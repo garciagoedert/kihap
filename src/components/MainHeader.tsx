@@ -97,6 +97,14 @@ export default function MainHeader() {
               Metodologia
             </Link>
 
+            <Link
+              to="/kihap-em-acao"
+              className="text-white hover:text-gray-300 transition-colors text-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Kihap em Ação
+            </Link>
+
             {/* Programs */}
             <div className="space-y-3">
               <h3 className="text-gray-400 uppercase text-sm font-medium">Programas</h3>

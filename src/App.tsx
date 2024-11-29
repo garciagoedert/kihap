@@ -25,6 +25,7 @@ import BadgeManagement from './components/BadgeManagement';
 import LeadChatWrapper from './components/chat/LeadChatWrapper';
 import About from './components/About';
 import Metodologia from './components/Metodologia';
+import KihapEmAcao from './components/KihapEmAcao';
 import { useAuthStore } from './store/useAuthStore';
 import { checkAndResetStorage } from './utils/storage';
 
@@ -55,6 +56,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/sobre" element={<About />} />
           <Route path="/metodologia" element={<Metodologia />} />
+          <Route path="/kihap-em-acao" element={<KihapEmAcao />} />
           <Route path="/cadastro" element={<LeadRegistration />} />
           <Route path="/unidade/:location" element={<LocationLanding />} />
           <Route path="/programa/:program" element={<ProgramLanding />} />
