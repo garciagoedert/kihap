@@ -1,0 +1,43 @@
+{
+  "name": "taekwondo-academy",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^16.5.0",
+    "@hookform/resolvers": "^3.3.4",
+    "@mailchimp/mailchimp_marketing": "^3.0.80",
+    "date-fns": "^3.3.1",
+    "firebase": "^11.0.2",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.344.0",
+    "nodemailer": "^6.9.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.51.0",
+    "react-player": "^2.15.1",
+    "react-router-dom": "^6.22.3",
+    "socket.io-client": "^4.7.4",
+    "zod": "^3.22.4",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  }
+}
