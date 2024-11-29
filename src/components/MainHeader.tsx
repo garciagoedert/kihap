@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function MainHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isProgramsOpen, setIsProgramsOpen] = useState(false);
+  const [isUnitsOpen, setIsUnitsOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -21,6 +23,8 @@ export default function MainHeader() {
 
   // Only use transparent background on home page
   const useTransparentBg = isHomePage && !isScrolled;
+
+  const submenuLinkClasses = "block text-gray-400 hover:text-white transition-colors text-base py-3 px-2 rounded-md hover:bg-gray-700/50 active:bg-gray-700";
 
   return (
     <>
@@ -72,10 +76,10 @@ export default function MainHeader() {
         </div>
 
         <nav className="h-[calc(100%-64px)] overflow-y-auto">
-          <div className="flex flex-col p-4 space-y-6">
+          <div className="flex flex-col p-4 space-y-4">
             <Link
               to="/"
-              className="text-white hover:text-gray-300 transition-colors text-lg"
+              className="text-white hover:text-gray-300 transition-colors text-lg py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
@@ -83,7 +87,7 @@ export default function MainHeader() {
 
             <Link
               to="/sobre"
-              className="text-white hover:text-gray-300 transition-colors text-lg"
+              className="text-white hover:text-gray-300 transition-colors text-lg py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Sobre
@@ -91,7 +95,7 @@ export default function MainHeader() {
 
             <Link
               to="/metodologia"
-              className="text-white hover:text-gray-300 transition-colors text-lg"
+              className="text-white hover:text-gray-300 transition-colors text-lg py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Metodologia
@@ -99,68 +103,121 @@ export default function MainHeader() {
 
             <Link
               to="/kihap-em-acao"
-              className="text-white hover:text-gray-300 transition-colors text-lg"
+              className="text-white hover:text-gray-300 transition-colors text-lg py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Kihap em Ação
             </Link>
 
-            {/* Programs */}
-            <div className="space-y-3">
-              <h3 className="text-gray-400 uppercase text-sm font-medium">Programas</h3>
-              <div className="flex flex-col space-y-3 pl-2">
+            {/* Programs Dropdown */}
+            <div className="border-t border-gray-700 pt-4">
+              <button
+                onClick={() => setIsProgramsOpen(!isProgramsOpen)}
+                className="w-full flex items-center justify-between text-white hover:text-gray-300 transition-colors text-lg py-2"
+              >
+                <span>Programas</span>
+                {isProgramsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+              
+              <div className={`mt-2 space-y-1 overflow-hidden transition-all duration-300 ${
+                isProgramsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              }`}>
+                <Link
+                  to="/programa/baby-littles"
+                  className={submenuLinkClasses}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Baby Littles
+                </Link>
                 <Link
                   to="/programa/littles"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Littles
                 </Link>
                 <Link
                   to="/programa/kids"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Kids
                 </Link>
                 <Link
+                  to="/programa/adolescentes"
+                  className={submenuLinkClasses}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Adolescentes
+                </Link>
+                <Link
                   to="/programa/adultos"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Adultos
                 </Link>
+                <Link
+                  to="/programa/familia"
+                  className={submenuLinkClasses}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Família
+                </Link>
+                <Link
+                  to="/programa/mulheres"
+                  className={submenuLinkClasses}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Mulheres
+                </Link>
+                <Link
+                  to="/programa/online"
+                  className={submenuLinkClasses}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Online
+                </Link>
               </div>
             </div>
 
-            {/* Locations */}
-            <div className="space-y-3">
-              <h3 className="text-gray-400 uppercase text-sm font-medium">Unidades</h3>
-              <div className="flex flex-col space-y-3 pl-2">
+            {/* Units Dropdown */}
+            <div className="border-t border-gray-700 pt-4">
+              <button
+                onClick={() => setIsUnitsOpen(!isUnitsOpen)}
+                className="w-full flex items-center justify-between text-white hover:text-gray-300 transition-colors text-lg py-2"
+              >
+                <span>Unidades</span>
+                {isUnitsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+              
+              <div className={`mt-2 space-y-1 overflow-hidden transition-all duration-300 ${
+                isUnitsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              }`}>
                 <Link
                   to="/unidade/brasilia"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Brasília - DF
                 </Link>
                 <Link
                   to="/unidade/florianopolis"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Florianópolis - SC
                 </Link>
                 <Link
                   to="/unidade/dourados"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Dourados - MG
+                  Dourados - MS
                 </Link>
                 <Link
                   to="/unidade/online"
-                  className="text-white hover:text-gray-300 transition-colors text-lg"
+                  className={submenuLinkClasses}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Unidade Online
@@ -168,7 +225,7 @@ export default function MainHeader() {
               </div>
             </div>
 
-            <div className="mt-auto pt-6">
+            <div className="mt-auto pt-4 border-t border-gray-700">
               <Link
                 to="/portal"
                 className="block w-full bg-[#dfa129] text-white px-6 py-3 rounded-md hover:bg-opacity-90 transition-colors text-center font-medium"

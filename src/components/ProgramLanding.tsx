@@ -3,7 +3,53 @@ import { useParams, Link } from 'react-router-dom';
 import MainHeader from './MainHeader';
 import Footer from './Footer';
 
-const programData = {
+interface Feature {
+  title: string;
+  description: string;
+}
+
+interface ProgramData {
+  name: string;
+  ageRange: string;
+  description: string;
+  benefits: string[];
+  image: string;
+  features: Feature[];
+}
+
+type Programs = {
+  [key: string]: ProgramData;
+}
+
+const programData: Programs = {
+  'baby-littles': {
+    name: 'Baby Littles',
+    ageRange: '0 a 2 anos',
+    description: 'Programa exclusivo para bebês até 2 anos, focando no desenvolvimento sensorial, motor e social através de atividades adaptadas e estimulantes.',
+    benefits: [
+      'Desenvolvimento sensorial',
+      'Coordenação motora inicial',
+      'Socialização precoce',
+      'Vínculo familiar',
+      'Estimulação cognitiva',
+      'Adaptação social'
+    ],
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/baby-littles.jpg',
+    features: [
+      {
+        title: 'Ambiente Adaptado',
+        description: 'Espaço seguro e adequado para bebês'
+      },
+      {
+        title: 'Atividades Sensoriais',
+        description: 'Estímulos específicos para a primeira infância'
+      },
+      {
+        title: 'Interação Pais e Bebês',
+        description: 'Fortalecimento do vínculo familiar'
+      }
+    ]
+  },
   littles: {
     name: 'Littles',
     ageRange: '3 a 6 anos',
@@ -60,10 +106,38 @@ const programData = {
       }
     ]
   },
+  adolescentes: {
+    name: 'Adolescentes',
+    ageRange: '13 a 17 anos',
+    description: 'Programa especializado para adolescentes, focando no desenvolvimento físico, mental e emocional durante esta fase crucial de transformação.',
+    benefits: [
+      'Autoconfiança',
+      'Gestão emocional',
+      'Preparação física',
+      'Autodefesa',
+      'Liderança',
+      'Foco nos estudos'
+    ],
+    image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-adolescentes.jpg',
+    features: [
+      {
+        title: 'Desenvolvimento Integral',
+        description: 'Equilíbrio entre corpo, mente e emoções'
+      },
+      {
+        title: 'Preparação para Vida',
+        description: 'Habilidades essenciais para o futuro'
+      },
+      {
+        title: 'Ambiente Motivador',
+        description: 'Suporte para superar desafios'
+      }
+    ]
+  },
   adultos: {
     name: 'Adultos',
-    ageRange: 'A partir de 13 anos',
-    description: 'Programa avançado para adolescentes e adultos, focando em técnica, condicionamento físico e desenvolvimento pessoal.',
+    ageRange: 'A partir de 18 anos',
+    description: 'Programa avançado para adultos, focando em técnica, condicionamento físico e desenvolvimento pessoal.',
     benefits: [
       'Condicionamento físico',
       'Autodefesa',
@@ -87,12 +161,96 @@ const programData = {
         description: 'Ambiente de suporte e networking'
       }
     ]
+  },
+  familia: {
+    name: 'Família',
+    ageRange: 'Todas as idades',
+    description: 'Programa especial que permite que toda a família treine junta, fortalecendo laços e compartilhando experiências através da arte marcial.',
+    benefits: [
+      'União familiar',
+      'Momentos especiais',
+      'Valores compartilhados',
+      'Saúde em família',
+      'Desenvolvimento conjunto',
+      'Memórias duradouras'
+    ],
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/familia-kihap.jpg',
+    features: [
+      {
+        title: 'Treino Integrado',
+        description: 'Atividades adaptadas para todas as idades'
+      },
+      {
+        title: 'Fortalecimento de Laços',
+        description: 'Experiências compartilhadas em família'
+      },
+      {
+        title: 'Valores Familiares',
+        description: 'Construção de legado e tradições'
+      }
+    ]
+  },
+  mulheres: {
+    name: 'Mulheres',
+    ageRange: 'Todas as idades',
+    description: 'Programa exclusivo para mulheres, focando em autodefesa, empoderamento e bem-estar físico e mental.',
+    benefits: [
+      'Autodefesa',
+      'Empoderamento',
+      'Condicionamento físico',
+      'Autoconfiança',
+      'Bem-estar mental',
+      'Comunidade feminina'
+    ],
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/mulheres-kihap.jpg',
+    features: [
+      {
+        title: 'Ambiente Exclusivo',
+        description: 'Espaço seguro e acolhedor'
+      },
+      {
+        title: 'Empoderamento',
+        description: 'Desenvolvimento de força e confiança'
+      },
+      {
+        title: 'Comunidade',
+        description: 'Rede de apoio e amizades'
+      }
+    ]
+  },
+  online: {
+    name: 'Online',
+    ageRange: 'Todas as idades',
+    description: 'Programa de treinamento online que permite praticar de qualquer lugar, com flexibilidade de horários e acompanhamento personalizado.',
+    benefits: [
+      'Flexibilidade',
+      'Treino em casa',
+      'Acompanhamento remoto',
+      'Economia de tempo',
+      'Suporte online',
+      'Comunidade virtual'
+    ],
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/online-kihap.jpg',
+    features: [
+      {
+        title: 'Flexibilidade Total',
+        description: 'Treine quando e onde quiser'
+      },
+      {
+        title: 'Suporte Contínuo',
+        description: 'Acompanhamento online personalizado'
+      },
+      {
+        title: 'Conteúdo Exclusivo',
+        description: 'Material didático e vídeos especiais'
+      }
+    ]
   }
 };
 
 export default function ProgramLanding() {
-  const { program } = useParams<{ program: keyof typeof programData }>();
-  const data = programData[program];
+  const { program } = useParams<{ program: string }>();
+  const data = program ? programData[program] : null;
 
   if (!data) return null;
 
@@ -136,7 +294,7 @@ export default function ProgramLanding() {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Benefícios</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
-              {data.benefits.map((benefit, index) => (
+              {data.benefits.map((benefit: string, index: number) => (
                 <div key={index} className="bg-white rounded-lg shadow-lg p-4 md:p-6 text-center">
                   <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-800 whitespace-normal break-words">
                     {benefit}
@@ -152,7 +310,7 @@ export default function ProgramLanding() {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Diferenciais</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {data.features.map((feature, index) => (
+              {data.features.map((feature: Feature, index: number) => (
                 <div key={index} className="bg-white rounded-lg shadow-lg p-6">
                   <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-4 whitespace-normal break-words">
                     {feature.title}

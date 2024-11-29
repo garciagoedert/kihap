@@ -6,6 +6,12 @@ import { MapPin } from 'lucide-react';
 
 const programs = [
   {
+    name: 'Baby Littles',
+    description: 'Programa especial para bebês até 2 anos',
+    path: '/programa/baby-littles',
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/baby-littles.jpg'
+  },
+  {
     name: 'Littles',
     description: 'Programa especial para crianças de 3 a 6 anos',
     path: '/programa/littles',
@@ -18,10 +24,34 @@ const programs = [
     image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-kids.jpg'
   },
   {
+    name: 'Adolescentes',
+    description: 'Programa especial para adolescentes',
+    path: '/programa/adolescentes',
+    image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-adolescentes.jpg'
+  },
+  {
     name: 'Adultos',
-    description: 'Programa para adolescentes e adultos',
+    description: 'Programa para adultos',
     path: '/programa/adultos',
     image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-adolescentes-e-adultos.jpg'
+  },
+  {
+    name: 'Família',
+    description: 'Programa especial para toda a família treinar junta',
+    path: '/programa/familia',
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/familia-kihap.jpg'
+  },
+  {
+    name: 'Mulheres',
+    description: 'Programa exclusivo para mulheres',
+    path: '/programa/mulheres',
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/mulheres-kihap.jpg'
+  },
+  {
+    name: 'Online',
+    description: 'Treine de onde estiver com nosso programa online',
+    path: '/programa/online',
+    image: 'https://kihap.com.br/wp-content/uploads/2023/02/online-kihap.jpg'
   }
 ];
 
@@ -101,7 +131,7 @@ export default function Home() {
         <section className="py-16 md:py-20 bg-gray-50">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-8 md:mb-12">Nossos Programas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {programs.map((program, index) => (
                 <Link
                   key={index}
@@ -112,7 +142,7 @@ export default function Home() {
                     <img 
                       src={program.image}
                       alt={program.name}
-                      className="w-full h-64 object-cover"
+                      className="w-full h-48 object-cover"
                     />
                   </div>
                   <div className="p-6">

@@ -20,8 +20,13 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
+            <h3 className="text-lg font-semibold mb-4">Programas</h3>
             <ul className="space-y-2 text-sm md:text-base">
+              <li>
+                <Link to="/programa/baby-littles" className="text-gray-400 hover:text-white transition-colors">
+                  Baby Littles
+                </Link>
+              </li>
               <li>
                 <Link to="/programa/littles" className="text-gray-400 hover:text-white transition-colors">
                   Littles
@@ -33,13 +38,55 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/programa/adolescentes" className="text-gray-400 hover:text-white transition-colors">
+                  Adolescentes
+                </Link>
+              </li>
+              <li>
                 <Link to="/programa/adultos" className="text-gray-400 hover:text-white transition-colors">
                   Adultos
                 </Link>
               </li>
               <li>
+                <Link to="/programa/familia" className="text-gray-400 hover:text-white transition-colors">
+                  Família
+                </Link>
+              </li>
+              <li>
+                <Link to="/programa/mulheres" className="text-gray-400 hover:text-white transition-colors">
+                  Mulheres
+                </Link>
+              </li>
+              <li>
+                <Link to="/programa/online" className="text-gray-400 hover:text-white transition-colors">
+                  Online
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
+            <ul className="space-y-2 text-sm md:text-base">
+              <li>
                 <Link to="/cadastro" className="text-gray-400 hover:text-white transition-colors">
                   Agende uma experiência
+                </Link>
+              </li>
+              <li>
+                <Link to="/sobre" className="text-gray-400 hover:text-white transition-colors">
+                  Sobre
+                </Link>
+              </li>
+              <li>
+                <Link to="/metodologia" className="text-gray-400 hover:text-white transition-colors">
+                  Metodologia
+                </Link>
+              </li>
+              <li>
+                <Link to="/kihap-em-acao" className="text-gray-400 hover:text-white transition-colors">
+                  Kihap em Ação
                 </Link>
               </li>
               <li>
@@ -48,17 +95,15 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
 
-          {/* Contact Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Área Restrita</h3>
-            <Link
-              to="/login"
-              className="inline-block bg-[#dfa129] text-white px-6 py-3 rounded-md hover:bg-opacity-90 transition-colors text-center w-full font-medium"
-            >
-              Área do Instrutor
-            </Link>
+            <div className="mt-6">
+              <Link
+                to="/login"
+                className="inline-block bg-[#dfa129] text-white px-6 py-3 rounded-md hover:bg-opacity-90 transition-colors text-center w-full font-medium"
+              >
+                Área do Instrutor
+              </Link>
+            </div>
           </div>
         </div>
 
