@@ -81,6 +81,22 @@ export default function MainHeader() {
               Home
             </Link>
 
+            <Link
+              to="/sobre"
+              className="text-white hover:text-gray-300 transition-colors text-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sobre
+            </Link>
+
+            <Link
+              to="/metodologia"
+              className="text-white hover:text-gray-300 transition-colors text-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Metodologia
+            </Link>
+
             {/* Programs */}
             <div className="space-y-3">
               <h3 className="text-gray-400 uppercase text-sm font-medium">Programas</h3>

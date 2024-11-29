@@ -94,6 +94,16 @@ export const units: Unit[] = [
     phone: '(61) 7890-1234',
     manager: 'Roberto Alves',
     isFixed: true
+  },
+  {
+    id: 8,
+    name: 'Online',
+    city: 'Online',
+    state: 'ON',
+    address: 'Plataforma Online',
+    phone: '0800-123-4567',
+    manager: 'Sistema KIHAP',
+    isFixed: true
   }
 ];
 
