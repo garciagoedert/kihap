@@ -15,6 +15,7 @@ import Home from './components/Home';
 import LeadRegistration from './components/LeadRegistration';
 import LocationLanding from './components/LocationLanding';
 import ProgramLanding from './components/ProgramLanding';
+import CharacterPage from './components/CharacterPage';
 import UserProfile from './components/UserProfile';
 import AdminDashboard from './components/admin/AdminDashboard';
 import StudentPortal from './components/student/StudentPortal';
@@ -60,6 +61,7 @@ function App() {
           <Route path="/cadastro" element={<LeadRegistration />} />
           <Route path="/unidade/:location" element={<LocationLanding />} />
           <Route path="/programa/:program" element={<ProgramLanding />} />
+          <Route path="/personagem/:characterId" element={<CharacterPage />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
           <Route path="/privacidade-e-direitos" element={<PrivacyAndCopyright />} />
           <Route path="/payment/:token" element={<PaymentPage />} />
