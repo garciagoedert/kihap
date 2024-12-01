@@ -2,20 +2,21 @@ import React, { useState, useMemo } from 'react';
 import { useDataStore } from '../store/useDataStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { Bell, X, Search, Users, Building2 } from 'lucide-react';
+import type { Student } from '../types';
 
 interface NotificationFormProps {
   onClose: () => void;
-  unitId?: number;
-  studentId?: number;
-  selectedStudents?: number[];
+  unitId?: string;
+  studentId?: string;
+  selectedStudents?: string[];
 }
 
 export default function NotificationForm({ onClose, unitId: initialUnitId, studentId, selectedStudents: initialSelectedStudents }: NotificationFormProps) {
   const currentUser = useAuthStore(state => state.user);
   const { addNotification, students, units } = useDataStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStudents, setSelectedStudents] = useState<number[]>(initialSelectedStudents || []);
-  const [selectedUnitId, setSelectedUnitId] = useState<number | 'all'>(initialUnitId || 'all');
+  const [selectedStudents, setSelectedStudents] = useState<string[]>(initialSelectedStudents || []);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | 'all'>(initialUnitId || 'all');
   const [formData, setFormData] = useState({
     title: '',
     message: '',
@@ -27,35 +28,35 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
   const filteredStudents = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
     return students
-      .filter(student => 
+      .filter((student: Student) => 
         (selectedUnitId === 'all' || student.unitId === selectedUnitId) &&
         (student.name.toLowerCase().includes(searchLower) ||
          student.email?.toLowerCase().includes(searchLower) ||
          student.phone.toLowerCase().includes(searchLower))
       )
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a: Student, b: Student) => a.name.localeCompare(b.name));
   }, [students, selectedUnitId, searchTerm]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
 
-    const recipientIds = studentId ? [studentId] : selectedStudents;
+    const userIds = studentId ? [studentId] : selectedStudents;
 
-    recipientIds.forEach(recipientId => {
+    userIds.forEach(userId => {
       addNotification({
-        ...formData,
-        createdBy: currentUser.id,
-        read: false,
-        recipientId,
-        unitId: selectedUnitId === 'all' ? undefined : selectedUnitId
+        title: formData.title,
+        message: formData.message,
+        type: formData.type,
+        userId,
+        read: false
       });
     });
 
     onClose();
   };
 
-  const toggleStudent = (studentId: number) => {
+  const toggleStudent = (studentId: string) => {
     setSelectedStudents(prev =>
       prev.includes(studentId)
         ? prev.filter(id => id !== studentId)
@@ -85,6 +86,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
+              aria-label="Fechar"
             >
               <X size={24} />
             </button>
@@ -102,10 +104,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     <select
                       value={selectedUnitId}
                       onChange={(e) => {
-                        setSelectedUnitId(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                        setSelectedUnitId(e.target.value);
                         setSelectedStudents([]);
                       }}
                       className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
+                      aria-label="Selecionar unidade"
                     >
                       <option value="all">Todas as Unidades</option>
                       {units.map(unit => (
@@ -124,6 +127,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+                      aria-label="Buscar alunos"
                     />
                   </div>
                 </div>
@@ -133,6 +137,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     <button
                       onClick={selectAllStudents}
                       className="text-sm text-[#1d528d] hover:text-[#164070] font-medium flex items-center gap-1"
+                      aria-label="Selecionar todos os alunos"
                     >
                       <Users size={16} />
                       Selecionar Todos
@@ -140,6 +145,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     <button
                       onClick={clearSelection}
                       className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                      aria-label="Limpar seleção"
                     >
                       Limpar Seleção
                     </button>
@@ -157,6 +163,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                         checked={selectedStudents.includes(student.id)}
                         onChange={() => toggleStudent(student.id)}
                         className="rounded border-gray-300 text-[#1d528d] focus:ring-[#1d528d]"
+                        aria-label={`Selecionar ${student.name}`}
                       />
                       <div className="ml-3">
                         <div className="text-sm font-medium text-gray-700">{student.name}</div>
@@ -173,6 +180,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                   <button
                     onClick={() => setShowStudentList(false)}
                     className="w-full bg-[#1d528d] text-white px-4 py-2 rounded-md"
+                    aria-label="Continuar"
                   >
                     Continuar
                   </button>
@@ -185,6 +193,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     type="button"
                     onClick={() => setShowStudentList(true)}
                     className="w-full mb-4 p-3 border border-gray-300 rounded-md text-left flex justify-between items-center"
+                    aria-label="Selecionar alunos"
                   >
                     <span className="text-gray-600">Selecionar alunos</span>
                     <Users size={20} className="text-gray-400" />
@@ -192,10 +201,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="title">
                         Título
                       </label>
                       <input
+                        id="title"
                         type="text"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -205,10 +215,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="message">
                         Mensagem
                       </label>
                       <textarea
+                        id="message"
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         className="w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
@@ -217,10 +228,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="type">
                         Tipo
                       </label>
                       <select
+                        id="type"
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
@@ -239,6 +251,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     type="submit"
                     disabled={selectedStudents.length === 0}
                     className="w-full bg-[#1d528d] text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Enviar notificação"
                   >
                     Enviar Notificação
                   </button>
@@ -257,10 +270,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                   <select
                     value={selectedUnitId}
                     onChange={(e) => {
-                      setSelectedUnitId(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                      setSelectedUnitId(e.target.value);
                       setSelectedStudents([]);
                     }}
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
+                    aria-label="Selecionar unidade"
                   >
                     <option value="all">Todas as Unidades</option>
                     {units.map(unit => (
@@ -279,6 +293,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+                    aria-label="Buscar alunos"
                   />
                 </div>
               </div>
@@ -288,6 +303,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                   <button
                     onClick={selectAllStudents}
                     className="text-sm text-[#1d528d] hover:text-[#164070] font-medium flex items-center gap-1"
+                    aria-label="Selecionar todos os alunos"
                   >
                     <Users size={16} />
                     Selecionar Todos
@@ -295,6 +311,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                   <button
                     onClick={clearSelection}
                     className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                    aria-label="Limpar seleção"
                   >
                     Limpar Seleção
                   </button>
@@ -312,6 +329,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                       checked={selectedStudents.includes(student.id)}
                       onChange={() => toggleStudent(student.id)}
                       className="rounded border-gray-300 text-[#1d528d] focus:ring-[#1d528d]"
+                      aria-label={`Selecionar ${student.name}`}
                     />
                     <div className="ml-3">
                       <div className="text-sm font-medium text-gray-700">{student.name}</div>
@@ -329,10 +347,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
             <div className="flex-1 flex flex-col">
               <form onSubmit={handleSubmit} className="p-6 space-y-4 flex-1">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="desktop-title">
                     Título
                   </label>
                   <input
+                    id="desktop-title"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -342,10 +361,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="desktop-message">
                     Mensagem
                   </label>
                   <textarea
+                    id="desktop-message"
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="w-full h-[200px] rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
@@ -354,10 +374,11 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="desktop-type">
                     Tipo
                   </label>
                   <select
+                    id="desktop-type"
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
@@ -374,6 +395,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     type="button"
                     onClick={onClose}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    aria-label="Cancelar"
                   >
                     Cancelar
                   </button>
@@ -381,6 +403,7 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
                     type="submit"
                     disabled={selectedStudents.length === 0}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#1d528d] border border-transparent rounded-md hover:bg-[#164070] disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Enviar notificação"
                   >
                     <Bell size={18} />
                     Enviar Notificação

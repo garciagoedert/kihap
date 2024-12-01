@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useDataStore } from '../../store/useDataStore';
-import { Bell, LogOut, Upload, X, User, DollarSign, Video, Award, Dumbbell } from 'lucide-react';
+import { Bell, LogOut, Upload, X, User, DollarSign, Video, Award, Dumbbell, ShoppingBag } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import NotificationList from '../NotificationList';
 import MainHeader from '../MainHeader';
@@ -10,6 +10,9 @@ import ContractPurchase from './ContractPurchase';
 import OnlineTraining from './OnlineTraining';
 import StudentBadges from './StudentBadges';
 import PhysicalTests from './PhysicalTests';
+import StoreWrapper from '../store/StoreWrapper';
+
+type TabType = 'profile' | 'online' | 'badges' | 'physical' | 'store';
 
 export default function StudentPortal() {
   const navigate = useNavigate();
@@ -18,7 +21,7 @@ export default function StudentPortal() {
   const { students, updateStudent, notifications } = useDataStore();
   const [error, setError] = useState<string | null>(null);
   const [showContractPurchase, setShowContractPurchase] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'online' | 'badges' | 'physical'>('profile');
+  const [activeTab, setActiveTab] = useState<TabType>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // If not logged in, redirect to login
@@ -31,7 +34,7 @@ export default function StudentPortal() {
     return <Navigate to="/" />;
   }
 
-  const student = students.find(s => s.id === currentUser.studentId);
+  const student = students.find(s => s.id === currentUser.id);
 
   // If student not found, logout and redirect
   if (!student) {
@@ -42,8 +45,8 @@ export default function StudentPortal() {
   // Filter notifications for this student
   const studentNotifications = notifications
     .filter(n => 
-      n.recipientId === student.id || 
-      (n.unitId === student.unitId && !n.recipientId)
+      n.userId === student.id || 
+      (student.unitId && n.userId === student.unitId)
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -112,6 +115,7 @@ export default function StudentPortal() {
                       onClick={() => fileInputRef.current?.click()}
                       className="p-1.5 bg-white text-[#1d528d] rounded-full hover:bg-gray-100 transition-colors shadow-md"
                       title="Alterar foto"
+                      aria-label="Alterar foto"
                     >
                       <Upload size={14} />
                     </button>
@@ -120,6 +124,7 @@ export default function StudentPortal() {
                         onClick={handleRemovePhoto}
                         className="p-1.5 bg-white text-red-500 rounded-full hover:bg-gray-100 transition-colors shadow-md"
                         title="Remover foto"
+                        aria-label="Remover foto"
                       >
                         <X size={14} />
                       </button>
@@ -131,6 +136,7 @@ export default function StudentPortal() {
                     accept="image/*"
                     onChange={handlePhotoChange}
                     className="hidden"
+                    aria-label="Upload de foto"
                   />
                 </div>
                 <div>
@@ -198,6 +204,17 @@ export default function StudentPortal() {
               <Dumbbell size={20} />
               Teste Físico
             </button>
+            <button
+              onClick={() => setActiveTab('store')}
+              className={`flex items-center gap-2 px-4 py-2 font-medium ${
+                activeTab === 'store'
+                  ? 'text-[#1d528d] border-b-2 border-[#1d528d]'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <ShoppingBag size={20} />
+              KIHAP STORE
+            </button>
           </div>
         </div>
       </div>
@@ -224,14 +241,11 @@ export default function StudentPortal() {
                   <div className="space-y-2 text-gray-600">
                     <p><strong>Email:</strong> {student.email}</p>
                     <p><strong>Telefone:</strong> {student.phone}</p>
-                    <p><strong>Data de Nascimento:</strong> {student.birthDate}</p>
                   </div>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-700 mb-2">Informações de Treino</h3>
                   <div className="space-y-2 text-gray-600">
-                    <p><strong>Dias:</strong> {student.trainingDays.join(', ')}</p>
-                    <p><strong>Horário:</strong> {student.trainingSchedule}</p>
                     <p><strong>Graduação:</strong> {student.belt}</p>
                   </div>
                 </div>
@@ -242,7 +256,7 @@ export default function StudentPortal() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-800">Informações do Contrato</h2>
-                {(!student.contract || !student.contract.active) && (
+                {(!student.contract || student.contract.status !== 'active') && (
                   <button
                     onClick={() => setShowContractPurchase(true)}
                     className="flex items-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
@@ -252,15 +266,8 @@ export default function StudentPortal() {
                   </button>
                 )}
               </div>
-              {student.contract && student.contract.active ? (
+              {student.contract && student.contract.status === 'active' ? (
                 <div className="space-y-2 text-gray-600">
-                  <p><strong>Plano:</strong> {student.contract.planName}</p>
-                  <p><strong>Início:</strong> {student.contract.startDate}</p>
-                  <p><strong>Término:</strong> {student.contract.endDate}</p>
-                  <p><strong>Valor Mensal:</strong> {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(student.contract.value)}</p>
                   <p><strong>Status:</strong> <span className="text-green-600">Ativo</span></p>
                 </div>
               ) : (
@@ -288,6 +295,7 @@ export default function StudentPortal() {
       {activeTab === 'online' && <OnlineTraining />}
       {activeTab === 'badges' && <StudentBadges student={student} />}
       {activeTab === 'physical' && <PhysicalTests student={student} />}
+      {activeTab === 'store' && <StoreWrapper student={student} />}
 
       {/* Contract Purchase Modal */}
       {showContractPurchase && (

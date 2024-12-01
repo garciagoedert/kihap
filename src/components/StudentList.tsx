@@ -5,12 +5,12 @@ import { Student } from '../types';
 interface StudentListProps {
   students: Student[];
   onEditStudent: (student: Student) => void;
-  onDeleteStudent: (studentId: number) => void;
-  unitId: number;
+  onDeleteStudent: (studentId: string) => void;
+  unitId: string;
 }
 
 export default function StudentList({ students, onEditStudent, onDeleteStudent, unitId }: StudentListProps) {
-  const handleDelete = (studentId: number) => {
+  const handleDelete = (studentId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este aluno? Esta ação não pode ser desfeita.')) {
       onDeleteStudent(studentId);
     }
@@ -19,7 +19,7 @@ export default function StudentList({ students, onEditStudent, onDeleteStudent, 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {students.map((student) => {
-        const hasActiveContract = student.contract?.active;
+        const hasActiveContract = student.contract?.status === 'active';
         
         return (
           <div 
@@ -52,7 +52,7 @@ export default function StudentList({ students, onEditStudent, onDeleteStudent, 
               {student.contract && (
                 <div className="flex items-center gap-2">
                   <span>
-                    {student.contract.planName}
+                    {student.contract.content}
                   </span>
                 </div>
               )}

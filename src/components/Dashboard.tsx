@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Users, Award, FileCheck, DollarSign, Bell } from 'lucide-react';
+import { MapPin, Users, Award, FileCheck, DollarSign, Bell, ShoppingBag } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -15,13 +15,13 @@ export default function Dashboard() {
     if (!s.contract) return false;
     const endDate = new Date(s.contract.endDate);
     const now = new Date();
-    return endDate >= now && s.contract.active;
+    return endDate >= now && s.contract.status === 'active';
   }).length;
 
   // Calcular valor total dos leads novos
   const totalLeadsValue = leads
     .filter(lead => lead.status === 'novo')
-    .reduce((total, lead) => total + (lead.value || 0), 0);
+    .length;
 
   // Log para debug
   console.log('Estado atual:', {
@@ -39,7 +39,7 @@ export default function Dashboard() {
       
       // Get active contract students
       const activeContractStudents = unitStudents.filter(student => {
-        if (!student.contract?.active) return false;
+        if (student.contract?.status !== 'active') return false;
         try {
           const endDate = new Date(student.contract.endDate);
           return endDate >= now;
@@ -51,7 +51,7 @@ export default function Dashboard() {
       // Calculate unit leads value
       const unitLeadsValue = leads
         .filter(lead => lead.status === 'novo' && lead.unitId === unit.id)
-        .reduce((total, lead) => total + (lead.value || 0), 0);
+        .length;
 
       return {
         ...unit,
@@ -79,6 +79,13 @@ export default function Dashboard() {
           <p className="text-gray-600">Gerenciamento global das unidades</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            to="/dashboard/store"
+            className="flex items-center justify-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors w-full sm:w-auto"
+          >
+            <ShoppingBag size={20} />
+            <span>KIHAP STORE</span>
+          </Link>
           <button
             onClick={() => setShowNotificationForm(true)}
             className="flex items-center justify-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors w-full sm:w-auto"
@@ -114,8 +121,8 @@ export default function Dashboard() {
         />
         <StatCard
           icon={<DollarSign className="text-[#1d528d]" size={24} />}
-          title="Valor Total de Novos Leads"
-          value={formatCurrency(totalLeadsValue)}
+          title="Total de Novos Leads"
+          value={totalLeadsValue.toString()}
           link="/dashboard/crm"
         />
       </div>
@@ -137,7 +144,7 @@ export default function Dashboard() {
             <div className="space-y-3 text-gray-600 mb-4">
               <div className="flex items-center gap-2">
                 <MapPin size={18} />
-                <span className="text-sm md:text-base">{unit.city}, {unit.state}</span>
+                <span className="text-sm md:text-base">{unit.city}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Users size={18} />
@@ -146,7 +153,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <DollarSign size={18} />
                 <span className="text-sm md:text-base">
-                  {formatCurrency(unit.stats.leadsValue)} em leads
+                  {unit.stats.leadsValue} leads novos
                 </span>
               </div>
             </div>

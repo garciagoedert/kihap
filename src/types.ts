@@ -1,282 +1,306 @@
-// Chat types
-export interface ChatMessage {
-  id: number;
-  threadId: number;
-  senderId: string; // Can be lead ID or staff ID
-  receiverId: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  type: 'lead' | 'staff';
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: LeadStatus;
+  source: string;
+  notes: string;
+  unitId: string;
+  history: LeadHistory[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ChatThread {
-  id: number;
-  leadId: number;
-  lastMessage?: ChatMessage;
-  unreadCount: number;
-  status: 'active' | 'archived' | 'resolved';
-  assignedTo?: number; // Staff ID
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Lead types
-export interface LeadHistory {
-  id: number;
-  leadId: number;
+export type LeadHistory = {
+  id: string;
+  leadId: string;
   type: 'status_change' | 'note' | 'contact';
   description: string;
   oldStatus?: LeadStatus;
   newStatus?: LeadStatus;
   createdAt: string;
-  createdBy: number;
-}
+  createdBy: string;
+};
 
-export interface Lead {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  source?: 'form' | 'manual' | 'chat';
-  notes?: string;
-  value: number;
-  status: LeadStatus;
-  createdAt: string;
-  history?: LeadHistory[];
-  lastContact?: string;
-  nextContactDate?: string;
-  interests?: string[];
-  unitId: number;
-  assignedTo?: number;
-}
-
-export type LeadStatus = 'novo' | 'contato' | 'visitou' | 'matriculado' | 'desistente';
-
-// Add missing types
-export interface Student {
-  id: number;
-  name: string;
-  belt: string;
-  age: number;
-  registrationDate: string;
-  lastAttendance: string;
-  unitId: number;
-  birthDate: string;
-  cpf: string;
-  rg?: string;
-  phone: string;
-  email?: string;
-  emergencyContact?: string;
-  emergencyPhone?: string;
-  address?: string;
-  neighborhood?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  bloodType?: string;
-  weight?: string;
-  height?: string;
-  healthIssues?: string;
-  medications?: string;
-  guardianName?: string;
-  guardianCPF?: string;
-  guardianPhone?: string;
-  trainingDays?: string[];
-  trainingSchedule?: string;
-  paymentDay?: number;
-  active: boolean;
-  favoriteContent?: number[]; // IDs dos conteúdos favoritados
-  completedContent?: number[]; // IDs dos conteúdos completados
-  contentProgress?: { [key: number]: number }; // Progresso por conteúdo
-  photo?: string;
-  observations?: string;
-  contract?: {
-    endDate: string;
-    active: boolean;
-    planName?: string;
-    startDate?: string;
-    value?: number;
-  };
-}
-
-export interface AttendanceRecord {
-  id: number;
-  studentId: number;
-  date: string;
-  present: boolean;
-  unitId: number;
-}
+export type LeadStatus = 'novo' | 'new' | 'contacted' | 'interested' | 'scheduled' | 'converted' | 'lost';
 
 export interface Unit {
-  id: number;
+  id: string;
   name: string;
   city: string;
-  state: string;
   address: string;
   phone: string;
-  manager: string;
-  isFixed?: boolean;
+  email: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  password?: string; //In a real application, this should be hashed
-  role: string;
-  unitId?: number;
+  password?: string;
+  role: 'admin' | 'instructor' | 'student';
+  unitId: string;
+  active: boolean;
   photo?: string;
-  firstLogin?: boolean;
-  studentId?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Online Content types
-export interface OnlineContent {
-  id: number;
+export interface Student {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  belt: string;
+  unitId: string;
+  instructorId: string;
+  instructor: Instructor;
+  active: boolean;
+  contract: Contract;
+  badges: StudentBadge[];
+  physicalTests: PhysicalTest[];
+  storeId: string;
+  store: Store;
+  photo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Instructor {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  belt: string;
+  unitId: string;
+  active: boolean;
+  students: Student[];
+  commissionRate: number;
+  commissions: Commission[];
+  totalCommission: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Class {
+  id: string;
+  name: string;
+  description: string;
+  schedule: string;
+  instructorId: string;
+  unitId: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  receiverId: string;
+  read: boolean;
+  type: 'user';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Task {
+  id: string;
   title: string;
   description: string;
-  type: 'video' | 'image' | 'document';
-  url?: string;
-  thumbnailUrl?: string;
-  youtubeUrl?: string;
-  category?: string;
-  tags?: string[];
-  targetStudentIds?: number[];
-  targetBelts?: string[];
-  unitId?: number;
-  createdAt: string;
-  updatedAt: string;
-  isPublished: boolean;
-  uploadStatus?: 'pending' | 'uploading' | 'processing' | 'complete' | 'error';
-  uploadProgress?: number;
-  authorId: number;
-  status?: 'draft' | 'published' | 'archived';
-  createdBy?: number;
-  fileSize?: number;
-  fileName?: string;
+  status: 'pending' | 'completed';
+  assignedTo: string;
+  dueDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ContentEngagement {
-  id: number;
-  contentId: number;
-  studentId: number;
-  type: 'view' | 'like' | 'comment' | 'complete';
-  timestamp: string;
-  comment?: string;
-  progress?: number;
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  userId: string;
+  read: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContractTemplate {
+  id: string;
+  name: string;
+  content: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Contract {
+  id: string;
+  studentId: string;
+  templateId: string;
+  content: string;
+  status: 'draft' | 'active' | 'expired' | 'cancelled';
+  startDate: Date;
+  endDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OnlineContent {
+  id: string;
+  title: string;
+  description: string;
+  type: 'video' | 'document' | 'quiz';
+  url: string;
+  active: boolean;
+  uploadStatus?: 'pending' | 'uploading' | 'completed' | 'error';
+  uploadProgress?: number;
+  isPublished?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface LiveClass {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  type: 'live';
-  instructorId: number;
-  scheduledFor: string;
-  duration: number;
-  status: 'scheduled' | 'live' | 'ended';
-  url?: string;
-  thumbnailUrl?: string;
-  category?: string;
-  tags?: string[];
-  targetStudentIds?: number[];
-  targetBelts?: string[];
-  unitId?: number;
-  createdAt: string;
-  updatedAt: string;
-  isPublished: boolean;
-  authorId: number;
+  instructorId: string;
+  startTime: Date;
+  endTime: Date;
+  url: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContentEngagement {
+  id: string;
+  studentId: string;
+  contentId: string;
+  type: 'view' | 'complete' | 'like' | 'comment';
+  progress: number;
+  completed: boolean;
+  comment?: string;
+  timestamp: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Badge {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  imageUrl: string;
+  image: string;
   criteria: string;
-  unitId?: number;
+  active: boolean;
   type?: 'belt' | 'achievement';
   beltLevel?: string;
-  icon?: string;
   color?: string;
-  category?: string;
+  icon?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface StudentBadge {
-  id: number;
-  studentId: number;
-  badgeId: number;
+  id: string;
+  studentId: string;
+  badgeId: string;
   awardedAt: string;
-  awardedBy: number;
+  awardedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PhysicalTest {
-  id: number;
-  studentId: number;
-  date: string;
+  id: string;
+  studentId: string;
   type: string;
-  result: number;
-  notes?: string;
-  evaluatorId: number;
+  result: string;
+  date: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Class Management
-export interface Class {
-  id: number;
-  title: string;
-  description: string;
-  instructor: string;
-  schedule: string;
-  duration: number;
-  maxCapacity: number;
-  unitId: number;
-  createdAt: string;
-  updatedAt: string;
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  classId: string;
+  date: Date;
+  status: 'present' | 'absent' | 'late';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Messaging
-export interface Message {
-  id: number;
-  senderId: number;
-  receiverId: number;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  type: 'system' | 'user';
-}
-
-// Task Management
-export interface Task {
-  id: number;
-  title: string;
-  description: string;
-  assignedTo: number;
-  dueDate: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Notifications
-export interface Notification {
-  id: number;
-  userId: number;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  read: boolean;
-  createdAt: string;
-}
-
-// Contract Templates
-export interface ContractTemplate {
-  id: number;
+// KIHAP Store Types
+export interface Product {
+  id: string;
   name: string;
-  content: string;
-  variables: string[];
-  unitId?: number;
-  createdAt: string;
-  updatedAt: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  storeId: string;
+  stock: number;
+  active: boolean;
+  promotion?: Promotion;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Promotion {
+  id: string;
+  productId: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  startDate: Date;
+  endDate: Date;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  city: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Sale {
+  id: string;
+  productId: string;
+  product: Product;
+  storeId: string;
+  store: Store;
+  studentId: string;
+  student: Student;
+  instructorId: string;
+  instructor: Instructor;
+  quantity: number;
+  totalPrice: number;
+  commission: number;
+  status: 'pending' | 'paid' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Commission {
+  id: string;
+  saleId: string;
+  sale: Sale;
+  instructorId: string;
+  instructor: Instructor;
+  amount: number;
+  status: 'pending' | 'paid';
+  paidAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -1,11 +1,14 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useDataStore } from '../store/useDataStore';
-import { Eye, EyeOff, Save, User, Upload, X } from 'lucide-react';
+import { useStoreStore } from '../store/useStoreStore';
+import { Eye, EyeOff, Save, User, Upload, X, ShoppingBag } from 'lucide-react';
 
 export default function UserProfile() {
   const currentUser = useAuthStore(state => state.user);
-  const { units, updateUser } = useDataStore();
+  const { units, students } = useDataStore();
+  const { stores } = useStoreStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -68,7 +71,7 @@ export default function UserProfile() {
           ...(formData.password ? { password: formData.password } : {})
         };
 
-        updateUser(updatedUser);
+        // updateUser(updatedUser);
         setSuccess('Perfil atualizado com sucesso!');
         setIsEditing(false);
 
@@ -87,6 +90,8 @@ export default function UserProfile() {
   if (!currentUser) return null;
 
   const userUnit = units.find(u => u.id === currentUser.unitId);
+  const currentStudent = students.find(s => s.id === currentUser.id);
+  const userStore = currentStudent ? stores.find(s => s.id === currentStudent.storeId) : null;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -125,7 +130,7 @@ export default function UserProfile() {
                 {formData.photo ? (
                   <img
                     src={formData.photo}
-                    alt={formData.name}
+                    alt={`Foto de perfil de ${formData.name}`}
                     className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                   />
                 ) : (
@@ -139,6 +144,8 @@ export default function UserProfile() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="p-2 bg-[#1d528d] text-white rounded-full hover:bg-[#164070] transition-colors"
+                      title="Carregar nova foto"
+                      aria-label="Carregar nova foto"
                     >
                       <Upload size={16} />
                     </button>
@@ -147,6 +154,8 @@ export default function UserProfile() {
                         type="button"
                         onClick={handleRemovePhoto}
                         className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        title="Remover foto"
+                        aria-label="Remover foto"
                       >
                         <X size={16} />
                       </button>
@@ -161,6 +170,8 @@ export default function UserProfile() {
                   accept="image/*"
                   onChange={handlePhotoChange}
                   className="hidden"
+                  aria-label="Selecionar foto de perfil"
+                  title="Selecionar foto de perfil"
                 />
               )}
             </div>
@@ -186,22 +197,42 @@ export default function UserProfile() {
                   </div>
                 </div>
               )}
+
+              {currentUser.role === 'student' && userStore && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    KIHAP Store
+                  </label>
+                  <div className="p-4 bg-gray-50 rounded-md flex items-center justify-between">
+                    <span>{userStore.name}</span>
+                    <Link
+                      to={`/store/${userStore.id}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#dfa129] text-white rounded-md hover:bg-opacity-90 transition-colors"
+                    >
+                      <ShoppingBag size={20} />
+                      Acessar Store
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Edit Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                     Nome
                   </label>
                   {isEditing ? (
                     <input
+                      id="name"
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
                       required
+                      placeholder="Seu nome completo"
                     />
                   ) : (
                     <div className="p-3 bg-gray-50 rounded-md">
@@ -211,16 +242,18 @@ export default function UserProfile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                     Email
                   </label>
                   {isEditing ? (
                     <input
+                      id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
                       required
+                      placeholder="seu.email@exemplo.com"
                     />
                   ) : (
                     <div className="p-3 bg-gray-50 rounded-md">
@@ -238,21 +271,25 @@ export default function UserProfile() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                           Nova Senha
                         </label>
                         <div className="relative">
                           <input
+                            id="new-password"
                             type={showPassword ? "text" : "password"}
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
                             minLength={6}
+                            placeholder="Digite sua nova senha"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                           >
                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                           </button>
@@ -260,14 +297,16 @@ export default function UserProfile() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
                           Senha Atual
                         </label>
                         <input
+                          id="current-password"
                           type="password"
                           value={formData.currentPassword}
                           onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                           className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
+                          placeholder="Digite sua senha atual"
                         />
                       </div>
                     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { Menu, X, LogOut, Users, Building2, BookOpen, BarChart3, CheckSquare, Home, UserCircle, Shield, Video, Award, MessageSquare, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, Users, Building2, BookOpen, BarChart3, CheckSquare, Home, UserCircle, Shield, Video, Award, MessageSquare, ChevronDown, ShoppingBag } from 'lucide-react';
 
 export default function Header() {
   const user = useAuthStore(state => state.user);
@@ -61,9 +61,14 @@ export default function Header() {
         label: 'Badges',
         path: '/dashboard/badges',
         icon: <Award size={20} />
+      },
+      {
+        label: 'KIHAP STORE',
+        path: '/dashboard/store',
+        icon: <ShoppingBag size={20} />
       }
     ] : []),
-    ...(user?.role === 'admin' || user?.role === 'manager' ? [
+    ...(user?.role === 'admin' ? [
       {
         label: 'CRM',
         path: '/dashboard/crm',

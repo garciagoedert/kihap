@@ -120,7 +120,7 @@ export default function MainHeader() {
               </button>
               
               <div className={`mt-2 space-y-1 overflow-hidden transition-all duration-300 ${
-                isProgramsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                isProgramsOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
               }`}>
                 <Link
                   to="/programa/baby-littles"
@@ -192,7 +192,7 @@ export default function MainHeader() {
               </button>
               
               <div className={`mt-2 space-y-1 overflow-hidden transition-all duration-300 ${
-                isUnitsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                isUnitsOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
               }`}>
                 <Link
                   to="/unidade/brasilia"

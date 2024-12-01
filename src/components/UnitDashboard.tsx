@@ -16,9 +16,9 @@ export default function UnitDashboard() {
   const [showNotificationForm, setShowNotificationForm] = useState(false);
   
   const { units, students, addStudent, updateStudent, deleteStudent } = useDataStore();
-  const unit = units.find(u => u.id === Number(unitId));
-  const unitStudents = students.filter(s => s.unitId === Number(unitId));
-  const { getStats } = useUnitStats(Number(unitId));
+  const unit = units.find(u => u.id === unitId);
+  const unitStudents = students.filter(s => s.unitId === unitId);
+  const { getStats } = useUnitStats(unitId || '');
   const stats = getStats();
   
   // Filter students based on search term
@@ -27,7 +27,8 @@ export default function UnitDashboard() {
   );
 
   const handleAddStudent = (studentData: Omit<Student, 'id'>) => {
-    addStudent({ ...studentData, unitId: Number(unitId) });
+    if (!unitId) return;
+    addStudent({ ...studentData, unitId });
     setShowForm(false);
   };
 
@@ -37,90 +38,40 @@ export default function UnitDashboard() {
   };
 
   const handleUpdateStudent = (studentData: Omit<Student, 'id'>) => {
-    if (!editingStudent) return;
+    if (!editingStudent || !unitId) return;
     
     updateStudent({
       ...studentData,
       id: editingStudent.id,
-      unitId: Number(unitId)
+      unitId
     });
     setShowForm(false);
     setEditingStudent(null);
   };
 
-  const handleDeleteStudent = (studentId: number) => {
+  const handleDeleteStudent = (studentId: string) => {
     deleteStudent(studentId);
   };
 
   const handleExportStudents = () => {
     const headers = [
       'Nome',
-      'Idade',
-      'Faixa',
-      'Data de Matrícula',
-      'CPF',
-      'RG',
       'Email',
       'Telefone',
-      'Contato de Emergência',
-      'Telefone de Emergência',
-      'Endereço',
-      'Bairro',
-      'Cidade',
-      'Estado',
-      'CEP',
-      'Tipo Sanguíneo',
-      'Peso',
-      'Altura',
-      'Condições Médicas',
-      'Medicamentos',
-      'Responsável',
-      'CPF do Responsável',
-      'Telefone do Responsável',
-      'Dias de Treino',
-      'Horário de Treino',
-      'Dia do Pagamento',
-      'Plano',
-      'Início do Contrato',
-      'Fim do Contrato',
-      'Valor do Contrato',
-      'Contrato Ativo',
-      'Observações'
+      'Faixa',
+      'Status do Contrato',
+      'Data de Início',
+      'Data de Término'
     ];
 
     const csvData = unitStudents.map(student => [
       student.name,
-      student.age,
-      student.belt,
-      student.registrationDate,
-      student.cpf,
-      student.rg || '',
-      student.email || '',
+      student.email,
       student.phone,
-      student.emergencyContact,
-      student.emergencyPhone,
-      student.address,
-      student.neighborhood,
-      student.city,
-      student.state,
-      student.zipCode,
-      student.bloodType || '',
-      student.weight || '',
-      student.height || '',
-      student.healthIssues || '',
-      student.medications || '',
-      student.guardianName || '',
-      student.guardianCPF || '',
-      student.guardianPhone || '',
-      (student.trainingDays || []).join('; '),
-      student.trainingSchedule,
-      student.paymentDay,
-      student.contract?.planName || '',
-      student.contract?.startDate || '',
-      student.contract?.endDate || '',
-      student.contract?.value || '',
-      student.contract?.active ? 'Sim' : 'Não',
-      student.observations || ''
+      student.belt,
+      student.contract?.status || 'Sem contrato',
+      student.contract?.startDate ? new Date(student.contract.startDate).toLocaleDateString() : '',
+      student.contract?.endDate ? new Date(student.contract.endDate).toLocaleDateString() : ''
     ]);
 
     const csvContent = [
@@ -149,7 +100,7 @@ export default function UnitDashboard() {
     <main className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{unit.name}</h2>
-        <p className="text-gray-600">{unit.city}, {unit.state}</p>
+        <p className="text-gray-600">{unit.city}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
@@ -227,7 +178,7 @@ export default function UnitDashboard() {
         students={filteredStudents}
         onEditStudent={handleEditStudent}
         onDeleteStudent={handleDeleteStudent}
-        unitId={Number(unitId)}
+        unitId={unitId || ''}
       />
 
       {showForm && (
@@ -244,7 +195,7 @@ export default function UnitDashboard() {
       {showNotificationForm && (
         <NotificationForm
           onClose={() => setShowNotificationForm(false)}
-          unitId={Number(unitId)}
+          unitId={unitId || ''}
         />
       )}
     </main>

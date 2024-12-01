@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -27,7 +27,12 @@ import LeadChatWrapper from './components/chat/LeadChatWrapper';
 import About from './components/About';
 import Metodologia from './components/Metodologia';
 import KihapEmAcao from './components/KihapEmAcao';
+import StoreList from './components/store/StoreList';
+import StoreWrapper from './components/store/StoreWrapper';
+import StoreManagementWrapper from './components/store/StoreManagementWrapper';
 import { useAuthStore } from './store/useAuthStore';
+import { useStoreStore } from './store/useStoreStore';
+import { useDataStore } from './store/useDataStore';
 import { checkAndResetStorage } from './utils/storage';
 
 function ScrollToTop() {
@@ -40,12 +45,33 @@ function ScrollToTop() {
   return null;
 }
 
+// Componente wrapper para a rota da loja do aluno
+function StudentStoreRoute() {
+  const user = useAuthStore(state => state.user);
+  const { students } = useDataStore();
+  
+  if (!user || user.role !== 'student') {
+    return <Navigate to="/login" />;
+  }
+
+  const student = students.find(s => s.id === user.id);
+  
+  if (!student) {
+    return <Navigate to="/login" />;
+  }
+
+  return <StoreWrapper student={student} />;
+}
+
 function App() {
   const user = useAuthStore(state => state.user);
+  const stores = useStoreStore(state => state.stores);
 
   useEffect(() => {
-    // Verificar e resetar o storage se necessário
-    checkAndResetStorage();
+    const needsReload = checkAndResetStorage();
+    if (needsReload) {
+      window.location.reload();
+    }
   }, []);
 
   return (
@@ -79,13 +105,15 @@ function App() {
                     <Route path="units/manage" element={user.role === 'admin' ? <UnitManagement /> : <Navigate to="/" />} />
                     <Route path="users/manage" element={user.role === 'admin' ? <UserManagement /> : <Navigate to="/" />} />
                     <Route path="classes" element={user.role === 'admin' || user.role === 'instructor' ? <ClassManagement /> : <Navigate to="/" />} />
-                    <Route path="crm" element={user.role === 'admin' || user.role === 'manager' ? <CRMBoard /> : <Navigate to="/" />} />
-                    <Route path="messages" element={user.role === 'admin' || user.role === 'manager' ? <ChatDashboard /> : <Navigate to="/" />} />
+                    <Route path="crm" element={user.role === 'admin' ? <CRMBoard /> : <Navigate to="/" />} />
+                    <Route path="messages" element={user.role === 'admin' ? <ChatDashboard /> : <Navigate to="/" />} />
                     <Route path="tasks" element={<Tasks />} />
                     <Route path="profile" element={<UserProfile />} />
                     <Route path="admin/*" element={user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
                     <Route path="online" element={<OnlineContentManagement />} />
                     <Route path="badges" element={<BadgeManagement />} />
+                    <Route path="store" element={user.role === 'admin' || user.role === 'instructor' ? <StoreList stores={stores} /> : <Navigate to="/" />} />
+                    <Route path="store/:storeId" element={user.role === 'admin' || user.role === 'instructor' ? <StoreManagementWrapper /> : <Navigate to="/" />} />
                   </Routes>
                   <Chat />
                 </div>
@@ -95,6 +123,7 @@ function App() {
             }
           />
           <Route path="/portal" element={<StudentPortal />} />
+          <Route path="/store/:storeId" element={<StudentStoreRoute />} />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />

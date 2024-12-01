@@ -1,202 +1,144 @@
-import { User, Unit, Student, AttendanceRecord, Badge } from './types';
+import { Store, Product, Unit, User, Badge } from './types';
 
-export const users: User[] = [
+export const initialStores: Store[] = [
   {
-    id: 1,
+    id: '1',
+    name: 'KIHAP STORE Florianópolis',
+    city: 'Florianópolis',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'KIHAP STORE Dourados',
+    city: 'Dourados (Jardim América)',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '3',
+    name: 'KIHAP STORE Brasília',
+    city: 'Brasília',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '4',
+    name: 'KIHAP STORE Online',
+    city: 'Online',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+export const initialProducts: Product[] = [
+  {
+    id: '1',
+    name: 'Dobok Kihap',
+    description: 'Dobok oficial Kihap Taekwondo',
+    price: 299.90,
+    image: 'https://example.com/dobok.jpg',
+    category: 'Uniformes',
+    storeId: '4', // Online
+    stock: 50,
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Faixa Preta',
+    description: 'Faixa Preta oficial Kihap Taekwondo',
+    price: 89.90,
+    image: 'https://example.com/faixa.jpg',
+    category: 'Faixas',
+    storeId: '4', // Online
+    stock: 30,
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+export const initialUnits: Unit[] = [
+  {
+    id: '1',
+    name: 'Kihap Florianópolis',
+    city: 'Florianópolis',
+    address: 'Rua Principal, 123',
+    phone: '(48) 99999-9999',
+    email: 'floripa@kihap.com.br',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Kihap Dourados',
+    city: 'Dourados',
+    address: 'Jardim América, 456',
+    phone: '(67) 99999-9999',
+    email: 'dourados@kihap.com.br',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '3',
+    name: 'Kihap Brasília',
+    city: 'Brasília',
+    address: 'Setor Central, 789',
+    phone: '(61) 99999-9999',
+    email: 'brasilia@kihap.com.br',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+export const initialUsers: User[] = [
+  {
+    id: '1',
     name: 'Admin',
     email: 'admin@kihap.com.br',
     password: 'admin123',
-    role: 'admin'
-  },
-  {
-    id: 2,
-    name: 'Master Cavenatti',
-    email: 'master@kihap.com.br',
-    password: 'master123',
-    role: 'master'
-  },
-  {
-    id: 3,
-    name: 'Prof. Cavenatti',
-    email: 'prof@kihap.com.br',
-    password: 'prof123',
-    role: 'instructor'
+    role: 'admin',
+    unitId: '1',
+    active: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
-
-export const units: Unit[] = [
-  {
-    id: 1,
-    name: 'Centro',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Setor Comercial Sul',
-    phone: '(61) 1234-5678',
-    manager: 'João Silva',
-    isFixed: true
-  },
-  {
-    id: 2,
-    name: 'Santa Mônica',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Santa Mônica',
-    phone: '(61) 2345-6789',
-    manager: 'Maria Santos',
-    isFixed: true
-  },
-  {
-    id: 3,
-    name: 'Coqueiros',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Coqueiros',
-    phone: '(61) 3456-7890',
-    manager: 'Pedro Oliveira',
-    isFixed: true
-  },
-  {
-    id: 4,
-    name: 'Jardim América',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Jardim América',
-    phone: '(61) 4567-8901',
-    manager: 'Ana Costa',
-    isFixed: true
-  },
-  {
-    id: 5,
-    name: 'Asa Sul',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Asa Sul',
-    phone: '(61) 5678-9012',
-    manager: 'Carlos Souza',
-    isFixed: true
-  },
-  {
-    id: 6,
-    name: 'Lago Sul',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Lago Sul',
-    phone: '(61) 6789-0123',
-    manager: 'Paula Lima',
-    isFixed: true
-  },
-  {
-    id: 7,
-    name: 'Sudoeste',
-    city: 'Brasília',
-    state: 'DF',
-    address: 'Sudoeste',
-    phone: '(61) 7890-1234',
-    manager: 'Roberto Alves',
-    isFixed: true
-  },
-  {
-    id: 8,
-    name: 'Online',
-    city: 'Online',
-    state: 'ON',
-    address: 'Plataforma Online',
-    phone: '0800-123-4567',
-    manager: 'Sistema KIHAP',
-    isFixed: true
-  }
-];
-
-export const students: Student[] = [];
-
-export const attendanceRecords: AttendanceRecord[] = [];
 
 export const beltBadges: Badge[] = [
   {
-    id: 1,
+    id: '1',
     name: 'Faixa Branca',
-    description: 'Conquistou a graduação de faixa branca',
-    imageUrl: '/badges/white-belt.png',
-    criteria: 'Graduação de faixa branca',
+    description: 'Conquistou a faixa branca',
+    image: 'white-belt.png',
+    criteria: 'Iniciante',
+    active: true,
     type: 'belt',
-    beltLevel: 'Faixa Branca'
+    beltLevel: 'branca',
+    color: '#FFFFFF',
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
-    id: 2,
-    name: 'Faixa Amarela',
-    description: 'Conquistou a graduação de faixa amarela',
-    imageUrl: '/badges/yellow-belt.png',
-    criteria: 'Graduação de faixa amarela',
-    type: 'belt',
-    beltLevel: 'Faixa Amarela'
-  },
-  {
-    id: 3,
-    name: 'Faixa Laranja',
-    description: 'Conquistou a graduação de faixa laranja',
-    imageUrl: '/badges/orange-belt.png',
-    criteria: 'Graduação de faixa laranja',
-    type: 'belt',
-    beltLevel: 'Faixa Laranja'
-  },
-  {
-    id: 4,
-    name: 'Faixa Verde',
-    description: 'Conquistou a graduação de faixa verde',
-    imageUrl: '/badges/green-belt.png',
-    criteria: 'Graduação de faixa verde',
-    type: 'belt',
-    beltLevel: 'Faixa Verde'
-  },
-  {
-    id: 5,
-    name: 'Faixa Azul',
-    description: 'Conquistou a graduação de faixa azul',
-    imageUrl: '/badges/blue-belt.png',
-    criteria: 'Graduação de faixa azul',
-    type: 'belt',
-    beltLevel: 'Faixa Azul'
-  },
-  {
-    id: 6,
-    name: 'Faixa Roxa',
-    description: 'Conquistou a graduação de faixa roxa',
-    imageUrl: '/badges/purple-belt.png',
-    criteria: 'Graduação de faixa roxa',
-    type: 'belt',
-    beltLevel: 'Faixa Roxa'
-  },
-  {
-    id: 7,
-    name: 'Faixa Vermelha',
-    description: 'Conquistou a graduação de faixa vermelha',
-    imageUrl: '/badges/red-belt.png',
-    criteria: 'Graduação de faixa vermelha',
-    type: 'belt',
-    beltLevel: 'Faixa Vermelha'
-  },
-  {
-    id: 8,
-    name: 'Faixa Marrom',
-    description: 'Conquistou a graduação de faixa marrom',
-    imageUrl: '/badges/brown-belt.png',
-    criteria: 'Graduação de faixa marrom',
-    type: 'belt',
-    beltLevel: 'Faixa Marrom'
-  },
-  {
-    id: 9,
+    id: '2',
     name: 'Faixa Preta',
-    description: 'Conquistou a graduação de faixa preta',
-    imageUrl: '/badges/black-belt.png',
-    criteria: 'Graduação de faixa preta',
+    description: 'Conquistou a faixa preta',
+    image: 'black-belt.png',
+    criteria: 'Avançado',
+    active: true,
     type: 'belt',
-    beltLevel: 'Faixa Preta'
+    beltLevel: 'preta',
+    color: '#000000',
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
-
-// Função para resetar o localStorage e recarregar os dados iniciais
-export const resetData = () => {
-  localStorage.clear();
-  window.location.reload();
-};

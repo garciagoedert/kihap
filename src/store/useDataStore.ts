@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest } from '../types';
+import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest, LeadHistory } from '../types';
 import { users as initialUsers, units as initialUnits, students as initialStudents, beltBadges } from '../data';
 
 interface DataState {
@@ -23,49 +23,39 @@ interface DataState {
   version: number;
 
   // Actions
-  addLead: (lead: Omit<Lead, 'id' | 'status' | 'createdAt' | 'history'>) => number;
+  addLead: (lead: Omit<Lead, 'id' | 'status' | 'createdAt' | 'history'>) => string;
   updateLead: (lead: Lead) => void;
-  deleteLead: (id: number) => void;
-  updateLeadStatus: (id: number, status: LeadStatus, userId: number) => void;
-  addLeadHistory: (leadId: number, history: Omit<LeadHistory, 'id' | 'leadId' | 'createdAt'>) => void;
-  addLeadNote: (leadId: number, note: string, userId: number) => void;
-  addLeadContact: (leadId: number, description: string, nextContactDate: string | undefined, userId: number) => void;
+  deleteLead: (id: string) => void;
+  updateLeadStatus: (id: string, status: LeadStatus, userId: string) => void;
+  addLeadHistory: (leadId: string, history: Omit<LeadHistory, 'id' | 'leadId' | 'createdAt'>) => void;
+  addLeadNote: (leadId: string, note: string, userId: string) => void;
+  addLeadContact: (leadId: string, description: string, nextContactDate: string | undefined, userId: string) => void;
   addUnit: (unit: Omit<Unit, 'id'>) => void;
   updateUnit: (unit: Unit) => void;
-  deleteUnit: (id: number) => void;
+  deleteUnit: (id: string) => void;
   addStudent: (student: Omit<Student, 'id'>) => void;
   updateStudent: (student: Student) => void;
-  updateStudentBelt: (studentId: number, newBelt: string, updatedBy: number) => void;
-  deleteStudent: (id: number) => void;
+  updateStudentBelt: (studentId: string, newBelt: string, updatedBy: string) => void;
+  deleteStudent: (id: string) => void;
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (user: User) => void;
-  deleteUser: (id: number) => void;
+  deleteUser: (id: string) => void;
   addBadge: (badge: Omit<Badge, 'id'>) => void;
-  awardBadge: (studentId: number, badgeId: number, awardedBy: number) => void;
+  awardBadge: (studentId: string, badgeId: string, awardedBy: string) => void;
   sendMessage: (message: Omit<Message, 'id' | 'type'>) => void;
-  markMessageAsRead: (id: number) => void;
-  addContent: (content: Omit<OnlineContent, 'id' | 'createdAt' | 'updatedAt' | 'uploadStatus' | 'uploadProgress'>) => number;
+  markMessageAsRead: (id: string) => void;
+  addContent: (content: Omit<OnlineContent, 'id' | 'createdAt' | 'updatedAt' | 'uploadStatus' | 'uploadProgress'>) => string;
   updateContent: (content: OnlineContent) => void;
-  deleteContent: (id: number) => void;
-  updateContentUploadStatus: (id: number, status: OnlineContent['uploadStatus'], progress?: number) => void;
-  publishContent: (id: number) => void;
-  unpublishContent: (id: number) => void;
-  trackContentProgress: (contentId: number, studentId: number, progress: number) => void;
-  markContentComplete: (contentId: number, studentId: number) => void;
-  toggleContentFavorite: (contentId: number, studentId: number) => void;
-  addContentComment: (contentId: number, studentId: number, comment: string) => void;
+  deleteContent: (id: string) => void;
+  updateContentUploadStatus: (id: string, status: OnlineContent['uploadStatus'], progress?: number) => void;
+  publishContent: (id: string) => void;
+  unpublishContent: (id: string) => void;
+  trackContentProgress: (contentId: string, studentId: string, progress: number) => void;
+  markContentComplete: (contentId: string, studentId: string) => void;
+  toggleContentFavorite: (contentId: string, studentId: string) => void;
+  addContentComment: (contentId: string, studentId: string, comment: string) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>) => void;
 }
-
-type LeadHistory = {
-  id: number;
-  leadId: number;
-  type: 'status_change' | 'note' | 'contact';
-  description: string;
-  oldStatus?: LeadStatus;
-  newStatus?: LeadStatus;
-  createdAt: string;
-  createdBy: number;
-};
 
 // Função para garantir que o estado tenha os dados iniciais necessários
 const ensureInitialData = (state: Partial<DataState>): DataState => {
@@ -112,11 +102,12 @@ export const useDataStore = create<DataState>()(
 
       // Actions
       addLead: (lead) => {
-        const newLead = {
+        const newLead: Lead = {
           ...lead,
-          id: Date.now(),
-          status: 'novo' as const,
-          createdAt: new Date().toISOString(),
+          id: Date.now().toString(),
+          status: 'novo',
+          createdAt: new Date(),
+          updatedAt: new Date(),
           history: []
         };
 
@@ -145,7 +136,7 @@ export const useDataStore = create<DataState>()(
           if (!lead) return state;
 
           const history: LeadHistory = {
-            id: Date.now(),
+            id: Date.now().toString(),
             leadId: id,
             type: 'status_change',
             description: `Status alterado de ${lead.status} para ${status}`,
@@ -173,7 +164,7 @@ export const useDataStore = create<DataState>()(
       addLeadHistory: (leadId, history) => {
         set((state) => {
           const newHistory: LeadHistory = {
-            id: Date.now(),
+            id: Date.now().toString(),
             leadId,
             ...history,
             createdAt: new Date().toISOString()
@@ -193,7 +184,7 @@ export const useDataStore = create<DataState>()(
       addLeadNote: (leadId, note, userId) => {
         set((state) => {
           const newHistory: LeadHistory = {
-            id: Date.now(),
+            id: Date.now().toString(),
             leadId,
             type: 'note',
             description: note,
@@ -219,7 +210,7 @@ export const useDataStore = create<DataState>()(
       addLeadContact: (leadId, description, nextContactDate, userId) => {
         set((state) => {
           const newHistory: LeadHistory = {
-            id: Date.now(),
+            id: Date.now().toString(),
             leadId,
             type: 'contact',
             description,
@@ -246,7 +237,9 @@ export const useDataStore = create<DataState>()(
       addStudent: (student) => {
         const newStudent = {
           ...student,
-          id: Date.now(),
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
 
         set((state) => ({
@@ -257,7 +250,7 @@ export const useDataStore = create<DataState>()(
         const store = get();
         const beltBadge = store.badges.find((b) => b.type === 'belt' && b.beltLevel === student.belt);
         if (beltBadge) {
-          store.awardBadge(newStudent.id, beltBadge.id, 1);
+          store.awardBadge(newStudent.id, beltBadge.id, "1");
         }
       },
 
@@ -292,7 +285,9 @@ export const useDataStore = create<DataState>()(
       addBadge: (badge) => {
         const newBadge = {
           ...badge,
-          id: Date.now()
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
 
         set((state) => ({
@@ -308,11 +303,13 @@ export const useDataStore = create<DataState>()(
 
         if (!existingBadge) {
           const newStudentBadge = {
-            id: Date.now(),
+            id: Date.now().toString(),
             studentId,
             badgeId,
             awardedAt: new Date().toISOString(),
-            awardedBy
+            awardedBy,
+            createdAt: new Date(),
+            updatedAt: new Date()
           };
 
           set((state) => ({
@@ -324,7 +321,9 @@ export const useDataStore = create<DataState>()(
       addUnit: (unit) => {
         const newUnit = {
           ...unit,
-          id: Date.now(),
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
 
         set((state) => ({
@@ -347,7 +346,9 @@ export const useDataStore = create<DataState>()(
       addUser: (user) => {
         const newUser = {
           ...user,
-          id: Date.now(),
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
 
         set((state) => ({
@@ -370,8 +371,10 @@ export const useDataStore = create<DataState>()(
       sendMessage: (message) => {
         const newMessage = {
           ...message,
-          id: Date.now(),
-          type: 'user' as const
+          id: Date.now().toString(),
+          type: 'user' as const,
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
 
         set((state) => ({
@@ -390,11 +393,12 @@ export const useDataStore = create<DataState>()(
       addContent: (content) => {
         const newContent = {
           ...content,
-          id: Date.now(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           uploadStatus: 'pending' as const,
-          uploadProgress: 0
+          uploadProgress: 0,
+          isPublished: false
         };
 
         set((state) => ({
@@ -408,7 +412,7 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           onlineContent: state.onlineContent.map((c) => 
             c.id === content.id 
-              ? { ...content, updatedAt: new Date().toISOString() }
+              ? { ...content, updatedAt: new Date() }
               : c
           )
         }));
@@ -428,7 +432,7 @@ export const useDataStore = create<DataState>()(
                   ...c,
                   uploadStatus: status,
                   uploadProgress: progress !== undefined ? progress : c.uploadProgress,
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date()
                 }
               : c
           )
@@ -439,7 +443,7 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           onlineContent: state.onlineContent.map((c) =>
             c.id === id
-              ? { ...c, isPublished: true, updatedAt: new Date().toISOString() }
+              ? { ...c, isPublished: true, updatedAt: new Date() }
               : c
           )
         }));
@@ -449,14 +453,14 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           onlineContent: state.onlineContent.map((c) =>
             c.id === id
-              ? { ...c, isPublished: false, updatedAt: new Date().toISOString() }
+              ? { ...c, isPublished: false, updatedAt: new Date() }
               : c
           )
         }));
       },
 
       trackContentProgress: (contentId, studentId, progress) => {
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date();
         
         set((state) => {
           const existingEngagement = state.contentEngagements.find(
@@ -470,7 +474,12 @@ export const useDataStore = create<DataState>()(
               ...state,
               contentEngagements: state.contentEngagements.map((e) =>
                 e.id === existingEngagement.id
-                  ? { ...e, progress, timestamp }
+                  ? { 
+                      ...e, 
+                      progress, 
+                      timestamp: timestamp.toISOString(),
+                      updatedAt: timestamp
+                    }
                   : e
               )
             };
@@ -479,19 +488,22 @@ export const useDataStore = create<DataState>()(
           return {
             ...state,
             contentEngagements: [...state.contentEngagements, {
-              id: Date.now(),
+              id: Date.now().toString(),
               contentId,
               studentId,
               type: 'view',
               progress,
-              timestamp
+              completed: false,
+              timestamp: timestamp.toISOString(),
+              createdAt: timestamp,
+              updatedAt: timestamp
             }]
           };
         });
       },
 
       markContentComplete: (contentId, studentId) => {
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date();
         
         set((state) => {
           const existingEngagement = state.contentEngagements.find(
@@ -505,18 +517,22 @@ export const useDataStore = create<DataState>()(
           return {
             ...state,
             contentEngagements: [...state.contentEngagements, {
-              id: Date.now(),
+              id: Date.now().toString(),
               contentId,
               studentId,
               type: 'complete',
-              timestamp
+              progress: 100,
+              completed: true,
+              timestamp: timestamp.toISOString(),
+              createdAt: timestamp,
+              updatedAt: timestamp
             }]
           };
         });
       },
 
       toggleContentFavorite: (contentId, studentId) => {
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date();
         
         set((state) => {
           const existingEngagement = state.contentEngagements.find(
@@ -537,28 +553,50 @@ export const useDataStore = create<DataState>()(
           return {
             ...state,
             contentEngagements: [...state.contentEngagements, {
-              id: Date.now(),
+              id: Date.now().toString(),
               contentId,
               studentId,
               type: 'like',
-              timestamp
+              progress: 0,
+              completed: false,
+              timestamp: timestamp.toISOString(),
+              createdAt: timestamp,
+              updatedAt: timestamp
             }]
           };
         });
       },
 
       addContentComment: (contentId, studentId, comment) => {
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date();
         
         set((state) => ({
           contentEngagements: [...state.contentEngagements, {
-            id: Date.now(),
+            id: Date.now().toString(),
             contentId,
             studentId,
             type: 'comment',
+            progress: 0,
+            completed: false,
             comment,
-            timestamp
+            timestamp: timestamp.toISOString(),
+            createdAt: timestamp,
+            updatedAt: timestamp
           }]
+        }));
+      },
+
+      addNotification: (notification) => {
+        const newNotification = {
+          ...notification,
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        set((state) => ({
+          ...state,
+          notifications: [...state.notifications, newNotification]
         }));
       }
     }),
