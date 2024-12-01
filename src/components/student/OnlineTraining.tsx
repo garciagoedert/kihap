@@ -20,7 +20,8 @@ export default function OnlineTraining() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploader, setShowUploader] = useState(false);
 
-  const student = students.find(s => s.id === currentUser?.studentId);
+  // Usar currentUser.id diretamente já que é o ID do aluno
+  const student = students.find(s => s.id === currentUser?.id);
   if (!student) return null;
 
   // Verificar se o usuário tem permissão para fazer upload

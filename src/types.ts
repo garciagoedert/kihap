@@ -66,6 +66,8 @@ export interface Student {
   storeId: string;
   store: Store;
   photo?: string;
+  favoriteContent?: string[];
+  completedContent?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -156,12 +158,18 @@ export interface OnlineContent {
   id: string;
   title: string;
   description: string;
-  type: 'video' | 'document' | 'quiz';
+  type: 'video' | 'document' | 'quiz' | 'image';
   url: string;
   active: boolean;
   uploadStatus?: 'pending' | 'uploading' | 'completed' | 'error';
   uploadProgress?: number;
   isPublished?: boolean;
+  thumbnailUrl?: string;
+  category?: string;
+  tags?: string[];
+  targetStudentIds?: string[];
+  targetBelts?: string[];
+  unitId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -175,6 +183,16 @@ export interface LiveClass {
   endTime: Date;
   url: string;
   active: boolean;
+  type: 'live';
+  status: 'scheduled' | 'live' | 'ended';
+  duration: number;
+  scheduledFor: string;
+  thumbnailUrl?: string;
+  category?: string;
+  tags?: string[];
+  targetStudentIds?: string[];
+  targetBelts?: string[];
+  unitId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

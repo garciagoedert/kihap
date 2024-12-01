@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types';
-import { users } from '../data';
+import { initialUsers } from '../data';
 import { useDataStore } from './useDataStore';
 
 interface AuthState {
@@ -13,11 +13,12 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       login: (email: string, password: string) => {
         // First, check for staff users (admin, manager, instructor)
-        const staffUser = users.find(u => u.email === email && u.password === password);
+        const dataStore = useDataStore.getState();
+        const staffUser = dataStore.users.find(u => u.email === email && u.password === password);
         if (staffUser) {
           const { password: _, ...userWithoutPassword } = staffUser;
           set({ user: userWithoutPassword as User });
@@ -25,7 +26,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         // If no staff user found, check for student users
-        const { students } = useDataStore.getState();
+        const { students } = dataStore;
         const student = students.find(s => s.email === email);
         
         if (student) {
@@ -33,13 +34,15 @@ export const useAuthStore = create<AuthState>()(
           if (password === 'kihap') {
             // Create a user account for the student if they don't have one
             const studentUser: User = {
-              id: Date.now(),
+              id: student.id,
               name: student.name,
-              email: student.email!,
+              email: student.email,
               role: 'student',
-              studentId: student.id,
+              unitId: student.unitId,
+              active: true,
               photo: student.photo,
-              firstLogin: true
+              createdAt: new Date(),
+              updatedAt: new Date()
             };
             
             set({ user: studentUser });
@@ -47,10 +50,10 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Check for updated password after first login
-          const existingUser = users.find(u => u.email === email && u.role === 'student');
+          const existingUser = dataStore.users.find(u => u.email === email && u.role === 'student');
           if (existingUser && existingUser.password === password) {
             const { password: _, ...userWithoutPassword } = existingUser;
-            set({ user: { ...userWithoutPassword, firstLogin: false } });
+            set({ user: userWithoutPassword });
             return true;
           }
         }
@@ -62,19 +65,15 @@ export const useAuthStore = create<AuthState>()(
         set(state => {
           if (!state.user) return state;
 
-          const updatedUser = {
+          const updatedUser: User = {
             ...state.user,
             password: newPassword,
-            firstLogin: false
+            updatedAt: new Date()
           };
 
-          // Update the users array
-          const userIndex = users.findIndex(u => u.email === state.user?.email);
-          if (userIndex >= 0) {
-            users[userIndex] = updatedUser;
-          } else {
-            users.push(updatedUser);
-          }
+          // Update the user in the data store
+          const dataStore = useDataStore.getState();
+          dataStore.updateUser(updatedUser);
 
           return { user: updatedUser };
         });

@@ -50,17 +50,17 @@ const StoreWrapper: React.FC<StoreWrapperProps> = ({ student }) => {
 
   const storeProducts = products.filter(p => p.storeId === store.id);
 
-  // Criar um objeto instrutor mock para atender aos requisitos do componente Store
+  // Criar um objeto instrutor com valores padrão caso não exista
   const mockInstructor: Instructor = {
-    id: student.instructorId,
-    name: student.instructor.name,
-    email: student.instructor.email,
-    phone: student.instructor.phone,
-    belt: student.instructor.belt,
-    unitId: student.instructor.unitId,
+    id: student.instructorId || '0',
+    name: student.instructor?.name || 'Instrutor Padrão',
+    email: student.instructor?.email || 'instrutor@kihap.com.br',
+    phone: student.instructor?.phone || '(00) 00000-0000',
+    belt: student.instructor?.belt || 'preta',
+    unitId: student.instructor?.unitId || student.unitId || '0',
     active: true,
     students: [],
-    commissionRate: student.instructor.commissionRate,
+    commissionRate: student.instructor?.commissionRate || 10,
     commissions: [],
     totalCommission: 0,
     createdAt: new Date(),

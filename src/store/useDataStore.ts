@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest, LeadHistory } from '../types';
-import { users as initialUsers, units as initialUnits, students as initialStudents, beltBadges } from '../data';
+import { initialUsers, initialUnits, beltBadges, initialOnlineContent, initialLiveClasses } from '../data';
 
 interface DataState {
   // State
@@ -69,8 +69,8 @@ const ensureInitialData = (state: Partial<DataState>): DataState => {
     tasks: state.tasks || [],
     notifications: state.notifications || [],
     contractTemplates: state.contractTemplates || [],
-    onlineContent: state.onlineContent || [],
-    liveClasses: state.liveClasses || [],
+    onlineContent: state.onlineContent?.length ? state.onlineContent : initialOnlineContent,
+    liveClasses: state.liveClasses?.length ? state.liveClasses : initialLiveClasses,
     contentEngagements: state.contentEngagements || [],
     badges: state.badges?.length ? state.badges : beltBadges,
     studentBadges: state.studentBadges || [],
@@ -92,8 +92,8 @@ export const useDataStore = create<DataState>()(
       tasks: [],
       notifications: [],
       contractTemplates: [],
-      onlineContent: [],
-      liveClasses: [],
+      onlineContent: initialOnlineContent,
+      liveClasses: initialLiveClasses,
       contentEngagements: [],
       badges: beltBadges,
       studentBadges: [],
