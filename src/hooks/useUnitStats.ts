@@ -1,14 +1,17 @@
 import { useDataStore } from '../store/useDataStore';
 
-export function useUnitStats(unitId: string) {
+export function useUnitStats(unitId: string, subUnitId?: string) {
   const { students } = useDataStore();
   
   return {
     getStats: () => {
       const now = new Date();
       
-      // Get students for this unit
-      const unitStudents = students.filter(s => s.unitId === unitId);
+      // Get students for this unit/subunit
+      const unitStudents = students.filter(s => 
+        s.unitId === unitId && 
+        (!subUnitId || s.subUnitId === subUnitId)
+      );
       
       // Get active contract students (contract status is active and not expired)
       const activeContractStudents = unitStudents.filter(student => {

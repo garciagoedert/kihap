@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest, LeadHistory } from '../types';
+import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest, LeadHistory, SubUnit } from '../types';
 import { initialUsers, initialUnits, beltBadges, initialOnlineContent, initialLiveClasses } from '../data';
 
 interface DataState {
@@ -33,6 +33,9 @@ interface DataState {
   addUnit: (unit: Omit<Unit, 'id'>) => void;
   updateUnit: (unit: Unit) => void;
   deleteUnit: (id: string) => void;
+  addSubUnit: (unitId: string, subUnit: Omit<SubUnit, 'id' | 'parentUnitId'>) => void;
+  updateSubUnit: (unitId: string, subUnit: SubUnit) => void;
+  deleteSubUnit: (unitId: string, subUnitId: string) => void;
   addStudent: (student: Omit<Student, 'id'>) => void;
   updateStudent: (student: Student) => void;
   updateStudentBelt: (studentId: string, newBelt: string, updatedBy: string) => void;
@@ -41,7 +44,8 @@ interface DataState {
   updateUser: (user: User) => void;
   deleteUser: (id: string) => void;
   addBadge: (badge: Omit<Badge, 'id'>) => void;
-  awardBadge: (studentId: string, badgeId: string, awardedBy: string) => void;
+  updateBadge: (badge: Badge) => void;
+  awardBadge: (studentId: string, badgeId: string, awardedBy: string, comment?: string) => void;
   sendMessage: (message: Omit<Message, 'id' | 'type'>) => void;
   markMessageAsRead: (id: string) => void;
   addContent: (content: Omit<OnlineContent, 'id' | 'createdAt' | 'updatedAt' | 'uploadStatus' | 'uploadProgress'>) => string;
@@ -295,7 +299,17 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
-      awardBadge: (studentId, badgeId, awardedBy) => {
+      updateBadge: (badge) => {
+        set((state) => ({
+          badges: state.badges.map((b) => 
+            b.id === badge.id 
+              ? { ...badge, updatedAt: new Date() }
+              : b
+          )
+        }));
+      },
+
+      awardBadge: (studentId, badgeId, awardedBy, comment) => {
         const store = get();
         const existingBadge = store.studentBadges.find(
           (sb) => sb.studentId === studentId && sb.badgeId === badgeId
@@ -308,6 +322,7 @@ export const useDataStore = create<DataState>()(
             badgeId,
             awardedAt: new Date().toISOString(),
             awardedBy,
+            comment,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -340,6 +355,60 @@ export const useDataStore = create<DataState>()(
       deleteUnit: (id) => {
         set((state) => ({
           units: state.units.filter((u) => u.id !== id)
+        }));
+      },
+
+      addSubUnit: (unitId, subUnit) => {
+        const newSubUnit: SubUnit = {
+          ...subUnit,
+          id: Date.now().toString(),
+          parentUnitId: unitId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        set((state) => ({
+          units: state.units.map((unit) => 
+            unit.id === unitId
+              ? {
+                  ...unit,
+                  subunits: [...(unit.subunits || []), newSubUnit],
+                  updatedAt: new Date()
+                }
+              : unit
+          )
+        }));
+      },
+
+      updateSubUnit: (unitId, subUnit) => {
+        set((state) => ({
+          units: state.units.map((unit) => 
+            unit.id === unitId
+              ? {
+                  ...unit,
+                  subunits: unit.subunits?.map((sub) =>
+                    sub.id === subUnit.id
+                      ? { ...subUnit, updatedAt: new Date() }
+                      : sub
+                  ),
+                  updatedAt: new Date()
+                }
+              : unit
+          )
+        }));
+      },
+
+      deleteSubUnit: (unitId, subUnitId) => {
+        set((state) => ({
+          units: state.units.map((unit) => 
+            unit.id === unitId
+              ? {
+                  ...unit,
+                  subunits: unit.subunits?.filter((sub) => sub.id !== subUnitId),
+                  updatedAt: new Date()
+                }
+              : unit
+          )
         }));
       },
 
@@ -602,7 +671,7 @@ export const useDataStore = create<DataState>()(
     }),
     {
       name: 'kihap-data-storage',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {

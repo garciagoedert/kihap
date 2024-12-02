@@ -7,11 +7,18 @@ import type { Student } from '../types';
 interface NotificationFormProps {
   onClose: () => void;
   unitId?: string;
+  subUnitId?: string;
   studentId?: string;
   selectedStudents?: string[];
 }
 
-export default function NotificationForm({ onClose, unitId: initialUnitId, studentId, selectedStudents: initialSelectedStudents }: NotificationFormProps) {
+export default function NotificationForm({ 
+  onClose, 
+  unitId: initialUnitId, 
+  subUnitId: initialSubUnitId,
+  studentId, 
+  selectedStudents: initialSelectedStudents 
+}: NotificationFormProps) {
   const currentUser = useAuthStore(state => state.user);
   const { addNotification, students, units } = useDataStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,18 +31,20 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
   });
   const [showStudentList, setShowStudentList] = useState(false);
 
-  // Filter students based on search term and unit
+  // Filter students based on search term, unit and subunit
   const filteredStudents = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
     return students
-      .filter((student: Student) => 
-        (selectedUnitId === 'all' || student.unitId === selectedUnitId) &&
-        (student.name.toLowerCase().includes(searchLower) ||
-         student.email?.toLowerCase().includes(searchLower) ||
-         student.phone.toLowerCase().includes(searchLower))
-      )
+      .filter((student: Student) => {
+        const unitMatch = selectedUnitId === 'all' || student.unitId === selectedUnitId;
+        const subUnitMatch = !initialSubUnitId || student.subUnitId === initialSubUnitId;
+        const searchMatch = student.name.toLowerCase().includes(searchLower) ||
+                          student.email?.toLowerCase().includes(searchLower) ||
+                          student.phone.toLowerCase().includes(searchLower);
+        return unitMatch && subUnitMatch && searchMatch;
+      })
       .sort((a: Student, b: Student) => a.name.localeCompare(b.name));
-  }, [students, selectedUnitId, searchTerm]);
+  }, [students, selectedUnitId, initialSubUnitId, searchTerm]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,25 +108,27 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
             {showStudentList ? (
               <div className="flex-1 flex flex-col">
                 <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center gap-2 text-gray-600 mb-4">
-                    <Building2 size={20} />
-                    <select
-                      value={selectedUnitId}
-                      onChange={(e) => {
-                        setSelectedUnitId(e.target.value);
-                        setSelectedStudents([]);
-                      }}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
-                      aria-label="Selecionar unidade"
-                    >
-                      <option value="all">Todas as Unidades</option>
-                      {units.map(unit => (
-                        <option key={unit.id} value={unit.id}>
-                          {unit.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {!initialSubUnitId && (
+                    <div className="flex items-center gap-2 text-gray-600 mb-4">
+                      <Building2 size={20} />
+                      <select
+                        value={selectedUnitId}
+                        onChange={(e) => {
+                          setSelectedUnitId(e.target.value);
+                          setSelectedStudents([]);
+                        }}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
+                        aria-label="Selecionar unidade"
+                      >
+                        <option value="all">Todas as Unidades</option>
+                        {units.map(unit => (
+                          <option key={unit.id} value={unit.id}>
+                            {unit.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -265,25 +276,27 @@ export default function NotificationForm({ onClose, unitId: initialUnitId, stude
             {/* Student Selection Panel */}
             <div className="w-1/3 border-r border-gray-200 flex flex-col">
               <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center gap-2 text-gray-600 mb-4">
-                  <Building2 size={20} />
-                  <select
-                    value={selectedUnitId}
-                    onChange={(e) => {
-                      setSelectedUnitId(e.target.value);
-                      setSelectedStudents([]);
-                    }}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
-                    aria-label="Selecionar unidade"
-                  >
-                    <option value="all">Todas as Unidades</option>
-                    {units.map(unit => (
-                      <option key={unit.id} value={unit.id}>
-                        {unit.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!initialSubUnitId && (
+                  <div className="flex items-center gap-2 text-gray-600 mb-4">
+                    <Building2 size={20} />
+                    <select
+                      value={selectedUnitId}
+                      onChange={(e) => {
+                        setSelectedUnitId(e.target.value);
+                        setSelectedStudents([]);
+                      }}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
+                      aria-label="Selecionar unidade"
+                    >
+                      <option value="all">Todas as Unidades</option>
+                      {units.map(unit => (
+                        <option key={unit.id} value={unit.id}>
+                          {unit.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />

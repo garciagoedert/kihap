@@ -33,6 +33,19 @@ export interface Unit {
   phone: string;
   email: string;
   active: boolean;
+  subunits?: SubUnit[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubUnit {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  active: boolean;
+  parentUnitId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +57,7 @@ export interface User {
   password?: string;
   role: 'admin' | 'instructor' | 'student';
   unitId: string;
+  subUnitId?: string;
   active: boolean;
   photo?: string;
   createdAt: Date;
@@ -57,6 +71,7 @@ export interface Student {
   phone: string;
   belt: string;
   unitId: string;
+  subUnitId?: string;
   instructorId: string;
   instructor: Instructor;
   active: boolean;
@@ -68,6 +83,15 @@ export interface Student {
   photo?: string;
   favoriteContent?: string[];
   completedContent?: string[];
+  birthDate: string;
+  cpf: string;
+  trainingDays: string[];
+  trainingSchedule: string;
+  emergencyContact: string;
+  emergencyPhone: string;
+  age: number;
+  registrationDate: string;
+  lastAttendance: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +103,7 @@ export interface Instructor {
   phone: string;
   belt: string;
   unitId: string;
+  subUnitId?: string;
   active: boolean;
   students: Student[];
   commissionRate: number;
@@ -95,6 +120,7 @@ export interface Class {
   schedule: string;
   instructorId: string;
   unitId: string;
+  subUnitId?: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -170,6 +196,7 @@ export interface OnlineContent {
   targetStudentIds?: string[];
   targetBelts?: string[];
   unitId?: string;
+  subUnitId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -193,6 +220,7 @@ export interface LiveClass {
   targetStudentIds?: string[];
   targetBelts?: string[];
   unitId?: string;
+  subUnitId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -214,13 +242,16 @@ export interface Badge {
   id: string;
   name: string;
   description: string;
-  image: string;
-  criteria: string;
+  image?: string;
+  criteria?: string;
   active: boolean;
+  category: 'belt' | 'achievement' | 'special';
   type?: 'belt' | 'achievement';
   beltLevel?: string;
-  color?: string;
-  icon?: string;
+  color: string;
+  icon: string;
+  unitId?: number;
+  createdBy?: number;
   createdAt: Date;
   updatedAt: Date;
 }

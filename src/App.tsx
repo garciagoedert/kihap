@@ -102,6 +102,7 @@ function App() {
                   <Routes>
                     <Route index element={user.role === 'admin' ? <Dashboard /> : <Navigate to={`/unit/${user.unitId}`} />} />
                     <Route path="unit/:unitId" element={<UnitDashboard />} />
+                    <Route path="unit/:unitId/subunit/:subUnitId" element={<UnitDashboard />} />
                     <Route path="units/manage" element={user.role === 'admin' ? <UnitManagement /> : <Navigate to="/" />} />
                     <Route path="users/manage" element={user.role === 'admin' ? <UserManagement /> : <Navigate to="/" />} />
                     <Route path="classes" element={user.role === 'admin' || user.role === 'instructor' ? <ClassManagement /> : <Navigate to="/" />} />
