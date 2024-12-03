@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { Student, User, Unit, Lead, Task, Notification, OnlineContent, LiveClass, Badge, StudentBadge, PhysicalTest, SubUnit, LeadStatus } from '../types';
-import { initialUsers, initialUnits, initialOnlineContent, initialLiveClasses, beltBadges } from '../data';
+import { Student, User, Unit, Lead, Task, Notification, OnlineContent, LiveClass, Badge, StudentBadge, PhysicalTest, SubUnit, LeadStatus, LeadHistory } from '../types';
+import { initialUsers, initialUnits, initialOnlineContent, initialLiveClasses, beltBadges, initialLeads } from '../data';
 
 // Extrair todas as subunidades das unidades iniciais
 const initialSubunits: SubUnit[] = initialUnits.reduce((acc: SubUnit[], unit) => {
@@ -38,6 +38,8 @@ interface DataState {
   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'status' | 'history'>) => void;
   deleteLead: (leadId: string) => void;
   updateLeadStatus: (leadId: string, status: LeadStatus) => void;
+  addLeadNote: (leadId: string, note: string, userId: string) => void;
+  addLeadContact: (leadId: string, description: string, nextContactDate: string | undefined, userId: string) => void;
   updateTask: (task: Task) => void;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   markNotificationAsRead: (notificationId: string) => void;
@@ -61,7 +63,7 @@ export const useDataStore = create<DataState>()(
       students: [],
       users: initialUsers,
       units: initialUnits,
-      leads: [],
+      leads: initialLeads,
       tasks: [],
       notifications: [],
       onlineContent: initialOnlineContent,
@@ -122,6 +124,43 @@ export const useDataStore = create<DataState>()(
           leads: state.leads.map((l) =>
             l.id === leadId ? { ...l, status } : l
           ),
+        })),
+
+      addLeadNote: (leadId, note, userId) =>
+        set((state) => ({
+          leads: state.leads.map((l) => {
+            if (l.id === leadId) {
+              const newHistory: LeadHistory = {
+                id: crypto.randomUUID(),
+                leadId,
+                type: 'note',
+                description: note,
+                createdBy: userId,
+                createdAt: new Date().toISOString()
+              };
+              return { ...l, history: [...(l.history || []), newHistory] };
+            }
+            return l;
+          }),
+        })),
+
+      addLeadContact: (leadId, description, nextContactDate, userId) =>
+        set((state) => ({
+          leads: state.leads.map((l) => {
+            if (l.id === leadId) {
+              const newHistory: LeadHistory = {
+                id: crypto.randomUUID(),
+                leadId,
+                type: 'contact',
+                description,
+                nextContactDate,
+                createdBy: userId,
+                createdAt: new Date().toISOString()
+              };
+              return { ...l, history: [...(l.history || []), newHistory] };
+            }
+            return l;
+          }),
         })),
 
       updateTask: (task) =>

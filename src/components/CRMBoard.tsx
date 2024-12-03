@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useDataStore } from '../store/useDataStore';
-import { Lead, LeadStatus } from '../types';
-import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
-import { FiSearch, FiTrash2, FiPhone, FiMail, FiMessageSquare, FiUsers } from 'react-icons/fi';
+import { useAuthStore } from '../store/useAuthStore';
+import { Lead, LeadStatus, LeadHistory } from '../types';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { FiSearch, FiTrash2, FiPhone, FiMail, FiMessageSquare, FiUsers, FiEdit } from 'react-icons/fi';
+import LeadDetailsModal from './LeadDetailsModal';
 
 const statusLabels: Record<LeadStatus, string> = {
   'novo': 'Novo',
@@ -38,18 +40,33 @@ const kanbanStatuses: LeadStatus[] = ['novo', 'contato', 'visitou', 'matriculado
 
 export default function CRMBoard() {
   const { leads, updateLead, deleteLead } = useDataStore();
+  const { user } = useAuthStore();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
+    if (!result.destination || !user) return;
 
-    const { draggableId, destination } = result;
+    const { draggableId, source, destination } = result;
     const lead = leads.find(l => l.id === draggableId);
     
-    if (lead) {
+    if (lead && source.droppableId !== destination.droppableId) {
+      const oldStatus = source.droppableId as LeadStatus;
       const newStatus = destination.droppableId as LeadStatus;
-      updateLead({ ...lead, status: newStatus });
+      
+      // Criar novo histórico para a mudança de status
+      const newHistoryItem: LeadHistory = {
+        id: crypto.randomUUID(),
+        leadId: lead.id,
+        type: 'status_change',
+        description: `Status alterado de ${statusLabels[oldStatus]} para ${statusLabels[newStatus]}`,
+        oldStatus,
+        newStatus,
+        createdBy: user.id,
+        createdAt: new Date().toISOString()
+      };
+
+      updateLead({ ...lead, status: newStatus, history: [...(lead.history || []), newHistoryItem] });
     }
   };
 
@@ -57,6 +74,10 @@ export default function CRMBoard() {
     if (window.confirm('Tem certeza que deseja excluir este lead?')) {
       deleteLead(leadId);
     }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setSelectedLead(lead);
   };
 
   const filteredLeads = leads.filter(lead => {
@@ -96,11 +117,15 @@ export default function CRMBoard() {
           <div className="flex overflow-x-auto gap-6 pb-6">
             {kanbanStatuses.map(status => (
               <Droppable key={status} droppableId={status}>
-                {(provided: DroppableProvided) => (
+                {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className="flex-shrink-0 w-80 bg-white rounded-xl shadow-sm border border-gray-100 backdrop-blur-lg bg-opacity-90"
+                    className={`flex-shrink-0 w-80 bg-white rounded-xl shadow-sm border backdrop-blur-lg bg-opacity-90 transition-colors duration-200 ${
+                      snapshot.isDraggingOver
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'border-gray-100'
+                    }`}
                   >
                     <div className="p-4 border-b border-gray-100">
                       <h3 className="text-lg font-semibold text-gray-800">
@@ -110,7 +135,9 @@ export default function CRMBoard() {
                         {filteredLeads.filter(lead => lead.status === status).length} leads
                       </div>
                     </div>
-                    <div className="p-4 space-y-4 min-h-[200px]">
+                    <div className={`p-4 space-y-4 min-h-[200px] transition-colors duration-200 ${
+                      snapshot.isDraggingOver ? 'bg-blue-50' : ''
+                    }`}>
                       {filteredLeads
                         .filter(lead => lead.status === status)
                         .map((lead, index) => (
@@ -119,25 +146,39 @@ export default function CRMBoard() {
                             draggableId={lead.id}
                             index={index}
                           >
-                            {(provided: DraggableProvided) => (
+                            {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className="group bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-1"
+                                className={`group bg-white rounded-lg p-4 shadow-sm border transition-all duration-200 ${
+                                  snapshot.isDragging
+                                    ? 'shadow-lg border-blue-300 rotate-2'
+                                    : 'hover:shadow-md border-gray-100 hover:border-gray-200 hover:-translate-y-1'
+                                }`}
                               >
                                 <div className="flex justify-between items-start mb-3">
                                   <h4 className="font-medium text-gray-800 text-lg">
                                     {lead.name}
                                   </h4>
-                                  <button
-                                    onClick={() => handleDeleteLead(lead.id)}
-                                    className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded-full hover:bg-red-50 opacity-0 group-hover:opacity-100"
-                                    title="Excluir lead"
-                                    aria-label="Excluir lead"
-                                  >
-                                    <FiTrash2 size={16} />
-                                  </button>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleEditLead(lead)}
+                                      className="text-gray-400 hover:text-blue-600 transition-colors p-1.5 rounded-full hover:bg-blue-50 opacity-0 group-hover:opacity-100"
+                                      title="Editar lead"
+                                      aria-label="Editar lead"
+                                    >
+                                      <FiEdit size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteLead(lead.id)}
+                                      className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded-full hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                                      title="Excluir lead"
+                                      aria-label="Excluir lead"
+                                    >
+                                      <FiTrash2 size={16} />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="space-y-2">
                                   <div className="flex items-center text-gray-600 group-hover:text-blue-600 transition-colors">
@@ -172,6 +213,14 @@ export default function CRMBoard() {
             ))}
           </div>
         </DragDropContext>
+
+        {selectedLead && user && (
+          <LeadDetailsModal
+            lead={selectedLead}
+            onClose={() => setSelectedLead(null)}
+            userId={user.id}
+          />
+        )}
       </div>
     </div>
   );

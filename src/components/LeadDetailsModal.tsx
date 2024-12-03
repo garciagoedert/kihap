@@ -8,7 +8,7 @@ import { useDataStore } from '../store/useDataStore';
 interface LeadDetailsModalProps {
   lead: Lead;
   onClose: () => void;
-  userId: number;
+  userId: string;
 }
 
 const statusLabels: Record<LeadStatus, string> = {
@@ -16,7 +16,14 @@ const statusLabels: Record<LeadStatus, string> = {
   contato: 'Em Contato',
   visitou: 'Visitou',
   matriculado: 'Matriculado',
-  desistente: 'Desistente'
+  desistente: 'Desistente',
+  // mantendo os outros status para compatibilidade com o tipo LeadStatus
+  new: 'Novo Lead',
+  contacted: 'Em Contato',
+  interested: 'Interessado',
+  scheduled: 'Agendado',
+  converted: 'Convertido',
+  lost: 'Desistente'
 };
 
 const statusColors: Record<LeadStatus, string> = {
@@ -24,7 +31,14 @@ const statusColors: Record<LeadStatus, string> = {
   contato: 'bg-yellow-600',
   visitou: 'bg-purple-600',
   matriculado: 'bg-green-600',
-  desistente: 'bg-red-600'
+  desistente: 'bg-red-600',
+  // mantendo os outros status para compatibilidade com o tipo LeadStatus
+  new: 'bg-blue-600',
+  contacted: 'bg-yellow-600',
+  interested: 'bg-purple-600',
+  scheduled: 'bg-indigo-600',
+  converted: 'bg-green-600',
+  lost: 'bg-red-600'
 };
 
 export default function LeadDetailsModal({ lead, onClose, userId }: LeadDetailsModalProps) {
@@ -168,7 +182,7 @@ export default function LeadDetailsModal({ lead, onClose, userId }: LeadDetailsM
                       {new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
                         currency: 'BRL'
-                      }).format(lead.value)}
+                      }).format(lead.value || 0)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

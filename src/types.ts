@@ -220,11 +220,13 @@ export type Lead = {
 export type LeadHistory = {
   id: string;
   leadId: string;
-  action: string;
-  notes: string;
+  type: 'status_change' | 'note' | 'contact';
+  description: string;
+  oldStatus?: LeadStatus;
+  newStatus?: LeadStatus;
   createdBy: string;
   createdAt: string;
-  type?: string;
+  nextContactDate?: string;
 };
 
 export type Task = {

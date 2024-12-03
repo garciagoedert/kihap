@@ -1,4 +1,67 @@
-import { Store, Product, Unit, User, Badge, OnlineContent, LiveClass } from './types';
+import { Store, Product, Unit, User, Badge, OnlineContent, LiveClass, Lead } from './types';
+
+export const initialLeads: Lead[] = [
+  {
+    id: '1',
+    name: 'João Silva',
+    email: 'joao.silva@email.com',
+    phone: '(48) 99999-1111',
+    status: 'novo',
+    source: 'site',
+    unitId: '1',
+    createdAt: new Date().toISOString(),
+    value: 199.90,
+    history: []
+  },
+  {
+    id: '2',
+    name: 'Maria Santos',
+    email: 'maria.santos@email.com',
+    phone: '(48) 99999-2222',
+    status: 'contato',
+    source: 'instagram',
+    unitId: '1',
+    createdAt: new Date().toISOString(),
+    value: 299.90,
+    history: []
+  },
+  {
+    id: '3',
+    name: 'Pedro Oliveira',
+    email: 'pedro.oliveira@email.com',
+    phone: '(48) 99999-3333',
+    status: 'visitou',
+    source: 'indicação',
+    unitId: '1',
+    createdAt: new Date().toISOString(),
+    value: 399.90,
+    history: []
+  },
+  {
+    id: '4',
+    name: 'Ana Costa',
+    email: 'ana.costa@email.com',
+    phone: '(48) 99999-4444',
+    status: 'matriculado',
+    source: 'facebook',
+    unitId: '1',
+    createdAt: new Date().toISOString(),
+    value: 499.90,
+    history: []
+  },
+  {
+    id: '5',
+    name: 'Lucas Pereira',
+    email: 'lucas.pereira@email.com',
+    phone: '(48) 99999-5555',
+    status: 'desistente',
+    source: 'google',
+    unitId: '1',
+    createdAt: new Date().toISOString(),
+    value: 199.90,
+    history: []
+  }
+];
 
 export const initialStores: Store[] = [
   {
