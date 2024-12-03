@@ -3,7 +3,32 @@ import { useParams } from 'react-router-dom';
 import MainHeader from './MainHeader';
 import Footer from './Footer';
 
-const locationData = {
+interface Instructor {
+  name: string;
+  role: string;
+  photo: string;
+}
+
+interface Location {
+  name: string;
+  address: string;
+  phone: string;
+  maps: string;
+}
+
+interface LocationData {
+  name: string;
+  state?: string;
+  heroImage: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  maps?: string;
+  locations?: Location[];
+  instructors: Instructor[];
+}
+
+const locationData: Record<string, LocationData> = {
   brasilia: {
     name: 'Brasília',
     state: 'DF',
@@ -95,8 +120,8 @@ const locationData = {
   },
   dourados: {
     name: 'Dourados',
-    state: 'MG',
-    heroImage: 'https://images.pexels.com/photos/1996330/pexels-photo-1996330.jpeg',
+    state: 'MS',
+    heroImage: 'https://i.imgur.com/L5zr9gT.jpg',
     address: 'Rua Principal, 123, Centro',
     phone: '(67) 99999-9999',
     maps: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3736.987456321098!2d-54.8067891!3d-22.2234567!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjLCsDEzJzI0LjQiUyA1NMKwNDgnMjQuNCJX!5e0!3m2!1spt-BR!2sbr!4v1629899012345!5m2!1spt-BR!2sbr',
@@ -133,8 +158,8 @@ const locationData = {
 };
 
 export default function LocationLanding() {
-  const { location } = useParams<{ location: keyof typeof locationData }>();
-  const data = locationData[location];
+  const { location } = useParams<{ location: string }>();
+  const data = location ? locationData[location] : null;
 
   if (!data) return null;
 
@@ -173,10 +198,10 @@ export default function LocationLanding() {
         {/* Location Info */}
         <section className="py-20">
           <div className="container mx-auto px-4">
-            {(location === 'florianopolis' || location === 'brasilia') ? (
+            {(location === 'florianopolis' || location === 'brasilia') && data.locations ? (
               <div className="space-y-12">
                 <h2 className="text-3xl font-bold text-gray-800 mb-6">Nossas Unidades em {data.name}</h2>
-                {data.locations.map((loc, index) => (
+                {data.locations.map((loc: Location, index: number) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-12 py-8 border-b border-gray-200 last:border-0">
                     <div>
                       <h3 className="text-2xl font-bold text-gray-800 mb-4">Unidade {loc.name}</h3>
@@ -195,6 +220,7 @@ export default function LocationLanding() {
                           allowFullScreen
                           loading="lazy"
                           referrerPolicy="no-referrer-when-downgrade"
+                          title={`Mapa da unidade ${loc.name}`}
                         ></iframe>
                       </div>
                     )}
@@ -221,6 +247,7 @@ export default function LocationLanding() {
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
+                      title={`Mapa da unidade ${data.name}`}
                     ></iframe>
                   </div>
                 )}
@@ -234,7 +261,7 @@ export default function LocationLanding() {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Nossa Equipe</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {data.instructors.map((instructor, index) => (
+              {data.instructors.map((instructor: Instructor, index: number) => (
                 <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden">
                   <img 
                     src={instructor.photo}
@@ -258,38 +285,49 @@ export default function LocationLanding() {
               <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Agende sua Experiência</h2>
               <form className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome completo</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="nome">Nome completo</label>
                   <input
                     type="text"
+                    id="nome"
+                    name="nome"
                     className="w-full px-4 py-2 rounded-md border-gray-300 focus:border-[#dfa129] focus:ring-1 focus:ring-[#dfa129]"
                     required
+                    placeholder="Digite seu nome completo"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label>
                   <input
                     type="email"
+                    id="email"
+                    name="email"
                     className="w-full px-4 py-2 rounded-md border-gray-300 focus:border-[#dfa129] focus:ring-1 focus:ring-[#dfa129]"
                     required
+                    placeholder="Digite seu email"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="telefone">Telefone</label>
                   <input
                     type="tel"
+                    id="telefone"
+                    name="telefone"
                     className="w-full px-4 py-2 rounded-md border-gray-300 focus:border-[#dfa129] focus:ring-1 focus:ring-[#dfa129]"
                     required
+                    placeholder="Digite seu telefone"
                   />
                 </div>
-                {(location === 'florianopolis' || location === 'brasilia') && (
+                {(location === 'florianopolis' || location === 'brasilia') && data.locations && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Unidade de Interesse</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="unidade">Unidade de Interesse</label>
                     <select
+                      id="unidade"
+                      name="unidade"
                       className="w-full px-4 py-2 rounded-md border-gray-300 focus:border-[#dfa129] focus:ring-1 focus:ring-[#dfa129]"
                       required
                     >
                       <option value="">Selecione uma unidade</option>
-                      {data.locations.map((loc, index) => (
+                      {data.locations.map((loc: Location, index: number) => (
                         <option key={index} value={loc.name}>{loc.name}</option>
                       ))}
                     </select>

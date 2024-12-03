@@ -9,7 +9,7 @@ const programs = [
     name: 'Baby Littles',
     description: 'Programa especial para bebês até 2 anos',
     path: '/programa/baby-littles',
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/baby-littles.jpg'
+    image: 'https://i.imgur.com/N1IaOpl.jpg'
   },
   {
     name: 'Littles',
@@ -21,13 +21,13 @@ const programs = [
     name: 'Kids',
     description: 'Programa para crianças de 7 a 12 anos',
     path: '/programa/kids',
-    image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-kids.jpg'
+    image: 'https://i.imgur.com/TuOrswr.jpg'
   },
   {
     name: 'Adolescentes',
     description: 'Programa especial para adolescentes',
     path: '/programa/adolescentes',
-    image: 'https://kihap.com.br/wp-content/uploads/2021/12/kihap-adolescentes.jpg'
+    image: 'https://i.imgur.com/nNaAx6f.jpg'
   },
   {
     name: 'Adultos',
@@ -39,19 +39,19 @@ const programs = [
     name: 'Família',
     description: 'Programa especial para toda a família treinar junta',
     path: '/programa/familia',
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/familia-kihap.jpg'
+    image: 'https://i.imgur.com/x7Yj2rj.jpg'
   },
   {
     name: 'Mulheres',
     description: 'Programa exclusivo para mulheres',
     path: '/programa/mulheres',
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/mulheres-kihap.jpg'
+    image: 'https://i.imgur.com/frJfdib.jpg'
   },
   {
     name: 'Online',
     description: 'Treine de onde estiver com nosso programa online',
     path: '/programa/online',
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/online-kihap.jpg'
+    image: 'https://i.imgur.com/1rng4W1.jpg'
   }
 ];
 
@@ -74,7 +74,7 @@ const cities = [
     name: 'Dourados',
     state: 'MS',
     path: '/unidade/dourados',
-    image: 'https://images.unsplash.com/photo-1533591380348-14193f1de18f?q=80&w=1000&auto=format&fit=crop',
+    image: 'https://i.imgur.com/L5zr9gT.jpg',
     unitsCount: 1
   }
 ];

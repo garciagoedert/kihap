@@ -39,7 +39,7 @@ const programData: Programs = {
       'Ambiente Seguro e Acolhedor',
       'Introdução a Valores Fundamentais'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/baby-littles.jpg',
+    image: 'https://i.imgur.com/N1IaOpl.jpg',
     features: [
       {
         title: 'Desenvolvimento Motor',
@@ -189,7 +189,7 @@ const programData: Programs = {
       'Ambiente Familiar',
       'Impacto Positivo na Escola e em Casa'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/kids-kihap.jpeg',
+    image: 'https://i.imgur.com/TuOrswr.jpg',
     features: [
       {
         title: 'Desenvolvimento Pessoal',
@@ -219,7 +219,7 @@ const programData: Programs = {
       'Ambiente Positivo e de Suporte',
       'Preparação para o Futuro'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/teens-kihap.jpeg',
+    image: 'https://i.imgur.com/nNaAx6f.jpg',
     features: [
       {
         title: 'Desenvolvimento Pessoal e Social',
@@ -279,7 +279,7 @@ const programData: Programs = {
       'Ambiente Positivo e Divertido',
       'Aulas Familiares'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/familia-kihap.jpeg',
+    image: 'https://i.imgur.com/x7Yj2rj.jpg',
     features: [
       {
         title: 'Fortalecimento dos Laços',
@@ -309,7 +309,7 @@ const programData: Programs = {
       'Bem-Estar e Redução de Estresse',
       'Ambiente de Apoio'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/mulheres-kihap.jpeg',
+    image: 'https://i.imgur.com/frJfdib.jpg',
     features: [
       {
         title: 'Segurança e Autodefesa',
@@ -339,7 +339,7 @@ const programData: Programs = {
       'Treinamento Completo',
       'Ambiente Seguro e Interativo'
     ],
-    image: 'https://kihap.com.br/wp-content/uploads/2023/02/online-kihap.jpeg',
+    image: 'https://i.imgur.com/1rng4W1.jpg',
     features: [
       {
         title: 'Flexibilidade e Conveniência',
