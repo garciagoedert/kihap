@@ -92,11 +92,12 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
                     <tr key={product.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0">
+                          <div className="relative h-12 w-12 flex-shrink-0">
                             <img
-                              className="h-10 w-10 rounded-full object-cover"
+                              className="absolute inset-0 w-full h-full rounded-lg object-cover object-center"
                               src={product.image}
                               alt={product.name}
+                              loading="lazy"
                             />
                           </div>
                           <div className="ml-4">

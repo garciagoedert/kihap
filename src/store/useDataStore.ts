@@ -63,10 +63,19 @@ interface DataState {
 
 // Função para garantir que o estado tenha os dados iniciais necessários
 const ensureInitialData = (state: Partial<DataState>): DataState => {
+  // Garantir que as unidades tenham suas subunidades iniciais
+  const units = state.units?.length ? state.units.map(unit => {
+    const initialUnit = initialUnits.find(u => u.id === unit.id);
+    if (initialUnit && !unit.subunits?.length) {
+      return { ...unit, subunits: initialUnit.subunits };
+    }
+    return unit;
+  }) : initialUnits;
+
   return {
     leads: state.leads || [],
     students: state.students || [],
-    units: state.units?.length ? state.units : initialUnits,
+    units,
     users: state.users?.length ? state.users : initialUsers,
     classes: state.classes || [],
     messages: state.messages || [],
@@ -337,6 +346,7 @@ export const useDataStore = create<DataState>()(
         const newUnit = {
           ...unit,
           id: Date.now().toString(),
+          subunits: [], // Inicializa com array vazio de subunidades
           createdAt: new Date(),
           updatedAt: new Date()
         };

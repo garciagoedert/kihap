@@ -57,11 +57,12 @@ const Store: React.FC<StoreProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="aspect-w-1 aspect-h-1">
+              <div className="relative h-80 w-full">
                 <img 
                   src={product.image} 
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  loading="lazy"
                 />
               </div>
               <div className="p-4">
@@ -93,6 +94,13 @@ const Store: React.FC<StoreProps> = ({
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
               <h2 className="text-2xl font-bold mb-4">{selectedProduct.name}</h2>
               <div className="mb-4">
+                <div className="relative h-64 w-full mb-4 rounded-lg overflow-hidden">
+                  <img
+                    src={selectedProduct.image}
+                    alt={selectedProduct.name}
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                  />
+                </div>
                 <p className="text-gray-600 mb-2">Preço unitário: R$ {selectedProduct.price.toFixed(2)}</p>
                 <div className="flex items-center gap-4">
                   <label htmlFor="quantity" className="text-gray-600">Quantidade:</label>
