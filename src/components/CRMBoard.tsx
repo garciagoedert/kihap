@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import React, { useState, useMemo } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useDataStore } from '../store/useDataStore';
 import { Plus, X, DollarSign, Calendar, Phone, Mail, Filter } from 'lucide-react';
 import { format } from 'date-fns';
@@ -14,7 +14,7 @@ const statusColumns = [
   { id: 'visitou', title: 'Visitou', color: 'bg-purple-600' },
   { id: 'matriculado', title: 'Matriculado', color: 'bg-green-600' },
   { id: 'desistente', title: 'Desistente', color: 'bg-red-600' }
-];
+] as const;
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -28,7 +28,7 @@ export default function CRMBoard() {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<number>(units[0]?.id || 0);
+  const [selectedUnit, setSelectedUnit] = useState<string>(units[0]?.id || '');
   const [showFormLeads, setShowFormLeads] = useState(true);
   const [showManualLeads, setShowManualLeads] = useState(true);
 
@@ -38,23 +38,36 @@ export default function CRMBoard() {
       .reduce((sum, lead) => sum + (lead.value || 0), 0);
   };
 
-  const handleDragEnd = (result: any) => {
+  // Filter leads by unit and source
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      if (lead.unitId !== selectedUnit) return false;
+      if (lead.source === 'form' && !showFormLeads) return false;
+      if ((lead.source === 'manual' || !lead.source) && !showManualLeads) return false;
+      return true;
+    });
+  }, [leads, selectedUnit, showFormLeads, showManualLeads]);
+
+  // Create a mapping of leads to their indices
+  const leadIndices = useMemo(() => {
+    const indices = new Map<string, number>();
+    filteredLeads.forEach((lead, index) => {
+      indices.set(lead.id, index);
+    });
+    return indices;
+  }, [filteredLeads]);
+
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const { draggableId, destination } = result;
-    const leadId = parseInt(draggableId);
     const newStatus = destination.droppableId as LeadStatus;
+    const [_, leadId] = draggableId.split('-');
+    const lead = filteredLeads.find(l => l.id === leadId);
+    if (!lead) return;
 
-    updateLeadStatus(leadId, newStatus, 1); // TODO: Pegar o userId real do contexto de autenticação
+    updateLeadStatus(lead.id, newStatus, '1'); // TODO: Pegar o userId real do contexto de autenticação
   };
-
-  // Filter leads by unit and source
-  const filteredLeads = leads.filter(lead => {
-    if (lead.unitId !== selectedUnit) return false;
-    if (lead.source === 'form' && !showFormLeads) return false;
-    if ((lead.source === 'manual' || !lead.source) && !showManualLeads) return false;
-    return true;
-  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -71,7 +84,7 @@ export default function CRMBoard() {
             <select
               id="unit-select"
               value={selectedUnit}
-              onChange={(e) => setSelectedUnit(Number(e.target.value))}
+              onChange={(e) => setSelectedUnit(e.target.value)}
               className="p-2 border rounded-md"
               aria-label="Selecionar unidade"
             >
@@ -139,71 +152,74 @@ export default function CRMBoard() {
                   >
                     {filteredLeads
                       .filter(lead => lead.status === column.id)
-                      .map((lead, index) => (
-                        <Draggable
-                          key={lead.id}
-                          draggableId={lead.id.toString()}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`bg-gray-50 p-4 rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative group
-                                ${lead.source === 'form' ? 'border-l-4 border-green-500' : ''}`}
-                              onClick={() => setSelectedLead(lead)}
-                            >
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.confirm('Tem certeza que deseja excluir este lead?')) {
-                                      deleteLead(lead.id);
-                                    }
-                                  }}
-                                  className="text-red-600 hover:text-red-700"
-                                  title="Excluir lead"
-                                  aria-label="Excluir lead"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                              
-                              <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-medium text-gray-800">{lead.name}</h4>
-                                {lead.source === 'form' && (
-                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                    Formulário
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <div className="space-y-2 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <Phone size={14} />
-                                  <span>{lead.phone}</span>
+                      .map((lead, i) => {
+                        const index = leadIndices.get(lead.id) || 0;
+                        return (
+                          <Draggable
+                            key={lead.id}
+                            draggableId={`${index}-${lead.id}`}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`bg-gray-50 p-4 rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative group
+                                  ${lead.source === 'form' ? 'border-l-4 border-green-500' : ''}`}
+                                onClick={() => setSelectedLead(lead)}
+                              >
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+                                        deleteLead(lead.id);
+                                      }
+                                    }}
+                                    className="text-red-600 hover:text-red-700"
+                                    title="Excluir lead"
+                                    aria-label="Excluir lead"
+                                  >
+                                    <X size={16} />
+                                  </button>
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
-                                  <Mail size={14} />
-                                  <span>{lead.email}</span>
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-medium text-gray-800">{lead.name}</h4>
+                                  {lead.source === 'form' && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                      Formulário
+                                    </span>
+                                  )}
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
-                                  <DollarSign size={14} />
-                                  <span>{formatCurrency(lead.value || 0)}</span>
-                                </div>
-                                
-                                <div className="flex items-center gap-2">
-                                  <Calendar size={14} />
-                                  <span>{format(new Date(lead.createdAt), 'dd/MM/yyyy')}</span>
+                                <div className="space-y-2 text-sm text-gray-600">
+                                  <div className="flex items-center gap-2">
+                                    <Phone size={14} />
+                                    <span>{lead.phone}</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <Mail size={14} />
+                                    <span>{lead.email}</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign size={14} />
+                                    <span>{formatCurrency(lead.value || 0)}</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <Calendar size={14} />
+                                    <span>{format(new Date(lead.createdAt), 'dd/MM/yyyy')}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
+                            )}
+                          </Draggable>
+                        );
+                      })}
                     {provided.placeholder}
                   </div>
                 )}
@@ -239,7 +255,7 @@ export default function CRMBoard() {
         <LeadDetailsModal
           lead={selectedLead}
           onClose={() => setSelectedLead(null)}
-          userId={1} // TODO: Pegar o userId real do contexto de autenticação
+          userId="1" // TODO: Pegar o userId real do contexto de autenticação
         />
       )}
     </div>

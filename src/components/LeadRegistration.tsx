@@ -24,14 +24,14 @@ const locations = {
 };
 
 export default function LeadRegistration() {
-  const { addLead } = useDataStore();
+  const { addLead, units } = useDataStore();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     city: '',
     unit: '',
-    source: 'website',
+    source: 'form',
     notes: '',
     value: 0
   });
@@ -47,9 +47,28 @@ export default function LeadRegistration() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Encontrar a unidade principal baseada na cidade
+    const mainUnit = units.find(u => u.city === locations[formData.city as keyof typeof locations].name);
+    
+    if (!mainUnit) {
+      console.error('Unidade principal não encontrada:', formData.city);
+      return;
+    }
+
+    // Encontrar a subunidade baseada no nome selecionado
+    const selectedSubUnit = mainUnit.subunits?.find(su => su.name === formData.unit);
+    
+    if (!selectedSubUnit) {
+      console.error('Subunidade não encontrada:', formData.unit);
+      return;
+    }
+
     addLead({
       ...formData,
-      notes: `Cidade: ${formData.city}\nUnidade: ${formData.unit}`
+      unitId: mainUnit.id,
+      notes: `Cidade: ${formData.city}\nUnidade: ${formData.unit}\nSubunidade ID: ${selectedSubUnit.id}`,
+      updatedAt: new Date()
     });
     setSubmitted(true);
   };
@@ -129,53 +148,64 @@ export default function LeadRegistration() {
                   </h2>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                         Nome completo
                       </label>
                       <input
+                        id="name"
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
                         required
+                        placeholder="Digite seu nome completo"
+                        title="Nome completo"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                         Email
                       </label>
                       <input
+                        id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
                         required
+                        placeholder="Digite seu email"
+                        title="Email"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                         Telefone
                       </label>
                       <input
+                        id="phone"
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="w-full px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
                         required
+                        placeholder="Digite seu telefone"
+                        title="Telefone"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
                         Cidade
                       </label>
                       <select
+                        id="city"
                         value={formData.city}
                         onChange={handleCityChange}
                         className="w-full px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
                         required
+                        title="Cidade"
                       >
                         <option value="">Selecione uma cidade</option>
                         {Object.entries(locations).map(([key, { name }]) => (
@@ -186,14 +216,16 @@ export default function LeadRegistration() {
 
                     {formData.city && locations[formData.city as keyof typeof locations].units.length > 1 && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
                           Unidade
                         </label>
                         <select
+                          id="unit"
                           value={formData.unit}
                           onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                           className="w-full px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
                           required
+                          title="Unidade"
                         >
                           <option value="">Selecione uma unidade</option>
                           {locations[formData.city as keyof typeof locations].units.map((unit) => (

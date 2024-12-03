@@ -7,6 +7,7 @@ export interface Lead {
   source: string;
   notes: string;
   unitId: string;
+  value: number;
   history: LeadHistory[];
   createdAt: Date;
   updatedAt: Date;
@@ -23,7 +24,7 @@ export type LeadHistory = {
   createdBy: string;
 };
 
-export type LeadStatus = 'novo' | 'new' | 'contacted' | 'interested' | 'scheduled' | 'converted' | 'lost';
+export type LeadStatus = 'novo' | 'contato' | 'visitou' | 'matriculado' | 'desistente';
 
 export interface Unit {
   id: string;
