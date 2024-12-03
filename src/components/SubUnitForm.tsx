@@ -18,9 +18,8 @@ export default function SubUnitForm({ subUnit, onSubmit, onClose }: SubUnitFormP
       address: formData.get('address') as string,
       phone: formData.get('phone') as string,
       email: formData.get('email') as string,
-      active: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      unitId: subUnit?.unitId || '',
+      active: true
     });
   };
 

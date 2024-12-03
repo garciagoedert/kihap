@@ -16,6 +16,10 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'products' | 'sales' | 'commissions'>('products');
 
+  const formatCurrency = (value: number) => {
+    return `R$ ${value.toFixed(2)}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -93,12 +97,14 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="relative h-12 w-12 flex-shrink-0">
-                            <img
-                              className="absolute inset-0 w-full h-full rounded-lg object-cover object-center"
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                            />
+                            {product.image && (
+                              <img
+                                className="absolute inset-0 w-full h-full rounded-lg object-cover object-center"
+                                src={product.image}
+                                alt={product.name}
+                                loading="lazy"
+                              />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
@@ -109,11 +115,11 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          R$ {product.price.toFixed(2)}
+                          {formatCurrency(product.price)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{product.stock}</div>
+                        <div className="text-sm text-gray-900">{product.stock ?? 0}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -172,31 +178,31 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
                     <tr key={sale.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {sale.product.name}
+                          {sale.product?.name ?? 'Produto não encontrado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {sale.student.name}
+                          {sale.student?.name ?? 'Aluno não encontrado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          R$ {sale.totalPrice.toFixed(2)}
+                          {formatCurrency(sale.price)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            sale.status === 'paid'
+                            sale.status === 'completed'
                               ? 'bg-green-100 text-green-800'
                               : sale.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
-                          {sale.status === 'paid'
-                            ? 'Pago'
+                          {sale.status === 'completed'
+                            ? 'Concluído'
                             : sale.status === 'pending'
                             ? 'Pendente'
                             : 'Cancelado'}
@@ -245,17 +251,17 @@ const StoreManagement: React.FC<StoreManagementProps> = ({
                     <tr key={commission.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {commission.instructor.name}
+                          {commission.instructor?.name ?? 'Instrutor não encontrado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {commission.sale.product.name}
+                          {commission.sale?.product?.name ?? 'Produto não encontrado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          R$ {commission.amount.toFixed(2)}
+                          {formatCurrency(commission.amount)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

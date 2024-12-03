@@ -1,694 +1,233 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Lead, Student, Unit, User, Class, Message, Task, LeadStatus, Notification, ContractTemplate, OnlineContent, LiveClass, ContentEngagement, Badge, StudentBadge, PhysicalTest, LeadHistory, SubUnit } from '../types';
-import { initialUsers, initialUnits, beltBadges, initialOnlineContent, initialLiveClasses } from '../data';
+import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+import { Student, User, Unit, Lead, Task, Notification, OnlineContent, LiveClass, Badge, StudentBadge, PhysicalTest, SubUnit, LeadStatus } from '../types';
+import { initialUsers, initialUnits, initialOnlineContent, initialLiveClasses, beltBadges } from '../data';
+
+// Extrair todas as subunidades das unidades iniciais
+const initialSubunits: SubUnit[] = initialUnits.reduce((acc: SubUnit[], unit) => {
+  if (unit.subunits) {
+    return [...acc, ...unit.subunits];
+  }
+  return acc;
+}, []);
 
 interface DataState {
-  // State
-  leads: Lead[];
   students: Student[];
-  units: Unit[];
   users: User[];
-  classes: Class[];
-  messages: Message[];
+  units: Unit[];
+  leads: Lead[];
   tasks: Task[];
   notifications: Notification[];
-  contractTemplates: ContractTemplate[];
   onlineContent: OnlineContent[];
   liveClasses: LiveClass[];
-  contentEngagements: ContentEngagement[];
   badges: Badge[];
   studentBadges: StudentBadge[];
   physicalTests: PhysicalTest[];
-  version: number;
-
-  // Actions
-  addLead: (lead: Omit<Lead, 'id' | 'status' | 'createdAt' | 'history'>) => string;
-  updateLead: (lead: Lead) => void;
-  deleteLead: (id: string) => void;
-  updateLeadStatus: (id: string, status: LeadStatus, userId: string) => void;
-  addLeadHistory: (leadId: string, history: Omit<LeadHistory, 'id' | 'leadId' | 'createdAt'>) => void;
-  addLeadNote: (leadId: string, note: string, userId: string) => void;
-  addLeadContact: (leadId: string, description: string, nextContactDate: string | undefined, userId: string) => void;
-  addUnit: (unit: Omit<Unit, 'id'>) => void;
-  updateUnit: (unit: Unit) => void;
-  deleteUnit: (id: string) => void;
-  addSubUnit: (unitId: string, subUnit: Omit<SubUnit, 'id' | 'parentUnitId'>) => void;
-  updateSubUnit: (unitId: string, subUnit: SubUnit) => void;
-  deleteSubUnit: (unitId: string, subUnitId: string) => void;
-  addStudent: (student: Omit<Student, 'id'>) => void;
+  subunits: SubUnit[];
+  kihapEvents: any[];
+  eventCheckins: any[];
+  messages: any[];
+  supabase: typeof supabase;
   updateStudent: (student: Student) => void;
-  updateStudentBelt: (studentId: string, newBelt: string, updatedBy: string) => void;
-  deleteStudent: (id: string) => void;
-  addUser: (user: Omit<User, 'id'>) => void;
+  addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => void;
+  deleteStudent: (studentId: string) => void;
   updateUser: (user: User) => void;
-  deleteUser: (id: string) => void;
-  addBadge: (badge: Omit<Badge, 'id'>) => void;
+  updateUnit: (unit: Unit) => void;
+  updateLead: (lead: Lead) => void;
+  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'status' | 'history'>) => void;
+  deleteLead: (leadId: string) => void;
+  updateLeadStatus: (leadId: string, status: LeadStatus) => void;
+  updateTask: (task: Task) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
+  markNotificationAsRead: (notificationId: string) => void;
+  updateOnlineContent: (content: OnlineContent) => void;
+  updateLiveClass: (liveClass: LiveClass) => void;
   updateBadge: (badge: Badge) => void;
-  awardBadge: (studentId: string, badgeId: string, awardedBy: string, comment?: string) => void;
-  sendMessage: (message: Omit<Message, 'id' | 'type'>) => void;
-  markMessageAsRead: (id: string) => void;
-  addContent: (content: Omit<OnlineContent, 'id' | 'createdAt' | 'updatedAt' | 'uploadStatus' | 'uploadProgress'>) => string;
-  updateContent: (content: OnlineContent) => void;
-  deleteContent: (id: string) => void;
-  updateContentUploadStatus: (id: string, status: OnlineContent['uploadStatus'], progress?: number) => void;
-  publishContent: (id: string) => void;
-  unpublishContent: (id: string) => void;
-  trackContentProgress: (contentId: string, studentId: string, progress: number) => void;
-  markContentComplete: (contentId: string, studentId: string) => void;
-  toggleContentFavorite: (contentId: string, studentId: string) => void;
-  addContentComment: (contentId: string, studentId: string, comment: string) => void;
-  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateStudentBadge: (studentBadge: StudentBadge) => void;
+  updatePhysicalTest: (physicalTest: PhysicalTest) => void;
+  updateSubunit: (subunit: SubUnit) => void;
+  addSubUnit: (subunit: Omit<SubUnit, 'id'>) => void;
+  deleteSubUnit: (subunitId: string) => void;
+  updateKihapEvent: (event: any) => void;
+  updateEventCheckin: (checkin: any) => void;
+  sendMessage: (message: any) => void;
+  markMessageAsRead: (messageId: string) => void;
 }
-
-// Função para garantir que o estado tenha os dados iniciais necessários
-const ensureInitialData = (state: Partial<DataState>): DataState => {
-  // Garantir que as unidades tenham suas subunidades iniciais
-  const units = state.units?.length ? state.units.map(unit => {
-    const initialUnit = initialUnits.find(u => u.id === unit.id);
-    if (initialUnit && !unit.subunits?.length) {
-      return { ...unit, subunits: initialUnit.subunits };
-    }
-    return unit;
-  }) : initialUnits;
-
-  return {
-    leads: state.leads || [],
-    students: state.students || [],
-    units,
-    users: state.users?.length ? state.users : initialUsers,
-    classes: state.classes || [],
-    messages: state.messages || [],
-    tasks: state.tasks || [],
-    notifications: state.notifications || [],
-    contractTemplates: state.contractTemplates || [],
-    onlineContent: state.onlineContent?.length ? state.onlineContent : initialOnlineContent,
-    liveClasses: state.liveClasses?.length ? state.liveClasses : initialLiveClasses,
-    contentEngagements: state.contentEngagements || [],
-    badges: state.badges?.length ? state.badges : beltBadges,
-    studentBadges: state.studentBadges || [],
-    physicalTests: state.physicalTests || [],
-    version: state.version || 1,
-  } as DataState;
-};
 
 export const useDataStore = create<DataState>()(
   persist(
-    (set, get) => ({
-      // Initial State
-      leads: [],
+    (set) => ({
       students: [],
-      units: initialUnits,
       users: initialUsers,
-      classes: [],
-      messages: [],
+      units: initialUnits,
+      leads: [],
       tasks: [],
       notifications: [],
-      contractTemplates: [],
       onlineContent: initialOnlineContent,
       liveClasses: initialLiveClasses,
-      contentEngagements: [],
       badges: beltBadges,
       studentBadges: [],
       physicalTests: [],
-      version: 1,
+      subunits: initialSubunits,
+      kihapEvents: [],
+      eventCheckins: [],
+      messages: [],
+      supabase,
 
-      // Actions
-      addLead: (lead) => {
-        const newLead: Lead = {
-          ...lead,
-          id: Date.now().toString(),
-          status: 'novo',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          history: []
-        };
-
+      updateStudent: (student) =>
         set((state) => ({
-          leads: [...state.leads, newLead]
-        }));
+          students: state.students.map((s) =>
+            s.id === student.id ? { ...s, ...student } : s
+          ),
+        })),
 
-        return newLead.id;
-      },
-
-      updateLead: (lead) => {
+      addStudent: (student) =>
         set((state) => ({
-          leads: state.leads.map((l) => l.id === lead.id ? lead : l)
-        }));
-      },
+          students: [...state.students, { ...student, id: crypto.randomUUID(), createdAt: new Date().toISOString() }],
+        })),
 
-      deleteLead: (id) => {
+      deleteStudent: (studentId) =>
         set((state) => ({
-          leads: state.leads.filter((l) => l.id !== id)
-        }));
-      },
+          students: state.students.filter((s) => s.id !== studentId),
+        })),
 
-      updateLeadStatus: (id, status, userId) => {
-        set((state) => {
-          const lead = state.leads.find((l) => l.id === id);
-          if (!lead) return state;
-
-          const history: LeadHistory = {
-            id: Date.now().toString(),
-            leadId: id,
-            type: 'status_change',
-            description: `Status alterado de ${lead.status} para ${status}`,
-            oldStatus: lead.status,
-            newStatus: status,
-            createdAt: new Date().toISOString(),
-            createdBy: userId
-          };
-
-          return {
-            ...state,
-            leads: state.leads.map((l) => 
-              l.id === id 
-                ? { 
-                    ...l, 
-                    status,
-                    history: [...(l.history || []), history]
-                  } 
-                : l
-            )
-          };
-        });
-      },
-
-      addLeadHistory: (leadId, history) => {
-        set((state) => {
-          const newHistory: LeadHistory = {
-            id: Date.now().toString(),
-            leadId,
-            ...history,
-            createdAt: new Date().toISOString()
-          };
-
-          return {
-            ...state,
-            leads: state.leads.map((l) =>
-              l.id === leadId
-                ? { ...l, history: [...(l.history || []), newHistory] }
-                : l
-            )
-          };
-        });
-      },
-
-      addLeadNote: (leadId, note, userId) => {
-        set((state) => {
-          const newHistory: LeadHistory = {
-            id: Date.now().toString(),
-            leadId,
-            type: 'note',
-            description: note,
-            createdAt: new Date().toISOString(),
-            createdBy: userId
-          };
-
-          return {
-            ...state,
-            leads: state.leads.map((l) =>
-              l.id === leadId
-                ? { 
-                    ...l, 
-                    notes: l.notes ? `${l.notes}\n${note}` : note,
-                    history: [...(l.history || []), newHistory]
-                  }
-                : l
-            )
-          };
-        });
-      },
-
-      addLeadContact: (leadId, description, nextContactDate, userId) => {
-        set((state) => {
-          const newHistory: LeadHistory = {
-            id: Date.now().toString(),
-            leadId,
-            type: 'contact',
-            description,
-            createdAt: new Date().toISOString(),
-            createdBy: userId
-          };
-
-          return {
-            ...state,
-            leads: state.leads.map((l) =>
-              l.id === leadId
-                ? { 
-                    ...l, 
-                    lastContact: new Date().toISOString(),
-                    nextContactDate,
-                    history: [...(l.history || []), newHistory]
-                  }
-                : l
-            )
-          };
-        });
-      },
-
-      addStudent: (student) => {
-        const newStudent = {
-          ...student,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
+      updateUser: (user) =>
         set((state) => ({
-          students: [...state.students, newStudent]
-        }));
+          users: state.users.map((u) => (u.id === user.id ? { ...u, ...user } : u)),
+        })),
 
-        // Conceder badge da faixa inicial
-        const store = get();
-        const beltBadge = store.badges.find((b) => b.type === 'belt' && b.beltLevel === student.belt);
-        if (beltBadge) {
-          store.awardBadge(newStudent.id, beltBadge.id, "1");
-        }
-      },
-
-      updateStudent: (student) => {
+      updateUnit: (unit) =>
         set((state) => ({
-          students: state.students.map((s) => s.id === student.id ? student : s)
-        }));
-      },
+          units: state.units.map((u) => (u.id === unit.id ? { ...u, ...unit } : u)),
+        })),
 
-      updateStudentBelt: (studentId, newBelt, updatedBy) => {
+      updateLead: (lead) =>
         set((state) => ({
-          students: state.students.map((s) => 
-            s.id === studentId 
-              ? { ...s, belt: newBelt }
-              : s
-          )
-        }));
+          leads: state.leads.map((l) => (l.id === lead.id ? { ...l, ...lead } : l)),
+        })),
 
-        const store = get();
-        const beltBadge = store.badges.find((b) => b.type === 'belt' && b.beltLevel === newBelt);
-        if (beltBadge) {
-          store.awardBadge(studentId, beltBadge.id, updatedBy);
-        }
-      },
-
-      deleteStudent: (id) => {
+      addLead: (lead) =>
         set((state) => ({
-          students: state.students.filter((s) => s.id !== id)
-        }));
-      },
+          leads: [...state.leads, { ...lead, id: crypto.randomUUID(), createdAt: new Date().toISOString(), status: 'novo' as LeadStatus, history: [] }],
+        })),
 
-      addBadge: (badge) => {
-        const newBadge = {
-          ...badge,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
+      deleteLead: (leadId) =>
         set((state) => ({
-          badges: [...state.badges, newBadge]
-        }));
-      },
+          leads: state.leads.filter((l) => l.id !== leadId),
+        })),
 
-      updateBadge: (badge) => {
+      updateLeadStatus: (leadId, status) =>
         set((state) => ({
-          badges: state.badges.map((b) => 
-            b.id === badge.id 
-              ? { ...badge, updatedAt: new Date() }
-              : b
-          )
-        }));
-      },
+          leads: state.leads.map((l) =>
+            l.id === leadId ? { ...l, status } : l
+          ),
+        })),
 
-      awardBadge: (studentId, badgeId, awardedBy, comment) => {
-        const store = get();
-        const existingBadge = store.studentBadges.find(
-          (sb) => sb.studentId === studentId && sb.badgeId === badgeId
-        );
-
-        if (!existingBadge) {
-          const newStudentBadge = {
-            id: Date.now().toString(),
-            studentId,
-            badgeId,
-            awardedAt: new Date().toISOString(),
-            awardedBy,
-            comment,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-
-          set((state) => ({
-            studentBadges: [...state.studentBadges, newStudentBadge]
-          }));
-        }
-      },
-
-      addUnit: (unit) => {
-        const newUnit = {
-          ...unit,
-          id: Date.now().toString(),
-          subunits: [], // Inicializa com array vazio de subunidades
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
+      updateTask: (task) =>
         set((state) => ({
-          units: [...state.units, newUnit]
-        }));
-      },
+          tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, ...task } : t)),
+        })),
 
-      updateUnit: (unit) => {
+      addNotification: (notification) =>
         set((state) => ({
-          units: state.units.map((u) => u.id === unit.id ? unit : u)
-        }));
-      },
+          notifications: [
+            ...state.notifications,
+            {
+              ...notification,
+              id: crypto.randomUUID(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        })),
 
-      deleteUnit: (id) => {
+      markNotificationAsRead: (notificationId) =>
         set((state) => ({
-          units: state.units.filter((u) => u.id !== id)
-        }));
-      },
+          notifications: state.notifications.map((n) =>
+            n.id === notificationId ? { ...n, read: true } : n
+          ),
+        })),
 
-      addSubUnit: (unitId, subUnit) => {
-        const newSubUnit: SubUnit = {
-          ...subUnit,
-          id: Date.now().toString(),
-          parentUnitId: unitId,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        set((state) => ({
-          units: state.units.map((unit) => 
-            unit.id === unitId
-              ? {
-                  ...unit,
-                  subunits: [...(unit.subunits || []), newSubUnit],
-                  updatedAt: new Date()
-                }
-              : unit
-          )
-        }));
-      },
-
-      updateSubUnit: (unitId, subUnit) => {
-        set((state) => ({
-          units: state.units.map((unit) => 
-            unit.id === unitId
-              ? {
-                  ...unit,
-                  subunits: unit.subunits?.map((sub) =>
-                    sub.id === subUnit.id
-                      ? { ...subUnit, updatedAt: new Date() }
-                      : sub
-                  ),
-                  updatedAt: new Date()
-                }
-              : unit
-          )
-        }));
-      },
-
-      deleteSubUnit: (unitId, subUnitId) => {
-        set((state) => ({
-          units: state.units.map((unit) => 
-            unit.id === unitId
-              ? {
-                  ...unit,
-                  subunits: unit.subunits?.filter((sub) => sub.id !== subUnitId),
-                  updatedAt: new Date()
-                }
-              : unit
-          )
-        }));
-      },
-
-      addUser: (user) => {
-        const newUser = {
-          ...user,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        set((state) => ({
-          users: [...state.users, newUser]
-        }));
-      },
-
-      updateUser: (user) => {
-        set((state) => ({
-          users: state.users.map((u) => u.id === user.id ? user : u)
-        }));
-      },
-
-      deleteUser: (id) => {
-        set((state) => ({
-          users: state.users.filter((u) => u.id !== id)
-        }));
-      },
-
-      sendMessage: (message) => {
-        const newMessage = {
-          ...message,
-          id: Date.now().toString(),
-          type: 'user' as const,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        set((state) => ({
-          messages: [...state.messages, newMessage]
-        }));
-      },
-
-      markMessageAsRead: (id) => {
-        set((state) => ({
-          messages: state.messages.map((m) => 
-            m.id === id ? { ...m, read: true } : m
-          )
-        }));
-      },
-
-      addContent: (content) => {
-        const newContent = {
-          ...content,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          uploadStatus: 'pending' as const,
-          uploadProgress: 0,
-          isPublished: false
-        };
-
-        set((state) => ({
-          onlineContent: [...state.onlineContent, newContent]
-        }));
-
-        return newContent.id;
-      },
-
-      updateContent: (content) => {
-        set((state) => ({
-          onlineContent: state.onlineContent.map((c) => 
-            c.id === content.id 
-              ? { ...content, updatedAt: new Date() }
-              : c
-          )
-        }));
-      },
-
-      deleteContent: (id) => {
-        set((state) => ({
-          onlineContent: state.onlineContent.filter((c) => c.id !== id)
-        }));
-      },
-
-      updateContentUploadStatus: (id, status, progress) => {
+      updateOnlineContent: (content) =>
         set((state) => ({
           onlineContent: state.onlineContent.map((c) =>
-            c.id === id
-              ? {
-                  ...c,
-                  uploadStatus: status,
-                  uploadProgress: progress !== undefined ? progress : c.uploadProgress,
-                  updatedAt: new Date()
-                }
-              : c
-          )
-        }));
-      },
+            c.id === content.id ? { ...c, ...content } : c
+          ),
+        })),
 
-      publishContent: (id) => {
+      updateLiveClass: (liveClass) =>
         set((state) => ({
-          onlineContent: state.onlineContent.map((c) =>
-            c.id === id
-              ? { ...c, isPublished: true, updatedAt: new Date() }
-              : c
-          )
-        }));
-      },
+          liveClasses: state.liveClasses.map((c) =>
+            c.id === liveClass.id ? { ...c, ...liveClass } : c
+          ),
+        })),
 
-      unpublishContent: (id) => {
+      updateBadge: (badge) =>
         set((state) => ({
-          onlineContent: state.onlineContent.map((c) =>
-            c.id === id
-              ? { ...c, isPublished: false, updatedAt: new Date() }
-              : c
-          )
-        }));
-      },
+          badges: state.badges.map((b) =>
+            b.id === badge.id ? { ...b, ...badge } : b
+          ),
+        })),
 
-      trackContentProgress: (contentId, studentId, progress) => {
-        const timestamp = new Date();
-        
-        set((state) => {
-          const existingEngagement = state.contentEngagements.find(
-            (e) => e.contentId === contentId && 
-                 e.studentId === studentId && 
-                 e.type === 'view'
-          );
-
-          if (existingEngagement) {
-            return {
-              ...state,
-              contentEngagements: state.contentEngagements.map((e) =>
-                e.id === existingEngagement.id
-                  ? { 
-                      ...e, 
-                      progress, 
-                      timestamp: timestamp.toISOString(),
-                      updatedAt: timestamp
-                    }
-                  : e
-              )
-            };
-          }
-
-          return {
-            ...state,
-            contentEngagements: [...state.contentEngagements, {
-              id: Date.now().toString(),
-              contentId,
-              studentId,
-              type: 'view',
-              progress,
-              completed: false,
-              timestamp: timestamp.toISOString(),
-              createdAt: timestamp,
-              updatedAt: timestamp
-            }]
-          };
-        });
-      },
-
-      markContentComplete: (contentId, studentId) => {
-        const timestamp = new Date();
-        
-        set((state) => {
-          const existingEngagement = state.contentEngagements.find(
-            (e) => e.contentId === contentId && 
-                 e.studentId === studentId && 
-                 e.type === 'complete'
-          );
-
-          if (existingEngagement) return state;
-
-          return {
-            ...state,
-            contentEngagements: [...state.contentEngagements, {
-              id: Date.now().toString(),
-              contentId,
-              studentId,
-              type: 'complete',
-              progress: 100,
-              completed: true,
-              timestamp: timestamp.toISOString(),
-              createdAt: timestamp,
-              updatedAt: timestamp
-            }]
-          };
-        });
-      },
-
-      toggleContentFavorite: (contentId, studentId) => {
-        const timestamp = new Date();
-        
-        set((state) => {
-          const existingEngagement = state.contentEngagements.find(
-            (e) => e.contentId === contentId && 
-                 e.studentId === studentId && 
-                 e.type === 'like'
-          );
-
-          if (existingEngagement) {
-            return {
-              ...state,
-              contentEngagements: state.contentEngagements.filter(
-                (e) => e.id !== existingEngagement.id
-              )
-            };
-          }
-
-          return {
-            ...state,
-            contentEngagements: [...state.contentEngagements, {
-              id: Date.now().toString(),
-              contentId,
-              studentId,
-              type: 'like',
-              progress: 0,
-              completed: false,
-              timestamp: timestamp.toISOString(),
-              createdAt: timestamp,
-              updatedAt: timestamp
-            }]
-          };
-        });
-      },
-
-      addContentComment: (contentId, studentId, comment) => {
-        const timestamp = new Date();
-        
+      updateStudentBadge: (studentBadge) =>
         set((state) => ({
-          contentEngagements: [...state.contentEngagements, {
-            id: Date.now().toString(),
-            contentId,
-            studentId,
-            type: 'comment',
-            progress: 0,
-            completed: false,
-            comment,
-            timestamp: timestamp.toISOString(),
-            createdAt: timestamp,
-            updatedAt: timestamp
-          }]
-        }));
-      },
+          studentBadges: state.studentBadges.map((sb) =>
+            sb.id === studentBadge.id ? { ...sb, ...studentBadge } : sb
+          ),
+        })),
 
-      addNotification: (notification) => {
-        const newNotification = {
-          ...notification,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
+      updatePhysicalTest: (physicalTest) =>
         set((state) => ({
-          ...state,
-          notifications: [...state.notifications, newNotification]
-        }));
-      }
+          physicalTests: state.physicalTests.map((pt) =>
+            pt.id === physicalTest.id ? { ...pt, ...physicalTest } : pt
+          ),
+        })),
+
+      updateSubunit: (subunit) =>
+        set((state) => ({
+          subunits: state.subunits.map((su) =>
+            su.id === subunit.id ? { ...su, ...subunit } : su
+          ),
+        })),
+
+      addSubUnit: (subunit) =>
+        set((state) => ({
+          subunits: [...state.subunits, { ...subunit, id: crypto.randomUUID() }],
+        })),
+
+      deleteSubUnit: (subunitId) =>
+        set((state) => ({
+          subunits: state.subunits.filter((su) => su.id !== subunitId),
+        })),
+
+      updateKihapEvent: (event) =>
+        set((state) => ({
+          kihapEvents: state.kihapEvents.map((e) =>
+            e.id === event.id ? { ...e, ...event } : e
+          ),
+        })),
+
+      updateEventCheckin: (checkin) =>
+        set((state) => ({
+          eventCheckins: state.eventCheckins.map((c) =>
+            c.id === checkin.id ? { ...c, ...checkin } : c
+          ),
+        })),
+
+      sendMessage: (message) =>
+        set((state) => ({
+          messages: [...state.messages, { ...message, id: crypto.randomUUID() }],
+        })),
+
+      markMessageAsRead: (messageId) =>
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.id === messageId ? { ...m, read: true } : m
+          ),
+        })),
     }),
     {
       name: 'kihap-data-storage',
-      version: 2,
-      storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          return ensureInitialData(state);
-        }
-        return state;
-      }
     }
   )
 );

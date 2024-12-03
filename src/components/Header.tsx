@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { Menu, X, LogOut, Users, Building2, BookOpen, BarChart3, CheckSquare, Home, UserCircle, Shield, Video, Award, MessageSquare, ChevronDown, ShoppingBag } from 'lucide-react';
+import { Menu, X, LogOut, Users, Building2, BookOpen, BarChart3, CheckSquare, Home, UserCircle, Shield, Video, Award, MessageSquare, ChevronDown, ShoppingBag, Calendar } from 'lucide-react';
 
 export default function Header() {
   const user = useAuthStore(state => state.user);
@@ -10,6 +10,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCRMSubmenuOpen, setIsCRMSubmenuOpen] = useState(false);
   const [isAdminSubmenuOpen, setIsAdminSubmenuOpen] = useState(false);
+  const [isEventsSubmenuOpen, setIsEventsSubmenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -66,6 +67,23 @@ export default function Header() {
         label: 'KIHAP STORE',
         path: '/dashboard/store',
         icon: <ShoppingBag size={20} />
+      },
+      {
+        label: 'Eventos KIHAP',
+        path: '/dashboard/events',
+        icon: <Calendar size={20} />,
+        submenu: [
+          {
+            label: 'Gerenciar Eventos',
+            path: '/dashboard/events/manage',
+            icon: <Calendar size={20} />
+          },
+          {
+            label: 'Checkins',
+            path: '/dashboard/events/checkins',
+            icon: <CheckSquare size={20} />
+          }
+        ]
       }
     ] : []),
     ...(user?.role === 'admin' ? [
@@ -154,6 +172,8 @@ export default function Header() {
                               setIsCRMSubmenuOpen(!isCRMSubmenuOpen);
                             } else if (item.label === 'Administração') {
                               setIsAdminSubmenuOpen(!isAdminSubmenuOpen);
+                            } else if (item.label === 'Eventos KIHAP') {
+                              setIsEventsSubmenuOpen(!isEventsSubmenuOpen);
                             }
                           }}
                           className="p-2 hover:bg-gray-600 rounded-full transition-colors"
@@ -166,14 +186,16 @@ export default function Header() {
                             style={{ 
                               transform: (
                                 (item.label === 'CRM' && isCRMSubmenuOpen) || 
-                                (item.label === 'Administração' && isAdminSubmenuOpen)
+                                (item.label === 'Administração' && isAdminSubmenuOpen) ||
+                                (item.label === 'Eventos KIHAP' && isEventsSubmenuOpen)
                               ) ? 'rotate(180deg)' : 'rotate(0deg)' 
                             }} 
                           />
                         </button>
                       </div>
                       {((item.label === 'CRM' && isCRMSubmenuOpen) || 
-                        (item.label === 'Administração' && isAdminSubmenuOpen)) && (
+                        (item.label === 'Administração' && isAdminSubmenuOpen) ||
+                        (item.label === 'Eventos KIHAP' && isEventsSubmenuOpen)) && (
                         <div className="mt-1 ml-4 border-l-2 border-gray-700">
                           {item.submenu.map((subitem, subindex) => (
                             <Link

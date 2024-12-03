@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useDataStore } from '../../store/useDataStore';
-import { Bell, LogOut, Upload, X, User, DollarSign, Video, Award, Dumbbell, ShoppingBag } from 'lucide-react';
+import { Bell, LogOut, Upload, X, User, DollarSign, Video, Award, Dumbbell, ShoppingBag, Calendar } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import NotificationList from '../NotificationList';
 import MainHeader from '../MainHeader';
@@ -11,8 +11,9 @@ import OnlineTraining from './OnlineTraining';
 import StudentBadges from './StudentBadges';
 import PhysicalTests from './PhysicalTests';
 import StoreWrapper from '../store/StoreWrapper';
+import EventCheckin from './EventCheckin';
 
-type TabType = 'profile' | 'online' | 'badges' | 'physical' | 'store';
+type TabType = 'profile' | 'online' | 'badges' | 'physical' | 'store' | 'checkin';
 
 export default function StudentPortal() {
   const navigate = useNavigate();
@@ -215,6 +216,17 @@ export default function StudentPortal() {
               <ShoppingBag size={20} />
               KIHAP STORE
             </button>
+            <button
+              onClick={() => setActiveTab('checkin')}
+              className={`flex items-center gap-2 px-4 py-2 font-medium ${
+                activeTab === 'checkin'
+                  ? 'text-[#1d528d] border-b-2 border-[#1d528d]'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Calendar size={20} />
+              Eventos KIHAP
+            </button>
           </div>
         </div>
       </div>
@@ -296,6 +308,7 @@ export default function StudentPortal() {
       {activeTab === 'badges' && <StudentBadges student={student} />}
       {activeTab === 'physical' && <PhysicalTests student={student} />}
       {activeTab === 'store' && <StoreWrapper student={student} />}
+      {activeTab === 'checkin' && <EventCheckin />}
 
       {/* Contract Purchase Modal */}
       {showContractPurchase && (

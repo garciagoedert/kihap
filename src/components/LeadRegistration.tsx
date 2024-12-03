@@ -67,8 +67,7 @@ export default function LeadRegistration() {
     addLead({
       ...formData,
       unitId: mainUnit.id,
-      notes: `Cidade: ${formData.city}\nUnidade: ${formData.unit}\nSubunidade ID: ${selectedSubUnit.id}`,
-      updatedAt: new Date()
+      notes: `Cidade: ${formData.city}\nUnidade: ${formData.unit}\nSubunidade ID: ${selectedSubUnit.id}`
     });
     setSubmitted(true);
   };

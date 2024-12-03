@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -30,20 +30,12 @@ import KihapEmAcao from './components/KihapEmAcao';
 import StoreList from './components/store/StoreList';
 import StoreWrapper from './components/store/StoreWrapper';
 import StoreManagementWrapper from './components/store/StoreManagementWrapper';
+import KihapEventManagement from './components/instructor/KihapEventManagement';
+import EventCheckinPage from './components/EventCheckinPage';
+import EventCheckin from './components/student/EventCheckin';
 import { useAuthStore } from './store/useAuthStore';
 import { useStoreStore } from './store/useStoreStore';
 import { useDataStore } from './store/useDataStore';
-import { checkAndResetStorage } from './utils/storage';
-
-function ScrollToTop() {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
-}
 
 // Componente wrapper para a rota da loja do aluno
 function StudentStoreRoute() {
@@ -67,16 +59,8 @@ function App() {
   const user = useAuthStore(state => state.user);
   const stores = useStoreStore(state => state.stores);
 
-  useEffect(() => {
-    const needsReload = checkAndResetStorage();
-    if (needsReload) {
-      window.location.reload();
-    }
-  }, []);
-
   return (
     <Router>
-      <ScrollToTop />
       <div className="relative">
         <Routes>
           {/* Public Routes */}
@@ -115,6 +99,8 @@ function App() {
                     <Route path="badges" element={<BadgeManagement />} />
                     <Route path="store" element={user.role === 'admin' || user.role === 'instructor' ? <StoreList stores={stores} /> : <Navigate to="/" />} />
                     <Route path="store/:storeId" element={user.role === 'admin' || user.role === 'instructor' ? <StoreManagementWrapper /> : <Navigate to="/" />} />
+                    <Route path="events/manage" element={user.role === 'admin' || user.role === 'instructor' ? <KihapEventManagement /> : <Navigate to="/" />} />
+                    <Route path="events/checkins" element={user.role === 'admin' || user.role === 'instructor' ? <EventCheckinPage /> : <Navigate to="/" />} />
                   </Routes>
                   <Chat />
                 </div>

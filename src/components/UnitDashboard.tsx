@@ -1,376 +1,283 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import StudentList from './StudentList';
+import { useParams } from 'react-router-dom';
+import { useDataStore } from '../store/useDataStore';
+import { useAuthStore } from '../store/useAuthStore';
 import StudentForm from './StudentForm';
 import SubUnitForm from './SubUnitForm';
-import NotificationForm from './NotificationForm';
-import { useDataStore } from '../store/useDataStore';
-import { useUnitStats } from '../hooks/useUnitStats';
-import { Users, Award, FileCheck, DollarSign, Search, Download, Bell, Building, Edit2, Trash2, Plus } from 'lucide-react';
 import { Student, SubUnit } from '../types';
 
 export default function UnitDashboard() {
   const { unitId, subUnitId } = useParams();
-  const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
+  const { user } = useAuthStore();
+  const { 
+    units, 
+    students,
+    subunits, 
+    updateStudent,
+    addSubUnit,
+    kihapEvents,
+    eventCheckins
+  } = useDataStore();
+  const [showStudentForm, setShowStudentForm] = useState(false);
   const [showSubUnitForm, setShowSubUnitForm] = useState(false);
-  const [editingSubUnit, setEditingSubUnit] = useState<SubUnit | undefined>(undefined);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedSubUnit, setSelectedSubUnit] = useState<SubUnit | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [showNotificationForm, setShowNotificationForm] = useState(false);
-  
-  const { units, students, addStudent, updateStudent, deleteStudent, addSubUnit, updateSubUnit, deleteSubUnit } = useDataStore();
+
   const unit = units.find(u => u.id === unitId);
-  const subUnit = unit?.subunits?.find(s => s.id === subUnitId);
-  
-  const unitStudents = students.filter(s => 
-    s.unitId === unitId && 
-    (!subUnitId || s.subUnitId === subUnitId)
+  if (!unit) return <div>Unidade não encontrada</div>;
+
+  const unitSubunits = subunits.filter(su => su.parentUnitId === unitId);
+  const subUnit = subUnitId 
+    ? unitSubunits.find(su => su.id === subUnitId)
+    : null;
+
+  const filteredStudents = students.filter(student => 
+    subUnitId 
+      ? student.subUnitId === subUnitId
+      : student.unitId === unitId
   );
-  
-  const { getStats } = useUnitStats(unitId || '', subUnitId);
-  const stats = getStats();
-  
-  // Filter students based on search term
-  const filteredStudents = unitStudents.filter(student =>
+
+  const searchFilteredStudents = filteredStudents.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddStudent = (studentData: Partial<Student>) => {
-    if (!unitId) return;
+  const activeStudents = filteredStudents.filter(s => s.active);
+  const inactiveStudents = filteredStudents.filter(s => !s.active);
 
-    const newStudent: Omit<Student, 'id'> = {
-      name: studentData.name || '',
-      email: studentData.email || '',
-      phone: studentData.phone || '',
-      belt: studentData.belt || 'Branca recomendada',
-      unitId,
-      subUnitId: subUnitId || undefined,
-      instructorId: studentData.instructorId || '1',
-      instructor: studentData.instructor!,
-      active: studentData.active ?? true,
-      contract: studentData.contract!,
-      badges: studentData.badges || [],
-      physicalTests: studentData.physicalTests || [],
-      storeId: studentData.storeId || '1',
-      store: studentData.store!,
-      photo: studentData.photo,
-      birthDate: studentData.birthDate || '',
-      cpf: studentData.cpf || '',
-      trainingDays: studentData.trainingDays || [],
-      trainingSchedule: studentData.trainingSchedule || '',
-      emergencyContact: studentData.emergencyContact || '',
-      emergencyPhone: studentData.emergencyPhone || '',
-      age: studentData.age || 0,
-      registrationDate: studentData.registrationDate || new Date().toISOString(),
-      lastAttendance: studentData.lastAttendance || new Date().toISOString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+  const unitEvents = kihapEvents.filter(event => 
+    event.unitId === unitId && event.active
+  );
 
-    addStudent(newStudent);
-    setShowForm(false);
-  };
-
-  const handleEditStudent = (student: Student) => {
-    setEditingStudent(student);
-    setShowForm(true);
-  };
-
-  const handleUpdateStudent = (studentData: Partial<Student>) => {
-    if (!editingStudent || !unitId) return;
-    
-    const updatedStudent: Student = {
-      ...editingStudent,
-      ...studentData,
-      unitId,
-      subUnitId: subUnitId || undefined,
-      updatedAt: new Date()
-    };
-
-    updateStudent(updatedStudent);
-    setShowForm(false);
-    setEditingStudent(null);
-  };
-
-  const handleDeleteStudent = (studentId: string) => {
-    deleteStudent(studentId);
-  };
-
-  const handleAddSubUnit = (subUnitData: Omit<SubUnit, 'id' | 'parentUnitId'>) => {
-    if (!unitId) return;
-    addSubUnit(unitId, subUnitData);
-    setShowSubUnitForm(false);
-  };
-
-  const handleUpdateSubUnit = (subUnitData: Omit<SubUnit, 'id' | 'parentUnitId'>) => {
-    if (!unitId || !editingSubUnit) return;
-    updateSubUnit(unitId, { ...editingSubUnit, ...subUnitData });
-    setShowSubUnitForm(false);
-    setEditingSubUnit(undefined);
-  };
-
-  const handleDeleteSubUnit = (subUnitId: string) => {
-    if (!unitId) return;
-    if (window.confirm('Tem certeza que deseja excluir esta subunidade? Esta ação não pode ser desfeita.')) {
-      deleteSubUnit(unitId, subUnitId);
+  const handleStudentSubmit = (studentData: Partial<Student>) => {
+    if (selectedStudent) {
+      updateStudent({ ...selectedStudent, ...studentData });
     }
+    setShowStudentForm(false);
+    setSelectedStudent(null);
   };
 
-  const handleExportStudents = () => {
-    const headers = [
-      'Nome',
-      'Email',
-      'Telefone',
-      'Faixa',
-      'Status do Contrato',
-      'Data de Início',
-      'Data de Término'
-    ];
-
-    const csvData = unitStudents.map(student => [
-      student.name,
-      student.email,
-      student.phone,
-      student.belt,
-      student.contract?.status || 'Sem contrato',
-      student.contract?.startDate ? new Date(student.contract.startDate).toLocaleDateString() : '',
-      student.contract?.endDate ? new Date(student.contract.endDate).toLocaleDateString() : ''
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => 
-        typeof cell === 'string' && cell.includes(',') 
-          ? `"${cell}"`
-          : cell
-      ).join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `alunos_${unit?.name}_${subUnit?.name || ''}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleSubUnitSubmit = (data: Omit<SubUnit, 'id' | 'parentUnitId'>) => {
+    if (unitId) {
+      addSubUnit({
+        ...data,
+        unitId,
+        parentUnitId: unitId,
+        active: true
+      });
+    }
+    setShowSubUnitForm(false);
+    setSelectedSubUnit(undefined);
   };
-
-  const handleSubUnitClick = (subUnit: SubUnit) => {
-    navigate(`/dashboard/unit/${unitId}/subunit/${subUnit.id}`);
-  };
-
-  if (!unit) return <div>Unidade não encontrada</div>;
 
   return (
-    <main className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          {unit.name}
-          {subUnit && ` - ${subUnit.name}`}
+          {subUnit ? subUnit.name : unit.name}
         </h2>
-        <p className="text-gray-600">{unit.city}</p>
+        <p className="text-gray-600">
+          {unit.address}, {unit.city} - {unit.state}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        {subUnitId ? (
-          <StatCard
-            icon={<Users className="text-[#1d528d]" />}
-            title="Total de Alunos"
-            value={stats.totalStudents.toString()}
-          />
-        ) : (
-          <StatCard
-            icon={<Building className="text-[#1d528d]" />}
-            title="Total de Subunidades"
-            value={(unit.subunits?.length || 0).toString()}
-          />
-        )}
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Alunos Ativos</h3>
+          <p className="text-2xl font-bold text-[#1d528d]">{activeStudents.length}</p>
+        </div>
 
-        <StatCard
-          icon={<Award className="text-[#1d528d]" />}
-          title="Faixas Pretas"
-          value={stats.beltDistribution['Faixa Preta']?.toString() || '0'}
-        />
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Alunos Inativos</h3>
+          <p className="text-2xl font-bold text-[#1d528d]">{inactiveStudents.length}</p>
+        </div>
 
-        <StatCard
-          icon={<FileCheck className="text-[#1d528d]" />}
-          title="Contratos Ativos"
-          value={stats.activeContracts.toString()}
-        />
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Subunidades</h3>
+          <p className="text-2xl font-bold text-[#1d528d]">{unitSubunits.length}</p>
+        </div>
 
-        <StatCard
-          icon={<DollarSign className="text-[#1d528d]" />}
-          title="Valor em Contratos"
-          value={new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(stats.totalContractsValue)}
-        />
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Taxa de Retenção</h3>
+          <p className="text-2xl font-bold text-[#1d528d]">
+            {filteredStudents.length > 0 
+              ? Math.round((activeStudents.length / filteredStudents.length) * 100) 
+              : 0}%
+          </p>
+        </div>
       </div>
 
-      {subUnitId ? (
-        <>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div className="w-full md:w-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Buscar alunos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full md:w-96 rounded-md border-gray-300 shadow-sm focus:border-[#1d528d] focus:ring-1 focus:ring-[#1d528d]"
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleExportStudents}
-                className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-              >
-                <Download size={20} />
-                <span>Exportar Alunos</span>
-              </button>
-              <button
-                onClick={() => setShowNotificationForm(true)}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <Bell size={20} />
-                <span>Notificar Alunos</span>
-              </button>
-              <button
-                onClick={() => {
-                  setEditingStudent(null);
-                  setShowForm(true);
-                }}
-                className="flex items-center justify-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
-              >
-                <Users size={20} />
-                <span>Novo Aluno</span>
-              </button>
-            </div>
-          </div>
+      {/* Actions */}
+      <div className="flex flex-wrap gap-4 mb-8">
+        {(user?.role === 'admin' || user?.role === 'instructor') && (
+          <>
+            <button
+              onClick={() => {
+                setSelectedStudent(null);
+                setShowStudentForm(true);
+              }}
+              className="bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
+            >
+              Adicionar Aluno
+            </button>
 
-          <StudentList
-            students={filteredStudents}
-            onEditStudent={handleEditStudent}
-            onDeleteStudent={handleDeleteStudent}
-            unitId={unitId || ''}
-          />
-        </>
-      ) : (
-        unit.subunits && (
-          <div className="mt-12">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-700">Subunidades</h3>
+            {!subUnitId && (
               <button
                 onClick={() => {
-                  setEditingSubUnit(undefined);
+                  setSelectedSubUnit(undefined);
                   setShowSubUnitForm(true);
                 }}
-                className="flex items-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
+                className="bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
               >
-                <Plus size={20} />
-                <span>Nova Subunidade</span>
+                Adicionar Subunidade
               </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {unit.subunits.map((subUnit) => (
-                <div
-                  key={subUnit.id}
-                  className="bg-white rounded-lg shadow-md p-6 relative group"
-                >
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingSubUnit(subUnit);
-                          setShowSubUnitForm(true);
-                        }}
-                        className="p-1 text-gray-600 hover:text-[#1d528d] transition-colors"
-                        title="Editar subunidade"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSubUnit(subUnit.id);
-                        }}
-                        className="p-1 text-gray-600 hover:text-red-600 transition-colors"
-                        title="Excluir subunidade"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => handleSubUnitClick(subUnit)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <Building className="text-[#1d528d]" size={24} />
-                      <h4 className="text-lg font-medium text-gray-800">{subUnit.name}</h4>
-                    </div>
-                    <p className="text-gray-600">{subUnit.address}</p>
-                    <p className="text-gray-500 text-sm mt-2">{subUnit.phone}</p>
-                    <p className="text-gray-500 text-sm">{subUnit.email}</p>
-                  </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Subunidades */}
+      {!subUnitId && unitSubunits.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Subunidades</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {unitSubunits.map(subunit => {
+              const subunitStudents = students.filter(s => s.subUnitId === subunit.id);
+              const activeSubunitStudents = subunitStudents.filter(s => s.active);
+              
+              return (
+                <div key={subunit.id} className="bg-white rounded-lg shadow-md p-6">
+                  <h4 className="text-lg font-semibold mb-2">{subunit.name}</h4>
+                  <p className="text-gray-600 mb-2">Alunos Ativos: {activeSubunitStudents.length}</p>
+                  <p className="text-gray-600">Total de Alunos: {subunitStudents.length}</p>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )
+        </div>
       )}
 
-      {showForm && (
-        <StudentForm
-          student={editingStudent}
-          onSubmit={editingStudent ? handleUpdateStudent : handleAddStudent}
-          onClose={() => {
-            setShowForm(false);
-            setEditingStudent(null);
-          }}
-        />
+      {/* Students List */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-800">Alunos</h3>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar alunos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1d528d] focus:border-transparent"
+            />
+            <svg
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {searchFilteredStudents.map(student => (
+            <div
+              key={student.id}
+              className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => {
+                setSelectedStudent(student);
+                setShowStudentForm(true);
+              }}
+            >
+              <div className="flex items-center gap-4">
+                {student.photo ? (
+                  <img
+                    src={student.photo}
+                    alt={student.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-500 text-xl">
+                      {student.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-semibold text-gray-800">{student.name}</h4>
+                  <p className="text-sm text-gray-600">{student.belt}</p>
+                  <p className="text-xs text-gray-500">
+                    {student.active ? 'Ativo' : 'Inativo'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Events Section */}
+      {unitEvents.length > 0 && (
+        <div>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Eventos KIHAP</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {unitEvents.map(event => {
+              const eventCheckinCount = eventCheckins.filter(c => c.eventId === event.id).length;
+              
+              return (
+                <div key={event.id} className="bg-white rounded-lg shadow-md p-6">
+                  <h4 className="text-lg font-semibold mb-2">{event.name}</h4>
+                  <p className="text-gray-600 mb-2">{event.description}</p>
+                  <p className="text-gray-600 mb-4">
+                    {new Date(event.date).toLocaleString('pt-BR')}
+                  </p>
+                  <p className="text-gray-600">Local: {event.location}</p>
+                  <p className="text-gray-600">Checkins: {eventCheckinCount}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Forms */}
+      {showStudentForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <StudentForm
+              student={selectedStudent}
+              onSubmit={handleStudentSubmit}
+              onClose={() => {
+                setShowStudentForm(false);
+                setSelectedStudent(null);
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {showSubUnitForm && (
-        <SubUnitForm
-          subUnit={editingSubUnit}
-          onSubmit={editingSubUnit ? handleUpdateSubUnit : handleAddSubUnit}
-          onClose={() => {
-            setShowSubUnitForm(false);
-            setEditingSubUnit(undefined);
-          }}
-        />
-      )}
-
-      {showNotificationForm && (
-        <NotificationForm
-          onClose={() => setShowNotificationForm(false)}
-          unitId={unitId || ''}
-          subUnitId={subUnitId}
-        />
-      )}
-    </main>
-  );
-}
-
-function StatCard({ icon, title, value }: { icon: React.ReactNode; title: string; value: string }) {
-  return (
-    <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2 bg-gray-50 rounded-lg">
-          {icon}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <SubUnitForm
+              subUnit={selectedSubUnit}
+              onSubmit={handleSubUnitSubmit}
+              onClose={() => {
+                setShowSubUnitForm(false);
+                setSelectedSubUnit(undefined);
+              }}
+            />
+          </div>
         </div>
-        <span className="text-xl md:text-2xl font-bold text-gray-800">{value}</span>
-      </div>
-      <h3 className="text-sm md:text-base text-gray-600 font-medium">{title}</h3>
+      )}
     </div>
   );
 }

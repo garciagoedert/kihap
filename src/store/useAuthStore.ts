@@ -18,7 +18,9 @@ export const useAuthStore = create<AuthState>()(
       login: (email: string, password: string) => {
         // First, check for staff users (admin, manager, instructor)
         const dataStore = useDataStore.getState();
-        const staffUser = dataStore.users.find(u => u.email === email && u.password === password);
+        const users = dataStore.users.length > 0 ? dataStore.users : initialUsers;
+        const staffUser = users.find(u => u.email === email && u.password === password);
+        
         if (staffUser) {
           const { password: _, ...userWithoutPassword } = staffUser;
           set({ user: userWithoutPassword as User });
@@ -40,9 +42,8 @@ export const useAuthStore = create<AuthState>()(
               role: 'student',
               unitId: student.unitId,
               active: true,
-              photo: student.photo,
-              createdAt: new Date(),
-              updatedAt: new Date()
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             };
             
             set({ user: studentUser });
@@ -50,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Check for updated password after first login
-          const existingUser = dataStore.users.find(u => u.email === email && u.role === 'student');
+          const existingUser = users.find(u => u.email === email && u.role === 'student');
           if (existingUser && existingUser.password === password) {
             const { password: _, ...userWithoutPassword } = existingUser;
             set({ user: userWithoutPassword });
@@ -68,7 +69,7 @@ export const useAuthStore = create<AuthState>()(
           const updatedUser: User = {
             ...state.user,
             password: newPassword,
-            updatedAt: new Date()
+            updatedAt: new Date().toISOString()
           };
 
           // Update the user in the data store

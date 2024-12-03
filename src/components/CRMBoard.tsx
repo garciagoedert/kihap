@@ -1,263 +1,178 @@
-import React, { useState, useMemo } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import React, { useState } from 'react';
 import { useDataStore } from '../store/useDataStore';
-import { Plus, X, DollarSign, Calendar, Phone, Mail, Filter } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Lead, LeadStatus } from '../types';
-import LeadDetailsModal from './LeadDetailsModal';
-import LeadForm from './LeadForm';
+import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
+import { FiSearch, FiTrash2, FiPhone, FiMail, FiMessageSquare, FiUsers } from 'react-icons/fi';
 
-const statusColumns = [
-  { id: 'novo', title: 'Novos Leads', color: 'bg-blue-600' },
-  { id: 'contato', title: 'Em Contato', color: 'bg-yellow-600' },
-  { id: 'visitou', title: 'Visitou', color: 'bg-purple-600' },
-  { id: 'matriculado', title: 'Matriculado', color: 'bg-green-600' },
-  { id: 'desistente', title: 'Desistente', color: 'bg-red-600' }
-] as const;
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
+const statusLabels: Record<LeadStatus, string> = {
+  'novo': 'Novo',
+  'contato': 'Contatado',
+  'visitou': 'Visitou',
+  'matriculado': 'Matriculado',
+  'desistente': 'Desistente',
+  // mantendo os outros status para compatibilidade com o tipo LeadStatus
+  'new': 'Novo',
+  'contacted': 'Contatado',
+  'interested': 'Interessado',
+  'scheduled': 'Agendado',
+  'converted': 'Convertido',
+  'lost': 'Perdido'
 };
 
+const statusColors: Record<LeadStatus, string> = {
+  'novo': 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-800 border-blue-200',
+  'contato': 'bg-gradient-to-br from-yellow-50 to-yellow-100 text-yellow-800 border-yellow-200',
+  'visitou': 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-800 border-purple-200',
+  'matriculado': 'bg-gradient-to-br from-green-50 to-green-100 text-green-800 border-green-200',
+  'desistente': 'bg-gradient-to-br from-red-50 to-red-100 text-red-800 border-red-200',
+  // mantendo os outros status para compatibilidade com o tipo LeadStatus
+  'new': 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-800 border-blue-200',
+  'contacted': 'bg-gradient-to-br from-yellow-50 to-yellow-100 text-yellow-800 border-yellow-200',
+  'interested': 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-800 border-purple-200',
+  'scheduled': 'bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-800 border-indigo-200',
+  'converted': 'bg-gradient-to-br from-green-50 to-green-100 text-green-800 border-green-200',
+  'lost': 'bg-gradient-to-br from-red-50 to-red-100 text-red-800 border-red-200'
+};
+
+const kanbanStatuses: LeadStatus[] = ['novo', 'contato', 'visitou', 'matriculado', 'desistente'];
+
 export default function CRMBoard() {
-  const { leads, units, addLead, updateLead, deleteLead, updateLeadStatus } = useDataStore();
-  const [showLeadForm, setShowLeadForm] = useState(false);
-  const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
+  const { leads, updateLead, deleteLead } = useDataStore();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<string>(units[0]?.id || '');
-  const [showFormLeads, setShowFormLeads] = useState(true);
-  const [showManualLeads, setShowManualLeads] = useState(true);
-
-  const calculateColumnTotal = (status: LeadStatus, filteredLeads: Lead[]) => {
-    return filteredLeads
-      .filter(lead => lead.status === status)
-      .reduce((sum, lead) => sum + (lead.value || 0), 0);
-  };
-
-  // Filter leads by unit and source
-  const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      if (lead.unitId !== selectedUnit) return false;
-      if (lead.source === 'form' && !showFormLeads) return false;
-      if ((lead.source === 'manual' || !lead.source) && !showManualLeads) return false;
-      return true;
-    });
-  }, [leads, selectedUnit, showFormLeads, showManualLeads]);
-
-  // Create a mapping of leads to their indices
-  const leadIndices = useMemo(() => {
-    const indices = new Map<string, number>();
-    filteredLeads.forEach((lead, index) => {
-      indices.set(lead.id, index);
-    });
-    return indices;
-  }, [filteredLeads]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const { draggableId, destination } = result;
-    const newStatus = destination.droppableId as LeadStatus;
-    const [_, leadId] = draggableId.split('-');
-    const lead = filteredLeads.find(l => l.id === leadId);
-    if (!lead) return;
-
-    updateLeadStatus(lead.id, newStatus, '1'); // TODO: Pegar o userId real do contexto de autenticação
+    const lead = leads.find(l => l.id === draggableId);
+    
+    if (lead) {
+      const newStatus = destination.droppableId as LeadStatus;
+      updateLead({ ...lead, status: newStatus });
+    }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">CRM</h2>
-          <p className="text-gray-600">Gestão de Leads</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label htmlFor="unit-select" className="text-sm text-gray-700">
-              Unidade:
-            </label>
-            <select
-              id="unit-select"
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="p-2 border rounded-md"
-              aria-label="Selecionar unidade"
-            >
-              {units.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showFormLeads}
-                onChange={(e) => setShowFormLeads(e.target.checked)}
-                className="form-checkbox h-4 w-4 text-blue-600"
-                aria-label="Mostrar leads do formulário"
-              />
-              <span className="text-sm text-gray-700">Leads do Formulário</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showManualLeads}
-                onChange={(e) => setShowManualLeads(e.target.checked)}
-                className="form-checkbox h-4 w-4 text-blue-600"
-                aria-label="Mostrar leads manuais"
-              />
-              <span className="text-sm text-gray-700">Leads Manuais</span>
-            </label>
-          </div>
-          <button
-            onClick={() => {
-              setEditingLead(undefined);
-              setShowLeadForm(true);
-            }}
-            className="flex items-center gap-2 bg-[#1d528d] text-white px-4 py-2 rounded-md hover:bg-[#164070] transition-colors"
-          >
-            <Plus size={20} />
-            Novo Lead
-          </button>
-        </div>
-      </div>
+  const handleDeleteLead = (leadId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+      deleteLead(leadId);
+    }
+  };
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {statusColumns.map(column => (
-            <div key={column.id} className="bg-white rounded-lg shadow-lg">
-              <div className={`p-4 ${column.color} rounded-t-lg`}>
-                <div className="flex justify-between items-center">
-                  <h3 className="text-white font-semibold">{column.title}</h3>
-                  <span className="text-white text-sm font-medium">
-                    {formatCurrency(calculateColumnTotal(column.id as LeadStatus, filteredLeads))}
-                  </span>
-                </div>
-              </div>
-              
-              <Droppable droppableId={column.id}>
-                {(provided) => (
+  const filteredLeads = leads.filter(lead => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      lead.name.toLowerCase().includes(searchLower) ||
+      lead.email.toLowerCase().includes(searchLower) ||
+      lead.phone.toLowerCase().includes(searchLower)
+    );
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-[1800px] mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white p-2 rounded-lg shadow-sm">
+              <FiUsers className="text-blue-600" size={24} />
+            </div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              CRM
+            </h2>
+          </div>
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-72 transition-all duration-200 shadow-sm bg-white"
+            />
+          </div>
+        </div>
+
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex overflow-x-auto gap-6 pb-6">
+            {kanbanStatuses.map(status => (
+              <Droppable key={status} droppableId={status}>
+                {(provided: DroppableProvided) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className="p-4 min-h-[200px]"
+                    className="flex-shrink-0 w-80 bg-white rounded-xl shadow-sm border border-gray-100 backdrop-blur-lg bg-opacity-90"
                   >
-                    {filteredLeads
-                      .filter(lead => lead.status === column.id)
-                      .map((lead, i) => {
-                        const index = leadIndices.get(lead.id) || 0;
-                        return (
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {statusLabels[status]}
+                      </h3>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {filteredLeads.filter(lead => lead.status === status).length} leads
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-4 min-h-[200px]">
+                      {filteredLeads
+                        .filter(lead => lead.status === status)
+                        .map((lead, index) => (
                           <Draggable
                             key={lead.id}
-                            draggableId={`${index}-${lead.id}`}
+                            draggableId={lead.id}
                             index={index}
                           >
-                            {(provided) => (
+                            {(provided: DraggableProvided) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-gray-50 p-4 rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative group
-                                  ${lead.source === 'form' ? 'border-l-4 border-green-500' : ''}`}
-                                onClick={() => setSelectedLead(lead)}
+                                className="group bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 transform hover:-translate-y-1"
                               >
-                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex justify-between items-start mb-3">
+                                  <h4 className="font-medium text-gray-800 text-lg">
+                                    {lead.name}
+                                  </h4>
                                   <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (window.confirm('Tem certeza que deseja excluir este lead?')) {
-                                        deleteLead(lead.id);
-                                      }
-                                    }}
-                                    className="text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteLead(lead.id)}
+                                    className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded-full hover:bg-red-50 opacity-0 group-hover:opacity-100"
                                     title="Excluir lead"
                                     aria-label="Excluir lead"
                                   >
-                                    <X size={16} />
+                                    <FiTrash2 size={16} />
                                   </button>
                                 </div>
-                                
-                                <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-medium text-gray-800">{lead.name}</h4>
-                                  {lead.source === 'form' && (
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                      Formulário
-                                    </span>
+                                <div className="space-y-2">
+                                  <div className="flex items-center text-gray-600 group-hover:text-blue-600 transition-colors">
+                                    <FiMail className="mr-2" size={14} />
+                                    <span className="text-sm">{lead.email}</span>
+                                  </div>
+                                  <div className="flex items-center text-gray-600 group-hover:text-blue-600 transition-colors">
+                                    <FiPhone className="mr-2" size={14} />
+                                    <span className="text-sm">{lead.phone}</span>
+                                  </div>
+                                  {lead.notes && (
+                                    <div className="flex items-start text-gray-600 mt-2">
+                                      <FiMessageSquare className="mr-2 mt-1" size={14} />
+                                      <span className="text-sm italic">{lead.notes}</span>
+                                    </div>
                                   )}
                                 </div>
-                                
-                                <div className="space-y-2 text-sm text-gray-600">
-                                  <div className="flex items-center gap-2">
-                                    <Phone size={14} />
-                                    <span>{lead.phone}</span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <Mail size={14} />
-                                    <span>{lead.email}</span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <DollarSign size={14} />
-                                    <span>{formatCurrency(lead.value || 0)}</span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <Calendar size={14} />
-                                    <span>{format(new Date(lead.createdAt), 'dd/MM/yyyy')}</span>
-                                  </div>
+                                <div className="mt-3">
+                                  <span className={`text-xs px-3 py-1 rounded-full border ${statusColors[lead.status]}`}>
+                                    {statusLabels[lead.status]}
+                                  </span>
                                 </div>
                               </div>
                             )}
                           </Draggable>
-                        );
-                      })}
-                    {provided.placeholder}
+                        ))}
+                      {provided.placeholder}
+                    </div>
                   </div>
                 )}
               </Droppable>
-            </div>
-          ))}
-        </div>
-      </DragDropContext>
-
-      {showLeadForm && (
-        <LeadForm
-          lead={editingLead}
-          onClose={() => {
-            setShowLeadForm(false);
-            setEditingLead(undefined);
-          }}
-          onSubmit={(leadData) => {
-            if (editingLead) {
-              updateLead({
-                ...editingLead,
-                ...leadData
-              });
-            } else {
-              addLead(leadData);
-            }
-            setShowLeadForm(false);
-            setEditingLead(undefined);
-          }}
-        />
-      )}
-
-      {selectedLead && (
-        <LeadDetailsModal
-          lead={selectedLead}
-          onClose={() => setSelectedLead(null)}
-          userId="1" // TODO: Pegar o userId real do contexto de autenticação
-        />
-      )}
+            ))}
+          </div>
+        </DragDropContext>
+      </div>
     </div>
   );
 }
