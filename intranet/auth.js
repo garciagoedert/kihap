@@ -1,5 +1,5 @@
 const users = [
-    { name: 'Paulo', email: 'comercial@kihap.com.br', password: 'Pg1308@!', isAdmin: true, profilePicture: 'default-profile.svg' }
+    { name: 'Mr. Garcia', email: 'comercial@kihap.com.br', password: 'Pg1308@!', isAdmin: true, profilePicture: 'default-profile.svg' }
 ];
 
 function findUser(email, password) {

@@ -93,10 +93,15 @@
             </div>
             <form id="prospectForm" class="p-4 sm:p-6 overflow-y-auto">
                 <input type="hidden" id="prospectId">
+                <input type="hidden" id="prospectType">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do responsável</label>
                         <input type="text" id="responsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="form-group">
+                        <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
+                        <input type="text" id="unidade" placeholder="Ex: Florianópolis, São José" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="form-group">
                         <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
@@ -291,7 +296,8 @@
             const formattedLeads = leads.map(lead => ({
                 id: lead.id,
                 responsavel: lead.nome,
-                setor: lead.unidade,
+                unidade: lead.unidade,
+                setor: '', // Leads from website don't have a program yet
                 prioridade: 3, // Default priority for leads
                 status: lead.status || 'Novo',
                 ticketEstimado: 0,
@@ -376,12 +382,12 @@
                     <h4 class="font-bold mb-2 flex-grow pr-2">${prospect.responsavel || 'Prospect sem nome'}</h4>
                 </div>
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
-                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${sectorColor.bg} ${sectorColor.text}">${prospect.setor}</span>
                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">P${prospect.prioridade}</span>
                 </div>
                 <div class="flex items-center gap-1 mb-3 flex-wrap">
                     ${tagsHTML}
                 </div>
+                ${prospect.unidade ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> ${prospect.unidade}</p>` : ''}
                 ${prospect.origemLead ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-sign-in-alt mr-1"></i> ${prospect.origemLead}</p>` : ''}
                 <p class="text-sm text-green-400 font-semibold mb-2">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
                 ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
@@ -643,6 +649,7 @@
             });
 
             if (prospect) {
+                document.getElementById('prospectType').value = prospect.type || 'prospect';
                 modalActionButtons.classList.remove('hidden');
                 modalTitle.textContent = 'Detalhes do Prospect';
                 prospectIdInput.value = prospect.id;
@@ -656,6 +663,7 @@
                     createdByContainer.classList.add('hidden');
                 }
                 
+                document.getElementById('unidade').value = prospect.unidade || '';
                 document.getElementById('setor').value = prospect.setor || '';
                 document.getElementById('prioridade').value = prospect.prioridade || '';
                 document.getElementById('ticketEstimado').value = prospect.ticketEstimado || '';
@@ -675,13 +683,14 @@
                 renderContactLog(prospect);
 
                 archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
-                deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteProspect(prospect.id); closeFormModal(); });
+                deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
 
                 setFormEditable(false);
                 editBtn.onclick = () => setFormEditable(true);
                 cancelFormBtn.onclick = () => openFormModal(prospect);
 
             } else {
+                document.getElementById('prospectType').value = 'prospect';
                 modalActionButtons.classList.add('hidden');
                 modalTitle.textContent = 'Adicionar Novo Prospect';
                 prospectIdInput.value = '';
@@ -762,6 +771,7 @@
             }
 
             const prospectId = document.getElementById('prospectId').value;
+            const prospectType = document.getElementById('prospectType').value;
             const selectedTags = [];
             document.querySelectorAll('#tagsContainer input[type="checkbox"]:checked').forEach(checkbox => {
                 selectedTags.push(checkbox.value);
@@ -769,6 +779,7 @@
 
             const data = {
                 responsavel: document.getElementById('responsavel').value,
+                unidade: document.getElementById('unidade').value,
                 setor: document.getElementById('setor').value,
                 prioridade: parseInt(document.getElementById('prioridade').value),
                 ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || 0,
@@ -784,21 +795,42 @@
 
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
             try {
-                const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
-                if (prospectId) { // Update
-                    if (data.pagina === 'Produção') {
-                        data.status = 'Produção // V1';
-                    }
-                    const prospectRef = doc(collectionPath, prospectId);
-                    await updateDoc(prospectRef, data);
-                    generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
-                } else { // Create
-                    data.status = 'Pendente';
+                const prospectsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
+
+                if (prospectId && prospectType === 'lead') {
+                    // Convert lead to prospect
+                    data.status = 'Novo';
                     data.pagina = 'Prospecção';
                     data.createdAt = serverTimestamp();
                     data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
-                    // contactLog is not added on creation, only on update.
-                    await addDoc(collectionPath, data);
+                    
+                    const batch = writeBatch(db);
+                    
+                    // 1. Create new prospect
+                    const newProspectRef = doc(prospectsCollection);
+                    batch.set(newProspectRef, data);
+                    
+                    // 2. Delete old lead
+                    const oldLeadRef = doc(db, 'leads', prospectId);
+                    batch.delete(oldLeadRef);
+                    
+                    await batch.commit();
+                    generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
+
+                } else if (prospectId) { // Update existing prospect
+                    if (data.pagina === 'Produção') {
+                        data.status = 'Produção // V1';
+                    }
+                    const prospectRef = doc(prospectsCollection, prospectId);
+                    await updateDoc(prospectRef, data);
+                    generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
+
+                } else { // Create new prospect
+                    data.status = 'Novo'; // FIX: Was 'Pendente'
+                    data.pagina = 'Prospecção';
+                    data.createdAt = serverTimestamp();
+                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                    await addDoc(prospectsCollection, data);
                     generalLog.add(user, 'Create Card', `New card "${data.responsavel}" created`);
                 }
                 closeFormModal();
@@ -808,17 +840,31 @@
             }
         }
         
-        async function deleteProspect(prospectId) {
+        async function deleteItem(itemId) {
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            const prospect = prospects.find(p => p.id === prospectId);
+            const item = combinedData.find(p => p.id === itemId);
+            if (!item) {
+                console.error("Item not found for deletion:", itemId);
+                alert("Erro: Item não encontrado para exclusão.");
+                return;
+            }
+
             try {
-                const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospectId);
-                await deleteDoc(prospectRef);
-                if(prospect) {
-                    generalLog.add(user, 'Delete Card', `Card "${prospect.responsavel}" deleted`);
+                let itemRef;
+                if (item.type === 'lead') {
+                    itemRef = doc(db, 'leads', itemId);
+                } else {
+                    itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', itemId);
                 }
+                
+                await deleteDoc(itemRef);
+                
+                const itemName = item.responsavel || item.nome || 'Item sem nome';
+                generalLog.add(user, 'Delete Card', `Card "${itemName}" (${item.type}) deleted`);
+
             } catch (error) {
-                console.error("Error deleting prospect:", error);
+                console.error("Error deleting item:", error);
+                alert(`Erro ao excluir o item: ${error.message}`);
             }
         }
 

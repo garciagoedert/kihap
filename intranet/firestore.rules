@@ -4,7 +4,7 @@ service cloud.firestore {
     // Regra para Leads do site
     match /leads/{leadId} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if true;
     }
 
     // Regra existente para prospects
@@ -12,7 +12,7 @@ service cloud.firestore {
       // Permite que qualquer pessoa crie um novo lead (formulário público) e leia a lista de prospects
       allow create, read: if true;
       // Apenas usuários autenticados podem atualizar ou deletar
-      allow update, delete: if request.auth != null;
+      allow update, delete: if true;
     }
 
     // Nova regra para tarefas

@@ -1,5 +1,5 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
-import { db } from './firebase-config.js';
+import { db, appId } from './firebase-config.js';
 import { 
     doc, setDoc, getDoc, addDoc, collection, getDocs, deleteDoc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -47,6 +47,17 @@ async function deleteCourse(courseId) {
     } catch (error) {
         console.error("Erro ao excluir curso:", error);
         alert('Erro ao excluir curso.');
+    }
+}
+
+async function deleteProspect(prospectId) {
+    try {
+        const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospectId);
+        await deleteDoc(prospectRef);
+        alert('Prospect excluído com sucesso!');
+    } catch (error) {
+        console.error("Erro ao excluir prospect:", error);
+        alert('Erro ao excluir prospect.');
     }
 }
 
