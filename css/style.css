@@ -1,0 +1,161 @@
+@font-face {
+    font-family: 'Neue Machina';
+    src: url('../fonte/NeueMachina-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Neue Machina';
+    src: url('../fonte/NEUEMACHINA-ULTRABOLD.OTF') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+body {
+    font-family: 'Neue Machina', sans-serif;
+    font-weight: 400;
+    background-color: #111111;
+    color: #f5f5f5;
+}
+
+.font-title {
+    font-weight: 900;
+}
+
+.btn-gradient {
+    background: linear-gradient(90deg, #FFC107, #FF9800);
+    transition: all 0.3s ease;
+}
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 179, 0, 0.4);
+}
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+@media (min-width: 768px) {
+    .section-title {
+        font-size: 3.75rem;
+    }
+}
+
+/* Swiper Styles */
+.program-swiper {
+    width: 100%;
+    padding-top: 20px;
+    padding-bottom: 50px;
+    position: relative;
+}
+
+.swiper-slide {
+    width: 300px;
+    height: 400px;
+}
+
+.program-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    color: white;
+}
+
+.program-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    z-index: 1;
+}
+
+.program-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.program-card:hover .program-card-img {
+    transform: scale(1.1);
+}
+
+.program-card-content {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+
+.program-card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 3;
+}
+
+.program-card:hover .program-card-overlay {
+    opacity: 1;
+}
+
+.program-card:hover .program-card-content {
+    opacity: 0;
+}
+
+.program-swiper .swiper-button-next, .program-swiper .swiper-button-prev {
+    color: #FFC107;
+}
+
+.swiper-pagination-bullet-active {
+    background: #FFC107;
+}
+
+/* Unit Card Styles */
+.unit-card {
+    position: relative;
+    z-index: 1;
+}
+
+.unit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.2;
+    z-index: -2;
+    border-radius: 0.5rem; /* Tailwind's rounded-lg */
+}
+
+.unit-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    border-radius: 0.5rem;
+}

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Kihap Martial Arts - A Força Para a Mudança</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Swiper.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="relative h-screen flex items-center justify-start text-left text-white" style="background-image: url('https://kihap.com.br/wp-content/uploads/2025/07/header-1-scaled-e1753296220846.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <div class="absolute inset-0 bg-black/70"></div>
+            <div class="relative z-10 px-4 md:px-24">
+                <h1 class="text-4xl md:text-6xl lg:text-7xl font-black uppercase leading-tight tracking-wide font-title">
+                    A Força para a <br class="hidden md:block"> Mudança que Você Precisa <br class="hidden md:block"> Está Dentro de Você
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-md text-gray-300">
+                    Descubra o poder das artes marciais na sua saúde física e mental.
+                </p>
+                <a href="#cta" class="mt-10 inline-block btn-gradient text-black font-bold py-4 px-10 rounded-lg text-lg uppercase tracking-wider">
+                    Agende uma Aula Experimental
+                </a>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="bg-black py-12">
+            <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div class="bg-gray-900/50 p-6 rounded-lg">
+                    <p class="text-4xl font-bold text-yellow-500">+1000</p>
+                    <p class="uppercase text-gray-400">Alunos</p>
+                </div>
+                <div class="bg-gray-900/50 p-6 rounded-lg">
+                    <p class="text-4xl font-bold text-yellow-500">03</p>
+                    <p class="uppercase text-gray-400">Estados</p>
+                </div>
+                <div class="bg-gray-900/50 p-6 rounded-lg">
+                    <p class="text-4xl font-bold text-yellow-500">10</p>
+                    <p class="uppercase text-gray-400">Unidades</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Programs Section -->
+        <section id="programas" class="py-20 overflow-hidden">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title uppercase font-title">Programas para <br> <span class="text-yellow-500">Todas as Idades</span></h2>
+            </div>
+            <div class="mt-12">
+                <!-- Swiper -->
+                <div class="swiper-container program-swiper">
+                    <div class="swiper-wrapper">
+                        <!-- Slide 1: Baby Littles -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/baby-littles.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/baby.png" alt="Baby Littles" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">BABY LITTLES</h3>
+                                    <p class="text-sm">1.5 a 3 anos</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">BABY LITTLES</h3>
+                                    <p>Desenvolvimento e Segurança para os Pequenos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slide 2: Littles -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/littles.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/littles.png" alt="Littles" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">LITTLES</h3>
+                                    <p class="text-sm">3 a 6 anos</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">LITTLES</h3>
+                                    <p>Desenvolvimento e Diversão para os Pequenos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slide 3: Kids -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/kids.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/kids.png" alt="Kids" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">KIDS</h3>
+                                    <p class="text-sm">7 a 12 anos</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">KIDS</h3>
+                                    <p>Crescimento Pessoal e Técnico para Crianças</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slide 4: Adolescentes -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/adolescentes.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/adolescentes.png" alt="Adolescentes" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">ADOLESCENTES</h3>
+                                    <p class="text-sm">12 a 17 anos</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">ADOLESCENTES</h3>
+                                    <p>Fortaleça Corpo e Habilidades Socioemocionais</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slide 5: Adultos -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/adultos.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/adultos.png" alt="Adultos" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">ADULTOS</h3>
+                                    <p class="text-sm">18 anos acima</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">ADULTOS</h3>
+                                    <p>Fortaleça Corpo e Mente</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slide 6: Família -->
+                        <div class="swiper-slide">
+                            <div class="program-card">
+                                <a href="programas/familia.html" class="absolute inset-0 z-10"></a>
+                                <img src="imgs/familia.png" alt="Família" class="program-card-img">
+                                <div class="program-card-content">
+                                    <h3 class="font-title text-yellow-500">FAMÍLIA</h3>
+                                    <p class="text-sm">Todas as idades</p>
+                                </div>
+                                <div class="program-card-overlay">
+                                    <h3 class="font-title text-yellow-500">FAMÍLIA</h3>
+                                    <p>Unindo Famílias Através das Artes Marciais</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Add Pagination -->
+                    <div class="swiper-pagination"></div>
+                    <!-- Add Navigation -->
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Journey Section -->
+        <section class="py-20 bg-gray-900">
+            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <img src="https://placehold.co/800x600/111111/FFF?text=Jornada" alt="[Imagem de instrutor guiando aluno]" class="rounded-lg shadow-2xl">
+                </div>
+                <div>
+                    <h2 class="section-title uppercase font-title">Embarque nessa <br><span class="text-yellow-500">Jornada Conosco</span></h2>
+                    <p class="mt-4 text-gray-400 text-lg">
+                        Nossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.
+                    </p>
+                    <div class="mt-8 space-x-4">
+                        <a href="#cta" class="btn-gradient text-black font-bold py-3 px-8 rounded-lg">
+                            Agende Sua Aula
+                        </a>
+                        <a href="#" class="border border-yellow-500 text-yellow-500 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition">
+                            Saiba Mais
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Guiding Principles Section -->
+        <section id="principios" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title uppercase font-title">O Que <span class="text-yellow-500">Nos Guia</span></h2>
+                 <p class="mt-4 max-w-3xl mx-auto text-gray-400">Estes princípios constituem a base de tudo o que fazemos na Kihap, orientando nossos alunos em sua jornada de transformação pessoal.</p>
+                <div class="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+                    <!-- Principle Item -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-gray-900 p-6 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold uppercase font-title">Comunidade</h3>
+                    </div>
+                     <!-- Principle Item -->
+                    <div class="flex flex-col items-center">
+                         <div class="bg-gray-900 p-6 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold uppercase font-title">Excelência</h3>
+                    </div>
+                     <!-- Principle Item -->
+                    <div class="flex flex-col items-center">
+                         <div class="bg-gray-900 p-6 rounded-full">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold uppercase font-title">Integridade</h3>
+                    </div>
+                     <!-- Principle Item -->
+                    <div class="flex flex-col items-center">
+                         <div class="bg-gray-900 p-6 rounded-full">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold uppercase font-title">Respeito</h3>
+                    </div>
+                     <!-- Principle Item -->
+                    <div class="flex flex-col items-center">
+                         <div class="bg-gray-900 p-6 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold uppercase font-title">Foco</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Locations Section -->
+        <section id="unidades" class="py-20 bg-gray-900">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title uppercase font-title">Nossas <span class="text-yellow-500">Unidades</span></h2>
+                <p class="mt-4 max-w-3xl mx-auto text-gray-400">Com unidades estrategicamente localizadas, oferecemos um ambiente seguro e motivador para a prática das artes marciais.</p>
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div class="unit-card p-8 rounded-lg" data-bg-image="https://images.unsplash.com/photo-1593854524137-81418f3563a2?q=80&w=800&auto=format&fit=crop">
+                        <h3 class="text-3xl font-bold font-title">BRASÍLIA</h3>
+                        <p class="mt-2 text-gray-300">Encontre a unidade mais próxima na capital federal.</p>
+                        <a href="#" class="mt-4 inline-block text-yellow-500 font-semibold hover:text-yellow-400">Ver Unidades &rarr;</a>
+                    </div>
+                    <div class="unit-card p-8 rounded-lg" data-bg-image="https://images.unsplash.com/photo-1595835018349-19846a133435?q=80&w=800&auto=format&fit=crop">
+                        <h3 class="text-3xl font-bold font-title">FLORIANÓPOLIS</h3>
+                        <p class="mt-2 text-gray-300">Treine conosco na ilha da magia.</p>
+                        <a href="#" class="mt-4 inline-block text-yellow-500 font-semibold hover:text-yellow-400">Ver Unidades &rarr;</a>
+                    </div>
+                    <div class="unit-card p-8 rounded-lg" data-bg-image="https://images.unsplash.com/photo-1543251699-043b2a442a42?q=80&w=800&auto=format&fit=crop">
+                        <h3 class="text-3xl font-bold font-title">DOURADOS</h3>
+                        <p class="mt-2 text-gray-300">Conheça nossa unidade no coração do MS.</p>
+                        <a href="#" class="mt-4 inline-block text-yellow-500 font-semibold hover:text-yellow-400">Ver Unidades &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="py-20">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title uppercase text-center font-title">Histórias de <span class="text-yellow-500">Transformação</span></h2>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Testimonial 1 -->
+                    <div class="bg-gray-900 p-8 rounded-lg">
+                        <p class="text-gray-400">"A Kihap mudou não só o meu corpo, mas minha mente. Ganhei confiança e disciplina que levo para todas as áreas da minha vida."</p>
+                        <div class="mt-4 flex items-center">
+                            <img src="https://placehold.co/50x50/333333/FFF?text=J" class="w-12 h-12 rounded-full" alt="Foto do aluno João Silva">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">João Silva</p>
+                                <p class="text-sm text-gray-500">Aluno há 2 anos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 2 -->
+                    <div class="bg-gray-900 p-8 rounded-lg">
+                        <p class="text-gray-400">"Meu filho era tímido e hoje é muito mais sociável e focado nos estudos. Sou muito grata a toda a equipe da Kihap."</p>
+                        <div class="mt-4 flex items-center">
+                            <img src="https://placehold.co/50x50/333333/FFF?text=M" class="w-12 h-12 rounded-full" alt="Foto da aluna Maria Costa">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">Maria Costa</p>
+                                <p class="text-sm text-gray-500">Mãe de aluno</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 3 -->
+                    <div class="bg-gray-900 p-8 rounded-lg">
+                        <p class="text-gray-400">"Ambiente incrível, professores excelentes e uma comunidade que te acolhe. Recomendo para todos que buscam uma mudança."</p>
+                         <div class="mt-4 flex items-center">
+                            <img src="https://placehold.co/50x50/333333/FFF?text=P" class="w-12 h-12 rounded-full" alt="Foto do aluno Pedro Almeida">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">Pedro Almeida</p>
+                                <p class="text-sm text-gray-500">Aluno há 6 meses</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA Section -->
+        <section id="cta" class="py-20 bg-yellow-500 text-black">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl md:text-5xl font-black uppercase font-title">Sua Jornada Começa Aqui.</h2>
+                <p class="mt-4 text-lg max-w-2xl mx-auto">Dê o primeiro passo e agende uma aula experimental grátis. <br>A transformação além do tatame espera por você.</p>
+                <form id="lead-form" class="mt-8 max-w-lg mx-auto grid grid-cols-1 gap-4">
+                    <input type="text" id="nome" placeholder="Nome Completo" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <input type="email" id="email" placeholder="Seu melhor e-mail" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <input type="tel" id="telefone" placeholder="Telefone (WhatsApp)" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <select id="unidade" title="Unidade de Interesse" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                        <option value="" disabled selected>Selecione a unidade de interesse</option>
+                        <option value="Brasília">Brasília</option>
+                        <option value="Florianópolis">Florianópolis</option>
+                        <option value="Dourados">Dourados</option>
+                    </select>
+                    <button type="submit" class="bg-black text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-800 transition w-full">
+                        AGENDAR AULA EXPERIMENTAL
+                    </button>
+                </form>
+                <p id="form-status" class="mt-4 text-lg"></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Swiper.js JS -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/form-handler.js"></script>
+</body>
+</html>
