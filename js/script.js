@@ -1,4 +1,13 @@
 document.addEventListener("DOMContentLoaded", function() {
+    // Mobile Menu Toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuButton && mobileMenu) {
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    }
+
     const isProgramsPage = window.location.pathname.includes('/programas/');
     const componentBasePath = isProgramsPage ? '../components/' : 'components/';
     const assetBasePath = isProgramsPage ? '../' : './';
@@ -11,23 +20,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 .then(data => {
                     // Adjust paths inside the loaded HTML
                     const adjustedData = data.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
-                    container.innerHTML = adjustedData;
-
-                    // Special handling for header's mobile menu
-                    if (containerId === 'header-container') {
-                        const mobileMenuButton = document.getElementById('mobile-menu-button');
-                        const mobileMenu = document.getElementById('mobile-menu');
-                        if (mobileMenuButton && mobileMenu) {
-                            mobileMenuButton.addEventListener('click', () => {
-                                mobileMenu.classList.toggle('hidden');
-                            });
-                        }
+                    
+                    if (containerId === 'header-container' || containerId === 'footer-container') {
+                        container.outerHTML = adjustedData;
+                    } else {
+                        container.innerHTML = adjustedData;
                     }
+
                 });
         }
     };
 
-    loadComponent('header-container', 'header.html');
     loadComponent('footer-container', 'footer.html');
     loadComponent('testimonials-container', 'testimonials.html');
     loadComponent('video-container', 'video.html');
