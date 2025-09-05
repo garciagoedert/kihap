@@ -20,9 +20,25 @@
     <link rel="stylesheet" href="log.css">
 
     <style>
-        /* Custom Styles */
         body {
             font-family: 'Inter', sans-serif;
+        }
+        .kpi-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 100%;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 50vh;
+            }
         }
     </style>
 </head>
@@ -40,56 +56,59 @@
 
             <!-- Board Content -->
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
-                <h1 class="text-2xl font-bold mb-6">Página de Análise</h1>
                 
-                <!-- Stats -->
-                <div id="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    
-                    <div class="bg-gray-800 p-4 rounded-lg flex items-center gap-4 shadow-md">
-                        <div class="bg-gray-700 p-3 rounded-full">
-                            <i class="fas fa-dollar-sign fa-lg text-green-500"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold">R$ 250.000</div>
-                            <div class="text-sm text-gray-400">Receita Total</div>
-                        </div>
+                <!-- Header and Filters -->
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h1 id="dashboard-title" class="text-2xl font-bold text-white">Dashboard de Análise</h1>
+                        <p id="dashboard-subtitle" class="text-gray-400 text-sm">Visão Geral (Todas as Unidades)</p>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-lg flex items-center gap-4 shadow-md">
-                        <div class="bg-gray-700 p-3 rounded-full">
-                            <i class="fas fa-chart-pie fa-lg text-blue-500"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold">R$ 1.667</div>
-                            <div class="text-sm text-gray-400">Ticket Médio</div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-800 p-4 rounded-lg flex items-center gap-4 shadow-md">
-                        <div class="bg-gray-700 p-3 rounded-full">
-                            <i class="fas fa-star fa-lg text-yellow-400"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold">25</div>
-                            <div class="text-sm text-gray-400">Novos Clientes (Mês)</div>
-                        </div>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <select id="location-filter" class="bg-gray-800 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="geral">Visão Geral (Todas as Unidades)</option>
+                        </select>
+                        <select id="year-filter" class="bg-gray-800 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="all">Todos os Anos</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                    <div class="bg-gray-800 p-4 rounded-lg shadow-md lg:col-span-2">
-                        <h2 class="text-xl font-bold mb-4">Receita por Mês</h2>
-                        <canvas id="revenueChart"></canvas>
+                <!-- KPIs -->
+                <div id="kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+                    <!-- KPI Cards will be injected here by JavaScript -->
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Evolução de Alunos Ativos</h2>
+                        <div class="chart-container">
+                            <canvas id="activeStudentsChart"></canvas>
+                        </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold mb-4">Clientes por Setor</h2>
-                        <canvas id="sectorChart"></canvas>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Novos Alunos vs. Baixas</h2>
+                        <div class="chart-container">
+                            <canvas id="newVsChurnChart"></canvas>
+                        </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold mb-4">Clientes por Origem do Lead</h2>
-                        <canvas id="leadSourceChart"></canvas>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Composição (Final do Período)</h2>
+                        <div class="chart-container flex items-center justify-center">
+                            <canvas id="compositionChart"></canvas>
+                        </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-lg shadow-md lg:col-span-2">
-                        <h2 class="text-xl font-bold mb-4">Funil de Vendas</h2>
-                        <canvas id="salesFunnelChart"></canvas>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Saldo Mensal (Novos - Baixas)</h2>
+                         <div class="chart-container">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-md lg:col-span-2">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Renovações Realizadas</h2>
+                        <div class="chart-container">
+                            <canvas id="renewalsChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -99,15 +118,367 @@
 
     <script type="module">
         import { loadComponents, setupUIListeners } from './common-ui.js';
-        import './analysis.js'; // Import to execute the analysis script
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
-                // This function is called after components are loaded
                 document.getElementById('addProspectBtnHeader')?.remove();
-                setupUIListeners(); // Setup common listeners like the sidebar toggle
+                setupUIListeners();
+                initializeDashboard();
             });
         });
+    </script>
+    
+    <script>
+        const embeddedData = [
+            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "September", "Ativos": 108, "Novos": 1, "Baixas": 0, "Inativos": 52, "Data": "2023-09-01", "Renovacoes": 14},
+            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "September", "Ativos": 157, "Novos": 4, "Baixas": 0, "Inativos": 60, "Data": "2023-09-01", "Renovacoes": 14},
+            {"Unidade": "Sudoeste", "Ano": 2023, "Mês": "September", "Ativos": 141, "Novos": 11, "Baixas": 0, "Inativos": 41, "Data": "2023-09-01", "Renovacoes": 15},
+            {"Unidade": "Lago Sul", "Ano": 2023, "Mês": "September", "Ativos": 161, "Novos": 9, "Baixas": 1, "Inativos": 54, "Data": "2023-09-01", "Renovacoes": 11},
+            {"Unidade": "Centro", "Ano": 2023, "Mês": "September", "Ativos": 32, "Novos": 2, "Baixas": 2, "Inativos": 0, "Data": "2023-09-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "October", "Ativos": 134, "Novos": 4, "Baixas": 1, "Inativos": 25, "Data": "2023-10-01", "Renovacoes": 12},
+            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "October", "Ativos": 162, "Novos": 4, "Baixas": 3, "Inativos": 56, "Data": "2023-10-01", "Renovacoes": 13},
+            {"Unidade": "Sudoeste", "Ano": 2023, "Mês": "October", "Ativos": 152, "Novos": 1, "Baixas": 0, "Inativos": 39, "Data": "2023-10-01", "Renovacoes": 17},
+            {"Unidade": "Lago Sul", "Ano": 2023, "Mês": "October", "Ativos": 163, "Novos": 5, "Baixas": 1, "Inativos": 55, "Data": "2023-10-01", "Renovacoes": 20},
+            {"Unidade": "Centro", "Ano": 2023, "Mês": "October", "Ativos": 34, "Novos": 2, "Baixas": 0, "Inativos": 13, "Data": "2023-10-01", "Renovacoes": 1},
+            {"Unidade": "Dourados", "Ano": 2023, "Mês": "October", "Ativos": 54, "Novos": 0, "Baixas": 0, "Inativos": 2, "Data": "2023-10-01", "Renovacoes": 4},
+            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "November", "Ativos": 138, "Novos": 2, "Baixas": 0, "Inativos": 33, "Data": "2023-11-01", "Renovacoes": 12},
+            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "November", "Ativos": 160, "Novos": 0, "Baixas": 1, "Inativos": 52, "Data": "2023-11-01", "Renovacoes": 13},
+            {"Unidade": "Sudoeste", "Ano": 2023, "Mês": "November", "Ativos": 152, "Novos": 1, "Baixas": 1, "Inativos": 35, "Data": "2023-11-01", "Renovacoes": 17},
+            {"Unidade": "Lago Sul", "Ano": 2023, "Mês": "November", "Ativos": 177, "Novos": 1, "Baixas": 0, "Inativos": 34, "Data": "2023-11-01", "Renovacoes": 20},
+            {"Unidade": "Centro", "Ano": 2023, "Mês": "November", "Ativos": 26, "Novos": 1, "Baixas": 0, "Inativos": 28, "Data": "2023-11-01", "Renovacoes": 1},
+            {"Unidade": "Dourados", "Ano": 2023, "Mês": "November", "Ativos": 55, "Novos": 0, "Baixas": 0, "Inativos": 1, "Data": "2023-11-01", "Renovacoes": 4},
+            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "December", "Ativos": 127, "Novos": 6, "Baixas": 6, "Inativos": 42, "Data": "2023-12-01", "Renovacoes": 13},
+            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "December", "Ativos": 174, "Novos": 1, "Baixas": 0, "Inativos": 43, "Data": "2023-12-01", "Renovacoes": 13},
+            {"Unidade": "Sudoeste", "Ano": 2023, "Mês": "December", "Ativos": 166, "Novos": 0, "Baixas": 9, "Inativos": 21, "Data": "2023-12-01", "Renovacoes": 13},
+            {"Unidade": "Lago Sul", "Ano": 2023, "Mês": "December", "Ativos": 149, "Novos": 0, "Baixas": 0, "Inativos": 71, "Data": "2023-12-01", "Renovacoes": 19},
+            {"Unidade": "Centro", "Ano": 2023, "Mês": "December", "Ativos": 15, "Novos": 0, "Baixas": 0, "Inativos": 29, "Data": "2023-12-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2023, "Mês": "December", "Ativos": 50, "Novos": 1, "Baixas": 0, "Inativos": 7, "Data": "2023-12-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "January", "Ativos": 82, "Novos": 8, "Baixas": 3, "Inativos": 58, "Data": "2024-01-01", "Renovacoes": 4},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "January", "Ativos": 79, "Novos": 5, "Baixas": 0, "Inativos": 113, "Data": "2024-01-01", "Renovacoes": 3},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "January", "Ativos": 67, "Novos": 2, "Baixas": 0, "Inativos": 117, "Data": "2024-01-01", "Renovacoes": 2},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "January", "Ativos": 67, "Novos": 3, "Baixas": 0, "Inativos": 135, "Data": "2024-01-01", "Renovacoes": 3},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "January", "Ativos": 13, "Novos": 0, "Baixas": 0, "Inativos": 37, "Data": "2024-01-01", "Renovacoes": 1},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "January", "Ativos": 11, "Novos": 0, "Baixas": 0, "Inativos": 41, "Data": "2024-01-01", "Renovacoes": 7},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "March", "Ativos": 147, "Novos": 5, "Baixas": 0, "Inativos": 20, "Data": "2024-03-01", "Renovacoes": 21},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "March", "Ativos": 90, "Novos": 2, "Baixas": 4, "Inativos": 3, "Data": "2024-03-01", "Renovacoes": 3},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "March", "Ativos": 151, "Novos": 5, "Baixas": 0, "Inativos": 54, "Data": "2024-03-01", "Renovacoes": 22},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "March", "Ativos": 128, "Novos": 7, "Baixas": 5, "Inativos": 51, "Data": "2024-03-01", "Renovacoes": 15},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "March", "Ativos": 148, "Novos": 5, "Baixas": 0, "Inativos": 57, "Data": "2024-03-01", "Renovacoes": 18},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "March", "Ativos": 68, "Novos": 6, "Baixas": 0, "Inativos": 4, "Data": "2024-03-01", "Renovacoes": 16},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "March", "Ativos": 14, "Novos": 1, "Baixas": 0, "Inativos": 34, "Data": "2024-03-01", "Renovacoes": 7},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "March", "Ativos": 39, "Novos": 3, "Baixas": 1, "Inativos": 14, "Data": "2024-03-01", "Renovacoes": 17},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "April", "Ativos": 140, "Novos": 3, "Baixas": 3, "Inativos": 30, "Data": "2024-04-01", "Renovacoes": 9},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "April", "Ativos": 63, "Novos": 2, "Baixas": 12, "Inativos": 28, "Data": "2024-04-01", "Renovacoes": 5},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "April", "Ativos": 144, "Novos": 6, "Baixas": 0, "Inativos": 53, "Data": "2024-04-01", "Renovacoes": 19},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "April", "Ativos": 124, "Novos": 1, "Baixas": 2, "Inativos": 65, "Data": "2024-04-01", "Renovacoes": 9},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "April", "Ativos": 158, "Novos": 1, "Baixas": 0, "Inativos": 36, "Data": "2024-04-01", "Renovacoes": 14},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "April", "Ativos": 68, "Novos": 0, "Baixas": 3, "Inativos": 4, "Data": "2024-04-01", "Renovacoes": 3},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "April", "Ativos": 31, "Novos": 0, "Baixas": 0, "Inativos": 5, "Data": "2024-04-01", "Renovacoes": 4},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "April", "Ativos": 41, "Novos": 0, "Baixas": 0, "Inativos": 12, "Data": "2024-04-01", "Renovacoes": 20},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "May", "Ativos": 145, "Novos": 12, "Baixas": 8, "Inativos": 34, "Data": "2024-05-01", "Renovacoes": 28},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "May", "Ativos": 92, "Novos": 1, "Baixas": 7, "Inativos": 7, "Data": "2024-05-01", "Renovacoes": 5},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "May", "Ativos": 155, "Novos": 11, "Baixas": 0, "Inativos": 56, "Data": "2024-05-01", "Renovacoes": 19},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "May", "Ativos": 145, "Novos": 2, "Baixas": 18, "Inativos": 26, "Data": "2024-05-01", "Renovacoes": 9},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "May", "Ativos": 176, "Novos": 1, "Baixas": 0, "Inativos": 19, "Data": "2024-05-01", "Renovacoes": 14},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "May", "Ativos": 69, "Novos": 3, "Baixas": 0, "Inativos": 4, "Data": "2024-05-01", "Renovacoes": 3},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "May", "Ativos": 32, "Novos": 3, "Baixas": 0, "Inativos": 8, "Data": "2024-05-01", "Renovacoes": 4},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "May", "Ativos": 40, "Novos": 1, "Baixas": 6, "Inativos": 11, "Data": "2024-05-01", "Renovacoes": 2},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "June", "Ativos": 153, "Novos": 1, "Baixas": 7, "Inativos": 31, "Data": "2024-06-01", "Renovacoes": 9},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "June", "Ativos": 77, "Novos": 1, "Baixas": 0, "Inativos": 19, "Data": "2024-06-01", "Renovacoes": 11},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "June", "Ativos": 138, "Novos": 2, "Baixas": 2, "Inativos": 55, "Data": "2024-06-01", "Renovacoes": 11},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "June", "Ativos": 137, "Novos": 1, "Baixas": 5, "Inativos": 32, "Data": "2024-06-01", "Renovacoes": 7},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "June", "Ativos": 161, "Novos": 1, "Baixas": 3, "Inativos": 31, "Data": "2024-06-01", "Renovacoes": 24},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "June", "Ativos": 66, "Novos": 1, "Baixas": 0, "Inativos": 10, "Data": "2024-06-01", "Renovacoes": 2},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "June", "Ativos": 23, "Novos": 1, "Baixas": 3, "Inativos": 8, "Data": "2024-06-01", "Renovacoes": 1},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "June", "Ativos": 45, "Novos": 2, "Baixas": 0, "Inativos": 5, "Data": "2024-06-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "July", "Ativos": 147, "Novos": 1, "Baixas": 3, "Inativos": 35, "Data": "2024-07-01", "Renovacoes": 14},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "July", "Ativos": 116, "Novos": 1, "Baixas": 0, "Inativos": 72, "Data": "2024-07-01", "Renovacoes": 11},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "July", "Ativos": 98, "Novos": 6, "Baixas": 0, "Inativos": 72, "Data": "2024-07-01", "Renovacoes": 11},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "July", "Ativos": 116, "Novos": 3, "Baixas": 0, "Inativos": 57, "Data": "2024-07-01", "Renovacoes": 11},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "July", "Ativos": 66, "Novos": 0, "Baixas": 0, "Inativos": 13, "Data": "2024-07-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "July", "Ativos": 27, "Novos": 0, "Baixas": 0, "Inativos": 2, "Data": "2024-07-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "July", "Ativos": 45, "Novos": 1, "Baixas": 0, "Inativos": 8, "Data": "2024-07-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "August", "Ativos": 151, "Novos": 4, "Baixas": 3, "Inativos": 36, "Data": "2024-08-01", "Renovacoes": 1},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "August", "Ativos": 69, "Novos": 2, "Baixas": 0, "Inativos": 23, "Data": "2024-08-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "August", "Ativos": 155, "Novos": 7, "Baixas": 2, "Inativos": 35, "Data": "2024-08-01", "Renovacoes": 17},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "August", "Ativos": 126, "Novos": 2, "Baixas": 0, "Inativos": 47, "Data": "2024-08-01", "Renovacoes": 8},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "August", "Ativos": 154, "Novos": 3, "Baixas": 0, "Inativos": 43, "Data": "2024-08-01", "Renovacoes": 19},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "August", "Ativos": 62, "Novos": 2, "Baixas": 5, "Inativos": 14, "Data": "2024-08-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "August", "Ativos": 32, "Novos": 0, "Baixas": 0, "Inativos": 3, "Data": "2024-08-01", "Renovacoes": 2},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "August", "Ativos": 49, "Novos": 4, "Baixas": 0, "Inativos": 7, "Data": "2024-08-01", "Renovacoes": 16},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "September", "Ativos": 154, "Novos": 3, "Baixas": 3, "Inativos": 29, "Data": "2024-09-01", "Renovacoes": 12},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "September", "Ativos": 76, "Novos": 0, "Baixas": 1, "Inativos": 5, "Data": "2024-09-01", "Renovacoes": 13},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "September", "Ativos": 138, "Novos": 1, "Baixas": 7, "Inativos": 51, "Data": "2024-09-01", "Renovacoes": 16},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "September", "Ativos": 119, "Novos": 2, "Baixas": 7, "Inativos": 52, "Data": "2024-09-01", "Renovacoes": 11},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "September", "Ativos": 140, "Novos": 4, "Baixas": 0, "Inativos": 41, "Data": "2024-09-01", "Renovacoes": 11},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "September", "Ativos": 73, "Novos": 1, "Baixas": 3, "Inativos": 7, "Data": "2024-09-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "September", "Ativos": 33, "Novos": 0, "Baixas": 0, "Inativos": 4, "Data": "2024-09-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "September", "Ativos": 44, "Novos": 0, "Baixas": 0, "Inativos": 15, "Data": "2024-09-01", "Renovacoes": 23},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "October", "Ativos": 150, "Novos": 2, "Baixas": 3, "Inativos": 32, "Data": "2024-10-01", "Renovacoes": 16},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "October", "Ativos": 76, "Novos": 0, "Baixas": 3, "Inativos": 6, "Data": "2024-10-01", "Renovacoes": 14},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "October", "Ativos": 139, "Novos": 3, "Baixas": 0, "Inativos": 48, "Data": "2024-10-01", "Renovacoes": 22},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "October", "Ativos": 129, "Novos": 0, "Baixas": 0, "Inativos": 47, "Data": "2024-10-01", "Renovacoes": 12},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "October", "Ativos": 144, "Novos": 1, "Baixas": 0, "Inativos": 49, "Data": "2024-10-01", "Renovacoes": 18},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "October", "Ativos": 61, "Novos": 0, "Baixas": 1, "Inativos": 15, "Data": "2024-10-01", "Renovacoes": 4},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "October", "Ativos": 32, "Novos": 1, "Baixas": 0, "Inativos": 6, "Data": "2024-10-01", "Renovacoes": 18},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "October", "Ativos": 49, "Novos": 2, "Baixas": 0, "Inativos": 13, "Data": "2024-10-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "November", "Ativos": 158, "Novos": 1, "Baixas": 0, "Inativos": 25, "Data": "2024-11-01", "Renovacoes": 16},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "November", "Ativos": 77, "Novos": 1, "Baixas": 0, "Inativos": 10, "Data": "2024-11-01", "Renovacoes": 4},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "November", "Ativos": 166, "Novos": 0, "Baixas": 7, "Inativos": 24, "Data": "2024-11-01", "Renovacoes": 19},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "November", "Ativos": 130, "Novos": 1, "Baixas": 0, "Inativos": 41, "Data": "2024-11-01", "Renovacoes": 14},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "November", "Ativos": 146, "Novos": 1, "Baixas": 4, "Inativos": 34, "Data": "2024-11-01", "Renovacoes": 12},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "November", "Ativos": 63, "Novos": 1, "Baixas": 0, "Inativos": 16, "Data": "2024-11-01", "Renovacoes": 2},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "November", "Ativos": 31, "Novos": 0, "Baixas": 0, "Inativos": 7, "Data": "2024-11-01", "Renovacoes": 20},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "November", "Ativos": 49, "Novos": 1, "Baixas": 4, "Inativos": 12, "Data": "2024-11-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2024, "Mês": "December", "Ativos": 131, "Novos": 1, "Baixas": 4, "Inativos": 50, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Coqueiros", "Ano": 2024, "Mês": "December", "Ativos": 71, "Novos": 1, "Baixas": 3, "Inativos": 8, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2024, "Mês": "December", "Ativos": 163, "Novos": 0, "Baixas": 0, "Inativos": 24, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2024, "Mês": "December", "Ativos": 146, "Novos": 1, "Baixas": 0, "Inativos": 26, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2024, "Mês": "December", "Ativos": 158, "Novos": 0, "Baixas": 0, "Inativos": 23, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2024, "Mês": "December", "Ativos": 68, "Novos": 0, "Baixas": 0, "Inativos": 11, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2024, "Mês": "December", "Ativos": 26, "Novos": 0, "Baixas": 0, "Inativos": 12, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2024, "Mês": "December", "Ativos": 49, "Novos": 0, "Baixas": 0, "Inativos": 14, "Data": "2024-12-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "January", "Ativos": 49, "Novos": 0, "Baixas": 0, "Inativos": 132, "Data": "2025-01-01", "Renovacoes": 12},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "January", "Ativos": 35, "Novos": 0, "Baixas": 0, "Inativos": 35, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "January", "Ativos": 68, "Novos": 2, "Baixas": 9, "Inativos": 110, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "January", "Ativos": 70, "Novos": 1, "Baixas": 11, "Inativos": 91, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "January", "Ativos": 71, "Novos": 0, "Baixas": 0, "Inativos": 111, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "January", "Ativos": 12, "Novos": 0, "Baixas": 1, "Inativos": 25, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "January", "Ativos": 14, "Novos": 0, "Baixas": 0, "Inativos": 51, "Data": "2025-01-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "February", "Ativos": 111, "Novos": 5, "Baixas": 3, "Inativos": 60, "Data": "2025-02-01", "Renovacoes": 25},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "February", "Ativos": 57, "Novos": 2, "Baixas": 0, "Inativos": 15, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "February", "Ativos": 126, "Novos": 7, "Baixas": 0, "Inativos": 68, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "February", "Ativos": 132, "Novos": 3, "Baixas": 0, "Inativos": 50, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "February", "Ativos": 142, "Novos": 2, "Baixas": 4, "Inativos": 47, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "February", "Ativos": 13, "Novos": 0, "Baixas": 0, "Inativos": 36, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "February", "Ativos": 6, "Novos": 0, "Baixas": 0, "Inativos": 0, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "February", "Ativos": 7, "Novos": 3, "Baixas": 0, "Inativos": 2, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "February", "Ativos": 24, "Novos": 2, "Baixas": 2, "Inativos": 12, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "February", "Ativos": 57, "Novos": 1, "Baixas": 8, "Inativos": 7, "Data": "2025-02-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "March", "Ativos": 92, "Novos": 1, "Baixas": 0, "Inativos": 75, "Data": "2025-03-01", "Renovacoes": 19},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "March", "Ativos": 39, "Novos": 2, "Baixas": 0, "Inativos": 37, "Data": "2025-03-01", "Renovacoes": 1},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "March", "Ativos": 71, "Novos": 1, "Baixas": 0, "Inativos": 115, "Data": "2025-03-01", "Renovacoes": 5},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "March", "Ativos": 99, "Novos": 2, "Baixas": 0, "Inativos": 82, "Data": "2025-03-01", "Renovacoes": 3},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "March", "Ativos": 82, "Novos": 0, "Baixas": 0, "Inativos": 114, "Data": "2025-03-01", "Renovacoes": 7},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "March", "Ativos": 24, "Novos": 2, "Baixas": 0, "Inativos": 47, "Data": "2025-03-01", "Renovacoes": 4},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "March", "Ativos": 11, "Novos": 1, "Baixas": 0, "Inativos": 0, "Data": "2025-03-01", "Renovacoes": 3},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "March", "Ativos": 11, "Novos": 0, "Baixas": 0, "Inativos": 4, "Data": "2025-03-01", "Renovacoes": 5},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "March", "Ativos": 30, "Novos": 1, "Baixas": 0, "Inativos": 11, "Data": "2025-03-01", "Renovacoes": 2},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "March", "Ativos": 44, "Novos": 2, "Baixas": 1, "Inativos": 27, "Data": "2025-03-01", "Renovacoes": 18},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "April", "Ativos": 144, "Novos": 0, "Baixas": 3, "Inativos": 23, "Data": "2025-04-01", "Renovacoes": 16},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "April", "Ativos": 42, "Novos": 5, "Baixas": 0, "Inativos": 41, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "April", "Ativos": 141, "Novos": 0, "Baixas": 0, "Inativos": 53, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "April", "Ativos": 143, "Novos": 0, "Baixas": 11, "Inativos": 28, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "April", "Ativos": 149, "Novos": 5, "Baixas": 0, "Inativos": 49, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "April", "Ativos": 69, "Novos": 2, "Baixas": 1, "Inativos": 8, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "April", "Ativos": 10, "Novos": 0, "Baixas": 0, "Inativos": 2, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "April", "Ativos": 14, "Novos": 1, "Baixas": 0, "Inativos": 5, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "April", "Ativos": 38, "Novos": 1, "Baixas": 0, "Inativos": 7, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "April", "Ativos": 72, "Novos": 2, "Baixas": 0, "Inativos": 10, "Data": "2025-04-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "May", "Ativos": 128, "Novos": 0, "Baixas": 2, "Inativos": 44, "Data": "2025-05-01", "Renovacoes": 26},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "May", "Ativos": 48, "Novos": 7, "Baixas": 29, "Inativos": 5, "Data": "2025-05-01", "Renovacoes": 4},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "May", "Ativos": 121, "Novos": 0, "Baixas": 0, "Inativos": 65, "Data": "2025-05-01", "Renovacoes": 4},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "May", "Ativos": 127, "Novos": 0, "Baixas": 0, "Inativos": 43, "Data": "2025-05-01", "Renovacoes": 5},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "May", "Ativos": 133, "Novos": 0, "Baixas": 0, "Inativos": 51, "Data": "2025-05-01", "Renovacoes": 2},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "May", "Ativos": 30, "Novos": 0, "Baixas": 0, "Inativos": 42, "Data": "2025-05-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "May", "Ativos": 14, "Novos": 1, "Baixas": 0, "Inativos": 2, "Data": "2025-05-01", "Renovacoes": 3},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "May", "Ativos": 12, "Novos": 0, "Baixas": 0, "Inativos": 10, "Data": "2025-05-01", "Renovacoes": 1},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "May", "Ativos": 36, "Novos": 0, "Baixas": 2, "Inativos": 7, "Data": "2025-05-01", "Renovacoes": 2},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "May", "Ativos": 57, "Novos": 1, "Baixas": 5, "Inativos": 23, "Data": "2025-05-01", "Renovacoes": 9},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "June", "Ativos": 126, "Novos": 3, "Baixas": 0, "Inativos": 45, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "June", "Ativos": 48, "Novos": 3, "Baixas": 0, "Inativos": 8, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "June", "Ativos": 140, "Novos": 2, "Baixas": 4, "Inativos": 39, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "June", "Ativos": 140, "Novos": 2, "Baixas": 0, "Inativos": 35, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "June", "Ativos": 153, "Novos": 2, "Baixas": 0, "Inativos": 31, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "June", "Ativos": 61, "Novos": 0, "Baixas": 0, "Inativos": 6, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "June", "Ativos": 22, "Novos": 2, "Baixas": 2, "Inativos": 7, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "June", "Ativos": 32, "Novos": 5, "Baixas": 0, "Inativos": 3, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "June", "Ativos": 37, "Novos": 0, "Baixas": 0, "Inativos": 8, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "June", "Ativos": 57, "Novos": 1, "Baixas": 0, "Inativos": 22, "Data": "2025-06-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "July", "Ativos": 137, "Novos": 0, "Baixas": 0, "Inativos": 29, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "July", "Ativos": 46, "Novos": 0, "Baixas": 0, "Inativos": 10, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "July", "Ativos": 115, "Novos": 1, "Baixas": 0, "Inativos": 72, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "July", "Ativos": 125, "Novos": 1, "Baixas": 4, "Inativos": 47, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "July", "Ativos": 104, "Novos": 1, "Baixas": 0, "Inativos": 75, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "July", "Ativos": 54, "Novos": 0, "Baixas": 0, "Inativos": 13, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "July", "Ativos": 24, "Novos": 3, "Baixas": 0, "Inativos": 8, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "July", "Ativos": 35, "Novos": 2, "Baixas": 0, "Inativos": 14, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "July", "Ativos": 40, "Novos": 0, "Baixas": 0, "Inativos": 5, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "July", "Ativos": 45, "Novos": 0, "Baixas": 1, "Inativos": 35, "Data": "2025-07-01", "Renovacoes": 0},
+            {"Unidade": "Santa Mônica", "Ano": 2025, "Mês": "August", "Ativos": 132, "Novos": 1, "Baixas": 0, "Inativos": 28, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Coqueiros", "Ano": 2025, "Mês": "August", "Ativos": 41, "Novos": 0, "Baixas": 0, "Inativos": 9, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Asa Sul", "Ano": 2025, "Mês": "August", "Ativos": 153, "Novos": 9, "Baixas": 0, "Inativos": 39, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Sudoeste", "Ano": 2025, "Mês": "August", "Ativos": 142, "Novos": 4, "Baixas": 2, "Inativos": 33, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Lago Sul", "Ano": 2025, "Mês": "August", "Ativos": 135, "Novos": 1, "Baixas": 0, "Inativos": 37, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Pontos de Ensino", "Ano": 2025, "Mês": "August", "Ativos": 58, "Novos": 0, "Baixas": 0, "Inativos": 6, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Jardim Botânico", "Ano": 2025, "Mês": "August", "Ativos": 42, "Novos": 2, "Baixas": 2, "Inativos": 12, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Noroeste", "Ano": 2025, "Mês": "August", "Ativos": 48, "Novos": 3, "Baixas": 1, "Inativos": 12, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Centro", "Ano": 2025, "Mês": "August", "Ativos": 38, "Novos": 3, "Baixas": 0, "Inativos": 16, "Data": "2025-08-01", "Renovacoes": 0},
+            {"Unidade": "Dourados", "Ano": 2025, "Mês": "August", "Ativos": 62, "Novos": 3, "Baixas": 1, "Inativos": 12, "Data": "2025-08-01", "Renovacoes": 0}
+        ];
+        let allData = [];
+        let charts = {};
+        
+        function initializeDashboard() {
+            allData = embeddedData
+                .filter(row => row.Ano && row.Mês)
+                .sort((a, b) => new Date(a.Data) - new Date(b.Data));
+            
+            populateFilters(allData);
+            
+            const locationFilter = document.getElementById('location-filter');
+            const yearFilter = document.getElementById('year-filter');
+            
+            locationFilter.addEventListener('change', () => updateDashboard());
+            yearFilter.addEventListener('change', () => updateDashboard());
+
+            updateDashboard();
+        }
+
+        function populateFilters(data) {
+            const yearFilter = document.getElementById('year-filter');
+            const locationFilter = document.getElementById('location-filter');
+            
+            const years = [...new Set(data.map(row => row.Ano))].sort();
+            const locations = [...new Set(data.map(row => row.Unidade))].sort();
+            
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                option.textContent = `Unidade ${location}`;
+                locationFilter.appendChild(option);
+            });
+
+            years.forEach(year => {
+                const yearOpt = document.createElement('option');
+                yearOpt.value = year;
+                yearOpt.textContent = year;
+                yearFilter.appendChild(yearOpt);
+            });
+        }
+        
+        function updateDashboard() {
+            const selectedLocation = document.getElementById('location-filter').value;
+            const selectedYear = document.getElementById('year-filter').value;
+            
+            const subtitle = document.getElementById('dashboard-subtitle');
+            subtitle.textContent = selectedLocation === 'geral' ? 'Visão Geral (Todas as Unidades)' : `Unidade ${selectedLocation}`;
+
+            let filteredData = allData;
+
+            if (selectedYear !== 'all') {
+                filteredData = filteredData.filter(row => row.Ano == selectedYear);
+            }
+
+            let finalData;
+            if (selectedLocation === 'geral') {
+                const aggregated = {};
+                filteredData.forEach(row => {
+                    const key = row.Data;
+                    if (!aggregated[key]) {
+                        aggregated[key] = { ...row, Ativos: 0, Novos: 0, Baixas: 0, Inativos: 0, Renovacoes: 0 };
+                    }
+                    aggregated[key].Ativos += row.Ativos || 0;
+                    aggregated[key].Novos += row.Novos || 0;
+                    aggregated[key].Baixas += row.Baixas || 0;
+                    aggregated[key].Inativos += row.Inativos || 0;
+                    aggregated[key].Renovacoes += row.Renovacoes || 0;
+                });
+                finalData = Object.values(aggregated).sort((a, b) => new Date(a.Data) - new Date(b.Data));
+            } else {
+                finalData = filteredData.filter(row => row.Unidade === selectedLocation);
+            }
+
+            if (finalData.length === 0) {
+                document.getElementById('kpi-container').innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado encontrado para a seleção atual.</div>`;
+                Object.values(charts).forEach(chart => { if(chart) chart.destroy(); });
+                charts = {};
+                return;
+            }
+            
+            updateKPIs(finalData);
+            updateCharts(finalData);
+        }
+
+        function updateKPIs(data) {
+            const kpiContainer = document.getElementById('kpi-container');
+            
+            const totalAtivos = data[data.length - 1]?.Ativos || 0;
+            const totalNovos = data.reduce((sum, row) => sum + (row.Novos || 0), 0);
+            const totalBaixas = data.reduce((sum, row) => sum + (row.Baixas || 0), 0);
+            const saldo = totalNovos - totalBaixas;
+
+            const kpis = [
+                { label: 'Alunos Ativos (Final Período)', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
+                { label: 'Total de Novos Alunos', value: totalNovos.toLocaleString('pt-BR'), icon: '📈' },
+                { label: 'Total de Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' },
+                { label: 'Saldo do Período', value: saldo.toLocaleString('pt-BR'), icon: '⚖️' }
+            ];
+            
+            kpiContainer.innerHTML = kpis.map(kpi => `
+                <div class="kpi-card bg-gray-800 p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">${kpi.icon}</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">${kpi.label}</p>
+                        <p class="text-2xl font-bold text-white">${kpi.value}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateCharts(data) {
+            const labels = data.map(row => `${row.Mês.substring(0, 3)}/${String(row.Ano).slice(-2)}`);
+            const isDarkMode = true; // Hardcoded for this dark theme
+            const gridColor = 'rgba(255, 255, 255, 0.1)';
+            const textColor = '#E5E7EB';
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor } } },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                }
+            };
+
+            if (charts.activeStudents) charts.activeStudents.destroy();
+            charts.activeStudents = new Chart(document.getElementById('activeStudentsChart'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Alunos Ativos', data: data.map(row => row.Ativos), borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 }] },
+                options: chartOptions
+            });
+
+            if (charts.newVsChurn) charts.newVsChurn.destroy();
+            charts.newVsChurn = new Chart(document.getElementById('newVsChurnChart'), {
+                type: 'bar',
+                data: { labels, datasets: [ { label: 'Novos Alunos', data: data.map(row => row.Novos), backgroundColor: '#10B981' }, { label: 'Baixas', data: data.map(row => row.Baixas), backgroundColor: '#EF4444' } ] },
+                options: chartOptions
+            });
+
+            const latestData = data[data.length - 1];
+            if (charts.composition) charts.composition.destroy();
+            charts.composition = new Chart(document.getElementById('compositionChart'), {
+                type: 'doughnut',
+                data: { labels: ['Ativos', 'Inativos'], datasets: [{ data: [latestData?.Ativos || 0, latestData?.Inativos || 0], backgroundColor: ['#3B82F6', '#6B7280'], borderColor: '#111827', borderWidth: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+            });
+
+            if (charts.balance) charts.balance.destroy();
+            const balanceData = data.map(row => (row.Novos || 0) - (row.Baixas || 0));
+            charts.balance = new Chart(document.getElementById('balanceChart'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Saldo Mensal', data: balanceData, backgroundColor: balanceData.map(v => v >= 0 ? '#10B981' : '#EF4444') }] },
+                options: chartOptions
+            });
+
+            if (charts.renewals) charts.renewals.destroy();
+            charts.renewals = new Chart(document.getElementById('renewalsChart'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Renovações', data: data.map(row => row.Renovacoes), backgroundColor: '#8B5CF6' }] },
+                options: chartOptions
+            });
+        }
     </script>
 </body>
 </html>

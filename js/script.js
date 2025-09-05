@@ -1,25 +1,37 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Carregar o header
-    fetch("components/header.html")
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById("header-container").innerHTML = data;
-            // Re-adicionar a lógica do menu mobile depois que o header for carregado
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
-        });
+    const isProgramsPage = window.location.pathname.includes('/programas/');
+    const componentBasePath = isProgramsPage ? '../components/' : 'components/';
+    const assetBasePath = isProgramsPage ? '../' : './';
 
-    // Carregar o footer
-    fetch("components/footer.html")
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById("footer-container").innerHTML = data;
-        });
+    const loadComponent = (containerId, filePath) => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            fetch(`${componentBasePath}${filePath}`)
+                .then(response => response.text())
+                .then(data => {
+                    // Adjust paths inside the loaded HTML
+                    const adjustedData = data.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
+                    container.innerHTML = adjustedData;
+
+                    // Special handling for header's mobile menu
+                    if (containerId === 'header-container') {
+                        const mobileMenuButton = document.getElementById('mobile-menu-button');
+                        const mobileMenu = document.getElementById('mobile-menu');
+                        if (mobileMenuButton && mobileMenu) {
+                            mobileMenuButton.addEventListener('click', () => {
+                                mobileMenu.classList.toggle('hidden');
+                            });
+                        }
+                    }
+                });
+        }
+    };
+
+    loadComponent('header-container', 'header.html');
+    loadComponent('footer-container', 'footer.html');
+    loadComponent('testimonials-container', 'testimonials.html');
+    loadComponent('video-container', 'video.html');
+    loadComponent('cta-container', 'form-cta.html');
 
     // Inicializar o Swiper
     var swiper = new Swiper('.program-swiper', {
@@ -52,7 +64,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('.unit-card').forEach(card => {
         const bgImage = card.getAttribute('data-bg-image');
         if (bgImage) {
-            // Criar uma regra de estilo dinamicamente
             const style = document.createElement('style');
             const uniqueId = `unit-card-${Math.random().toString(36).substr(2, 9)}`;
             card.classList.add(uniqueId);
