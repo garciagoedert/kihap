@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };
 
+    loadComponent('header-container', 'header.html');
     loadComponent('footer-container', 'footer.html');
     loadComponent('testimonials-container', 'testimonials.html');
     loadComponent('video-container', 'video.html');
