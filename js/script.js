@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const isProgramsPage = window.location.pathname.includes('/programas/');
-    const componentBasePath = isProgramsPage ? '../components/' : 'components/';
-    const assetBasePath = isProgramsPage ? '../' : './';
+    const isSubPage = window.location.pathname.includes('/programas/') || window.location.pathname.includes('/unidades/');
+    const componentBasePath = isSubPage ? '../components/' : 'components/';
+    const assetBasePath = isSubPage ? '../' : './';
 
     const loadComponent = (containerId, filePath) => {
         const container = document.getElementById(containerId);
