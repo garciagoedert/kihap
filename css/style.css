@@ -146,6 +146,12 @@ body {
     color: #FFC107;
 }
 
+@media (max-width: 768px) {
+    .program-swiper .swiper-button-next, .program-swiper .swiper-button-prev {
+        display: none;
+    }
+}
+
 .swiper-pagination-bullet-active {
     background: #FFC107;
 }
