@@ -25,37 +25,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         processedData = processedData.replace('{{YEAR}}', new Date().getFullYear());
                     }
 
-                    // Handle video component dynamically
-                    if (filePath === 'video.html' && isProgramsPage) {
-                        const pageName = window.location.pathname.split('/').pop().replace('.html', '');
-                        const videoMap = {
-                            'adolescentes': 'adolescentes.mp4',
-                            'adultos': 'adultos.mp4',
-                            'littles': 'littles.mp4',
-                            'mulheres': 'mulheres.mp4'
-                        };
-
-                        const videoFile = videoMap[pageName];
-                        const isDesktop = window.innerWidth >= 1024; // Consider desktop if width is 1024px or more
-
-                        if (isDesktop) {
-                            const youtubeEmbedUrl = "https://www.youtube.com/embed/lN8CSjfbIiM";
-                            const iframePlayer = `<iframe src="${youtubeEmbedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full rounded-lg shadow-2xl"></iframe>`;
-                            processedData = processedData.replace('{{VIDEO_PLAYER}}', iframePlayer);
-                        } else if (videoFile) {
-                            const videoSrc = `${assetBasePath}imgs/${videoFile}`;
-                            const videoPlayer = `
-                                <video controls class="w-full h-full rounded-lg shadow-2xl">
-                                    <source src="${videoSrc}" type="video/mp4">
-                                    Seu navegador não suporta a tag de vídeo.
-                                </video>`;
-                            processedData = processedData.replace('{{VIDEO_PLAYER}}', videoPlayer);
-                        } else {
-                            // If no video is mapped for mobile, hide the container
-                            container.style.display = 'none';
-                            return;
-                        }
-                    }
 
                     // Adjust paths inside the loaded HTML
                     const adjustedData = processedData.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
