@@ -25,6 +25,27 @@ document.addEventListener("DOMContentLoaded", function() {
                         processedData = processedData.replace('{{YEAR}}', new Date().getFullYear());
                     }
 
+                    // Handle video component dynamically
+                    if (filePath === 'video.html' && isProgramsPage) {
+                        const pageName = window.location.pathname.split('/').pop().replace('.html', '');
+                        const videoMap = {
+                            'adolescentes': 'adolescentes.mp4',
+                            'adultos': 'adultos.mp4',
+                            'littles': 'littles.mp4',
+                            // Adicione outros mapeamentos aqui
+                        };
+
+                        const videoFile = videoMap[pageName];
+                        if (videoFile) {
+                            const videoSrc = `${assetBasePath}imgs/${videoFile}`;
+                            processedData = processedData.replace('{{VIDEO_SRC}}', videoSrc);
+                        } else {
+                            // If no video is mapped, hide the container and stop processing
+                            container.style.display = 'none';
+                            return;
+                        }
+                    }
+
                     // Adjust paths inside the loaded HTML
                     const adjustedData = processedData.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
                     
