@@ -17,7 +17,37 @@
 <body class="antialiased">
 
     <!-- Header -->
-    <div id="header-container"></div>
+    <header class="bg-black/80 backdrop-blur-sm sticky top-0 z-50 w-full">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div>
+                <a href="/">
+                    <img src="https://kihap.com.br/wp-content/uploads/2021/02/kihap-wh-1536x359.png" alt="Kihap Logo" class="h-8">
+                </a>
+            </div>
+            <div class="hidden md:flex space-x-8 items-center">
+                <a href="#programas" class="text-gray-300 hover:text-yellow-500 transition">Programas</a>
+                <a href="#unidades" class="text-gray-300 hover:text-yellow-500 transition">Unidades</a>
+                <a href="#principios" class="text-gray-300 hover:text-yellow-500 transition">O Que Nos Guia</a>
+            </div>
+            <a href="#cta" class="hidden md:block btn-gradient text-black font-bold py-2 px-6 rounded-lg">
+                Agende uma Aula
+            </a>
+            <button id="mobile-menu-button" class="md:hidden text-white" aria-label="Abrir menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#programas" class="block py-2 text-gray-300 hover:text-yellow-500">Programas</a>
+            <a href="#unidades" class="block py-2 text-gray-300 hover:text-yellow-500">Unidades</a>
+            <a href="#principios" class="block py-2 text-gray-300 hover:text-yellow-500">O Que Nos Guia</a>
+            <a href="#cta" class="mt-2 block btn-gradient text-black text-center font-bold py-2 px-6 rounded-lg">
+                Agende uma Aula
+            </a>
+        </div>
+    </header>
 
     <!-- Main Content -->
     <main>
