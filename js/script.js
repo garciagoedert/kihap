@@ -1,13 +1,4 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Mobile Menu Toggle
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
-    }
-
     const isProgramsPage = window.location.pathname.includes('/programas/');
     const componentBasePath = isProgramsPage ? '../components/' : 'components/';
     const assetBasePath = isProgramsPage ? '../' : './';
@@ -31,6 +22,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     if (containerId === 'header-container' || containerId === 'footer-container') {
                         container.outerHTML = adjustedData;
+                        if (containerId === 'header-container') {
+                            // Dispara um evento para notificar que o header foi carregado
+                            document.dispatchEvent(new Event('headerLoaded'));
+                        }
                     } else {
                         container.innerHTML = adjustedData;
                     }
@@ -43,6 +38,38 @@ document.addEventListener("DOMContentLoaded", function() {
     loadComponent('testimonials-container', 'testimonials.html');
     loadComponent('video-container', 'video.html');
     loadComponent('cta-container', 'form-cta.html');
+
+    // A lógica do menu será adicionada após o carregamento do header
+    document.addEventListener('headerLoaded', setupMobileMenu);
+
+    function setupMobileMenu() {
+        const openButton = document.getElementById('mobile-menu-button');
+        const closeButton = document.getElementById('mobile-menu-close-button');
+        const menu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('mobile-menu-overlay');
+        const menuLinks = menu.querySelectorAll('a');
+
+        const openMenu = () => {
+            menu.classList.add('is-open');
+            overlay.classList.add('is-open');
+            document.body.classList.add('no-scroll');
+        };
+
+        const closeMenu = () => {
+            menu.classList.remove('is-open');
+            overlay.classList.remove('is-open');
+            document.body.classList.remove('no-scroll');
+        };
+
+        if (openButton && menu && overlay && closeButton) {
+            openButton.addEventListener('click', openMenu);
+            closeButton.addEventListener('click', closeMenu);
+            overlay.addEventListener('click', closeMenu);
+            menuLinks.forEach(link => {
+                link.addEventListener('click', closeMenu);
+            });
+        }
+    }
 
     // Inicializar o Swiper
     var swiper = new Swiper('.program-swiper', {
