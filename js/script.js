@@ -18,15 +18,21 @@ document.addEventListener("DOMContentLoaded", function() {
             fetch(`${componentBasePath}${filePath}`)
                 .then(response => response.text())
                 .then(data => {
+                    let processedData = data;
+
+                    // If it's the footer, replace the year placeholder
+                    if (filePath === 'footer.html') {
+                        processedData = processedData.replace('{{YEAR}}', new Date().getFullYear());
+                    }
+
                     // Adjust paths inside the loaded HTML
-                    const adjustedData = data.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
+                    const adjustedData = processedData.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
                     
                     if (containerId === 'header-container' || containerId === 'footer-container') {
                         container.outerHTML = adjustedData;
                     } else {
                         container.innerHTML = adjustedData;
                     }
-
                 });
         }
     };
@@ -40,6 +46,8 @@ document.addEventListener("DOMContentLoaded", function() {
     // Inicializar o Swiper
     var swiper = new Swiper('.program-swiper', {
         loop: true,
+        slidesPerView: 'auto',
+        spaceBetween: 15,
         pagination: {
             el: '.swiper-pagination',
             clickable: true,
@@ -55,11 +63,11 @@ document.addEventListener("DOMContentLoaded", function() {
             },
             768: {
                 slidesPerView: 3,
-                spaceBetween: 40,
+                spaceBetween: 30,
             },
             1024: {
                 slidesPerView: 4,
-                spaceBetween: 50,
+                spaceBetween: 40,
             },
         }
     });
