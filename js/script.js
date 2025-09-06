@@ -32,15 +32,26 @@ document.addEventListener("DOMContentLoaded", function() {
                             'adolescentes': 'adolescentes.mp4',
                             'adultos': 'adultos.mp4',
                             'littles': 'littles.mp4',
-                            // Adicione outros mapeamentos aqui
+                            'mulheres': 'mulheres.mp4'
                         };
 
                         const videoFile = videoMap[pageName];
-                        if (videoFile) {
+                        const isDesktop = window.innerWidth >= 1024; // Consider desktop if width is 1024px or more
+
+                        if (isDesktop) {
+                            const youtubeEmbedUrl = "https://www.youtube.com/embed/lN8CSjfbIiM";
+                            const iframePlayer = `<iframe src="${youtubeEmbedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full rounded-lg shadow-2xl"></iframe>`;
+                            processedData = processedData.replace('{{VIDEO_PLAYER}}', iframePlayer);
+                        } else if (videoFile) {
                             const videoSrc = `${assetBasePath}imgs/${videoFile}`;
-                            processedData = processedData.replace('{{VIDEO_SRC}}', videoSrc);
+                            const videoPlayer = `
+                                <video controls class="w-full h-full rounded-lg shadow-2xl">
+                                    <source src="${videoSrc}" type="video/mp4">
+                                    Seu navegador não suporta a tag de vídeo.
+                                </video>`;
+                            processedData = processedData.replace('{{VIDEO_PLAYER}}', videoPlayer);
                         } else {
-                            // If no video is mapped, hide the container and stop processing
+                            // If no video is mapped for mobile, hide the container
                             container.style.display = 'none';
                             return;
                         }
