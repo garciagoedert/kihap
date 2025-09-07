@@ -21,7 +21,7 @@ if (leadForm) {
             email: document.getElementById('email').value,
             telefone: document.getElementById('telefone').value,
             unidade: document.getElementById('unidade').value,
-            source: 'Site',
+            'origem do lead': 'Site',
             status: 'Novo',
             createdAt: serverTimestamp()
         };
@@ -69,8 +69,8 @@ if (academyLeadForm) {
             nome: document.getElementById('academy-nome').value,
             email: document.getElementById('academy-email').value,
             telefone: document.getElementById('academy-telefone').value,
-            source: 'Academy',
-            details: 'Lead from Kihap Academy form',
+            'origem do lead': 'Academy',
+            debug_source: 'Academy Form',
             status: 'Novo',
             createdAt: serverTimestamp()
         };
