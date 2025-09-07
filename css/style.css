@@ -252,6 +252,26 @@ body {
 .hero-kids { background-image: url('../imgs/kids.png'); }
 .hero-littles { background-image: url('../imgs/littles.png'); }
 
+.hero-brasilia {
+    background-position: center 25%;
+}
+
+@media (min-width: 768px) {
+    .hero-brasilia {
+        background-position: center;
+    }
+}
+
+.hero-florianopolis {
+    background-position: center 35%;
+}
+
+@media (min-width: 768px) {
+    .hero-florianopolis {
+        background-position: center;
+    }
+}
+
 /* Mobile Menu Styles */
 .mobile-menu-overlay {
     position: fixed;
