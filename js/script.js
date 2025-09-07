@@ -115,4 +115,30 @@ document.addEventListener("DOMContentLoaded", function() {
             document.head.appendChild(style);
         }
     });
+
+    // --- Lógica do Modal Academy ---
+    const openModalBtn = document.getElementById('open-academy-modal');
+    const closeModalBtn = document.getElementById('close-academy-modal');
+    const modal = document.getElementById('academy-modal');
+
+    if (openModalBtn && closeModalBtn && modal) {
+        openModalBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            document.body.classList.add('no-scroll');
+        });
+
+        const closeModal = () => {
+            modal.classList.add('hidden');
+            document.body.classList.remove('no-scroll');
+        };
+
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Fechar o modal clicando fora dele
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
 });
