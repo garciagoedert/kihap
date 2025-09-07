@@ -301,7 +301,7 @@
                 prioridade: 3, // Default priority for leads
                 status: lead.status || 'Novo',
                 ticketEstimado: 0,
-                origemLead: 'Site',
+                origemLead: lead['origem do lead'] || 'Site',
                 telefone: lead.telefone,
                 email: lead.email,
                 createdAt: lead.createdAt,
