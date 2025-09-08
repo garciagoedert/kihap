@@ -51,6 +51,55 @@ if (leadForm) {
 }
 
 
+// --- Lógica do Formulário do Curso Mente Faixa Preta ---
+const cursoLeadForm = document.getElementById('curso-lead-form');
+const cursoFormStatus = document.getElementById('curso-form-status');
+
+if (cursoLeadForm) {
+    cursoLeadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = cursoLeadForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+        submitBtn.classList.add('opacity-50');
+        cursoFormStatus.textContent = '';
+
+        const data = {
+            nome: document.getElementById('curso-nome').value,
+            email: document.getElementById('curso-email').value,
+            telefone: document.getElementById('curso-telefone').value,
+            'origem do lead': 'Curso Mente Faixa Preta',
+            tags: ['Mente Faixa Preta'],
+            status: 'Novo',
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            const leadsCollectionRef = collection(db, 'leads');
+            await addDoc(leadsCollectionRef, data);
+
+            cursoFormStatus.textContent = 'Inscrição enviada com sucesso! Verifique seu e-mail.';
+            cursoFormStatus.className = 'text-green-800 text-center mt-4';
+            cursoLeadForm.reset();
+
+            setTimeout(() => {
+                cursoFormStatus.textContent = '';
+            }, 5000);
+
+        } catch (error) {
+            console.error("Erro ao salvar o lead do curso:", error);
+            cursoFormStatus.textContent = 'Ocorreu um erro ao enviar sua inscrição. Tente novamente.';
+            cursoFormStatus.className = 'text-red-800 text-center mt-4';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'INSCREVA-SE AGORA';
+            submitBtn.classList.remove('opacity-50');
+        }
+    });
+}
+
+
 // --- Lógica do Formulário do Modal Academy ---
 const academyLeadForm = document.getElementById('academy-lead-form');
 const academyFormStatus = document.getElementById('academy-form-status');

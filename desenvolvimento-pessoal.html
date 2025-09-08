@@ -9,9 +9,6 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Swiper.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
-
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="antialiased">
@@ -20,19 +17,95 @@
     <div id="header-container"></div>
 
     <main>
-        <section class="py-20">
+        <!-- Hero Section -->
+        <section class="py-20 bg-black">
             <div class="container mx-auto px-6 text-center">
                 <h1 class="section-title uppercase font-title">Desenvolvimento Pessoal</h1>
-                <p class="mt-4 max-w-3xl mx-auto text-gray-400">Conteúdo sobre desenvolvimento pessoal em breve.</p>
+                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-gray-300">
+                    Nosso propósito é que as pessoas (re)conheçam o poder da <span class="text-yellow-500 font-semibold">energia interior</span> e que, com <span class="text-yellow-500 font-semibold">disciplina positiva</span>, entrem em <span class="text-yellow-500 font-semibold">harmonia</span> com o <span class="text-yellow-500 font-semibold">objetivo definido</span> e <span class="text-yellow-500 font-semibold">evoluam a sua própria realidade</span>.
+                </p>
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <a href="#newsletter" class="btn-gradient text-black font-bold py-3 px-8 rounded-lg w-full sm:w-auto text-center">
+                        Assinar Newsletter
+                    </a>
+                    <a href="#metodologia" class="border border-yellow-500 text-yellow-500 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition w-full sm:w-auto text-center">
+                        Saiba Mais
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Metodologia Section -->
+        <section id="metodologia" class="py-20 bg-gray-900">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <h2 class="section-title uppercase font-title">Metodologia</h2>
+                <div class="mt-6 text-gray-400 space-y-4 text-lg">
+                    <p>O Kihap Desenvolvimento Pessoal através da filosofia da disciplina positiva da arte marcial, ajuda pessoas comuns a atingirem o que nunca antes imaginaram. São vivências e insights do tatame que foram transformadas em treinamentos online, com a didática única e exclusiva Kihap, com o foco no aprendizado e evolução pessoal.</p>
+                    <p>Temos como base o equilíbrio, e acreditamos que esse mesmo equilíbrio é movimento. Nosso objetivo é tornar esse movimento agradável e atingível a todos, independente do conhecimento de arte marcial. Aqui os nossos aprendizados são fora do tatame, com papel e caneta, planejamento e 'mão na massa' para buscar o crescimento mental.</p>
+                    <p>Caso se interesse pela prática física da arte marcial, <a href="/artes-marciais.html" class="text-yellow-500 underline hover:text-yellow-400">acesse aqui</a> para maiores informações.</p>
+                </div>
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <a href="#mente-faixa-preta" class="btn-gradient text-black font-bold py-3 px-8 rounded-lg w-full sm:w-auto text-center">
+                        Mente Faixa Preta
+                    </a>
+                    <a href="#kihap-do" class="border border-yellow-500 text-yellow-500 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition w-full sm:w-auto text-center">
+                        Kihap Do
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Introdução a Mente Faixa Preta Section -->
+        <section id="mente-faixa-preta" class="py-20">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <h2 class="section-title uppercase font-title">Introdução a Mente Faixa Preta</h2>
+                <div class="mt-6 text-gray-400 space-y-4 text-lg">
+                    <p>Esse programa é o início de uma caminhada mesmo para pessoas que nunca pisaram em um tatame. Surgiu a partir da metodologia que aplicamos com nossos alunos e que foi muito além das artes marciais.</p>
+                    <p>Dentro da arte marcial conseguimos mensurar a graduação dos alunos pela cor da faixa, e mesmo as pessoas mais inexperientes, ao ver alguém com uma Faixa Preta na cintura, sabe que aquela pessoa tem muita experiência no assunto. E a função de um bom mestre de arte marcial é evoluir esse aluno tanto fisicamente quanto mentalmente, a ponto dessa pessoa saber o que fazer com as técnicas aprendidas.</p>
+                    <p>Esse programa possui 3 pilares: <span class="font-semibold text-white">clareza, planejamento e ação.</span> Aprender de forma sólida alguns conceitos é fundamental para um bom desenvolvimento. Afinal, só conseguimos mudar aquilo que entendemos, e só conseguimos de fato evoluir quando aprendemos a lutar com os nossos próprios desafios internos. Esse é o início para uma transformação consistente e profunda.</p>
+                    <p class="text-white">O Programa está disponível para ser realizado online.</p>
+                </div>
+                <div class="mt-10">
+                    <a href="/desenvolvimento/mente-faixa-preta.html" class="btn-gradient text-black font-bold py-3 px-8 rounded-lg">
+                        Inscreva-se
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kihap Do Section -->
+        <section id="kihap-do" class="py-20 bg-gray-900">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <h2 class="section-title uppercase font-title">Kihap Do</h2>
+                <div class="mt-6 text-gray-400 space-y-4 text-lg">
+                    <p>Esse programa é uma mentoria de Sprint de resultados. Temos como filosofia dupla o 'DO' do <span class="font-semibold text-white">Kihap DO</span>, sendo a tradução coreana o "caminho", e do inglês "fazer".</p>
+                    <p class="text-white font-semibold">Nessa mentoria nós mostramos o caminho do fazer. Acompanhamos de forma ativa os alunos, e através de encontros online e ao vivo, aplicamos os elementos da disciplina positiva de forma que os resultados sejam atingidos e a pessoa seja transformada nessa caminhada.</p>
+                    <p>Nessa fase é importante que o aluno já tenha passado pelo treinamento de Introdução a Mente Faixa Preta para aproveitar melhor o sprint de resultado. Portanto, apenas alunos que já fizeram o treinamento receberão as informações sobre a abertura de novas turmas.</p>
+                </div>
+                <div class="mt-10">
+                    <a href="#" class="border border-yellow-500 text-yellow-500 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition">
+                        Saiba Mais
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section id="newsletter" class="py-20 text-center">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title uppercase font-title">Fique por <span class="text-yellow-500">Dentro</span></h2>
+                <p class="mt-4 max-w-2xl mx-auto text-gray-400">
+                    Assine nossa newsletter para receber as últimas novidades, dicas de treino e ofertas especiais diretamente no seu e-mail.
+                </p>
+                <div class="mt-8 max-w-2xl mx-auto">
+                    <iframe src="https://embeds.beehiiv.com/10b6139c-0d4d-433d-aae7-5f4c46eb98a1?slim=true" data-test-id="beehiiv-embed" height="52" frameborder="0" scrolling="no" style="margin: 0; border-radius: 0px !important; background-color: transparent; width: 100%;"></iframe>
+                </div>
             </div>
         </section>
     </main>
 
     <!-- Footer -->
     <div id="footer-container"></div>
-
-    <!-- Swiper.js JS -->
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 
     <script src="js/script.js"></script>
 </body>

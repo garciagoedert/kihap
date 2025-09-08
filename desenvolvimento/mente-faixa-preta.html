@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Introdução a Mente Faixa Preta - Kihap</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="py-20 bg-gray-900">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="section-title uppercase font-title">Introdução a Mente Faixa Preta</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-gray-400 text-xl">O início para uma transformação consistente e profunda.</p>
+            </div>
+        </section>
+
+        <!-- Sobre Section -->
+        <section class="py-20">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <h2 class="section-title uppercase font-title">Sobre o Curso</h2>
+                <div class="mt-6 text-gray-400 space-y-4 text-lg">
+                    <p>Esse programa é o início de uma caminhada mesmo para pessoas que nunca pisaram em um tatame. Surgiu a partir da metodologia que aplicamos com nossos alunos e que foi muito além das artes marciais.</p>
+                    <p>Dentro da arte marcial conseguimos mensurar a graduação dos alunos pela cor da faixa, e mesmo as pessoas mais inexperientes, ao ver alguém com uma Faixa Preta na cintura, sabe que aquela pessoa tem muita experiência no assunto. E a função de um bom mestre de arte marcial é evoluir esse aluno tanto fisicamente quanto mentalmente, a ponto dessa pessoa saber o que fazer com as técnicas aprendidas.</p>
+                    <p>Esse programa possui 3 pilares: <span class="font-semibold text-white">clareza, planejamento e ação.</span> Aprender de forma sólida alguns conceitos é fundamental para um bom desenvolvimento. Afinal, só conseguimos mudar aquilo que entendemos, e só conseguimos de fato evoluir quando aprendemos a lutar com os nossos próprios desafios internos.</p>
+                    <p class="text-white">O Programa está disponível para ser realizado online.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Video Section -->
+        <section class="py-20 bg-black">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <h2 class="section-title uppercase font-title">Primeira Aula</h2>
+                <div class="mt-8 aspect-video">
+                    <iframe src="https://www.youtube.com/embed/ZXM9sY73tMU" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full rounded-lg shadow-2xl"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inscrição Section -->
+        <section id="inscricao" class="py-20 bg-yellow-500 text-black">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl md:text-5xl font-black uppercase font-title">Comece sua Jornada</h2>
+                <p class="mt-4 text-lg max-w-2xl mx-auto">Inscreva-se para receber acesso completo ao curso e dar o primeiro passo na sua transformação.</p>
+                <form id="curso-lead-form" class="mt-8 max-w-lg mx-auto grid grid-cols-1 gap-4">
+                    <input type="text" id="curso-nome" placeholder="Nome Completo" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <input type="email" id="curso-email" placeholder="Seu melhor e-mail" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <input type="tel" id="curso-telefone" placeholder="Telefone (WhatsApp)" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <button type="submit" class="bg-black text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-800 transition w-full">
+                        INSCREVA-SE AGORA
+                    </button>
+                </form>
+                <p id="curso-form-status" class="mt-4 text-lg"></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="../js/script.js"></script>
+    <script type="module" src="../js/form-handler.js"></script>
+</body>
+</html>
