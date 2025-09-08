@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const isSubPage = window.location.pathname.includes('/programas/') || window.location.pathname.includes('/unidades/');
+    const isSubPage = window.location.pathname.includes('/programas/') || window.location.pathname.includes('/unidades/') || window.location.pathname.includes('/desenvolvimento/');
     const componentBasePath = isSubPage ? '../components/' : 'components/';
     const assetBasePath = isSubPage ? '../' : './';
 
