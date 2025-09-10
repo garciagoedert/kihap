@@ -1,31 +1,28 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { db, auth } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Função principal que será exportada e chamada pelo HTML
-export function initializeAppWithFirebase(firebaseConfig) {
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const appId = firebaseConfig.appId || 'default-app';
+function getAllUsers() {
+    return [
+        { id: 'comercial@kihap.com.br', name: 'Mr. Garcia' },
+        { id: 'mr.hadad@kihap.com.br', name: 'Mr. Hadad' },
+        { id: 'vendas@kihap.com.br', name: 'Time de Vendas' },
+        { id: 'suporte@kihap.com.br', name: 'Suporte' }
+    ];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const appId = '1:1055939458006:web:1d67459a0bc0da60cf2a77' || 'default-app';
     const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
     const meetingsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'meetings');
     const prospectsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
-
-    document.addEventListener('DOMContentLoaded', () => {
-        onAuthStateChanged(auth, (user) => {
-            if (user && sessionStorage.getItem('isLoggedIn') === 'true') {
-                loadComponents(() => {
-                    initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef);
-                    setupUIListeners();
-                });
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+    
+    loadComponents(() => {
+        initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef);
+        setupUIListeners();
     });
-}
+});
 
 function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef) {
     const systemUsers = getAllUsers();
@@ -100,7 +97,7 @@ function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prosp
         taskAssigneeSelect.innerHTML = '';
         systemUsers.forEach(user => {
             const option = document.createElement('option');
-            option.value = user.email;
+            option.value = user.id;
             option.textContent = user.name;
             taskAssigneeSelect.appendChild(option);
         });
