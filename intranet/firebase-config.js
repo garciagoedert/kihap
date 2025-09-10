@@ -2,6 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 // Configuração do seu aplicativo da web do Firebase
 const firebaseConfig = {
@@ -21,4 +22,5 @@ const analytics = getAnalytics(app);
 // Exporta a instância do Firestore, o app e o appId para serem usados em outras partes do aplicativo
 export { app };
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 export const appId = firebaseConfig.appId || 'default-kihap-app';
