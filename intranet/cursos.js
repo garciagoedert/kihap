@@ -2,6 +2,7 @@ import { collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/fir
 import { db } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady } from './auth.js';
+import { checkPermission } from './permission-check.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadComponents();
@@ -9,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     onAuthReady(async (user) => {
         if (user) {
+            if (!checkPermission('cursos')) return;
             const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
             if (isAdmin) {
                 document.getElementById('add-course-btn').classList.remove('hidden');

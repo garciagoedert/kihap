@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebas
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc, arrayUnion, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
+import { checkPermission } from './permission-check.js';
 
 let db;
 let auth;
@@ -15,6 +16,7 @@ export function initializeAppWithFirebase(firebaseConfig) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                if (!checkPermission('arquivo')) return;
                 loadComponents(() => {
                     setupUIListeners({}); // Setup sidebar interactivity
                     loadArchivedLeads();
