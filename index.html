@@ -332,36 +332,6 @@
         </section>
     </main>
 
-        <!-- Kihap Academy Section -->
-        <section id="academy" class="py-20 bg-black">
-            <div class="container mx-auto px-6">
-                <div class="bg-gray-900 rounded-lg shadow-2xl overflow-hidden md:grid md:grid-cols-5 md:gap-0 items-center">
-                    <div class="md:col-span-2">
-                        <img src="imgs/KI_academy.jpg" alt="Kihap Academy" class="w-full h-full object-cover max-h-96 md:max-h-full">
-                    </div>
-                    <div class="p-8 md:p-12 md:col-span-3 text-center md:text-left">
-                        <img src="imgs/academy.png" alt="Kihap Academy Logo" class="h-16 md:h-20 mb-6 mx-auto md:mx-0">
-                        <p class="text-xl md:text-2xl font-semibold text-gray-300 leading-relaxed">
-                            Você é um praticante, ex-praticante ou entusiasta das artes marciais?
-                        </p>
-                        <p class="mt-2 text-xl md:text-2xl font-semibold text-gray-300 leading-relaxed">
-                            Já pensou em viver profissionalmente das artes marciais?
-                        </p>
-                        <h2 class="mt-8 text-3xl md:text-4xl uppercase font-title text-white">
-                            Conheça o <span class="text-yellow-500">Kihap Academy</span>
-                        </h2>
-                        <p class="mt-4 text-gray-400">
-                            Você também pode se tornar um profissional da área através do Kihap Academy.
-                        </p>
-                        <div class="mt-8">
-                            <button id="open-academy-modal" class="btn-gradient text-black font-bold py-3 px-8 rounded-lg uppercase">
-                                Quero Saber Mais
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- Newsletter Section -->
         <section class="py-20 text-center">
@@ -413,6 +383,36 @@
         </section>
 
     <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Swiper.js JS -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/form-handler.js"></script>
+
+    <!-- Academy Form Modal -->
+    <div id="academy-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg relative">
+            <button id="close-academy-modal" title="Fechar modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold text-center text-white mb-6 uppercase font-title">Interesse na <span class="text-yellow-500">Kihap Academy</span></h2>
+            <form id="academy-lead-form" class="grid grid-cols-1 gap-4">
+                <input type="text" id="academy-nome" placeholder="Nome Completo" class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                <input type="email" id="academy-email" placeholder="Seu melhor e-mail" class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                <input type="tel" id="academy-telefone" placeholder="Telefone (WhatsApp)" class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                <button type="submit" class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition w-full">
+                    ENVIAR INTERESSE
+                </button>
+            </form>
+            <p id="academy-form-status" class="mt-4 text-lg text-center"></p>
+        </div>
+    </div>
+</body>
+</html>
     <div id="footer-container"></div>
 
     <!-- Swiper.js JS -->

@@ -55,7 +55,7 @@ async function loadArchivedLeads(searchTerm = '') {
     container.innerHTML = ''; // Limpa o container
 
     try {
-        const leadsRef = collection(db, 'artifacts', '1:476390177044:web:39e6597eb624006ee06a01', 'public', 'data', 'prospects');
+        const leadsRef = collection(db, 'prospects');
         const q = query(leadsRef, where('pagina', '==', 'Arquivo'));
         const querySnapshot = await getDocs(q);
 
@@ -88,7 +88,7 @@ async function loadArchivedLeads(searchTerm = '') {
             card.className = 'bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col';
             card.innerHTML = `
                 <div>
-                    <h3 class="text-lg font-bold text-white">${lead.empresa || 'Empresa não informada'}</h3>
+                    <h3 class="text-lg font-bold text-white">${lead.responsavel || 'Lead sem nome'}</h3>
                     <p class="text-sm text-gray-400">${lead.setor || 'Setor não informado'}</p>
                     <div class="mt-2">
                         ${lead.telefone ? `<p class="text-sm text-gray-300"><i class="fas fa-phone-alt mr-2"></i>${lead.telefone}</p>` : ''}
@@ -193,7 +193,7 @@ function openEditModal(lead) {
         if (!description) return alert('Por favor, adicione uma descrição para o contato.');
         
         try {
-            const clientRef = doc(db, 'artifacts', '1:476390177044:web:39e6597eb624006ee06a01', 'public', 'data', 'prospects', lead.id);
+            const clientRef = doc(db, 'prospects', lead.id);
             await updateDoc(clientRef, {
                 contactLog: arrayUnion({
                     author: auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous',
@@ -229,13 +229,13 @@ async function unarchiveLead(leadId) {
     if (!confirm('Tem certeza que deseja desarquivar este lead?')) return;
 
     try {
-        const leadRef = doc(db, 'artifacts', '1:476390177044:web:39e6597eb624006ee06a01', 'public', 'data', 'prospects', leadId);
+        const leadRef = doc(db, 'prospects', leadId);
         await updateDoc(leadRef, {
             pagina: 'Prospecção',
             status: 'Pendente'
         });
         closeEditModal();
-        loadArchivedLeads(document.getElementById('search-input').value);
+        window.location.href = 'index.html';
     } catch (error) {
         console.error("Error unarchiving lead:", error);
         alert("Erro ao desarquivar o lead.");
@@ -246,7 +246,7 @@ async function deleteLead(leadId) {
     if (!confirm('Tem certeza que deseja excluir este lead permanentemente? Esta ação não pode ser desfeita.')) return;
 
     try {
-        const leadRef = doc(db, 'artifacts', '1:476390177044:web:39e6597eb624006ee06a01', 'public', 'data', 'prospects', leadId);
+        const leadRef = doc(db, 'prospects', leadId);
         await deleteDoc(leadRef);
         closeEditModal();
         loadArchivedLeads(document.getElementById('search-input').value);
@@ -278,7 +278,7 @@ async function saveLeadChanges(e) {
     };
 
     try {
-        const leadRef = doc(db, 'artifacts', '1:476390177044:web:39e6597eb624006ee06a01', 'public', 'data', 'prospects', leadId);
+        const leadRef = doc(db, 'prospects', leadId);
         await updateDoc(leadRef, data);
         closeEditModal();
         loadArchivedLeads(document.getElementById('search-input').value);

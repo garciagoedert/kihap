@@ -40,9 +40,69 @@
                 height: 50vh;
             }
         }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-active {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-[#111111] text-gray-200">
+    <!-- Add Data Modal -->
+    <div id="addDataModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-4 transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">Adicionar Novos Dados</h2>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <form id="addDataForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <select id="unidade-select" aria-label="Unidade" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                        <option value="">Selecione a Unidade</option>
+                    </select>
+                    <input type="text" id="unidade-nova" placeholder="Nome da Nova Unidade" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none hidden">
+                    <input type="number" id="ano" placeholder="Ano" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    <select id="mes" aria-label="Mês" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                        <option value="">Mês</option>
+                        <option value="January">Janeiro</option>
+                        <option value="February">Fevereiro</option>
+                        <option value="March">Março</option>
+                        <option value="April">Abril</option>
+                        <option value="May">Maio</option>
+                        <option value="June">Junho</option>
+                        <option value="July">Julho</option>
+                        <option value="August">Agosto</option>
+                        <option value="September">Setembro</option>
+                        <option value="October">Outubro</option>
+                        <option value="November">Novembro</option>
+                        <option value="December">Dezembro</option>
+                    </select>
+                    <select id="semana" aria-label="Semana" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                        <option value="">Selecione a Semana</option>
+                        <option value="1">Semana 1</option>
+                        <option value="2">Semana 2</option>
+                        <option value="3">Semana 3</option>
+                        <option value="4">Semana 4</option>
+                        <option value="5">Semana 5</option>
+                    </select>
+                    <input type="number" id="ativos" placeholder="Ativos" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    <input type="number" id="novos" placeholder="Novos" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    <input type="number" id="baixas" placeholder="Baixas" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    <input type="number" id="inativos" placeholder="Inativos" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    <input type="number" id="renovacoes" placeholder="Renovações" class="bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" id="cancelModalBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
@@ -64,12 +124,19 @@
                         <p id="dashboard-subtitle" class="text-gray-400 text-sm">Visão Geral (Todas as Unidades)</p>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <select id="location-filter" class="bg-gray-800 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <select id="location-filter" aria-label="Filtrar por unidade" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="geral">Visão Geral (Todas as Unidades)</option>
                         </select>
-                        <select id="year-filter" class="bg-gray-800 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <select id="year-filter" aria-label="Filtrar por ano" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="all">Todos os Anos</option>
                         </select>
+                        <select id="view-by-filter" aria-label="Visualizar por" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                            <option value="monthly">Mensal</option>
+                            <option value="weekly">Semanal</option>
+                        </select>
+                        <button id="addDataBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg ml-2">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Dados
+                        </button>
                     </div>
                 </div>
 
@@ -80,31 +147,31 @@
 
                 <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md">
                         <h2 class="text-xl font-semibold mb-4 text-white">Evolução de Alunos Ativos</h2>
                         <div class="chart-container">
                             <canvas id="activeStudentsChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md">
                         <h2 class="text-xl font-semibold mb-4 text-white">Novos Alunos vs. Baixas</h2>
                         <div class="chart-container">
                             <canvas id="newVsChurnChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md">
                         <h2 class="text-xl font-semibold mb-4 text-white">Composição (Final do Período)</h2>
                         <div class="chart-container flex items-center justify-center">
                             <canvas id="compositionChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md">
                         <h2 class="text-xl font-semibold mb-4 text-white">Saldo Mensal (Novos - Baixas)</h2>
                          <div class="chart-container">
                             <canvas id="balanceChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-md lg:col-span-2">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md lg:col-span-2">
                         <h2 class="text-xl font-semibold mb-4 text-white">Renovações Realizadas</h2>
                         <div class="chart-container">
                             <canvas id="renewalsChart"></canvas>
@@ -130,8 +197,8 @@
     
     <script>
         const embeddedData = [
-            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "September", "Ativos": 108, "Novos": 1, "Baixas": 0, "Inativos": 52, "Data": "2023-09-01", "Renovacoes": 14},
-            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "September", "Ativos": 157, "Novos": 4, "Baixas": 0, "Inativos": 60, "Data": "2023-09-01", "Renovacoes": 14},
+            {"Unidade": "Santa Mônica", "Ano": 2023, "Mês": "September", "Semana": 4, "Ativos": 108, "Novos": 1, "Baixas": 0, "Inativos": 52, "Data": "2023-09-28", "Renovacoes": 14},
+            {"Unidade": "Asa Sul", "Ano": 2023, "Mês": "September", "Semana": 4, "Ativos": 157, "Novos": 4, "Baixas": 0, "Inativos": 60, "Data": "2023-09-28", "Renovacoes": 14},
             {"Unidade": "Sudoeste", "Ano": 2023, "Mês": "September", "Ativos": 141, "Novos": 11, "Baixas": 0, "Inativos": 41, "Data": "2023-09-01", "Renovacoes": 15},
             {"Unidade": "Lago Sul", "Ano": 2023, "Mês": "September", "Ativos": 161, "Novos": 9, "Baixas": 1, "Inativos": 54, "Data": "2023-09-01", "Renovacoes": 11},
             {"Unidade": "Centro", "Ano": 2023, "Mês": "September", "Ativos": 32, "Novos": 2, "Baixas": 2, "Inativos": 0, "Data": "2023-09-01", "Renovacoes": 0},
@@ -328,16 +395,134 @@
             
             const locationFilter = document.getElementById('location-filter');
             const yearFilter = document.getElementById('year-filter');
+            const viewByFilter = document.getElementById('view-by-filter');
             
             locationFilter.addEventListener('change', () => updateDashboard());
             yearFilter.addEventListener('change', () => updateDashboard());
+            viewByFilter.addEventListener('change', () => updateDashboard());
 
+            setupModal();
             updateDashboard();
+        }
+
+        function setupModal() {
+            const modal = document.getElementById('addDataModal');
+            const openBtn = document.getElementById('addDataBtn');
+            const closeBtn = document.getElementById('closeModalBtn');
+            const cancelBtn = document.getElementById('cancelModalBtn');
+            const form = document.getElementById('addDataForm');
+            const unidadeSelect = document.getElementById('unidade-select');
+            const unidadeNovaInput = document.getElementById('unidade-nova');
+
+            const openModal = () => {
+                // Populate unidade dropdown
+                const unidades = [...new Set(allData.map(item => item.Unidade))].sort();
+                unidadeSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
+                unidades.forEach(unidade => {
+                    const option = document.createElement('option');
+                    option.value = unidade;
+                    option.textContent = unidade;
+                    unidadeSelect.appendChild(option);
+                });
+                const novaUnidadeOption = document.createElement('option');
+                novaUnidadeOption.value = 'nova';
+                novaUnidadeOption.textContent = '--- Adicionar Nova Unidade ---';
+                unidadeSelect.appendChild(novaUnidadeOption);
+
+                unidadeNovaInput.classList.add('hidden');
+                unidadeSelect.classList.remove('hidden');
+
+                modal.classList.remove('hidden');
+                document.body.classList.add('modal-active');
+                setTimeout(() => {
+                    modal.querySelector('.modal-content').classList.remove('scale-95');
+                    modal.querySelector('.modal-content').classList.add('scale-100');
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modal.querySelector('.modal-content').classList.remove('scale-100');
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('modal-active');
+                }, 250);
+            };
+
+            openBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            unidadeSelect.addEventListener('change', () => {
+                if (unidadeSelect.value === 'nova') {
+                    unidadeNovaInput.classList.remove('hidden');
+                    unidadeNovaInput.required = true;
+                } else {
+                    unidadeNovaInput.classList.add('hidden');
+                    unidadeNovaInput.required = false;
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                let unidade = unidadeSelect.value;
+                if (unidade === 'nova') {
+                    unidade = unidadeNovaInput.value;
+                }
+
+                if (!unidade) {
+                    alert('Por favor, selecione ou adicione uma unidade.');
+                    return;
+                }
+
+                const newData = {
+                    "Unidade": unidade,
+                    "Ano": parseInt(document.getElementById('ano').value),
+                    "Mês": document.getElementById('mes').value,
+                    "Semana": parseInt(document.getElementById('semana').value),
+                    "Ativos": parseInt(document.getElementById('ativos').value),
+                    "Novos": parseInt(document.getElementById('novos').value),
+                    "Baixas": parseInt(document.getElementById('baixas').value),
+                    "Inativos": parseInt(document.getElementById('inativos').value),
+                    "Renovacoes": parseInt(document.getElementById('renovacoes').value),
+                    "Data": `${document.getElementById('ano').value}-${getMonthNumber(document.getElementById('mes').value)}-${(parseInt(document.getElementById('semana').value) * 7) - 6}`
+                };
+                
+                allData.push(newData);
+                allData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+                
+                populateFilters(allData); // Re-populate filters in case of new year or location
+                updateDashboard();
+                
+                form.reset();
+                closeModal();
+            });
+        }
+
+        function getMonthNumber(monthName) {
+            const months = {
+                "January": "01", "February": "02", "March": "03", "April": "04", "May": "05", "June": "06",
+                "July": "07", "August": "08", "September": "09", "October": "10", "November": "11", "December": "12"
+            };
+            return months[monthName];
         }
 
         function populateFilters(data) {
             const yearFilter = document.getElementById('year-filter');
             const locationFilter = document.getElementById('location-filter');
+
+            const currentYear = yearFilter.value;
+            const currentLocation = locationFilter.value;
+            
+            // Clear filters but keep the default option
+            locationFilter.innerHTML = '<option value="geral">Visão Geral (Todas as Unidades)</option>';
+            yearFilter.innerHTML = '<option value="all">Todos os Anos</option>';
             
             const years = [...new Set(data.map(row => row.Ano))].sort();
             const locations = [...new Set(data.map(row => row.Unidade))].sort();
@@ -355,11 +540,20 @@
                 yearOpt.textContent = year;
                 yearFilter.appendChild(yearOpt);
             });
+
+            // Try to restore previous selection
+            if (Array.from(locationFilter.options).some(opt => opt.value === currentLocation)) {
+                locationFilter.value = currentLocation;
+            }
+            if (Array.from(yearFilter.options).some(opt => opt.value == currentYear)) {
+                yearFilter.value = currentYear;
+            }
         }
         
         function updateDashboard() {
             const selectedLocation = document.getElementById('location-filter').value;
             const selectedYear = document.getElementById('year-filter').value;
+            const viewBy = document.getElementById('view-by-filter').value;
             
             const subtitle = document.getElementById('dashboard-subtitle');
             subtitle.textContent = selectedLocation === 'geral' ? 'Visão Geral (Todas as Unidades)' : `Unidade ${selectedLocation}`;
@@ -370,34 +564,60 @@
                 filteredData = filteredData.filter(row => row.Ano == selectedYear);
             }
 
-            let finalData;
+            let processedData;
+
+            // Step 1: Filter by location
+            let locationFilteredData;
             if (selectedLocation === 'geral') {
-                const aggregated = {};
+                // Aggregate all locations
+                const aggregatedByDate = {};
                 filteredData.forEach(row => {
-                    const key = row.Data;
-                    if (!aggregated[key]) {
-                        aggregated[key] = { ...row, Ativos: 0, Novos: 0, Baixas: 0, Inativos: 0, Renovacoes: 0 };
+                    const key = row.Data; // Group by exact date first
+                    if (!aggregatedByDate[key]) {
+                        aggregatedByDate[key] = { ...row, Ativos: 0, Novos: 0, Baixas: 0, Inativos: 0, Renovacoes: 0 };
                     }
-                    aggregated[key].Ativos += row.Ativos || 0;
-                    aggregated[key].Novos += row.Novos || 0;
-                    aggregated[key].Baixas += row.Baixas || 0;
-                    aggregated[key].Inativos += row.Inativos || 0;
-                    aggregated[key].Renovacoes += row.Renovacoes || 0;
+                    aggregatedByDate[key].Ativos += row.Ativos || 0;
+                    aggregatedByDate[key].Novos += row.Novos || 0;
+                    aggregatedByDate[key].Baixas += row.Baixas || 0;
+                    aggregatedByDate[key].Inativos += row.Inativos || 0;
+                    aggregatedByDate[key].Renovacoes += row.Renovacoes || 0;
                 });
-                finalData = Object.values(aggregated).sort((a, b) => new Date(a.Data) - new Date(b.Data));
+                locationFilteredData = Object.values(aggregatedByDate);
             } else {
-                finalData = filteredData.filter(row => row.Unidade === selectedLocation);
+                locationFilteredData = filteredData.filter(row => row.Unidade === selectedLocation);
             }
 
-            if (finalData.length === 0) {
+            // Step 2: Aggregate by selected view (monthly or weekly)
+            if (viewBy === 'monthly') {
+                const monthlyAggregated = {};
+                locationFilteredData.forEach(row => {
+                    const key = `${row.Ano}-${row.Mês}`;
+                    if (!monthlyAggregated[key]) {
+                        monthlyAggregated[key] = { Ano: row.Ano, Mês: row.Mês, Data: new Date(row.Ano, getMonthNumber(row.Mês)-1, 28), Novos: 0, Baixas: 0, Renovacoes: 0 };
+                    }
+                    monthlyAggregated[key].Novos += row.Novos || 0;
+                    monthlyAggregated[key].Baixas += row.Baixas || 0;
+                    monthlyAggregated[key].Renovacoes += row.Renovacoes || 0;
+                    // For Ativos and Inativos, we take the latest value of the month
+                    monthlyAggregated[key].Ativos = row.Ativos;
+                    monthlyAggregated[key].Inativos = row.Inativos;
+                });
+                processedData = Object.values(monthlyAggregated);
+            } else { // weekly
+                processedData = locationFilteredData;
+            }
+
+            processedData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+            if (processedData.length === 0) {
                 document.getElementById('kpi-container').innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado encontrado para a seleção atual.</div>`;
                 Object.values(charts).forEach(chart => { if(chart) chart.destroy(); });
                 charts = {};
                 return;
             }
             
-            updateKPIs(finalData);
-            updateCharts(finalData);
+            updateKPIs(processedData);
+            updateCharts(processedData, viewBy);
         }
 
         function updateKPIs(data) {
@@ -416,7 +636,7 @@
             ];
             
             kpiContainer.innerHTML = kpis.map(kpi => `
-                <div class="kpi-card bg-gray-800 p-4 rounded-xl shadow-md flex items-center">
+                <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
                     <div class="text-3xl mr-4">${kpi.icon}</div>
                     <div>
                         <p class="text-gray-400 text-sm">${kpi.label}</p>
@@ -426,8 +646,11 @@
             `).join('');
         }
 
-        function updateCharts(data) {
-            const labels = data.map(row => `${row.Mês.substring(0, 3)}/${String(row.Ano).slice(-2)}`);
+        function updateCharts(data, viewBy) {
+            const labels = viewBy === 'monthly'
+                ? data.map(row => `${row.Mês.substring(0, 3)}/${String(row.Ano).slice(-2)}`)
+                : data.map(row => `S${row.Semana}/${row.Mês.substring(0, 3)}`);
+
             const isDarkMode = true; // Hardcoded for this dark theme
             const gridColor = 'rgba(255, 255, 255, 0.1)';
             const textColor = '#E5E7EB';

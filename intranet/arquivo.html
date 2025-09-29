@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="log.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-[#111111] text-gray-200">
     <div id="app-container" class="flex h-screen">
         <div id="sidebar-container"></div>
         
@@ -23,7 +23,7 @@
                     <h1 class="text-2xl font-semibold text-white">Arquivo de Leads</h1>
                 </div>
                 <div class="flex items-center gap-4 mb-6">
-                    <input type="text" id="search-input" placeholder="Buscar por nome, empresa ou contato..." class="flex-grow p-2 border border-gray-700 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="search-input" placeholder="Buscar por nome, empresa ou contato..." class="flex-grow p-2 border border-gray-700 bg-[#1a1a1a] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div id="archived-leads-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Cards dos leads arquivados serão inseridos aqui -->
@@ -34,7 +34,7 @@
 
     <!-- Edit Client Modal -->
     <div id="editClientModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
                 <h3 class="text-xl font-bold">Editar Cliente</h3>
                 <button id="cancelEditBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -44,15 +44,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label for="editClientEmpresa" class="block text-sm font-medium text-gray-300 mb-1">Empresa *</label>
-                        <input type="text" id="editClientEmpresa" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" id="editClientEmpresa" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                     </div>
                     <div class="form-group">
                         <label for="editClientSetor" class="block text-sm font-medium text-gray-300 mb-1">Setor *</label>
-                        <input type="text" id="editClientSetor" placeholder="Ex: Imobiliário" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" id="editClientSetor" placeholder="Ex: Imobiliário" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                     </div>
                     <div class="form-group">
                         <label for="editClientPrioridade" class="block text-sm font-medium text-gray-300 mb-1">Prioridade *</label>
-                        <select id="editClientPrioridade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <select id="editClientPrioridade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                             <option value="">Selecione</option>
                             <option value="5">5 - Máxima 🚀</option>
                             <option value="4">4 - Alta 🔥</option>
@@ -63,36 +63,36 @@
                     </div>
                     <div class="form-group">
                         <label for="editClientTicket" class="block text-sm font-medium text-gray-300 mb-1">Ticket Estimado (R$)</label>
-                        <input type="number" id="editClientTicket" placeholder="15000" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="editClientTicket" placeholder="15000" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="editOrigemLead" class="block text-sm font-medium text-gray-300 mb-1">Origem do Lead</label>
-                        <input type="text" id="editOrigemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editOrigemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="editResponsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do responsável</label>
-                        <input type="text" id="editResponsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editResponsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                      <div class="form-group">
                         <label for="editClientTelefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-                        <input type="text" id="editClientTelefone" placeholder="(48) 99999-9999" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editClientTelefone" placeholder="(48) 99999-9999" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="editClientEmail" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                        <input type="email" id="editClientEmail" placeholder="contato@empresa.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="email" id="editClientEmail" placeholder="contato@empresa.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="editClientCpf" class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
-                        <input type="text" id="editClientCpf" placeholder="000.000.000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editClientCpf" placeholder="000.000.000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="editClientCnpj" class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
-                        <input type="text" id="editClientCnpj" placeholder="00.000.000/0000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editClientCnpj" placeholder="00.000.000/0000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="editClientEndereco" class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
                         <div class="flex items-center">
-                            <input type="text" id="editClientEndereco" placeholder="Rua, Número, Bairro, Cidade" class="w-full bg-gray-700 border border-gray-600 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="editClientEndereco" placeholder="Rua, Número, Bairro, Cidade" class="w-full bg-gray-700 border border-gray-600 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                             <button type="button" id="openEditMapBtn" title="Abrir no Google Maps" class="bg-primary hover:bg-primary-dark text-white font-bold p-2 rounded-r-lg">
                                 <i class="fas fa-map-marker-alt"></i>
                             </button>
@@ -100,15 +100,15 @@
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="editClientRedesSociais" class="block text-sm font-medium text-gray-300 mb-1">Redes Sociais</label>
-                        <textarea id="editClientRedesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"></textarea>
+                        <textarea id="editClientRedesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 custom-scrollbar"></textarea>
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="editClientSiteAtual" class="block text-sm font-medium text-gray-300 mb-1">Site Atual</label>
-                        <input type="text" id="editClientSiteAtual" placeholder="empresa.com.br" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="editClientSiteAtual" placeholder="empresa.com.br" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="editClientObservacoes" class="block text-sm font-medium text-gray-300 mb-1">Follow-up / Observações</label>
-                        <textarea id="editClientObservacoes" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"></textarea>
+                        <textarea id="editClientObservacoes" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 custom-scrollbar"></textarea>
                     </div>
                     <div class="form-group md:col-span-2">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
@@ -116,7 +116,7 @@
                             <!-- Log entries will be injected here -->
                         </div>
                         <div class="flex gap-2">
-                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"></textarea>
+                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 custom-scrollbar"></textarea>
                             <button type="button" id="addContactLogBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar</button>
                         </div>
                     </div>
@@ -139,23 +139,9 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
+    <script type="module" src="auth.js"></script>
     <script type="module" src="common-ui.js?v=1.1"></script>
     
-    <script type="module">
-        import { initializeAppWithFirebase } from './arquivo.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAKTAVsJKQISRYamsX7SMmh9uCJ6d2bMEs",
-            authDomain: "kanban-652ba.firebaseapp.com",
-            projectId: "kanban-652ba",
-            storageBucket: "kanban-652ba.firebasestorage.app",
-            messagingSenderId: "476390177044",
-            appId: "1:476390177044:web:39e6597eb624006ee06a01",
-            measurementId: "G-KRW331FL5F"
-        };
-        
-        initializeAppWithFirebase(firebaseConfig);
-    </script>
+    <script type="module" src="arquivo-main.js?v=1.3"></script>
 </body>
 </html>
