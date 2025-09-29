@@ -1,10 +1,14 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, auth } from './firebase-config.js';
-import { getAllUsers } from './auth.js';
+import { getAllUsers, onAuthReady } from './auth.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { checkPermission } from './permission-check.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    onAuthReady(user => {
+        if (!user || !checkPermission('calendario')) return;
+    });
     const appId = '1:1055939458006:web:1d67459a0bc0da60cf2a77' || 'default-app';
     const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
     const meetingsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'meetings');

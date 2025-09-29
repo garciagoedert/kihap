@@ -4,13 +4,21 @@ import { auth, db } from './firebase-config.js';
 
 // Função para verificar o estado de autenticação e executar um callback
 export function onAuthReady(callback) {
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
         if (user) {
             // Usuário está logado.
             console.log('Usuário logado:', user.uid);
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                sessionStorage.setItem('userName', userData.name);
+                sessionStorage.setItem('isAdmin', userData.isAdmin);
+                sessionStorage.setItem('userPermissions', JSON.stringify(userData.permissions || {}));
+            }
             callback(user);
         } else {
             // Usuário está deslogado.
+            sessionStorage.clear();
             // Redireciona para a página de login se não estiver nela.
             if (window.location.pathname !== '/intranet/login.html' && window.location.pathname !== '/intranet/recuperacao.html') {
                  window.location.href = 'login.html';
@@ -58,10 +66,22 @@ window.addUser = async function(userData) {
         const user = userCredential.user;
 
         // 2. Salvar os dados adicionais no Firestore
+        const permissions = {
+            cursos: true,
+            marketing: false,
+            calendario: false,
+            tarefas: false,
+            mapasMentais: false,
+            arquivo: false,
+            analysis: false,
+            admin: userData.isAdmin
+        };
+
         await setDoc(doc(db, "users", user.uid), {
             name: userData.name,
             email: userData.email,
-            isAdmin: userData.isAdmin
+            isAdmin: userData.isAdmin,
+            permissions: permissions
         });
         alert('Usuário adicionado com sucesso!');
         return { success: true, uid: user.uid };
