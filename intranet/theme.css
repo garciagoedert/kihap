@@ -1,0 +1,30 @@
+/* Estilos para a cor primária - será sobrescrito pelo JS de whitelabel */
+:root {
+    --primary-color: #FFC107; /* Cor padrão */
+    --primary-color-dark: #d39e00;
+    --primary-color-light: #ffd452;
+    --primary-text-color: #111111;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.hover\:bg-primary-dark:hover {
+    background-color: var(--primary-color-dark) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.bg-primary-light {
+    background-color: var(--primary-color-light) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.border-primary {
+    border-color: var(--primary-color) !important;
+}

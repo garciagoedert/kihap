@@ -2,20 +2,23 @@ import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "htt
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
 
-// Observador do estado de autenticação
-onAuthStateChanged(auth, user => {
-    if (user) {
-        // Usuário está logado.
-        // Você pode adicionar lógica aqui para ser executada quando um usuário faz login.
-        console.log('Usuário logado:', user.uid);
-    } else {
-        // Usuário está deslogado.
-        // Redireciona para a página de login se não estiver nela.
-        if (window.location.pathname !== '/intranet/login.html') {
-            // window.location.href = 'login.html';
+// Função para verificar o estado de autenticação e executar um callback
+export function onAuthReady(callback) {
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            // Usuário está logado.
+            console.log('Usuário logado:', user.uid);
+            callback(user);
+        } else {
+            // Usuário está deslogado.
+            // Redireciona para a página de login se não estiver nela.
+            if (window.location.pathname !== '/intranet/login.html' && window.location.pathname !== '/intranet/recuperacao.html') {
+                 window.location.href = 'login.html';
+            }
+            callback(null);
         }
-    }
-});
+    });
+}
 
 // Função de logout
 window.logout = function() {

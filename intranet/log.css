@@ -65,3 +65,46 @@ body {
 .bg-primary {
     background-color: #FF9800;
 }
+
+/* Quill.js Dark Theme */
+.ql-toolbar {
+    background-color: #374151; /* gray-700 */
+    border-color: #4B5563 !important; /* gray-600 */
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+.ql-container {
+    border-color: #4B5563 !important; /* gray-600 */
+    border-radius: 0 0 0.5rem 0.5rem;
+    background-color: #4B5563; /* gray-600 */
+}
+.ql-editor {
+    color: #F3F4F6; /* gray-200 */
+}
+.ql-snow .ql-stroke {
+    stroke: #D1D5DB; /* gray-300 */
+}
+.ql-snow .ql-picker-label {
+    color: #D1D5DB; /* gray-300 */
+}
+.ql-snow .ql-picker-options {
+    background-color: #374151; /* gray-700 */
+    border-color: #4B5563 !important; /* gray-600 */
+}
+.ql-snow .ql-picker-item:hover {
+    background-color: #4B5563; /* gray-600 */
+}
+.ql-snow .ql-picker-item.ql-selected {
+    background-color: #6B7280; /* gray-500 */
+}
+
+.ql-snow .ql-stroke, .ql-snow .ql-fill {
+    stroke: #D1D5DB !important; /* gray-300 */
+}
+
+.ql-snow .ql-picker-label {
+    color: #D1D5DB !important; /* gray-300 */
+}
+
+.ql-snow .ql-picker-item {
+    color: #D1D5DB; /* gray-300 */
+}

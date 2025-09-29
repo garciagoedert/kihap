@@ -80,6 +80,4 @@ export async function setupProfilePage() {
         // Note: localStorage is not cleared on logout to persist profile pictures
         window.location.href = 'login.html';
     });
-
-    setupUIListeners();
 }
