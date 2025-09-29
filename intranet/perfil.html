@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-[#111111] text-gray-200">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         
@@ -28,7 +28,7 @@
                 <h1 class="text-2xl font-bold mb-6">Meu Perfil</h1>
                 
                 <!-- Profile Info -->
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
                     <div class="flex items-center space-x-6">
                         <img id="user-avatar" src="default-profile.svg" alt="User Avatar" class="w-24 h-24 rounded-full">
                         <div>
@@ -39,7 +39,7 @@
                 </div>
 
                 <!-- Edit Profile Form -->
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
                     <h2 class="text-xl font-semibold mb-4">Editar Informações</h2>
                     <form id="edit-profile-form">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -74,6 +74,16 @@
     </div>
 
     <script src="auth.js"></script>
-    <script type="module" src="perfil.js"></script>
+    <script type="module">
+        import { loadComponents, setupUIListeners } from './common-ui.js';
+        import { setupProfilePage } from './perfil.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupUIListeners();
+                setupProfilePage();
+            });
+        });
+    </script>
 </body>
 </html>

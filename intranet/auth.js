@@ -1,33 +1,99 @@
-const users = [
-    { name: 'Mr. Garcia', email: 'comercial@kihap.com.br', password: 'Pg1308@!', isAdmin: true, profilePicture: 'default-profile.svg' }
-];
+import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { auth, db } from './firebase-config.js';
 
-function findUser(email, password) {
-    return users.find(user => user.email === email && user.password === password);
+// Observador do estado de autenticação
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // Usuário está logado.
+        // Você pode adicionar lógica aqui para ser executada quando um usuário faz login.
+        console.log('Usuário logado:', user.uid);
+    } else {
+        // Usuário está deslogado.
+        // Redireciona para a página de login se não estiver nela.
+        if (window.location.pathname !== '/intranet/login.html') {
+            // window.location.href = 'login.html';
+        }
+    }
+});
+
+// Função de logout
+window.logout = function() {
+    signOut(auth).then(() => {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }).catch((error) => {
+        console.error('Erro ao fazer logout:', error);
+    });
 }
 
-window.getAllUsers = function() {
+// Funções de gerenciamento de usuário (a serem implementadas/adaptadas)
+// Por enquanto, elas podem ser mantidas vazias ou removidas se não forem usadas em nenhum outro lugar.
+
+async function findUser(email, password) {
+    // Esta função não é mais necessária e será removida.
+    return null;
+}
+
+export async function getAllUsers() {
+    const users = [];
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        querySnapshot.forEach((doc) => {
+            users.push({ id: doc.id, ...doc.data() });
+        });
+    } catch (error) {
+        console.error("Erro ao buscar usuários:", error);
+    }
     return users;
 }
 
-function addUser(user) {
-    users.push(user);
+window.addUser = async function(userData) {
+    try {
+        // 1. Criar o usuário no Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+        const user = userCredential.user;
+
+        // 2. Salvar os dados adicionais no Firestore
+        await setDoc(doc(db, "users", user.uid), {
+            name: userData.name,
+            email: userData.email,
+            isAdmin: userData.isAdmin
+        });
+        alert('Usuário adicionado com sucesso!');
+        return { success: true, uid: user.uid };
+    } catch (error) {
+        console.error("Erro ao adicionar usuário:", error);
+        alert(`Erro ao adicionar usuário: ${error.message}`);
+        return { success: false, error: error.message };
+    }
 }
 
-function updateUser(email, updatedData) {
-    const userIndex = users.findIndex(user => user.email === email);
-    if (userIndex !== -1) {
-        users[userIndex] = { ...users[userIndex], ...updatedData };
-        return true;
+window.updateUser = async function(uid, updatedData) {
+    try {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, updatedData);
+        alert('Usuário atualizado com sucesso!');
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao atualizar usuário:", error);
+        alert(`Erro ao atualizar usuário: ${error.message}`);
+        return { success: false, error: error.message };
     }
-    return false;
 }
 
-function deleteUser(email) {
-    const userIndex = users.findIndex(user => user.email === email);
-    if (userIndex !== -1) {
-        users.splice(userIndex, 1);
-        return true;
+window.deleteUser = async function(uid) {
+    try {
+        // ATENÇÃO: Esta função deleta apenas o documento do Firestore.
+        // Deletar um usuário do Firebase Authentication pelo client-side
+        // não é recomendado por questões de segurança.
+        // A exclusão completa deve ser feita por um backend com o Admin SDK.
+        await deleteDoc(doc(db, "users", uid));
+        alert('Usuário removido do banco de dados com sucesso!');
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao deletar usuário:", error);
+        alert(`Erro ao deletar usuário: ${error.message}`);
+        return { success: false, error: error.message };
     }
-    return false;
 }

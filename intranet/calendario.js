@@ -1,16 +1,8 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, auth } from './firebase-config.js';
+import { getAllUsers } from './auth.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-function getAllUsers() {
-    return [
-        { id: 'comercial@kihap.com.br', name: 'Mr. Garcia' },
-        { id: 'mr.hadad@kihap.com.br', name: 'Mr. Hadad' },
-        { id: 'vendas@kihap.com.br', name: 'Time de Vendas' },
-        { id: 'suporte@kihap.com.br', name: 'Suporte' }
-    ];
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     const appId = '1:1055939458006:web:1d67459a0bc0da60cf2a77' || 'default-app';
@@ -24,8 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef) {
-    const systemUsers = getAllUsers();
+async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef) {
+    const systemUsers = await getAllUsers();
     let tasks = [];
     let meetings = [];
     let prospects = [];

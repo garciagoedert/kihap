@@ -160,9 +160,4 @@ async function deleteMap(mapId, mapName) {
     }
 }
 
-// --- INITIALIZE APP ---
-document.addEventListener('DOMContentLoaded', () => {
-    loadComponents(() => {
-        setupUIListeners();
-    });
-});
+// A inicialização agora é tratada no arquivo HTML principal.

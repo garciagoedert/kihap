@@ -32,7 +32,7 @@
         .fc-scroller::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-[#111111] text-gray-200">
     <div id="app-container" class="flex h-screen">
         <div id="sidebar-container"></div>
         
@@ -52,14 +52,14 @@
                         <button id="create-task-btn-calendar" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg shadow-md">Nova Tarefa</button>
                     </div>
                 </div>
-                <div id='calendar' class="bg-gray-800 p-4 rounded-lg"></div>
+                <div id='calendar' class="bg-[#1a1a1a] p-4 rounded-lg"></div>
             </div>
         </main>
     </div>
 
     <!-- Modal para Criar/Editar Tarefa (reutilizado de tarefas.html) -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
                 <h2 id="modal-title" class="text-xl font-bold">Nova Tarefa</h2>
                 <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -68,23 +68,23 @@
                 <input type="hidden" id="task-id">
                 <div>
                     <label for="task-title" class="block text-sm font-medium text-gray-300 mb-1">Título</label>
-                    <input type="text" id="task-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="task-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="task-description" class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
-                    <textarea id="task-description" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="task-description" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                 </div>
                 <div>
                     <label for="task-assignee" class="block text-sm font-medium text-gray-300 mb-1">Responsável</label>
-                    <select id="task-assignee" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    <select id="task-assignee" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
                 </div>
                 <div>
                     <label for="task-due-date" class="block text-sm font-medium text-gray-300 mb-1">Prazo</label>
-                    <input type="datetime-local" id="task-due-date" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="datetime-local" id="task-due-date" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="task-priority" class="block text-sm font-medium text-gray-300 mb-1">Prioridade</label>
-                    <select id="task-priority" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="task-priority" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <option value="low">Baixa</option>
                         <option value="normal">Normal</option>
                         <option value="high">Alta</option>
@@ -93,7 +93,7 @@
                 </div>
                 <div>
                     <label for="task-status" class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-                    <select id="task-status" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="task-status" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <option value="pending">Pendente</option>
                         <option value="in_progress">Em Progresso</option>
                         <option value="done">Concluída</option>
@@ -101,15 +101,15 @@
                 </div>
                 <div>
                     <label for="task-color" class="block text-sm font-medium text-gray-300 mb-1">Cor</label>
-                    <input type="color" id="task-color" value="#3b82f6" class="w-full h-10 bg-gray-700 border border-gray-600 rounded-lg p-1 cursor-pointer">
+                    <input type="color" id="task-color" value="#FFC107" class="w-full h-10 bg-gray-700 border border-gray-600 rounded-lg p-1 cursor-pointer">
                 </div>
                 <div>
                     <label for="task-parent-entity" class="block text-sm font-medium text-gray-300 mb-1">Vincular a (Cliente, Negócio, etc.)</label>
-                    <input type="text" id="task-parent-entity" placeholder="Busque por um cliente ou negócio..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="task-parent-entity" placeholder="Busque por um cliente ou negócio..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div class="relative">
                     <label for="task-linked-card-search" class="block text-sm font-medium text-gray-300 mb-1">Vincular ao Card (Prospect/Produção)</label>
-                    <input type="text" id="task-linked-card-search" placeholder="Digite para buscar..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="task-linked-card-search" placeholder="Digite para buscar..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     <input type="hidden" id="task-linked-card-id">
                     <div id="task-linked-card-results" class="absolute z-10 w-full bg-gray-600 border border-gray-500 rounded-b-lg mt-1 max-h-48 overflow-y-auto hidden"></div>
                 </div>
@@ -126,7 +126,7 @@
 
     <!-- Modal para Criar/Editar Reunião -->
     <div id="meeting-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
                 <h2 id="meeting-modal-title" class="text-xl font-bold">Agendar Nova Reunião</h2>
                 <button id="close-meeting-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -135,37 +135,37 @@
                 <input type="hidden" id="meeting-id">
                 <div>
                     <label for="meeting-title" class="block text-sm font-medium text-gray-300 mb-1">Título</label>
-                    <input type="text" id="meeting-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="meeting-title" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="meeting-date" class="block text-sm font-medium text-gray-300 mb-1">Data e Hora de Início</label>
-                    <input type="datetime-local" id="meeting-date" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="datetime-local" id="meeting-date" required class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="meeting-end-date" class="block text-sm font-medium text-gray-300 mb-1">Data e Hora Final</label>
-                    <input type="datetime-local" id="meeting-end-date" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="datetime-local" id="meeting-end-date" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="meeting-meet-link" class="block text-sm font-medium text-gray-300 mb-1">Link da Reunião (Google Meet)</label>
-                    <input type="url" id="meeting-meet-link" placeholder="https://meet.google.com/..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="url" id="meeting-meet-link" placeholder="https://meet.google.com/..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="meeting-guests" class="block text-sm font-medium text-gray-300 mb-1">Convidados (e-mails separados por vírgula)</label>
-                    <input type="text" id="meeting-guests" placeholder="email1@exemplo.com, email2@exemplo.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="meeting-guests" placeholder="email1@exemplo.com, email2@exemplo.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
                 <div>
                     <label for="meeting-description" class="block text-sm font-medium text-gray-300 mb-1">Pauta / Descrição</label>
-                    <textarea id="meeting-description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="meeting-description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                 </div>
                 <div class="relative">
                     <label for="meeting-linked-card-search" class="block text-sm font-medium text-gray-300 mb-1">Vincular ao Card (Prospect/Produção)</label>
-                    <input type="text" id="meeting-linked-card-search" placeholder="Digite para buscar..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="meeting-linked-card-search" placeholder="Digite para buscar..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     <input type="hidden" id="meeting-linked-card-id">
                     <div id="meeting-linked-card-results" class="absolute z-10 w-full bg-gray-600 border border-gray-500 rounded-b-lg mt-1 max-h-48 overflow-y-auto hidden"></div>
                 </div>
                  <div>
                     <label for="meeting-status" class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-                    <select id="meeting-status" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="meeting-status" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <option value="scheduled">Agendada</option>
                         <option value="completed">Realizada</option>
                         <option value="canceled">Cancelada</option>

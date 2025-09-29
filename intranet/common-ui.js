@@ -1,3 +1,5 @@
+import './auth.js';
+
 function setupUIListeners(handlers = {}) {
     const {
         openFormModal,
@@ -152,7 +154,7 @@ async function loadWhitelabelSettings() {
 
 async function applyWhitelabelSettings() {
     const settings = await loadWhitelabelSettings();
-    const primaryColor = settings?.primaryColor || '#2563eb'; // Default to Tailwind's blue-600
+    const primaryColor = settings?.primaryColor || '#FFC107'; // Default to Tailwind's blue-600
 
     // Apply header logo
     if (settings?.headerLogoUrl) {
@@ -178,6 +180,7 @@ async function applyWhitelabelSettings() {
         .hover\\:bg-primary-dark:hover { background-color: ${shadeColor(primaryColor, -20)} !important; }
         .bg-primary-light { background-color: ${shadeColor(primaryColor, 20)} !important; }
         .hover\\:bg-primary:hover { background-color: ${primaryColor} !important; }
+        .bg-primary, .bg-primary-light, .hover\\:bg-primary:hover, .hover\\:bg-primary-dark:hover { color: #111111 !important; }
     `;
     document.head.appendChild(style);
 }
@@ -228,8 +231,8 @@ async function loadComponents(pageSpecificSetup) {
         sidebarLinks.forEach(link => {
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
-                link.classList.add('bg-primary-light', 'text-white');
-                link.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                link.classList.add('bg-primary-light');
+                link.classList.remove('bg-gray-700', 'hover:bg-gray-600', 'text-white');
 
                 if (linkPage === 'index.html') {
                     const prospectActions = document.getElementById('prospect-actions');

@@ -29,11 +29,11 @@
             transform: rotate(2deg);
         }
         .drag-over {
-            @apply border-dashed border-2 border-blue-500 bg-blue-500/10;
+            @apply border-dashed border-2 border-gray-500 bg-gray-500/10;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-[#111111] text-gray-200">
 
     <div id="kanban-container" class="flex h-screen">
         <div id="sidebar-container"></div>
@@ -53,13 +53,13 @@
                 </div>
 
                 <!-- Filters -->
-                <div class="bg-gray-800 p-4 rounded-lg mb-6 flex flex-col xl:flex-row items-center gap-4 shadow-md flex-shrink-0">
+                <div class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-col xl:flex-row items-center gap-4 shadow-md flex-shrink-0">
                      <div class="relative flex-grow w-full">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
-                        <select id="priorityFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filter by priority">
+                        <select id="priorityFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by priority">
                             <option value="">Todas as Prioridades</option>
                             <option value="5">Máxima (5)</option>
                             <option value="4">Alta (4)</option>
@@ -67,7 +67,7 @@
                             <option value="2">Baixa (2)</option>
                             <option value="1">Mínima (1)</option>
                         </select>
-                        <select id="tagFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filter by tag">
+                        <select id="tagFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by tag">
                             <option value="">Todas as Tags</option>
                         </select>
                         <button id="resetFiltersBtn" class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
@@ -84,7 +84,7 @@
 
     <!-- Add/Edit Prospect Modal -->
     <div id="formModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
-        <div class="bg-gray-800 w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
+        <div class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
                 <div class="flex items-center gap-4">
                     <h2 id="modalTitle" class="text-xl font-bold">Adicionar Novo Prospect</h2>
@@ -97,19 +97,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do responsável</label>
-                        <input type="text" id="responsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="responsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
-                        <input type="text" id="unidade" placeholder="Ex: Florianópolis, São José" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="unidade" placeholder="Ex: Florianópolis, São José" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
-                        <input type="text" id="setor" placeholder="Ex: Kids, Adultos" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" id="setor" placeholder="Ex: Kids, Adultos" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                     </div>
                     <div class="form-group">
                         <label for="prioridade" class="block text-sm font-medium text-gray-300 mb-1">Prioridade *</label>
-                        <select id="prioridade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <select id="prioridade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                             <option value="">Selecione</option>
                             <option value="5">5 - Máxima 🚀</option>
                             <option value="4">4 - Alta 🔥</option>
@@ -120,15 +120,15 @@
                     </div>
                     <div class="form-group">
                         <label for="ticketEstimado" class="block text-sm font-medium text-gray-300 mb-1">Ticket Estimado (R$)</label>
-                        <input type="number" id="ticketEstimado" placeholder="15000" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="ticketEstimado" placeholder="15000" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="origemLead" class="block text-sm font-medium text-gray-300 mb-1">Origem do Lead</label>
-                        <input type="text" id="origemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="origemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                      <div class="form-group">
                         <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-                        <input type="text" id="telefone" placeholder="(48) 99999-9999" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="telefone" placeholder="(48) 99999-9999" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         <a id="whatsappLink" href="#" target="_blank" class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
                             <i class="fab fa-whatsapp"></i>
                             <span>Chamar no WhatsApp</span>
@@ -136,19 +136,19 @@
                     </div>
                     <div class="form-group">
                         <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                        <input type="email" id="email" placeholder="contato@empresa.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="email" id="email" placeholder="contato@empresa.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group">
                         <label for="cpf" class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
-                        <input type="text" id="cpf" placeholder="000.000.000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="cpf" placeholder="000.000.000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="redesSociais" class="block text-sm font-medium text-gray-300 mb-1">Redes Sociais</label>
-                        <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                     </div>
                     <div class="form-group md:col-span-2">
                         <label for="observacoes" class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-                        <textarea id="observacoes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <textarea id="observacoes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                     </div>
                     <div class="form-group md:col-span-2">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
@@ -156,7 +156,7 @@
                             <!-- Log entries will be injected here -->
                         </div>
                         <div class="flex gap-2">
-                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                             <button type="button" id="addContactLogBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar</button>
                         </div>
                     </div>
@@ -187,7 +187,7 @@
 
     <!-- Import Modal -->
     <div id="importModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
                 <h2 class="text-xl font-bold">Importar Leads</h2>
                 <button id="closeImportModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -195,7 +195,7 @@
             <div class="p-6 overflow-y-auto">
                 <p class="text-gray-400 mb-4">Copie e cole os dados da sua planilha (formato CSV). A primeira linha deve ser o cabeçalho e as colunas devem estar na seguinte ordem:</p>
                 <code class="block bg-gray-900 text-gray-300 p-2 rounded-md text-xs mb-4">Empresa,Setor,Prioridade,Ticket Estimado,Telefone,Email,CPF,CNPJ,Endereço,Redes Sociais,Site,Observações</code>
-                <textarea id="csvData" rows="10" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cole seus dados aqui..."></textarea>
+                <textarea id="csvData" rows="10" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Cole seus dados aqui..."></textarea>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-700">
                 <button type="button" id="cancelImportBtn" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
@@ -206,7 +206,7 @@
 
     <!-- Confirmation Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
             <h3 class="text-lg font-bold mb-2">Confirmar Ação</h3>
             <p id="confirmMessage" class="text-gray-300 mb-6">Você tem certeza?</p>
             <div class="flex justify-center gap-4">
@@ -275,7 +275,7 @@
             if (prospectsListener) prospectsListener();
             if (leadsListener) leadsListener();
 
-            const prospectsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
+            const prospectsCollection = collection(db, 'prospects');
             prospectsListener = onSnapshot(prospectsCollection, (snapshot) => {
                 prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'prospect' })).filter(p => !p.pagina || p.pagina === 'Prospecção');
                 combineAndRender();
@@ -324,7 +324,7 @@
                 
                 let contentHTML;
                 if (isMobile) {
-                    columnEl.className = 'bg-gray-800 rounded-lg flex flex-col';
+                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
                     contentHTML = `
                         <div class="overflow-x-auto pb-3">
                             <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-3 p-2 min-h-[120px] pr-2">
@@ -333,7 +333,7 @@
                         </div>
                     `;
                 } else {
-                    columnEl.className = 'bg-gray-800 rounded-lg flex flex-col overflow-hidden';
+                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col overflow-hidden';
                     contentHTML = `
                         <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-2 space-y-3 rounded-md overflow-y-auto">
                            <!-- Cards will be injected here -->
@@ -368,7 +368,7 @@
         function createProspectCard(prospect, isMobile = false) {
             const card = document.createElement('div');
             const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
-            card.className = `prospect-card bg-gray-900 p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
+            card.className = `prospect-card bg-[#111111] p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
             card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
             card.draggable = true;
             card.dataset.id = prospect.id;
@@ -410,13 +410,13 @@
                 ${createStatCard('Total de Prospects', total, 'fa-users', 'text-gray-300')}
                 ${createStatCard('Alta Prioridade', highPriority, 'fa-star', 'text-yellow-400')}
                 ${createStatCard('Potencial Total', `R$ ${totalPotential.toLocaleString('pt-BR')}`, 'fa-dollar-sign', 'text-green-500')}
-                ${createStatCard('Ticket Médio', `R$ ${Math.round(avgTicket).toLocaleString('pt-BR')}`, 'fa-chart-pie', 'text-blue-500')}
+                ${createStatCard('Ticket Médio', `R$ ${Math.round(avgTicket).toLocaleString('pt-BR')}`, 'fa-chart-pie', 'text-yellow-500')}
             `;
         }
 
         function createStatCard(label, value, icon, iconColor) {
             return `
-                <div class="bg-gray-800 p-4 rounded-lg flex items-center gap-4 shadow-md">
+                <div class="bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-4 shadow-md">
                     <div class="bg-gray-700 p-3 rounded-full">
                         <i class="fas ${icon} fa-lg ${iconColor}"></i>
                     </div>
@@ -477,7 +477,7 @@
                 if (item.type === 'lead') {
                     itemRef = doc(db, 'leads', prospectId);
                 } else {
-                    itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospectId);
+                    itemRef = doc(db, 'prospects', prospectId);
                 }
 
                 await updateDoc(itemRef, {
@@ -795,7 +795,7 @@
 
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
             try {
-                const prospectsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
+                const prospectsCollection = collection(db, 'prospects');
 
                 if (prospectId && prospectType === 'lead') {
                     // Convert lead to prospect
@@ -854,7 +854,7 @@
                 if (item.type === 'lead') {
                     itemRef = doc(db, 'leads', itemId);
                 } else {
-                    itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', itemId);
+                    itemRef = doc(db, 'prospects', itemId);
                 }
                 
                 await deleteDoc(itemRef);
@@ -868,20 +868,68 @@
             }
         }
 
-        async function archiveProspect(prospectId) {
+        async function archiveProspect(itemId) {
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            const prospect = prospects.find(p => p.id === prospectId);
+            const item = combinedData.find(p => p.id === itemId);
+
+            if (!item) {
+                console.error("Error archiving: item not found with id", itemId);
+                alert("Erro: Item não encontrado para arquivar.");
+                return;
+            }
+
             try {
-                const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospectId);
-                await updateDoc(prospectRef, {
-                    pagina: 'Arquivo',
-                    updatedAt: serverTimestamp()
-                });
-                if(prospect) {
-                    generalLog.add(user, 'Archive Card', `Card "${prospect.responsavel}" archived`);
+                if (item.type === 'lead') {
+                    // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
+                    const prospectsCollection = collection(db, 'prospects');
+                    
+                    // Create a new object for the archived prospect from the lead data
+                    const newArchivedProspect = {
+                        responsavel: item.responsavel || '',
+                        unidade: item.unidade || '',
+                        setor: item.setor || '',
+                        prioridade: item.prioridade || 3,
+                        ticketEstimado: item.ticketEstimado || 0,
+                        origemLead: item.origemLead || 'Site',
+                        telefone: item.telefone || '',
+                        email: item.email || '',
+                        cpf: item.cpf || '',
+                        redesSociais: item.redesSociais || '',
+                        observacoes: item.observacoes || '',
+                        tags: item.tags || [],
+                        pagina: 'Arquivo',
+                        status: 'Arquivado',
+                        updatedAt: serverTimestamp(),
+                        createdAt: item.createdAt || serverTimestamp(),
+                        createdBy: item.createdBy || 'System Conversion'
+                    };
+
+                    const batch = writeBatch(db);
+
+                    // 1. Create the new archived prospect
+                    const newProspectRef = doc(prospectsCollection);
+                    batch.set(newProspectRef, newArchivedProspect);
+
+                    // 2. Delete the old lead
+                    const oldLeadRef = doc(db, 'leads', itemId);
+                    batch.delete(oldLeadRef);
+
+                    await batch.commit();
+
+                } else { // It's a prospect, just update it
+                    const prospectRef = doc(db, 'prospects', itemId);
+                    await updateDoc(prospectRef, {
+                        pagina: 'Arquivo',
+                        updatedAt: serverTimestamp()
+                    });
                 }
+
+                const itemName = item.responsavel || item.nome || 'Item sem nome';
+                generalLog.add(user, 'Archive Card', `Card "${itemName}" archived`);
+
             } catch (error) {
-                console.error("Error archiving prospect:", error);
+                console.error("Error archiving item:", error);
+                alert("Erro ao arquivar o item.");
             }
         }
 
@@ -899,7 +947,7 @@
             }
 
             const batch = writeBatch(db);
-            const prospectsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
+            const prospectsCollection = collection(db, 'prospects');
             let importedCount = 0;
 
             rows.forEach(row => {
@@ -962,7 +1010,7 @@
                 checkbox.type = 'checkbox';
                 checkbox.id = `tag-${tag}`;
                 checkbox.value = tag;
-                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700';
+                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
                 
                 const label = document.createElement('label');
                 label.htmlFor = `tag-${tag}`;
@@ -994,7 +1042,7 @@
 
         function getSectorColor(sector) {
             const colorPalette = [
-                { bg: 'bg-blue-900/50', text: 'text-blue-200' },
+                { bg: 'bg-gray-900/50', text: 'text-gray-200' },
                 { bg: 'bg-purple-900/50', text: 'text-purple-200' },
                 { bg: 'bg-teal-900/50', text: 'text-teal-200' },
                 { bg: 'bg-red-900/50', text: 'text-red-200' },
@@ -1063,7 +1111,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const cardIdToOpen = urlParams.get('cardId');
                 if (cardIdToOpen) {
-                    const unsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'prospects'), (snapshot) => {
+                    const unsubscribe = onSnapshot(collection(db, 'prospects'), (snapshot) => {
                         const prospect = prospects.find(p => p.id === cardIdToOpen);
                         if (prospect) {
                             openFormModal(prospect);

@@ -1,6 +1,7 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
+import { getAllUsers } from './auth.js';
 
-function setupProfilePage() {
+export async function setupProfilePage() {
     const userNameDisplay = document.getElementById('user-name-display');
     const userEmailDisplay = document.getElementById('user-email-display');
     const userAvatar = document.getElementById('user-avatar');
@@ -11,7 +12,7 @@ function setupProfilePage() {
     const logoutBtn = document.getElementById('logout-btn');
 
     const loggedInUserName = sessionStorage.getItem('userName');
-    const allUsers = getAllUsers();
+    const allUsers = await getAllUsers();
     let currentUser = allUsers.find(user => user.name === loggedInUserName);
 
     if (currentUser) {
@@ -82,5 +83,3 @@ function setupProfilePage() {
 
     setupUIListeners();
 }
-
-loadComponents(setupProfilePage);
