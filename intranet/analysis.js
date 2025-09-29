@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { checkPermission } from './permission-check.js';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -269,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
         }
-        if (!checkPermission('analysis')) return;
+        
         try {
             const data = await fetchData();
             const processedData = processData(data);
