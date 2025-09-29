@@ -125,7 +125,6 @@ export function setupAdminPage() {
     userForm.addEventListener('submit', handleFormSubmit);
 
     renderUsers();
-    setupUIListeners();
 }
 
 // A inicialização agora é tratada no arquivo HTML principal.
