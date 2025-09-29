@@ -1,23 +1,18 @@
-import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady } from './auth.js';
 
 let courseData = null;
-let courseId = null;
-let user = null;
-let userProgress = [];
-let currentLessonIdentifier = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadComponents();
     setupUIListeners();
 
-    onAuthReady(currentUser => {
-        if (currentUser) {
-            user = currentUser;
+    onAuthReady(user => {
+        if (user) {
             const params = new URLSearchParams(window.location.search);
-            courseId = params.get('courseId');
+            const courseId = params.get('courseId');
             if (courseId) {
                 loadCourse(courseId);
             } else {
@@ -28,23 +23,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-async function loadCourse(id) {
-    const courseRef = doc(db, "courses", id);
-    const progressRef = doc(db, "users", user.uid, "course_progress", id);
-    
-    const [courseSnap, progressSnap] = await Promise.all([getDoc(courseRef), getDoc(progressRef)]);
+async function loadCourse(courseId) {
+    const docRef = doc(db, "courses", courseId);
+    const docSnap = await getDoc(docRef);
 
-    if (courseSnap.exists()) {
-        courseData = courseSnap.data();
-        if (progressSnap.exists()) {
-            userProgress = progressSnap.data().completedLessons || [];
-        }
-        
+    if (docSnap.exists()) {
+        courseData = docSnap.data();
         document.title = `${courseData.title} - Player do Curso`;
         document.getElementById('course-title-sidebar').textContent = courseData.title;
         renderModules();
-        
-        if (courseData.modules?.[0]?.lessons?.[0]) {
+        // Load the first lesson of the first module by default
+        if (courseData.modules && courseData.modules[0] && courseData.modules[0].lessons && courseData.modules[0].lessons[0]) {
             loadLesson(0, 0);
         }
     } else {
@@ -62,12 +51,10 @@ function renderModules() {
         const lessonsList = document.createElement('ul');
         lessonsList.className = 'space-y-1 mt-1 pl-2';
         module.lessons.forEach((lesson, lessonIndex) => {
-            const lessonIdentifier = `${moduleIndex}-${lessonIndex}`;
-            const isCompleted = userProgress.includes(lessonIdentifier);
             const lessonEl = document.createElement('li');
             lessonEl.innerHTML = `
                 <a href="#" class="flex items-center gap-2 text-gray-300 hover:text-white p-1 rounded-md" data-module="${moduleIndex}" data-lesson="${lessonIndex}">
-                    <i class="${isCompleted ? 'fas fa-check-circle text-green-500' : 'far fa-play-circle'}"></i>
+                    <i class="far fa-play-circle"></i>
                     <span>${lesson.title}</span>
                 </a>
             `;
@@ -89,13 +76,10 @@ function renderModules() {
 }
 
 function loadLesson(moduleIndex, lessonIndex) {
-    currentLessonIdentifier = `${moduleIndex}-${lessonIndex}`;
     const lesson = courseData.modules[moduleIndex].lessons[lessonIndex];
     document.getElementById('lesson-title').textContent = lesson.title;
     document.getElementById('lesson-description').innerHTML = lesson.description || '';
     
-    updateCompleteButton();
-
     const contentContainer = document.getElementById('lesson-content-container');
     
     switch (lesson.type) {
@@ -122,38 +106,3 @@ function loadLesson(moduleIndex, lessonIndex) {
             contentContainer.innerHTML = `<div class="p-6 bg-gray-800 rounded-lg">Tipo de conteúdo não suportado.</div>`;
     }
 }
-
-function updateCompleteButton() {
-    const btn = document.getElementById('complete-lesson-btn');
-    if (userProgress.includes(currentLessonIdentifier)) {
-        btn.textContent = 'Aula Concluída';
-        btn.classList.replace('bg-green-600', 'bg-gray-500');
-        btn.classList.replace('hover:bg-green-700', 'hover:bg-gray-600');
-    } else {
-        btn.textContent = 'Marcar como Concluída';
-        btn.classList.replace('bg-gray-500', 'bg-green-600');
-        btn.classList.replace('hover:bg-gray-600', 'hover:bg-green-700');
-    }
-}
-
-async function toggleLessonCompletion() {
-    const progressRef = doc(db, "users", user.uid, "course_progress", courseId);
-    const isCompleted = userProgress.includes(currentLessonIdentifier);
-
-    try {
-        if (isCompleted) {
-            await setDoc(progressRef, { completedLessons: arrayRemove(currentLessonIdentifier) }, { merge: true });
-            userProgress = userProgress.filter(id => id !== currentLessonIdentifier);
-        } else {
-            await setDoc(progressRef, { completedLessons: arrayUnion(currentLessonIdentifier) }, { merge: true });
-            userProgress.push(currentLessonIdentifier);
-        }
-        renderModules();
-        updateCompleteButton();
-    } catch (error) {
-        console.error("Error updating progress:", error);
-        alert("Erro ao atualizar o progresso.");
-    }
-}
-
-document.getElementById('complete-lesson-btn').addEventListener('click', toggleLessonCompletion);

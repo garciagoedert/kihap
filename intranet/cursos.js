@@ -1,9 +1,7 @@
-import { collection, getDocs, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady } from './auth.js';
-
-let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadComponents();
@@ -11,7 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     onAuthReady(async (user) => {
         if (user) {
-            currentUser = user;
             const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
             if (isAdmin) {
                 document.getElementById('add-course-btn').classList.remove('hidden');
@@ -32,13 +29,12 @@ async function loadCourses(isAdmin) {
             return;
         }
 
-        for (const courseDoc of querySnapshot.docs) {
-            const course = courseDoc.data();
-            const courseId = courseDoc.id;
+        querySnapshot.forEach((doc) => {
+            const course = doc.data();
+            const courseId = doc.id;
             const courseCard = createCourseCard(course, courseId, isAdmin);
             courseListContainer.appendChild(courseCard);
-            updateCourseProgress(courseId, course);
-        }
+        });
     } catch (error) {
         console.error("Error loading courses: ", error);
         courseListContainer.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar os cursos.</p>';
@@ -71,9 +67,6 @@ function createCourseCard(course, courseId, isAdmin) {
         <div class="course-card-content">
             <h3 class="text-2xl font-bold font-title">${course.title}</h3>
             <p class="text-sm text-gray-300">Por ${course.author || 'Autor desconhecido'}</p>
-            <div class="progress-bar-container mt-2 h-2 w-full bg-gray-700 rounded-full overflow-hidden">
-                <div id="progress-${courseId}" class="progress-bar h-full bg-green-500 rounded-full" style="width: 0%;"></div>
-            </div>
         </div>
         ${adminActionsHTML}
     `;
@@ -84,23 +77,6 @@ function createCourseCard(course, courseId, isAdmin) {
     card.appendChild(adminActionsContainer);
 
     return card;
-}
-
-async function updateCourseProgress(courseId, course) {
-    const progressRef = doc(db, "users", currentUser.uid, "course_progress", courseId);
-    const progressSnap = await getDoc(progressRef);
-
-    if (progressSnap.exists()) {
-        const progressData = progressSnap.data();
-        const completedLessons = progressData.completedLessons || [];
-        const totalLessons = course.modules.reduce((acc, module) => acc + module.lessons.length, 0);
-        const progressPercentage = totalLessons > 0 ? (completedLessons.length / totalLessons) * 100 : 0;
-
-        const progressBar = document.getElementById(`progress-${courseId}`);
-        if (progressBar) {
-            progressBar.style.width = `${progressPercentage}%`;
-        }
-    }
 }
 
 async function deleteCourse(courseId, courseTitle) {

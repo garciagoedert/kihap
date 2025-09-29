@@ -70,11 +70,6 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if request.auth != null;
-
-      // Permite que um usuário leia e escreva em seu próprio progresso de curso
-      match /course_progress/{courseId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
     }
 
     // --- REGRAS PARA O SISTEMA DE CURSOS ---
