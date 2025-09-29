@@ -69,7 +69,23 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if request.auth != null;
+      // Função para verificar se o usuário da requisição é um admin.
+      function isRequesterAdmin() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+               && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      }
+
+      // Admins podem ler a lista de todos os usuários.
+      allow list: if request.auth != null && isRequesterAdmin();
+      
+      // Usuários autenticados podem ler seus próprios dados. Admins podem ler qualquer um.
+      allow get: if request.auth != null && (request.auth.uid == userId || isRequesterAdmin());
+
+      // Qualquer usuário autenticado pode criar uma conta.
+      allow create: if request.auth != null;
+
+      // Apenas admins podem atualizar ou deletar usuários.
+      allow update, delete: if request.auth != null && isRequesterAdmin();
     }
 
     // --- REGRAS PARA O SISTEMA DE CURSOS ---

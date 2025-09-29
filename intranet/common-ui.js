@@ -244,11 +244,39 @@ async function loadComponents(pageSpecificSetup) {
             }
         });
 
-        // Show/hide elements based on page and user role
+        // Show/hide elements based on user permissions
+        const permissions = JSON.parse(sessionStorage.getItem('userPermissions')) || {};
         const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+
+        const navLinks = {
+            'index.html': true, // Prospecção é sempre visível
+            'arquivo.html': permissions.arquivo,
+            'analysis.html': permissions.analysis,
+            'marketing.html': permissions.marketing,
+            'tarefas.html': permissions.tarefas,
+            'calendario.html': permissions.calendario,
+            'mapas-mentais.html': permissions.mapasMentais,
+            'cursos.html': permissions.cursos,
+            'admin.html': isAdmin
+        };
+
+        sidebarLinks.forEach(link => {
+            const linkPage = link.getAttribute('href');
+            if (navLinks[linkPage]) {
+                link.style.display = 'flex';
+            } else {
+                link.style.display = 'none';
+            }
+        });
+
+        // Lógica específica para o link de admin que já tem um ID
         const adminLink = document.getElementById('admin-link');
-        if (isAdmin && adminLink) {
-            adminLink.classList.remove('hidden');
+        if (adminLink) {
+            if (isAdmin) {
+                adminLink.style.display = 'flex';
+            } else {
+                adminLink.style.display = 'none';
+            }
         }
 
         // Apenas mostra o botão de prospecção na página de prospecção
