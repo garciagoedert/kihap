@@ -2,7 +2,6 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db, app } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
-import { checkPermission } from './permission-check.js';
 
 // --- INITIALIZATION ---
 const auth = getAuth(app);
@@ -15,7 +14,6 @@ const mapsGrid = document.getElementById('maps-grid');
 onAuthStateChanged(auth, (user) => {
     if (user) {
         if (sessionStorage.getItem('isLoggedIn') === 'true') {
-            if (!checkPermission('mapasMentais')) return;
             document.getElementById('app-container').classList.remove('hidden');
             setupMapsListener(user.uid);
         } else {

@@ -2,7 +2,6 @@
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, getDocs, query, where, writeBatch, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { app, db, auth, appId } from './firebase-config.js';
-import { checkPermission } from './permission-check.js';
 
 // --- UI ELEMENTS ---
 const exportEmailsBtn = document.getElementById('exportEmailsBtn');
@@ -18,7 +17,6 @@ let lastFilteredProspectIds = [];
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         if (sessionStorage.getItem('isLoggedIn') === 'true') {
-            if (!checkPermission('marketing')) return;
             document.getElementById('main-container').classList.remove('hidden');
             setupEventListeners();
         } else {
