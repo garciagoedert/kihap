@@ -3,6 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { checkPermission } from './permission-check.js';
+import { getAllUsers } from './auth.js';
 
 // Função principal que será exportada e chamada pelo HTML
 export function initializeAppWithFirebase(firebaseConfig) {
@@ -18,8 +19,8 @@ export function initializeAppWithFirebase(firebaseConfig) {
             if (user && sessionStorage.getItem('isLoggedIn') === 'true') {
                 if (!checkPermission('tarefas')) return;
                 // Usuário autenticado, pode carregar a UI
-                loadComponents(() => {
-                    initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
+                loadComponents(async () => {
+                    await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
                     setupUIListeners();
                 });
             } else {
@@ -30,8 +31,8 @@ export function initializeAppWithFirebase(firebaseConfig) {
     });
 }
 
-function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
-    const systemUsers = window.getAllUsers();
+async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
+    const systemUsers = await getAllUsers();
     let tasks = []; // O array será populado pelo Firebase
     let prospects = []; // Array para os cards do Kanban
     let showDone = false; // Estado para controlar a visibilidade de tarefas concluídas
