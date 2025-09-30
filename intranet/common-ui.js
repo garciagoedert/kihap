@@ -1,4 +1,4 @@
-import './auth.js';
+import { getAllUsers } from './auth.js';
 
 function setupUIListeners(handlers = {}) {
     const {
@@ -269,4 +269,4 @@ async function loadComponents(pageSpecificSetup) {
     }
 }
 
-export { setupUIListeners, loadComponents };
+export { setupUIListeners, loadComponents, getAllUsers };
