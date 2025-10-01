@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Mapa Mental</title>
+    <title>Editor de Projeto</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,13 +37,20 @@
             cursor: grabbing;
             box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
         }
-        .node-textarea {
-            background: transparent;
-            border: none;
-            color: white;
-            width: 100%;
-            resize: none;
-            outline: none;
+        .node {
+            user-select: none; /* Impede a seleção de texto */
+            -webkit-user-select: none; /* Para compatibilidade com Safari */
+        }
+        .node-title {
+            font-weight: 600;
+            padding: 8px;
+            cursor: pointer;
+        }
+        .status-badge {
+            white-space: normal;
+            line-height: 1.2;
+            display: inline-block;
+            text-align: center;
         }
         .node.selected {
             border-color: #3b82f6;
@@ -113,19 +120,28 @@
                 <div id="canvas">
                     <!-- Nós do mapa mental serão inseridos aqui -->
                 </div>
+                <canvas id="drawing-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
                 
                 <div id="toolbar">
                     <button id="undo-btn" title="Desfazer (Ctrl+Z)" disabled><i class="fas fa-undo"></i></button>
                     <button id="redo-btn" title="Refazer (Ctrl+Y)" disabled><i class="fas fa-redo"></i></button>
                     <div class="w-px bg-gray-500 h-6 my-auto"></div>
                     <button id="add-node-btn" title="Adicionar Nó"><i class="fas fa-plus"></i></button>
-                    <button id="connect-nodes-btn" title="Conectar Nós"><i class="fas fa-link"></i></button>
                     <input type="color" id="color-picker" title="Mudar Cor do Nó" value="#334155">
+                    <div class="w-px bg-gray-500 h-6 my-auto"></div>
+                    <button id="upload-pdf-btn" title="Anexar PDF"><i class="fas fa-file-pdf"></i></button>
+                    <input type="file" id="pdf-input" class="hidden" accept=".pdf">
+                    <button id="upload-image-btn" title="Anexar Imagem"><i class="fas fa-image"></i></button>
+                    <input type="file" id="image-input" class="hidden" accept="image/*">
+                    <div class="w-px bg-gray-500 h-6 my-auto"></div>
+                    <button id="link-nodes-btn" title="Ligar Nós"><i class="fas fa-share-alt"></i></button>
+                    <button id="draw-mode-btn" title="Desenho Livre"><i class="fas fa-pencil-alt"></i></button>
+                    <div class="w-px bg-gray-500 h-6 my-auto"></div>
                     <button id="delete-node-btn" title="Excluir Nó (Delete)" disabled><i class="fas fa-trash"></i></button>
                 </div>
 
                 <div class="absolute top-4 left-4">
-                    <a href="mapas-mentais.html" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                    <a href="projetos.html" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i>
                         <span>Voltar</span>
                     </a>
@@ -134,12 +150,32 @@
         </main>
     </div>
 
+    <!-- PDF.js for rendering PDF previews -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <!-- LeaderLine for drawing connections -->
     <script src="https://cdn.jsdelivr.net/npm/leader-line-new@1.1.9/leader-line.min.js"></script>
     <!-- Panzoom for zoom/pan functionality -->
     <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
     
     <!-- Firebase and App Logic -->
-    <script type="module" src="mapa-mental-editor.js"></script>
+    <script type="module" src="projeto-editor.js"></script>
+
+    <!-- Modal para Detalhes do Nó/Tarefa -->
+    <div id="node-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center sm:p-4">
+        <div class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 id="node-modal-title" class="text-xl font-bold">Detalhes da Tarefa</h2>
+                <button id="close-node-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="flex-grow p-6 overflow-y-auto custom-scrollbar">
+                <div id="node-modal-content" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- O conteúdo será preenchido pelo JS -->
+                </div>
+            </div>
+            <div id="node-modal-footer" class="flex justify-between items-center mt-auto p-4 border-t border-gray-700">
+                <!-- Botões do rodapé serão preenchidos pelo JS -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>

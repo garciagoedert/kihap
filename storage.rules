@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permite a leitura de todos os arquivos por qualquer pessoa (se os URLs forem conhecidos)
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // PERMISSÃO DE ESCRITA ABERTA (TEMPORÁRIO)
+    // Permite o upload de qualquer arquivo por qualquer usuário.
+    // TODO: Reimplementar regras de segurança mais restritivas.
+    match /{allPaths=**} {
+      allow write: if true;
+    }
+  }
+}
