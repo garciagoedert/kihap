@@ -43,7 +43,19 @@ function setupUIListeners(handlers = {}) {
     }
 
     // Modal Buttons (only if they exist on the page)
-    if (openFormModal) document.getElementById('addProspectBtnHeader')?.addEventListener('click', () => openFormModal());
+    const addProspectBtnHeader = document.getElementById('addProspectBtnHeader');
+    if (addProspectBtnHeader) {
+        if (window.location.pathname.includes('projetos.html')) {
+            // Na página de projetos, o botão abre o modal de nova tarefa
+            addProspectBtnHeader.addEventListener('click', () => {
+                // Dispara um evento customizado que o projetos.js pode ouvir
+                window.dispatchEvent(new CustomEvent('open-create-task-modal'));
+            });
+        } else if (openFormModal) {
+            // Comportamento padrão para outras páginas
+            addProspectBtnHeader.addEventListener('click', () => openFormModal());
+        }
+    }
     if (exportData) document.getElementById('exportBtnSidebar')?.addEventListener('click', exportData);
     if (openImportModal) document.getElementById('importBtnSidebar')?.addEventListener('click', openImportModal);
     if (openQuickMessagesModal) document.getElementById('quickMessagesBtn')?.addEventListener('click', openQuickMessagesModal);

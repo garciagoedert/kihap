@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kihap - Projetos</title>
+    <title>Kihap - Gestão de Projetos</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/kihap-wh-1536x359.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,32 +12,78 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="log.css">
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Estilos para a barra de rolagem customizada */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body class="bg-[#111111] text-gray-200">
 
     <div id="app-container" class="flex h-screen">
         <div id="sidebar-container"></div>
-        
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
         <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container" class="flex-shrink-0"></div>
 
-            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold">Meus Projetos</h1>
-                    <button id="create-project-btn" class="bg-primary hover:bg-primary-dark font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                        <i class="fas fa-plus"></i>
-                        <span>Criar Novo Projeto</span>
-                    </button>
+            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold">Controle de Tarefas</h1>
                 </div>
 
-                <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <!-- Os cards dos projetos serão inseridos aqui -->
+                <!-- Barra de Filtros -->
+                <div class="mb-4 p-4 bg-gray-800 rounded-lg flex flex-wrap items-center gap-4">
+                    <div class="flex-grow">
+                        <input type="text" id="search-input" placeholder="Buscar por tarefa..." class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-1 text-sm">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="project-filter" class="text-sm">Projeto:</label>
+                        <select id="project-filter" class="bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-sm">
+                            <option value="all">Todos</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="executor-filter" class="text-sm">Executor:</label>
+                        <select id="executor-filter" class="bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-sm">
+                            <option value="all">Todos</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                     <div class="flex items-center gap-2">
+                        <label for="status-filter" class="text-sm">Etapa:</label>
+                        <select id="status-filter" class="bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-sm">
+                            <option value="all">Todas</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <button id="apply-filters-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Aplicar</button>
+                    <div class="ml-auto">
+                        <button id="manage-projects-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Gerenciar Projetos</button>
+                    </div>
+                </div>
+
+                <!-- Abas de Visualização -->
+                <div class="mb-4 flex border-b border-gray-700">
+                    <button class="py-2 px-4 text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none focus:border-blue-500 focus:text-white active-tab" data-view="list">LISTA</button>
+                    <button class="py-2 px-4 text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none focus:border-blue-500 focus:text-white" data-view="kanban">KANBAN</button>
+                </div>
+
+                <!-- Conteúdo das Abas -->
+                <div id="view-content" class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div id="task-list-view">
+                        <!-- Grupos de tarefas (Atrasado, Hoje, etc.) serão inseridos aqui -->
+                    </div>
+                    <div id="kanban-view" class="hidden h-full flex gap-4 overflow-x-auto">
+                        <!-- Colunas do Kanban serão inseridas aqui -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -45,16 +91,35 @@
 
     <!-- Firebase and App Logic -->
     <script type="module" src="projetos.js"></script>
-    <script type="module">
-        import { loadComponents, setupUIListeners } from './common-ui.js';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadComponents(() => {
-                // Remove o botão "Novo Prospect" que não é necessário nesta página
-                document.getElementById('addProspectBtnHeader')?.remove();
-                setupUIListeners();
-            });
-        });
-    </script>
-</body>
-</html>
+    <!-- Modal para Detalhes da Tarefa -->
+    <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center sm:p-4">
+        <div class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 id="task-modal-title" class="text-xl font-bold">Detalhes da Tarefa</h2>
+                <button id="close-task-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="task-modal-content" class="flex-grow p-6 overflow-y-auto custom-scrollbar">
+                <!-- O conteúdo será preenchido pelo JS -->
+            </div>
+            <div id="task-modal-footer" class="flex justify-between items-center mt-auto p-4 border-t border-gray-700">
+                <!-- Botões do rodapé serão preenchidos pelo JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Gerenciar Projetos -->
+    <div id="projects-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center sm:p-4">
+        <div class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-lg sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold">Gerenciar Projetos</h2>
+                <button id="close-projects-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="projects-modal-content" class="flex-grow p-6 overflow-y-auto custom-scrollbar">
+                <!-- A lista de projetos será inserida aqui -->
+            </div>
+             <div class="p-4 border-t border-gray-700">
+                <button id="add-project-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg">Adicionar Novo Projeto</button>
+            </div>
+        </div>
+    </div>
