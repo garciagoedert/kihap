@@ -47,9 +47,18 @@ function renderModules() {
     modulesList.innerHTML = '';
     courseData.modules.forEach((module, moduleIndex) => {
         const moduleEl = document.createElement('div');
-        moduleEl.innerHTML = `<h3 class="font-semibold text-lg text-white">${module.title}</h3>`;
+        moduleEl.classList.add('module-item');
+
+        const moduleHeader = document.createElement('div');
+        moduleHeader.classList.add('module-header', 'flex', 'justify-between', 'items-center', 'cursor-pointer', 'p-2', 'hover:bg-gray-700', 'rounded-md');
+        moduleHeader.innerHTML = `
+            <h3 class="font-semibold text-lg text-white">${module.title}</h3>
+            <i class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+        `;
+
         const lessonsList = document.createElement('ul');
-        lessonsList.className = 'space-y-1 mt-1 pl-2';
+        lessonsList.className = 'space-y-1 mt-1 pl-4 border-l border-gray-700 ml-2 hidden'; // Oculto por padrão
+        
         module.lessons.forEach((lesson, lessonIndex) => {
             const lessonEl = document.createElement('li');
             lessonEl.innerHTML = `
@@ -60,6 +69,15 @@ function renderModules() {
             `;
             lessonsList.appendChild(lessonEl);
         });
+
+        moduleHeader.addEventListener('click', () => {
+            lessonsList.classList.toggle('hidden');
+            const icon = moduleHeader.querySelector('i');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        });
+
+        moduleEl.appendChild(moduleHeader);
         moduleEl.appendChild(lessonsList);
         modulesList.appendChild(moduleEl);
     });
