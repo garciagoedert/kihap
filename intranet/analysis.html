@@ -53,6 +53,49 @@
     </style>
 </head>
 <body class="bg-[#111111] text-gray-200">
+    <!-- Edit Data Modal -->
+    <div id="editDataModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-4 transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">Editar Dados</h2>
+                <button id="closeEditModalBtn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <form id="editDataForm">
+                <input type="hidden" id="edit-doc-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-report-date" class="block text-sm font-medium text-gray-400">Data do Relatório</label>
+                        <input type="date" id="edit-report-date" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label for="edit-unidade-select" class="block text-sm font-medium text-gray-400">Unidade</label>
+                        <select id="edit-unidade-select" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="number" id="edit-aulas-intro" placeholder="Aulas Intro (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-matriculas" placeholder="Matrículas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-ligacoes" placeholder="Ligações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-alunos-ativos" placeholder="Alunos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-renovacoes" placeholder="Renovações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-retornos" placeholder="Retornos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-leads" placeholder="Leads (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-baixas" placeholder="Baixas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                    </div>
+                    <div>
+                        <label for="edit-acoes-divulgacao" class="block text-sm font-medium text-gray-400">Ações de Divulgação</label>
+                        <textarea id="edit-acoes-divulgacao" rows="2" placeholder="Descreva as ações de divulgação" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" id="cancelEditModalBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add Data Modal -->
     <div id="addDataModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-4 transform scale-95">
@@ -165,6 +208,28 @@
                         <div class="chart-container">
                             <canvas id="renewalsChart"></canvas>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Data Log Table -->
+                <div id="data-log-container" class="mt-8 bg-[#1a1a1a] p-4 rounded-xl shadow-md">
+                    <h2 id="data-log-title" class="text-xl font-semibold mb-4 text-white">Log de Dados</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-[#2a2a2a]">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Unidade</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Matrículas</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Baixas</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ativos</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-log-body" class="bg-[#1a1a1a] divide-y divide-gray-700">
+                                <!-- Rows will be injected by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

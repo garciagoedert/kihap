@@ -1,5 +1,5 @@
 import { app, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
 
 let allData = [];
@@ -40,6 +40,7 @@ async function initializeDashboard() {
     });
 
     setupModal();
+    setupEditModal(); // Setup for the new edit modal
     updateDashboard();
 }
 
@@ -158,6 +159,70 @@ function setupModal() {
     });
 }
 
+function setupEditModal() {
+    const modal = document.getElementById('editDataModal');
+    const closeBtn = document.getElementById('closeEditModalBtn');
+    const cancelBtn = document.getElementById('cancelEditModalBtn');
+    const form = document.getElementById('editDataForm');
+
+    const closeModal = () => {
+        modal.querySelector('.modal-content').classList.remove('scale-100');
+        modal.querySelector('.modal-content').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }, 250);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const docId = document.getElementById('edit-doc-id').value;
+        if (!docId) {
+            alert('Erro: ID do documento não encontrado.');
+            return;
+        }
+
+        const reportDate = new Date(document.getElementById('edit-report-date').value + 'T00:00:00');
+        const year = reportDate.getFullYear();
+        const month = reportDate.toLocaleString('pt-BR', { month: 'long' });
+
+        const updatedData = {
+            "Data": document.getElementById('edit-report-date').value,
+            "Unidade": document.getElementById('edit-unidade-select').value,
+            "Ano": year,
+            "Mês": month,
+            "AulasIntro": parseInt(document.getElementById('edit-aulas-intro').value) || 0,
+            "Matriculas": parseInt(document.getElementById('edit-matriculas').value) || 0,
+            "Ligacoes": parseInt(document.getElementById('edit-ligacoes').value) || 0,
+            "Ativos": parseInt(document.getElementById('edit-alunos-ativos').value) || 0,
+            "Renovacoes": parseInt(document.getElementById('edit-renovacoes').value) || 0,
+            "Retornos": parseInt(document.getElementById('edit-retornos').value) || 0,
+            "Leads": parseInt(document.getElementById('edit-leads').value) || 0,
+            "Baixas": parseInt(document.getElementById('edit-baixas').value) || 0,
+            "AcoesDivulgacao": document.getElementById('edit-acoes-divulgacao').value || ""
+        };
+
+        try {
+            const docRef = doc(db, 'analise_unidades', docId);
+            await updateDoc(docRef, updatedData);
+            alert('Dados atualizados com sucesso!');
+            closeModal();
+            await fetchData(); // Refresh data
+            populateFilters(allData);
+            updateDashboard();
+        } catch (error) {
+            console.error("Erro ao atualizar os dados: ", error);
+            alert('Ocorreu um erro ao atualizar os dados.');
+        }
+    });
+}
+
 function populateFilters(data) {
     const yearFilter = document.getElementById('year-filter');
     const locationFilter = document.getElementById('location-filter');
@@ -199,32 +264,145 @@ function updateDashboard() {
     const viewBy = document.getElementById('view-by-filter').value;
     const selectedDate = document.getElementById('date-filter').value;
     const chartsContainer = document.getElementById('charts-container');
+    const dataLogContainer = document.getElementById('data-log-container');
+    const dataLogTitle = document.getElementById('data-log-title');
 
-    let baseData = allData;
+    let titleParts = ["Log de Dados"];
     if (selectedLocation !== 'geral') {
-        baseData = baseData.filter(d => d.Unidade === selectedLocation);
+        titleParts.push(`Unidade ${selectedLocation}`);
+    }
+    if (selectedYear !== 'all') {
+        titleParts.push(selectedYear);
+    }
+    if (viewBy === 'daily') {
+        titleParts.push(new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR'));
+    }
+    dataLogTitle.textContent = titleParts.join(' - ');
+
+    let filteredData = allData;
+    if (selectedLocation !== 'geral') {
+        filteredData = filteredData.filter(d => d.Unidade === selectedLocation);
     }
 
     if (viewBy === 'daily') {
         chartsContainer.classList.add('hidden');
-        const dailyData = baseData.filter(d => d.Data === selectedDate);
+        const dailyData = filteredData.filter(d => d.Data === selectedDate);
         updateKPIs(dailyData, 'daily');
         updateCharts(dailyData, 'daily'); // Pass daily data to clear charts
+        renderDataLog(dailyData);
     } else {
         chartsContainer.classList.remove('hidden');
-        let dataForCharts = baseData;
         if (selectedYear !== 'all') {
-            dataForCharts = dataForCharts.filter(d => d.Ano == selectedYear);
+            filteredData = filteredData.filter(d => d.Ano == selectedYear);
         }
         
-        if (dataForCharts.length === 0) {
+        if (filteredData.length === 0) {
             document.getElementById('kpi-container').innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado encontrado para a seleção atual.</div>`;
             updateCharts([], viewBy); // Clear charts
+            renderDataLog([]); // Clear log
             return;
         }
 
-        updateKPIs(dataForCharts, viewBy);
-        updateCharts(dataForCharts, viewBy);
+        updateKPIs(filteredData, viewBy);
+        updateCharts(filteredData, viewBy);
+        renderDataLog(filteredData);
+    }
+}
+
+function renderDataLog(data) {
+    const logBody = document.getElementById('data-log-body');
+    if (!logBody) return;
+
+    logBody.innerHTML = ''; // Clear existing rows
+
+    const sortedData = data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
+
+    if (sortedData.length === 0) {
+        logBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-500">Nenhum registro encontrado.</td></tr>`;
+        return;
+    }
+
+    sortedData.forEach(item => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-[#2a2a2a]';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Data}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Unidade}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Matriculas || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Baixas || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Ativos || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-blue-400 hover:text-blue-600 edit-btn" data-id="${item.id}">Editar</button>
+                <button class="text-red-400 hover:text-red-600 ml-4 delete-btn" data-id="${item.id}">Excluir</button>
+            </td>
+        `;
+        logBody.appendChild(row);
+    });
+
+    // Add event listeners for the new buttons
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', handleEdit);
+    });
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', handleDelete);
+    });
+}
+
+async function handleEdit(event) {
+    const docId = event.target.getAttribute('data-id');
+    const dataEntry = allData.find(item => item.id === docId);
+    if (!dataEntry) {
+        alert('Erro: Registro não encontrado.');
+        return;
+    }
+
+    // Populate and show the modal
+    const modal = document.getElementById('editDataModal');
+    document.getElementById('edit-doc-id').value = docId;
+    document.getElementById('edit-report-date').value = dataEntry.Data;
+    
+    const unidadeSelect = document.getElementById('edit-unidade-select');
+    const unidades = [...new Set(allData.map(item => item.Unidade))].sort();
+    unidadeSelect.innerHTML = ''; // Clear previous options
+    unidades.forEach(unidade => {
+        const option = document.createElement('option');
+        option.value = unidade;
+        option.textContent = unidade;
+        unidadeSelect.appendChild(option);
+    });
+    unidadeSelect.value = dataEntry.Unidade;
+
+    document.getElementById('edit-aulas-intro').value = dataEntry.AulasIntro || 0;
+    document.getElementById('edit-matriculas').value = dataEntry.Matriculas || 0;
+    document.getElementById('edit-ligacoes').value = dataEntry.Ligacoes || 0;
+    document.getElementById('edit-alunos-ativos').value = dataEntry.Ativos || 0;
+    document.getElementById('edit-renovacoes').value = dataEntry.Renovacoes || 0;
+    document.getElementById('edit-retornos').value = dataEntry.Retornos || 0;
+    document.getElementById('edit-leads').value = dataEntry.Leads || 0;
+    document.getElementById('edit-baixas').value = dataEntry.Baixas || 0;
+    document.getElementById('edit-acoes-divulgacao').value = dataEntry.AcoesDivulgacao || "";
+
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-active');
+    setTimeout(() => {
+        modal.querySelector('.modal-content').classList.remove('scale-95');
+        modal.querySelector('.modal-content').classList.add('scale-100');
+    }, 10);
+}
+
+async function handleDelete(event) {
+    const docId = event.target.getAttribute('data-id');
+    if (confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
+        try {
+            await deleteDoc(doc(db, 'analise_unidades', docId));
+            alert('Registro excluído com sucesso!');
+            await fetchData(); // Refresh data
+            populateFilters(allData);
+            updateDashboard();
+        } catch (error) {
+            console.error("Erro ao excluir o registro: ", error);
+            alert('Ocorreu um erro ao excluir o registro.');
+        }
     }
 }
 
