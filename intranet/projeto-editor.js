@@ -140,6 +140,7 @@ function createNodeElement(nodeData) {
     nodes[nodeData.id] = { el: nodeEl, data: nodeData };
 
     makeDraggable(nodeEl, nodeData);
+    nodeEl.addEventListener('dblclick', () => openNodeModal(nodeData));
 }
 
 function updateNodeElement(nodeData) {
@@ -516,6 +517,50 @@ nodeModal.addEventListener('click', (e) => {
     }
 });
 
+canvas.addEventListener('mousedown', (e) => {
+    // Limpa a seleção se clicar no canvas vazio
+    if (e.target === canvas) {
+        clearNodeSelection();
+    }
+});
+
+deleteNodeBtn.addEventListener('click', deleteSelectedNodes);
+
+function clearNodeSelection() {
+    selectedNodes.forEach(nodeId => {
+        if (nodes[nodeId]) {
+            nodes[nodeId].el.classList.remove('selected');
+        }
+    });
+    selectedNodes = [];
+    updateDeleteButtonState();
+}
+
+function updateDeleteButtonState() {
+    deleteNodeBtn.disabled = selectedNodes.length === 0;
+}
+
+async function deleteSelectedNodes() {
+    if (selectedNodes.length === 0 || !confirm(`Tem certeza que deseja excluir ${selectedNodes.length} item(s)?`)) {
+        return;
+    }
+
+    const batch = writeBatch(db);
+    selectedNodes.forEach(nodeId => {
+        const nodeRef = doc(db, 'artifacts', db.app.options.appId, 'public', 'data', 'projects', projectId, 'nodes', nodeId);
+        batch.delete(nodeRef);
+    });
+
+    try {
+        await batch.commit();
+        // A remoção dos elementos da UI será tratada pelo listener 'onSnapshot'
+        clearNodeSelection();
+    } catch (error) {
+        console.error("Erro ao deletar nós:", error);
+        alert("Ocorreu um erro ao deletar os itens.");
+    }
+}
+
 drawModeBtn.addEventListener('click', toggleDrawMode);
 linkNodesBtn.addEventListener('click', toggleLinkingMode);
 
@@ -597,20 +642,37 @@ function handleNodeClick(event, nodeData) {
     if (linkingMode.active) {
         const clickedNode = nodes[nodeData.id];
         if (!linkingMode.startNode) {
-            // Inicia a ligação
             linkingMode.startNode = clickedNode;
             clickedNode.el.classList.add('selected');
         } else {
-            // Completa a ligação
             if (linkingMode.startNode.el.id !== clickedNode.el.id) {
                 createLink(linkingMode.startNode.el.id, clickedNode.el.id);
             }
-            // Reseta o modo de ligação
             toggleLinkingMode();
         }
-    } else {
-        openNodeModal(nodeData);
+        return; // Impede que a lógica de seleção normal seja executada
     }
+
+    const nodeEl = nodes[nodeData.id].el;
+    const nodeId = nodeData.id;
+    const isSelected = selectedNodes.includes(nodeId);
+
+    if (!event.shiftKey) {
+        // Limpa a seleção anterior, a menos que Shift esteja pressionado
+        clearNodeSelection();
+    }
+
+    if (isSelected && event.shiftKey) {
+        // Remove da seleção com Shift + Click
+        nodeEl.classList.remove('selected');
+        selectedNodes = selectedNodes.filter(id => id !== nodeId);
+    } else if (!isSelected) {
+        // Adiciona à seleção
+        nodeEl.classList.add('selected');
+        selectedNodes.push(nodeId);
+    }
+    
+    updateDeleteButtonState();
 }
 
 async function createLink(startNodeId, endNodeId) {

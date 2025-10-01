@@ -61,10 +61,10 @@ service cloud.firestore {
 
     // Regras para Projetos
     match /artifacts/{appId}/public/data/projects/{projectId} {
-      // Permite a um usuário autenticado criar um projeto.
-      allow create: if request.auth != null;
-      // Permite ler, atualizar e deletar apenas se o usuário for o dono do projeto.
-      allow read, update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
+      // Permite que qualquer usuário autenticado crie e leia projetos.
+      allow create, read: if request.auth != null;
+      // Permite atualizar e deletar apenas se o usuário for o dono do projeto.
+      allow update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
 
       // Regras para os nós dentro de um projeto
       match /nodes/{nodeId} {
@@ -77,6 +77,11 @@ service cloud.firestore {
         // Permite que usuários autenticados leiam e escrevam nos links.
         allow read, write: if request.auth != null;
       }
+    }
+
+    // Regra para a consulta collectionGroup em 'nodes'
+    match /{path=**}/nodes/{nodeId} {
+      allow read: if request.auth != null;
     }
 
     // Regras para o chat
