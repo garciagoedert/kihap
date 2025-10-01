@@ -263,10 +263,15 @@ async function loadComponents(pageSpecificSetup) {
             adminLink.classList.remove('hidden');
         }
 
-        // Apenas mostra o botão de prospecção na página de prospecção
+        // Controla a visibilidade do botão "Novo Prospect"
         const addProspectBtn = document.getElementById('addProspectBtnHeader');
-        if (addProspectBtn && currentPage === 'index.html') {
-            addProspectBtn.classList.remove('hidden');
+        if (addProspectBtn) {
+            const wikiPages = ['wiki.html', 'wiki-editor.html', 'wiki-viewer.html'];
+            if (wikiPages.includes(currentPage)) {
+                addProspectBtn.classList.add('hidden');
+            } else {
+                addProspectBtn.classList.remove('hidden');
+            }
         }
 
 
@@ -281,4 +286,51 @@ async function loadComponents(pageSpecificSetup) {
     }
 }
 
-export { setupUIListeners, loadComponents, getAllUsers };
+function showAlert(message, title = "Aviso") {
+    const alertModal = document.getElementById('alertModal');
+    const alertTitle = document.getElementById('alertTitle');
+    const alertMessage = document.getElementById('alertMessage');
+    const closeAlertBtn = document.getElementById('closeAlertBtn');
+
+    if (!alertModal) return;
+
+    alertTitle.textContent = title;
+    alertMessage.textContent = message;
+
+    alertModal.classList.remove('hidden');
+    alertModal.classList.add('flex');
+
+    closeAlertBtn.onclick = () => {
+        alertModal.classList.add('hidden');
+        alertModal.classList.remove('flex');
+    };
+}
+
+function showConfirm(message, onConfirm, title = "Confirmar Ação") {
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+
+    if (!confirmModal) return;
+
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+
+    confirmModal.classList.remove('hidden');
+    confirmModal.classList.add('flex');
+
+    const close = () => {
+        confirmModal.classList.add('hidden');
+        confirmModal.classList.remove('flex');
+    };
+
+    cancelConfirmBtn.onclick = close;
+    confirmActionBtn.onclick = () => {
+        close();
+        onConfirm();
+    };
+}
+
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm };

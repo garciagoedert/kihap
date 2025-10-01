@@ -1,6 +1,7 @@
 import { app, db, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, serverTimestamp, orderBy, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { showAlert, showConfirm } from './common-ui.js';
 
 const storage = getStorage(app);
 
@@ -44,10 +45,13 @@ function initializeEditor() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const articleId = urlParams.get('id');
+    const deleteButton = document.getElementById('deleteArticle');
 
     if (articleId) {
         loadArticleForEditing(articleId);
         document.getElementById('editor-title').textContent = 'Editar Artigo';
+        deleteButton.classList.remove('hidden');
+        deleteButton.addEventListener('click', () => deleteArticle(articleId));
     }
 
     document.getElementById('saveArticle').addEventListener('click', () => saveArticle(articleId));
@@ -65,11 +69,24 @@ async function loadArticleForEditing(articleId) {
             quill.setContents(data.content);
         } else {
             console.error("Nenhum artigo encontrado com este ID!");
-            alert("Artigo não encontrado.");
+            showAlert("Artigo não encontrado.");
         }
     } catch (error) {
         console.error("Erro ao carregar artigo para edição: ", error);
     }
+}
+
+async function deleteArticle(articleId) {
+    showConfirm("Tem certeza de que deseja excluir este artigo? Esta ação não pode ser desfeita.", async () => {
+        try {
+            await deleteDoc(doc(db, 'wiki_articles', articleId));
+            showAlert("Artigo excluído com sucesso!");
+            window.location.href = 'wiki.html';
+        } catch (error) {
+            console.error("Erro ao excluir artigo: ", error);
+            showAlert("Ocorreu um erro ao excluir o artigo.");
+        }
+    });
 }
 
 async function loadArticleForViewing(articleId) {
@@ -111,7 +128,7 @@ async function saveArticle(articleId) {
     const user = auth.currentUser;
 
     if (!title || content.ops.every(op => !op.insert.trim())) {
-        alert("Por favor, preencha o título e o conteúdo do artigo.");
+        showAlert("Por favor, preencha o título e o conteúdo do artigo.");
         return;
     }
 
@@ -126,7 +143,7 @@ async function saveArticle(articleId) {
                 updatedAt: serverTimestamp(),
                 author: user.displayName || user.email
             });
-            alert("Artigo atualizado com sucesso!");
+            showAlert("Artigo atualizado com sucesso!");
         } else {
             await addDoc(collection(db, 'wiki_articles'), {
                 title: title,
@@ -135,12 +152,12 @@ async function saveArticle(articleId) {
                 updatedAt: serverTimestamp(),
                 author: user.displayName || user.email
             });
-            alert("Artigo salvo com sucesso!");
+            showAlert("Artigo salvo com sucesso!");
         }
         window.location.href = 'wiki.html';
     } catch (error) {
         console.error("Erro ao salvar artigo: ", error);
-        alert("Ocorreu um erro ao salvar o artigo.");
+        showAlert("Ocorreu um erro ao salvar o artigo.");
     }
 }
 
@@ -241,7 +258,7 @@ function uploadAttachment(event) {
         },
         (error) => {
             console.error("Erro no upload: ", error);
-            alert("Falha no upload do anexo.");
+            showAlert("Falha no upload do anexo.");
         },
         () => {
             getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
