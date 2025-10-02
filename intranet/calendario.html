@@ -186,8 +186,14 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script type="module" src="common-ui.js?v=1.1"></script>
-    <script type="module" src="calendario.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './auth.js';
+        import './calendario.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 </body>
 </html>

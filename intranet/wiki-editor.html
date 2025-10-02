@@ -60,7 +60,6 @@
         onAuthReady(user => {
             if (user) {
                 loadComponents(() => {
-                    setupUIListeners();
                     initEditorPage();
                 });
             }

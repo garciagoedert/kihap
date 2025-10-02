@@ -64,6 +64,13 @@
     </div>
     <!-- Quill.js JS -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script type="module" src="course-editor.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './course-editor.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 </body>
 </html>

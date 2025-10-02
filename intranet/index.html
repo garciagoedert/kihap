@@ -1096,18 +1096,6 @@
             populateTags();
             loadComponents(() => {
                 // This callback runs after header/sidebar are loaded
-                setupUIListeners({
-                    openFormModal,
-                    exportData,
-                    openImportModal,
-                    closeFormModal,
-                    handleFormSubmit,
-                    closeImportModal,
-                    handleImport,
-                    applyFilters,
-                    closeConfirmModal
-                });
-
                 const urlParams = new URLSearchParams(window.location.search);
                 const cardIdToOpen = urlParams.get('cardId');
                 if (cardIdToOpen) {

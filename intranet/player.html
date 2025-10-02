@@ -51,6 +51,13 @@
             </div>
         </main>
     </div>
-    <script type="module" src="player.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './player.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 </body>
 </html>

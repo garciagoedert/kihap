@@ -158,7 +158,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
     
     <!-- Firebase and App Logic -->
-    <script type="module" src="projeto-editor.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './projeto-editor.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 
     <!-- Modal para Detalhes do Nó/Tarefa -->
     <div id="node-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center sm:p-4">

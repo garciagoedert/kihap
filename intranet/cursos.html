@@ -30,6 +30,13 @@
             </div>
         </main>
     </div>
-    <script type="module" src="cursos.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './cursos.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 </body>
 </html>
