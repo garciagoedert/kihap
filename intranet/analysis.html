@@ -76,7 +76,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="number" id="edit-aulas-intro" placeholder="Aulas Intro (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="edit-matriculas" placeholder="Matrículas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-ligacoes" placeholder="Ligações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="edit-contratos-ativos" placeholder="Contratos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="edit-alunos-ativos" placeholder="Alunos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="edit-renovacoes" placeholder="Renovações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="edit-retornos" placeholder="Retornos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
@@ -120,7 +120,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="number" id="aulas-intro" placeholder="Aulas Intro (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="matriculas" placeholder="Matrículas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="ligacoes" placeholder="Ligações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
+                        <input type="number" id="contratos-ativos" placeholder="Contratos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="alunos-ativos" placeholder="Alunos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="renovacoes" placeholder="Renovações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
                         <input type="number" id="retornos" placeholder="Retornos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
@@ -159,20 +159,20 @@
                         <h1 id="dashboard-title" class="text-2xl font-bold text-white">Dashboard de Análise</h1>
                         <p id="dashboard-subtitle" class="text-gray-400 text-sm">Visão Geral (Todas as Unidades)</p>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <select id="location-filter" aria-label="Filtrar por unidade" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <select id="location-filter" aria-label="Filtrar por unidade" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="geral">Visão Geral (Todas as Unidades)</option>
                         </select>
-                        <select id="year-filter" aria-label="Filtrar por ano" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                        <select id="year-filter" aria-label="Filtrar por ano" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="all">Todos os Anos</option>
                         </select>
-                        <select id="view-by-filter" aria-label="Visualizar por" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                        <select id="view-by-filter" aria-label="Visualizar por" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="monthly">Mensal</option>
                             <option value="weekly">Semanal</option>
                             <option value="daily">Diário</option>
                         </select>
-                        <input type="date" id="date-filter" class="bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none hidden">
-                        <button id="addDataBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg ml-2">
+                        <input type="date" id="date-filter" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none hidden">
+                        <button id="addDataBtn" class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg">
                             <i class="fas fa-plus mr-2"></i>Adicionar Dados
                         </button>
                     </div>
@@ -209,27 +209,29 @@
                             <canvas id="renewalsChart"></canvas>
                         </div>
                     </div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md lg:col-span-2">
+                        <h2 class="text-xl font-semibold mb-4 text-white">Contratos Ativos</h2>
+                        <div class="chart-container">
+                            <canvas id="contractsChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Data Log Table -->
+                <!-- Data Log Section -->
                 <div id="data-log-container" class="mt-8 bg-[#1a1a1a] p-4 rounded-xl shadow-md">
                     <h2 id="data-log-title" class="text-xl font-semibold mb-4 text-white">Log de Dados</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-[#2a2a2a]">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Unidade</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Matrículas</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Baixas</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ativos</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="data-log-body" class="bg-[#1a1a1a] divide-y divide-gray-700">
-                                <!-- Rows will be injected by JavaScript -->
-                            </tbody>
-                        </table>
+                    <!-- Desktop Table Header -->
+                    <div class="hidden md:grid md:grid-cols-6 gap-4 px-6 py-3 bg-[#2a2a2a] rounded-t-lg text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div>Data</div>
+                        <div>Unidade</div>
+                        <div>Matrículas</div>
+                        <div>Baixas</div>
+                        <div>Ativos</div>
+                        <div>Ações</div>
+                    </div>
+                    <!-- Data Log Body -->
+                    <div id="data-log-body" class="space-y-4 md:space-y-0">
+                        <!-- Mobile Cards / Desktop Rows will be injected by JavaScript -->
                     </div>
                 </div>
 

@@ -134,7 +134,7 @@ function setupModal() {
             "Mês": month,
             "AulasIntro": parseInt(document.getElementById('aulas-intro').value) || 0,
             "Matriculas": parseInt(document.getElementById('matriculas').value) || 0,
-            "Ligacoes": parseInt(document.getElementById('ligacoes').value) || 0,
+            "ContratosAtivos": parseInt(document.getElementById('contratos-ativos').value) || 0,
             "Ativos": parseInt(document.getElementById('alunos-ativos').value) || 0,
             "Renovacoes": parseInt(document.getElementById('renovacoes').value) || 0,
             "Retornos": parseInt(document.getElementById('retornos').value) || 0,
@@ -199,7 +199,7 @@ function setupEditModal() {
             "Mês": month,
             "AulasIntro": parseInt(document.getElementById('edit-aulas-intro').value) || 0,
             "Matriculas": parseInt(document.getElementById('edit-matriculas').value) || 0,
-            "Ligacoes": parseInt(document.getElementById('edit-ligacoes').value) || 0,
+            "ContratosAtivos": parseInt(document.getElementById('edit-contratos-ativos').value) || 0,
             "Ativos": parseInt(document.getElementById('edit-alunos-ativos').value) || 0,
             "Renovacoes": parseInt(document.getElementById('edit-renovacoes').value) || 0,
             "Retornos": parseInt(document.getElementById('edit-retornos').value) || 0,
@@ -313,38 +313,68 @@ function renderDataLog(data) {
     const logBody = document.getElementById('data-log-body');
     if (!logBody) return;
 
-    logBody.innerHTML = ''; // Clear existing rows
+    logBody.innerHTML = ''; // Clear existing content
 
     const sortedData = data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
 
     if (sortedData.length === 0) {
-        logBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-500">Nenhum registro encontrado.</td></tr>`;
+        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-6">Nenhum registro encontrado.</div>`;
         return;
     }
 
     sortedData.forEach(item => {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-[#2a2a2a]';
+        const itemElement = document.createElement('div');
+        itemElement.className = 'bg-[#2a2a2a] md:bg-transparent p-4 rounded-lg md:p-0 md:grid md:grid-cols-6 md:gap-4 md:px-6 md:py-4 md:border-b md:border-gray-700 hover:bg-[#3a3a3a]';
+        
         const displayDate = new Date(item.Data + 'T00:00:00').toLocaleDateString('pt-BR');
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${displayDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Unidade}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Matriculas || 0}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Baixas || 0}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Ativos || 0}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+
+        itemElement.innerHTML = `
+            <!-- Mobile view: Label + Value -->
+            <div class="flex justify-between md:hidden">
+                <span class="font-bold text-gray-400">Data:</span>
+                <span class="text-gray-300">${displayDate}</span>
+            </div>
+            <!-- Desktop view: Just value -->
+            <div class="hidden md:flex items-center text-sm text-gray-300">${displayDate}</div>
+
+            <div class="flex justify-between md:hidden mt-2">
+                <span class="font-bold text-gray-400">Unidade:</span>
+                <span class="text-gray-300">${item.Unidade}</span>
+            </div>
+            <div class="hidden md:flex items-center text-sm text-gray-300">${item.Unidade}</div>
+
+            <div class="flex justify-between md:hidden mt-2">
+                <span class="font-bold text-gray-400">Matrículas:</span>
+                <span class="text-gray-300">${item.Matriculas || 0}</span>
+            </div>
+            <div class="hidden md:flex items-center text-sm text-gray-300">${item.Matriculas || 0}</div>
+
+            <div class="flex justify-between md:hidden mt-2">
+                <span class="font-bold text-gray-400">Baixas:</span>
+                <span class="text-gray-300">${item.Baixas || 0}</span>
+            </div>
+            <div class="hidden md:flex items-center text-sm text-gray-300">${item.Baixas || 0}</div>
+
+            <div class="flex justify-between md:hidden mt-2">
+                <span class="font-bold text-gray-400">Ativos:</span>
+                <span class="text-gray-300">${item.Ativos || 0}</span>
+            </div>
+            <div class="hidden md:flex items-center text-sm text-gray-300">${item.Ativos || 0}</div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end mt-4 md:mt-0 text-sm font-medium">
                 <button class="text-blue-400 hover:text-blue-600 edit-btn" data-id="${item.id}">Editar</button>
                 <button class="text-red-400 hover:text-red-600 ml-4 delete-btn" data-id="${item.id}">Excluir</button>
-            </td>
+            </div>
         `;
-        logBody.appendChild(row);
+        logBody.appendChild(itemElement);
     });
 
     // Add event listeners for the new buttons
-    document.querySelectorAll('.edit-btn').forEach(button => {
+    logBody.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', handleEdit);
     });
-    document.querySelectorAll('.delete-btn').forEach(button => {
+    logBody.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', handleDelete);
     });
 }
@@ -375,7 +405,7 @@ async function handleEdit(event) {
 
     document.getElementById('edit-aulas-intro').value = dataEntry.AulasIntro || 0;
     document.getElementById('edit-matriculas').value = dataEntry.Matriculas || 0;
-    document.getElementById('edit-ligacoes').value = dataEntry.Ligacoes || 0;
+    document.getElementById('edit-contratos-ativos').value = dataEntry.ContratosAtivos || 0;
     document.getElementById('edit-alunos-ativos').value = dataEntry.Ativos || 0;
     document.getElementById('edit-renovacoes').value = dataEntry.Renovacoes || 0;
     document.getElementById('edit-retornos').value = dataEntry.Retornos || 0;
@@ -428,13 +458,15 @@ function processDataForView(data, viewBy) {
                     Matriculas: 0, 
                     Baixas: 0, 
                     Renovacoes: 0,
-                    Ativos: 0 // We'll take the last value
+                    Ativos: 0, // We'll take the last value
+                    ContratosAtivos: 0
                 };
             }
             monthlyAggregated[key].Matriculas += row.Matriculas || 0;
             monthlyAggregated[key].Baixas += row.Baixas || 0;
             monthlyAggregated[key].Renovacoes += row.Renovacoes || 0;
             monthlyAggregated[key].Ativos = row.Ativos; // Overwrite with the latest value for the month
+            monthlyAggregated[key].ContratosAtivos += row.ContratosAtivos || 0;
         });
         return Object.values(monthlyAggregated).sort((a, b) => a.Data - b.Data);
     }
@@ -549,6 +581,14 @@ function updateCharts(data, viewBy) {
     charts.renewals = new Chart(document.getElementById('renewalsChart'), {
         type: 'bar',
         data: { labels, datasets: [{ label: 'Renovações', data: processedData.map(row => row.Renovacoes), backgroundColor: '#8B5CF6' }] },
+        options: chartOptions
+    });
+
+    // Contracts Chart
+    if (charts.contracts) charts.contracts.destroy();
+    charts.contracts = new Chart(document.getElementById('contractsChart'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Contratos Ativos', data: processedData.map(row => row.ContratosAtivos), borderColor: '#A78BFA', backgroundColor: 'rgba(167, 139, 250, 0.1)', fill: true, tension: 0.3 }] },
         options: chartOptions
     });
 
