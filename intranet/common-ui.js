@@ -279,8 +279,15 @@ async function loadComponents(pageSpecificSetup) {
         // Controla a visibilidade do botão "Novo Prospect"
         const addProspectBtn = document.getElementById('addProspectBtnHeader');
         if (addProspectBtn) {
-            const wikiPages = ['wiki.html', 'wiki-editor.html', 'wiki-viewer.html'];
-            if (wikiPages.includes(currentPage)) {
+            const pagesToHideButton = [
+                'processos.html', 
+                'processos-editor.html', 
+                'processos-viewer.html',
+                'cursos.html',
+                'projetos.html',
+                'tarefas.html'
+            ];
+            if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
             } else {
                 addProspectBtn.classList.remove('hidden');

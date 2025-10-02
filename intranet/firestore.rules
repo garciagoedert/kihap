@@ -12,8 +12,8 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Regra para a coleção da Wiki
-    match /wiki_articles/{articleId} {
+    // Regra para a coleção de Processos
+    match /processos_articles/{articleId} {
       allow read, write: if request.auth != null;
     }
 

@@ -6,19 +6,20 @@ import { showAlert, showConfirm } from './common-ui.js';
 const storage = getStorage(app);
 
 let quill;
+let heroImageFile = null;
 
-// Função para inicializar a página principal da Wiki
-export function initWikiPage() {
+// Função para inicializar a página principal de Processos
+export function initProcessosPage() {
     loadArticles();
     document.getElementById('searchInput').addEventListener('input', searchArticles);
 }
 
-// Função para inicializar a página do editor da Wiki
+// Função para inicializar a página do editor de Processos
 export function initEditorPage() {
     initializeEditor();
 }
 
-// Função para inicializar a página de visualização da Wiki
+// Função para inicializar a página de visualização de Processos
 export function initViewerPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const articleId = urlParams.get('id');
@@ -57,16 +58,25 @@ function initializeEditor() {
     document.getElementById('saveArticle').addEventListener('click', () => saveArticle(articleId));
     document.getElementById('attachFile').addEventListener('click', () => document.getElementById('fileInput').click());
     document.getElementById('fileInput').addEventListener('change', uploadAttachment);
+    document.getElementById('heroImageInput').addEventListener('change', handleHeroImageSelect);
 }
 
 async function loadArticleForEditing(articleId) {
     try {
-        const docRef = doc(db, 'wiki_articles', articleId);
+        const docRef = doc(db, 'processos_articles', articleId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
             document.getElementById('articleTitle').value = data.title;
             quill.setContents(data.content);
+
+            if (data.heroImageUrl) {
+                const preview = document.getElementById('heroImagePreview');
+                const icon = document.getElementById('heroImageIcon');
+                preview.src = data.heroImageUrl;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+            }
         } else {
             console.error("Nenhum artigo encontrado com este ID!");
             showAlert("Artigo não encontrado.");
@@ -77,14 +87,14 @@ async function loadArticleForEditing(articleId) {
 }
 
 async function deleteArticle(articleId) {
-    showConfirm("Tem certeza de que deseja excluir este artigo? Esta ação não pode ser desfeita.", async () => {
+    showConfirm("Tem certeza de que deseja excluir este processo? Esta ação não pode ser desfeita.", async () => {
         try {
-            await deleteDoc(doc(db, 'wiki_articles', articleId));
-            showAlert("Artigo excluído com sucesso!");
-            window.location.href = 'wiki.html';
+            await deleteDoc(doc(db, 'processos_articles', articleId));
+            showAlert("Processo excluído com sucesso!");
+            window.location.href = 'processos.html';
         } catch (error) {
-            console.error("Erro ao excluir artigo: ", error);
-            showAlert("Ocorreu um erro ao excluir o artigo.");
+            console.error("Erro ao excluir processo: ", error);
+            showAlert("Ocorreu um erro ao excluir o processo.");
         }
     });
 }
@@ -93,14 +103,21 @@ async function loadArticleForViewing(articleId) {
     const titleEl = document.getElementById('article-title');
     const contentEl = document.getElementById('article-content');
     const editButton = document.getElementById('edit-button');
+    const heroContainer = document.getElementById('hero-container');
+    const heroImage = document.getElementById('hero-image');
 
     try {
-        const docRef = doc(db, 'wiki_articles', articleId);
+        const docRef = doc(db, 'processos_articles', articleId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
             titleEl.innerText = data.title;
-            editButton.href = `wiki-editor.html?id=${articleId}`;
+            editButton.href = `processos-editor.html?id=${articleId}`;
+
+            if (data.heroImageUrl) {
+                heroImage.src = data.heroImageUrl;
+                heroContainer.classList.remove('hidden');
+            }
 
             // Usa o Quill em modo read-only para renderizar o conteúdo
             const viewerQuill = new Quill(contentEl, {
@@ -128,7 +145,7 @@ async function saveArticle(articleId) {
     const user = auth.currentUser;
 
     if (!title || content.ops.every(op => !op.insert.trim())) {
-        showAlert("Por favor, preencha o título e o conteúdo do artigo.");
+        showAlert("Por favor, preencha o título e o conteúdo do processo.");
         return;
     }
 
@@ -136,28 +153,31 @@ async function saveArticle(articleId) {
     const contentAsObject = JSON.parse(JSON.stringify(content));
 
     try {
-        if (articleId) {
-            await updateDoc(doc(db, 'wiki_articles', articleId), {
-                title: title,
-                content: contentAsObject,
-                updatedAt: serverTimestamp(),
-                author: user.displayName || user.email
-            });
-            showAlert("Artigo atualizado com sucesso!");
-        } else {
-            await addDoc(collection(db, 'wiki_articles'), {
-                title: title,
-                content: contentAsObject,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                author: user.displayName || user.email
-            });
-            showAlert("Artigo salvo com sucesso!");
+        let heroImageUrl = document.getElementById('heroImagePreview').src;
+        if (heroImageFile) {
+            heroImageUrl = await uploadHeroImage(heroImageFile);
         }
-        window.location.href = 'wiki.html';
+
+        const articleData = {
+            title: title,
+            content: contentAsObject,
+            updatedAt: serverTimestamp(),
+            author: user.displayName || user.email,
+            heroImageUrl: heroImageUrl.startsWith('http') ? heroImageUrl : ''
+        };
+
+        if (articleId) {
+            await updateDoc(doc(db, 'processos_articles', articleId), articleData);
+            showAlert("Processo atualizado com sucesso!");
+        } else {
+            articleData.createdAt = serverTimestamp();
+            await addDoc(collection(db, 'processos_articles'), articleData);
+            showAlert("Processo salvo com sucesso!");
+        }
+        window.location.href = 'processos.html';
     } catch (error) {
-        console.error("Erro ao salvar artigo: ", error);
-        showAlert("Ocorreu um erro ao salvar o artigo.");
+        console.error("Erro ao salvar processo: ", error);
+        showAlert("Ocorreu um erro ao salvar o processo.");
     }
 }
 
@@ -183,7 +203,7 @@ function createArticleCard(doc) {
             <div class="text-xs text-gray-500 mb-4">
                 <span>Por ${article.author}</span> | <span>Em ${article.createdAt.toDate().toLocaleDateString()}</span>
             </div>
-            <a href="wiki-viewer.html?id=${doc.id}" class="bg-gray-700 hover:bg-yellow-500 hover:text-black text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 w-full text-center block">
+            <a href="processos-viewer.html?id=${doc.id}" class="bg-gray-700 hover:bg-yellow-500 hover:text-black text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 w-full text-center block">
                 Visualizar
             </a>
         </div>
@@ -194,11 +214,11 @@ function createArticleCard(doc) {
 async function loadArticles() {
     const articlesList = document.getElementById('articles-list');
     try {
-        const q = query(collection(db, 'wiki_articles'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'processos_articles'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         articlesList.innerHTML = '';
         if (querySnapshot.empty) {
-            articlesList.innerHTML = '<p class="text-center text-gray-500">Nenhum artigo encontrado. Crie o primeiro!</p>';
+            articlesList.innerHTML = '<p class="text-center text-gray-500">Nenhum processo encontrado. Crie o primeiro!</p>';
             return;
         }
         articlesList.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
@@ -216,7 +236,7 @@ async function searchArticles() {
     const articlesList = document.getElementById('articles-list');
     
     try {
-        const q = query(collection(db, 'wiki_articles'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'processos_articles'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         articlesList.innerHTML = '';
         
@@ -248,13 +268,14 @@ function uploadAttachment(event) {
     if (!file) return;
 
     const user = auth.currentUser;
-    const storageRef = ref(storage, `wiki_attachments/${user.uid}/${Date.now()}_${file.name}`);
+    const storageRef = ref(storage, `processos_attachments/${user.uid}/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
     uploadTask.on('state_changed',
         (snapshot) => {
-            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             console.log('Upload is ' + progress + '% done');
+            // Opcional: Mostrar progresso do upload para o usuário
         },
         (error) => {
             console.error("Erro no upload: ", error);
@@ -269,4 +290,41 @@ function uploadAttachment(event) {
             });
         }
     );
+}
+
+function handleHeroImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    heroImageFile = file;
+    const preview = document.getElementById('heroImagePreview');
+    const icon = document.getElementById('heroImageIcon');
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+        icon.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+async function uploadHeroImage(file) {
+    const user = auth.currentUser;
+    if (!user) {
+        showAlert("Você precisa estar logado para fazer upload de imagens.");
+        return null;
+    }
+    const storageRef = ref(storage, `processos_banners/${user.uid}/${Date.now()}_${file.name}`);
+    
+    try {
+        const snapshot = await uploadBytesResumable(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        console.log('Banner image available at', downloadURL);
+        return downloadURL;
+    } catch (error) {
+        console.error("Erro no upload do banner: ", error);
+        showAlert("Falha no upload do banner.");
+        return null;
+    }
 }
