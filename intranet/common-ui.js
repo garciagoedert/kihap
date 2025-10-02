@@ -88,6 +88,19 @@ function setupUIListeners(handlers = {}) {
     
     // Add modal close listeners
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
+
+    // Prospecção submenu toggle
+    const prospeccaoMenuBtn = document.getElementById('prospeccao-menu-btn');
+    const prospeccaoSubmenu = document.getElementById('prospeccao-submenu');
+    if (prospeccaoMenuBtn && prospeccaoSubmenu) {
+        prospeccaoMenuBtn.addEventListener('click', () => {
+            prospeccaoSubmenu.classList.toggle('hidden');
+            const icon = prospeccaoMenuBtn.querySelector('i.fa-chevron-down');
+            if (icon) {
+                icon.classList.toggle('rotate-180');
+            }
+        });
+    }
 }
 
 function setupModalCloseListeners(handlers = {}) {

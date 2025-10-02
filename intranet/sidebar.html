@@ -6,12 +6,20 @@
         </button>
     </div>
     <nav class="flex-grow p-4 min-h-0 overflow-y-auto space-y-2">
-        <a href="index.html" class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <span><i class="fas fa-tasks w-6"></i> Prospecção</span>
-        </a>
-        <a href="arquivo.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-box-archive w-6"></i> Arquivo
-        </a>
+        <div>
+            <button id="prospeccao-menu-btn" class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                <span><i class="fas fa-tasks w-6"></i> Prospecção</span>
+                <i class="fas fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="prospeccao-submenu" class="hidden pl-4 mt-2 space-y-2">
+                <a href="index.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-tachometer-alt w-6"></i> Dashboard
+                </a>
+                <a href="arquivo.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-box-archive w-6"></i> Arquivo
+                </a>
+            </div>
+        </div>
         <a href="analysis.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
             <i class="fas fa-chart-line w-6"></i> Análise
         </a>
