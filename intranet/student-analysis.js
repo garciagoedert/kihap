@@ -325,8 +325,9 @@ function renderDataLog(data) {
     sortedData.forEach(item => {
         const row = document.createElement('tr');
         row.className = 'hover:bg-[#2a2a2a]';
+        const displayDate = new Date(item.Data + 'T00:00:00').toLocaleDateString('pt-BR');
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Data}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${displayDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Unidade}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Matriculas || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${item.Baixas || 0}</td>

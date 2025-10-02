@@ -1,0 +1,13 @@
+[debug] [2025-10-02T00:16:50.101Z] ----------------------------------------------------------------------
+[debug] [2025-10-02T00:16:50.104Z] Command:       /Users/goedert/.nvm/versions/node/v22.19.0/bin/node /Users/goedert/.nvm/versions/node/v22.19.0/bin/firebase login --reauth
+[debug] [2025-10-02T00:16:50.105Z] CLI Version:   14.17.0
+[debug] [2025-10-02T00:16:50.105Z] Platform:      darwin
+[debug] [2025-10-02T00:16:50.105Z] Node Version:  v22.19.0
+[debug] [2025-10-02T00:16:50.105Z] Time:          Wed Oct 01 2025 21:16:50 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2025-10-02T00:16:50.106Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=346410083&redirect_uri=http%3A%2F%2Flocalhost%3A9006&login_hint=comercial%40kihap.com.br
+[info] 
+[info] Waiting for authentication...

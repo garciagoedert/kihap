@@ -147,27 +147,26 @@
         </div>
     </div>
 
-    <script type="module" src="auth.js"></script>
-    <script type="module" src="common-ui.js?v=1.1"></script>
-    
     <!-- Firebase SDK -->
     <script type="module">
-        // Import a função que inicializa a página de tarefas
+        import { loadComponents } from './common-ui.js';
         import { initializeAppWithFirebase } from './tarefas.js?v=2.1';
+        import './auth.js';
 
-        // Configuração do Firebase (mesma do index.html)
-        const firebaseConfig = {
-          apiKey: "AIzaSyD1WKwAsAicGdRz9cRA2Nvv3LEZve1vZe0",
-          authDomain: "intranet-kihap.firebaseapp.com",
-          projectId: "intranet-kihap",
-          storageBucket: "intranet-kihap.firebasestorage.app",
-          messagingSenderId: "1055939458006",
-          appId: "1:1055939458006:web:1d67459a0bc0da60cf2a77",
-          measurementId: "G-5LP0W3QSVZ"
-        };
-        
-        // Inicializa o Firebase e passa a configuração para o script de tarefas
-        initializeAppWithFirebase(firebaseConfig);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                const firebaseConfig = {
+                  apiKey: "AIzaSyD1WKwAsAicGdRz9cRA2Nvv3LEZve1vZe0",
+                  authDomain: "intranet-kihap.firebaseapp.com",
+                  projectId: "intranet-kihap",
+                  storageBucket: "intranet-kihap.firebasestorage.app",
+                  messagingSenderId: "1055939458006",
+                  appId: "1:1055939458006:web:1d67459a0bc0da60cf2a77",
+                  measurementId: "G-5LP0W3QSVZ"
+                };
+                initializeAppWithFirebase(firebaseConfig);
+            });
+        });
     </script>
 </body>
 </html>

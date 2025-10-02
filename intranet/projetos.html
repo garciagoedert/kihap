@@ -90,7 +90,14 @@
     </div>
 
     <!-- Firebase and App Logic -->
-    <script type="module" src="projetos.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './projetos.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
 
     <!-- Modal para Detalhes da Tarefa -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center sm:p-4">

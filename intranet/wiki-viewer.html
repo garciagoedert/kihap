@@ -51,7 +51,6 @@
         onAuthReady(user => {
             if (user) {
                 loadComponents(() => {
-                    setupUIListeners();
                     initViewerPage();
                 });
             }

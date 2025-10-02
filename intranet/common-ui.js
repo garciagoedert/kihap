@@ -279,6 +279,9 @@ async function loadComponents(pageSpecificSetup) {
             pageSpecificSetup();
         }
 
+        // Setup listeners after components are loaded
+        setupUIListeners();
+
     } catch (error) {
         console.error('Error loading components:', error);
         headerContainer.innerHTML = '<p class="text-red-500 p-4">Error loading header.</p>';
