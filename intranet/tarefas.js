@@ -12,19 +12,16 @@ export function initializeAppWithFirebase(firebaseConfig) {
     const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
     const prospectsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        onAuthStateChanged(auth, (user) => {
-            if (user && sessionStorage.getItem('isLoggedIn') === 'true') {
-                // Usuário autenticado, pode carregar a UI
-                loadComponents(async () => {
-                    await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
-                    setupUIListeners();
-                });
-            } else {
-                // Usuário não autenticado, redireciona para o login
-                window.location.href = 'login.html';
-            }
-        });
+    onAuthStateChanged(auth, (user) => {
+        if (user && sessionStorage.getItem('isLoggedIn') === 'true') {
+            // Usuário autenticado, pode carregar a UI
+            loadComponents(async () => {
+                await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
+            });
+        } else {
+            // Usuário não autenticado, redireciona para o login
+            window.location.href = 'login.html';
+        }
     });
 }
 
