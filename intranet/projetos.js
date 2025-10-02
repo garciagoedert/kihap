@@ -292,6 +292,14 @@ function openTaskModal(task = null) {
     const userOptions = users.map(u => `<option value="${u.id}" ${task?.assignee === u.id ? 'selected' : ''}>${u.name}</option>`).join('');
     const projectOptions = Object.entries(projectsMap).map(([id, name]) => `<option value="${id}" ${task?.projectId === id ? 'selected' : ''}>${name}</option>`).join('');
 
+    const todoListHtml = (task?.todos || []).map((todo, index) => `
+        <div class="flex items-center gap-2 p-2 rounded-md bg-gray-900/50 todo-item">
+            <input type="checkbox" ${todo.completed ? 'checked' : ''} class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
+            <input type="text" value="${todo.text}" class="flex-grow bg-transparent border-none text-gray-300 focus:ring-0 focus:outline-none">
+            <button type="button" class="text-gray-500 hover:text-red-500 remove-todo-btn">&times;</button>
+        </div>
+    `).join('');
+
     taskModalContent.innerHTML = `
         <form id="task-form" class="space-y-4">
             <input type="hidden" id="task-id" value="${task?.id || ''}">
@@ -309,6 +317,19 @@ function openTaskModal(task = null) {
                 <label for="task-description" class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
                 <textarea id="task-description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2">${task?.description || ''}</textarea>
             </div>
+            
+            <!-- Seção de Checklist -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Checklist</label>
+                <div id="todo-list" class="space-y-2 mb-2">
+                    ${todoListHtml}
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="new-todo-input" placeholder="Adicionar novo item..." class="flex-grow bg-gray-700 border border-gray-600 rounded-lg p-2 text-sm">
+                    <button type="button" id="add-todo-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-lg text-sm">+</button>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="task-assignee" class="block text-sm font-medium text-gray-300 mb-1">Executor</label>
@@ -343,6 +364,20 @@ function openTaskModal(task = null) {
             </div>
         </form>
     `;
+    
+    // Event Listeners para a Checklist
+    document.getElementById('add-todo-btn').addEventListener('click', addTodoItem);
+    document.getElementById('todo-list').addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-todo-btn')) {
+            e.target.closest('.todo-item').remove();
+        }
+    });
+    document.getElementById('new-todo-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTodoItem();
+        }
+    });
 
     taskModalFooter.innerHTML = `
         <div>
@@ -362,6 +397,24 @@ function openTaskModal(task = null) {
 
     taskModal.classList.remove('hidden');
     taskModal.classList.add('flex');
+}
+
+function addTodoItem() {
+    const input = document.getElementById('new-todo-input');
+    const text = input.value.trim();
+    if (text === '') return;
+
+    const todoList = document.getElementById('todo-list');
+    const newItem = document.createElement('div');
+    newItem.className = 'flex items-center gap-2 p-2 rounded-md bg-gray-900/50 todo-item';
+    newItem.innerHTML = `
+        <input type="checkbox" class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
+        <input type="text" value="${text}" class="flex-grow bg-transparent border-none text-gray-300 focus:ring-0 focus:outline-none">
+        <button type="button" class="text-gray-500 hover:text-red-500 remove-todo-btn">&times;</button>
+    `;
+    todoList.appendChild(newItem);
+    input.value = '';
+    input.focus();
 }
 
 function closeTaskModal() {
@@ -519,6 +572,13 @@ async function saveTask() {
         return;
     }
 
+    const todos = Array.from(document.querySelectorAll('#todo-list .todo-item')).map(item => {
+        return {
+            text: item.querySelector('input[type="text"]').value,
+            completed: item.querySelector('input[type="checkbox"]').checked
+        };
+    });
+
     const taskData = {
         text: document.getElementById('task-title').value,
         description: document.getElementById('task-description').value,
@@ -526,6 +586,7 @@ async function saveTask() {
         dueDate: document.getElementById('task-dueDate').value,
         status: document.getElementById('task-status').value,
         priority: document.getElementById('task-priority').value,
+        todos: todos,
         updatedAt: serverTimestamp()
     };
 
