@@ -1,6 +1,31 @@
 import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
+
+// Função para obter dados do usuário do Firestore
+export async function getUserData(uid) {
+    if (!uid) return null;
+    try {
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+            return { uid, ...userSnap.data() };
+        } else {
+            console.log("No such user document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting user data:", error);
+        return null;
+    }
+}
+
+// Função para verificar se o usuário é admin
+export async function checkAdminStatus(user) {
+    if (!user) return false;
+    const userData = await getUserData(user.uid);
+    return userData?.isAdmin === true;
+}
 
 // Função para verificar o estado de autenticação e executar um callback
 export function onAuthReady(callback) {

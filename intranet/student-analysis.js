@@ -1,6 +1,7 @@
 import { app, db } from './firebase-config.js';
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
+import { onAuthReady, checkAdminStatus } from './auth.js';
 
 // Helper function to get ISO week number
 function getWeekNumber(d) {
@@ -14,9 +15,20 @@ function getWeekNumber(d) {
 let allData = [];
 let charts = {};
 let currentViewingId = null;
+let currentUserIsAdmin = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadComponents(initializeDashboard);
+    onAuthReady(user => {
+        if (user) {
+            checkAdminStatus(user).then(isAdmin => {
+                currentUserIsAdmin = isAdmin;
+                loadComponents(initializeDashboard);
+            });
+        } else {
+            // Se não houver usuário, apenas carregue o dashboard com permissões limitadas
+            loadComponents(initializeDashboard);
+        }
+    });
 });
 
 async function initializeDashboard() {
@@ -484,6 +496,14 @@ function handleView(event) {
     currentViewingId = docId;
     const modal = document.getElementById('viewDataModal');
     const modalBody = document.getElementById('view-modal-body');
+    const deleteButton = document.getElementById('deleteFromViewBtn');
+
+    // Controla a visibilidade do botão de exclusão
+    if (currentUserIsAdmin) {
+        deleteButton.style.display = 'block';
+    } else {
+        deleteButton.style.display = 'none';
+    }
 
     const displayDate = new Date(dataEntry.Data + 'T00:00:00').toLocaleDateString('pt-BR');
 
@@ -598,6 +618,10 @@ function showNotification(message, isError = false) {
 }
 
 async function handleDelete(docId) {
+    if (!currentUserIsAdmin) {
+        showNotification('Você não tem permissão para excluir registros.', true);
+        return;
+    }
     try {
         await deleteDoc(doc(db, 'analise_unidades', docId));
         showNotification('Registro excluído com sucesso!');
