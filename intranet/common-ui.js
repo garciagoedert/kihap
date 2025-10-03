@@ -14,32 +14,36 @@ function setupUIListeners(handlers = {}) {
     } = handlers;
 
     // Sidebar toggle
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('main-content');
     const menuToggle = document.getElementById('menu-toggle');
-    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-    const backdrop = document.getElementById('sidebar-backdrop');
+    if (menuToggle && !menuToggle.dataset.listenerAttached) {
+        menuToggle.dataset.listenerAttached = 'true';
 
-    if (sidebar && menuToggle && sidebarCloseBtn && backdrop) {
-        const toggleSidebar = () => {
-            const isHidden = sidebar.classList.contains('-translate-x-full');
-            if (isHidden) {
-                sidebar.classList.remove('-translate-x-full');
-                backdrop.classList.remove('hidden');
-                if (window.innerWidth >= 768) {
-                    mainContent.classList.add('md:ml-64');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        if (sidebar && mainContent && sidebarCloseBtn && backdrop) {
+            const toggleSidebar = () => {
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
+                    sidebar.classList.remove('-translate-x-full');
+                    backdrop.classList.remove('hidden');
+                    if (window.innerWidth >= 768) {
+                        mainContent.classList.add('md:ml-64');
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                    if (window.innerWidth >= 768) {
+                        mainContent.classList.remove('md:ml-64');
+                    }
                 }
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-                if (window.innerWidth >= 768) {
-                    mainContent.classList.remove('md:ml-64');
-                }
-            }
-        };
-        menuToggle.addEventListener('click', toggleSidebar);
-        sidebarCloseBtn.addEventListener('click', toggleSidebar);
-        backdrop.addEventListener('click', toggleSidebar);
+            };
+            menuToggle.addEventListener('click', toggleSidebar);
+            sidebarCloseBtn.addEventListener('click', toggleSidebar);
+            backdrop.addEventListener('click', toggleSidebar);
+        }
     }
 
     // Modal Buttons (only if they exist on the page)
@@ -299,11 +303,10 @@ async function loadComponents(pageSpecificSetup) {
 
 
         // Setup listeners after components are loaded
+        setupUIListeners();
+
         if (pageSpecificSetup && typeof pageSpecificSetup === 'function') {
             pageSpecificSetup();
-        } else {
-            // Fallback if no page-specific setup is provided
-            setupUIListeners();
         }
 
     } catch (error) {
