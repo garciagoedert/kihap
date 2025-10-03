@@ -285,7 +285,10 @@ async function loadComponents(pageSpecificSetup) {
                 'processos-viewer.html',
                 'cursos.html',
                 'projetos.html',
-                'tarefas.html'
+                'tarefas.html',
+                'tatame.html',
+                'conteudo-editor.html',
+                'conteudo-viewer.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
