@@ -13,6 +13,7 @@ function getWeekNumber(d) {
 
 let allData = [];
 let charts = {};
+let currentViewingId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadComponents(initializeDashboard);
@@ -63,7 +64,9 @@ async function initializeDashboard() {
     });
 
     setupModal();
-    setupEditModal(); // Setup for the new edit modal
+    setupEditModal();
+    setupViewModal();
+    setupConfirmationModal();
     updateDashboard();
 }
 
@@ -375,13 +378,14 @@ function renderDataLog(data) {
     const sortedData = data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
 
     if (sortedData.length === 0) {
-        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-6">Nenhum registro encontrado.</div>`;
+        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-5">Nenhum registro encontrado.</div>`;
         return;
     }
 
     sortedData.forEach(item => {
         const itemElement = document.createElement('div');
-        itemElement.className = 'bg-[#2a2a2a] md:bg-transparent p-4 rounded-lg md:p-0 md:grid md:grid-cols-6 md:gap-4 md:px-6 md:py-4 md:border-b md:border-gray-700 hover:bg-[#3a3a3a]';
+        itemElement.className = 'log-item cursor-pointer bg-[#2a2a2a] md:bg-transparent p-4 rounded-lg md:p-0 md:grid md:grid-cols-5 md:gap-4 md:px-6 md:py-4 md:border-b md:border-gray-700 hover:bg-[#3a3a3a]';
+        itemElement.setAttribute('data-id', item.id);
         
         const displayDate = new Date(item.Data + 'T00:00:00').toLocaleDateString('pt-BR');
 
@@ -417,23 +421,97 @@ function renderDataLog(data) {
                 <span class="text-gray-300">${item.Ativos || 0}</span>
             </div>
             <div class="hidden md:flex items-center text-sm text-gray-300">${item.Ativos || 0}</div>
-
-            <!-- Actions -->
-            <div class="flex items-center justify-end mt-4 md:mt-0 text-sm font-medium">
-                <button class="text-blue-400 hover:text-blue-600 edit-btn" data-id="${item.id}">Editar</button>
-                <button class="text-red-400 hover:text-red-600 ml-4 delete-btn" data-id="${item.id}">Excluir</button>
-            </div>
         `;
         logBody.appendChild(itemElement);
     });
 
-    // Add event listeners for the new buttons
-    logBody.querySelectorAll('.edit-btn').forEach(button => {
-        button.addEventListener('click', handleEdit);
+    // Add event listeners for the new log items
+    logBody.querySelectorAll('.log-item').forEach(item => {
+        item.addEventListener('click', handleView);
     });
-    logBody.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', handleDelete);
+}
+
+function setupViewModal() {
+    const modal = document.getElementById('viewDataModal');
+    const closeBtn = document.getElementById('closeViewModalBtn');
+    const editBtn = document.getElementById('editFromViewBtn');
+    const deleteBtn = document.getElementById('deleteFromViewBtn');
+
+    const closeModal = () => {
+        modal.querySelector('.modal-content').classList.remove('scale-100');
+        modal.querySelector('.modal-content').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.classList.remove('modal-active');
+            currentViewingId = null;
+        }, 250);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
     });
+
+    editBtn.addEventListener('click', () => {
+        if (currentViewingId) {
+            closeModal();
+            // Pass a mock event object to handleEdit
+            handleEdit({ target: { getAttribute: () => currentViewingId } });
+        }
+    });
+
+    deleteBtn.addEventListener('click', () => {
+        if (currentViewingId) {
+            // Don't close the view modal yet.
+            const confirmationModal = document.getElementById('confirmationModal');
+            confirmationModal.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationModal.querySelector('.modal-content').classList.remove('scale-95');
+                confirmationModal.querySelector('.modal-content').classList.add('scale-100');
+            }, 10);
+        }
+    });
+}
+
+function handleView(event) {
+    const docId = event.currentTarget.getAttribute('data-id');
+    const dataEntry = allData.find(item => item.id === docId);
+    if (!dataEntry) {
+        alert('Erro: Registro não encontrado.');
+        return;
+    }
+
+    currentViewingId = docId;
+    const modal = document.getElementById('viewDataModal');
+    const modalBody = document.getElementById('view-modal-body');
+
+    const displayDate = new Date(dataEntry.Data + 'T00:00:00').toLocaleDateString('pt-BR');
+
+    modalBody.innerHTML = `
+        <p><strong>Data:</strong> ${displayDate}</p>
+        <p><strong>Unidade:</strong> ${dataEntry.Unidade}</p>
+        <hr class="border-gray-600 my-2">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+            <p><strong>Aulas Intro:</strong></p><p>${dataEntry.AulasIntro || 0}</p>
+            <p><strong>Matrículas:</strong></p><p>${dataEntry.Matriculas || 0}</p>
+            <p><strong>Contratos Ativos:</strong></p><p>${dataEntry.ContratosAtivos || 0}</p>
+            <p><strong>Alunos Ativos:</strong></p><p>${dataEntry.Ativos || 0}</p>
+            <p><strong>Renovações:</strong></p><p>${dataEntry.Renovacoes || 0}</p>
+            <p><strong>Retornos:</strong></p><p>${dataEntry.Retornos || 0}</p>
+            <p><strong>Leads:</strong></p><p>${dataEntry.Leads || 0}</p>
+            <p><strong>Baixas:</strong></p><p>${dataEntry.Baixas || 0}</p>
+        </div>
+        <hr class="border-gray-600 my-2">
+        <p><strong>Ações de Divulgação:</strong></p>
+        <p class="text-sm text-gray-400">${dataEntry.AcoesDivulgacao || 'Nenhuma ação descrita.'}</p>
+    `;
+
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-active');
+    setTimeout(() => {
+        modal.querySelector('.modal-content').classList.remove('scale-95');
+        modal.querySelector('.modal-content').classList.add('scale-100');
+    }, 10);
 }
 
 async function handleEdit(event) {
@@ -478,19 +556,57 @@ async function handleEdit(event) {
     }, 10);
 }
 
-async function handleDelete(event) {
-    const docId = event.target.getAttribute('data-id');
-    if (confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
-        try {
-            await deleteDoc(doc(db, 'analise_unidades', docId));
-            alert('Registro excluído com sucesso!');
-            await fetchData(); // Refresh data
-            populateFilters(allData);
-            updateDashboard();
-        } catch (error) {
-            console.error("Erro ao excluir o registro: ", error);
-            alert('Ocorreu um erro ao excluir o registro.');
+function setupConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    const closeModal = () => {
+        modal.querySelector('.modal-content').classList.remove('scale-100');
+        modal.querySelector('.modal-content').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 250);
+    };
+
+    cancelBtn.addEventListener('click', closeModal);
+    confirmBtn.addEventListener('click', () => {
+        if (currentViewingId) {
+            handleDelete(currentViewingId);
+            closeModal();
+            // Also close the view modal
+            document.getElementById('closeViewModalBtn').click();
         }
+    });
+}
+
+function showNotification(message, isError = false) {
+    const notification = document.getElementById('custom-notification');
+    const notificationText = notification.querySelector('p');
+    
+    notificationText.textContent = message;
+    notification.classList.remove('bg-green-500', 'bg-red-500');
+    notification.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+
+    notification.classList.remove('translate-x-[120%]');
+    notification.classList.add('translate-x-0');
+
+    setTimeout(() => {
+        notification.classList.remove('translate-x-0');
+        notification.classList.add('translate-x-[120%]');
+    }, 3000);
+}
+
+async function handleDelete(docId) {
+    try {
+        await deleteDoc(doc(db, 'analise_unidades', docId));
+        showNotification('Registro excluído com sucesso!');
+        await fetchData(); // Refresh data
+        populateFilters(allData);
+        updateDashboard();
+    } catch (error) {
+        console.error("Erro ao excluir o registro: ", error);
+        showNotification('Ocorreu um erro ao excluir o registro.', true);
     }
 }
 
