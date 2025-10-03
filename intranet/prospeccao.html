@@ -1107,6 +1107,17 @@
                         }
                     });
                 }
+                // Pass handlers to setupUIListeners
+                setupUIListeners({
+                    openFormModal,
+                    closeFormModal,
+                    handleFormSubmit,
+                    openImportModal,
+                    closeImportModal,
+                    handleImport,
+                    applyFilters,
+                    closeConfirmModal
+                });
             });
         });
     </script>

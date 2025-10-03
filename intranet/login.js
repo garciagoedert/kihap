@@ -25,7 +25,7 @@ async function handleLogin(e) {
             // O log será adaptado em um passo futuro
             // generalLog.add(userData.name, 'Login', 'User logged in successfully');
             errorEl.classList.add('hidden');
-            window.location.href = 'index.html';
+            window.location.href = 'analysis.html';
         } else {
             throw new Error("Dados do usuário não encontrados no Firestore.");
         }
