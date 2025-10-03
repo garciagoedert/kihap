@@ -57,15 +57,19 @@
                         </div>
                     </div>
                     <div>
+                        <label for="youtubeUrl" class="block text-sm font-medium text-gray-300 mb-2">URL do Vídeo do YouTube (Opcional)</label>
+                        <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Conteúdo do Processo</label>
                         <div id="editor"></div>
                     </div>
-                    <div class="flex justify-between items-center pt-4">
-                        <div class="flex gap-4">
-                            <button id="saveArticle" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition-colors">Salvar Processo</button>
-                            <button id="attachFile" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Anexar Arquivo</button>
+                    <div class="flex flex-col sm:flex-row sm:justify-between items-center pt-4 gap-4">
+                        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                            <button id="saveArticle" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition-colors w-full">Salvar Processo</button>
+                            <button id="attachFile" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg w-full">Anexar Arquivo</button>
                         </div>
-                        <button id="deleteArticle" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden">Excluir Processo</button>
+                        <button id="deleteArticle" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Excluir Processo</button>
                         <input type="file" id="fileInput" class="hidden">
                     </div>
                 </div>
