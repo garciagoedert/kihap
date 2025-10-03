@@ -713,11 +713,15 @@ function updateKPIs(data, viewBy) {
     // Always sort data by date to find the latest records
     const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    // For stock metrics like Ativos and ContratosAtivos, we need the latest value for each unit in the period.
+    // For stock metrics like Ativos and ContratosAtivos, we find the record with the highest value for each unit in the period.
+    // This prevents issues with multiple entries on the same day (e.g., one correct, one with 0).
     const latestDataPerUnit = {};
     sortedData.forEach(row => {
-        // Since data is sorted by date, the last entry for each unit will naturally overwrite previous ones.
-        latestDataPerUnit[row.Unidade] = row;
+        const existingEntry = latestDataPerUnit[row.Unidade];
+        // If there's no entry for the unit, or the current row has more 'Ativos', update it.
+        if (!existingEntry || (row.Ativos || 0) > (existingEntry.Ativos || 0)) {
+            latestDataPerUnit[row.Unidade] = row;
+        }
     });
 
     const latestDataArray = Object.values(latestDataPerUnit);
