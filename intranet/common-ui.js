@@ -298,6 +298,9 @@ async function loadComponents(pageSpecificSetup) {
         }
 
 
+        // Setup listeners after components are loaded
+        setupUIListeners();
+
         if (pageSpecificSetup && typeof pageSpecificSetup === 'function') {
             pageSpecificSetup();
         }
