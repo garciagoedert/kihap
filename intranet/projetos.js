@@ -17,6 +17,8 @@ const searchInput = document.getElementById('search-input');
 const projectFilter = document.getElementById('project-filter');
 const executorFilter = document.getElementById('executor-filter');
 const applyFiltersBtn = document.getElementById('apply-filters-btn');
+const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
+const collapsibleFilters = document.getElementById('collapsible-filters');
 const createTaskBtn = document.getElementById('create-task-btn');
 const createProjectBtn = document.getElementById('create-project-btn');
 const taskModal = document.getElementById('task-modal');
@@ -50,6 +52,10 @@ async function loadInitialData() {
     setupTasksListener();
     applyFiltersBtn.addEventListener('click', renderTasks);
     searchInput.addEventListener('keyup', renderTasks);
+    toggleFiltersBtn.addEventListener('click', () => {
+        collapsibleFilters.classList.toggle('hidden');
+        collapsibleFilters.classList.toggle('flex');
+    });
     manageProjectsBtn.addEventListener('click', openProjectsModal);
     closeTaskModalBtn.addEventListener('click', closeTaskModal);
 
@@ -238,7 +244,7 @@ function createTaskGroup(title, tasks) {
     groupEl.innerHTML = `
         <h2 class="text-lg font-semibold text-gray-400 mb-2">${title} (${tasks.length})</h2>
         <div class="bg-gray-800 rounded-lg">
-            <div class="grid grid-cols-12 gap-4 p-4 border-b border-gray-700 text-xs font-semibold text-gray-400">
+            <div class="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-gray-700 text-xs font-semibold text-gray-400">
                 <div class="col-span-4">TAREFA</div>
                 <div class="col-span-2">PROJETO</div>
                 <div class="col-span-2">EXECUTOR</div>
@@ -261,23 +267,55 @@ function createTaskRow(task) {
     const executor = users.find(u => u.id === task.assignee);
     const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : 'N/A';
     
+    const executorDisplayMobile = executor
+        ? `<div class="flex items-center gap-1 h-5">
+               <img src="${executor.photoURL || 'default-profile.svg'}" class="w-5 h-5 rounded-full">
+               <span>${executor.name}</span>
+           </div>`
+        : '<div class="h-5 flex items-center"><span>N/A</span></div>';
+
     const row = document.createElement('div');
-    row.className = "grid grid-cols-12 gap-4 p-4 border-b border-gray-700 items-center hover:bg-gray-700 transition-colors cursor-pointer";
+    row.className = "block md:grid md:grid-cols-12 gap-4 p-4 border-b border-gray-700 items-center hover:bg-gray-700 transition-colors cursor-pointer";
+    
     row.innerHTML = `
-        <div class="col-span-4">
+        <!-- Mobile View: Card-like structure -->
+        <div class="md:hidden">
+            <p class="font-semibold text-base mb-2">${task.text}</p>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div>
+                    <span class="text-xs text-gray-400 block">PROJETO</span>
+                    <div class="h-5 flex items-center"><span>${projectsMap[task.projectId] || 'Desconhecido'}</span></div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 block">EXECUTOR</span>
+                    ${executorDisplayMobile}
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 block">PRAZO</span>
+                    <div class="h-5 flex items-center"><span class="px-2 py-0.5 text-xs rounded-full bg-orange-500 text-black">${dueDate}</span></div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 block">PRIORIDADE</span>
+                    <div class="h-5 flex items-center"><span>${task.priority || 'Normal'}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop View: Grid structure -->
+        <div class="hidden md:col-span-4 md:block">
             <p>${task.text}</p>
         </div>
-        <div class="col-span-2">
+        <div class="hidden md:col-span-2 md:block">
             <span class="text-sm text-gray-400">${projectsMap[task.projectId] || 'Projeto desconhecido'}</span>
         </div>
-        <div class="col-span-2 flex items-center gap-2">
+        <div class="hidden md:col-span-2 md:flex items-center gap-2">
             <img src="${executor?.photoURL || 'default-profile.svg'}" class="w-6 h-6 rounded-full">
             <span class="text-sm">${executor?.name || 'N/A'}</span>
         </div>
-        <div class="col-span-2">
+        <div class="hidden md:col-span-2 md:block">
             <span class="px-2 py-1 text-xs rounded-full bg-orange-500 text-black">${dueDate}</span>
         </div>
-        <div class="col-span-1">
+        <div class="hidden md:col-span-1 md:block">
             <span class="text-sm">${task.priority || 'Normal'}</span>
         </div>
     `;
