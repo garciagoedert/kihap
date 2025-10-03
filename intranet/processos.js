@@ -69,6 +69,9 @@ async function loadArticleForEditing(articleId) {
             const data = docSnap.data();
             document.getElementById('articleTitle').value = data.title;
             quill.setContents(data.content);
+            if (data.youtubeUrl) {
+                document.getElementById('youtubeUrl').value = data.youtubeUrl;
+            }
 
             if (data.heroImageUrl) {
                 const preview = document.getElementById('heroImagePreview');
@@ -105,6 +108,7 @@ async function loadArticleForViewing(articleId) {
     const editButton = document.getElementById('edit-button');
     const heroContainer = document.getElementById('hero-container');
     const heroImage = document.getElementById('hero-image');
+    const videoContainer = document.getElementById('video-container');
 
     try {
         const docRef = doc(db, 'processos_articles', articleId);
@@ -117,6 +121,19 @@ async function loadArticleForViewing(articleId) {
             if (data.heroImageUrl) {
                 heroImage.src = data.heroImageUrl;
                 heroContainer.classList.remove('hidden');
+            }
+
+            if (data.youtubeUrl) {
+                const videoId = getYouTubeVideoId(data.youtubeUrl);
+                if (videoId) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://www.youtube.com/embed/${videoId}`;
+                    iframe.frameBorder = '0';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    iframe.allowFullscreen = true;
+                    videoContainer.appendChild(iframe);
+                    videoContainer.classList.remove('hidden');
+                }
             }
 
             // Usa o Quill em modo read-only para renderizar o conteúdo
@@ -141,6 +158,7 @@ async function loadArticleForViewing(articleId) {
 
 async function saveArticle(articleId) {
     const title = document.getElementById('articleTitle').value.trim();
+    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
     const content = quill.getContents();
     const user = auth.currentUser;
 
@@ -161,6 +179,7 @@ async function saveArticle(articleId) {
         const articleData = {
             title: title,
             content: contentAsObject,
+            youtubeUrl: youtubeUrl,
             updatedAt: serverTimestamp(),
             author: user.displayName || user.email,
             heroImageUrl: heroImageUrl.startsWith('http') ? heroImageUrl : ''
@@ -327,4 +346,19 @@ async function uploadHeroImage(file) {
         showAlert("Falha no upload do banner.");
         return null;
     }
+}
+
+function getYouTubeVideoId(url) {
+    let videoId = null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        }
+    } catch (e) {
+        console.error('URL do YouTube inválida:', e);
+    }
+    return videoId;
 }
