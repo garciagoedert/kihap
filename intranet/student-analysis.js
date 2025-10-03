@@ -2,6 +2,15 @@ import { app, db } from './firebase-config.js';
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
 
+// Helper function to get ISO week number
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
+}
+
 let allData = [];
 let charts = {};
 
@@ -21,20 +30,34 @@ async function initializeDashboard() {
     const yearFilter = document.getElementById('year-filter');
     const viewByFilter = document.getElementById('view-by-filter');
     const dateFilter = document.getElementById('date-filter');
+    const weekFilter = document.getElementById('week-filter');
 
     // Set default date for date filter
     dateFilter.valueAsDate = new Date();
     
     locationFilter.addEventListener('change', updateDashboard);
-    yearFilter.addEventListener('change', updateDashboard);
+    yearFilter.addEventListener('change', () => {
+        if (viewByFilter.value === 'weekly') {
+            populateWeekFilter(allData);
+        }
+        updateDashboard();
+    });
     dateFilter.addEventListener('change', updateDashboard);
+    weekFilter.addEventListener('change', updateDashboard);
     viewByFilter.addEventListener('change', () => {
         if (viewByFilter.value === 'daily') {
             dateFilter.classList.remove('hidden');
             yearFilter.classList.add('hidden');
-        } else {
+            weekFilter.classList.add('hidden');
+        } else if (viewByFilter.value === 'weekly') {
             dateFilter.classList.add('hidden');
             yearFilter.classList.remove('hidden');
+            weekFilter.classList.remove('hidden');
+            populateWeekFilter(allData);
+        } else { // monthly
+            dateFilter.classList.add('hidden');
+            yearFilter.classList.remove('hidden');
+            weekFilter.classList.add('hidden');
         }
         updateDashboard();
     });
@@ -42,6 +65,30 @@ async function initializeDashboard() {
     setupModal();
     setupEditModal(); // Setup for the new edit modal
     updateDashboard();
+}
+
+function populateWeekFilter(data) {
+    const weekFilter = document.getElementById('week-filter');
+    const selectedYear = document.getElementById('year-filter').value;
+    weekFilter.innerHTML = '<option value="all">Todas as Semanas</option>';
+
+    if (selectedYear === 'all') {
+        // Do not populate if 'All Years' is selected, as weeks would be ambiguous.
+        return;
+    }
+
+    const yearData = data.filter(d => d.Ano == selectedYear);
+    const weeks = [...new Set(yearData.map(row => {
+        const date = new Date(row.Data + 'T00:00:00');
+        return getWeekNumber(date);
+    }))].sort((a, b) => a - b);
+
+    weeks.forEach(week => {
+        const option = document.createElement('option');
+        option.value = week;
+        option.textContent = `Semana ${week}`;
+        weekFilter.appendChild(option);
+    });
 }
 
 async function fetchData() {
@@ -263,6 +310,7 @@ function updateDashboard() {
     const selectedYear = document.getElementById('year-filter').value;
     const viewBy = document.getElementById('view-by-filter').value;
     const selectedDate = document.getElementById('date-filter').value;
+    const selectedWeek = document.getElementById('week-filter').value;
     const chartsContainer = document.getElementById('charts-container');
     const dataLogContainer = document.getElementById('data-log-container');
     const dataLogTitle = document.getElementById('data-log-title');
@@ -276,6 +324,8 @@ function updateDashboard() {
     }
     if (viewBy === 'daily') {
         titleParts.push(new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR'));
+    } else if (viewBy === 'weekly' && selectedWeek !== 'all') {
+        titleParts.push(`Semana ${selectedWeek}`);
     }
     dataLogTitle.textContent = titleParts.join(' - ');
 
@@ -294,6 +344,13 @@ function updateDashboard() {
         chartsContainer.classList.remove('hidden');
         if (selectedYear !== 'all') {
             filteredData = filteredData.filter(d => d.Ano == selectedYear);
+        }
+
+        if (viewBy === 'weekly' && selectedWeek !== 'all') {
+            filteredData = filteredData.filter(d => {
+                const date = new Date(d.Data + 'T00:00:00');
+                return getWeekNumber(date) == selectedWeek;
+            });
         }
         
         if (filteredData.length === 0) {
@@ -446,9 +503,11 @@ function getMonthNumber(monthName) {
 }
 
 function processDataForView(data, viewBy) {
+    const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
     if (viewBy === 'monthly') {
         const monthlyAggregated = {};
-        data.forEach(row => {
+        sortedData.forEach(row => {
             const key = `${row.Ano}-${row.Mês}`;
             if (!monthlyAggregated[key]) {
                 monthlyAggregated[key] = { 
@@ -458,7 +517,7 @@ function processDataForView(data, viewBy) {
                     Matriculas: 0, 
                     Baixas: 0, 
                     Renovacoes: 0,
-                    Ativos: 0, // We'll take the last value
+                    Ativos: 0,
                     ContratosAtivos: 0
                 };
             }
@@ -466,43 +525,80 @@ function processDataForView(data, viewBy) {
             monthlyAggregated[key].Baixas += row.Baixas || 0;
             monthlyAggregated[key].Renovacoes += row.Renovacoes || 0;
             monthlyAggregated[key].Ativos = row.Ativos; // Overwrite with the latest value for the month
-            monthlyAggregated[key].ContratosAtivos += row.ContratosAtivos || 0;
+            monthlyAggregated[key].ContratosAtivos = row.ContratosAtivos; // Overwrite with the latest value
         });
         return Object.values(monthlyAggregated).sort((a, b) => a.Data - b.Data);
     }
-    // For weekly view, we can implement aggregation later if needed.
-    // For now, just return the raw data sorted by date.
-    return data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+    
+    if (viewBy === 'weekly') {
+        const weeklyAggregated = {};
+        sortedData.forEach(row => {
+            const date = new Date(row.Data + 'T00:00:00');
+            const week = getWeekNumber(date);
+            const key = `${row.Ano}-W${week}`;
+
+            if (!weeklyAggregated[key]) {
+                weeklyAggregated[key] = {
+                    Ano: row.Ano,
+                    Mês: row.Mês,
+                    Semana: week,
+                    Data: date,
+                    Matriculas: 0,
+                    Baixas: 0,
+                    Renovacoes: 0,
+                    Ativos: 0,
+                    ContratosAtivos: 0
+                };
+            }
+            weeklyAggregated[key].Matriculas += row.Matriculas || 0;
+            weeklyAggregated[key].Baixas += row.Baixas || 0;
+            weeklyAggregated[key].Renovacoes += row.Renovacoes || 0;
+            weeklyAggregated[key].Ativos = row.Ativos; // Overwrite with the latest value for the week
+            weeklyAggregated[key].ContratosAtivos = row.ContratosAtivos; // Overwrite with the latest value
+        });
+        return Object.values(weeklyAggregated).sort((a, b) => a.Data - b.Data);
+    }
+
+    return sortedData;
 }
 
 
 function updateKPIs(data, viewBy) {
     const kpiContainer = document.getElementById('kpi-container');
     let kpiData = {};
+    const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
     if (viewBy === 'daily') {
-        // For daily, we sum up all entries for that day (in case of multiple reports for the same day)
+        const totalAtivos = sortedData.reduce((sum, row) => sum + (row.Ativos || 0), 0);
+        const totalContratos = sortedData.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
         kpiData = {
-            ativos: data.reduce((sum, row) => sum + (row.Ativos || 0), 0),
-            matriculas: data.reduce((sum, row) => sum + (row.Matriculas || 0), 0),
-            baixas: data.reduce((sum, row) => sum + (row.Baixas || 0), 0),
-            saldo: data.reduce((sum, row) => sum + (row.Matriculas || 0) - (row.Baixas || 0), 0)
+            ativos: totalAtivos,
+            contratos: totalContratos,
+            percentualAtivos: totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0,
+            matriculas: sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0),
+            baixas: sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0),
+            saldo: sortedData.reduce((sum, row) => sum + (row.Matriculas || 0) - (row.Baixas || 0), 0)
         };
     } else { // monthly or weekly
-        const latestData = data.length > 0 ? data[data.length - 1] : {};
+        const latestData = sortedData.length > 0 ? sortedData[sortedData.length - 1] : {};
+        const totalMatriculas = sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
+        const totalBaixas = sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
+        
         kpiData = {
-            ativos: latestData.Ativos || 0, // Show the last known 'Ativos' for the period
-            matriculas: data.reduce((sum, row) => sum + (row.Matriculas || 0), 0),
-            baixas: data.reduce((sum, row) => sum + (row.Baixas || 0), 0),
-            saldo: data.reduce((sum, row) => sum + (row.Matriculas || 0), 0) - data.reduce((sum, row) => sum + (row.Baixas || 0), 0)
+            ativos: latestData.Ativos || 0,
+            contratos: latestData.ContratosAtivos || 0,
+            percentualAtivos: (latestData.ContratosAtivos || 0) > 0 ? ((latestData.Ativos || 0) / latestData.ContratosAtivos * 100).toFixed(1) : 0,
+            matriculas: totalMatriculas,
+            baixas: totalBaixas,
+            saldo: totalMatriculas - totalBaixas
         };
     }
 
     const kpis = [
         { label: 'Alunos Ativos', value: kpiData.ativos.toLocaleString('pt-BR'), icon: '👤' },
+        { label: '% de Ativos', value: `${kpiData.percentualAtivos}%`, icon: '📊' },
         { label: 'Matrículas', value: kpiData.matriculas.toLocaleString('pt-BR'), icon: '📈' },
-        { label: 'Baixas', value: kpiData.baixas.toLocaleString('pt-BR'), icon: '📉' },
-        { label: 'Saldo', value: kpiData.saldo.toLocaleString('pt-BR'), icon: '⚖️' }
+        { label: 'Baixas', value: kpiData.baixas.toLocaleString('pt-BR'), icon: '📉' }
     ];
     
     kpiContainer.innerHTML = kpis.map(kpi => `
@@ -528,10 +624,7 @@ function updateCharts(data, viewBy) {
 
     const labels = processedData.map(row => {
         if (viewBy === 'weekly') {
-            // Assuming 'Data' is in 'YYYY-MM-DD' format
-            const date = new Date(row.Data + 'T00:00:00');
-            const weekNumber = Math.ceil(date.getDate() / 7);
-            return `S${weekNumber}/${row.Mês.substring(0, 3)}`;
+            return `S${row.Semana}/${String(row.Ano).slice(-2)}`;
         }
         return `${row.Mês.substring(0, 3)}/${String(row.Ano).slice(-2)}`;
     });
