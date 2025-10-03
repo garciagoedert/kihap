@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tatame - Intranet KIHAP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <link rel="shortcut icon" href="../imgs/favicon.png" type="image/x-icon">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .article-card {
+            background-color: #1a1a1a;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .article-card-content p {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+        <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden">
+            <div id="header-container"></div>
+            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold">Conteúdos do Tatame</h1>
+                    <a href="conteudo-editor.html" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg">Novo Conteúdo</a>
+                </div>
+                <div class="mb-6">
+                    <input type="text" id="searchInput" placeholder="Buscar conteúdos por título..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div id="articles-list" class="space-y-4">
+                    <!-- Conteúdos serão carregados aqui -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { app } from './firebase-config.js';
+        import { onAuthReady } from './auth.js';
+        import { loadComponents, setupUIListeners } from './common-ui.js';
+        import { initTatamePage } from './tatame.js';
+
+        onAuthReady(user => {
+            if (user) {
+                loadComponents(() => {
+                    initTatamePage();
+                });
+            }
+        });
+    </script>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 id="confirmTitle" class="text-lg font-bold mb-2">Confirmar Ação</h3>
+            <p id="confirmMessage" class="text-gray-300 mb-6">Você tem certeza?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelConfirmBtn" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-6 rounded-lg">Cancelar</button>
+                <button id="confirmActionBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 id="alertTitle" class="text-lg font-bold mb-2">Aviso</h3>
+            <p id="alertMessage" class="text-gray-300 mb-6"></p>
+            <div class="flex justify-center">
+                <button id="closeAlertBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

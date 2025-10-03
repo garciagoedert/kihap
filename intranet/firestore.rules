@@ -17,6 +17,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Regra para a coleção de Conteúdos do Tatame
+    match /tatame_conteudos/{conteudoId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Regra para Análise de Unidades
     match /analise_unidades/{docId} {
       allow read: if true;
