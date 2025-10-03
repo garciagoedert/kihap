@@ -705,34 +705,38 @@ function processDataForView(data, viewBy) {
 
 function updateKPIs(data, viewBy) {
     const kpiContainer = document.getElementById('kpi-container');
-    let kpiData = {};
+    if (!data || data.length === 0) {
+        kpiContainer.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado de KPI para a seleção atual.</div>`;
+        return;
+    }
+
+    // Always sort data by date to find the latest records
     const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    if (viewBy === 'daily') {
-        const totalAtivos = sortedData.reduce((sum, row) => sum + (row.Ativos || 0), 0);
-        const totalContratos = sortedData.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
-        kpiData = {
-            ativos: totalAtivos,
-            contratos: totalContratos,
-            percentualAtivos: totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0,
-            matriculas: sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0),
-            baixas: sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0),
-            saldo: sortedData.reduce((sum, row) => sum + (row.Matriculas || 0) - (row.Baixas || 0), 0)
-        };
-    } else { // monthly or weekly
-        const latestData = sortedData.length > 0 ? sortedData[sortedData.length - 1] : {};
-        const totalMatriculas = sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
-        const totalBaixas = sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
-        
-        kpiData = {
-            ativos: latestData.Ativos || 0,
-            contratos: latestData.ContratosAtivos || 0,
-            percentualAtivos: (latestData.ContratosAtivos || 0) > 0 ? ((latestData.Ativos || 0) / latestData.ContratosAtivos * 100).toFixed(1) : 0,
-            matriculas: totalMatriculas,
-            baixas: totalBaixas,
-            saldo: totalMatriculas - totalBaixas
-        };
-    }
+    // For stock metrics like Ativos and ContratosAtivos, we need the latest value for each unit in the period.
+    const latestDataPerUnit = {};
+    sortedData.forEach(row => {
+        // Since data is sorted by date, the last entry for each unit will naturally overwrite previous ones.
+        latestDataPerUnit[row.Unidade] = row;
+    });
+
+    const latestDataArray = Object.values(latestDataPerUnit);
+    
+    const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
+    const totalContratos = latestDataArray.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
+
+    // For flow metrics like Matriculas and Baixas, we sum up all occurrences in the period.
+    const totalMatriculas = sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
+    const totalBaixas = sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
+
+    const kpiData = {
+        ativos: totalAtivos,
+        contratos: totalContratos,
+        percentualAtivos: totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0,
+        matriculas: totalMatriculas,
+        baixas: totalBaixas,
+        saldo: totalMatriculas - totalBaixas
+    };
 
     const kpis = [
         { label: 'Alunos Ativos', value: kpiData.ativos.toLocaleString('pt-BR'), icon: '👤' },
