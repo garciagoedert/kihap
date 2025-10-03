@@ -59,6 +59,7 @@ function initializeEditor() {
     document.getElementById('attachFile').addEventListener('click', () => document.getElementById('fileInput').click());
     document.getElementById('fileInput').addEventListener('change', uploadAttachment);
     document.getElementById('heroImageInput').addEventListener('change', handleHeroImageSelect);
+    document.getElementById('removeHeroImage').addEventListener('click', removeHeroImage);
 }
 
 async function loadArticleForEditing(articleId) {
@@ -76,9 +77,11 @@ async function loadArticleForEditing(articleId) {
             if (data.heroImageUrl) {
                 const preview = document.getElementById('heroImagePreview');
                 const icon = document.getElementById('heroImageIcon');
+                const removeButton = document.getElementById('removeHeroImage');
                 preview.src = data.heroImageUrl;
                 preview.classList.remove('hidden');
                 icon.classList.add('hidden');
+                removeButton.classList.remove('hidden');
             }
         } else {
             console.error("Nenhum artigo encontrado com este ID!");
@@ -174,6 +177,8 @@ async function saveArticle(articleId) {
         let heroImageUrl = document.getElementById('heroImagePreview').src;
         if (heroImageFile) {
             heroImageUrl = await uploadHeroImage(heroImageFile);
+        } else if (!heroImageUrl.startsWith('http')) {
+            heroImageUrl = ''; // Image was removed
         }
 
         const articleData = {
@@ -182,7 +187,7 @@ async function saveArticle(articleId) {
             youtubeUrl: youtubeUrl,
             updatedAt: serverTimestamp(),
             author: user.displayName || user.email,
-            heroImageUrl: heroImageUrl.startsWith('http') ? heroImageUrl : ''
+            heroImageUrl: heroImageUrl
         };
 
         if (articleId) {
@@ -311,6 +316,20 @@ function uploadAttachment(event) {
     );
 }
 
+function removeHeroImage() {
+    heroImageFile = null;
+    const preview = document.getElementById('heroImagePreview');
+    const icon = document.getElementById('heroImageIcon');
+    const removeButton = document.getElementById('removeHeroImage');
+    const input = document.getElementById('heroImageInput');
+
+    preview.src = '#';
+    preview.classList.add('hidden');
+    icon.classList.remove('hidden');
+    removeButton.classList.add('hidden');
+    input.value = ''; // Reset file input
+}
+
 function handleHeroImageSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -324,6 +343,7 @@ function handleHeroImageSelect(event) {
         preview.src = e.target.result;
         preview.classList.remove('hidden');
         icon.classList.add('hidden');
+        document.getElementById('removeHeroImage').classList.remove('hidden');
     };
     reader.readAsDataURL(file);
 }
