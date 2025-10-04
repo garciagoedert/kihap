@@ -178,3 +178,33 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("internal", "Não foi possível criar o convite do aluno.");
     }
 });
+
+/**
+ * Atualiza as permissões de conteúdo de um aluno.
+ */
+exports.updateStudentPermissions = functions.https.onCall(async (data, context) => {
+    // Verificação de permissão de admin
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isAdmin) {
+        throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
+    }
+
+    const { studentUid, accessibleContent } = data;
+    if (!studentUid || !Array.isArray(accessibleContent)) {
+        throw new functions.https.HttpsError("invalid-argument", "ID do aluno e lista de conteúdos são obrigatórios.");
+    }
+
+    try {
+        const studentUserRef = admin.firestore().collection('users').doc(studentUid);
+        await studentUserRef.update({
+            accessibleContent: accessibleContent
+        });
+        return { success: true, message: "Permissões atualizadas com sucesso." };
+    } catch (error) {
+        functions.logger.error(`Erro ao atualizar permissões para o aluno ${studentUid}:`, error);
+        throw new functions.https.HttpsError("internal", "Não foi possível atualizar as permissões.");
+    }
+});

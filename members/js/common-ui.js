@@ -11,21 +11,13 @@ function setupUIListeners() {
 
     if (sidebar && mainContent && sidebarOpenBtn && sidebarCloseBtn && backdrop) {
         const toggleSidebar = () => {
-            const isHidden = sidebar.classList.contains('-translate-x-full');
-            if (isHidden) {
-                sidebar.classList.remove('-translate-x-full');
-                backdrop.classList.remove('hidden');
-                if (window.innerWidth >= 768) {
-                    mainContent.classList.add('md:ml-64');
-                }
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-                if (window.innerWidth >= 768) {
-                    mainContent.classList.remove('md:ml-64');
-                }
-            }
+            // No mobile, a sidebar desliza por cima e o backdrop aparece.
+            // No desktop (md:), a sidebar fica fixa e empurra o conteúdo.
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+            backdrop.classList.toggle('md:hidden'); // O backdrop deve sempre estar escondido no desktop.
         };
+
         sidebarOpenBtn.addEventListener('click', toggleSidebar);
         sidebarCloseBtn.addEventListener('click', toggleSidebar);
         backdrop.addEventListener('click', toggleSidebar);
