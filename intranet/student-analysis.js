@@ -17,6 +17,10 @@ let charts = {};
 let currentViewingId = null;
 let currentUserIsAdmin = false;
 
+let fullLogData = [];
+let renderedLogCount = 0;
+const LOG_PAGE_SIZE = 20;
+
 document.addEventListener('DOMContentLoaded', () => {
     onAuthReady(user => {
         if (user) {
@@ -63,6 +67,10 @@ async function initializeDashboard() {
             yearFilter.classList.add('hidden');
             weekFilter.classList.add('hidden');
         } else if (viewByFilter.value === 'weekly') {
+            // If switching to weekly view and "All Years" is selected, default to the most recent year.
+            if (yearFilter.value === 'all' && yearFilter.options.length > 1) {
+                yearFilter.value = yearFilter.options[1].value; // The first actual year
+            }
             dateFilter.classList.add('hidden');
             yearFilter.classList.remove('hidden');
             weekFilter.classList.remove('hidden');
@@ -74,6 +82,8 @@ async function initializeDashboard() {
         }
         updateDashboard();
     });
+
+    document.getElementById('load-more-btn').addEventListener('click', renderMoreLogItems);
 
     setupModal();
     setupEditModal();
@@ -127,9 +137,15 @@ function setupModal() {
     document.getElementById('report-date').valueAsDate = new Date();
 
     const openModal = () => {
-        const unidades = [...new Set(allData.map(item => item.Unidade))].sort();
+        const preDefinedUnidades = [
+            'Asa Sul', 'Sudoeste', 'Lago Sul', 'Noroeste', 'Jardim Botânico',
+            'Pontos de Ensino', 'Centro', 'Santa Mônica', 'Coqueiros', 'Dourados'
+        ];
+        const existingUnidades = [...new Set(allData.map(item => item.Unidade))];
+        const allUnidades = [...new Set([...preDefinedUnidades, ...existingUnidades])].sort();
+
         unidadeSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
-        unidades.forEach(unidade => {
+        allUnidades.forEach(unidade => {
             const option = document.createElement('option');
             option.value = unidade;
             option.textContent = unidade;
@@ -169,14 +185,8 @@ function setupModal() {
     unidadeSelect.addEventListener('change', () => {
         const isNova = unidadeSelect.value === 'nova';
         const isValidUnidade = unidadeSelect.value && !isNova;
-
         document.getElementById('unidade-nova').classList.toggle('hidden', !isNova);
-        
-        if (currentUserIsAdmin && isValidUnidade) {
-            editUnidadeBtn.classList.remove('hidden');
-        } else {
-            editUnidadeBtn.classList.add('hidden');
-        }
+        editUnidadeBtn.classList.toggle('hidden', !(currentUserIsAdmin && isValidUnidade));
     });
 
     editUnidadeBtn.addEventListener('click', handleEditUnidade);
@@ -184,24 +194,27 @@ function setupModal() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const reportDate = new Date(document.getElementById('report-date').value + 'T00:00:00'); // Treat date as local
-        const year = reportDate.getFullYear();
-        const month = reportDate.toLocaleString('pt-BR', { month: 'long' });
+        const dateValue = document.getElementById('report-date').value;
+        if (!dateValue) {
+            showNotification('Por favor, selecione uma data.', true);
+            return;
+        }
+        const reportDate = new Date(dateValue + 'T12:00:00'); // Use noon to avoid timezone issues
         
         let unidade = unidadeSelect.value;
         if (unidade === 'nova') {
             unidade = document.getElementById('unidade-nova').value.trim();
             if (!unidade) {
-                alert('Por favor, insira o nome da nova unidade.');
+                showNotification('Por favor, insira o nome da nova unidade.', true);
                 return;
             }
         }
 
         const newData = {
-            "Data": document.getElementById('report-date').value,
+            "Data": dateValue,
             "Unidade": unidade,
-            "Ano": year,
-            "Mês": month,
+            "Ano": reportDate.getFullYear(),
+            "Mês": reportDate.toLocaleString('pt-BR', { month: 'long' }),
             "AulasIntro": parseInt(document.getElementById('aulas-intro').value) || 0,
             "Matriculas": parseInt(document.getElementById('matriculas').value) || 0,
             "ContratosAtivos": parseInt(document.getElementById('contratos-ativos').value) || 0,
@@ -214,8 +227,19 @@ function setupModal() {
         };
 
         try {
-            await addDoc(collection(db, 'analise_unidades'), newData);
-            alert('Dados salvos com sucesso!');
+            // Check if a doc for this date and unit already exists to update it
+            const q = query(collection(db, 'analise_unidades'), where("Data", "==", dateValue), where("Unidade", "==", unidade));
+            const existingDocs = await getDocs(q);
+
+            if (!existingDocs.empty) {
+                const docId = existingDocs.docs[0].id;
+                await updateDoc(doc(db, 'analise_unidades', docId), newData);
+                showNotification('Dados do dia atualizados com sucesso!');
+            } else {
+                await addDoc(collection(db, 'analise_unidades'), newData);
+                showNotification('Dados salvos com sucesso!');
+            }
+
             form.reset();
             document.getElementById('report-date').valueAsDate = new Date();
             closeModal();
@@ -224,7 +248,7 @@ function setupModal() {
             updateDashboard();
         } catch (error) {
             console.error("Erro ao salvar os dados: ", error);
-            alert('Ocorreu um erro ao salvar os dados.');
+            showNotification('Ocorreu um erro ao salvar os dados.', true);
         }
     });
 }
@@ -362,7 +386,11 @@ function updateDashboard() {
         const dailyData = filteredData.filter(d => d.Data === selectedDate);
         updateKPIs(dailyData, 'daily');
         updateCharts(dailyData, 'daily'); // Pass daily data to clear charts
-        renderDataLog(dailyData);
+        
+        fullLogData = dailyData.sort((a, b) => new Date(b.Data) - new Date(a.Data));
+        renderedLogCount = 0;
+        document.getElementById('data-log-body').innerHTML = '';
+        renderMoreLogItems();
     } else {
         chartsContainer.classList.remove('hidden');
         if (selectedYear !== 'all') {
@@ -379,76 +407,69 @@ function updateDashboard() {
         if (filteredData.length === 0) {
             document.getElementById('kpi-container').innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado encontrado para a seleção atual.</div>`;
             updateCharts([], viewBy); // Clear charts
-            renderDataLog([]); // Clear log
+            fullLogData = [];
+            renderedLogCount = 0;
+            document.getElementById('data-log-body').innerHTML = '';
+            renderMoreLogItems(); // Will show "Nenhum registro"
             return;
         }
 
         updateKPIs(filteredData, viewBy);
         updateCharts(filteredData, viewBy);
-        renderDataLog(filteredData);
+        
+        fullLogData = filteredData.sort((a, b) => new Date(b.Data) - new Date(a.Data));
+        renderedLogCount = 0;
+        document.getElementById('data-log-body').innerHTML = '';
+        renderMoreLogItems();
     }
 }
 
-function renderDataLog(data) {
+function renderMoreLogItems() {
     const logBody = document.getElementById('data-log-body');
-    if (!logBody) return;
+    const loadMoreContainer = document.getElementById('load-more-container');
 
-    logBody.innerHTML = ''; // Clear existing content
+    const startIndex = renderedLogCount;
+    const endIndex = startIndex + LOG_PAGE_SIZE;
+    const dataToRender = fullLogData.slice(startIndex, endIndex);
 
-    const sortedData = data.sort((a, b) => new Date(b.Data) - new Date(a.Data));
-
-    if (sortedData.length === 0) {
+    if (startIndex === 0 && dataToRender.length === 0) {
         logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-5">Nenhum registro encontrado.</div>`;
+        loadMoreContainer.classList.add('hidden');
         return;
     }
 
-    sortedData.forEach(item => {
+    dataToRender.forEach(item => {
         const itemElement = document.createElement('div');
+        // Add a class to prevent re-adding listeners
         itemElement.className = 'log-item cursor-pointer bg-[#2a2a2a] md:bg-transparent p-4 rounded-lg md:p-0 md:grid md:grid-cols-5 md:gap-4 md:px-6 md:py-4 md:border-b md:border-gray-700 hover:bg-[#3a3a3a]';
         itemElement.setAttribute('data-id', item.id);
         
         const displayDate = new Date(item.Data + 'T00:00:00').toLocaleDateString('pt-BR');
 
         itemElement.innerHTML = `
-            <!-- Mobile view: Label + Value -->
-            <div class="flex justify-between md:hidden">
-                <span class="font-bold text-gray-400">Data:</span>
-                <span class="text-gray-300">${displayDate}</span>
-            </div>
-            <!-- Desktop view: Just value -->
             <div class="hidden md:flex items-center text-sm text-gray-300">${displayDate}</div>
-
-            <div class="flex justify-between md:hidden mt-2">
-                <span class="font-bold text-gray-400">Unidade:</span>
-                <span class="text-gray-300">${item.Unidade}</span>
-            </div>
             <div class="hidden md:flex items-center text-sm text-gray-300">${item.Unidade}</div>
-
-            <div class="flex justify-between md:hidden mt-2">
-                <span class="font-bold text-gray-400">Matrículas:</span>
-                <span class="text-gray-300">${item.Matriculas || 0}</span>
-            </div>
             <div class="hidden md:flex items-center text-sm text-gray-300">${item.Matriculas || 0}</div>
-
-            <div class="flex justify-between md:hidden mt-2">
-                <span class="font-bold text-gray-400">Baixas:</span>
-                <span class="text-gray-300">${item.Baixas || 0}</span>
-            </div>
             <div class="hidden md:flex items-center text-sm text-gray-300">${item.Baixas || 0}</div>
-
-            <div class="flex justify-between md:hidden mt-2">
-                <span class="font-bold text-gray-400">Ativos:</span>
-                <span class="text-gray-300">${item.Ativos || 0}</span>
-            </div>
             <div class="hidden md:flex items-center text-sm text-gray-300">${item.Ativos || 0}</div>
+            <!-- Mobile view -->
+            <div class="flex justify-between md:hidden"><span class="font-bold text-gray-400">Data:</span><span class="text-gray-300">${displayDate}</span></div>
+            <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Unidade:</span><span class="text-gray-300">${item.Unidade}</span></div>
+            <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Matrículas:</span><span class="text-gray-300">${item.Matriculas || 0}</span></div>
+            <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Baixas:</span><span class="text-gray-300">${item.Baixas || 0}</span></div>
+            <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Ativos:</span><span class="text-gray-300">${item.Ativos || 0}</span></div>
         `;
+        itemElement.addEventListener('click', handleView);
         logBody.appendChild(itemElement);
     });
 
-    // Add event listeners for the new log items
-    logBody.querySelectorAll('.log-item').forEach(item => {
-        item.addEventListener('click', handleView);
-    });
+    renderedLogCount += dataToRender.length;
+
+    if (renderedLogCount < fullLogData.length) {
+        loadMoreContainer.classList.remove('hidden');
+    } else {
+        loadMoreContainer.classList.add('hidden');
+    }
 }
 
 function setupViewModal() {
@@ -771,11 +792,12 @@ function updateKPIs(data, viewBy) {
             { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' }
         ];
     } else { // For 'weekly' and 'monthly' views
+        const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
         kpis = [
+            { label: 'Alunos Ativos', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
             { label: 'Contratos Ativos', value: totalContratos.toLocaleString('pt-BR'), icon: '📝' },
-            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' },
             { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
-            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' }
+            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' }
         ];
     }
     
