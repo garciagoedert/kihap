@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Painel do Aluno</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../intranet/theme.css">
+    <link rel="stylesheet" href="../intranet/log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
+                <h1 class="text-2xl font-bold mb-6">Painel do Aluno</h1>
+                
+                <!-- Profile Info -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
+                    <div class="flex items-center space-x-6">
+                        <img id="user-avatar" src="../intranet/default-profile.svg" alt="User Avatar" class="w-24 h-24 rounded-full">
+                        <div>
+                            <h2 id="user-name-display" class="text-2xl font-bold">Carregando...</h2>
+                            <p id="user-email-display" class="text-gray-400">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Member Details -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">Minhas Informações</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Nome Completo</label>
+                            <p id="member-name" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Idade</label>
+                            <p id="member-age" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Graduação (Faixa)</label>
+                            <p id="member-belt" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Unidade de Aula</label>
+                            <p id="member-unit" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Status da Matrícula</label>
+                            <p id="member-status" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Data de Cadastro</label>
+                            <p id="member-register-date" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-400">KihapCoins</label>
+                            <p id="member-kihapcoins" class="mt-1 text-2xl font-bold text-yellow-400">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <a href="perfil.html" class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Editar Perfil</a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './js/common-ui.js';
+        import { loadMemberDashboard } from './js/dashboard.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                loadMemberDashboard();
+            });
+        });
+    </script>
+</body>
+</html>
