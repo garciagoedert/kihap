@@ -60,7 +60,7 @@ async function initializeDashboard() {
         updateDashboard();
     });
     // Atualiza os KPIs do EVO sempre que o filtro de localização mudar
-    locationFilter.addEventListener('change', loadEvoKPIs);
+    locationFilter.addEventListener('change', displayEvoKpi);
     dateFilter.addEventListener('change', updateDashboard);
     weekFilter.addEventListener('change', updateDashboard);
     viewByFilter.addEventListener('change', () => {
@@ -92,7 +92,7 @@ async function initializeDashboard() {
     setupViewModal();
     setupConfirmationModal();
     updateDashboard();
-    loadEvoKPIs();
+    displayEvoKpi();
 }
 
 function populateWeekFilter(data) {
@@ -320,9 +320,10 @@ function setupEditModal() {
     });
 }
 
-function populateFilters(data) {
+async function populateFilters(data) {
     const yearFilter = document.getElementById('year-filter');
     const locationFilter = document.getElementById('location-filter');
+    const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 
     const currentYear = yearFilter.value;
     const currentLocation = locationFilter.value;
@@ -331,14 +332,23 @@ function populateFilters(data) {
     yearFilter.innerHTML = '<option value="all">Todos os Anos</option>';
     
     const years = [...new Set(data.map(row => row.Ano))].sort((a, b) => b - a);
-    const locations = [...new Set(data.map(row => row.Unidade))].sort();
     
-    locations.forEach(location => {
-        const option = document.createElement('option');
-        option.value = location;
-        option.textContent = `Unidade ${location}`;
-        locationFilter.appendChild(option);
-    });
+    try {
+        const result = await getEvoUnits();
+        const evoUnits = result.data.sort();
+        
+        evoUnits.forEach(unitId => {
+            const option = document.createElement('option');
+            option.value = unitId;
+            // Formata o nome para exibição
+            const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            option.textContent = `Unidade ${displayName}`;
+            locationFilter.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Erro ao buscar unidades do EVO:", error);
+    }
 
     years.forEach(year => {
         const yearOpt = document.createElement('option');
@@ -356,7 +366,6 @@ function populateFilters(data) {
 }
 
 function updateDashboard() {
-    // A chamada para loadEvoKPIs foi movida para o event listener do filtro
     const selectedLocation = document.getElementById('location-filter').value;
     const selectedYear = document.getElementById('year-filter').value;
     const viewBy = document.getElementById('view-by-filter').value;
@@ -962,41 +971,48 @@ async function handleEditUnidade() {
     }
 }
 
-async function loadEvoKPIs() {
-    const evoKpiContainer = document.getElementById('evo-kpi-container');
+async function displayEvoKpi() {
+    const kpiContainer = document.getElementById('kpi-container');
     const locationFilter = document.getElementById('location-filter');
     const selectedUnit = locationFilter.value;
     const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
 
-    // Mostra um placeholder de carregamento
-    evoKpiContainer.innerHTML = `
-        <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse col-span-1 sm:col-span-2 lg:col-span-4">
+    // Remove o card antigo, se existir
+    const oldCard = document.getElementById('evo-kpi-card');
+    if (oldCard) {
+        oldCard.remove();
+    }
+
+    // Adiciona um placeholder de carregamento
+    const placeholderHtml = `
+        <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Carregando Contratos Ativos...</p>
+                <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
                 <p class="text-2xl font-bold text-white">...</p>
             </div>
         </div>`;
+    kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     try {
         const result = await getActiveContractsCount({ unitId: selectedUnit });
         const counts = result.data;
         
-        evoKpiContainer.innerHTML = ''; // Limpa o carregamento
-
         let label;
         let value;
 
-        if (selectedUnit !== 'geral') {
-            label = `Contratos Ativos (${selectedUnit.charAt(0).toUpperCase() + selectedUnit.slice(1)})`;
-            value = counts[selectedUnit];
+        if (selectedUnit && selectedUnit !== 'geral') {
+            // Formata o nome da unidade para exibição
+            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            label = `Contratos Ativos (${displayName})`;
+            value = counts[selectedUnit] !== undefined ? counts[selectedUnit] : 0;
         } else {
             label = "Total de Contratos Ativos (EVO)";
-            value = counts.totalGeral;
+            value = counts.totalGeral !== undefined ? counts.totalGeral : 0;
         }
         
-        evoKpiContainer.innerHTML = `
-            <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center col-span-1 sm:col-span-2 lg:col-span-4">
+        const finalHtml = `
+            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
                 <div class="text-3xl mr-4">📝</div>
                 <div>
                     <p class="text-gray-400 text-sm">${label}</p>
@@ -1004,9 +1020,26 @@ async function loadEvoKPIs() {
                 </div>
             </div>
         `;
+        
+        const placeholderCard = document.getElementById('evo-kpi-card');
+        if (placeholderCard) {
+            placeholderCard.outerHTML = finalHtml;
+        }
 
     } catch (error) {
         console.error("Erro ao carregar KPIs da EVO:", error);
-        evoKpiContainer.innerHTML = `<div class="col-span-full text-center p-8 text-red-500">Não foi possível carregar os dados de contratos.</div>`;
+        const errorHtml = `
+            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">⚠️</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
+                    <p class="text-xl font-bold text-red-500">Erro</p>
+                </div>
+            </div>
+        `;
+        const placeholderCard = document.getElementById('evo-kpi-card');
+        if (placeholderCard) {
+            placeholderCard.outerHTML = errorHtml;
+        }
     }
 }

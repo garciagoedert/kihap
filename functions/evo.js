@@ -248,47 +248,89 @@ exports.updateStudentPermissions = functions.https.onCall(async (data, context) 
 /**
  * Busca o número de contratos ativos para uma ou todas as unidades.
  */
-exports.getActiveContractsCount = functions.https.onCall(async (data, context) => {
+exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId } = data; // Recebe a unidade do frontend
+    const { unitId } = data;
+    const executionId = Math.random().toString(36).substring(2, 10);
+    functions.logger.info(`[${executionId}] Iniciando getActiveContractsCount para unitId: ${unitId || 'geral'}`);
 
     const getCountForUnit = async (id) => {
-        try {
-            const apiClient = getEvoApiClient(id, 'v2');
-            // Usando GET para maior compatibilidade. A API retorna o header 'total'.
-            const response = await apiClient.get("/members", { params: { status: 1, take: 1 } }); // take: 1 para minimizar o payload
-            return parseInt(response.headers['total'] || '0', 10);
-        } catch (unitError) {
-            functions.logger.error(`Erro ao buscar contagem para a unidade ${id}:`, unitError.message);
-            return 0; // Retorna 0 para a unidade que falhou
+        const MAX_RETRIES = 3;
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const apiClient = getEvoApiClient(id, 'v2');
+                const response = await apiClient.get("/members", { params: { status: 1, take: 1 } });
+                const count = parseInt(response.headers['total'] || '0', 10);
+                
+                functions.logger.info(`[${executionId}] Tentativa ${attempt} para '${id}': Sucesso com contagem ${count}.`);
+
+                // A API às vezes retorna 0 incorretamente. Se não for a última tentativa, tratamos 0 como um erro transitório.
+                if (count > 0 || attempt === MAX_RETRIES) {
+                    return count;
+                }
+                
+                // Se count for 0 e ainda houver tentativas, espera antes de tentar novamente.
+                const delay = 250 * attempt; // 250ms, 500ms, 750ms
+                functions.logger.warn(`[${executionId}] Tentativa ${attempt} para '${id}' retornou 0. Tentando novamente em ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+
+            } catch (unitError) {
+                lastError = unitError;
+                functions.logger.error(`[${executionId}] Tentativa ${attempt} para '${id}' falhou:`, unitError.message);
+                if (attempt < MAX_RETRIES) {
+                    const delay = 500 * attempt; // Espera mais em caso de erro real
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
         }
+
+        functions.logger.error(`[${executionId}] Todas as ${MAX_RETRIES} tentativas falharam para a unidade '${id}'.`, lastError?.message);
+        return 0; // Retorna 0 se todas as tentativas falharem.
     };
 
     try {
         if (unitId && unitId !== 'geral') {
-            // Busca para uma unidade específica
             const count = await getCountForUnit(unitId);
+            functions.logger.info(`[${executionId}] Retornando contagem única para '${unitId}': ${count}`);
             return { [unitId]: count };
         } else {
-            // Busca para todas as unidades
             const unitIds = Object.keys(EVO_CREDENTIALS);
-            const counts = {};
-            let totalGeral = 0;
+            functions.logger.info(`[${executionId}] Buscando contagem para todas as ${unitIds.length} unidades.`);
 
             const promises = unitIds.map(async (id) => {
                 const count = await getCountForUnit(id);
-                counts[id] = count;
-                totalGeral += count;
+                return { id, count };
             });
 
-            await Promise.all(promises);
-            return { totalGeral, ...counts };
+            const results = await Promise.all(promises);
+            functions.logger.info(`[${executionId}] Resultados individuais recebidos:`, results);
+
+            const finalCounts = results.reduce((acc, result) => {
+                acc.counts[result.id] = result.count;
+                acc.totalGeral += result.count;
+                return acc;
+            }, { totalGeral: 0, counts: {} });
+
+            functions.logger.info(`[${executionId}] Contagem final calculada. Total: ${finalCounts.totalGeral}`, finalCounts.counts);
+            return { totalGeral: finalCounts.totalGeral, ...finalCounts.counts };
         }
     } catch (error) {
         functions.logger.error("Erro geral ao buscar contagem de contratos:", error);
         throw new functions.https.HttpsError("internal", "Não foi possível buscar a contagem de contratos ativos.");
     }
+});
+
+/**
+ * Retorna a lista de unidades configuradas para a API EVO.
+ */
+exports.getEvoUnits = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    return Object.keys(EVO_CREDENTIALS);
 });
