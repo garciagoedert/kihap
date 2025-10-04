@@ -1,4 +1,5 @@
-import { app, db } from './firebase-config.js';
+import { app, db, functions } from './firebase-config.js';
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
@@ -29,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadComponents(initializeDashboard);
             });
         } else {
-            // Se não houver usuário, apenas carregue o dashboard com permissões limitadas
             loadComponents(initializeDashboard);
         }
     });
@@ -59,6 +59,8 @@ async function initializeDashboard() {
         }
         updateDashboard();
     });
+    // Atualiza os KPIs do EVO sempre que o filtro de localização mudar
+    locationFilter.addEventListener('change', loadEvoKPIs);
     dateFilter.addEventListener('change', updateDashboard);
     weekFilter.addEventListener('change', updateDashboard);
     viewByFilter.addEventListener('change', () => {
@@ -90,6 +92,7 @@ async function initializeDashboard() {
     setupViewModal();
     setupConfirmationModal();
     updateDashboard();
+    loadEvoKPIs();
 }
 
 function populateWeekFilter(data) {
@@ -353,6 +356,7 @@ function populateFilters(data) {
 }
 
 function updateDashboard() {
+    // A chamada para loadEvoKPIs foi movida para o event listener do filtro
     const selectedLocation = document.getElementById('location-filter').value;
     const selectedYear = document.getElementById('year-filter').value;
     const viewBy = document.getElementById('view-by-filter').value;
@@ -779,24 +783,27 @@ function updateKPIs(data, viewBy) {
         }
     });
     const latestDataArray = Object.values(latestDataPerUnit);
-    const totalContratos = latestDataArray.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
+    // O KPI de Contratos Ativos agora vem do EVO, então removemos a lógica daqui.
+    // const totalContratos = latestDataArray.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
 
     if (viewBy === 'daily') {
         const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
+        // const percentualAtivos = totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0;
         const percentualAtivos = totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0;
         
         kpis = [
-            { label: 'Alunos Ativos', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
-            { label: '% de Ativos', value: `${percentualAtivos}%`, icon: '📊' },
+            { label: 'Alunos Ativos (Manual)', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
+            // { label: '% de Ativos', value: `${percentualAtivos}%`, icon: '📊' },
             { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
-            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' }
+            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' },
+            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' }
         ];
     } else { // For 'weekly' and 'monthly' views
         const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
         kpis = [
-            { label: 'Alunos Ativos', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
-            { label: 'Contratos Ativos', value: totalContratos.toLocaleString('pt-BR'), icon: '📝' },
+            { label: 'Alunos Ativos (Manual)', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
             { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
+            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' },
             { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' }
         ];
     }
@@ -952,5 +959,54 @@ async function handleEditUnidade() {
             console.error("Erro ao renomear unidade: ", error);
             showNotification('Ocorreu um erro ao renomear a unidade.', true);
         }
+    }
+}
+
+async function loadEvoKPIs() {
+    const evoKpiContainer = document.getElementById('evo-kpi-container');
+    const locationFilter = document.getElementById('location-filter');
+    const selectedUnit = locationFilter.value;
+    const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
+
+    // Mostra um placeholder de carregamento
+    evoKpiContainer.innerHTML = `
+        <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse col-span-1 sm:col-span-2 lg:col-span-4">
+            <div class="text-3xl mr-4">🔄</div>
+            <div>
+                <p class="text-gray-400 text-sm">Carregando Contratos Ativos...</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>`;
+
+    try {
+        const result = await getActiveContractsCount({ unitId: selectedUnit });
+        const counts = result.data;
+        
+        evoKpiContainer.innerHTML = ''; // Limpa o carregamento
+
+        let label;
+        let value;
+
+        if (selectedUnit !== 'geral') {
+            label = `Contratos Ativos (${selectedUnit.charAt(0).toUpperCase() + selectedUnit.slice(1)})`;
+            value = counts[selectedUnit];
+        } else {
+            label = "Total de Contratos Ativos (EVO)";
+            value = counts.totalGeral;
+        }
+        
+        evoKpiContainer.innerHTML = `
+            <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center col-span-1 sm:col-span-2 lg:col-span-4">
+                <div class="text-3xl mr-4">📝</div>
+                <div>
+                    <p class="text-gray-400 text-sm">${label}</p>
+                    <p class="text-2xl font-bold text-white">${value.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("Erro ao carregar KPIs da EVO:", error);
+        evoKpiContainer.innerHTML = `<div class="col-span-full text-center p-8 text-red-500">Não foi possível carregar os dados de contratos.</div>`;
     }
 }
