@@ -247,7 +247,7 @@ exports.updateStudentPermissions = functions.https.onCall(async (data, context) 
 });
 
 /**
- * Busca o número de contratos ativos para uma ou todas as unidades.
+ * Busca o número de contratos ativos para uma ou todas as unidades, com cache para resiliência.
  */
 exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
     if (!context.auth) {
@@ -258,40 +258,79 @@ exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).htt
     const executionId = Math.random().toString(36).substring(2, 10);
     functions.logger.info(`[${executionId}] Iniciando getActiveContractsCount para unitId: ${unitId || 'geral'}`);
 
+    const db = admin.firestore();
+    const CACHE_DURATION_HOURS = 4;
+
     const getCountForUnit = async (id) => {
+        const cacheRef = db.collection('evo_cache').doc(id);
         const MAX_RETRIES = 3;
         let lastError = null;
 
+        // 1. Tenta ler do cache primeiro
+        try {
+            const cacheDoc = await cacheRef.get();
+            if (cacheDoc.exists) {
+                const cacheData = cacheDoc.data();
+                const cacheAgeHours = (Date.now() - cacheData.timestamp.toMillis()) / (1000 * 60 * 60);
+                if (cacheAgeHours < CACHE_DURATION_HOURS) {
+                    functions.logger.info(`[${executionId}] Usando cache para '${id}'. Contagem: ${cacheData.count}. Idade: ${cacheAgeHours.toFixed(2)}h.`);
+                    return cacheData.count;
+                }
+            }
+        } catch (cacheError) {
+            functions.logger.error(`[${executionId}] Erro ao ler cache para '${id}':`, cacheError);
+        }
+
+        // 2. Se o cache não existir ou estiver expirado, busca na API
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 const apiClient = getEvoApiClient(id, 'v2');
                 const response = await apiClient.get("/members", { params: { status: 1, take: 1 } });
                 const count = parseInt(response.headers['total'] || '0', 10);
                 
-                functions.logger.info(`[${executionId}] Tentativa ${attempt} para '${id}': Sucesso com contagem ${count}.`);
+                functions.logger.info(`[${executionId}] API | Tentativa ${attempt} para '${id}': Sucesso com contagem ${count}.`);
 
-                // A API às vezes retorna 0 incorretamente. Se não for a última tentativa, tratamos 0 como um erro transitório.
-                if (count > 0 || attempt === MAX_RETRIES) {
+                // Se a API retornar um valor válido, atualiza o cache e retorna o valor.
+                if (count > 0) {
+                    await cacheRef.set({
+                        count: count,
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    });
                     return count;
                 }
-                
-                // Se count for 0 e ainda houver tentativas, espera antes de tentar novamente.
-                const delay = 250 * attempt; // 250ms, 500ms, 750ms
-                functions.logger.warn(`[${executionId}] Tentativa ${attempt} para '${id}' retornou 0. Tentando novamente em ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
+
+                // Se a API retornar 0, mas não for a última tentativa, tenta novamente.
+                if (attempt < MAX_RETRIES) {
+                    const delay = 250 * attempt;
+                    functions.logger.warn(`[${executionId}] API | Tentativa ${attempt} para '${id}' retornou 0. Tentando novamente em ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    // É a última tentativa e o resultado é 0. Não atualiza o cache com 0.
+                    functions.logger.warn(`[${executionId}] API | Última tentativa para '${id}' retornou 0. Não atualizando o cache.`);
+                }
 
             } catch (unitError) {
                 lastError = unitError;
-                functions.logger.error(`[${executionId}] Tentativa ${attempt} para '${id}' falhou:`, unitError.message);
+                functions.logger.error(`[${executionId}] API | Tentativa ${attempt} para '${id}' falhou:`, unitError.message);
                 if (attempt < MAX_RETRIES) {
-                    const delay = 500 * attempt; // Espera mais em caso de erro real
+                    const delay = 500 * attempt;
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
         }
 
-        functions.logger.error(`[${executionId}] Todas as ${MAX_RETRIES} tentativas falharam para a unidade '${id}'.`, lastError?.message);
-        return 0; // Retorna 0 se todas as tentativas falharem.
+        // 3. Se todas as tentativas da API falharem, usa o cache antigo se existir.
+        functions.logger.error(`[${executionId}] Todas as ${MAX_RETRIES} tentativas de API falharam para a unidade '${id}'.`, lastError?.message);
+        const finalCacheDoc = await cacheRef.get();
+        if (finalCacheDoc.exists) {
+            const staleCount = finalCacheDoc.data().count;
+            functions.logger.warn(`[${executionId}] Usando valor de cache antigo para '${id}' como fallback: ${staleCount}`);
+            return staleCount;
+        }
+
+        // 4. Se não houver nem API nem cache, retorna 0.
+        functions.logger.error(`[${executionId}] Sem resposta da API e sem cache para '${id}'. Retornando 0.`);
+        return 0;
     };
 
     try {
@@ -312,8 +351,10 @@ exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).htt
             functions.logger.info(`[${executionId}] Resultados individuais recebidos:`, results);
 
             const finalCounts = results.reduce((acc, result) => {
-                acc.counts[result.id] = result.count;
-                acc.totalGeral += result.count;
+                if (result.count !== undefined) {
+                    acc.counts[result.id] = result.count;
+                    acc.totalGeral += result.count;
+                }
                 return acc;
             }, { totalGeral: 0, counts: {} });
 
@@ -367,4 +408,85 @@ exports.getActivitiesSchedule = functions.https.onCall(async (data, context) => 
         });
         throw new functions.https.HttpsError("internal", "Não foi possível buscar a agenda de atividades.");
     }
+});
+
+/**
+ * Busca as entradas (check-ins) de alunos em uma unidade para uma data específica.
+ */
+exports.getDailyEntries = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para consultar as entradas.");
+    }
+
+    const { unitId, date } = data; // A data deve estar no formato 'YYYY-MM-DD'
+    if (!unitId || !date) {
+        throw new functions.https.HttpsError("invalid-argument", "O ID da unidade e a data são obrigatórios.");
+    }
+
+    // Define o intervalo de tempo para o dia inteiro.
+    const registerDateStart = `${date}T00:00:00Z`;
+    const registerDateEnd = `${date}T23:59:59Z`;
+
+    try {
+        // O endpoint de 'entries' utiliza a v1 da API.
+        const apiClient = getEvoApiClient(unitId, 'v1');
+        
+        const response = await apiClient.get("/entries", {
+            params: {
+                registerDateStart,
+                registerDateEnd,
+                take: 1000 // Valor máximo para buscar todas as entradas do dia.
+            }
+        });
+        
+        functions.logger.info(`Resposta da API EVO para getDailyEntries (unidade: ${unitId}, data: ${date})`, response.data);
+
+        // Calcula o número de membros únicos que fizeram entrada.
+        const uniqueMemberIds = new Set();
+        if (response.data && Array.isArray(response.data)) {
+            response.data.forEach(entry => {
+                if (entry.idMember) {
+                    uniqueMemberIds.add(entry.idMember);
+                }
+            });
+        }
+
+        return { 
+            totalEntries: response.data ? response.data.length : 0,
+            uniqueMembersCount: uniqueMemberIds.size,
+        };
+
+    } catch (error) {
+        functions.logger.error(`Erro ao buscar entradas da unidade ${unitId} para a data ${date}:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar as entradas de alunos.");
+    }
+});
+
+/**
+ * Busca a evolução do número de contratos ativos ao longo do tempo.
+ */
+exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GB" }).https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+
+    // NOTA: A API do EVO não fornece um endpoint para dados históricos de contratos ativos.
+    // Esta função está retornando dados de exemplo para evitar que o frontend quebre.
+    // Para uma implementação real, seria necessário criar snapshots mensais dos dados
+    // ou obter um novo endpoint da EVO.
+    
+    const months = 12;
+    const labels = [];
+    for (let i = months - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        labels.push(date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
+    }
+
+    // Retornando dados vazios para não quebrar o gráfico.
+    return { labels, data: Array(months).fill(0) };
 });

@@ -6,6 +6,7 @@ import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/fir
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
+const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 
 let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
@@ -32,8 +33,14 @@ export function setupAlunosPage() {
             const contentPermissions = document.getElementById('tab-content-permissions');
             const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
             const inviteBtn = document.getElementById('modal-invite-btn');
+            const checkEntriesBtn = document.getElementById('check-entries-btn');
+            const dailyEntriesDate = document.getElementById('daily-entries-date');
+
+            // Set default date to today
+            dailyEntriesDate.value = new Date().toISOString().split('T')[0];
 
             unitFilter.addEventListener('change', () => loadStudents());
+            checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
             searchInput.addEventListener('input', () => renderStudents(allStudents));
             statusFilter.addEventListener('change', () => loadStudents());
             
@@ -421,4 +428,45 @@ async function findUserByEvoId(evoId) {
         }
     }
     return null;
+}
+
+async function handleCheckEntriesClick() {
+    const unitFilter = document.getElementById('unit-filter');
+    const selectedUnit = unitFilter.value;
+    const dateInput = document.getElementById('daily-entries-date');
+    const selectedDate = dateInput.value;
+    const resultDiv = document.getElementById('entries-result');
+    const button = document.getElementById('check-entries-btn');
+
+    if (!selectedDate) {
+        resultDiv.innerHTML = '<span class="text-red-500">Por favor, selecione uma data.</span>';
+        return;
+    }
+
+    if (selectedUnit === 'all') {
+        resultDiv.innerHTML = '<span class="text-red-500">Por favor, selecione uma unidade específica para verificar as entradas.</span>';
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Verificando...';
+    resultDiv.innerHTML = 'Carregando...';
+
+    try {
+        const result = await getDailyEntries({ unitId: selectedUnit, date: selectedDate });
+        const { totalEntries, uniqueMembersCount } = result.data;
+        
+        resultDiv.innerHTML = `
+            <span class="font-semibold">Resultados para ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}:</span> 
+            <span class="text-yellow-500">${uniqueMembersCount}</span> alunos únicos de um total de 
+            <span class="text-yellow-500">${totalEntries}</span> entradas.
+        `;
+
+    } catch (error) {
+        console.error("Erro ao verificar entradas diárias:", error);
+        resultDiv.innerHTML = `<span class="text-red-500">Erro ao buscar dados: ${error.message}</span>`;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Verificar Entradas';
+    }
 }

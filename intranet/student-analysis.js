@@ -1,5 +1,7 @@
 import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
+const getContractsEvolution = httpsCallable(functions, 'getContractsEvolution');
 import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
@@ -60,7 +62,10 @@ async function initializeDashboard() {
         updateDashboard();
     });
     // Atualiza os KPIs do EVO sempre que o filtro de localização mudar
-    locationFilter.addEventListener('change', displayEvoKpi);
+    locationFilter.addEventListener('change', () => {
+        displayEvoKpi();
+        displayDailyEntriesKpi();
+    });
     dateFilter.addEventListener('change', updateDashboard);
     weekFilter.addEventListener('change', updateDashboard);
     viewByFilter.addEventListener('change', () => {
@@ -93,6 +98,7 @@ async function initializeDashboard() {
     setupConfirmationModal();
     updateDashboard();
     displayEvoKpi();
+    displayDailyEntriesKpi();
 }
 
 function populateWeekFilter(data) {
@@ -178,7 +184,9 @@ function setupModal() {
         }, 250);
     };
 
-    openBtn.addEventListener('click', openModal);
+    if (openBtn) {
+        openBtn.addEventListener('click', openModal);
+    }
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => {
@@ -418,7 +426,7 @@ function updateDashboard() {
         }
         
         if (filteredData.length === 0) {
-            document.getElementById('kpi-container').innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado encontrado para a seleção atual.</div>`;
+            document.getElementById('kpi-container').innerHTML = ``;
             updateCharts([], viewBy); // Clear charts
             fullLogData = [];
             renderedLogCount = 0;
@@ -766,7 +774,7 @@ function processDataForView(data, viewBy) {
 function updateKPIs(data, viewBy) {
     const kpiContainer = document.getElementById('kpi-container');
     if (!data || data.length === 0) {
-        kpiContainer.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500">Nenhum dado de KPI para a seleção atual.</div>`;
+        kpiContainer.innerHTML = ``;
         return;
     }
 
@@ -800,21 +808,10 @@ function updateKPIs(data, viewBy) {
         // const percentualAtivos = totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0;
         const percentualAtivos = totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0;
         
-        kpis = [
-            { label: 'Alunos Ativos (Manual)', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
-            // { label: '% de Ativos', value: `${percentualAtivos}%`, icon: '📊' },
-            { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
-            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' },
-            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' }
-        ];
+        kpis = [];
     } else { // For 'weekly' and 'monthly' views
         const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
-        kpis = [
-            { label: 'Alunos Ativos (Manual)', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
-            { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
-            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' },
-            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' }
-        ];
+        kpis = [];
     }
     
     kpiContainer.innerHTML = kpis.map(kpi => `
@@ -865,40 +862,29 @@ function updateCharts(data, viewBy) {
         options: chartOptions
     });
 
-    // New vs Churn Chart
-    if (charts.newVsChurn) charts.newVsChurn.destroy();
-    charts.newVsChurn = new Chart(document.getElementById('newVsChurnChart'), {
-        type: 'bar',
-        data: { labels, datasets: [
-            { label: 'Matrículas', data: processedData.map(row => row.Matriculas), backgroundColor: '#10B981' },
-            { label: 'Baixas', data: processedData.map(row => row.Baixas), backgroundColor: '#EF4444' }
-        ]},
-        options: chartOptions
-    });
-
-    // Balance Chart
-    if (charts.balance) charts.balance.destroy();
-    const balanceData = processedData.map(row => (row.Matriculas || 0) - (row.Baixas || 0));
-    charts.balance = new Chart(document.getElementById('balanceChart'), {
-        type: 'bar',
-        data: { labels, datasets: [{ label: 'Saldo Mensal', data: balanceData, backgroundColor: balanceData.map(v => v >= 0 ? '#10B981' : '#EF4444') }] },
-        options: chartOptions
-    });
-
-    // Renewals Chart
-    if (charts.renewals) charts.renewals.destroy();
-    charts.renewals = new Chart(document.getElementById('renewalsChart'), {
-        type: 'bar',
-        data: { labels, datasets: [{ label: 'Renovações', data: processedData.map(row => row.Renovacoes), backgroundColor: '#8B5CF6' }] },
-        options: chartOptions
-    });
-
-    // Contracts Chart
-    if (charts.contracts) charts.contracts.destroy();
-    charts.contracts = new Chart(document.getElementById('contractsChart'), {
-        type: 'line',
-        data: { labels, datasets: [{ label: 'Contratos Ativos', data: processedData.map(row => row.ContratosAtivos), borderColor: '#A78BFA', backgroundColor: 'rgba(167, 139, 250, 0.1)', fill: true, tension: 0.3 }] },
-        options: chartOptions
+    // Contracts Chart (EVO)
+    const selectedUnit = document.getElementById('location-filter').value;
+    getContractsEvolution({ unitId: selectedUnit }).then(result => {
+        const { labels, data } = result.data;
+        if (charts.contracts) charts.contracts.destroy();
+        charts.contracts = new Chart(document.getElementById('contractsChart'), {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Contratos Ativos (EVO)', 
+                    data: data, 
+                    borderColor: '#A78BFA', 
+                    backgroundColor: 'rgba(167, 139, 250, 0.1)', 
+                    fill: true, 
+                    tension: 0.3 
+                }] 
+            },
+            options: chartOptions
+        });
+    }).catch(error => {
+        console.error("Erro ao buscar evolução de contratos:", error);
+        // Opcional: Mostrar uma mensagem de erro no lugar do gráfico
     });
 
     // The composition chart container is already removed from HTML.
@@ -1038,6 +1024,124 @@ async function displayEvoKpi() {
             </div>
         `;
         const placeholderCard = document.getElementById('evo-kpi-card');
+        if (placeholderCard) {
+            placeholderCard.outerHTML = errorHtml;
+        }
+    }
+}
+
+async function displayDailyEntriesKpi() {
+    const kpiContainer = document.getElementById('kpi-container');
+    const locationFilter = document.getElementById('location-filter');
+    const selectedUnit = locationFilter.value;
+
+    // Remove o card antigo, se existir
+    const oldCard = document.getElementById('daily-entries-kpi-card');
+    if (oldCard) {
+        oldCard.remove();
+    }
+
+    if (selectedUnit === 'geral') {
+        const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+        const placeholderHtml = `
+        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+            <div class="text-3xl mr-4">🏃</div>
+            <div>
+                <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>`;
+        kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
+
+        try {
+            const result = await getEvoUnits();
+            const evoUnits = result.data;
+            const today = new Date().toISOString().split('T')[0];
+            let totalAtivosHoje = 0;
+
+            const promises = evoUnits.map(unitId => getDailyEntries({ unitId: unitId, date: today }));
+            const results = await Promise.all(promises);
+
+            results.forEach(result => {
+                totalAtivosHoje += result.data.uniqueMembersCount;
+            });
+
+            const finalHtml = `
+                <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">🏃</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                        <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+                    </div>
+                </div>
+            `;
+            const placeholderCard = document.getElementById('daily-entries-kpi-card');
+            if (placeholderCard) {
+                placeholderCard.outerHTML = finalHtml;
+            }
+
+        } catch (error) {
+            console.error("Erro ao carregar KPI de entradas diárias total:", error);
+            const errorHtml = `
+                <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">⚠️</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                        <p class="text-xl font-bold text-red-500">Erro</p>
+                    </div>
+                </div>
+            `;
+            const placeholderCard = document.getElementById('daily-entries-kpi-card');
+            if (placeholderCard) {
+                placeholderCard.outerHTML = errorHtml;
+            }
+        }
+        return;
+    }
+
+    // Adiciona um placeholder de carregamento
+    const placeholderHtml = `
+        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+            <div class="text-3xl mr-4">🏃</div>
+            <div>
+                <p class="text-gray-400 text-sm">Alunos Ativos (Hoje)</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>`;
+    kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
+
+    try {
+        const today = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        const result = await getDailyEntries({ unitId: selectedUnit, date: today });
+        const { uniqueMembersCount } = result.data;
+        
+        const finalHtml = `
+            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">🏃</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Alunos Ativos (Hoje)</p>
+                    <p class="text-2xl font-bold text-white">${uniqueMembersCount.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+        `;
+        
+        const placeholderCard = document.getElementById('daily-entries-kpi-card');
+        if (placeholderCard) {
+            placeholderCard.outerHTML = finalHtml;
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar KPI de entradas diárias:", error);
+        const errorHtml = `
+            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">⚠️</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Alunos Ativos (Hoje)</p>
+                    <p class="text-xl font-bold text-red-500">Erro</p>
+                </div>
+            </div>
+        `;
+        const placeholderCard = document.getElementById('daily-entries-kpi-card');
         if (placeholderCard) {
             placeholderCard.outerHTML = errorHtml;
         }
