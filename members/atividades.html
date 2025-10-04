@@ -14,6 +14,17 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Estilos para as abas */
+        .tab-button.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-[#111111] text-gray-200">
@@ -26,10 +37,22 @@
             <div id="header-container"></div>
 
             <div class="p-4 md:p-6 lg:p-8">
-                <h1 class="text-2xl font-bold mb-6">Minhas Atividades</h1>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold">Quadro de Horários</h1>
+                    <!-- Controles de Navegação de Data -->
+                    <div class="flex items-center gap-4">
+                        <button id="prev-day-btn" class="px-3 py-1 bg-gray-700 rounded-md hover:bg-primary transition-colors"><</button>
+                        <h2 id="current-date-display" class="text-xl font-semibold"></h2>
+                        <button id="next-day-btn" class="px-3 py-1 bg-gray-700 rounded-md hover:bg-primary transition-colors">></button>
+                    </div>
+                </div>
                 
+                <!-- Contêiner das Abas -->
                 <div id="atividades-container" class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <p>Carregando atividades...</p>
+                    <!-- Navegação das Abas será inserida aqui -->
+                    <div id="tabs-nav" class="flex border-b border-gray-700 mb-4"></div>
+                    <!-- Conteúdo das Abas será inserido aqui -->
+                    <div id="tabs-content"></div>
                 </div>
             </div>
         </main>

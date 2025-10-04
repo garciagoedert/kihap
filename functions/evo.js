@@ -336,39 +336,35 @@ exports.getEvoUnits = functions.https.onCall(async (data, context) => {
     return Object.keys(EVO_CREDENTIALS);
 });
 
-const cors = require('cors')({ origin: true });
-
 /**
- * Busca a agenda de atividades de uma unidade específica.
- * Convertida para onRequest para lidar com CORS manualmente.
+ * Busca a agenda de atividades de uma unidade específica para uma data.
  */
-exports.getActivitiesSchedule = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
-        // A verificação de autenticação manual é necessária para onRequest.
-        if (!req.body.data || !req.body.data.unitId) {
-            functions.logger.error("Requisição sem ID da unidade.");
-            res.status(400).send({ error: { message: "O ID da unidade é obrigatório." } });
-            return;
-        }
+exports.getActivitiesSchedule = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para ver as atividades.");
+    }
+
+    const { unitId, date } = data; // Adiciona o parâmetro de data
+    if (!unitId || !date) {
+        throw new functions.https.HttpsError("invalid-argument", "O ID da unidade e a data são obrigatórios.");
+    }
+
+    try {
+        const apiClient = getEvoApiClient(unitId, 'v1');
+        // Tenta passar a data usando o parâmetro 'date'
+        const response = await apiClient.get("/activities/schedule", {
+            params: { date: date }
+        });
         
-        // O SDK do cliente envolve os dados em um objeto 'data'.
-        const { unitId } = req.body.data;
+        functions.logger.info(`Resposta da API EVO para getActivitiesSchedule (unidade: ${unitId}, data: ${date}):`, response.data);
+        return response.data;
 
-        try {
-            const apiClient = getEvoApiClient(unitId, 'v1'); // A API de atividades usa v1
-            const response = await apiClient.get("/activities/schedule");
-            
-            functions.logger.info(`Resposta da API EVO para getActivitiesSchedule (unidade: ${unitId}):`, response.data);
-            // Para funções onRequest, a resposta deve ser encapsulada em um objeto 'data'.
-            res.status(200).send({ data: response.data });
-
-        } catch (error) {
-            functions.logger.error(`Erro ao buscar agenda da unidade ${unitId}:`, {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message,
-            });
-            res.status(500).send({ error: { message: "Não foi possível buscar a agenda de atividades." } });
-        }
-    });
+    } catch (error) {
+        functions.logger.error(`Erro ao buscar agenda da unidade ${unitId}:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar a agenda de atividades.");
+    }
 });
