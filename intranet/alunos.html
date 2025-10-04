@@ -29,6 +29,23 @@
                     <h1 class="text-2xl font-bold">Gerenciamento de Alunos</h1>
                 </div>
 
+                <!-- Daily Entries Check -->
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
+                    <h2 class="text-xl font-bold mb-4">Verificar Entradas Diárias</h2>
+                    <div class="flex items-center space-x-4">
+                        <div>
+                            <label for="daily-entries-date" class="text-sm font-medium text-gray-400">Selecione a Data:</label>
+                            <input type="date" id="daily-entries-date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button id="check-entries-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded self-end">
+                            Verificar Entradas
+                        </button>
+                    </div>
+                    <div id="entries-result" class="mt-4 text-lg">
+                        <!-- O resultado será exibido aqui -->
+                    </div>
+                </div>
+
                 <!-- Filters -->
                 <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
                     <div>
