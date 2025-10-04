@@ -145,10 +145,15 @@
                     </div>
                     <div>
                         <label for="unidade-select" class="block text-sm font-medium text-gray-400">Unidade</label>
-                        <select id="unidade-select" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
-                            <option value="">Selecione a Unidade</option>
-                            <!-- Options will be populated by JS -->
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select id="unidade-select" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
+                                <option value="">Selecione a Unidade</option>
+                                <!-- Options will be populated by JS -->
+                            </select>
+                            <button type="button" id="edit-unidade-btn" class="hidden mt-1 p-2 bg-gray-600 hover:bg-yellow-500 rounded text-white" title="Editar nome da unidade selecionada">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                        </div>
                         <input type="text" id="unidade-nova" placeholder="Nome da Nova Unidade" class="mt-2 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none hidden">
                     </div>
                     <div class="grid grid-cols-1 gap-4">

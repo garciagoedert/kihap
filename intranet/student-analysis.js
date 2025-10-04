@@ -1,5 +1,5 @@
 import { app, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
 
@@ -121,6 +121,7 @@ function setupModal() {
     const cancelBtn = document.getElementById('cancelModalBtn');
     const form = document.getElementById('addDataForm');
     const unidadeSelect = document.getElementById('unidade-select');
+    const editUnidadeBtn = document.getElementById('edit-unidade-btn');
 
     // Set default date to today
     document.getElementById('report-date').valueAsDate = new Date();
@@ -166,12 +167,19 @@ function setupModal() {
     });
 
     unidadeSelect.addEventListener('change', () => {
-        if (unidadeSelect.value === 'nova') {
-            document.getElementById('unidade-nova').classList.remove('hidden');
+        const isNova = unidadeSelect.value === 'nova';
+        const isValidUnidade = unidadeSelect.value && !isNova;
+
+        document.getElementById('unidade-nova').classList.toggle('hidden', !isNova);
+        
+        if (currentUserIsAdmin && isValidUnidade) {
+            editUnidadeBtn.classList.remove('hidden');
         } else {
-            document.getElementById('unidade-nova').classList.add('hidden');
+            editUnidadeBtn.classList.add('hidden');
         }
     });
+
+    editUnidadeBtn.addEventListener('click', handleEditUnidade);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -834,4 +842,71 @@ function updateCharts(data, viewBy) {
     });
 
     // The composition chart container is already removed from HTML.
+}
+
+async function handleEditUnidade() {
+    const unidadeSelect = document.getElementById('unidade-select');
+    const oldUnidadeName = unidadeSelect.value;
+
+    if (!oldUnidadeName) {
+        showNotification('Selecione uma unidade válida para editar.', true);
+        return;
+    }
+
+    const newUnidadeName = prompt(`Digite o novo nome para a unidade "${oldUnidadeName}":`, oldUnidadeName);
+
+    if (newUnidadeName && newUnidadeName.trim() !== '' && newUnidadeName.trim() !== oldUnidadeName) {
+        const trimmedNewName = newUnidadeName.trim();
+        
+        if (!confirm(`Tem certeza que deseja renomear "${oldUnidadeName}" para "${trimmedNewName}"? Isso atualizará TODOS os registros existentes.`)) {
+            return;
+        }
+
+        try {
+            showNotification('Renomeando unidade...');
+            
+            const dataCollection = collection(db, 'analise_unidades');
+            const q = query(dataCollection, where("Unidade", "==", oldUnidadeName));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                showNotification('Nenhum registro encontrado para a unidade selecionada.', true);
+                return;
+            }
+
+            const batch = writeBatch(db);
+            querySnapshot.forEach((doc) => {
+                batch.update(doc.ref, { "Unidade": trimmedNewName });
+            });
+            await batch.commit();
+
+            showNotification('Unidade renomeada com sucesso!');
+            
+            // Atualizar dados e UI
+            await fetchData();
+            populateFilters(allData);
+            updateDashboard();
+
+            // Re-popular o select no modal e manter o novo nome selecionado
+            const unidades = [...new Set(allData.map(item => item.Unidade))].sort();
+            unidadeSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
+            unidades.forEach(unidade => {
+                const option = document.createElement('option');
+                option.value = unidade;
+                option.textContent = unidade;
+                unidadeSelect.appendChild(option);
+            });
+            const novaUnidadeOption = document.createElement('option');
+            novaUnidadeOption.value = 'nova';
+            novaUnidadeOption.textContent = '--- Adicionar Nova Unidade ---';
+            unidadeSelect.appendChild(novaUnidadeOption);
+            
+            unidadeSelect.value = trimmedNewName;
+            unidadeSelect.dispatchEvent(new Event('change')); // Trigger change to update button visibility
+
+        } catch (error) {
+            console.error("Erro ao renomear unidade: ", error);
+            showNotification('Ocorreu um erro ao renomear a unidade.', true);
+        }
+    }
 }
