@@ -9,9 +9,43 @@ const EVO_CREDENTIALS = {
     centro: {
         dns: "atadf",
         token: "08AD03F4-B0A7-4B4B-958C-38C81EA66E48",
-        // idbranch: 123 // Exemplo de ID da filial, se necessário
+    },
+    coqueiros: {
+        dns: "atadf",
+        token: "9409BA4A-CA49-45ED-86D5-35BF336ECFAF",
+    },
+    "asa-sul": {
+        dns: "atadf",
+        token: "79D29584-14EB-4E13-8C06-E55A4BC7FD8E",
+    },
+    sudoeste: {
+        dns: "atadf",
+        token: "F33EBA37-367A-42A8-B598-3DDF0387F997",
+    },
+    "lago-sul": {
+        dns: "atadf",
+        token: "3FABB904-BE55-474F-99CE-C1901962679B",
+    },
+    "pontos-de-ensino": {
+        dns: "atadf",
+        token: "0543427D-8C44-4150-B5AB-F15761F63B8B",
+    },
+    "jardim-botanico": {
+        dns: "atadf",
+        token: "9F34BB72-1368-4E97-B933-323BE40C54CC",
+    },
+    dourados: {
+        dns: "atadf",
+        token: "7A515FA0-3C34-465C-B5B7-9D60DECB9882",
+    },
+    "santa-monica": {
+        dns: "atadf",
+        token: "78C3EA0E-3757-4FE0-A40C-E0C9E3E4D79B",
+    },
+    noroeste: {
+        dns: "atadf",
+        token: "EB5D8DDB-7263-476D-9491-2DD3F4BB7414",
     }
-    // Adicionar outras unidades aqui, ex: 'florianopolis': { ... }
 };
 
 function getEvoApiClient(unitId, apiVersion = 'v2') {
@@ -69,14 +103,16 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId = 'centro' } = data; // Padrão para 'centro' se nenhuma unidade for fornecida
+    const { unitId = 'centro', status = 1 } = data; // Padrão para 'centro' e status 'ativo'
 
     // Adicionar verificação de permissão de admin/professor aqui
     // ...
 
     try {
         const apiClientV2 = getEvoApiClient(unitId, 'v2');
-        const response = await apiClientV2.get("/members");
+        const response = await apiClientV2.get("/members", {
+            params: { status: status }
+        });
         functions.logger.info("Resposta da API EVO:", response.data); // Log da resposta
         return response.data;
     } catch (error) {
@@ -206,5 +242,53 @@ exports.updateStudentPermissions = functions.https.onCall(async (data, context) 
     } catch (error) {
         functions.logger.error(`Erro ao atualizar permissões para o aluno ${studentUid}:`, error);
         throw new functions.https.HttpsError("internal", "Não foi possível atualizar as permissões.");
+    }
+});
+
+/**
+ * Busca o número de contratos ativos para uma ou todas as unidades.
+ */
+exports.getActiveContractsCount = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+
+    const { unitId } = data; // Recebe a unidade do frontend
+
+    const getCountForUnit = async (id) => {
+        try {
+            const apiClient = getEvoApiClient(id, 'v2');
+            // Usando GET para maior compatibilidade. A API retorna o header 'total'.
+            const response = await apiClient.get("/members", { params: { status: 1, take: 1 } }); // take: 1 para minimizar o payload
+            return parseInt(response.headers['total'] || '0', 10);
+        } catch (unitError) {
+            functions.logger.error(`Erro ao buscar contagem para a unidade ${id}:`, unitError.message);
+            return 0; // Retorna 0 para a unidade que falhou
+        }
+    };
+
+    try {
+        if (unitId && unitId !== 'geral') {
+            // Busca para uma unidade específica
+            const count = await getCountForUnit(unitId);
+            return { [unitId]: count };
+        } else {
+            // Busca para todas as unidades
+            const unitIds = Object.keys(EVO_CREDENTIALS);
+            const counts = {};
+            let totalGeral = 0;
+
+            const promises = unitIds.map(async (id) => {
+                const count = await getCountForUnit(id);
+                counts[id] = count;
+                totalGeral += count;
+            });
+
+            await Promise.all(promises);
+            return { totalGeral, ...counts };
+        }
+    } catch (error) {
+        functions.logger.error("Erro geral ao buscar contagem de contratos:", error);
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar a contagem de contratos ativos.");
     }
 });

@@ -23,6 +23,7 @@ export function setupAlunosPage() {
 
             const unitFilter = document.getElementById('unit-filter');
             const searchInput = document.getElementById('search-input');
+            const statusFilter = document.getElementById('status-filter');
             const modal = document.getElementById('student-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const tabDetails = document.getElementById('tab-details');
@@ -34,6 +35,7 @@ export function setupAlunosPage() {
 
             unitFilter.addEventListener('change', () => loadStudents());
             searchInput.addEventListener('input', () => renderStudents(allStudents));
+            statusFilter.addEventListener('change', () => loadStudents());
             
             // Controle do Modal
             closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -71,21 +73,30 @@ export function setupAlunosPage() {
 async function loadStudents() {
     const tableBody = document.getElementById('students-table-body');
     const unitFilter = document.getElementById('unit-filter');
+    const statusFilter = document.getElementById('status-filter');
     const selectedUnit = unitFilter.value;
+    const selectedStatus = parseInt(statusFilter.value, 10);
 
-    tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando alunos...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
-        // Se a unidade for 'all', precisaremos chamar a função para cada unidade no futuro.
-        // Por enquanto, só temos 'centro', então tratamos 'all' e 'centro' da mesma forma.
-        const unitToFetch = selectedUnit === 'all' ? 'centro' : selectedUnit;
+        let studentList = [];
+        if (selectedUnit === 'all') {
+            // Pega todos os IDs de unidade do HTML para fazer as chamadas
+            const unitOptions = Array.from(unitFilter.options)
+                .filter(opt => opt.value !== 'all')
+                .map(opt => opt.value);
+
+            const promises = unitOptions.map(unitId => listAllMembers({ unitId: unitId, status: selectedStatus }));
+            
+            const results = await Promise.all(promises);
+            studentList = results.flatMap(result => result.data || []);
+        } else {
+            const result = await listAllMembers({ unitId: selectedUnit, status: selectedStatus });
+            studentList = result.data || [];
+        }
         
-        const result = await listAllMembers({ unitId: unitToFetch });
-        
-        // A resposta da callable function tem a lista dentro de result.data
-        const studentList = result.data || [];
         allStudents = studentList; // Armazena no cache
-        
         renderStudents(allStudents);
 
     } catch (error) {
@@ -111,13 +122,11 @@ function renderStudents(students) {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
-            const graduation = member.memberships?.[0]?.name || 'N/A';
 
             const row = `
                 <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row">
                     <td class="p-4">${fullName}</td>
                     <td class="p-4">${email}</td>
-                    <td class="p-4">${graduation}</td>
                     <td class="p-4">${member.branchName || 'Centro'}</td>
                 </tr>
             `;

@@ -36,12 +36,27 @@
                         <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="all">Todas as Unidades</option>
                             <option value="centro">Unidade Centro</option>
-                            <!-- Outras unidades serão adicionadas aqui no futuro -->
+                            <option value="coqueiros">Unidade Coqueiros</option>
+                            <option value="asa-sul">Unidade Asa Sul</option>
+                            <option value="sudoeste">Unidade Sudoeste</option>
+                            <option value="lago-sul">Unidade Lago Sul</option>
+                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
+                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                            <option value="dourados">Unidade Dourados</option>
+                            <option value="santa-monica">Unidade Santa Mônica</option>
+                            <option value="noroeste">Unidade Noroeste</option>
                         </select>
                     </div>
                     <div>
                         <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
                         <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="status-filter" class="text-sm font-medium text-gray-400">Filtrar por Status:</label>
+                        <select id="status-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">Ativos</option>
+                            <option value="2">Inativos</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -52,7 +67,6 @@
                             <tr class="border-b border-gray-700">
                                 <th class="p-4">Nome</th>
                                 <th class="p-4">Email</th>
-                                <th class="p-4">Graduação</th>
                                 <th class="p-4">Unidade</th>
                             </tr>
                         </thead>
