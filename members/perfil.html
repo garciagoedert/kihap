@@ -17,15 +17,15 @@
     </style>
 </head>
 <body class="bg-[#111111] text-gray-200">
-    <div class="flex h-screen">
+    <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
         
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
-        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+        <main id="main-content" class="flex-1">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
+            <div class="p-4 md:p-6 lg:p-8">
                 <h1 class="text-2xl font-bold mb-6">Editar Perfil</h1>
                 
                 <!-- Profile Info -->
