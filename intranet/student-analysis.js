@@ -653,58 +653,76 @@ function getMonthNumber(monthName) {
 function processDataForView(data, viewBy) {
     const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
+    const aggregatePeriodData = (periodData) => {
+        const latestDataPerUnit = {};
+        periodData.forEach(row => {
+            const existingEntry = latestDataPerUnit[row.Unidade];
+            if (!existingEntry || (row.Ativos || 0) > (existingEntry.Ativos || 0)) {
+                latestDataPerUnit[row.Unidade] = row;
+            }
+        });
+        const latestDataArray = Object.values(latestDataPerUnit);
+
+        const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
+        const totalContratosAtivos = latestDataArray.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
+
+        const totalMatriculas = periodData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
+        const totalBaixas = periodData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
+        const totalRenovacoes = periodData.reduce((sum, row) => sum + (row.Renovacoes || 0), 0);
+
+        return {
+            Ativos: totalAtivos,
+            ContratosAtivos: totalContratosAtivos,
+            Matriculas: totalMatriculas,
+            Baixas: totalBaixas,
+            Renovacoes: totalRenovacoes
+        };
+    };
+
     if (viewBy === 'monthly') {
-        const monthlyAggregated = {};
+        const monthlyData = {};
         sortedData.forEach(row => {
             const key = `${row.Ano}-${row.Mês}`;
-            if (!monthlyAggregated[key]) {
-                monthlyAggregated[key] = { 
-                    Ano: row.Ano, 
-                    Mês: row.Mês, 
-                    Data: new Date(row.Ano, getMonthNumber(row.Mês)-1, 28), 
-                    Matriculas: 0, 
-                    Baixas: 0, 
-                    Renovacoes: 0,
-                    Ativos: 0,
-                    ContratosAtivos: 0
-                };
-            }
-            monthlyAggregated[key].Matriculas += row.Matriculas || 0;
-            monthlyAggregated[key].Baixas += row.Baixas || 0;
-            monthlyAggregated[key].Renovacoes += row.Renovacoes || 0;
-            monthlyAggregated[key].Ativos = row.Ativos; // Overwrite with the latest value for the month
-            monthlyAggregated[key].ContratosAtivos = row.ContratosAtivos; // Overwrite with the latest value
+            if (!monthlyData[key]) monthlyData[key] = [];
+            monthlyData[key].push(row);
         });
-        return Object.values(monthlyAggregated).sort((a, b) => a.Data - b.Data);
+
+        const monthlyAggregated = Object.values(monthlyData).map(dataForMonth => {
+            const aggregated = aggregatePeriodData(dataForMonth);
+            const firstEntry = dataForMonth[0];
+            return {
+                Ano: firstEntry.Ano,
+                Mês: firstEntry.Mês,
+                Data: new Date(firstEntry.Ano, getMonthNumber(firstEntry.Mês) - 1, 28),
+                ...aggregated
+            };
+        });
+        return monthlyAggregated.sort((a, b) => a.Data - b.Data);
     }
     
     if (viewBy === 'weekly') {
-        const weeklyAggregated = {};
+        const weeklyData = {};
         sortedData.forEach(row => {
             const date = new Date(row.Data + 'T00:00:00');
             const week = getWeekNumber(date);
             const key = `${row.Ano}-W${week}`;
-
-            if (!weeklyAggregated[key]) {
-                weeklyAggregated[key] = {
-                    Ano: row.Ano,
-                    Mês: row.Mês,
-                    Semana: week,
-                    Data: date,
-                    Matriculas: 0,
-                    Baixas: 0,
-                    Renovacoes: 0,
-                    Ativos: 0,
-                    ContratosAtivos: 0
-                };
-            }
-            weeklyAggregated[key].Matriculas += row.Matriculas || 0;
-            weeklyAggregated[key].Baixas += row.Baixas || 0;
-            weeklyAggregated[key].Renovacoes += row.Renovacoes || 0;
-            weeklyAggregated[key].Ativos = row.Ativos; // Overwrite with the latest value for the week
-            weeklyAggregated[key].ContratosAtivos = row.ContratosAtivos; // Overwrite with the latest value
+            if (!weeklyData[key]) weeklyData[key] = [];
+            weeklyData[key].push(row);
         });
-        return Object.values(weeklyAggregated).sort((a, b) => a.Data - b.Data);
+
+        const weeklyAggregated = Object.values(weeklyData).map(dataForWeek => {
+            const aggregated = aggregatePeriodData(dataForWeek);
+            const firstEntry = dataForWeek[0];
+            const date = new Date(firstEntry.Data + 'T00:00:00');
+            return {
+                Ano: firstEntry.Ano,
+                Mês: firstEntry.Mês,
+                Semana: getWeekNumber(date),
+                Data: date,
+                ...aggregated
+            };
+        });
+        return weeklyAggregated.sort((a, b) => a.Data - b.Data);
     }
 
     return sortedData;
