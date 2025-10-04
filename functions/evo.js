@@ -474,19 +474,106 @@ exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory:
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    // NOTA: A API do EVO não fornece um endpoint para dados históricos de contratos ativos.
-    // Esta função está retornando dados de exemplo para evitar que o frontend quebre.
-    // Para uma implementação real, seria necessário criar snapshots mensais dos dados
-    // ou obter um novo endpoint da EVO.
-    
-    const months = 12;
-    const labels = [];
-    for (let i = months - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        labels.push(date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
+    const db = admin.firestore();
+    const snapshotsRef = db.collection('evo_daily_snapshots');
+    const snapshot = await snapshotsRef.orderBy('timestamp', 'desc').limit(12).get();
+
+    if (snapshot.empty) {
+        return { labels: [], data: [] };
     }
 
-    // Retornando dados vazios para não quebrar o gráfico.
-    return { labels, data: Array(months).fill(0) };
+    const labels = [];
+    const evolutionData = [];
+    
+    // Os snapshots são ordenados do mais recente para o mais antigo, então revertemos para o gráfico
+    snapshot.docs.reverse().forEach(doc => {
+        const docData = doc.data();
+        const date = docData.timestamp.toDate();
+        labels.push(date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
+        
+        // Lógica para decidir qual dado usar (geral ou específico da unidade)
+        if (data.unitId && data.unitId !== 'geral') {
+            evolutionData.push(docData[data.unitId] || 0);
+        } else {
+            evolutionData.push(docData.totalGeral || 0);
+        }
+    });
+
+    return { labels, data: evolutionData };
+});
+
+const _snapshotDailyEvoData = async () => {
+    functions.logger.info("Iniciando snapshot diário de dados do EVO...");
+    const db = admin.firestore();
+    const today = new Date().toISOString().split('T')[0];
+
+    const getUnitData = async (id) => {
+        try {
+            const apiClientV2 = getEvoApiClient(id, 'v2');
+            const contractsResponse = await apiClientV2.get("/members", { params: { status: 1, take: 1 } });
+            const contractsCount = parseInt(contractsResponse.headers['total'] || '0', 10);
+
+            const apiClientV1 = getEvoApiClient(id, 'v1');
+            const entriesResponse = await apiClientV1.get("/entries", {
+                params: {
+                    registerDateStart: `${today}T00:00:00Z`,
+                    registerDateEnd: `${today}T23:59:59Z`,
+                    take: 1000
+                }
+            });
+            const uniqueMemberIds = new Set(entriesResponse.data.map(entry => entry.idMember));
+            const dailyActivesCount = uniqueMemberIds.size;
+
+            return { id, contractsCount, dailyActivesCount };
+        } catch (error) {
+            functions.logger.error(`Erro ao buscar dados para snapshot da unidade '${id}':`, error.message);
+            return { id, contractsCount: 0, dailyActivesCount: 0 };
+        }
+    };
+
+    try {
+        const unitIds = Object.keys(EVO_CREDENTIALS);
+        const promises = unitIds.map(id => getUnitData(id));
+        const results = await Promise.all(promises);
+
+        const snapshotData = results.reduce((acc, result) => {
+            acc.units[result.id] = {
+                contracts: result.contractsCount,
+                dailyActives: result.dailyActivesCount
+            };
+            acc.totalContracts += result.contractsCount;
+            acc.totalDailyActives += result.dailyActivesCount;
+            return acc;
+        }, { totalContracts: 0, totalDailyActives: 0, units: {} });
+
+        snapshotData.timestamp = admin.firestore.FieldValue.serverTimestamp();
+
+        await db.collection('evo_daily_snapshots').add(snapshotData);
+        functions.logger.info("Snapshot diário do EVO salvo com sucesso:", snapshotData);
+    } catch (error) {
+        functions.logger.error("Falha ao criar snapshot diário do EVO:", error);
+        throw error; // Lança o erro para a função chamadora
+    }
+};
+
+exports.snapshotDailyEvoData = functions.pubsub.schedule('every 24 hours').onRun(async (context) => {
+    await _snapshotDailyEvoData();
+});
+
+exports.triggerSnapshot = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isAdmin) {
+        throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
+    }
+
+    try {
+        await _snapshotDailyEvoData();
+        return { success: true, message: "Snapshot manual gerado com sucesso!" };
+    } catch (error) {
+        functions.logger.error("Falha ao acionar snapshot manual:", error);
+        throw new functions.https.HttpsError("internal", "Não foi possível gerar o snapshot.");
+    }
 });

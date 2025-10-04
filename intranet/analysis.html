@@ -4,52 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análise - Kihap Kanban</title>
-    <!-- Favicon -->
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
-    
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="log.css">
-
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .kpi-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .chart-container {
-            position: relative;
-            height: 40vh;
-            width: 100%;
-        }
-        @media (max-width: 768px) {
-            .chart-container {
-                height: 50vh;
-            }
-        }
-        .modal {
-            transition: opacity 0.25s ease;
-        }
-        .modal-active {
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-        .modal-content {
-            transition: transform 0.25s ease;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .kpi-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .modal { transition: opacity 0.25s ease; }
+        .modal-active { overflow-x: hidden; overflow-y: auto; }
+        .modal-content { transition: transform 0.25s ease; }
     </style>
 </head>
 <body class="bg-[#111111] text-gray-200">
@@ -58,141 +26,28 @@
         <p>Notificação</p>
     </div>
 
-    <!-- View Data Modal -->
-    <div id="viewDataModal" class="modal fixed inset-0 z-50 flex justify-center items-start sm:items-center bg-black bg-opacity-50 hidden">
-        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-2 sm:m-4 transform scale-95 overflow-y-auto max-h-[95vh]">
+    <!-- Snapshot Details Modal -->
+    <div id="snapshot-modal" class="modal fixed inset-0 z-50 flex justify-center items-start sm:items-center bg-black bg-opacity-50 hidden">
+        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-2xl m-2 sm:m-4 transform scale-95 overflow-y-auto max-h-[95vh]">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Detalhes do Registro</h2>
-                <button id="closeViewModalBtn" class="text-gray-400 hover:text-white">&times;</button>
+                <h2 id="snapshot-modal-title" class="text-xl font-bold text-white">Detalhes do Snapshot</h2>
+                <button id="close-snapshot-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <div id="view-modal-body" class="space-y-3 text-gray-300">
-                <!-- Data will be populated by JS -->
+            <div id="snapshot-modal-body" class="space-y-3 text-gray-300">
+                <!-- Details will be populated by JS -->
             </div>
-            <div class="mt-6 flex justify-between items-center">
-                <button type="button" id="deleteFromViewBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
-                <button type="button" id="editFromViewBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Editar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirmation Modal -->
-    <div id="confirmationModal" class="modal fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-70 hidden">
-        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-sm m-4 transform scale-95">
-            <h2 class="text-lg font-bold text-white mb-4">Confirmar Exclusão</h2>
-            <p class="text-gray-400 mb-6">Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.</p>
-            <div class="flex justify-end gap-4">
-                <button id="cancelDeleteBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancelar</button>
-                <button id="confirmDeleteBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Data Modal -->
-    <div id="editDataModal" class="modal fixed inset-0 z-50 flex justify-center items-start sm:items-center bg-black bg-opacity-50 hidden">
-        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-2 sm:m-4 transform scale-95 overflow-y-auto max-h-[95vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Editar Dados</h2>
-                <button id="closeEditModalBtn" class="text-gray-400 hover:text-white">&times;</button>
-            </div>
-            <form id="editDataForm">
-                <input type="hidden" id="edit-doc-id">
-                <div class="space-y-4">
-                    <div>
-                        <label for="edit-report-date" class="block text-sm font-medium text-gray-400">Data do Relatório</label>
-                        <input type="date" id="edit-report-date" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
-                    </div>
-                    <div>
-                        <label for="edit-unidade-select" class="block text-sm font-medium text-gray-400">Unidade</label>
-                        <select id="edit-unidade-select" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
-                            <!-- Options will be populated by JS -->
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 gap-4">
-                        <input type="number" id="edit-aulas-intro" placeholder="Aulas Intro (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-matriculas" placeholder="Matrículas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-contratos-ativos" placeholder="Contratos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-alunos-ativos" placeholder="Alunos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-renovacoes" placeholder="Renovações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-retornos" placeholder="Retornos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-leads" placeholder="Leads (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="edit-baixas" placeholder="Baixas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label for="edit-acoes-divulgacao" class="block text-sm font-medium text-gray-400">Ações de Divulgação</label>
-                        <textarea id="edit-acoes-divulgacao" rows="2" placeholder="Descreva as ações de divulgação" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2"></textarea>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button type="button" id="cancelEditModalBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
-                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Salvar Alterações</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Add Data Modal -->
-    <div id="addDataModal" class="modal fixed inset-0 z-50 flex justify-center items-start sm:items-center bg-black bg-opacity-50 hidden">
-        <div class="modal-content bg-[#1a1a1a] rounded-lg shadow-xl p-6 w-full max-w-md m-2 sm:m-4 transform scale-95 overflow-y-auto max-h-[95vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Adicionar Novos Dados</h2>
-                <button id="closeModalBtn" class="text-gray-400 hover:text-white">&times;</button>
-            </div>
-            <form id="addDataForm">
-                <div class="space-y-4">
-                    <div>
-                        <label for="report-date" class="block text-sm font-medium text-gray-400">Data do Relatório</label>
-                        <input type="date" id="report-date" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
-                    </div>
-                    <div>
-                        <label for="unidade-select" class="block text-sm font-medium text-gray-400">Unidade</label>
-                        <div class="flex items-center gap-2">
-                            <select id="unidade-select" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none" required>
-                                <option value="">Selecione a Unidade</option>
-                                <!-- Options will be populated by JS -->
-                            </select>
-                            <button type="button" id="edit-unidade-btn" class="hidden mt-1 p-2 bg-gray-600 hover:bg-yellow-500 rounded text-white" title="Editar nome da unidade selecionada">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                        </div>
-                        <input type="text" id="unidade-nova" placeholder="Nome da Nova Unidade" class="mt-2 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2 focus:ring-yellow-500 focus:outline-none hidden">
-                    </div>
-                    <div class="grid grid-cols-1 gap-4">
-                        <input type="number" id="aulas-intro" placeholder="Aulas Intro (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="matriculas" placeholder="Matrículas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="contratos-ativos" placeholder="Contratos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="alunos-ativos" placeholder="Alunos Ativos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="renovacoes" placeholder="Renovações (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="retornos" placeholder="Retornos (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="leads" placeholder="Leads (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                        <input type="number" id="baixas" placeholder="Baixas (dia)" class="bg-[#2a2a2a] border border-gray-600 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label for="acoes-divulgacao" class="block text-sm font-medium text-gray-400">Ações de Divulgação</label>
-                        <textarea id="acoes-divulgacao" rows="2" placeholder="Descreva as ações de divulgação" class="mt-1 w-full bg-[#2a2a2a] border border-gray-600 rounded p-2"></textarea>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button type="button" id="cancelModalBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
-                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Salvar Dados</button>
-                </div>
-            </form>
         </div>
     </div>
 
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
-        
-        <!-- Backdrop for mobile sidebar -->
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
-        <!-- Main Content -->
         <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
 
-            <!-- Board Content -->
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
                 
-                <!-- Header and Filters -->
                 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 id="dashboard-title" class="text-2xl font-bold text-white">Dashboard de Análise</h1>
@@ -202,62 +57,26 @@
                         <select id="location-filter" aria-label="Filtrar por unidade" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                             <option value="geral">Visão Geral (Todas as Unidades)</option>
                         </select>
-                        <select id="year-filter" aria-label="Filtrar por ano" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
-                            <option value="all">Todos os Anos</option>
-                        </select>
-                        <select id="view-by-filter" aria-label="Visualizar por" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
-                            <option value="monthly">Mensal</option>
-                            <option value="weekly">Semanal</option>
-                            <option value="daily">Diário</option>
-                        </select>
-                        <select id="week-filter" aria-label="Filtrar por semana" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none hidden">
-                            <option value="all">Todas as Semanas</option>
-                        </select>
-                        <input type="date" id="date-filter" class="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none hidden">
-                    </div>
-                </div>
-
-                <!-- KPIs -->
-                <div id="kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
-                    <!-- KPI Cards, including EVO data, will be injected here by JavaScript -->
-                </div>
-
-                <!-- Charts -->
-                <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md">
-                        <h2 class="text-xl font-semibold mb-4 text-white">Evolução de Alunos Ativos</h2>
-                        <div class="chart-container">
-                            <canvas id="activeStudentsChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md lg:col-span-2">
-                        <h2 class="text-xl font-semibold mb-4 text-white">Evolução de Contratos Ativos (EVO)</h2>
-                        <div class="chart-container">
-                            <canvas id="contractsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Data Log Section -->
-                <div id="data-log-container" class="mt-8 bg-[#1a1a1a] p-4 rounded-xl shadow-md">
-                    <h2 id="data-log-title" class="text-xl font-semibold mb-4 text-white">Log de Dados</h2>
-                    <!-- Desktop Table Header -->
-                    <div class="hidden md:grid md:grid-cols-5 gap-4 px-6 py-3 bg-[#2a2a2a] rounded-t-lg text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        <div>Data</div>
-                        <div>Unidade</div>
-                        <div>Matrículas</div>
-                        <div>Baixas</div>
-                        <div>Ativos</div>
-                    </div>
-                    <!-- Data Log Body -->
-                    <div id="data-log-body" class="space-y-4 md:space-y-0">
-                        <!-- Mobile Cards / Desktop Rows will be injected by JavaScript -->
-                    </div>
-                    <!-- Load More Button -->
-                    <div id="load-more-container" class="mt-6 text-center hidden">
-                        <button id="load-more-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105">
-                            Carregar Mais
+                        <button id="manual-snapshot-btn" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
+                            <i class="fas fa-camera mr-2"></i>Gerar Snapshot Manual
                         </button>
+                    </div>
+                </div>
+
+                <div id="kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+                    <!-- KPI Cards will be injected here by JavaScript -->
+                </div>
+
+                <!-- Snapshot Log Section -->
+                <div id="snapshot-log-container" class="mt-8 bg-[#1a1a1a] p-4 rounded-xl shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-white">Histórico de Snapshots</h2>
+                    <div class="hidden md:grid md:grid-cols-3 gap-4 px-6 py-3 bg-[#2a2a2a] rounded-t-lg text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div>Data</div>
+                        <div>Total Contratos (EVO)</div>
+                        <div>Total Alunos Ativos (EVO)</div>
+                    </div>
+                    <div id="snapshot-log-body" class="space-y-4 md:space-y-0">
+                        <!-- Snapshot rows will be injected by JavaScript -->
                     </div>
                 </div>
 
