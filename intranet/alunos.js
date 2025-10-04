@@ -1,11 +1,15 @@
-import { onAuthReady, checkAdminStatus } from './auth.js';
+import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { functions } from './firebase-config.js';
+import { functions, db } from './firebase-config.js';
+import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
+const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
 
 let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
+let allCourses = [];
+let allTatameContents = [];
 
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
@@ -21,11 +25,17 @@ export function setupAlunosPage() {
             const searchInput = document.getElementById('search-input');
             const modal = document.getElementById('student-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
+            const tabDetails = document.getElementById('tab-details');
+            const tabPermissions = document.getElementById('tab-permissions');
+            const contentDetails = document.getElementById('tab-content-details');
+            const contentPermissions = document.getElementById('tab-content-permissions');
+            const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
+            const inviteBtn = document.getElementById('modal-invite-btn');
 
             unitFilter.addEventListener('change', () => loadStudents());
             searchInput.addEventListener('input', () => renderStudents(allStudents));
             
-            // Fecha o modal ao clicar no botão 'x' ou fora da área de conteúdo
+            // Controle do Modal
             closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -33,7 +43,27 @@ export function setupAlunosPage() {
                 }
             });
 
-            loadStudents(); // Carga inicial
+            // Controle das Abas
+            tabDetails.addEventListener('click', () => {
+                contentDetails.classList.remove('hidden');
+                contentPermissions.classList.add('hidden');
+                tabDetails.classList.add('text-yellow-500', 'border-yellow-500');
+                tabPermissions.classList.remove('text-yellow-500', 'border-yellow-500');
+                savePermissionsBtn.classList.add('hidden');
+                inviteBtn.classList.remove('hidden');
+            });
+
+            tabPermissions.addEventListener('click', () => {
+                contentDetails.classList.add('hidden');
+                contentPermissions.classList.remove('hidden');
+                tabPermissions.classList.add('text-yellow-500', 'border-yellow-500');
+                tabDetails.classList.remove('text-yellow-500', 'border-yellow-500');
+                savePermissionsBtn.classList.remove('hidden');
+                inviteBtn.classList.add('hidden');
+            });
+
+            // Carrega todos os conteúdos uma vez para popular os modais
+            Promise.all([loadStudents(), loadAllSelectableContent()]);
         }
     });
 }
@@ -110,12 +140,21 @@ function renderStudents(students) {
     }
 }
 
-function openStudentModal(student) {
+async function openStudentModal(student) {
     const modal = document.getElementById('student-modal');
     const photoEl = document.getElementById('modal-student-photo');
     const mainContentEl = document.getElementById('modal-content-main');
     const extraContentEl = document.getElementById('modal-content-extra');
     const inviteBtn = document.getElementById('modal-invite-btn');
+    const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
+    
+    // Reseta para a aba de detalhes ao abrir
+    document.getElementById('tab-content-details').classList.remove('hidden');
+    document.getElementById('tab-content-permissions').classList.add('hidden');
+    document.getElementById('tab-details').classList.add('text-yellow-500', 'border-yellow-500');
+    document.getElementById('tab-permissions').classList.remove('text-yellow-500', 'border-yellow-500');
+    savePermissionsBtn.classList.add('hidden');
+    inviteBtn.classList.remove('hidden');
 
     // Atualiza a foto
     photoEl.src = student.photoUrl || 'default-profile.svg';
@@ -227,10 +266,16 @@ function openStudentModal(student) {
         inviteBtn.disabled = false;
         inviteBtn.title = "";
         inviteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        // Remove listener antigo para evitar múltiplos cliques
         inviteBtn.replaceWith(inviteBtn.cloneNode(true));
         document.getElementById('modal-invite-btn').addEventListener('click', () => handleInviteClick(student));
     }
+
+    // Carrega e preenche as permissões
+    await populatePermissionsChecklists(student);
+    
+    // Lógica do botão de salvar permissões
+    savePermissionsBtn.replaceWith(savePermissionsBtn.cloneNode(true));
+    document.getElementById('modal-save-permissions-btn').addEventListener('click', () => handleSavePermissions(student));
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -276,4 +321,95 @@ async function handleInviteClick(student) {
         button.disabled = false;
         button.textContent = 'Convidar';
     }
+}
+
+async function loadAllSelectableContent() {
+    try {
+        const coursesQuery = query(collection(db, "courses"), orderBy("title"));
+        const tatameQuery = query(collection(db, "tatame_conteudos"), orderBy("title"));
+        
+        const [coursesSnapshot, tatameSnapshot] = await Promise.all([
+            getDocs(coursesQuery),
+            getDocs(tatameQuery)
+        ]);
+
+        allCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allTatameContents = tatameSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    } catch (error) {
+        console.error("Erro ao carregar conteúdos para seleção:", error);
+    }
+}
+
+async function populatePermissionsChecklists(student) {
+    const coursesChecklist = document.getElementById('courses-checklist');
+    const tatameChecklist = document.getElementById('tatame-checklist');
+    coursesChecklist.innerHTML = '';
+    tatameChecklist.innerHTML = '';
+
+    // Precisamos encontrar o UID do usuário do Firebase correspondente ao aluno
+    const studentUser = await findUserByEvoId(student.idMember);
+    const studentUid = studentUser?.id;
+    const studentPermissions = studentUser?.accessibleContent || [];
+
+    allCourses.forEach(course => {
+        const isChecked = studentPermissions.includes(course.id);
+        coursesChecklist.innerHTML += `
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                <input type="checkbox" value="${course.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${isChecked ? 'checked' : ''}>
+                <span>${course.title}</span>
+            </label>
+        `;
+    });
+
+    allTatameContents.forEach(content => {
+        const isChecked = studentPermissions.includes(content.id);
+        tatameChecklist.innerHTML += `
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                <input type="checkbox" value="${content.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${isChecked ? 'checked' : ''}>
+                <span>${content.title}</span>
+            </label>
+        `;
+    });
+}
+
+async function handleSavePermissions(student) {
+    const button = document.getElementById('modal-save-permissions-btn');
+    const studentUser = await findUserByEvoId(student.idMember);
+    
+    if (!studentUser) {
+        alert("Este aluno ainda não tem uma conta no sistema (use o botão 'Convidar' primeiro). Não é possível salvar permissões.");
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Salvando...';
+
+    const selectedCourses = Array.from(document.querySelectorAll('#courses-checklist input:checked')).map(input => input.value);
+    const selectedTatame = Array.from(document.querySelectorAll('#tatame-checklist input:checked')).map(input => input.value);
+    const accessibleContent = [...selectedCourses, ...selectedTatame];
+
+    try {
+        await updateStudentPermissions({ studentUid: studentUser.id, accessibleContent });
+        alert("Permissões salvas com sucesso!");
+    } catch (error) {
+        console.error("Erro ao salvar permissões:", error);
+        alert(`Erro ao salvar permissões: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Salvar Permissões';
+    }
+}
+
+// Função auxiliar para encontrar um usuário do Firestore pelo seu evoMemberId
+async function findUserByEvoId(evoId) {
+    // Esta é uma busca ineficiente. O ideal seria ter uma coleção separada para mapear evoId -> uid.
+    // Por enquanto, vamos buscar em todos os usuários.
+    const allUsersSnapshot = await getDocs(collection(db, "users"));
+    for (const doc of allUsersSnapshot.docs) {
+        if (doc.data().evoMemberId === evoId) {
+            return { id: doc.id, ...doc.data() };
+        }
+    }
+    return null;
 }
