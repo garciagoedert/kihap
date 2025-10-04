@@ -22,10 +22,16 @@ async function handleLogin(e) {
             sessionStorage.setItem('currentUser', JSON.stringify({ ...userData, uid: user.uid, email: user.email }));
             sessionStorage.setItem('userName', userData.name);
             sessionStorage.setItem('isAdmin', userData.isAdmin || false);
-            // O log será adaptado em um passo futuro
-            // generalLog.add(userData.name, 'Login', 'User logged in successfully');
             errorEl.classList.add('hidden');
-            window.location.href = 'analysis.html';
+
+            // Lógica de redirecionamento inteligente
+            if (userData.evoMemberId) {
+                // É um aluno, redireciona para a área de membros
+                window.location.href = '../members/index.html';
+            } else {
+                // É um usuário da intranet (admin, professor, etc.)
+                window.location.href = 'analysis.html';
+            }
         } else {
             throw new Error("Dados do usuário não encontrados no Firestore.");
         }

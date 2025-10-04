@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Alunos</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold">Gerenciamento de Alunos</h1>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
+                    <div>
+                        <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
+                        <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Todas as Unidades</option>
+                            <option value="centro">Unidade Centro</option>
+                            <!-- Outras unidades serão adicionadas aqui no futuro -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
+                        <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <!-- Students Table -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Nome</th>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Graduação</th>
+                                <th class="p-4">Unidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body">
+                            <!-- Linhas serão inseridas dinamicamente aqui -->
+                            <tr>
+                                <td colspan="4" class="text-center p-8">Carregando alunos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Student Details Modal -->
+    <div id="student-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-gray-700 p-4">
+                <h2 class="text-xl font-bold text-white">Detalhes do Aluno</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-6">
+                <div class="flex items-start space-x-6">
+                    <img id="modal-student-photo" src="default-profile.svg" alt="Foto do Aluno" class="w-32 h-32 rounded-full object-cover border-2 border-gray-600">
+                    <div id="modal-content-main" class="flex-grow">
+                        <!-- Conteúdo principal preenchido via JS -->
+                    </div>
+                </div>
+                <div id="modal-content-extra">
+                    <!-- Dados adicionais preenchidos via JS -->
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t border-gray-700 mt-auto">
+                <button id="modal-invite-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Convidar Aluno
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupAlunosPage } from './alunos.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupAlunosPage();
+            });
+        });
+    </script>
+</body>
+</html>
