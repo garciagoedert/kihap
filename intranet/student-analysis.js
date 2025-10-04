@@ -736,44 +736,48 @@ function updateKPIs(data, viewBy) {
         return;
     }
 
-    // Always sort data by date to find the latest records
     const sortedData = data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    // For stock metrics like Ativos and ContratosAtivos, we find the record with the highest value for each unit in the period.
-    // This prevents issues with multiple entries on the same day (e.g., one correct, one with 0).
+    // Flow metrics are always the sum over the period.
+    const totalMatriculas = sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
+    const totalBaixas = sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
+    const totalRenovacoes = sortedData.reduce((sum, row) => sum + (row.Renovacoes || 0), 0);
+
+    let kpis = [];
+
+    // Stock metrics (like Ativos/Contratos) need to be calculated based on the latest record for each unit.
     const latestDataPerUnit = {};
     sortedData.forEach(row => {
         const existingEntry = latestDataPerUnit[row.Unidade];
-        // If there's no entry for the unit, or the current row has more 'Ativos', update it.
-        if (!existingEntry || (row.Ativos || 0) > (existingEntry.Ativos || 0)) {
+        // To get the most accurate stock value, we prefer the one with more 'Ativos', or the latest date as a tie-breaker.
+        if (!existingEntry || 
+            (row.Ativos || 0) > (existingEntry.Ativos || 0) ||
+            ((row.Ativos || 0) === (existingEntry.Ativos || 0) && new Date(row.Data) >= new Date(existingEntry.Data))) 
+        {
             latestDataPerUnit[row.Unidade] = row;
         }
     });
-
     const latestDataArray = Object.values(latestDataPerUnit);
-    
-    const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
     const totalContratos = latestDataArray.reduce((sum, row) => sum + (row.ContratosAtivos || 0), 0);
 
-    // For flow metrics like Matriculas and Baixas, we sum up all occurrences in the period.
-    const totalMatriculas = sortedData.reduce((sum, row) => sum + (row.Matriculas || 0), 0);
-    const totalBaixas = sortedData.reduce((sum, row) => sum + (row.Baixas || 0), 0);
-
-    const kpiData = {
-        ativos: totalAtivos,
-        contratos: totalContratos,
-        percentualAtivos: totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0,
-        matriculas: totalMatriculas,
-        baixas: totalBaixas,
-        saldo: totalMatriculas - totalBaixas
-    };
-
-    const kpis = [
-        { label: 'Alunos Ativos', value: kpiData.ativos.toLocaleString('pt-BR'), icon: '👤' },
-        { label: '% de Ativos', value: `${kpiData.percentualAtivos}%`, icon: '📊' },
-        { label: 'Matrículas', value: kpiData.matriculas.toLocaleString('pt-BR'), icon: '📈' },
-        { label: 'Baixas', value: kpiData.baixas.toLocaleString('pt-BR'), icon: '📉' }
-    ];
+    if (viewBy === 'daily') {
+        const totalAtivos = latestDataArray.reduce((sum, row) => sum + (row.Ativos || 0), 0);
+        const percentualAtivos = totalContratos > 0 ? (totalAtivos / totalContratos * 100).toFixed(1) : 0;
+        
+        kpis = [
+            { label: 'Alunos Ativos', value: totalAtivos.toLocaleString('pt-BR'), icon: '👤' },
+            { label: '% de Ativos', value: `${percentualAtivos}%`, icon: '📊' },
+            { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
+            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' }
+        ];
+    } else { // For 'weekly' and 'monthly' views
+        kpis = [
+            { label: 'Contratos Ativos', value: totalContratos.toLocaleString('pt-BR'), icon: '📝' },
+            { label: 'Renovações', value: totalRenovacoes.toLocaleString('pt-BR'), icon: '🔄' },
+            { label: 'Matrículas', value: totalMatriculas.toLocaleString('pt-BR'), icon: '📈' },
+            { label: 'Baixas', value: totalBaixas.toLocaleString('pt-BR'), icon: '📉' }
+        ];
+    }
     
     kpiContainer.innerHTML = kpis.map(kpi => `
         <div class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
