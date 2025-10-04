@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Atividades - Kihap</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../intranet/theme.css">
+    <link rel="stylesheet" href="../intranet/log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="relative min-h-screen md:flex">
+        <div id="sidebar-container"></div>
+        
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+        <main id="main-content" class="flex-1">
+            <div id="header-container"></div>
+
+            <div class="p-4 md:p-6 lg:p-8">
+                <h1 class="text-2xl font-bold mb-6">Minhas Atividades</h1>
+                
+                <div id="atividades-container" class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <p>Carregando atividades...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { loadComponents } from './js/common-ui.js';
+        import { setupAtividadesPage } from './js/atividades.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(setupAtividadesPage);
+        });
+    </script>
+</body>
+</html>

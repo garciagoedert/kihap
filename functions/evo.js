@@ -167,9 +167,9 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
     }
 
-    const { evoMemberId, email, firstName, lastName } = data;
-    if (!evoMemberId || !email || !firstName) {
-        throw new functions.https.HttpsError("invalid-argument", "Dados do aluno insuficientes para criar convite.");
+    const { evoMemberId, email, firstName, lastName, unitId } = data; // Adiciona unitId
+    if (!evoMemberId || !email || !firstName || !unitId) { // Valida unitId
+        throw new functions.https.HttpsError("invalid-argument", "Dados do aluno (incluindo unidade) insuficientes para criar convite.");
     }
 
     try {
@@ -192,12 +192,13 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
             }
         }
 
-        // 3. Cria ou atualiza o documento no Firestore com o evoMemberId
+        // 3. Cria ou atualiza o documento no Firestore com o evoMemberId e unitId
         await admin.firestore().collection('users').doc(userRecord.uid).set({
             name: `${firstName} ${lastName || ''}`,
             email: email,
             isAdmin: false, // Alunos não são administradores
-            evoMemberId: evoMemberId
+            evoMemberId: evoMemberId,
+            unitId: unitId // Salva a unidade do aluno
         }, { merge: true });
 
         // 4. Gera o link de redefinição de senha (convite)
@@ -333,4 +334,41 @@ exports.getEvoUnits = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
     return Object.keys(EVO_CREDENTIALS);
+});
+
+const cors = require('cors')({ origin: true });
+
+/**
+ * Busca a agenda de atividades de uma unidade específica.
+ * Convertida para onRequest para lidar com CORS manualmente.
+ */
+exports.getActivitiesSchedule = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        // A verificação de autenticação manual é necessária para onRequest.
+        if (!req.body.data || !req.body.data.unitId) {
+            functions.logger.error("Requisição sem ID da unidade.");
+            res.status(400).send({ error: { message: "O ID da unidade é obrigatório." } });
+            return;
+        }
+        
+        // O SDK do cliente envolve os dados em um objeto 'data'.
+        const { unitId } = req.body.data;
+
+        try {
+            const apiClient = getEvoApiClient(unitId, 'v1'); // A API de atividades usa v1
+            const response = await apiClient.get("/activities/schedule");
+            
+            functions.logger.info(`Resposta da API EVO para getActivitiesSchedule (unidade: ${unitId}):`, response.data);
+            // Para funções onRequest, a resposta deve ser encapsulada em um objeto 'data'.
+            res.status(200).send({ data: response.data });
+
+        } catch (error) {
+            functions.logger.error(`Erro ao buscar agenda da unidade ${unitId}:`, {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            });
+            res.status(500).send({ error: { message: "Não foi possível buscar a agenda de atividades." } });
+        }
+    });
 });
