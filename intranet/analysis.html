@@ -91,17 +91,23 @@
 
                 <!-- Snapshot Log Section -->
                 <div id="snapshot-log-container" class="mt-8 bg-[#1a1a1a] p-4 rounded-xl shadow-md">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h2 class="text-xl font-semibold text-white">Histórico de Snapshots</h2>
-                        <input type="text" id="snapshot-search" placeholder="Buscar por data..." class="bg-[#2a2a2a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                        <input type="text" id="snapshot-search" placeholder="Buscar por data..." class="w-full sm:w-auto bg-[#2a2a2a] border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
                     </div>
-                    <div class="hidden md:grid md:grid-cols-3 gap-4 px-6 py-3 bg-[#2a2a2a] rounded-t-lg text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        <div>Data</div>
-                        <div>Total Contratos (EVO)</div>
-                        <div>Total Alunos Ativos (EVO)</div>
-                    </div>
-                    <div id="snapshot-log-body" class="space-y-4 md:space-y-0">
-                        <!-- Snapshot rows will be injected by JavaScript -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-[#2a2a2a]">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Data</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Contratos (EVO)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Alunos Ativos (EVO)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="snapshot-log-body" class="divide-y divide-gray-700">
+                                <!-- Snapshot rows will be injected by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
