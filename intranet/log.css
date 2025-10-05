@@ -59,6 +59,51 @@ body {
     box-shadow: 0 4px 15px rgba(255, 179, 0, 0.4);
 }
 
+.btn-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563; /* gray-600 */
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background-color: #dc2626; /* red-600 */
+    color: white;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c; /* red-700 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
 .bg-primary-light {
     background-color: var(--accent-primary);
 }
@@ -107,4 +152,14 @@ body {
 
 .ql-snow .ql-picker-item {
     color: #D1D5DB; /* gray-300 */
+}
+
+/* Ocultar botão de adicionar no header da página de admin */
+.admin-page #addProspectBtnHeader {
+    display: none;
+}
+
+/* Ocultar botão de adicionar no header da página de perfil */
+.profile-page #addProspectBtnHeader {
+    display: none;
 }

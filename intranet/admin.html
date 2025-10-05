@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-[#111111] text-gray-200 admin-page">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         
@@ -31,7 +31,15 @@
 
                 <!-- User Table -->
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
-                    <h2 class="text-xl font-semibold mb-4">Usuários</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">Usuários</h2>
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="search-users" placeholder="Buscar por nome ou email..." class="px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <button id="add-user-btn" class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">
+                                <i class="fas fa-plus mr-2"></i>Adicionar Usuário
+                            </button>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-[#1a1a1a]">
                             <thead>
@@ -50,7 +58,7 @@
                 </div>
 
                 <!-- Add/Edit User Form -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
+                <div id="user-form-container" class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6 hidden">
                     <h2 id="form-title" class="text-xl font-semibold mb-4">Adicionar Novo Usuário</h2>
                     <form id="user-form">
                         <input type="hidden" id="user-email-hidden">

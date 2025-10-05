@@ -10,6 +10,16 @@ export async function setupProfilePage() {
     const passwordInput = document.getElementById('password');
     const profilePictureInput = document.getElementById('profile-picture-input');
     const logoutBtn = document.getElementById('logout-btn');
+    const fileNameSpan = document.getElementById('file-name');
+
+    // Update file name display on file selection
+    profilePictureInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            fileNameSpan.textContent = this.files[0].name;
+        } else {
+            fileNameSpan.textContent = 'Nenhum arquivo selecionado';
+        }
+    });
 
     const loggedInUserName = sessionStorage.getItem('userName');
     const allUsers = await getAllUsers();
@@ -56,7 +66,8 @@ export async function setupProfilePage() {
                 }
                 alert('Perfil atualizado com sucesso!');
                 passwordInput.value = '';
-                profilePictureInput.value = '';
+                profilePictureInput.value = ''; // Reset file input
+                fileNameSpan.textContent = 'Nenhum arquivo selecionado'; // Reset file name display
             } else {
                 alert('Erro ao atualizar o perfil.');
             }

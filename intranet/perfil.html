@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-[#111111] text-gray-200 profile-page">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         
@@ -41,30 +41,37 @@
                 <!-- Edit Profile Form -->
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
                     <h2 class="text-xl font-semibold mb-4">Editar Informações</h2>
-                    <form id="edit-profile-form">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="name" class="block text-sm font-medium text-gray-300">Nome</label>
-                                <input type="text" id="name" required class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md">
-                            </div>
-                            <div>
-                                <label for="password" class="block text-sm font-medium text-gray-300">Nova Senha</label>
-                                <input type="password" id="password" placeholder="Deixe em branco para não alterar" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="profile-picture-input" class="block text-sm font-medium text-gray-300">Foto de Perfil</label>
-                                <input type="file" id="profile-picture-input" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark mt-1">
+                    <form id="edit-profile-form" class="space-y-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nome</label>
+                            <input type="text" id="name" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Nova Senha</label>
+                            <input type="password" id="password" placeholder="Deixe em branco para não alterar" class="form-input">
+                        </div>
+                        <div>
+                            <label for="profile-picture-input" class="block text-sm font-medium text-gray-300 mb-1">Foto de Perfil</label>
+                            <div class="flex items-center">
+                                <label class="btn-secondary cursor-pointer">
+                                    <i class="fas fa-upload mr-2"></i>
+                                    <span>Escolher arquivo</span>
+                                    <input type="file" id="profile-picture-input" accept="image/*" class="hidden">
+                                </label>
+                                <span id="file-name" class="ml-4 text-gray-400">Nenhum arquivo selecionado</span>
                             </div>
                         </div>
-                        <div class="mt-6">
-                            <button type="submit" class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Salvar Alterações</button>
+                        <div class="pt-2 flex items-center gap-4">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save mr-2"></i>Salvar Alterações
+                            </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Logout Button -->
-                <div class="mt-auto pt-6 text-right">
-                     <button id="logout-btn" class="px-6 py-2 font-bold text-white bg-red-600 rounded-md hover:bg-red-700">
+                <!-- Actions -->
+                <div class="mt-auto pt-6 flex justify-end">
+                    <button id="logout-btn" class="btn-danger">
                         <i class="fas fa-sign-out-alt mr-2"></i>Sair
                     </button>
                 </div>
