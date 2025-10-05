@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const axios = require("axios");
 const admin = require("firebase-admin");
+const cors = require("cors")({origin: true});
 
 admin.initializeApp();
 
@@ -505,7 +506,13 @@ exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory:
 const _snapshotDailyEvoData = async () => {
     functions.logger.info("Iniciando snapshot diário de dados do EVO...");
     const db = admin.firestore();
-    const today = new Date().toISOString().split('T')[0];
+    
+    // Corrigido para usar o fuso horário de São Paulo
+    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const year = nowInSaoPaulo.getFullYear();
+    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
 
     const getUnitData = async (id) => {
         try {
@@ -521,7 +528,8 @@ const _snapshotDailyEvoData = async () => {
                     take: 1000
                 }
             });
-            const uniqueMemberIds = new Set(entriesResponse.data.map(entry => entry.idMember));
+            const entriesData = entriesResponse.data || [];
+            const uniqueMemberIds = Array.isArray(entriesData) ? new Set(entriesData.map(entry => entry.idMember)) : new Set();
             const dailyActivesCount = uniqueMemberIds.size;
 
             return { id, contractsCount, dailyActivesCount };
@@ -556,11 +564,48 @@ const _snapshotDailyEvoData = async () => {
     }
 };
 
-exports.snapshotDailyEvoData = functions.pubsub.schedule('every 24 hours').onRun(async (context) => {
+exports.snapshotDailyEvoData = functions.pubsub.schedule('0 23 * * *').timeZone('America/Sao_Paulo').onRun(async (context) => {
     await _snapshotDailyEvoData();
 });
 
-exports.triggerSnapshot = functions.https.onCall(async (data, context) => {
+exports.triggerSnapshot = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        // Verificação de autenticação e permissão para onRequest
+        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+            functions.logger.error("Não autorizado: Sem token de autorização.");
+            res.status(403).send('Unauthorized');
+            return;
+        }
+
+        const idToken = req.headers.authorization.split('Bearer ')[1];
+
+        try {
+            const decodedToken = await admin.auth().verifyIdToken(idToken);
+            const uid = decodedToken.uid;
+            const userDoc = await admin.firestore().collection('users').doc(uid).get();
+
+            if (!userDoc.exists || !userDoc.data().isAdmin) {
+                functions.logger.error(`Permissão negada para UID: ${uid}.`);
+                res.status(403).send('Permission Denied');
+                return;
+            }
+
+            // Lógica principal da função
+            await _snapshotDailyEvoData();
+            res.status(200).send({ data: { success: true, message: "Snapshot manual gerado com sucesso!" } });
+
+        } catch (error) {
+            functions.logger.error("Falha ao acionar snapshot manual:", error);
+            if (error.code === 'auth/id-token-expired') {
+                res.status(401).send('Token expired');
+            } else {
+                res.status(500).send('Internal Server Error');
+            }
+        }
+    });
+});
+
+exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
@@ -569,11 +614,17 @@ exports.triggerSnapshot = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
     }
 
+    const { snapshotId } = data;
+    if (!snapshotId) {
+        throw new functions.https.HttpsError("invalid-argument", "O ID do snapshot é obrigatório.");
+    }
+
     try {
-        await _snapshotDailyEvoData();
-        return { success: true, message: "Snapshot manual gerado com sucesso!" };
+        await admin.firestore().collection('evo_daily_snapshots').doc(snapshotId).delete();
+        functions.logger.info(`Snapshot ${snapshotId} deletado com sucesso pelo usuário ${context.auth.uid}.`);
+        return { success: true, message: "Snapshot deletado com sucesso." };
     } catch (error) {
-        functions.logger.error("Falha ao acionar snapshot manual:", error);
-        throw new functions.https.HttpsError("internal", "Não foi possível gerar o snapshot.");
+        functions.logger.error(`Erro ao deletar o snapshot ${snapshotId}:`, error);
+        throw new functions.https.HttpsError("internal", "Não foi possível deletar o snapshot.");
     }
 });

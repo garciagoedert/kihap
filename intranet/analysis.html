@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="log.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .kpi-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
@@ -35,6 +36,11 @@
             </div>
             <div id="snapshot-modal-body" class="space-y-3 text-gray-300">
                 <!-- Details will be populated by JS -->
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-700 flex justify-end">
+                <button id="delete-snapshot-btn" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+                    <i class="fas fa-trash-alt mr-2"></i>Apagar Snapshot
+                </button>
             </div>
         </div>
     </div>
@@ -65,6 +71,22 @@
 
                 <div id="kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
                     <!-- KPI Cards will be injected here by JavaScript -->
+                </div>
+
+                <!-- Evolution Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex flex-col">
+                        <h2 class="text-lg font-semibold mb-4 text-white">Evolução dos Contratos Ativos</h2>
+                        <div class="relative h-80">
+                            <canvas id="contracts-evolution-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex flex-col">
+                        <h2 class="text-lg font-semibold mb-4 text-white">Evolução dos Alunos Ativos</h2>
+                        <div class="relative h-80">
+                            <canvas id="students-evolution-chart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Snapshot Log Section -->
