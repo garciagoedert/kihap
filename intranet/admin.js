@@ -26,6 +26,7 @@ export function setupAdminPage() {
 
     const userTableBody = document.getElementById('user-table-body');
     const userForm = document.getElementById('user-form');
+    const userFormContainer = document.getElementById('user-form-container');
     const formTitle = document.getElementById('form-title');
     const nameInput = document.getElementById('name');
     const emailInput = document.getElementById('email');
@@ -33,12 +34,27 @@ export function setupAdminPage() {
     const isAdminInput = document.getElementById('isAdmin');
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
+    const addUserBtn = document.getElementById('add-user-btn');
+    const searchInput = document.getElementById('search-users');
 
-    async function renderUsers() {
+    addUserBtn.addEventListener('click', () => {
+        resetForm();
+        userFormContainer.classList.remove('hidden');
+        formTitle.textContent = 'Adicionar Novo Usuário';
+    });
+
+    async function renderUsers(filter = '') {
         userTableBody.innerHTML = '';
         const users = await getAllUsers();
         const adminUsers = users.filter(user => !user.evoMemberId);
-        adminUsers.forEach(user => {
+        
+        const lowercasedFilter = filter.toLowerCase();
+        const filteredUsers = adminUsers.filter(user => {
+            return user.name.toLowerCase().includes(lowercasedFilter) || 
+                   user.email.toLowerCase().includes(lowercasedFilter);
+        });
+
+        filteredUsers.forEach(user => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="py-2 px-4 border-b border-gray-700">${user.name}</td>
@@ -88,7 +104,10 @@ export function setupAdminPage() {
         userForm.reset();
         hiddenEmailInput.value = '';
         emailInput.disabled = false;
+        passwordInput.disabled = false;
+        passwordInput.placeholder = "";
         cancelEditBtn.classList.add('hidden');
+        userFormContainer.classList.add('hidden');
     }
 
     userTableBody.addEventListener('click', async function(e) {
@@ -100,6 +119,7 @@ export function setupAdminPage() {
             const users = await getAllUsers();
             const user = users.find(u => u.id === userId);
             if (user) {
+                userFormContainer.classList.remove('hidden');
                 formTitle.textContent = 'Editar Usuário';
                 nameInput.value = user.name;
                 emailInput.value = user.email;
@@ -124,6 +144,10 @@ export function setupAdminPage() {
 
     cancelEditBtn.addEventListener('click', resetForm);
     userForm.addEventListener('submit', handleFormSubmit);
+
+    searchInput.addEventListener('input', (e) => {
+        renderUsers(e.target.value);
+    });
 
     renderUsers();
 }
