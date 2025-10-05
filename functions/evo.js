@@ -628,3 +628,58 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("internal", "Não foi possível deletar o snapshot.");
     }
 });
+
+/**
+ * Busca o total de entries (check-ins) de hoje para uma unidade específica ou para todas.
+ */
+exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+
+    const { unitId } = data; // Recebe o unitId do frontend
+
+    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const year = nowInSaoPaulo.getFullYear();
+    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    const getUnitEntries = async (unitId) => {
+        try {
+            const apiClient = getEvoApiClient(unitId, 'v1');
+            const response = await apiClient.get("/entries", {
+                params: {
+                    registerDateStart: `${today}T00:00:00Z`,
+                    registerDateEnd: `${today}T23:59:59Z`,
+                    take: 1000
+                }
+            });
+            const entriesData = response.data || [];
+            return Array.isArray(entriesData) ? entriesData.length : 0;
+        } catch (error) {
+            functions.logger.error(`Erro ao buscar entries da unidade '${unitId}' para hoje:`, error.message);
+            return 0; // Retorna 0 em caso de erro para não quebrar a soma total.
+        }
+    };
+
+    try {
+        const unitIdsToFetch = (unitId && unitId !== 'geral') ? [unitId] : Object.keys(EVO_CREDENTIALS);
+
+        const promises = unitIdsToFetch.map(id => getUnitEntries(id));
+        const results = await Promise.all(promises);
+
+        const totalEntries = results.reduce((sum, count) => sum + count, 0);
+        
+        const logMessage = (unitId && unitId !== 'geral') 
+            ? `Total de entries para ${unitId} hoje (${today}): ${totalEntries}`
+            : `Total de entries de hoje (${today}): ${totalEntries}`;
+        functions.logger.info(logMessage);
+
+        return { totalEntries };
+
+    } catch (error) {
+        functions.logger.error("Falha geral ao buscar o total de entries de hoje:", error);
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar o total de check-ins de hoje.");
+    }
+});

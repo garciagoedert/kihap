@@ -8,6 +8,7 @@ const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
 const triggerSnapshot = httpsCallable(functions, 'triggerSnapshot');
 const deleteEvoSnapshot = httpsCallable(functions, 'deleteEvoSnapshot');
+const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
 
 let snapshots = [];
 let isAdmin = false;
@@ -297,7 +298,7 @@ async function handleDeleteSnapshot(snapshotId) {
     }
 }
 
-function displayDailyEntriesKpi() {
+async function displayDailyEntriesKpi() {
     const kpiContainer = document.getElementById('kpi-container');
     const locationFilter = document.getElementById('location-filter');
     const selectedUnit = locationFilter.value;
@@ -305,32 +306,56 @@ function displayDailyEntriesKpi() {
     const oldCard = document.getElementById('daily-entries-kpi-card');
     if (oldCard) oldCard.remove();
 
-    let totalAtivosHoje = 0;
-    let label = "Alunos Ativos (Hoje)";
-
-    if (snapshots.length > 0) {
-        const latestSnapshot = snapshots[0]; // Array está ordenado por data desc
-        if (selectedUnit === 'geral') {
-            label = "Total Alunos Ativos (Hoje)";
-            totalAtivosHoje = latestSnapshot.totalDailyActives || 0;
-        } else {
-            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Alunos Ativos (${displayName})`;
-            totalAtivosHoje = latestSnapshot.units[selectedUnit]?.dailyActives || 0;
-        }
-    }
-
-    const finalHtml = `
-        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+    // Placeholder de carregamento
+    const placeholderHtml = `
+        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
             <div class="text-3xl mr-4">🏃</div>
             <div>
-                <p class="text-gray-400 text-sm">${label}</p>
-                <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+                <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                <p class="text-2xl font-bold text-white">...</p>
             </div>
-        </div>
-    `;
-    
-    kpiContainer.insertAdjacentHTML('beforeend', finalHtml);
+        </div>`;
+    kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
+
+    try {
+        const result = await getTodaysTotalEntries({ unitId: selectedUnit });
+        const totalAtivosHoje = result.data.totalEntries;
+        
+        let label;
+        if (selectedUnit && selectedUnit !== 'geral') {
+            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            label = `Alunos Ativos Hoje (${displayName})`;
+        } else {
+            label = "Total Alunos Ativos (Hoje)";
+        }
+
+        const finalHtml = `
+            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">🏃</div>
+                <div>
+                    <p class="text-gray-400 text-sm">${label}</p>
+                    <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+        `;
+        
+        const placeholderCard = document.getElementById('daily-entries-kpi-card');
+        if (placeholderCard) placeholderCard.outerHTML = finalHtml;
+
+    } catch (error) {
+        console.error("Erro ao carregar KPI de Alunos Ativos Hoje:", error);
+        const errorHtml = `
+            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">⚠️</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                    <p class="text-xl font-bold text-red-500">Erro</p>
+                </div>
+            </div>
+        `;
+        const placeholderCard = document.getElementById('daily-entries-kpi-card');
+        if (placeholderCard) placeholderCard.outerHTML = errorHtml;
+    }
 }
 
 function renderEvolutionCharts() {
