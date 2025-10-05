@@ -2,17 +2,21 @@ import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents } from './common-ui.js';
-import { onAuthReady } from './auth.js';
+import { onAuthReady, checkAdminStatus } from './auth.js';
 
 const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
-const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const triggerSnapshot = httpsCallable(functions, 'triggerSnapshot');
+const deleteEvoSnapshot = httpsCallable(functions, 'deleteEvoSnapshot');
 
 let snapshots = [];
+let isAdmin = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    onAuthReady(user => {
+    onAuthReady(async (user) => {
+        if (user) {
+            isAdmin = await checkAdminStatus(user);
+        }
         loadComponents(initializeDashboard);
     });
 });
@@ -28,6 +32,7 @@ async function initializeDashboard() {
 
     await fetchSnapshots();
     renderSnapshotLog();
+    renderEvolutionCharts();
     setupModal();
     displayEvoKpi();
     displayDailyEntriesKpi();
@@ -134,6 +139,17 @@ function handleViewSnapshot(event) {
     const date = snapshot.timestamp.toDate();
     modalTitle.textContent = `Detalhes do Snapshot - ${date.toLocaleDateString('pt-BR')}`;
 
+    const deleteBtn = document.getElementById('delete-snapshot-btn');
+    if (isAdmin) {
+        deleteBtn.classList.remove('hidden');
+        // Clonar e substituir o botão para remover event listeners antigos
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+        newDeleteBtn.addEventListener('click', () => handleDeleteSnapshot(docId));
+    } else {
+        deleteBtn.classList.add('hidden');
+    }
+
     let tableHtml = `
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-400">
@@ -238,7 +254,38 @@ async function displayEvoKpi() {
     }
 }
 
-async function displayDailyEntriesKpi() {
+async function handleDeleteSnapshot(snapshotId) {
+    if (!confirm('Tem certeza que deseja apagar este snapshot? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+
+    const deleteBtn = document.getElementById('delete-snapshot-btn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Apagando...';
+
+    try {
+        await deleteEvoSnapshot({ snapshotId });
+        alert('Snapshot apagado com sucesso!');
+        
+        // Fecha o modal
+        document.getElementById('snapshot-modal').classList.add('hidden');
+        document.body.classList.remove('modal-active');
+
+        // Remove o snapshot da lista local e re-renderiza a UI
+        snapshots = snapshots.filter(s => s.id !== snapshotId);
+        renderSnapshotLog();
+        renderEvolutionCharts();
+
+    } catch (error) {
+        console.error("Erro ao apagar snapshot:", error);
+        alert(`Erro ao apagar snapshot: ${error.message}`);
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Apagar Snapshot';
+    }
+}
+
+function displayDailyEntriesKpi() {
     const kpiContainer = document.getElementById('kpi-container');
     const locationFilter = document.getElementById('location-filter');
     const selectedUnit = locationFilter.value;
@@ -246,60 +293,130 @@ async function displayDailyEntriesKpi() {
     const oldCard = document.getElementById('daily-entries-kpi-card');
     if (oldCard) oldCard.remove();
 
-    const placeholderHtml = `
-        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-            <div class="text-3xl mr-4">🏃</div>
-            <div>
-                <p class="text-gray-400 text-sm">Alunos Ativos (Hoje)</p>
-                <p class="text-2xl font-bold text-white">...</p>
-            </div>
-        </div>`;
-    kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
+    let totalAtivosHoje = 0;
+    let label = "Alunos Ativos (Hoje)";
 
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        let totalAtivosHoje = 0;
-        let label = "Alunos Ativos (Hoje)";
-
+    if (snapshots.length > 0) {
+        const latestSnapshot = snapshots[0]; // Array está ordenado por data desc
         if (selectedUnit === 'geral') {
             label = "Total Alunos Ativos (Hoje)";
-            const result = await getEvoUnits();
-            const evoUnits = result.data;
-            const promises = evoUnits.map(unitId => getDailyEntries({ unitId: unitId, date: today }));
-            const results = await Promise.all(promises);
-            results.forEach(result => {
-                totalAtivosHoje += result.data.uniqueMembersCount;
-            });
+            totalAtivosHoje = latestSnapshot.totalDailyActives || 0;
         } else {
-            const result = await getDailyEntries({ unitId: selectedUnit, date: today });
-            totalAtivosHoje = result.data.uniqueMembersCount;
+            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            label = `Alunos Ativos (${displayName})`;
+            totalAtivosHoje = latestSnapshot.units[selectedUnit]?.dailyActives || 0;
         }
-
-        const finalHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">🏃</div>
-                <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
-                </div>
-            </div>
-        `;
-        
-        const placeholderCard = document.getElementById('daily-entries-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = finalHtml;
-
-    } catch (error) {
-        console.error("Erro ao carregar KPI de entradas diárias:", error);
-        const errorHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">⚠️</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Alunos Ativos (Hoje)</p>
-                    <p class="text-xl font-bold text-red-500">Erro</p>
-                </div>
-            </div>
-        `;
-        const placeholderCard = document.getElementById('daily-entries-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = errorHtml;
     }
+
+    const finalHtml = `
+        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div class="text-3xl mr-4">🏃</div>
+            <div>
+                <p class="text-gray-400 text-sm">${label}</p>
+                <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+            </div>
+        </div>
+    `;
+    
+    kpiContainer.insertAdjacentHTML('beforeend', finalHtml);
+}
+
+function renderEvolutionCharts() {
+    if (snapshots.length === 0) return;
+
+    // Os snapshots são buscados em ordem decrescente, então precisamos invertê-los para o gráfico
+    const sortedSnapshots = [...snapshots].reverse();
+
+    const labels = sortedSnapshots.map(snap => 
+        snap.timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    );
+    const contractsData = sortedSnapshots.map(snap => snap.totalContracts || 0);
+    const studentsData = sortedSnapshots.map(snap => snap.totalDailyActives || 0);
+
+    // Configurações globais para os gráficos
+    Chart.defaults.color = '#a0aec0'; // Cor do texto (cinza claro)
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'; // Cor das bordas/grades
+
+    const sharedConfig = {
+        type: 'line',
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Oculta a legenda, já que o título do card já informa o que é o gráfico
+                },
+                tooltip: {
+                    backgroundColor: '#2d3748', // Fundo do tooltip (cinza escuro)
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#4a5568',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: '#a0aec0',
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        color: '#a0aec0',
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    };
+
+    // Gráfico de Contratos
+    const contractsCtx = document.getElementById('contracts-evolution-chart').getContext('2d');
+    new Chart(contractsCtx, {
+        ...sharedConfig,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Contratos Ativos',
+                data: contractsData,
+                fill: true,
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                tension: 0.3,
+                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                pointBorderColor: '#fff',
+                pointHoverRadius: 7,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+            }]
+        }
+    });
+
+    // Gráfico de Alunos
+    const studentsCtx = document.getElementById('students-evolution-chart').getContext('2d');
+    new Chart(studentsCtx, {
+        ...sharedConfig,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Alunos Ativos',
+                data: studentsData,
+                fill: true,
+                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                tension: 0.3,
+                pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                pointBorderColor: '#fff',
+                pointHoverRadius: 7,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(16, 185, 129, 1)'
+            }]
+        }
+    });
 }

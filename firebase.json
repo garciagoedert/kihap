@@ -7,7 +7,7 @@
     "cors": "cors.json"
   },
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "intranet/firestore.rules"
   },
   "storage": {
     "rules": "storage.rules"
