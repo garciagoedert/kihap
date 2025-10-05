@@ -29,20 +29,24 @@ function setupUIListeners(handlers = {}) {
                 if (isHidden) {
                     sidebar.classList.remove('-translate-x-full');
                     backdrop.classList.remove('hidden');
-                    if (window.innerWidth >= 768) {
-                        mainContent.classList.add('md:ml-64');
-                    }
+                    // A classe md:ml-64 é gerenciada pelo Tailwind, não precisa de JS
                 } else {
                     sidebar.classList.add('-translate-x-full');
                     backdrop.classList.add('hidden');
-                    if (window.innerWidth >= 768) {
-                        mainContent.classList.remove('md:ml-64');
-                    }
+                    // A classe md:ml-64 é gerenciada pelo Tailwind, não precisa de JS
                 }
             };
             menuToggle.addEventListener('click', toggleSidebar);
             sidebarCloseBtn.addEventListener('click', toggleSidebar);
             backdrop.addEventListener('click', toggleSidebar);
+
+            // Garante que o layout se ajuste em redimensionamento
+            window.addEventListener('resize', () => {
+                if (window.innerWidth < 768) {
+                    sidebar.classList.add('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                }
+            });
         }
     }
 
