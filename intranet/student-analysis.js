@@ -47,18 +47,23 @@ async function initializeDashboard() {
     displayEvoKpi();
     displayDailyEntriesKpi();
 
-    document.getElementById('manual-snapshot-btn').addEventListener('click', async () => {
-        try {
-            alert('Gerando snapshot... Isso pode levar um minuto.');
-            await triggerSnapshot();
-            alert('Snapshot gerado com sucesso! A página será atualizada.');
-            await fetchSnapshots();
-            renderSnapshotLog();
-        } catch (error) {
-            console.error("Erro ao gerar snapshot manual:", error);
-            alert(`Erro ao gerar snapshot: ${error.message}`);
-        }
-    });
+    const manualSnapshotBtn = document.getElementById('manual-snapshot-btn');
+    if (isAdmin) {
+        manualSnapshotBtn.addEventListener('click', async () => {
+            try {
+                alert('Gerando snapshot... Isso pode levar um minuto.');
+                await triggerSnapshot();
+                alert('Snapshot gerado com sucesso! A página será atualizada.');
+                await fetchSnapshots();
+                renderSnapshotLog();
+            } catch (error) {
+                console.error("Erro ao gerar snapshot manual:", error);
+                alert(`Erro ao gerar snapshot: ${error.message}`);
+            }
+        });
+    } else {
+        manualSnapshotBtn.style.display = 'none';
+    }
 }
 
 async function populateFilters() {
