@@ -288,15 +288,17 @@ async function loadComponents(pageSpecificSetup) {
         const addProspectBtn = document.getElementById('addProspectBtnHeader');
         if (addProspectBtn) {
             const pagesToHideButton = [
-                'processos.html', 
-                'processos-editor.html', 
+                'processos.html',
+                'processos-editor.html',
                 'processos-viewer.html',
                 'cursos.html',
                 'projetos.html',
                 'tarefas.html',
                 'tatame.html',
                 'conteudo-editor.html',
-                'conteudo-viewer.html'
+                'conteudo-viewer.html',
+                'estoque.html',
+                'pedidos-faixas.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');

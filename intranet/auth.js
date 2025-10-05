@@ -45,6 +45,21 @@ export function onAuthReady(callback) {
     });
 }
 
+// Função para obter o usuário atualmente logado e seus dados
+export function getCurrentUser() {
+    return new Promise((resolve, reject) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            unsubscribe(); // Para de ouvir após obter o primeiro resultado
+            if (user) {
+                const userData = await getUserData(user.uid);
+                resolve(userData);
+            } else {
+                resolve(null);
+            }
+        }, reject);
+    });
+}
+
 // Função de logout
 window.logout = function() {
     signOut(auth).then(() => {
