@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeDashboard() {
+    // Remove o botão de adicionar prospect, pois não é relevante nesta página
+    const addProspectBtn = document.getElementById('addProspectBtnHeader');
+    if (addProspectBtn) {
+        addProspectBtn.remove();
+    }
+
     await populateFilters();
     
     const locationFilter = document.getElementById('location-filter');
@@ -101,14 +107,11 @@ function renderSnapshotLog(searchTerm = '') {
         const displayDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
         return `
-            <div class="log-item cursor-pointer bg-[#2a2a2a] md:bg-transparent p-4 rounded-lg md:p-0 md:grid md:grid-cols-3 md:gap-4 md:px-6 md:py-4 md:border-b md:border-gray-700 hover:bg-[#3a3a3a]" data-id="${item.id}">
-                <div class="hidden md:flex items-center text-sm text-gray-300">${displayDate}</div>
-                <div class="hidden md:flex items-center text-sm text-gray-300">${item.totalContracts || 0}</div>
-                <div class="hidden md:flex items-center text-sm text-gray-300">${item.totalDailyActives || 0}</div>
-                <div class="flex justify-between md:hidden"><span class="font-bold text-gray-400">Data:</span><span class="text-gray-300">${displayDate}</span></div>
-                <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Total Contratos:</span><span class="text-gray-300">${item.totalContracts || 0}</span></div>
-                <div class="flex justify-between md:hidden mt-2"><span class="font-bold text-gray-400">Total Alunos Ativos:</span><span class="text-gray-300">${item.totalDailyActives || 0}</span></div>
-            </div>
+            <tr class="log-item cursor-pointer hover:bg-[#2a2a2a]" data-id="${item.id}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">${displayDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalContracts || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalDailyActives || 0}</td>
+            </tr>
         `;
     }).join('');
 
