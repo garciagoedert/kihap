@@ -125,32 +125,35 @@ function renderStudents(students) {
 
     if (filteredStudents.length > 0) {
         tableBody.innerHTML = '';
-        filteredStudents.forEach(member => {
+        const studentPromises = filteredStudents.map(async member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
+            const user = await findUserByEvoId(member.idMember);
+            const rowClass = user ? 'bg-blue-900' : '';
 
-            const row = `
-                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row">
+            return `
+                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row ${rowClass}">
                     <td class="p-4">${fullName}</td>
                     <td class="p-4">${email}</td>
                     <td class="p-4">${member.branchName || 'Centro'}</td>
                 </tr>
             `;
-            tableBody.innerHTML += row;
         });
 
-        // Adiciona os event listeners para as linhas da tabela
-        document.querySelectorAll('.student-row').forEach(row => {
-            row.addEventListener('click', (e) => {
-                const memberId = parseInt(e.currentTarget.dataset.id, 10);
-                const studentData = allStudents.find(s => s.idMember === memberId);
-                if (studentData) {
-                    openStudentModal(studentData);
-                }
+        Promise.all(studentPromises).then(rows => {
+            tableBody.innerHTML = rows.join('');
+            // Adiciona os event listeners para as linhas da tabela
+            document.querySelectorAll('.student-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    const memberId = parseInt(e.currentTarget.dataset.id, 10);
+                    const studentData = allStudents.find(s => s.idMember === memberId);
+                    if (studentData) {
+                        openStudentModal(studentData);
+                    }
+                });
             });
         });
-
     } else {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
     }

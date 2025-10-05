@@ -37,7 +37,8 @@ export function setupAdminPage() {
     async function renderUsers() {
         userTableBody.innerHTML = '';
         const users = await getAllUsers();
-        users.forEach(user => {
+        const adminUsers = users.filter(user => !user.evoMemberId);
+        adminUsers.forEach(user => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="py-2 px-4 border-b border-gray-700">${user.name}</td>
