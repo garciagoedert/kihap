@@ -34,6 +34,9 @@ async function initializeDashboard() {
     renderSnapshotLog();
     renderEvolutionCharts();
     setupModal();
+    document.getElementById('snapshot-search').addEventListener('input', (e) => {
+        renderSnapshotLog(e.target.value);
+    });
     displayEvoKpi();
     displayDailyEntriesKpi();
 
@@ -78,16 +81,22 @@ async function fetchSnapshots() {
     snapshots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function renderSnapshotLog() {
+function renderSnapshotLog(searchTerm = '') {
     const logBody = document.getElementById('snapshot-log-body');
     if (!logBody) return;
 
-    if (snapshots.length === 0) {
-        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-3">Nenhum snapshot encontrado.</div>`;
+    const filteredSnapshots = snapshots.filter(item => {
+        const date = item.timestamp.toDate();
+        const displayDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return displayDate.includes(searchTerm);
+    });
+
+    if (filteredSnapshots.length === 0) {
+        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-3">Nenhum snapshot encontrado para "${searchTerm}".</div>`;
         return;
     }
 
-    logBody.innerHTML = snapshots.map(item => {
+    logBody.innerHTML = filteredSnapshots.map(item => {
         const date = item.timestamp.toDate();
         const displayDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
