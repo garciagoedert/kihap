@@ -1,4 +1,4 @@
-import { getAllUsers } from './auth.js';
+import { getAllUsers, updateUserPassword } from './auth.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, appId } from './firebase-config.js';
 import { 
@@ -36,6 +36,11 @@ export function setupAdminPage() {
     const cancelEditBtn = document.getElementById('cancel-edit');
     const addUserBtn = document.getElementById('add-user-btn');
     const searchInput = document.getElementById('search-users');
+    const changePasswordModal = document.getElementById('change-password-modal');
+    const changePasswordForm = document.getElementById('change-password-form');
+    const cancelChangePasswordBtn = document.getElementById('cancel-change-password');
+    const changePasswordUserIdInput = document.getElementById('change-password-user-id');
+    const newPasswordInput = document.getElementById('new-password');
 
     addUserBtn.addEventListener('click', () => {
         resetForm();
@@ -66,6 +71,9 @@ export function setupAdminPage() {
                     </button>
                     <button class="text-red-400 hover:text-red-600 delete-btn" data-id="${user.id}">
                         <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="text-yellow-400 hover:text-yellow-600 change-password-btn ml-2" data-id="${user.id}">
+                        <i class="fas fa-key"></i>
                     </button>
                 </td>
             `;
@@ -113,6 +121,13 @@ export function setupAdminPage() {
     userTableBody.addEventListener('click', async function(e) {
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
+        const changePasswordBtn = e.target.closest('.change-password-btn');
+
+        if (changePasswordBtn) {
+            const userId = changePasswordBtn.dataset.id;
+            changePasswordUserIdInput.value = userId;
+            changePasswordModal.classList.remove('hidden');
+        }
 
         if (editBtn) {
             const userId = editBtn.dataset.id;
@@ -138,6 +153,29 @@ export function setupAdminPage() {
             if (confirm(`Tem certeza que deseja excluir o usuário ${userEmail}?`)) {
                 await deleteUser(userId);
                 renderUsers();
+            }
+        }
+    });
+
+    cancelChangePasswordBtn.addEventListener('click', () => {
+        changePasswordModal.classList.add('hidden');
+        changePasswordForm.reset();
+    });
+
+    changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = changePasswordUserIdInput.value;
+        const newPassword = newPasswordInput.value;
+
+        if (userId && newPassword) {
+            try {
+                await updateUserPassword(userId, newPassword);
+                alert('Senha atualizada com sucesso!');
+                changePasswordModal.classList.add('hidden');
+                changePasswordForm.reset();
+            } catch (error) {
+                console.error("Erro ao atualizar a senha:", error);
+                alert('Erro ao atualizar a senha.');
             }
         }
     });

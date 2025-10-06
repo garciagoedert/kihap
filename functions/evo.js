@@ -3,7 +3,7 @@ const axios = require("axios");
 const admin = require("firebase-admin");
 const cors = require("cors")({origin: true});
 
-admin.initializeApp();
+// A inicialização do Admin SDK é feita no index.js
 
 // Configuração das credenciais por unidade. No futuro, isso pode vir de secrets ou do Firestore.
 const EVO_CREDENTIALS = {

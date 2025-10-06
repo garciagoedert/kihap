@@ -87,3 +87,154 @@
 [info] ✔  functions[us-central1-triggerSnapshot]: http function initialized (http://localhost:5000/intranet-kihap/us-central1/triggerSnapshot). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://localhost:5000/intranet-kihap/us-central1/triggerSnapshot)."}}
 [info] ✔  functions[us-central1-deleteEvoSnapshot]: http function initialized (http://localhost:5000/intranet-kihap/us-central1/deleteEvoSnapshot). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://localhost:5000/intranet-kihap/us-central1/deleteEvoSnapshot)."}}
 [info] ✔  functions[us-central1-getTodaysTotalEntries]: http function initialized (http://localhost:5000/intranet-kihap/us-central1/getTodaysTotalEntries). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://localhost:5000/intranet-kihap/us-central1/getTodaysTotalEntries)."}}
+[debug] [2025-10-06T18:13:24.959Z] File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/index.js changed, reloading triggers"}}
+[debug] [2025-10-06T18:13:25.965Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-10-06T18:13:26.990Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-10-06T18:13:26.990Z] Building nodejs source
+[debug] [2025-10-06T18:13:26.990Z] Failed to find version of module node: reached end of search path /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2025-10-06T18:13:26.992Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-10-06T18:13:26.996Z] Found firebase-functions binary at '/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8782
+
+[error] FirebaseAppError: The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.
+    at AppStore.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/lifecycle.js:41:23)
+    at FirebaseNamespaceInternals.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/firebase-namespace.js:43:35)
+    at FirebaseNamespace.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/firebase-namespace.js:246:30)
+    at Object.<anonymous> (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/evo.js:6:7)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24) {
+  errorInfo: {
+    code: 'app/duplicate-app',
+    message: 'The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.'
+  },
+  codePrefix: 'app'
+}
+
+[debug] [2025-10-06T18:13:27.747Z] Got response code 400; body Failed to generate manifest from function source: Error: The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-10-06T18:13:40.790Z] File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/package-lock.json changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/package-lock.json changed, reloading triggers"}}
+[debug] [2025-10-06T18:13:41.790Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-10-06T18:13:42.400Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-10-06T18:13:42.400Z] Building nodejs source
+[debug] [2025-10-06T18:13:42.400Z] Failed to find version of module node: reached end of search path /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2025-10-06T18:13:42.401Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-10-06T18:13:42.402Z] Found firebase-functions binary at '/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8316
+
+[error] FirebaseAppError: The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.
+    at AppStore.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/lifecycle.js:41:23)
+    at FirebaseNamespaceInternals.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/firebase-namespace.js:43:35)
+    at FirebaseNamespace.initializeApp (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/firebase-admin/lib/app/firebase-namespace.js:246:30)
+    at Object.<anonymous> (/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/evo.js:6:7)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24) {
+  errorInfo: {
+    code: 'app/duplicate-app',
+    message: 'The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.'
+  },
+  codePrefix: 'app'
+}
+
+[debug] [2025-10-06T18:13:42.758Z] Got response code 400; body Failed to generate manifest from function source: Error: The default Firebase app already exists. This means you called initializeApp() more than once without providing an app name as the second argument. In most cases you only need to call initializeApp() once. But if you do want to initialize multiple apps, pass a second argument to initializeApp() to give each app a unique name.
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-10-06T18:14:12.204Z] File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/evo.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/evo.js changed, reloading triggers"}}
+[debug] [2025-10-06T18:14:13.206Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-10-06T18:14:14.215Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-10-06T18:14:14.215Z] Building nodejs source
+[debug] [2025-10-06T18:14:14.215Z] Failed to find version of module node: reached end of search path /Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2025-10-06T18:14:14.216Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-10-06T18:14:14.217Z] Found firebase-functions binary at '/Users/goedert/Documents/GITHUB/KIHAP/novokihap/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8389
+
+[debug] [2025-10-06T18:14:14.917Z] Got response from /__/functions.yaml {"endpoints":{"updateUserPassword":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"updateUserPassword"},"getMemberData":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getMemberData"},"listAllMembers":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"listAllMembers"},"updateMemberData":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"updateMemberData"},"inviteStudent":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"inviteStudent"},"updateStudentPermissions":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"updateStudentPermissions"},"getActiveContractsCount":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":120,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getActiveContractsCount"},"getEvoUnits":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getEvoUnits"},"getActivitiesSchedule":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getActivitiesSchedule"},"getDailyEntries":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getDailyEntries"},"getContractsEvolution":{"platform":"gcfv1","labels":{},"availableMemoryMb":1024,"timeoutSeconds":120,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getContractsEvolution"},"snapshotDailyEvoData":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 23 * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":"America/Sao_Paulo"},"labels":{},"entryPoint":"snapshotDailyEvoData"},"triggerSnapshot":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"httpsTrigger":{},"entryPoint":"triggerSnapshot"},"deleteEvoSnapshot":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"deleteEvoSnapshot"},"getTodaysTotalEntries":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":120,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"getTodaysTotalEntries"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: updateUserPassword, getMemberData, listAllMembers, updateMemberData, inviteStudent, updateStudentPermissions, getActiveContractsCount, getEvoUnits, getActivitiesSchedule, getDailyEntries, getContractsEvolution, snapshotDailyEvoData, triggerSnapshot, deleteEvoSnapshot, getTodaysTotalEntries. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: updateUserPassword, getMemberData, listAllMembers, updateMemberData, inviteStudent, updateStudentPermissions, getActiveContractsCount, getEvoUnits, getActivitiesSchedule, getDailyEntries, getContractsEvolution, snapshotDailyEvoData, triggerSnapshot, deleteEvoSnapshot, getTodaysTotalEntries."}}
+[info] ✔  functions[us-central1-updateUserPassword]: http function initialized (http://localhost:5000/intranet-kihap/us-central1/updateUserPassword). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://localhost:5000/intranet-kihap/us-central1/updateUserPassword)."}}

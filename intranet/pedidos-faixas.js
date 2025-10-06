@@ -9,7 +9,7 @@ const faixas = [
     "Verde Recomendada", "Verde Decidida", "Roxa Recomendada", "Roxa Decidida",
     "Azul Recomendada", "Azul Decidida", "Marrom Recomendada", "Marrom Decidida",
     "Vermelha Recomendada", "Vermelha Decidida", "Vermelha e Preta",
-    "Panda", "Leão", "Girafa", "Borboleta", "Jacaré", "Coruja", "Papagaio", "Macaco", "Fênix"
+    "Panda", "Leão", "Girafa", "Borboleta", "Jacaré", "Coruja", "Arara", "Macaco", "Fênix"
 ];
 
 const tamanhos = ["PP", "P", "M", "G", "GG"];
