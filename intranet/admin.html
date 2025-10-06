@@ -87,6 +87,24 @@
                     </form>
                 </div>
 
+                <!-- Change Password Modal -->
+                <div id="change-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg w-full max-w-md">
+                        <h2 class="text-xl font-semibold mb-4">Alterar Senha</h2>
+                        <form id="change-password-form">
+                            <input type="hidden" id="change-password-user-id">
+                            <div>
+                                <label for="new-password" class="block text-sm font-medium text-gray-300">Nova Senha</label>
+                                <input type="password" id="new-password" required class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md">
+                            </div>
+                            <div class="mt-6 flex space-x-4">
+                                <button type="submit" class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Salvar Senha</button>
+                                <button type="button" id="cancel-change-password" class="px-4 py-2 font-bold text-white bg-gray-600 rounded-md hover:bg-gray-700">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
 
             </div>
         </main>

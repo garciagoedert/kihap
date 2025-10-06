@@ -1,5 +1,6 @@
 import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { auth, db } from './firebase-config.js';
 
 // Função para obter dados do usuário do Firestore
@@ -138,5 +139,17 @@ window.deleteUser = async function(uid) {
         console.error("Erro ao deletar usuário:", error);
         alert(`Erro ao deletar usuário: ${error.message}`);
         return { success: false, error: error.message };
+    }
+}
+
+export async function updateUserPassword(userId, newPassword) {
+    const functions = getFunctions();
+    const updateUserPasswordCallable = httpsCallable(functions, 'updateUserPassword');
+    try {
+        const result = await updateUserPasswordCallable({ userId, password: newPassword });
+        return result.data;
+    } catch (error) {
+        console.error("Erro ao chamar a função para atualizar a senha:", error);
+        throw error;
     }
 }
