@@ -48,21 +48,30 @@ async function initializeDashboard() {
     displayDailyEntriesKpi();
 
     const manualSnapshotBtn = document.getElementById('manual-snapshot-btn');
+    const weeklySummaryBtn = document.getElementById('weekly-summary-btn');
+
     if (isAdmin) {
-        manualSnapshotBtn.addEventListener('click', async () => {
-            try {
-                alert('Gerando snapshot... Isso pode levar um minuto.');
-                await triggerSnapshot();
-                alert('Snapshot gerado com sucesso! A página será atualizada.');
-                await fetchSnapshots();
-                renderSnapshotLog();
-            } catch (error) {
-                console.error("Erro ao gerar snapshot manual:", error);
-                alert(`Erro ao gerar snapshot: ${error.message}`);
-            }
-        });
+        manualSnapshotBtn.addEventListener('click', handleManualSnapshot);
+        weeklySummaryBtn.classList.remove('hidden');
+        weeklySummaryBtn.addEventListener('click', showWeeklySummary);
     } else {
         manualSnapshotBtn.style.display = 'none';
+        weeklySummaryBtn.style.display = 'none';
+    }
+    setupWeeklySummaryModal();
+}
+
+async function handleManualSnapshot() {
+    try {
+        alert('Gerando snapshot... Isso pode levar um minuto.');
+        await triggerSnapshot();
+        alert('Snapshot gerado com sucesso! A página será atualizada.');
+        await fetchSnapshots();
+        renderSnapshotLog();
+        renderEvolutionCharts(); // Re-renderiza os gráficos com os novos dados
+    } catch (error) {
+        console.error("Erro ao gerar snapshot manual:", error);
+        alert(`Erro ao gerar snapshot: ${error.message}`);
     }
 }
 
@@ -124,6 +133,72 @@ function renderSnapshotLog(searchTerm = '') {
     document.querySelectorAll('.log-item').forEach(item => {
         item.addEventListener('click', handleViewSnapshot);
     });
+}
+
+function setupWeeklySummaryModal() {
+    const modal = document.getElementById('weekly-summary-modal');
+    const closeBtn = document.getElementById('close-weekly-summary-modal-btn');
+
+    const closeModal = () => {
+        modal.querySelector('.modal-content').classList.remove('scale-100');
+        modal.querySelector('.modal-content').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }, 250);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+function showWeeklySummary() {
+    if (snapshots.length < 7) {
+        alert("Não há dados suficientes para gerar um resumo semanal. São necessários pelo menos 7 dias de snapshots.");
+        return;
+    }
+
+    // Snapshots já estão ordenados do mais recente para o mais antigo
+    const latestSnapshot = snapshots[0];
+    const seventhDaySnapshot = snapshots[6];
+
+    const calculateDifference = (current, previous) => {
+        const diff = current - previous;
+        const sign = diff > 0 ? '+' : '';
+        const color = diff > 0 ? 'text-green-400' : diff < 0 ? 'text-red-400' : 'text-gray-400';
+        return `<span class="${color}">(${sign}${diff})</span>`;
+    };
+
+    const summaryBody = document.getElementById('weekly-summary-modal-body');
+    summaryBody.innerHTML = `
+        <div class="p-3 bg-[#2a2a2a] rounded-lg">
+            <p class="text-sm text-gray-400">Contratos Ativos (Total)</p>
+            <p class="text-xl font-bold text-white">
+                ${latestSnapshot.totalContracts.toLocaleString('pt-BR')}
+                ${calculateDifference(latestSnapshot.totalContracts, seventhDaySnapshot.totalContracts)}
+            </p>
+        </div>
+        <div class="p-3 bg-[#2a2a2a] rounded-lg">
+            <p class="text-sm text-gray-400">Alunos Ativos (Total)</p>
+            <p class="text-xl font-bold text-white">
+                ${latestSnapshot.totalDailyActives.toLocaleString('pt-BR')}
+                ${calculateDifference(latestSnapshot.totalDailyActives, seventhDaySnapshot.totalDailyActives)}
+            </p>
+        </div>
+        <p class="text-xs text-center text-gray-500 pt-2">
+            Comparativo entre ${snapshots[6].timestamp.toDate().toLocaleDateString('pt-BR')} e ${snapshots[0].timestamp.toDate().toLocaleDateString('pt-BR')}.
+        </p>
+    `;
+
+    const modal = document.getElementById('weekly-summary-modal');
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-active');
+    setTimeout(() => {
+        modal.querySelector('.modal-content').classList.remove('scale-95');
+        modal.querySelector('.modal-content').classList.add('scale-100');
+    }, 10);
 }
 
 function setupModal() {
