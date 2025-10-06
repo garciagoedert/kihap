@@ -15,13 +15,6 @@ let allTatameContents = [];
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
         if (user) {
-            const isAdmin = await checkAdminStatus(user);
-            if (!isAdmin) {
-                alert("Você não tem permissão para acessar esta página.");
-                window.location.href = 'perfil.html';
-                return;
-            }
-
             const unitFilter = document.getElementById('unit-filter');
             const searchInput = document.getElementById('search-input');
             const statusFilter = document.getElementById('status-filter');
