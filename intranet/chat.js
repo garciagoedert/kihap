@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { loadComponents } from './common-ui.js';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { loadComponents, showConfirm } from './common-ui.js';
 import { getCurrentUser, getAllUsers, checkAdminStatus } from './auth.js';
 
 // Elementos do DOM
@@ -114,7 +114,7 @@ async function renderChatLists(groups, directMessages, currentUserId) {
 
 function renderGroupItem(chat, chatId, currentUserId) {
     const groupElement = document.createElement('div');
-    groupElement.className = 'flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+    groupElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
     groupElement.setAttribute('data-chat-id', chatId);
     
     const safeUserKey = currentUserId.replace(/\./g, '_');
@@ -127,11 +127,18 @@ function renderGroupItem(chat, chatId, currentUserId) {
     }
 
     groupElement.innerHTML = `
-        <div class="truncate font-bold">${chat.name}</div>
+        <div class="truncate font-bold flex-1">${chat.name}</div>
         ${unreadCount > 0 ? `<div class="bg-primary text-black text-xs rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 ml-2">${unreadCount}</div>` : ''}
+        <button class="delete-chat-btn text-gray-500 hover:text-red-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i class="fas fa-trash-alt"></i>
+        </button>
     `;
 
-    groupElement.onclick = () => selectChat(chatId, chat.name, true);
+    groupElement.querySelector('.truncate').onclick = () => selectChat(chatId, chat.name, true);
+    groupElement.querySelector('.delete-chat-btn').onclick = (e) => {
+        e.stopPropagation(); // Prevent chat selection
+        deleteChat(chatId, chat.name);
+    };
     groupList.appendChild(groupElement);
 }
 
@@ -147,7 +154,7 @@ async function renderUserItem(chat, chatId, currentUserId) {
 
     if (otherUserData) {
         const userElement = document.createElement('div');
-        userElement.className = 'flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+        userElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
         userElement.setAttribute('data-chat-id', chatId);
 
         const safeUserKey = currentUserId.replace(/\./g, '_');
@@ -164,7 +171,7 @@ async function renderUserItem(chat, chatId, currentUserId) {
             : `<div class="w-10 h-10 rounded-full mr-3 flex-shrink-0 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-gray-400 text-2xl"></i></div>`;
 
         userElement.innerHTML = `
-            <div class="flex items-center overflow-hidden">
+            <div class="flex items-center overflow-hidden flex-1">
                 ${avatarHtml}
                 <div class="overflow-hidden">
                     <div class="truncate">${otherUserData.name || 'Usuário'}</div>
@@ -172,8 +179,15 @@ async function renderUserItem(chat, chatId, currentUserId) {
                 </div>
             </div>
             ${unreadCount > 0 ? `<div class="bg-primary text-black text-xs rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 ml-2">${unreadCount}</div>` : ''}
+            <button class="delete-chat-btn text-gray-500 hover:text-red-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-trash-alt"></i>
+            </button>
         `;
-        userElement.onclick = () => selectChat(chatId, otherUserData.name || otherUserData.email, false);
+        userElement.querySelector('.flex-1').onclick = () => selectChat(chatId, otherUserData.name || otherUserData.email, false);
+        userElement.querySelector('.delete-chat-btn').onclick = (e) => {
+            e.stopPropagation(); // Prevent chat selection
+            deleteChat(chatId, otherUserData.name || otherUserData.email);
+        };
         directMessageList.appendChild(userElement);
     }
 }
@@ -500,3 +514,38 @@ window.addEventListener('beforeunload', () => {
 document.addEventListener('DOMContentLoaded', () => {
     loadComponents(initializeChat);
 });
+
+// Função para deletar um chat
+function deleteChat(chatId, chatName) {
+    showConfirm(`Tem certeza que deseja apagar o chat "${chatName}"? Esta ação não pode ser desfeita e apagará todas as mensagens.`, async () => {
+        try {
+            const chatRef = doc(db, 'chats', chatId);
+            // Deletar subcoleção de mensagens (boa prática, embora deleteDoc() em teoria apague subcoleções)
+            const messagesRef = collection(db, 'chats', chatId, 'messages');
+            const messagesSnap = await getDocs(messagesRef);
+            const batch = writeBatch(db);
+            messagesSnap.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            // Deletar o documento do chat
+            await deleteDoc(chatRef);
+            
+            console.log(`Chat ${chatId} deletado.`);
+            if (currentChatId === chatId) {
+                currentChatId = null;
+                sessionStorage.removeItem('activeChatId');
+                chatTitle.textContent = 'Selecione uma conversa';
+                chatMessages.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-500">
+                                            <i class="fas fa-comments text-5xl mb-4"></i>
+                                            <p>Suas mensagens aparecerão aqui</p>
+                                          </div>`;
+                enableChatInput();
+            }
+        } catch (error) {
+            console.error("Erro ao deletar chat:", error);
+            showAlert("Erro ao deletar chat. Verifique as permissões do Firestore.", "Erro");
+        }
+    });
+}
