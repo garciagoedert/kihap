@@ -93,7 +93,7 @@ export async function getAllUsers() {
     return users;
 }
 
-window.addUser = async function(userData) {
+export async function addUser(userData) {
     try {
         // 1. Criar o usuário no Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
@@ -114,11 +114,11 @@ window.addUser = async function(userData) {
     }
 }
 
-window.updateUser = async function(uid, updatedData) {
+export async function updateUser(uid, updatedData) {
     try {
         const userRef = doc(db, "users", uid);
         await updateDoc(userRef, updatedData);
-        alert('Usuário atualizado com sucesso!');
+        // alert('Usuário atualizado com sucesso!'); // Let's remove the alert for a better UX
         return { success: true };
     } catch (error) {
         console.error("Erro ao atualizar usuário:", error);
@@ -127,7 +127,7 @@ window.updateUser = async function(uid, updatedData) {
     }
 }
 
-window.deleteUser = async function(uid) {
+export async function deleteUser(uid) {
     try {
         // ATENÇÃO: Esta função deleta apenas o documento do Firestore.
         // Deletar um usuário do Firebase Authentication pelo client-side

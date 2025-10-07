@@ -206,6 +206,7 @@ async function renderUserItem(chat, chatId, currentUserId) {
     }
 
     if (otherUserData) {
+        console.log("CHAT_LOG: Dados do usuário da conversa:", JSON.stringify(otherUserData)); // Log para depuração
         const userElement = document.createElement('div');
         userElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
         userElement.setAttribute('data-chat-id', chatId);
@@ -219,8 +220,9 @@ async function renderUserItem(chat, chatId, currentUserId) {
             userElement.classList.add('bg-primary-dark');
         }
 
-        const avatarHtml = otherUserData.profilePicture
-            ? `<img src="${otherUserData.profilePicture}" alt="Foto de perfil" class="w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover">`
+        const photoUrl = otherUserData.profilePicture || otherUserData.photoURL;
+        const avatarHtml = photoUrl
+            ? `<img src="${photoUrl}" alt="Foto de perfil" class="w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover">`
             : `<div class="w-10 h-10 rounded-full mr-3 flex-shrink-0 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-gray-400 text-2xl"></i></div>`;
 
         userElement.innerHTML = `
@@ -256,8 +258,9 @@ function selectChat(chatData, isGroup) {
     } else {
         const otherUser = chatData.otherUser;
         chatTitle.textContent = otherUser.name || otherUser.email;
-        if (otherUser.profilePicture) {
-            headerAvatar.src = otherUser.profilePicture;
+        const photoUrl = otherUser.profilePicture || otherUser.photoURL;
+        if (photoUrl) {
+            headerAvatar.src = photoUrl;
             headerAvatar.alt = otherUser.name;
             headerAvatar.classList.remove('hidden');
         } else {
