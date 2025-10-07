@@ -3,34 +3,14 @@ import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy,
 import { loadComponents, showConfirm } from './common-ui.js';
 import { getCurrentUser, getAllUsers, checkAdminStatus } from './auth.js';
 
-// Elementos do DOM
-const groupList = document.getElementById('group-list');
-const directMessageList = document.getElementById('direct-message-list');
-const chatTitle = document.getElementById('chat-title');
-const chatMessages = document.getElementById('chat-messages');
-const messageInput = document.getElementById('message-input');
-const sendButton = document.getElementById('send-button');
-const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
-const newGroupBtn = document.getElementById('newGroupBtn');
-const newGroupModal = document.getElementById('newGroupModal');
-const closeGroupModalBtn = document.getElementById('closeGroupModalBtn');
-const cancelGroupBtn = document.getElementById('cancelGroupBtn');
-const createGroupBtn = document.getElementById('createGroupBtn');
-const groupNameInput = document.getElementById('groupName');
-const groupMembersContainer = document.getElementById('group-members');
-const userSearchInput = document.getElementById('user-search-input');
-const searchResultsContainer = document.getElementById('search-results');
-const viewAsBtn = document.getElementById('viewAsBtn');
-const viewAsModal = document.getElementById('viewAsModal');
-const closeViewAsModalBtn = document.getElementById('closeViewAsModalBtn');
-const viewAsUserSearchInput = document.getElementById('viewAs-user-search-input');
-const viewAsSearchResultsContainer = document.getElementById('viewAs-search-results');
-const viewAsBanner = document.getElementById('viewAsBanner');
-const viewAsBannerText = document.getElementById('viewAsBannerText');
-const exitViewAsBtn = document.getElementById('exitViewAsBtn');
-const emojiButton = document.getElementById('emoji-button');
-const emojiPickerContainer = document.getElementById('emoji-picker-container');
-const reactionEmojiPickerContainer = document.getElementById('reaction-emoji-picker-container');
+// Elementos do DOM (serão inicializados em initializeChat)
+let groupList, directMessageList, chatTitle, chatMessages, messageInput, sendButton,
+    scrollToBottomBtn, newGroupBtn, newGroupModal, closeGroupModalBtn, cancelGroupBtn,
+    createGroupBtn, groupNameInput, groupMembersContainer, userSearchInput,
+    searchResultsContainer, viewAsBtn, viewAsModal, closeViewAsModalBtn,
+    viewAsUserSearchInput, viewAsSearchResultsContainer, viewAsBanner,
+    viewAsBannerText, exitViewAsBtn, emojiButton, emojiPickerContainer,
+    reactionEmojiPickerContainer;
 
 // Variáveis de estado
 let currentChatId = null;
@@ -42,7 +22,80 @@ const userCache = new Map();
 let currentUser = null;
 let unsubscribeMessages = null;
 
+function assignDomElements() {
+    groupList = document.getElementById('group-list');
+    directMessageList = document.getElementById('direct-message-list');
+    chatTitle = document.getElementById('chat-title');
+    chatMessages = document.getElementById('chat-messages');
+    messageInput = document.getElementById('message-input');
+    sendButton = document.getElementById('send-button');
+    scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+    newGroupBtn = document.getElementById('newGroupBtn');
+    newGroupModal = document.getElementById('newGroupModal');
+    closeGroupModalBtn = document.getElementById('closeGroupModalBtn');
+    cancelGroupBtn = document.getElementById('cancelGroupBtn');
+    createGroupBtn = document.getElementById('createGroupBtn');
+    groupNameInput = document.getElementById('groupName');
+    groupMembersContainer = document.getElementById('group-members');
+    userSearchInput = document.getElementById('user-search-input');
+    searchResultsContainer = document.getElementById('search-results');
+    viewAsBtn = document.getElementById('viewAsBtn');
+    viewAsModal = document.getElementById('viewAsModal');
+    closeViewAsModalBtn = document.getElementById('closeViewAsModalBtn');
+    viewAsUserSearchInput = document.getElementById('viewAs-user-search-input');
+    viewAsSearchResultsContainer = document.getElementById('viewAs-search-results');
+    viewAsBanner = document.getElementById('viewAsBanner');
+    viewAsBannerText = document.getElementById('viewAsBannerText');
+    exitViewAsBtn = document.getElementById('exitViewAsBtn');
+    emojiButton = document.getElementById('emoji-button');
+    emojiPickerContainer = document.getElementById('emoji-picker-container');
+    reactionEmojiPickerContainer = document.getElementById('reaction-emoji-picker-container');
+}
+
+function setupEventListeners() {
+    userSearchInput.addEventListener('input', searchUser);
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    newGroupBtn.addEventListener('click', () => newGroupModal.classList.remove('hidden'));
+    closeGroupModalBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
+    cancelGroupBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
+    createGroupBtn.addEventListener('click', createGroup);
+    viewAsBtn.addEventListener('click', () => viewAsModal.classList.remove('hidden'));
+    closeViewAsModalBtn.addEventListener('click', () => viewAsModal.classList.add('hidden'));
+    viewAsUserSearchInput.addEventListener('input', searchUserForViewAs);
+    exitViewAsBtn.addEventListener('click', exitViewingAs);
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#search-results') && event.target !== userSearchInput) {
+            searchResultsContainer.classList.add('hidden');
+        }
+    });
+
+    chatMessages.addEventListener('scroll', () => {
+        if (chatMessages.scrollHeight - chatMessages.clientHeight - chatMessages.scrollTop > 200) {
+            scrollToBottomBtn.classList.remove('opacity-0');
+        } else {
+            scrollToBottomBtn.classList.add('opacity-0');
+        }
+    });
+
+    scrollToBottomBtn.addEventListener('click', () => {
+        chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (currentChatId) {
+            sessionStorage.setItem('activeChatId', currentChatId);
+        } else {
+            sessionStorage.removeItem('activeChatId');
+        }
+    });
+}
+
 async function initializeChat() {
+    assignDomElements();
+    setupEventListeners();
+    
     currentUser = await getCurrentUser();
     if (!currentUser) {
         console.log("Nenhum usuário autenticado, redirecionando...");
@@ -493,45 +546,6 @@ function exitViewingAs() {
     enableChatInput();
     populateConversationsList(currentUser.id);
 }
-
-// Event Listeners
-userSearchInput.addEventListener('input', searchUser);
-sendButton.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-newGroupBtn.addEventListener('click', () => newGroupModal.classList.remove('hidden'));
-closeGroupModalBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
-cancelGroupBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
-createGroupBtn.addEventListener('click', createGroup);
-viewAsBtn.addEventListener('click', () => viewAsModal.classList.remove('hidden'));
-closeViewAsModalBtn.addEventListener('click', () => viewAsModal.classList.add('hidden'));
-viewAsUserSearchInput.addEventListener('input', searchUserForViewAs);
-exitViewAsBtn.addEventListener('click', exitViewingAs);
-
-document.addEventListener('click', (event) => {
-    if (!event.target.closest('#search-results') && event.target !== userSearchInput) {
-        searchResultsContainer.classList.add('hidden');
-    }
-});
-
-chatMessages.addEventListener('scroll', () => {
-    if (chatMessages.scrollHeight - chatMessages.clientHeight - chatMessages.scrollTop > 200) {
-        scrollToBottomBtn.classList.remove('opacity-0');
-    } else {
-        scrollToBottomBtn.classList.add('opacity-0');
-    }
-});
-
-scrollToBottomBtn.addEventListener('click', () => {
-    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
-});
-
-window.addEventListener('beforeunload', () => {
-    if (currentChatId) {
-        sessionStorage.setItem('activeChatId', currentChatId);
-    } else {
-        sessionStorage.removeItem('activeChatId');
-    }
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     loadComponents(initializeChat);
