@@ -334,12 +334,18 @@ async function loadMessages(chatId, isGroup) {
 
 async function sendMessage() {
     if (isViewingAs) return;
+    const user = await getCurrentUser(); // Fetch the latest user state
+    if (!user) {
+        console.error("User not authenticated. Cannot send message.");
+        return;
+    }
+
     const text = messageInput.value.trim();
-    if (text && currentChatId && currentUser) {
+    if (text && currentChatId) {
         const messagesCollection = collection(db, 'chats', currentChatId, 'messages');
         await addDoc(messagesCollection, {
             text: text,
-            senderId: currentUser.uid,
+            senderId: user.uid, // Use the freshly fetched user's UID
             timestamp: serverTimestamp(),
             status: 'enviado'
         });
@@ -350,14 +356,14 @@ async function sendMessage() {
             const chatData = chatSnap.data();
             const unreadCountUpdate = {};
             chatData.members.forEach(memberId => {
-                if (memberId !== currentUser.uid) {
+                if (memberId !== user.uid) { // Use the freshly fetched user
                     const safeMemberKey = memberId.replace(/\./g, '_');
                     unreadCountUpdate[`unreadCount.${safeMemberKey}`] = (chatData.unreadCount?.[safeMemberKey] || 0) + 1;
                 }
             });
 
             await updateDoc(chatRef, {
-                lastMessage: { text, senderId: currentUser.uid, timestamp: serverTimestamp() },
+                lastMessage: { text, senderId: user.uid, timestamp: serverTimestamp() }, // Use the freshly fetched user
                 ...unreadCountUpdate
             });
         }
