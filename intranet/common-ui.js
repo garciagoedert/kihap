@@ -169,7 +169,101 @@ function setupModalCloseListeners(handlers = {}) {
 }
 
 import { db } from './firebase-config.js';
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { showNotification as showChatMessageNotification } from './notification.js';
+import { getCurrentUser } from './auth.js';
+
+
+// Atualiza ou remove o indicador de notificação (ponto ou contador)
+function updateNotificationIndicator(element, count) {
+    if (!element) return;
+
+    let indicator = element.querySelector('.notification-indicator');
+
+    if (count > 0) {
+        if (!indicator) {
+            indicator = document.createElement('span');
+            // Classes para o indicador
+            indicator.className = 'notification-indicator absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center';
+            element.style.position = 'relative'; // Garante que o posicionamento absoluto funcione
+            element.appendChild(indicator);
+        }
+        indicator.textContent = count;
+    } else {
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+}
+
+
+// Listener global para notificações de novas mensagens
+async function listenForChatNotifications() {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || !currentUser.uid) return;
+
+    const chatsCollection = collection(db, 'chats');
+    const q = query(chatsCollection, where('members', 'array-contains', currentUser.uid));
+    
+    let isInitialLoad = true;
+
+    onSnapshot(q, (snapshot) => {
+        let totalUnreadCount = 0;
+        const safeCurrentUserKey = currentUser.uid.replace(/\./g, '_');
+
+        // 1. Processa todos os documentos para contagem
+        snapshot.forEach(doc => {
+            const chatData = doc.data();
+            totalUnreadCount += chatData.unreadCount?.[safeCurrentUserKey] || 0;
+        });
+
+        // 2. Atualiza a UI global (indicadores na sidebar)
+        const chatLink = document.getElementById('chat-link');
+        updateNotificationIndicator(chatLink, totalUnreadCount);
+
+        // 3. Dispara evento para a página de chat (se estiver aberta)
+        document.dispatchEvent(new CustomEvent('chat-data-updated', {
+            detail: { totalUnreadCount }
+        }));
+
+        // 4. Lógica para notificações push, ignorando o carregamento inicial
+        if (!isInitialLoad) {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'modified') {
+                    const chatData = change.doc.data();
+                    const lastMessage = chatData.lastMessage;
+
+                    if (lastMessage && lastMessage.senderId !== currentUser.uid) {
+                        const unreadCount = chatData.unreadCount?.[safeCurrentUserKey] || 0;
+                        if (unreadCount > 0) {
+                            const activeChatId = sessionStorage.getItem('activeChatId');
+                            if (change.doc.id === activeChatId) return; // Não mostra notificação para o chat ativo
+
+                            const senderRef = doc(db, 'users', lastMessage.senderId);
+                            const senderSnap = await getDoc(senderRef);
+                            if (senderSnap.exists()) {
+                                const senderData = senderSnap.data();
+                                const isChatPage = window.location.pathname.includes('chat.html');
+                                const notificationDetails = {
+                                    title: `Nova mensagem de ${senderData.name || senderData.email}`,
+                                    message: lastMessage.text,
+                                    icon: senderData.profilePicture || './default-profile.svg'
+                                };
+                                if (!isChatPage) {
+                                    notificationDetails.onClickUrl = `chat.html?chatId=${change.doc.id}`;
+                                }
+                                showChatMessageNotification(notificationDetails);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        isInitialLoad = false;
+    });
+}
+
 
 async function loadWhitelabelSettings() {
     try {
@@ -314,6 +408,9 @@ async function loadComponents(pageSpecificSetup) {
         if (pageSpecificSetup && typeof pageSpecificSetup === 'function') {
             pageSpecificSetup();
         }
+
+        // Inicia o listener de notificações de chat
+        listenForChatNotifications();
 
     } catch (error) {
         console.error('Error loading components:', error);

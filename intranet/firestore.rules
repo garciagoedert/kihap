@@ -119,7 +119,10 @@ service cloud.firestore {
 
     // Regras para o chat
     match /chats/{chatId} {
-      allow read, write: if request.auth != null && request.auth.uid in resource.data.members;
+      // Permite criar um chat se o usuário autenticado estiver na lista de membros do novo chat.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.members;
+      // Permite ler ou atualizar um chat se o ID do usuário estiver no ID do chat (para DMs) OU se ele for membro (para grupos).
+      allow read, update: if request.auth != null && (request.auth.uid in chatId.split('_') || request.auth.uid in resource.data.members);
       
       match /messages/{messageId} {
         allow read, create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
