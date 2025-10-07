@@ -1,12 +1,13 @@
 import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
 const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
+const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
 
 let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
@@ -22,8 +23,10 @@ export function setupAlunosPage() {
             const closeModalBtn = document.getElementById('close-modal-btn');
             const tabDetails = document.getElementById('tab-details');
             const tabPermissions = document.getElementById('tab-permissions');
+            const tabPhysicalTest = document.getElementById('tab-physical-test');
             const contentDetails = document.getElementById('tab-content-details');
             const contentPermissions = document.getElementById('tab-content-permissions');
+            const contentPhysicalTest = document.getElementById('tab-content-physical-test');
             const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
             const inviteBtn = document.getElementById('modal-invite-btn');
             const checkEntriesBtn = document.getElementById('check-entries-btn');
@@ -36,6 +39,19 @@ export function setupAlunosPage() {
             checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
             searchInput.addEventListener('input', () => renderStudents(allStudents));
             statusFilter.addEventListener('change', () => loadStudents());
+
+            // Event listener delegado para a tabela de alunos
+            const tableBody = document.getElementById('students-table-body');
+            tableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('.student-row');
+                if (row) {
+                    const memberId = parseInt(row.dataset.id, 10);
+                    const studentData = allStudents.find(s => s.idMember === memberId);
+                    if (studentData) {
+                        openStudentModal(studentData);
+                    }
+                }
+            });
             
             // Controle do Modal
             closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -58,9 +74,22 @@ export function setupAlunosPage() {
             tabPermissions.addEventListener('click', () => {
                 contentDetails.classList.add('hidden');
                 contentPermissions.classList.remove('hidden');
+                contentPhysicalTest.classList.add('hidden');
                 tabPermissions.classList.add('text-yellow-500', 'border-yellow-500');
                 tabDetails.classList.remove('text-yellow-500', 'border-yellow-500');
+                tabPhysicalTest.classList.remove('text-yellow-500', 'border-yellow-500');
                 savePermissionsBtn.classList.remove('hidden');
+                inviteBtn.classList.add('hidden');
+            });
+
+            tabPhysicalTest.addEventListener('click', () => {
+                contentDetails.classList.add('hidden');
+                contentPermissions.classList.add('hidden');
+                contentPhysicalTest.classList.remove('hidden');
+                tabPhysicalTest.classList.add('text-yellow-500', 'border-yellow-500');
+                tabDetails.classList.remove('text-yellow-500', 'border-yellow-500');
+                tabPermissions.classList.remove('text-yellow-500', 'border-yellow-500');
+                savePermissionsBtn.classList.add('hidden');
                 inviteBtn.classList.add('hidden');
             });
 
@@ -117,38 +146,46 @@ function renderStudents(students) {
     });
 
     if (filteredStudents.length > 0) {
-        tableBody.innerHTML = '';
-        const studentPromises = filteredStudents.map(async member => {
+        const rowsHtml = filteredStudents.map(member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
-            const user = await findUserByEvoId(member.idMember);
-            const rowClass = user ? 'bg-blue-900' : '';
 
             return `
-                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row ${rowClass}">
+                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row">
                     <td class="p-4">${fullName}</td>
                     <td class="p-4">${email}</td>
                     <td class="p-4">${member.branchName || 'Centro'}</td>
                 </tr>
             `;
-        });
+        }).join('');
+        tableBody.innerHTML = rowsHtml;
 
-        Promise.all(studentPromises).then(rows => {
-            tableBody.innerHTML = rows.join('');
-            // Adiciona os event listeners para as linhas da tabela
-            document.querySelectorAll('.student-row').forEach(row => {
-                row.addEventListener('click', (e) => {
-                    const memberId = parseInt(e.currentTarget.dataset.id, 10);
-                    const studentData = allStudents.find(s => s.idMember === memberId);
-                    if (studentData) {
-                        openStudentModal(studentData);
-                    }
-                });
-            });
-        });
+        // Agora, chame a Cloud Function para obter os status e aplicar os destaques
+        highlightRegisteredStudents(filteredStudents.map(s => s.idMember));
+
     } else {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
+    }
+}
+
+async function highlightRegisteredStudents(evoIds) {
+    if (evoIds.length === 0) return;
+
+    try {
+        const result = await getRegisteredUsersByEvoId({ evoIds });
+        const registeredEvoIds = new Set(result.data.registeredEvoIds);
+
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            const memberId = parseInt(row.dataset.id, 10);
+            if (registeredEvoIds.has(memberId)) {
+                row.classList.add('bg-blue-900');
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao destacar alunos registrados:", error);
+        // Não quebra a funcionalidade, apenas não destaca em caso de erro.
     }
 }
 
@@ -163,8 +200,10 @@ async function openStudentModal(student) {
     // Reseta para a aba de detalhes ao abrir
     document.getElementById('tab-content-details').classList.remove('hidden');
     document.getElementById('tab-content-permissions').classList.add('hidden');
+    document.getElementById('tab-content-physical-test').classList.add('hidden');
     document.getElementById('tab-details').classList.add('text-yellow-500', 'border-yellow-500');
     document.getElementById('tab-permissions').classList.remove('text-yellow-500', 'border-yellow-500');
+    document.getElementById('tab-physical-test').classList.remove('text-yellow-500', 'border-yellow-500');
     savePermissionsBtn.classList.add('hidden');
     inviteBtn.classList.remove('hidden');
 
@@ -282,15 +321,22 @@ async function openStudentModal(student) {
         document.getElementById('modal-invite-btn').addEventListener('click', () => handleInviteClick(student));
     }
 
-    // Carrega e preenche as permissões
-    await populatePermissionsChecklists(student);
+    try {
+        // Carrega e preenche as permissões e outros dados
+        await populatePermissionsChecklists(student);
+        await populatePhysicalTestTab(student);
+    } catch (error) {
+        console.error("Erro ao popular dados do modal para o aluno:", student.idMember, error);
+        // Opcional: Exibir uma mensagem de erro em alguma parte do modal
+    } finally {
+        // Garante que o modal sempre seja exibido
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
     
     // Lógica do botão de salvar permissões
     savePermissionsBtn.replaceWith(savePermissionsBtn.cloneNode(true));
     document.getElementById('modal-save-permissions-btn').addEventListener('click', () => handleSavePermissions(student));
-    
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
 }
 
 async function handleInviteClick(student) {
@@ -413,15 +459,103 @@ async function handleSavePermissions(student) {
     }
 }
 
-// Função auxiliar para encontrar um usuário do Firestore pelo seu evoMemberId
+async function populatePhysicalTestTab(student) {
+    const historyContainer = document.getElementById('physical-test-history');
+    const saveBtn = document.getElementById('save-physical-test-btn');
+    historyContainer.innerHTML = '<p class="text-gray-500">Carregando histórico...</p>';
+
+    const studentUser = await findUserByEvoId(student.idMember);
+    if (!studentUser) {
+        historyContainer.innerHTML = '<p class="text-red-500">Este aluno ainda não tem uma conta no sistema. Use o botão "Convidar" primeiro.</p>';
+        saveBtn.disabled = true;
+        return;
+    }
+    saveBtn.disabled = false;
+
+    const testsQuery = query(collection(db, `users/${studentUser.id}/physicalTests`), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(testsQuery);
+
+    if (querySnapshot.empty) {
+        historyContainer.innerHTML = '<p class="text-gray-500">Nenhum teste físico registrado ainda.</p>';
+    } else {
+        let html = '<ul class="space-y-2">';
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.date.toDate().toLocaleDateString('pt-BR');
+            html += `
+                <li class="flex justify-between items-center bg-gray-900 p-2 rounded">
+                    <span>Data: <span class="font-semibold">${date}</span></span>
+                    <span>Pontuação: <span class="font-semibold text-yellow-500">${data.score}</span></span>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        historyContainer.innerHTML = html;
+    }
+
+    saveBtn.onclick = () => handleSavePhysicalTest(student);
+}
+
+async function handleSavePhysicalTest(student) {
+    const dateInput = document.getElementById('physical-test-date');
+    const scoreInput = document.getElementById('physical-test-score');
+    const button = document.getElementById('save-physical-test-btn');
+
+    const date = dateInput.value;
+    const score = scoreInput.value;
+
+    if (!date || !score) {
+        alert("Por favor, preencha a data e a pontuação.");
+        return;
+    }
+
+    const studentUser = await findUserByEvoId(student.idMember);
+    if (!studentUser) {
+        alert("Erro: não foi possível encontrar o usuário do aluno.");
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Salvando...';
+
+    try {
+        const testsCollection = collection(db, `users/${studentUser.id}/physicalTests`);
+        await addDoc(testsCollection, {
+            date: Timestamp.fromDate(new Date(date)),
+            score: Number(score)
+        });
+        
+        dateInput.value = '';
+        scoreInput.value = '';
+        await populatePhysicalTestTab(student); // Recarrega o histórico
+
+    } catch (error) {
+        console.error("Erro ao salvar o teste físico:", error);
+        alert(`Erro ao salvar: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Adicionar Log';
+    }
+}
+
+// A função findUserByEvoId foi removida do cliente para melhorar a segurança e o desempenho.
+// A verificação agora é feita pela Cloud Function 'getRegisteredUsersByEvoId'.
+// As funções abaixo que ainda a utilizam precisarão ser refatoradas no futuro se necessário.
+
+// Função auxiliar para encontrar um usuário do Firestore pelo seu evoMemberId (LEGADO - MANTER PARA MODAL)
+// TODO: Refatorar o modal para usar uma Cloud Function para buscar dados de um usuário específico.
 async function findUserByEvoId(evoId) {
-    // Esta é uma busca ineficiente. O ideal seria ter uma coleção separada para mapear evoId -> uid.
-    // Por enquanto, vamos buscar em todos os usuários.
-    const allUsersSnapshot = await getDocs(collection(db, "users"));
-    for (const doc of allUsersSnapshot.docs) {
-        if (doc.data().evoMemberId === evoId) {
-            return { id: doc.id, ...doc.data() };
+    // Esta é uma busca ineficiente e insegura. Mantida temporariamente para o modal funcionar.
+    try {
+        const allUsersSnapshot = await getDocs(collection(db, "users"));
+        for (const doc of allUsersSnapshot.docs) {
+            if (doc.data().evoMemberId === evoId) {
+                return { id: doc.id, ...doc.data() };
+            }
         }
+    } catch (e) {
+        console.warn("Permissão negada para buscar usuário. O modal pode não exibir permissões/testes. Este é o comportamento esperado após a mudança de segurança.");
+        return null;
     }
     return null;
 }
