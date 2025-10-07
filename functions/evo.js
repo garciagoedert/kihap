@@ -379,6 +379,14 @@ exports.getEvoUnits = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Retorna a lista de unidades configuradas para a API EVO (versão pública).
+ */
+exports.getPublicEvoUnits = functions.https.onCall(async (data, context) => {
+    // Esta função é pública e não requer autenticação.
+    return Object.keys(EVO_CREDENTIALS);
+});
+
+/**
  * Busca a agenda de atividades de uma unidade específica para uma data.
  */
 exports.getActivitiesSchedule = functions.https.onCall(async (data, context) => {

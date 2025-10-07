@@ -70,6 +70,9 @@
                         <select id="tagFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by tag">
                             <option value="">Todas as Tags</option>
                         </select>
+                        <select id="unidadeFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by unit">
+                            <option value="">Todas as Unidades</option>
+                        </select>
                         <button id="resetFiltersBtn" class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
                     </div>
                 </div>
@@ -101,7 +104,9 @@
                     </div>
                     <div class="form-group">
                         <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
-                        <input type="text" id="unidade" placeholder="Ex: Florianópolis, São José" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <select id="unidade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="">Selecione a Unidade</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
@@ -221,13 +226,16 @@
         // Firebase Imports
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { db, appId, app } from './firebase-config.js';
+        import { db, appId, app, functions } from './firebase-config.js';
+        import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         import { setupUIListeners, loadComponents } from './common-ui.js';
         
         // --- INITIALIZATION ---
         const auth = getAuth(app);
+        const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 
         // --- GLOBAL STATE ---
+        let evoUnits = [];
         let prospects = [];
         let leads = [];
         let combinedData = [];
@@ -501,6 +509,7 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             const priority = document.getElementById('priorityFilter').value;
             const tag = document.getElementById('tagFilter').value;
+            const unidade = document.getElementById('unidadeFilter').value;
             const prospectingStatuses = Object.keys(COLUMNS);
 
 
@@ -512,7 +521,8 @@
                 const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
                 const matchPriority = !priority || p.prioridade.toString() === priority;
                 const matchTag = !tag || (p.tags && p.tags.includes(tag));
-                return matchSearch && matchPriority && matchTag;
+                const matchUnidade = !unidade || p.unidade === unidade;
+                return matchSearch && matchPriority && matchTag && matchUnidade;
             });
             renderBoard();
         }
@@ -1058,6 +1068,41 @@
             return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
         }
         
+        async function populateEvoUnits() {
+            const unidadeFilter = document.getElementById('unidadeFilter');
+            const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
+
+            try {
+                const result = await getEvoUnits();
+                evoUnits = result.data.sort();
+                
+                // Clear existing options except the first one
+                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
+                unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
+
+                evoUnits.forEach(unitId => {
+                    const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    // Populate filter dropdown
+                    const filterOption = document.createElement('option');
+                    filterOption.value = displayName;
+                    filterOption.textContent = displayName;
+                    unidadeFilter.appendChild(filterOption);
+
+                    // Populate modal dropdown
+                    const modalOption = document.createElement('option');
+                    modalOption.value = displayName;
+                    modalOption.textContent = displayName;
+                    unidadeModalSelect.appendChild(modalOption);
+                });
+
+            } catch (error) {
+                console.error("Erro ao buscar unidades do EVO:", error);
+                unidadeFilter.innerHTML = '<option value="">Erro ao carregar</option>';
+                unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
         function exportData() {
             if (prospects.length === 0) {
                 alert("Não há dados para exportar.");
@@ -1094,6 +1139,8 @@
             });
 
             populateTags();
+            populateEvoUnits();
+
             loadComponents(() => {
                 // This callback runs after header/sidebar are loaded
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1108,6 +1155,9 @@
                     });
                 }
                 // Pass handlers to setupUIListeners by calling it again
+                const unidadeFilter = document.getElementById('unidadeFilter');
+                if(unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
+
                 setupUIListeners({
                     openFormModal,
                     closeFormModal,
@@ -1118,6 +1168,18 @@
                     applyFilters,
                     closeConfirmModal
                 });
+
+                // Override reset button to include unit filter
+                const resetBtn = document.getElementById('resetFiltersBtn');
+                if(resetBtn) {
+                    resetBtn.addEventListener('click', () => {
+                        document.getElementById('searchInput').value = '';
+                        document.getElementById('priorityFilter').value = '';
+                        document.getElementById('tagFilter').value = '';
+                        document.getElementById('unidadeFilter').value = '';
+                        applyFilters();
+                    });
+                }
             });
         });
     </script>
