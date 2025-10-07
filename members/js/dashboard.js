@@ -1,6 +1,7 @@
 import { onAuthReady, getUserData } from './auth.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { functions } from '../../intranet/firebase-config.js';
+import { functions, db } from '../../intranet/firebase-config.js';
+import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const getMemberData = httpsCallable(functions, 'getMemberData');
 
@@ -44,9 +45,38 @@ export function loadMemberDashboard() {
                     console.warn("ID de membro da EVO não encontrado para este usuário.");
                     // Opcional: Esconder a seção de informações do aluno
                 }
+
+                // Carrega o histórico de testes físicos
+                loadMemberPhysicalTestHistory(user.uid);
             }
         }
     });
+}
+
+async function loadMemberPhysicalTestHistory(userId) {
+    const historyContainer = document.getElementById('member-physical-test-history');
+    historyContainer.innerHTML = '<p class="text-gray-500">Carregando histórico...</p>';
+
+    const testsQuery = query(collection(db, `users/${userId}/physicalTests`), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(testsQuery);
+
+    if (querySnapshot.empty) {
+        historyContainer.innerHTML = '<p class="text-gray-500">Nenhum teste físico registrado ainda.</p>';
+    } else {
+        let html = '<ul class="space-y-2">';
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.date.toDate().toLocaleDateString('pt-BR');
+            html += `
+                <li class="flex justify-between items-center bg-gray-800 p-3 rounded">
+                    <span>Data: <span class="font-semibold">${date}</span></span>
+                    <span>Pontuação: <span class="font-semibold text-yellow-500">${data.score}</span></span>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        historyContainer.innerHTML = html;
+    }
 }
 
 function calculateAge(birthDateString) {

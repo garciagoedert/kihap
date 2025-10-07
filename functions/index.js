@@ -50,3 +50,51 @@ Object.keys(evoFunctions).forEach(key => {
 // Object.keys(outrasFuncoes).forEach(key => {
 //   exports[key] = outrasFuncoes[key];
 // });
+
+exports.getRegisteredUsersByEvoId = functions.https.onCall(
+    async (data, context) => {
+      // Apenas administradores podem chamar esta função.
+      if (!context.auth.token.isAdmin) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Apenas administradores podem consultar os status de registro.",
+        );
+      }
+
+      const {evoIds} = data;
+
+      if (!Array.isArray(evoIds) || evoIds.length === 0) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Um array de 'evoIds' é obrigatório.",
+        );
+      }
+
+      try {
+        const usersRef = admin.firestore().collection("users");
+        // O Firestore limita o operador 'in' a 10 itens por query.
+        // Se houver mais de 10, precisaremos dividir em múltiplos chunks.
+        const chunks = [];
+        for (let i = 0; i < evoIds.length; i += 10) {
+          chunks.push(evoIds.slice(i, i + 10));
+        }
+
+        const registeredIds = new Set();
+
+        for (const chunk of chunks) {
+          const snapshot = await usersRef.where("evoMemberId", "in", chunk).get();
+          snapshot.forEach((doc) => {
+            registeredIds.add(doc.data().evoMemberId);
+          });
+        }
+
+        return {registeredEvoIds: Array.from(registeredIds)};
+      } catch (error) {
+        console.error("Erro ao buscar usuários registrados:", error);
+        throw new functions.https.HttpsError(
+            "internal",
+            "Ocorreu um erro ao buscar os usuários.",
+        );
+      }
+    },
+);

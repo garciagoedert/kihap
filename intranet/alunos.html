@@ -116,6 +116,9 @@
                     <button id="tab-permissions" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
                         Permissões
                     </button>
+                    <button id="tab-physical-test" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Teste Físico
+                    </button>
                 </nav>
             </div>
 
@@ -146,6 +149,32 @@
                             <h4 class="font-bold text-gray-300 mb-2">Tatame</h4>
                             <div id="tatame-checklist" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-gray-800 rounded">
                                 <p class="text-gray-500">Carregando conteúdos...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Physical Test -->
+                <div id="tab-content-physical-test" class="tab-content hidden">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold">Adicionar Novo Log de Teste Físico</h3>
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <label for="physical-test-date" class="text-sm font-medium text-gray-400">Data:</label>
+                                <input type="date" id="physical-test-date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="physical-test-score" class="text-sm font-medium text-gray-400">Pontuação Total:</label>
+                                <input type="number" id="physical-test-score" placeholder="0" class="w-32 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <button id="save-physical-test-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded self-end">
+                                Adicionar Log
+                            </button>
+                        </div>
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold">Histórico de Testes</h3>
+                            <div id="physical-test-history" class="mt-2 max-h-60 overflow-y-auto p-2 bg-gray-800 rounded">
+                                <p class="text-gray-500">Carregando histórico...</p>
                             </div>
                         </div>
                     </div>
