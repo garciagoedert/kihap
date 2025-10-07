@@ -134,10 +134,10 @@ function renderGroupItem(chat, chatId, currentUserId) {
         </button>
     `;
 
-    groupElement.querySelector('.truncate').onclick = () => selectChat(chatId, chat.name, true);
+    groupElement.querySelector('.truncate').onclick = () => selectChat(chat, true);
     groupElement.querySelector('.delete-chat-btn').onclick = (e) => {
         e.stopPropagation(); // Prevent chat selection
-        deleteChat(chatId, chat.name);
+        deleteChat(chat.id, chat.name);
     };
     groupList.appendChild(groupElement);
 }
@@ -183,20 +183,36 @@ async function renderUserItem(chat, chatId, currentUserId) {
                 <i class="fas fa-trash-alt"></i>
             </button>
         `;
-        userElement.querySelector('.flex-1').onclick = () => selectChat(chatId, otherUserData.name || otherUserData.email, false);
+        userElement.querySelector('.flex-1').onclick = () => selectChat({ ...chat, otherUser: otherUserData }, false);
         userElement.querySelector('.delete-chat-btn').onclick = (e) => {
             e.stopPropagation(); // Prevent chat selection
-            deleteChat(chatId, otherUserData.name || otherUserData.email);
+            deleteChat(chat.id, otherUserData.name || otherUserData.email);
         };
         directMessageList.appendChild(userElement);
     }
 }
 
-function selectChat(chatId, name, isGroup) {
-    currentChatId = chatId;
-    sessionStorage.setItem('activeChatId', chatId);
-    chatTitle.textContent = name;
-    loadMessages(chatId, isGroup);
+function selectChat(chatData, isGroup) {
+    const headerAvatar = document.getElementById('chat-header-avatar');
+    currentChatId = chatData.id;
+    sessionStorage.setItem('activeChatId', currentChatId);
+    
+    if (isGroup) {
+        chatTitle.textContent = chatData.name;
+        headerAvatar.classList.add('hidden');
+    } else {
+        const otherUser = chatData.otherUser;
+        chatTitle.textContent = otherUser.name || otherUser.email;
+        if (otherUser.profilePicture) {
+            headerAvatar.src = otherUser.profilePicture;
+            headerAvatar.alt = otherUser.name;
+            headerAvatar.classList.remove('hidden');
+        } else {
+            headerAvatar.classList.add('hidden');
+        }
+    }
+
+    loadMessages(chatData.id, isGroup);
     enableChatInput();
 }
 
@@ -204,14 +220,16 @@ async function loadChatFromId(chatId) {
     const chatRef = doc(db, 'chats', chatId);
     const chatSnap = await getDoc(chatRef);
     if (chatSnap.exists()) {
-        const chatData = chatSnap.data();
-        let chatName = chatData.name;
-        if (!chatData.isGroup) {
+        const chatData = { id: chatSnap.id, ...chatSnap.data() };
+        if (chatData.isGroup) {
+            selectChat(chatData, true);
+        } else {
             const otherUserId = chatData.members.find(id => id !== currentUser.id);
             const otherUserData = userCache.get(otherUserId) || await getUserData(otherUserId);
-            chatName = otherUserData?.name || otherUserData?.email || 'Chat';
+            if (otherUserData) {
+                selectChat({ ...chatData, otherUser: otherUserData }, false);
+            }
         }
-        selectChat(chatId, chatName, chatData.isGroup);
     } else {
         console.error("Chat não encontrado:", chatId);
         sessionStorage.removeItem('activeChatId');
@@ -285,7 +303,8 @@ async function startChat(otherUserId, otherUserName) {
             unreadCount: unreadCount
         });
     }
-    selectChat(chatId, otherUserName, false);
+    const newChatData = { id: chatId, members: [currentUser.id, otherUserId], otherUser: { id: otherUserId, name: otherUserName } };
+    selectChat(newChatData, false);
 }
 
 async function loadMessages(chatId, isGroup) {
@@ -404,7 +423,8 @@ async function createGroup() {
             createdAt: serverTimestamp(),
             unreadCount: unreadCount
         });
-        selectChat(newGroupRef.id, groupName, true);
+        const newGroupData = { id: newGroupRef.id, name: groupName };
+        selectChat(newGroupData, true);
         newGroupModal.classList.add('hidden');
         groupNameInput.value = '';
         groupMembersContainer.querySelectorAll('input:checked').forEach(input => input.checked = false);
