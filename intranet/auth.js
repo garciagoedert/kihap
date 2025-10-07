@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { createUserWithEmailAndPassword, onAuthStateChanged, signOut, getIdTokenResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { auth, db } from './firebase-config.js';
@@ -29,12 +29,27 @@ export async function checkAdminStatus(user) {
     return user.isAdmin === true;
 }
 
+// Função para forçar a atualização do token de ID do usuário
+export async function forceTokenRefresh() {
+    const user = auth.currentUser;
+    if (user) {
+        try {
+            // Passar `true` para `getIdToken` força a atualização do token.
+            await user.getIdToken(true);
+            console.log("Token de usuário atualizado com sucesso.");
+        } catch (error) {
+            console.error("Erro ao forçar a atualização do token:", error);
+        }
+    }
+}
+
 // Função para verificar o estado de autenticação e executar um callback
 export function onAuthReady(callback) {
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
         if (user) {
-            // Usuário está logado.
-            console.log('Usuário logado:', user.uid);
+            // Usuário está logado. Força a atualização do token para obter as claims mais recentes.
+            await forceTokenRefresh();
+            console.log('Usuário logado e token atualizado:', user.uid);
             callback(user);
         } else {
             // Usuário está deslogado.

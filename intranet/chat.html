@@ -37,9 +37,6 @@
                     <h2 class="text-lg font-bold mt-4 px-2 text-gray-300">Conversas</h2>
                     <div id="direct-message-list"></div>
                 </div>
-                <div class="p-2 border-t border-gray-700">
-                    <button id="viewAsBtn" class="w-full p-2 rounded-lg hover:bg-gray-700 hidden">Ver como...</button>
-                </div>
             </div>
 
             <!-- Área do Chat -->
@@ -97,18 +94,6 @@
                 <button id="cancelGroupBtn" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
                 <button id="createGroupBtn" class="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark">Criar</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal "Ver como" -->
-    <div id="viewAsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">Ver Chat Como...</h3>
-                <button id="closeViewAsModalBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
-            </div>
-            <input id="viewAs-user-search-input" type="text" placeholder="Buscar usuário" class="w-full p-2 rounded-lg bg-gray-200 dark:bg-gray-700 mb-2">
-            <div id="viewAs-search-results" class="max-h-60 overflow-y-auto"></div>
         </div>
     </div>
     
