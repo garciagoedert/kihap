@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents, showConfirm } from './common-ui.js';
 import { getCurrentUser, getAllUsers, checkAdminStatus } from './auth.js';
 
@@ -49,7 +49,7 @@ async function initializeChat() {
         // A função onAuthReady em auth.js já deve cuidar do redirecionamento
         return;
     }
-    console.log("Usuário autenticado:", currentUser.uid);
+    console.log("CHAT_LOG: Usuário inicializado:", JSON.stringify(currentUser));
 
     const isAdmin = await checkAdminStatus(currentUser);
     if (isAdmin) {
@@ -58,7 +58,7 @@ async function initializeChat() {
     }
 
     await fetchAllUsersForModal();
-    populateConversationsList(currentUser.uid);
+    populateConversationsList(currentUser.id);
 
     // Recupera o chat ativo da sessão
     const activeChatId = sessionStorage.getItem('activeChatId');
@@ -207,7 +207,7 @@ async function loadChatFromId(chatId) {
         const chatData = chatSnap.data();
         let chatName = chatData.name;
         if (!chatData.isGroup) {
-            const otherUserId = chatData.members.find(id => id !== currentUser.uid);
+            const otherUserId = chatData.members.find(id => id !== currentUser.id);
             const otherUserData = userCache.get(otherUserId) || await getUserData(otherUserId);
             chatName = otherUserData?.name || otherUserData?.email || 'Chat';
         }
@@ -227,7 +227,7 @@ async function searchUser() {
     }
 
     const foundUsers = allUsers.filter(u =>
-        u.id !== currentUser.uid &&
+        u.id !== currentUser.id &&
         (u.name?.toLowerCase().includes(searchTerm) || u.email?.toLowerCase().includes(searchTerm))
     );
 
@@ -255,7 +255,7 @@ function populateGroupMembers() {
     if (!currentUser) return;
     groupMembersContainer.innerHTML = '';
     allUsers.forEach(u => {
-        if (u.id !== currentUser.uid) {
+        if (u.id !== currentUser.id) {
             const memberElement = document.createElement('div');
             memberElement.className = 'flex items-center';
             memberElement.innerHTML = `
@@ -269,16 +269,17 @@ function populateGroupMembers() {
 
 async function startChat(otherUserId, otherUserName) {
     if (!currentUser) return;
-    const chatId = [currentUser.uid, otherUserId].sort().join('_');
+    console.log(`CHAT_LOG: Iniciando chat. De: ${currentUser.id} Para: ${otherUserId}`);
+    const chatId = [currentUser.id, otherUserId].sort().join('_');
     const chatRef = doc(db, 'chats', chatId);
     const chatSnap = await getDoc(chatRef);
 
     if (!chatSnap.exists()) {
         const unreadCount = {};
-        unreadCount[currentUser.uid.replace(/\./g, '_')] = 0;
+        unreadCount[currentUser.id.replace(/\./g, '_')] = 0;
         unreadCount[otherUserId.replace(/\./g, '_')] = 0;
         await setDoc(chatRef, {
-            members: [currentUser.uid, otherUserId],
+            members: [currentUser.id, otherUserId],
             isGroup: false,
             createdAt: serverTimestamp(),
             unreadCount: unreadCount
@@ -307,7 +308,7 @@ async function loadMessages(chatId, isGroup) {
         for (const messageDoc of snapshot.docs) {
             const message = messageDoc.data();
             const messageId = messageDoc.id;
-            const isSender = message.senderId === currentUser.uid;
+            const isSender = message.senderId === currentUser.id;
 
             let senderInfoHtml = '';
             if (isGroup && !isSender) {
@@ -341,7 +342,7 @@ async function loadMessages(chatId, isGroup) {
 
         // Marcar mensagens como lidas
         const chatRef = doc(db, 'chats', chatId);
-        const safeUserKey = currentUser.uid.replace(/\./g, '_');
+        const safeUserKey = currentUser.id.replace(/\./g, '_');
         await updateDoc(chatRef, { [`unreadCount.${safeUserKey}`]: 0 });
     });
 }
@@ -353,13 +354,14 @@ async function sendMessage() {
         console.error("User not authenticated. Cannot send message.");
         return;
     }
+    console.log(`CHAT_LOG: Enviando mensagem como: ${user.id} (${user.email})`);
 
     const text = messageInput.value.trim();
     if (text && currentChatId) {
         const messagesCollection = collection(db, 'chats', currentChatId, 'messages');
         await addDoc(messagesCollection, {
             text: text,
-            senderId: user.uid, // Use the freshly fetched user's UID
+            senderId: user.id, // Use the freshly fetched user's ID
             timestamp: serverTimestamp(),
             status: 'enviado'
         });
@@ -370,14 +372,14 @@ async function sendMessage() {
             const chatData = chatSnap.data();
             const unreadCountUpdate = {};
             chatData.members.forEach(memberId => {
-                if (memberId !== user.uid) { // Use the freshly fetched user
+                if (memberId !== user.id) { // Use the freshly fetched user
                     const safeMemberKey = memberId.replace(/\./g, '_');
                     unreadCountUpdate[`unreadCount.${safeMemberKey}`] = (chatData.unreadCount?.[safeMemberKey] || 0) + 1;
                 }
             });
 
             await updateDoc(chatRef, {
-                lastMessage: { text, senderId: user.uid, timestamp: serverTimestamp() }, // Use the freshly fetched user
+                lastMessage: { text, senderId: user.id, timestamp: serverTimestamp() }, // Use the freshly fetched user
                 ...unreadCountUpdate
             });
         }
@@ -390,7 +392,7 @@ async function createGroup() {
     const groupName = groupNameInput.value.trim();
     const selectedMembers = Array.from(groupMembersContainer.querySelectorAll('input:checked')).map(input => input.value);
     if (groupName && selectedMembers.length > 0) {
-        selectedMembers.push(currentUser.uid);
+        selectedMembers.push(currentUser.id);
         const chatsCollection = collection(db, 'chats');
         const unreadCount = {};
         selectedMembers.forEach(id => { unreadCount[id.replace(/\./g, '_')] = 0; });
@@ -429,7 +431,7 @@ async function searchUserForViewAs() {
         return;
     }
     const foundUsers = allUsers.filter(u =>
-        u.id !== currentUser.uid &&
+        u.id !== currentUser.id &&
         (u.name?.toLowerCase().includes(searchTerm) || u.email?.toLowerCase().includes(searchTerm))
     );
     viewAsSearchResultsContainer.innerHTML = '';
@@ -469,7 +471,7 @@ function exitViewingAs() {
     viewAsBanner.classList.remove('flex');
     chatTitle.textContent = 'Selecione uma conversa';
     enableChatInput();
-    populateConversationsList(currentUser.uid);
+    populateConversationsList(currentUser.id);
 }
 
 // Event Listeners
@@ -520,16 +522,18 @@ function deleteChat(chatId, chatName) {
     showConfirm(`Tem certeza que deseja apagar o chat "${chatName}"? Esta ação não pode ser desfeita e apagará todas as mensagens.`, async () => {
         try {
             const chatRef = doc(db, 'chats', chatId);
-            // Deletar subcoleção de mensagens (boa prática, embora deleteDoc() em teoria apague subcoleções)
+            
+            // Firestore não apaga subcoleções automaticamente no client-side.
+            // É preciso deletar as mensagens primeiro.
             const messagesRef = collection(db, 'chats', chatId, 'messages');
             const messagesSnap = await getDocs(messagesRef);
             const batch = writeBatch(db);
-            messagesSnap.forEach(doc => {
-                batch.delete(doc.ref);
+            messagesSnap.forEach(messageDoc => {
+                batch.delete(messageDoc.ref);
             });
             await batch.commit();
 
-            // Deletar o documento do chat
+            // Agora, deletar o documento do chat
             await deleteDoc(chatRef);
             
             console.log(`Chat ${chatId} deletado.`);
@@ -545,7 +549,7 @@ function deleteChat(chatId, chatName) {
             }
         } catch (error) {
             console.error("Erro ao deletar chat:", error);
-            showAlert("Erro ao deletar chat. Verifique as permissões do Firestore.", "Erro");
+            alert("Erro ao deletar chat. Verifique as permissões do Firestore.");
         }
     });
 }
