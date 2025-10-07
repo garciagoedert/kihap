@@ -97,27 +97,65 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
 });
 
 /**
- * Lista todos os membros (para a visão do professor).
+ * Lista todos os membros (para a visão do professor), lidando com paginação.
  */
 exports.listAllMembers = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId = 'centro', status = 1 } = data; // Padrão para 'centro' e status 'ativo'
-
-    // Adicionar verificação de permissão de admin/professor aqui
-    // ...
+    const { unitId = 'centro', status = 1 } = data;
+    const PAGE_SIZE = 100; // Define um tamanho de página razoável para a API.
 
     try {
         const apiClientV2 = getEvoApiClient(unitId, 'v2');
-        const response = await apiClientV2.get("/members", {
-            params: { status: status }
+
+        // 1. Faz a primeira chamada para obter a primeira página e o total de membros.
+        const firstPageResponse = await apiClientV2.get("/members", {
+            params: {
+                status: status,
+                page: 1,
+                take: PAGE_SIZE,
+            },
         });
-        functions.logger.info("Resposta da API EVO:", response.data); // Log da resposta
-        return response.data;
+
+        const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
+        let allMembers = firstPageResponse.data || [];
+
+        // 2. Se houver mais membros do que o tamanho da página, busca as páginas restantes.
+        if (totalMembers > PAGE_SIZE) {
+            const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
+            const pagePromises = [];
+
+            // Cria uma promessa para cada página restante (da 2 até a última).
+            for (let page = 2; page <= totalPages; page++) {
+                pagePromises.push(
+                    apiClientV2.get("/members", {
+                        params: {
+                            status: status,
+                            page: page,
+                            take: PAGE_SIZE,
+                        },
+                    }),
+                );
+            }
+
+            // 3. Executa todas as chamadas de API restantes em paralelo.
+            const subsequentPageResponses = await Promise.all(pagePromises);
+
+            // 4. Concatena os resultados de todas as páginas.
+            subsequentPageResponses.forEach((response) => {
+                if (response.data) {
+                    allMembers = allMembers.concat(response.data);
+                }
+            });
+        }
+
+        functions.logger.info(`Total de ${allMembers.length} membros carregados para a unidade ${unitId}.`);
+        return allMembers;
+
     } catch (error) {
-        functions.logger.error("Erro detalhado ao listar membros na EVO API:", {
+        functions.logger.error(`Erro detalhado ao listar membros na EVO API para unidade ${unitId}:`, {
             status: error.response?.status,
             data: error.response?.data,
             message: error.message,

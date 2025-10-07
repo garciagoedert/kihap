@@ -1,7 +1,7 @@
 import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -184,8 +184,12 @@ async function highlightRegisteredStudents(evoIds) {
             }
         });
     } catch (error) {
-        console.error("Erro ao destacar alunos registrados:", error);
-        // Não quebra a funcionalidade, apenas não destaca em caso de erro.
+        if (error.code === 'permission-denied' || error.message.includes('Apenas administradores')) {
+            console.warn("Permissão negada para destacar alunos registrados. Apenas administradores podem ver esta informação.");
+        } else {
+            console.error("Erro ao destacar alunos registrados:", error);
+        }
+        // A funcionalidade de destaque é opcional, então a página continua funcionando.
     }
 }
 
@@ -463,24 +467,39 @@ async function populatePhysicalTestTab(student) {
     const historyContainer = document.getElementById('physical-test-history');
     const saveBtn = document.getElementById('save-physical-test-btn');
     historyContainer.innerHTML = '<p class="text-gray-500">Carregando histórico...</p>';
+    saveBtn.disabled = false; // Habilita o botão por padrão
 
     const studentUser = await findUserByEvoId(student.idMember);
-    if (!studentUser) {
-        historyContainer.innerHTML = '<p class="text-red-500">Este aluno ainda não tem uma conta no sistema. Use o botão "Convidar" primeiro.</p>';
-        saveBtn.disabled = true;
-        return;
+    let allTests = [];
+
+    // 1. Busca testes da subcoleção do usuário, se ele existir
+    if (studentUser) {
+        const userTestsQuery = query(collection(db, `users/${studentUser.id}/physicalTests`), orderBy("date", "desc"));
+        const userTestsSnapshot = await getDocs(userTestsQuery);
+        userTestsSnapshot.forEach(doc => {
+            allTests.push({ id: doc.id, ...doc.data() });
+        });
     }
-    saveBtn.disabled = false;
 
-    const testsQuery = query(collection(db, `users/${studentUser.id}/physicalTests`), orderBy("date", "desc"));
-    const querySnapshot = await getDocs(testsQuery);
+    // 2. Busca testes da coleção principal, associados pelo evoMemberId
+    const generalTestsQuery = query(
+        collection(db, "physicalTests"),
+        where("evoMemberId", "==", student.idMember),
+        orderBy("date", "desc")
+    );
+    const generalTestsSnapshot = await getDocs(generalTestsQuery);
+    generalTestsSnapshot.forEach(doc => {
+        allTests.push({ id: doc.id, ...doc.data() });
+    });
 
-    if (querySnapshot.empty) {
+    // Ordena todos os testes combinados pela data
+    allTests.sort((a, b) => b.date.toMillis() - a.date.toMillis());
+
+    if (allTests.length === 0) {
         historyContainer.innerHTML = '<p class="text-gray-500">Nenhum teste físico registrado ainda.</p>';
     } else {
         let html = '<ul class="space-y-2">';
-        querySnapshot.forEach(doc => {
-            const data = doc.data();
+        allTests.forEach(data => {
             const date = data.date.toDate().toLocaleDateString('pt-BR');
             html += `
                 <li class="flex justify-between items-center bg-gray-900 p-2 rounded">
@@ -501,29 +520,39 @@ async function handleSavePhysicalTest(student) {
     const scoreInput = document.getElementById('physical-test-score');
     const button = document.getElementById('save-physical-test-btn');
 
-    const date = dateInput.value;
+    const dateValue = dateInput.value;
     const score = scoreInput.value;
 
-    if (!date || !score) {
+    if (!dateValue || !score) {
         alert("Por favor, preencha a data e a pontuação.");
         return;
     }
-
-    const studentUser = await findUserByEvoId(student.idMember);
-    if (!studentUser) {
-        alert("Erro: não foi possível encontrar o usuário do aluno.");
-        return;
-    }
+    
+    // Adiciona a hora atual para garantir que a data seja salva corretamente no fuso horário local
+    const date = new Date(dateValue + 'T00:00:00');
 
     button.disabled = true;
     button.textContent = 'Salvando...';
 
     try {
-        const testsCollection = collection(db, `users/${studentUser.id}/physicalTests`);
-        await addDoc(testsCollection, {
-            date: Timestamp.fromDate(new Date(date)),
-            score: Number(score)
-        });
+        const studentUser = await findUserByEvoId(student.idMember);
+        
+        const testData = {
+            date: Timestamp.fromDate(date),
+            score: Number(score),
+            evoMemberId: student.idMember, // Sempre salva o ID do EVO
+            studentName: `${student.firstName} ${student.lastName}` // Salva o nome para referência
+        };
+
+        let testsCollection;
+        // Se o usuário existe, salva na subcoleção dele. Senão, na coleção principal.
+        if (studentUser) {
+            testsCollection = collection(db, `users/${studentUser.id}/physicalTests`);
+        } else {
+            testsCollection = collection(db, "physicalTests");
+        }
+        
+        await addDoc(testsCollection, testData);
         
         dateInput.value = '';
         scoreInput.value = '';

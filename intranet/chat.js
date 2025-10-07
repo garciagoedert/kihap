@@ -1,22 +1,18 @@
 import { db } from './firebase-config.js';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { loadComponents, showConfirm } from './common-ui.js';
+import { loadComponents } from './common-ui.js';
 import { getCurrentUser, getAllUsers, checkAdminStatus } from './auth.js';
 
 // Elementos do DOM (serão inicializados em initializeChat)
 let groupList, directMessageList, chatTitle, chatMessages, messageInput, sendButton,
     scrollToBottomBtn, newGroupBtn, newGroupModal, closeGroupModalBtn, cancelGroupBtn,
     createGroupBtn, groupNameInput, groupMembersContainer, userSearchInput,
-    searchResultsContainer, viewAsBtn, viewAsModal, closeViewAsModalBtn,
-    viewAsUserSearchInput, viewAsSearchResultsContainer, viewAsBanner,
-    viewAsBannerText, exitViewAsBtn, emojiButton, emojiPickerContainer,
+    searchResultsContainer, emojiButton, emojiPickerContainer,
     reactionEmojiPickerContainer;
 
 // Variáveis de estado
 let currentChatId = null;
 let currentReactionMessageId = null;
-let isViewingAs = false;
-let viewingAsUser = null;
 let allUsers = [];
 const userCache = new Map();
 let currentUser = null;
@@ -39,14 +35,6 @@ function assignDomElements() {
     groupMembersContainer = document.getElementById('group-members');
     userSearchInput = document.getElementById('user-search-input');
     searchResultsContainer = document.getElementById('search-results');
-    viewAsBtn = document.getElementById('viewAsBtn');
-    viewAsModal = document.getElementById('viewAsModal');
-    closeViewAsModalBtn = document.getElementById('closeViewAsModalBtn');
-    viewAsUserSearchInput = document.getElementById('viewAs-user-search-input');
-    viewAsSearchResultsContainer = document.getElementById('viewAs-search-results');
-    viewAsBanner = document.getElementById('viewAsBanner');
-    viewAsBannerText = document.getElementById('viewAsBannerText');
-    exitViewAsBtn = document.getElementById('exitViewAsBtn');
     emojiButton = document.getElementById('emoji-button');
     emojiPickerContainer = document.getElementById('emoji-picker-container');
     reactionEmojiPickerContainer = document.getElementById('reaction-emoji-picker-container');
@@ -60,10 +48,6 @@ function setupEventListeners() {
     closeGroupModalBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
     cancelGroupBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
     createGroupBtn.addEventListener('click', createGroup);
-    viewAsBtn.addEventListener('click', () => viewAsModal.classList.remove('hidden'));
-    closeViewAsModalBtn.addEventListener('click', () => viewAsModal.classList.add('hidden'));
-    viewAsUserSearchInput.addEventListener('input', searchUserForViewAs);
-    exitViewAsBtn.addEventListener('click', exitViewingAs);
 
     document.addEventListener('click', (event) => {
         if (!event.target.closest('#search-results') && event.target !== userSearchInput) {
@@ -106,7 +90,6 @@ async function initializeChat() {
 
     const isAdmin = await checkAdminStatus(currentUser);
     if (isAdmin) {
-        viewAsBtn.classList.remove('hidden');
         newGroupBtn.classList.remove('hidden');
     }
 
@@ -423,7 +406,6 @@ async function loadMessages(chatId, isGroup) {
 }
 
 async function sendMessage() {
-    if (isViewingAs) return;
     const user = await getCurrentUser(); // Fetch the latest user state
     if (!user) {
         console.error("User not authenticated. Cannot send message.");
@@ -488,66 +470,9 @@ async function createGroup() {
 }
 
 function enableChatInput() {
-    if (isViewingAs) {
-        messageInput.disabled = true;
-        sendButton.disabled = true;
-        messageInput.placeholder = "Visualizando como outro usuário (somente leitura)";
-    } else {
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        messageInput.placeholder = "Digite sua mensagem...";
-    }
-}
-
-// --- Lógica do "Ver como" ---
-async function searchUserForViewAs() {
-    const searchTerm = viewAsUserSearchInput.value.trim().toLowerCase();
-    if (!searchTerm) {
-        viewAsSearchResultsContainer.innerHTML = '';
-        return;
-    }
-    const foundUsers = allUsers.filter(u =>
-        u.id !== currentUser.id &&
-        (u.name?.toLowerCase().includes(searchTerm) || u.email?.toLowerCase().includes(searchTerm))
-    );
-    viewAsSearchResultsContainer.innerHTML = '';
-    if (foundUsers.length === 0) {
-        viewAsSearchResultsContainer.innerHTML = '<div class="p-2">Nenhum usuário encontrado.</div>';
-    } else {
-        foundUsers.forEach(foundUser => {
-            const userElement = document.createElement('div');
-            userElement.className = 'flex items-center p-2 hover:bg-gray-700 cursor-pointer rounded-lg';
-            const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3">` : `<div class="w-10 h-10 rounded-full mr-3 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-2xl"></i></div>`;
-            userElement.innerHTML = `${avatarHtml}<div><div class="font-bold">${foundUser.name || 'Usuário'}</div><div class="text-sm">${foundUser.email}</div></div>`;
-            userElement.onclick = () => startViewingAs(foundUser);
-            viewAsSearchResultsContainer.appendChild(userElement);
-        });
-    }
-}
-
-function startViewingAs(user) {
-    isViewingAs = true;
-    viewingAsUser = user;
-    viewAsBannerText.textContent = `Visualizando como ${user.name}`;
-    viewAsBanner.classList.remove('hidden');
-    viewAsBanner.classList.add('flex');
-    groupList.innerHTML = '';
-    directMessageList.innerHTML = '';
-    chatMessages.innerHTML = '';
-    chatTitle.textContent = `Visualizando como ${user.name}`;
-    enableChatInput();
-    populateConversationsList(user.id);
-    viewAsModal.classList.add('hidden');
-}
-
-function exitViewingAs() {
-    isViewingAs = false;
-    viewingAsUser = null;
-    viewAsBanner.classList.add('hidden');
-    viewAsBanner.classList.remove('flex');
-    chatTitle.textContent = 'Selecione uma conversa';
-    enableChatInput();
-    populateConversationsList(currentUser.id);
+    messageInput.disabled = false;
+    sendButton.disabled = false;
+    messageInput.placeholder = "Digite sua mensagem...";
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -555,8 +480,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Função para deletar um chat
-function deleteChat(chatId, chatName) {
-    showConfirm(`Tem certeza que deseja apagar o chat "${chatName}"? Esta ação não pode ser desfeita e apagará todas as mensagens.`, async () => {
+async function deleteChat(chatId, chatName) {
+    const confirmation = confirm(`Tem certeza que deseja apagar o chat "${chatName}"? Esta ação não pode ser desfeita e apagará todas as mensagens.`);
+    if (confirmation) {
         try {
             const chatRef = doc(db, 'chats', chatId);
             
@@ -588,5 +514,5 @@ function deleteChat(chatId, chatName) {
             console.error("Erro ao deletar chat:", error);
             alert("Erro ao deletar chat. Verifique as permissões do Firestore.");
         }
-    });
+    }
 }
