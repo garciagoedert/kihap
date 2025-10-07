@@ -1,6 +1,36 @@
 // Importa as funções necessárias do SDK do Firebase
-import { db } from '../intranet/firebase-config.js';
+import { db, functions } from '../intranet/firebase-config.js';
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+const getPublicEvoUnits = httpsCallable(functions, 'getPublicEvoUnits');
+
+document.addEventListener('DOMContentLoaded', () => {
+    populateUnitsDropdown();
+});
+
+async function populateUnitsDropdown() {
+    const unidadeSelect = document.getElementById('unidade');
+    if (!unidadeSelect) return;
+
+    try {
+        const result = await getPublicEvoUnits();
+        const evoUnits = result.data.sort();
+        
+        unidadeSelect.innerHTML = '<option value="" disabled selected>Selecione a unidade de interesse</option>';
+
+        evoUnits.forEach(unitId => {
+            const option = document.createElement('option');
+            const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            option.value = displayName;
+            option.textContent = displayName;
+            unidadeSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Erro ao buscar unidades do EVO:", error);
+        unidadeSelect.innerHTML = '<option value="" disabled selected>Não foi possível carregar as unidades</option>';
+    }
+}
 
 // --- Lógica do Formulário ---
 const leadForm = document.getElementById('lead-form');
