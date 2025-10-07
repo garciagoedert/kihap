@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Intranet Kihap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="log.css">
+    <link rel="stylesheet" href="theme.css">
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
+                <div id="viewAsBanner" class="hidden items-center justify-between bg-yellow-500 text-black p-2 rounded-md mb-4">
+                    <span id="viewAsBannerText"></span>
+                    <button id="exitViewAsBtn" class="font-bold hover:underline">Sair</button>
+                </div>
+                <div class="flex flex-grow h-[calc(100vh-8rem)] bg-[#1a1a1a] rounded-lg shadow-lg text-gray-200">
+            <!-- Sidebar de Conversas -->
+            <div class="w-1/3 border-r border-gray-700 flex flex-col">
+                <div class="p-4 border-b border-gray-700 relative">
+                    <input id="user-search-input" type="text" placeholder="Buscar ou iniciar nova conversa" class="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <div id="search-results" class="absolute z-20 w-full left-0 mt-1 bg-[#1a1a1a] border border-gray-700 rounded-b-lg shadow-lg hidden"></div>
+                </div>
+                <div class="flex-grow overflow-y-auto p-2 space-y-2">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <h2 class="text-lg font-bold text-gray-300">Grupos</h2>
+                        <button id="newGroupBtn" title="Criar novo grupo" class="p-2 rounded-full hover:bg-gray-700"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="group-list"></div>
+                    <h2 class="text-lg font-bold mt-4 px-2 text-gray-300">Conversas</h2>
+                    <div id="direct-message-list"></div>
+                </div>
+                <div class="p-2 border-t border-gray-700">
+                    <button id="viewAsBtn" class="w-full p-2 rounded-lg hover:bg-gray-700 hidden">Ver como...</button>
+                </div>
+            </div>
+
+            <!-- Área do Chat -->
+            <div class="w-2/3 flex flex-col">
+                <div id="chat-header" class="p-4 border-b border-gray-700 flex items-center">
+                    <h2 id="chat-title" class="text-xl font-bold text-gray-300">Selecione uma conversa</h2>
+                </div>
+                <div id="chat-messages" class="flex-grow p-4 overflow-y-auto relative">
+                    <!-- Placeholder -->
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                        <i class="fas fa-comments text-5xl mb-4"></i>
+                        <p>Suas mensagens aparecerão aqui</p>
+                    </div>
+                    <button id="scrollToBottomBtn" title="Rolar para baixo" class="absolute bottom-20 right-4 bg-primary text-black w-10 h-10 rounded-full opacity-0 transition-opacity duration-300 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                </div>
+                <div id="chat-input-area" class="p-4 border-t border-gray-700 flex items-center space-x-2">
+                    <div class="relative">
+                        <button id="emoji-button" title="Adicionar emoji" class="p-2 rounded-full hover:bg-gray-700 text-gray-400"><i class="fas fa-smile"></i></button>
+                        <div id="emoji-picker-container" class="absolute bottom-full mb-2" style="display: none;">
+                            <emoji-picker class="dark"></emoji-picker>
+                        </div>
+                    </div>
+                    <input id="message-input" type="text" placeholder="Digite sua mensagem..." class="flex-grow p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary" disabled>
+                    <button id="send-button" class="bg-primary text-black font-bold py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors" disabled>Enviar</button>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Novo Grupo -->
+    <div id="newGroupModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Criar Novo Grupo</h3>
+                <button id="closeGroupModalBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="groupName" class="block text-sm font-medium mb-1">Nome do Grupo</label>
+                    <input type="text" id="groupName" class="w-full p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium mb-2">Membros</h4>
+                    <div id="group-members" class="max-h-48 overflow-y-auto space-y-2 p-2 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                        <!-- Membros serão inseridos aqui -->
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="cancelGroupBtn" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+                <button id="createGroupBtn" class="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal "Ver como" -->
+    <div id="viewAsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Ver Chat Como...</h3>
+                <button id="closeViewAsModalBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
+            </div>
+            <input id="viewAs-user-search-input" type="text" placeholder="Buscar usuário" class="w-full p-2 rounded-lg bg-gray-200 dark:bg-gray-700 mb-2">
+            <div id="viewAs-search-results" class="max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <!-- Container para o seletor de emojis de reação -->
+    <div id="reaction-emoji-picker-container" class="absolute z-50" style="display: none;">
+        <emoji-picker></emoji-picker>
+    </div>
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script type="module" src="common-ui.js"></script>
+    <script type="module" src="chat.js"></script>
+</body>
+</html>
