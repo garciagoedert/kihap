@@ -10,7 +10,7 @@ export async function getUserData(uid) {
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            return { uid, ...userSnap.data() };
+            return { id: uid, ...userSnap.data() };
         } else {
             console.log("No such user document!");
             return null;
@@ -23,9 +23,10 @@ export async function getUserData(uid) {
 
 // Função para verificar se o usuário é admin
 export async function checkAdminStatus(user) {
+    // A função getCurrentUser() já retorna o objeto completo do usuário,
+    // incluindo a flag isAdmin. Não é necessário buscar novamente.
     if (!user) return false;
-    const userData = await getUserData(user.uid);
-    return userData?.isAdmin === true;
+    return user.isAdmin === true;
 }
 
 // Função para verificar o estado de autenticação e executar um callback
