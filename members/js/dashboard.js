@@ -16,7 +16,10 @@ export function loadMemberDashboard() {
                 // Assumindo que o ID do membro da EVO está armazenado no documento do usuário no Firestore
                 if (userData.evoMemberId) {
                     try {
-                        const result = await getMemberData({ memberId: userData.evoMemberId });
+                        const result = await getMemberData({ 
+                            memberId: userData.evoMemberId,
+                            unitId: userData.unitId // Passa a unidade do aluno para a função
+                        });
                         const member = result.data;
 
                         // Preenche os campos com os dados da API
@@ -35,6 +38,7 @@ export function loadMemberDashboard() {
                         document.getElementById('member-unit').textContent = member.branchName || 'Unidade Centro';
                         document.getElementById('member-status').textContent = member.membershipStatus || 'Não informado';
                         document.getElementById('member-register-date').textContent = member.registerDate ? new Date(member.registerDate).toLocaleDateString('pt-BR') : 'Não informada';
+                        document.getElementById('member-instructor').textContent = member.nameEmployeeInstructor || 'Não informado';
                         
                         const kihapCoins = member.totalFitCoins || 0;
                         document.getElementById('member-kihapcoins').textContent = kihapCoins;

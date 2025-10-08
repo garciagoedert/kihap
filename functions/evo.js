@@ -73,19 +73,39 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para acessar esta função.");
     }
 
-    const { memberId, unitId = 'centro' } = data;
+    const { memberId, unitId } = data;
     if (!memberId) {
         throw new functions.https.HttpsError("invalid-argument", "O ID do membro é obrigatório.");
     }
 
+    // Valida a unitId para garantir que ela existe em nossas credenciais.
+    // Se for inválida ou não fornecida, usa 'centro' como fallback.
+    const validUnitId = unitId && EVO_CREDENTIALS[unitId] ? unitId : 'centro';
+
     try {
-        const apiClientV2 = getEvoApiClient(unitId, 'v2');
-        // A documentação de listagem sugere vários parâmetros "show...". Vamos tentar um genérico.
+        const apiClientV2 = getEvoApiClient(validUnitId, 'v2');
         const response = await apiClientV2.get(`/members/${memberId}`, {
-            params: { showMemberships: true, showsResponsibles: true } // Parâmetros que podem trazer mais dados
+            params: { showMemberships: true, showsResponsibles: true }
         });
-        functions.logger.info(`Resposta da API EVO para getMemberData (ID: ${memberId}):`, response.data);
-        return response.data;
+        
+        const memberData = response.data;
+
+        // Se o aluno tiver um instrutor associado, busca o nome do instrutor.
+        if (memberData && memberData.idEmployeeInstructor) {
+            try {
+                const employeeResponse = await apiClientV2.get(`/employees/${memberData.idEmployeeInstructor}`);
+                const employeeData = employeeResponse.data;
+                if (employeeData) {
+                    memberData.nameEmployeeInstructor = `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim();
+                }
+            } catch (employeeError) {
+                functions.logger.warn(`Não foi possível buscar o instrutor com ID ${memberData.idEmployeeInstructor}.`, employeeError.message);
+                // A função continua mesmo que o instrutor não seja encontrado.
+            }
+        }
+        
+        functions.logger.info(`Resposta da API EVO para getMemberData (ID: ${memberId}):`, memberData);
+        return memberData;
     } catch (error) {
         functions.logger.error(`Erro detalhado ao buscar membro ${memberId}:`, {
             status: error.response?.status,
