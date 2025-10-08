@@ -4,6 +4,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFunctions } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // Configuração do seu aplicativo da web do Firebase
 const firebaseConfig = {
@@ -25,4 +26,5 @@ export { app };
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const functions = getFunctions(app, 'us-central1'); // Especifica a região, se necessário
+export const storage = getStorage(app);
 export const appId = firebaseConfig.appId || 'default-kihap-app';

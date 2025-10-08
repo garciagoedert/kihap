@@ -32,6 +32,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Regra para a coleção de Emblemas (Badges)
+    match /badges/{badgeId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Regra para a coleção de Testes Físicos (alunos sem conta)
     match /physicalTests/{testId} {
       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;

@@ -98,3 +98,63 @@ exports.getRegisteredUsersByEvoId = functions.https.onCall(
       }
     },
 );
+
+exports.updateStudentBadges = functions.https.onCall(async (data, context) => {
+    // Verifica se o usuário está autenticado.
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "Você precisa estar autenticado para realizar esta ação."
+        );
+    }
+
+    const { studentUid, earnedBadges } = data;
+
+    if (!studentUid || !Array.isArray(earnedBadges)) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "O ID do aluno e um array de emblemas são obrigatórios."
+        );
+    }
+
+    try {
+        const userRef = admin.firestore().collection("users").doc(studentUid);
+        await userRef.set({
+            earnedBadges: earnedBadges,
+        }, { merge: true });
+        return { success: true, message: "Emblemas atualizados com sucesso." };
+    } catch (error) {
+        console.error("Erro ao atualizar emblemas:", error);
+        throw new functions.https.HttpsError(
+            "internal",
+            "Ocorreu um erro ao atualizar os emblemas do aluno."
+        );
+    }
+});
+
+exports.grantAdminRole = functions.https.onCall(async (data, context) => {
+    // Idealmente, verifique se o chamador já é um administrador
+    // if (!context.auth.token.isAdmin) {
+    //     throw new functions.https.HttpsError(
+    //         "permission-denied",
+    //         "Apenas administradores podem conceder privilégios."
+    //     );
+    // }
+
+    const { email } = data;
+    if (!email) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "O e-mail é obrigatório."
+        );
+    }
+
+    try {
+        const user = await admin.auth().getUserByEmail(email);
+        await admin.auth().setCustomUserClaims(user.uid, { isAdmin: true });
+        return { message: `Sucesso! ${email} agora é um administrador.` };
+    } catch (error) {
+        console.error("Erro ao conceder privilégio de administrador:", error);
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro.");
+    }
+});
