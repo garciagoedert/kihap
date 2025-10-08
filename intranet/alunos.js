@@ -12,6 +12,7 @@ const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersBy
 let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
 let allTatameContents = [];
+let allBadges = [];
 
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
@@ -24,10 +25,13 @@ export function setupAlunosPage() {
             const tabDetails = document.getElementById('tab-details');
             const tabPermissions = document.getElementById('tab-permissions');
             const tabPhysicalTest = document.getElementById('tab-physical-test');
+            const tabBadges = document.getElementById('tab-badges');
             const contentDetails = document.getElementById('tab-content-details');
             const contentPermissions = document.getElementById('tab-content-permissions');
             const contentPhysicalTest = document.getElementById('tab-content-physical-test');
+            const contentBadges = document.getElementById('tab-content-badges');
             const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
+            const saveBadgesBtn = document.getElementById('modal-save-badges-btn');
             const inviteBtn = document.getElementById('modal-invite-btn');
             const checkEntriesBtn = document.getElementById('check-entries-btn');
             const dailyEntriesDate = document.getElementById('daily-entries-date');
@@ -62,36 +66,53 @@ export function setupAlunosPage() {
             });
 
             // Controle das Abas
-            tabDetails.addEventListener('click', () => {
-                contentDetails.classList.remove('hidden');
-                contentPermissions.classList.add('hidden');
-                tabDetails.classList.add('text-yellow-500', 'border-yellow-500');
-                tabPermissions.classList.remove('text-yellow-500', 'border-yellow-500');
-                savePermissionsBtn.classList.add('hidden');
-                inviteBtn.classList.remove('hidden');
-            });
+            function switchTab(activeTab) {
+                const tabConfig = {
+                    details: {
+                        content: contentDetails,
+                        button: document.getElementById('modal-invite-btn'),
+                        tab: tabDetails
+                    },
+                    permissions: {
+                        content: contentPermissions,
+                        button: document.getElementById('modal-save-permissions-btn'),
+                        tab: tabPermissions
+                    },
+                    'physical-test': {
+                        content: contentPhysicalTest,
+                        button: null, // No button for this tab
+                        tab: tabPhysicalTest
+                    },
+                    badges: {
+                        content: contentBadges,
+                        button: document.getElementById('modal-save-badges-btn'),
+                        tab: tabBadges
+                    }
+                };
 
-            tabPermissions.addEventListener('click', () => {
-                contentDetails.classList.add('hidden');
-                contentPermissions.classList.remove('hidden');
-                contentPhysicalTest.classList.add('hidden');
-                tabPermissions.classList.add('text-yellow-500', 'border-yellow-500');
-                tabDetails.classList.remove('text-yellow-500', 'border-yellow-500');
-                tabPhysicalTest.classList.remove('text-yellow-500', 'border-yellow-500');
-                savePermissionsBtn.classList.remove('hidden');
-                inviteBtn.classList.add('hidden');
-            });
+                // Loop through all configurations to set the correct state
+                for (const tabName in tabConfig) {
+                    const config = tabConfig[tabName];
+                    const isActive = tabName === activeTab;
 
-            tabPhysicalTest.addEventListener('click', () => {
-                contentDetails.classList.add('hidden');
-                contentPermissions.classList.add('hidden');
-                contentPhysicalTest.classList.remove('hidden');
-                tabPhysicalTest.classList.add('text-yellow-500', 'border-yellow-500');
-                tabDetails.classList.remove('text-yellow-500', 'border-yellow-500');
-                tabPermissions.classList.remove('text-yellow-500', 'border-yellow-500');
-                savePermissionsBtn.classList.add('hidden');
-                inviteBtn.classList.add('hidden');
-            });
+                    // Toggle content visibility
+                    config.content.classList.toggle('hidden', !isActive);
+
+                    // Toggle button visibility
+                    if (config.button) {
+                        config.button.classList.toggle('hidden', !isActive);
+                    }
+
+                    // Toggle tab style
+                    config.tab.classList.toggle('text-yellow-500', isActive);
+                    config.tab.classList.toggle('border-yellow-500', isActive);
+                }
+            }
+            
+            tabDetails.addEventListener('click', () => switchTab('details'));
+            tabPermissions.addEventListener('click', () => switchTab('permissions'));
+            tabPhysicalTest.addEventListener('click', () => switchTab('physical-test'));
+            tabBadges.addEventListener('click', () => switchTab('badges'));
 
             // Carrega todos os conteúdos uma vez para popular os modais
             Promise.all([loadStudents(), loadAllSelectableContent()]);
@@ -200,15 +221,19 @@ async function openStudentModal(student) {
     const extraContentEl = document.getElementById('modal-content-extra');
     const inviteBtn = document.getElementById('modal-invite-btn');
     const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
+    const saveBadgesBtn = document.getElementById('modal-save-badges-btn');
     
     // Reseta para a aba de detalhes ao abrir
     document.getElementById('tab-content-details').classList.remove('hidden');
     document.getElementById('tab-content-permissions').classList.add('hidden');
     document.getElementById('tab-content-physical-test').classList.add('hidden');
+    document.getElementById('tab-content-badges').classList.add('hidden');
     document.getElementById('tab-details').classList.add('text-yellow-500', 'border-yellow-500');
     document.getElementById('tab-permissions').classList.remove('text-yellow-500', 'border-yellow-500');
     document.getElementById('tab-physical-test').classList.remove('text-yellow-500', 'border-yellow-500');
+    document.getElementById('tab-badges').classList.remove('text-yellow-500', 'border-yellow-500');
     savePermissionsBtn.classList.add('hidden');
+    saveBadgesBtn.classList.add('hidden');
     inviteBtn.classList.remove('hidden');
 
     // Atualiza a foto
@@ -328,6 +353,7 @@ async function openStudentModal(student) {
     try {
         // Carrega e preenche as permissões e outros dados
         await populatePermissionsChecklists(student);
+        await populateBadgesChecklist(student);
         await populatePhysicalTestTab(student);
     } catch (error) {
         console.error("Erro ao popular dados do modal para o aluno:", student.idMember, error);
@@ -341,6 +367,10 @@ async function openStudentModal(student) {
     // Lógica do botão de salvar permissões
     savePermissionsBtn.replaceWith(savePermissionsBtn.cloneNode(true));
     document.getElementById('modal-save-permissions-btn').addEventListener('click', () => handleSavePermissions(student));
+
+    // Lógica do botão de salvar emblemas
+    saveBadgesBtn.replaceWith(saveBadgesBtn.cloneNode(true));
+    document.getElementById('modal-save-badges-btn').addEventListener('click', () => handleSaveBadges(student));
 }
 
 async function handleInviteClick(student) {
@@ -389,14 +419,17 @@ async function loadAllSelectableContent() {
     try {
         const coursesQuery = query(collection(db, "courses"), orderBy("title"));
         const tatameQuery = query(collection(db, "tatame_conteudos"), orderBy("title"));
+        const badgesQuery = query(collection(db, "badges"), orderBy("name"));
         
-        const [coursesSnapshot, tatameSnapshot] = await Promise.all([
+        const [coursesSnapshot, tatameSnapshot, badgesSnapshot] = await Promise.all([
             getDocs(coursesQuery),
-            getDocs(tatameQuery)
+            getDocs(tatameQuery),
+            getDocs(badgesQuery)
         ]);
 
         allCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         allTatameContents = tatameSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allBadges = badgesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     } catch (error) {
         console.error("Erro ao carregar conteúdos para seleção:", error);
@@ -411,7 +444,6 @@ async function populatePermissionsChecklists(student) {
 
     // Precisamos encontrar o UID do usuário do Firebase correspondente ao aluno
     const studentUser = await findUserByEvoId(student.idMember);
-    const studentUid = studentUser?.id;
     const studentPermissions = studentUser?.accessibleContent || [];
 
     allCourses.forEach(course => {
@@ -460,6 +492,60 @@ async function handleSavePermissions(student) {
     } finally {
         button.disabled = false;
         button.textContent = 'Salvar Permissões';
+    }
+}
+
+async function populateBadgesChecklist(student) {
+    const badgesChecklist = document.getElementById('badges-checklist');
+    badgesChecklist.innerHTML = '';
+
+    const studentUser = await findUserByEvoId(student.idMember);
+    const studentBadges = studentUser?.earnedBadges || [];
+
+    if (allBadges.length === 0) {
+        badgesChecklist.innerHTML = '<p class="text-gray-500 col-span-full">Nenhum emblema cadastrado no sistema.</p>';
+        return;
+    }
+
+    allBadges.forEach(badge => {
+        const isChecked = studentBadges.includes(badge.id);
+        badgesChecklist.innerHTML += `
+            <label class="flex flex-col items-center space-y-2 text-gray-300 cursor-pointer p-2 rounded-lg hover:bg-gray-700">
+                <img src="${badge.imageUrl}" alt="${badge.name}" class="w-16 h-16 rounded-full object-cover border-2 ${isChecked ? 'border-yellow-500' : 'border-gray-600'}">
+                <input type="checkbox" value="${badge.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${isChecked ? 'checked' : ''}>
+                <span class="text-xs text-center">${badge.name}</span>
+            </label>
+        `;
+    });
+}
+
+async function handleSaveBadges(student) {
+    const button = document.getElementById('modal-save-badges-btn');
+    const studentUser = await findUserByEvoId(student.idMember);
+
+    if (!studentUser) {
+        alert("Este aluno ainda não tem uma conta no sistema (use o botão 'Convidar' primeiro). Não é possível salvar emblemas.");
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Salvando...';
+
+    const selectedBadges = Array.from(document.querySelectorAll('#badges-checklist input:checked')).map(input => input.value);
+
+    try {
+        // Precisamos de uma nova Cloud Function para atualizar apenas os emblemas
+        // Por enquanto, vamos usar uma função hipotética 'updateStudentBadges'
+        // Esta será criada no backend (Firebase Functions)
+        const updateStudentBadges = httpsCallable(functions, 'updateStudentBadges');
+        await updateStudentBadges({ studentUid: studentUser.id, earnedBadges: selectedBadges });
+        alert("Emblemas salvos com sucesso!");
+    } catch (error) {
+        console.error("Erro ao salvar emblemas:", error);
+        alert(`Erro ao salvar emblemas: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Salvar Emblemas';
     }
 }
 

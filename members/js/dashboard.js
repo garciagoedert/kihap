@@ -1,7 +1,7 @@
 import { onAuthReady, getUserData } from './auth.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db } from '../../intranet/firebase-config.js';
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const getMemberData = httpsCallable(functions, 'getMemberData');
 
@@ -35,7 +35,10 @@ export function loadMemberDashboard() {
                         document.getElementById('member-unit').textContent = member.branchName || 'Unidade Centro';
                         document.getElementById('member-status').textContent = member.membershipStatus || 'Não informado';
                         document.getElementById('member-register-date').textContent = member.registerDate ? new Date(member.registerDate).toLocaleDateString('pt-BR') : 'Não informada';
-                        document.getElementById('member-kihapcoins').textContent = member.totalFitCoins || 0;
+                        
+                        const kihapCoins = member.totalFitCoins || 0;
+                        document.getElementById('member-kihapcoins').textContent = kihapCoins;
+                        document.getElementById('member-kihapcoins-highlight').textContent = kihapCoins;
 
                     } catch (error) {
                         console.error("Erro ao buscar dados do membro:", error);
@@ -48,6 +51,8 @@ export function loadMemberDashboard() {
 
                 // Carrega o histórico de testes físicos
                 loadMemberPhysicalTestHistory(user.uid);
+                // Carrega os emblemas do aluno
+                loadMemberBadges(userData);
             }
         }
     });
@@ -89,4 +94,35 @@ function calculateAge(birthDateString) {
         age--;
     }
     return age;
+}
+
+async function loadMemberBadges(userData) {
+    const container = document.getElementById('badges-container');
+    if (!userData || !userData.earnedBadges || userData.earnedBadges.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">Você ainda não conquistou emblemas.</p>';
+        return;
+    }
+
+    container.innerHTML = ''; // Limpa a mensagem de "carregando"
+
+    try {
+        for (const badgeId of userData.earnedBadges) {
+            const badgeRef = doc(db, "badges", badgeId);
+            const badgeSnap = await getDoc(badgeRef);
+
+            if (badgeSnap.exists()) {
+                const badge = badgeSnap.data();
+                const badgeElement = document.createElement('div');
+                badgeElement.className = 'flex flex-col items-center text-center';
+                badgeElement.innerHTML = `
+                    <img src="${badge.imageUrl}" alt="${badge.name}" title="${badge.name}: ${badge.description}" class="w-20 h-20 rounded-full object-cover border-2 border-yellow-500 transition-transform hover:scale-110">
+                    <p class="text-sm mt-2">${badge.name}</p>
+                `;
+                container.appendChild(badgeElement);
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao carregar emblemas do aluno:", error);
+        container.innerHTML = '<p class="text-red-500">Não foi possível carregar seus emblemas.</p>';
+    }
 }

@@ -27,6 +27,10 @@
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold">Gerenciamento de Alunos</h1>
+                    <a href="gerenciar-emblemas.html" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded flex items-center space-x-2">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Gerenciar Emblemas</span>
+                    </a>
                 </div>
 
                 <!-- Daily Entries Check -->
@@ -119,6 +123,9 @@
                     <button id="tab-physical-test" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
                         Teste Físico
                     </button>
+                    <button id="tab-badges" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Emblemas
+                    </button>
                 </nav>
             </div>
 
@@ -151,6 +158,13 @@
                                 <p class="text-gray-500">Carregando conteúdos...</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Badges -->
+                <div id="tab-content-badges" class="tab-content hidden">
+                    <div id="badges-checklist" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-80 overflow-y-auto p-2 bg-gray-800 rounded">
+                        <p class="text-gray-500 col-span-full">Carregando emblemas...</p>
                     </div>
                 </div>
 
@@ -187,6 +201,9 @@
                 </button>
                 <button id="modal-save-permissions-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded hidden">
                     Salvar Permissões
+                </button>
+                <button id="modal-save-badges-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded hidden">
+                    Salvar Emblemas
                 </button>
             </div>
         </div>
