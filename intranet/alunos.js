@@ -261,7 +261,8 @@ async function openStudentModal(student) {
         membershipStatus: "Status da Matrícula",
         photoUrl: "URL da Foto",
         email: "E-mail",
-        cellphones: "Celulares"
+        cellphones: "Celulares",
+        nameEmployeeInstructor: "Professor"
     };
 
     const formatValue = (key, value) => {
@@ -305,7 +306,7 @@ async function openStudentModal(student) {
     }
     
     // Campos principais (ao lado da foto)
-    const mainKeys = ['firstName', 'lastName', 'birthDate', 'membershipStatus', 'email', 'cellphones'];
+    const mainKeys = ['firstName', 'lastName', 'birthDate', 'membershipStatus', 'email', 'cellphones', 'nameEmployeeInstructor'];
     mainKeys.forEach(key => {
         if (studentData.hasOwnProperty(key) && studentData[key]) {
             mainHtml += `
