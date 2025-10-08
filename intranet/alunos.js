@@ -1,7 +1,11 @@
 import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { functions, db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { functions, db, storage } from './firebase-config.js'; // Added storage import
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"; // Added storage imports
+
+// Import functions for badge management from gerenciar-emblemas.js
+import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js'; 
 
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -12,39 +16,51 @@ const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersBy
 let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
 let allTatameContents = [];
-let allBadges = [];
+let allBadges = []; // This will be populated by loadAllSelectableContent and used by the modal
 
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
         if (user) {
+            // --- DOM Elements ---
             const unitFilter = document.getElementById('unit-filter');
             const searchInput = document.getElementById('search-input');
             const statusFilter = document.getElementById('status-filter');
             const modal = document.getElementById('student-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
-            const tabDetails = document.getElementById('tab-details');
-            const tabPermissions = document.getElementById('tab-permissions');
-            const tabPhysicalTest = document.getElementById('tab-physical-test');
-            const tabBadges = document.getElementById('tab-badges');
-            const contentDetails = document.getElementById('tab-content-details');
-            const contentPermissions = document.getElementById('tab-content-permissions');
-            const contentPhysicalTest = document.getElementById('tab-content-physical-test');
-            const contentBadges = document.getElementById('tab-content-badges');
             const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
             const saveBadgesBtn = document.getElementById('modal-save-badges-btn');
             const inviteBtn = document.getElementById('modal-invite-btn');
             const checkEntriesBtn = document.getElementById('check-entries-btn');
             const dailyEntriesDate = document.getElementById('daily-entries-date');
 
+            // --- Tab Elements ---
+            const tabManageStudents = document.getElementById('tab-manage-students');
+            const tabCheckEntries = document.getElementById('tab-check-entries');
+            const tabManageBadges = document.getElementById('tab-manage-badges');
+            const contentManageStudents = document.getElementById('tab-content-manage-students');
+            const contentCheckEntries = document.getElementById('tab-content-check-entries');
+            const contentManageBadges = document.getElementById('tab-content-manage-badges');
+
+            // --- Modal Tab Elements ---
+            const tabDetails = document.getElementById('tab-details');
+            const tabPermissions = document.getElementById('tab-permissions');
+            const tabPhysicalTest = document.getElementById('tab-physical-test');
+            const tabBadgesModal = document.getElementById('tab-badges'); // Renamed to avoid conflict
+            const contentDetails = document.getElementById('tab-content-details');
+            const contentPermissions = document.getElementById('tab-content-permissions');
+            const contentPhysicalTest = document.getElementById('tab-content-physical-test');
+            const contentBadgesModal = document.getElementById('tab-content-badges'); // Renamed to avoid conflict
+
             // Set default date to today
             dailyEntriesDate.value = new Date().toISOString().split('T')[0];
 
+            // --- Event Listeners ---
             unitFilter.addEventListener('change', () => loadStudents());
             checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
             searchInput.addEventListener('input', () => renderStudents(allStudents));
             statusFilter.addEventListener('change', () => loadStudents());
 
-            // Event listener delegado para a tabela de alunos
+            // Event listener delegated for the students table
             const tableBody = document.getElementById('students-table-body');
             tableBody.addEventListener('click', (e) => {
                 const row = e.target.closest('.student-row');
@@ -57,7 +73,7 @@ export function setupAlunosPage() {
                 }
             });
             
-            // Controle do Modal
+            // Modal Controls
             closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -65,40 +81,75 @@ export function setupAlunosPage() {
                 }
             });
 
-            // Controle das Abas
-            function switchTab(activeTab) {
+            // --- Main Page Tab Switching Logic ---
+            function switchMainTab(activeTabName) {
+                const tabConfigs = {
+                    'manage-students': { content: contentManageStudents, button: tabManageStudents },
+                    'check-entries': { content: contentCheckEntries, button: tabCheckEntries },
+                    'manage-badges': { content: contentManageBadges, button: tabManageBadges }
+                };
+
+                // Hide all content and reset button styles
+                for (const name in tabConfigs) {
+                    tabConfigs[name].content.classList.add('hidden');
+                    tabConfigs[name].button.classList.remove('text-yellow-500', 'border-yellow-500');
+                    tabConfigs[name].button.classList.add('text-gray-400', 'hover:text-white');
+                }
+
+                // Show the active tab's content and style its button
+                const activeConfig = tabConfigs[activeTabName];
+                activeConfig.content.classList.remove('hidden');
+                activeConfig.button.classList.add('text-yellow-500', 'border-yellow-500');
+                activeConfig.button.classList.remove('text-gray-400', 'hover:text-white');
+
+                // Special handling for badge management tab activation
+                if (activeTabName === 'manage-badges') {
+                    // Ensure badge management setup is called only once or when needed
+                    // We can check if the content is already loaded or if the setup function has been called
+                    // For simplicity, we'll call it here, assuming it handles re-initialization gracefully or we add a flag.
+                    // A more robust solution might involve checking if the content is visible and then calling setup.
+                    setupBadgeManagement(); 
+                }
+            }
+            
+            tabManageStudents.addEventListener('click', () => switchMainTab('manage-students'));
+            tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
+            tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
+
+            // --- Modal Tab Switching Logic (Existing) ---
+            function switchModalTab(activeTabName) {
                 const tabConfig = {
                     details: {
                         content: contentDetails,
-                        button: document.getElementById('modal-invite-btn'),
+                        button: document.getElementById('modal-invite-btn'), // This button is for details tab
                         tab: tabDetails
                     },
                     permissions: {
                         content: contentPermissions,
-                        button: document.getElementById('modal-save-permissions-btn'),
+                        button: savePermissionsBtn,
                         tab: tabPermissions
                     },
                     'physical-test': {
                         content: contentPhysicalTest,
-                        button: null, // No button for this tab
+                        button: null, // No specific button for this tab in the footer
                         tab: tabPhysicalTest
                     },
-                    badges: {
-                        content: contentBadges,
-                        button: document.getElementById('modal-save-badges-btn'),
-                        tab: tabBadges
+                    badges: { // This refers to the modal's badge tab
+                        content: contentBadgesModal,
+                        button: saveBadgesBtn,
+                        tab: tabBadgesModal
                     }
                 };
 
                 // Loop through all configurations to set the correct state
                 for (const tabName in tabConfig) {
                     const config = tabConfig[tabName];
-                    const isActive = tabName === activeTab;
+                    const isActive = tabName === activeTabName;
 
                     // Toggle content visibility
                     config.content.classList.toggle('hidden', !isActive);
 
-                    // Toggle button visibility
+                    // Toggle button visibility (for footer buttons)
                     if (config.button) {
                         config.button.classList.toggle('hidden', !isActive);
                     }
@@ -106,16 +157,26 @@ export function setupAlunosPage() {
                     // Toggle tab style
                     config.tab.classList.toggle('text-yellow-500', isActive);
                     config.tab.classList.toggle('border-yellow-500', isActive);
+                    // Ensure other tabs are styled as inactive
+                    if (!isActive) {
+                        config.tab.classList.add('text-gray-400', 'hover:text-white');
+                        config.tab.classList.remove('border-yellow-500');
+                    } else {
+                        config.tab.classList.remove('text-gray-400', 'hover:text-white');
+                    }
                 }
             }
             
-            tabDetails.addEventListener('click', () => switchTab('details'));
-            tabPermissions.addEventListener('click', () => switchTab('permissions'));
-            tabPhysicalTest.addEventListener('click', () => switchTab('physical-test'));
-            tabBadges.addEventListener('click', () => switchTab('badges'));
+            tabDetails.addEventListener('click', () => switchModalTab('details'));
+            tabPermissions.addEventListener('click', () => switchModalTab('permissions'));
+            tabPhysicalTest.addEventListener('click', () => switchModalTab('physical-test'));
+            tabBadgesModal.addEventListener('click', () => switchModalTab('badges')); // Use renamed variable
 
-            // Carrega todos os conteúdos uma vez para popular os modais
+            // --- Initial Load ---
+            // Load students and other necessary data for the page
             Promise.all([loadStudents(), loadAllSelectableContent()]);
+            // Set the default active tab to "Gerenciamento de Alunos"
+            switchMainTab('manage-students'); 
         }
     });
 }
@@ -227,11 +288,11 @@ async function openStudentModal(student) {
     document.getElementById('tab-content-details').classList.remove('hidden');
     document.getElementById('tab-content-permissions').classList.add('hidden');
     document.getElementById('tab-content-physical-test').classList.add('hidden');
-    document.getElementById('tab-content-badges').classList.add('hidden');
+    document.getElementById('tab-content-badges').classList.add('hidden'); // Use renamed variable
     document.getElementById('tab-details').classList.add('text-yellow-500', 'border-yellow-500');
     document.getElementById('tab-permissions').classList.remove('text-yellow-500', 'border-yellow-500');
     document.getElementById('tab-physical-test').classList.remove('text-yellow-500', 'border-yellow-500');
-    document.getElementById('tab-badges').classList.remove('text-yellow-500', 'border-yellow-500');
+    document.getElementById('tab-badges').classList.remove('text-yellow-500', 'border-yellow-500'); // Use renamed variable
     savePermissionsBtn.classList.add('hidden');
     saveBadgesBtn.classList.add('hidden');
     inviteBtn.classList.remove('hidden');

@@ -13,44 +13,37 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .tab-btn {
+            transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .tab-content {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .tab-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none; /* Ensure it's not taking up space */
+        }
+        .badge-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .badge-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.1), 0 4px 6px -2px rgba(251, 191, 36, 0.05);
+        }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
-    <div class="flex h-screen">
-        <div id="sidebar-container"></div>
-        
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+<body class="bg-[#111111] text-gray-200 h-screen">
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
-        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
-            <div id="header-container"></div>
+    <main id="main-content" class="flex-1 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out">
+        <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold">Gerenciamento de Alunos</h1>
-                    <a href="gerenciar-emblemas.html" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded flex items-center space-x-2">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>Gerenciar Emblemas</span>
-                    </a>
-                </div>
+        <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
+                <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
 
-                <!-- Daily Entries Check -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
-                    <h2 class="text-xl font-bold mb-4">Verificar Entradas Diárias</h2>
-                    <div class="flex items-center space-x-4">
-                        <div>
-                            <label for="daily-entries-date" class="text-sm font-medium text-gray-400">Selecione a Data:</label>
-                            <input type="date" id="daily-entries-date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <button id="check-entries-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded self-end">
-                            Verificar Entradas
-                        </button>
-                    </div>
-                    <div id="entries-result" class="mt-4 text-lg">
-                        <!-- O resultado será exibido aqui -->
-                    </div>
-                </div>
-
-                <!-- Filters -->
+                <!-- Unit Filter (Moved to be always visible) -->
                 <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
                     <div>
                         <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
@@ -68,36 +61,115 @@
                             <option value="noroeste">Unidade Noroeste</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
-                        <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Search and Status filters remain in the first tab -->
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="border-b border-gray-700 mb-6">
+                    <nav class="flex space-x-4" aria-label="Tabs">
+                        <button id="tab-manage-students" class="tab-btn text-yellow-500 border-b-2 border-yellow-500 px-3 py-2 font-medium text-sm">
+                            Gerenciamento de Alunos
+                        </button>
+                        <button id="tab-check-entries" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                            Verificar Entradas
+                        </button>
+                        <button id="tab-manage-badges" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                            Gerenciar Emblemas
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content: Gerenciamento de Alunos -->
+                <div id="tab-content-manage-students" class="tab-content">
+                    <!-- Filters (Search and Status only) -->
+                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
+                        <div>
+                            <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
+                            <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="status-filter" class="text-sm font-medium text-gray-400">Filtrar por Status:</label>
+                            <select id="status-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="1">Ativos</option>
+                                <option value="2">Inativos</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label for="status-filter" class="text-sm font-medium text-gray-400">Filtrar por Status:</label>
-                        <select id="status-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="1">Ativos</option>
-                            <option value="2">Inativos</option>
-                        </select>
+                    
+                    <!-- Students Table -->
+                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Nome</th>
+                                    <th class="p-4">Email</th>
+                                    <th class="p-4">Unidade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body">
+                                <!-- Linhas serão inseridas dinamicamente aqui -->
+                                <tr>
+                                    <td colspan="3" class="text-center p-8">Carregando alunos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                
-                <!-- Students Table -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-700">
-                                <th class="p-4">Nome</th>
-                                <th class="p-4">Email</th>
-                                <th class="p-4">Unidade</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body">
-                            <!-- Linhas serão inseridas dinamicamente aqui -->
-                            <tr>
-                                <td colspan="4" class="text-center p-8">Carregando alunos...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- Tab Content: Verificar Entradas -->
+                <div id="tab-content-check-entries" class="tab-content hidden">
+                    <!-- Daily Entries Check -->
+                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
+                        <h2 class="text-xl font-bold mb-4">Verificar Entradas Diárias</h2>
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <label for="daily-entries-date" class="text-sm font-medium text-gray-400">Selecione a Data:</label>
+                                <input type="date" id="daily-entries-date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <button id="check-entries-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded self-end">
+                                Verificar Entradas
+                            </button>
+                        </div>
+                        <div id="entries-result" class="mt-4 text-lg">
+                            <!-- O resultado será exibido aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Gerenciar Emblemas -->
+                <div id="tab-content-manage-badges" class="tab-content hidden">
+                    <!-- Formulário para Adicionar Novo Emblema -->
+                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-8">
+                        <h2 class="text-xl font-bold mb-4">Adicionar Novo Emblema</h2>
+                        <form id="add-badge-form" class="space-y-4">
+                            <div>
+                                <label for="badge-name" class="block text-sm font-medium text-gray-400">Nome do Emblema</label>
+                                <input type="text" id="badge-name" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            </div>
+                            <div>
+                                <label for="badge-description" class="block text-sm font-medium text-gray-400">Descrição</label>
+                                <textarea id="badge-description" rows="3" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                            </div>
+                            <div>
+                                <label for="badge-image" class="block text-sm font-medium text-gray-400">Imagem do Emblema</label>
+                                <input type="file" id="badge-image" accept="image/*" required class="w-full mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600">
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" id="submit-badge-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                                    Salvar Emblema
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Lista de Emblemas Existentes -->
+                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg flex-grow overflow-y-auto">
+                        <h2 class="text-xl font-bold mb-4">Emblemas Existentes</h2>
+                        <div id="badges-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <!-- Emblemas serão carregados aqui -->
+                            <p class="col-span-full text-center text-gray-500">Carregando emblemas...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -213,6 +285,8 @@
     <script type="module">
         import { loadComponents } from './common-ui.js';
         import { setupAlunosPage } from './alunos.js';
+        // Import functions for badge management from gerenciar-emblemas.js
+        import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js'; 
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
