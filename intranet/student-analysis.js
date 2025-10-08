@@ -1,6 +1,6 @@
 import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
 
@@ -32,11 +32,13 @@ async function initializeDashboard() {
     await populateFilters();
     
     const locationFilter = document.getElementById('location-filter');
-    locationFilter.addEventListener('change', () => {
+
+    const updateAllKpis = () => {
         displayEvoKpi();
         displayDailyEntriesKpi();
-        displayNewEnrollmentsKpi();
-    });
+    };
+
+    locationFilter.addEventListener('change', updateAllKpis);
 
     await fetchSnapshots();
     renderSnapshotLog();
@@ -45,9 +47,8 @@ async function initializeDashboard() {
     document.getElementById('snapshot-search').addEventListener('input', (e) => {
         renderSnapshotLog(e.target.value);
     });
-    displayEvoKpi();
-    displayDailyEntriesKpi();
-    displayNewEnrollmentsKpi();
+    
+    updateAllKpis();
 
     const manualSnapshotBtn = document.getElementById('manual-snapshot-btn');
     const weeklySummaryBtn = document.getElementById('weekly-summary-btn');
@@ -135,75 +136,6 @@ function renderSnapshotLog(searchTerm = '') {
     document.querySelectorAll('.log-item').forEach(item => {
         item.addEventListener('click', handleViewSnapshot);
     });
-}
-
-async function displayNewEnrollmentsKpi() {
-    const kpiContainer = document.getElementById('kpi-container');
-    const locationFilter = document.getElementById('location-filter');
-    const selectedUnit = locationFilter.value;
-
-    const oldCard = document.getElementById('new-enrollments-kpi-card');
-    if (oldCard) oldCard.remove();
-
-    const placeholderHtml = `
-        <div id="new-enrollments-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-            <div class="text-3xl mr-4">🎉</div>
-            <div>
-                <p class="text-gray-400 text-sm">Novas Matrículas</p>
-                <p class="text-2xl font-bold text-white">...</p>
-            </div>
-        </div>`;
-    kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
-
-    try {
-        const prospectsRef = collection(db, 'prospects');
-        let q;
-
-        if (selectedUnit && selectedUnit !== 'geral') {
-            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            q = query(prospectsRef, where('status', '==', 'Matrícula'), where('unidade', '==', displayName));
-        } else {
-            q = query(prospectsRef, where('status', '==', 'Matrícula'));
-        }
-
-        const querySnapshot = await getDocs(q);
-        const enrollmentsCount = querySnapshot.size;
-
-        let label;
-        if (selectedUnit && selectedUnit !== 'geral') {
-            const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Novas Matrículas (${displayName})`;
-        } else {
-            label = "Novas Matrículas (Geral)";
-        }
-
-        const finalHtml = `
-            <div id="new-enrollments-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">🎉</div>
-                <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${enrollmentsCount}</p>
-                </div>
-            </div>
-        `;
-        
-        const placeholderCard = document.getElementById('new-enrollments-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = finalHtml;
-
-    } catch (error) {
-        console.error("Erro ao carregar KPI de Novas Matrículas:", error);
-        const errorHtml = `
-            <div id="new-enrollments-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">⚠️</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Novas Matrículas</p>
-                    <p class="text-xl font-bold text-red-500">Erro</p>
-                </div>
-            </div>
-        `;
-        const placeholderCard = document.getElementById('new-enrollments-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = errorHtml;
-    }
 }
 
 function setupWeeklySummaryModal() {
