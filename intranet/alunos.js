@@ -1,4 +1,5 @@
 import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
+import { showConfirm } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, storage } from './firebase-config.js'; // Added storage import
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -437,6 +438,7 @@ async function openStudentModal(student) {
 
 async function handleInviteClick(student) {
     const button = document.getElementById('modal-invite-btn');
+    const unitFilter = document.getElementById('unit-filter');
 
     const email = student.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description;
     if (!email) {
@@ -444,37 +446,102 @@ async function handleInviteClick(student) {
         return;
     }
 
-    if (!confirm(`Tem certeza que deseja enviar um convite para ${student.firstName} (${email})?`)) {
+    let unitId;
+    const selectedUnit = unitFilter.value;
+
+    // Função de normalização final para garantir a correspondência
+    const normalize = (str) => {
+        if (!str) return '';
+        return str.normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+                  .toLowerCase()
+                  .replace(/kihap|unidade/g, '') // Remove palavras-chave
+                  .replace(/[^a-z0-9]/g, ''); // Remove caracteres não alfanuméricos
+    };
+
+    if (selectedUnit !== 'all') {
+        unitId = selectedUnit;
+    } else {
+        const normalizedBranchName = normalize(student.branchName); // Ex: "kihap-centro" -> "centro"
+        if (normalizedBranchName) {
+            const unitOption = Array.from(unitFilter.options).find(opt => {
+                if (opt.value === 'all') return false;
+                // Compara o nome normalizado da API com o valor da opção (que já é um slug)
+                // Ex: "centro" (da API) vs "centro" (do value do option)
+                return normalize(opt.value) === normalizedBranchName;
+            });
+
+            if (unitOption) {
+                unitId = unitOption.value;
+            }
+        }
+    }
+
+    if (!unitId) {
+        alert("Não foi possível determinar a unidade do aluno. Por favor, selecione uma unidade específica no filtro e tente novamente.");
         return;
     }
 
-    button.disabled = true;
-    button.textContent = 'Enviando...';
+    showConfirm(
+        `Tem certeza que deseja enviar um convite para ${student.firstName} (${email}) da unidade ${student.branchName}?`,
+        async () => {
+            button.disabled = true;
+            button.textContent = 'Enviando...';
 
-    try {
-        const result = await inviteStudent({
-            evoMemberId: student.idMember,
-            email: email,
-            firstName: student.firstName,
-            lastName: student.lastName
-        });
+            try {
+                const result = await inviteStudent({
+                    evoMemberId: student.idMember,
+                    email: email,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    unitId: unitId // Adiciona a unitId na chamada
+                });
 
-        // Exibe o link para o admin copiar
-        prompt(
-            "Convite gerado com sucesso! Copie o link abaixo e envie para o aluno:",
-            result.data.link
-        );
+                showInviteLinkModal(result.data.link);
 
-        button.textContent = 'Convite Enviado';
-        button.classList.remove('bg-green-600', 'hover:bg-green-700');
-        button.classList.add('bg-gray-500');
+                button.textContent = 'Convite Enviado';
+                button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                button.classList.add('bg-gray-500');
 
-    } catch (error) {
-        console.error("Erro ao enviar convite:", error);
-        alert(`Erro ao enviar convite: ${error.message}`);
-        button.disabled = false;
-        button.textContent = 'Convidar';
-    }
+            } catch (error) {
+                console.error("Erro ao enviar convite:", error);
+                alert(`Erro ao enviar convite: ${error.message}`);
+                button.disabled = false;
+                button.textContent = 'Convidar';
+            }
+        },
+        "Confirmar Envio de Convite"
+    );
+}
+
+function showInviteLinkModal(link) {
+    const modal = document.getElementById('inviteLinkModal');
+    const linkInput = document.getElementById('inviteLinkInput');
+    const copyBtn = document.getElementById('copyInviteLinkBtn');
+    const closeBtn = document.getElementById('closeInviteLinkModalBtn');
+
+    if (!modal || !linkInput || !copyBtn || !closeBtn) return;
+
+    linkInput.value = link;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const close = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    };
+
+    copyBtn.onclick = () => {
+        linkInput.select();
+        document.execCommand('copy');
+        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => {
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        }, 2000);
+    };
+
+    closeBtn.onclick = close;
 }
 
 async function loadAllSelectableContent() {
