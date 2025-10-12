@@ -44,7 +44,7 @@ body {
 }
 
 .hero-section {
-    background-image: url('https://kihap.com.br/wp-content/uploads/2025/07/header-1-scaled-e1753296220846.jpg');
+    background-image: url('/imgs/fundogero.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
