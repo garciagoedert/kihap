@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { showConfirm } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, storage } from './firebase-config.js'; // Added storage import
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"; // Added storage imports
 
 // Import functions for badge management from gerenciar-emblemas.js
@@ -38,9 +38,11 @@ export function setupAlunosPage() {
             const tabManageStudents = document.getElementById('tab-manage-students');
             const tabCheckEntries = document.getElementById('tab-check-entries');
             const tabManageBadges = document.getElementById('tab-manage-badges');
+            const tabRanking = document.getElementById('tab-ranking');
             const contentManageStudents = document.getElementById('tab-content-manage-students');
             const contentCheckEntries = document.getElementById('tab-content-check-entries');
             const contentManageBadges = document.getElementById('tab-content-manage-badges');
+            const contentRanking = document.getElementById('tab-content-ranking');
 
             // --- Modal Tab Elements ---
             const tabDetails = document.getElementById('tab-details');
@@ -87,7 +89,8 @@ export function setupAlunosPage() {
                 const tabConfigs = {
                     'manage-students': { content: contentManageStudents, button: tabManageStudents },
                     'check-entries': { content: contentCheckEntries, button: tabCheckEntries },
-                    'manage-badges': { content: contentManageBadges, button: tabManageBadges }
+                    'manage-badges': { content: contentManageBadges, button: tabManageBadges },
+                    'ranking': { content: contentRanking, button: tabRanking }
                 };
 
                 // Hide all content and reset button styles
@@ -110,12 +113,15 @@ export function setupAlunosPage() {
                     // For simplicity, we'll call it here, assuming it handles re-initialization gracefully or we add a flag.
                     // A more robust solution might involve checking if the content is visible and then calling setup.
                     setupBadgeManagement(); 
+                } else if (activeTabName === 'ranking') {
+                    loadRankingData();
                 }
             }
             
             tabManageStudents.addEventListener('click', () => switchMainTab('manage-students'));
             tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
             tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
+            tabRanking.addEventListener('click', () => switchMainTab('ranking'));
 
             // --- Modal Tab Switching Logic (Existing) ---
             function switchModalTab(activeTabName) {
@@ -208,7 +214,16 @@ async function loadStudents() {
             studentList = result.data || [];
         }
         
-        allStudents = studentList; // Armazena no cache
+        // Remove duplicates based on idMember
+        const uniqueStudentsMap = new Map();
+        studentList.forEach(student => {
+            if (!uniqueStudentsMap.has(student.idMember)) {
+                uniqueStudentsMap.set(student.idMember, student);
+            }
+        });
+        const uniqueStudentList = Array.from(uniqueStudentsMap.values());
+
+        allStudents = uniqueStudentList; // Armazena no cache a lista sem duplicatas
         renderStudents(allStudents);
 
     } catch (error) {
@@ -843,4 +858,51 @@ async function handleCheckEntriesClick() {
         button.disabled = false;
         button.textContent = 'Verificar Entradas';
     }
+}
+
+function loadRankingData() {
+    const rankingTableBody = document.getElementById('ranking-table-body');
+    rankingTableBody.innerHTML = ''; // Limpa a tabela
+
+    // Usa a lista de alunos já carregada da API do EVO
+    if (!allStudents || allStudents.length === 0) {
+        rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando dados dos alunos... Por favor, aguarde.</td></tr>';
+        // Se os alunos ainda não foram carregados, podemos esperar um pouco ou mostrar uma mensagem.
+        // A chamada inicial `loadStudents()` deve cuidar disso.
+        return;
+    }
+
+    // Cria uma cópia para não alterar a ordem original e filtra alunos com FitCoins
+    const studentsWithCoins = [...allStudents].filter(student => student.totalFitCoins > 0);
+
+    // Ordena os alunos pelo campo 'totalFitCoins'
+    studentsWithCoins.sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));
+
+    renderRanking(studentsWithCoins);
+}
+
+function renderRanking(students) {
+    const rankingTableBody = document.getElementById('ranking-table-body');
+    
+    if (students.length === 0) {
+        rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno com KihapCoins encontrado nos filtros atuais.</td></tr>';
+        return;
+    }
+
+    const rowsHtml = students.map((student, index) => {
+        const fullName = `${student.firstName || ''} ${student.lastName || ''}`;
+        const unitName = student.branchName || 'N/A';
+        const fitCoins = student.totalFitCoins || 0;
+
+        return `
+            <tr class="border-b border-gray-800">
+                <td class="p-4 text-center font-medium">${index + 1}º</td>
+                <td class="p-4">${fullName}</td>
+                <td class="p-4">${unitName}</td>
+                <td class="p-4 font-bold text-yellow-500">${fitCoins}</td>
+            </tr>
+        `;
+    }).join('');
+
+    rankingTableBody.innerHTML = rowsHtml;
 }

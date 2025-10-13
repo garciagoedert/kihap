@@ -137,7 +137,7 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid in resource.data.members;
       
       match /messages/{messageId} {
-        allow read, create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow read, create, delete: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
       }
     }
 
