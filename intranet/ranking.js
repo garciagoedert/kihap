@@ -84,7 +84,22 @@ function renderRanking(students) {
     rankingBody.innerHTML = rowsHtml;
 }
 
+let slideIndex = 0;
+
+function showSlides() {
+    let i;
+    const slides = document.getElementsByClassName("banner-slide");
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+    slideIndex++;
+    if (slideIndex > slides.length) {slideIndex = 1}
+    slides[slideIndex-1].style.display = "block";
+    setTimeout(showSlides, 10000); // Change image every 10 seconds
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayRanking(); // Initial load
     setInterval(fetchAndDisplayRanking, 300000); // Refresh every 5 minutes (300000 ms)
+    showSlides(); // Start the slideshow
 });

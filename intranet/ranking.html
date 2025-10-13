@@ -83,26 +83,51 @@
             padding: 4rem;
             color: #9CA3AF;
         }
-        .qr-container {
+        .banner-slideshow-container {
             position: fixed;
             bottom: 2rem;
-            right: 2rem;
-            text-align: center;
-            background-color: #1a1a1a;
-            padding: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 900px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
-        .qr-container img {
+        .banner-slide {
+            display: none;
+            background-color: #1a1a1a;
+            padding: 1.5rem;
+        }
+        .banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+        .banner-text h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #E5E7EB;
+            text-align: left;
+        }
+        .banner-qr img {
             width: 150px;
             height: 150px;
             border-radius: 0.25rem;
-            margin: 0 auto; /* Center the image */
         }
-        .qr-container p {
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            color: #D1D5DB; /* Gray 300 */
+        .full-width-banner img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .fade {
+          animation-name: fade;
+          animation-duration: 1.5s;
+        }
+        @keyframes fade {
+          from {opacity: .4}
+          to {opacity: 1}
         }
     </style>
 </head>
@@ -131,9 +156,23 @@
         </div>
     </div>
 
-    <div class="qr-container">
-        <img src="../imgs/QRCODETELA.jpg" alt="QR Code para área do aluno">
-        <p>Acesse a nova área do aluno e saiba mais</p>
+    <div class="banner-slideshow-container">
+        <div class="banner-slide fade">
+            <div class="banner-content">
+                <div class="banner-text">
+                    <h2>Acesse a nova área do aluno e saiba mais</h2>
+                </div>
+                <div class="banner-qr">
+                    <img src="../imgs/QRCODETELA.jpg" alt="QR Code para área do aluno">
+                </div>
+            </div>
+        </div>
+        <!-- Adicione mais banners aqui no futuro -->
+        <div class="banner-slide fade">
+            <div class="full-width-banner">
+                <img src="../imgs/banner.jpg" alt="Banner informativo">
+            </div>
+        </div>
     </div>
 
     <script type="module" src="ranking.js"></script>
