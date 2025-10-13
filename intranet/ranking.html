@@ -83,6 +83,27 @@
             padding: 4rem;
             color: #9CA3AF;
         }
+        .qr-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            text-align: center;
+            background-color: #1a1a1a;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .qr-container img {
+            width: 150px;
+            height: 150px;
+            border-radius: 0.25rem;
+            margin: 0 auto; /* Center the image */
+        }
+        .qr-container p {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #D1D5DB; /* Gray 300 */
+        }
     </style>
 </head>
 <body class="h-screen">
@@ -108,6 +129,11 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <div class="qr-container">
+        <img src="../imgs/QRCODETELA.jpg" alt="QR Code para área do aluno">
+        <p>Acesse a nova área do aluno e saiba mais</p>
     </div>
 
     <script type="module" src="ranking.js"></script>
