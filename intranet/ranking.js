@@ -78,7 +78,21 @@ function renderRanking(students) {
     rankingBody.innerHTML = rowsHtml;
 }
 
+function initVideoSlider() {
+    const videos = document.querySelectorAll('#video-slider .tiktok-video');
+    let currentVideoIndex = 0;
+
+    if (videos.length > 0) {
+        setInterval(() => {
+            videos[currentVideoIndex].classList.remove('active');
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            videos[currentVideoIndex].classList.add('active');
+        }, 30000); // Troca de vídeo a cada 30 segundos
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayRanking(); // Initial load
     setInterval(fetchAndDisplayRanking, 300000); // Refresh every 5 minutes (300000 ms)
+    initVideoSlider();
 });

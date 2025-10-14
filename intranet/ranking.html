@@ -110,6 +110,14 @@
         .tiktok-video {
             width: 100%;
             height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .tiktok-video.active {
+            opacity: 1;
         }
         .ranking-section {
             flex: 2;
@@ -136,8 +144,9 @@
 <body class="h-screen">
     <div class="main-content">
         <div class="video-section">
-            <div class="tiktok-video-container">
-                <iframe class="tiktok-video" src="https://www.youtube.com/embed/gh0cw5z1ocs?autoplay=1&mute=1&loop=1&playlist=gh0cw5z1ocs&controls=0&showinfo=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div class="tiktok-video-container" id="video-slider">
+                <iframe class="tiktok-video active" src="https://www.youtube.com/embed/gh0cw5z1ocs?autoplay=1&mute=1&loop=1&playlist=gh0cw5z1ocs&controls=0&showinfo=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <iframe class="tiktok-video" src="https://www.youtube.com/embed/ZTLGO0jxafQ?autoplay=1&mute=1&loop=1&playlist=ZTLGO0jxafQ&controls=0&showinfo=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
         </div>
         <div class="ranking-section">
