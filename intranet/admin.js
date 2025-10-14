@@ -1,4 +1,4 @@
-import { getAllUsers, updateUserPassword } from './auth.js';
+import { getAllUsers, updateUserPassword, updateUser } from './auth.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, appId } from './firebase-config.js';
 import { 
@@ -32,6 +32,7 @@ export function setupAdminPage() {
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const isAdminInput = document.getElementById('isAdmin');
+    const isInstructorInput = document.getElementById('isInstructor');
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
     const addUserBtn = document.getElementById('add-user-btn');
@@ -87,11 +88,12 @@ export function setupAdminPage() {
         const email = emailInput.value;
         const password = passwordInput.value;
         const isAdmin = isAdminInput.checked;
+        const isInstructor = isInstructorInput.checked;
         const userId = hiddenEmailInput.value;
 
         if (userId) {
             // Editing user
-            const updatedData = { name, isAdmin };
+            const updatedData = { name, isAdmin, isInstructor };
             // O email não pode ser alterado aqui. A senha requer reautenticação.
             await updateUser(userId, updatedData);
         } else {
@@ -140,6 +142,7 @@ export function setupAdminPage() {
                 emailInput.value = user.email;
                 emailInput.disabled = true; // Não permitir edição de email
                 isAdminInput.checked = user.isAdmin;
+                isInstructorInput.checked = user.isInstructor || false;
                 hiddenEmailInput.value = user.id; // Armazenar UID
                 passwordInput.placeholder = "Não é possível alterar a senha aqui";
                 passwordInput.disabled = true;

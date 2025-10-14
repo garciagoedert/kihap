@@ -222,8 +222,9 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
     const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists || !userDoc.data().isAdmin) {
-        throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
+    const userData = userDoc.data();
+    if (!userDoc.exists || (!userData.isAdmin && !userData.isInstructor)) {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores ou instrutores podem executar esta ação.");
     }
 
     const { evoMemberId, email, firstName, lastName, unitId } = data; // Adiciona unitId

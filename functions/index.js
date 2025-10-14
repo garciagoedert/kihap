@@ -158,3 +158,40 @@ exports.grantAdminRole = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("internal", "Ocorreu um erro.");
     }
 });
+
+exports.grantInstructorRole = functions.https.onCall(async (data, context) => {
+    // Apenas administradores podem conceder a permissão de instrutor.
+    if (!context.auth.token.isAdmin) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Apenas administradores podem conceder esta permissão."
+        );
+    }
+
+    const { email } = data;
+    if (!email) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "O e-mail é obrigatório."
+        );
+    }
+
+    try {
+        const user = await admin.auth().getUserByEmail(email);
+        // Define a custom claim 'isInstructor'
+        await admin.auth().setCustomUserClaims(user.uid, { ...user.customClaims, isInstructor: true });
+        
+        // Atualiza também o documento no Firestore para consistência
+        await admin.firestore().collection('users').doc(user.uid).set({
+            isInstructor: true
+        }, { merge: true });
+
+        return { message: `Sucesso! ${email} agora tem permissão de instrutor.` };
+    } catch (error) {
+        console.error("Erro ao conceder permissão de instrutor:", error);
+        if (error.code === 'auth/user-not-found') {
+            throw new functions.https.HttpsError("not-found", "Usuário não encontrado com este e-mail.");
+        }
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro ao processar a solicitação.");
+    }
+});
