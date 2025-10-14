@@ -697,6 +697,55 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Busca e retorna os dados do ranking de forma pública, sem necessidade de autenticação.
+ */
+exports.getPublicRanking = functions.https.onCall(async (data, context) => {
+    const PAGE_SIZE = 100;
+    const unitIds = Object.keys(EVO_CREDENTIALS);
+    let allMembers = [];
+
+    try {
+        const allUnitPromises = unitIds.map(async (unitId) => {
+            const apiClientV2 = getEvoApiClient(unitId, 'v2');
+            const firstPageResponse = await apiClientV2.get("/members", {
+                params: { status: 1, page: 1, take: PAGE_SIZE },
+            });
+
+            const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
+            let unitMembers = firstPageResponse.data || [];
+
+            if (totalMembers > PAGE_SIZE) {
+                const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
+                const pagePromises = [];
+                for (let page = 2; page <= totalPages; page++) {
+                    pagePromises.push(apiClientV2.get("/members", { params: { status: 1, page, take: PAGE_SIZE } }));
+                }
+                const subsequentPageResponses = await Promise.all(pagePromises);
+                subsequentPageResponses.forEach(response => {
+                    if (response.data) unitMembers = unitMembers.concat(response.data);
+                });
+            }
+            return unitMembers;
+        });
+
+        const results = await Promise.all(allUnitPromises);
+        allMembers = results.flatMap(result => result || []);
+        
+        functions.logger.info(`Total de ${allMembers.length} membros carregados para o ranking público.`);
+        return allMembers;
+
+    } catch (error) {
+        functions.logger.error(`Erro detalhado ao gerar ranking público:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+        throw new functions.https.HttpsError("internal", "Não foi possível gerar o ranking.");
+    }
+});
+
+
+/**
  * Busca o total de entries (check-ins) de hoje para uma unidade específica ou para todas.
  */
 exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {

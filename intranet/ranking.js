@@ -1,12 +1,7 @@
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions } from './firebase-config.js';
 
-const listAllMembers = httpsCallable(functions, 'listAllMembers');
-
-const unitIds = [
-    "centro", "coqueiros", "asa-sul", "sudoeste", "lago-sul", 
-    "pontos-de-ensino", "jardim-botanico", "dourados", "santa-monica", "noroeste"
-];
+const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
 
 async function fetchAndDisplayRanking() {
     const rankingBody = document.getElementById('ranking-body');
@@ -18,10 +13,9 @@ async function fetchAndDisplayRanking() {
         </tr>`;
 
     try {
-        // Fetch students from all units concurrently
-        const promises = unitIds.map(unitId => listAllMembers({ unitId: unitId, status: 1 }));
-        const results = await Promise.all(promises);
-        const allStudents = results.flatMap(result => result.data || []);
+        // Call the public Cloud Function to get all students
+        const result = await getPublicRanking();
+        const allStudents = result.data || [];
 
         // Remove duplicates based on idMember
         const uniqueStudentsMap = new Map();

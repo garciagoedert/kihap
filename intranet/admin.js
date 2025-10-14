@@ -1,4 +1,4 @@
-import { getAllUsers, updateUserPassword, updateUser } from './auth.js';
+import { getAllUsers, updateUserPassword, updateUser, addUser } from './auth.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, appId } from './firebase-config.js';
 import { 
