@@ -29,8 +29,25 @@
                             <textarea id="post-content" rows="4" class="w-full bg-[#2a2a2a] text-gray-200 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Escreva sua mensagem..."></textarea>
                         </div>
                         <div class="mb-4">
-                            <label for="post-media" class="block text-gray-400 mb-2">Adicionar Mídia (Imagem, Vídeo, Áudio)</label>
-                            <input type="file" id="post-media" class="w-full text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                            <label class="block text-gray-400 mb-2">Adicionar Mídia</label>
+                            <div class="flex items-center mb-2">
+                                <input type="radio" id="media-type-upload" name="media-type" value="upload" checked class="mr-2">
+                                <label for="media-type-upload">Upload de Arquivo</label>
+                                <input type="radio" id="media-type-url" name="media-type" value="url" class="ml-4 mr-2">
+                                <label for="media-type-url">Link (YouTube, Spotify)</label>
+                            </div>
+
+                            <div id="upload-container" class="flex items-center">
+                                <label for="post-media" class="cursor-pointer bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg inline-block">
+                                    Escolher Arquivo
+                                </label>
+                                <span id="file-name" class="ml-4 text-gray-400">Nenhum arquivo selecionado</span>
+                                <input type="file" id="post-media" class="hidden">
+                            </div>
+
+                            <div id="url-container" class="hidden mt-2">
+                                <input type="text" id="media-url" class="w-full bg-[#2a2a2a] text-gray-200 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Cole o link do YouTube ou Spotify aqui">
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label for="target-unit" class="block text-gray-400 mb-2">Para qual unidade?</label>
@@ -61,7 +78,26 @@
             loadComponents(initFeedPage);
         };
 
-        document.addEventListener('DOMContentLoaded', loadScripts);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadScripts();
+
+            document.getElementById('post-media').addEventListener('change', function() {
+                const fileName = this.files[0] ? this.files[0].name : 'Nenhum arquivo selecionado';
+                document.getElementById('file-name').textContent = fileName;
+            });
+
+            document.querySelectorAll('input[name="media-type"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'upload') {
+                        document.getElementById('upload-container').style.display = 'flex';
+                        document.getElementById('url-container').style.display = 'none';
+                    } else {
+                        document.getElementById('upload-container').style.display = 'none';
+                        document.getElementById('url-container').style.display = 'block';
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
