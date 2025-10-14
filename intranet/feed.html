@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed - Intranet Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="log.css">
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+        <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Feed de Conteúdo</h1>
+                </div>
+
+                <!-- Formulário de Nova Postagem -->
+                <div class="bg-[#1e1e1e] p-6 rounded-lg mb-8">
+                    <h2 class="text-2xl font-bold mb-4">Criar Nova Postagem</h2>
+                    <form id="post-form">
+                        <div class="mb-4">
+                            <label for="post-content" class="block text-gray-400 mb-2">O que você quer compartilhar?</label>
+                            <textarea id="post-content" rows="4" class="w-full bg-[#2a2a2a] text-gray-200 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Escreva sua mensagem..."></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label for="post-media" class="block text-gray-400 mb-2">Adicionar Mídia (Imagem, Vídeo, Áudio)</label>
+                            <input type="file" id="post-media" class="w-full text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                        </div>
+                        <div class="mb-4">
+                            <label for="target-unit" class="block text-gray-400 mb-2">Para qual unidade?</label>
+                            <select id="target-unit" class="w-full bg-[#2a2a2a] text-gray-200 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="all">Todas as Unidades</option>
+                                <!-- Outras unidades serão carregadas aqui -->
+                            </select>
+                        </div>
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-6 rounded-lg">
+                            Publicar
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lista de Postagens -->
+                <h2 class="text-2xl font-bold mb-4">Postagens Recentes</h2>
+                <div id="feed-list" class="space-y-6">
+                    <!-- Postagens serão carregadas aqui -->
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module">
+        const loadScripts = async () => {
+            const timestamp = new Date().getTime();
+            const { loadComponents } = await import(`./common-ui.js?v=${timestamp}`);
+            const { initFeedPage } = await import(`./feed.js?v=${timestamp}`);
+            loadComponents(initFeedPage);
+        };
+
+        document.addEventListener('DOMContentLoaded', loadScripts);
+    </script>
+</body>
+</html>
