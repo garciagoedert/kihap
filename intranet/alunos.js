@@ -205,25 +205,18 @@ async function loadStudents() {
                 .filter(opt => opt.value !== 'all')
                 .map(opt => opt.value);
 
+            // Para cada unidade, chama a função para buscar os alunos com o status selecionado
             const promises = unitOptions.map(unitId => listAllMembers({ unitId: unitId, status: selectedStatus }));
             
             const results = await Promise.all(promises);
             studentList = results.flatMap(result => result.data || []);
         } else {
+            // Para uma única unidade, chama a função com o status selecionado
             const result = await listAllMembers({ unitId: selectedUnit, status: selectedStatus });
             studentList = result.data || [];
         }
         
-        // Remove duplicates based on idMember
-        const uniqueStudentsMap = new Map();
-        studentList.forEach(student => {
-            if (!uniqueStudentsMap.has(student.idMember)) {
-                uniqueStudentsMap.set(student.idMember, student);
-            }
-        });
-        const uniqueStudentList = Array.from(uniqueStudentsMap.values());
-
-        allStudents = uniqueStudentList; // Armazena no cache a lista sem duplicatas
+        allStudents = studentList; // Armazena no cache a lista sem duplicatas
         renderStudents(allStudents);
 
     } catch (error) {

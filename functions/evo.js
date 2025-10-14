@@ -125,53 +125,37 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
     }
 
     const { unitId = 'centro', status = 1 } = data;
-    const PAGE_SIZE = 100; // Define um tamanho de página razoável para a API.
+    const PAGE_SIZE = 500; // Um tamanho de página alto e seguro para a API.
 
     try {
         const apiClientV2 = getEvoApiClient(unitId, 'v2');
+        const apiParams = { page: 1, take: PAGE_SIZE };
 
-        // 1. Faz a primeira chamada para obter a primeira página e o total de membros.
-        const firstPageResponse = await apiClientV2.get("/members", {
-            params: {
-                status: status,
-                page: 1,
-                take: PAGE_SIZE,
-            },
-        });
+        // Apenas adiciona o filtro de status se ele for diferente de 0 (Todos).
+        if (status !== 0) {
+            apiParams.status = status;
+        }
 
+        const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
         const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
         let allMembers = firstPageResponse.data || [];
 
-        // 2. Se houver mais membros do que o tamanho da página, busca as páginas restantes.
         if (totalMembers > PAGE_SIZE) {
             const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
-            const pagePromises = [];
-
-            // Cria uma promessa para cada página restante (da 2 até a última).
             for (let page = 2; page <= totalPages; page++) {
-                pagePromises.push(
-                    apiClientV2.get("/members", {
-                        params: {
-                            status: status,
-                            page: page,
-                            take: PAGE_SIZE,
-                        },
-                    }),
-                );
-            }
-
-            // 3. Executa todas as chamadas de API restantes em paralelo.
-            const subsequentPageResponses = await Promise.all(pagePromises);
-
-            // 4. Concatena os resultados de todas as páginas.
-            subsequentPageResponses.forEach((response) => {
-                if (response.data) {
-                    allMembers = allMembers.concat(response.data);
+                try {
+                    apiParams.page = page;
+                    const subsequentPageResponse = await apiClientV2.get("/members", { params: apiParams });
+                    if (subsequentPageResponse.data) {
+                        allMembers = allMembers.concat(subsequentPageResponse.data);
+                    }
+                } catch (pageError) {
+                    functions.logger.error(`Erro ao buscar a página ${page} para a unidade ${unitId}:`, pageError.message);
                 }
-            });
+            }
         }
-
-        functions.logger.info(`Total de ${allMembers.length} membros carregados para a unidade ${unitId}.`);
+        
+        functions.logger.info(`Total de ${allMembers.length} membros carregados para a unidade ${unitId} com status ${status}.`);
         return allMembers;
 
     } catch (error) {
