@@ -682,32 +682,38 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
 
 /**
  * Busca e retorna os dados do ranking de forma pública, sem necessidade de autenticação.
+ * Lógica alinhada com listAllMembers para garantir consistência dos dados.
  */
 exports.getPublicRanking = functions.https.onCall(async (data, context) => {
-    const PAGE_SIZE = 100;
     const unitIds = Object.keys(EVO_CREDENTIALS);
     let allMembers = [];
+    const PAGE_SIZE = 500; // Padronizado com listAllMembers para eficiência
 
     try {
         const allUnitPromises = unitIds.map(async (unitId) => {
+            // Lógica de busca e paginação robusta, copiada de listAllMembers
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            const firstPageResponse = await apiClientV2.get("/members", {
-                params: { status: 1, page: 1, take: PAGE_SIZE },
-            });
+            const apiParams = { page: 1, take: PAGE_SIZE, status: 1 }; // Sempre status 1 (ativos) para o ranking
 
+            const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
             const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
             let unitMembers = firstPageResponse.data || [];
 
             if (totalMembers > PAGE_SIZE) {
                 const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
-                const pagePromises = [];
+                // Loop sequencial para evitar sobrecarregar a API com muitas requisições simultâneas
                 for (let page = 2; page <= totalPages; page++) {
-                    pagePromises.push(apiClientV2.get("/members", { params: { status: 1, page, take: PAGE_SIZE } }));
+                    try {
+                        apiParams.page = page;
+                        const subsequentPageResponse = await apiClientV2.get("/members", { params: apiParams });
+                        if (subsequentPageResponse.data) {
+                            unitMembers = unitMembers.concat(subsequentPageResponse.data);
+                        }
+                    } catch (pageError) {
+                        functions.logger.error(`Erro ao buscar a página ${page} para a unidade ${unitId} no ranking público:`, pageError.message);
+                        // Continua para as próximas páginas mesmo que uma falhe
+                    }
                 }
-                const subsequentPageResponses = await Promise.all(pagePromises);
-                subsequentPageResponses.forEach(response => {
-                    if (response.data) unitMembers = unitMembers.concat(response.data);
-                });
             }
             return unitMembers;
         });
