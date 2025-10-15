@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const axios = require("axios");
 const admin = require("firebase-admin");
 const cors = require("cors")({origin: true});
+const https = require("https");
 
 // A inicialização do Admin SDK é feita no index.js
 
@@ -55,12 +56,18 @@ function getEvoApiClient(unitId, apiVersion = 'v2') {
         throw new functions.https.HttpsError("not-found", `Credenciais para a unidade '${unitId}' não encontradas.`);
     }
 
+    // Força o uso de IPv4. O Node.js 18+ pode priorizar IPv6 por padrão,
+    // o que pode causar problemas de conexão com algumas APIs.
+    const httpsAgent = new https.Agent({ family: 4 });
+
     return axios.create({
-        baseURL: `https://evo-integracao-api.w12app.com.br/api/${apiVersion}`,
+        baseURL: `https://172.64.151.155/api/${apiVersion}`,
         headers: {
             "Authorization": `Basic ${Buffer.from(`${credentials.dns}:${credentials.token}`).toString("base64")}`,
-            "Content-Type": "application/json"
-        }
+            "Content-Type": "application/json",
+            "Host": "evo-integracao-api.w12app.com.br"
+        },
+        httpsAgent: httpsAgent
     });
 }
 
@@ -159,14 +166,32 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
         return allMembers;
 
     } catch (error) {
-        functions.logger.error(`Erro detalhado ao listar membros na EVO API para unidade ${unitId}:`, {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message,
-        });
-        throw new functions.https.HttpsError("internal", "Não foi possível listar os membros.");
+        // Log a estrutura completa do erro para depuração nos logs do Firebase.
+        functions.logger.error(`Erro completo ao listar membros na EVO API para unidade ${unitId}:`, error);
+
+        const status = error.response?.status;
+        const errorData = error.response?.data;
+        
+        let errorMessage = `Erro na unidade '${unitId}'.`;
+        if (status) {
+            errorMessage += ` Status da API: ${status}.`;
+        } else if (error.code) {
+            // Captura erros de rede de baixo nível (ex: ECONNRESET, ETIMEDOUT).
+            errorMessage += ` Erro de rede: ${error.code}.`;
+        } else {
+            errorMessage += " Não foi possível conectar à API.";
+        }
+
+        // Passa o código de erro de rede para o cliente.
+        throw new functions.https.HttpsError("unavailable", errorMessage, { unitId, status, errorCode: error.code, errorData });
     }
 });
+
+/**
+ * Função auxiliar para remover membros duplicados da lista
+ * @param {Array} members - Lista de membros que pode conter duplicatas
+ * @return {Array} Lista de membros sem duplicatas
+ */
 
 /**
  * Atualiza os dados de um membro na API da EVO.

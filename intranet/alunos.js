@@ -206,16 +206,55 @@ async function loadStudents() {
     try {
         let studentList = [];
         if (selectedUnit === 'all') {
-            // Pega todos os IDs de unidade do HTML para fazer as chamadas
             const unitOptions = Array.from(unitFilter.options)
                 .filter(opt => opt.value !== 'all')
                 .map(opt => opt.value);
 
-            // Para cada unidade, chama a função para buscar os alunos com o status selecionado
             const promises = unitOptions.map(unitId => listAllMembers({ unitId: unitId, status: selectedStatus }));
             
-            const results = await Promise.all(promises);
-            studentList = results.flatMap(result => result.data || []);
+            const results = await Promise.allSettled(promises);
+            
+            studentList = results
+                .filter(result => result.status === 'fulfilled')
+                .flatMap(result => result.value.data || []);
+
+            const failedUnits = results
+                .map((result, index) => ({ result, unit: unitOptions[index] }))
+                .filter(({ result }) => result.status === 'rejected');
+
+            if (failedUnits.length > 0) {
+                let errorMessages = '';
+                failedUnits.forEach(({ unit, result }) => {
+                    const error = result.reason;
+                    // Prioriza a mensagem de erro detalhada vinda do backend.
+                    let displayMessage = error?.message || 'Erro desconhecido';
+
+                    // O Firebase HttpsError anexa dados customizados na propriedade 'details'.
+                    // Verificamos se os detalhes que enviamos do backend existem.
+                    if (error?.details) {
+                        displayMessage = `Erro na unidade '${error.details.unitId}'.`;
+                        if (error.details.status) {
+                            displayMessage += ` Status da API: ${error.details.status}.`;
+                        } else if (error.details.errorCode) {
+                            displayMessage += ` Erro de rede: ${error.details.errorCode}.`;
+                        } else {
+                            displayMessage += " Não foi possível conectar à API.";
+                        }
+                    }
+                    
+                    console.error(`Falha ao carregar alunos da unidade '${unit}':`, error); // Log do objeto de erro completo para depuração.
+                    errorMessages += `<li><b>${unit}</b>: ${displayMessage}</li>`;
+                });
+                
+                const tableBody = document.getElementById('students-table-body');
+                const errorRow = `<tr><td colspan="4" class="p-4 text-yellow-500"><b class='font-bold'>Ocorreram erros ao carregar os dados de algumas unidades:</b><ul class="list-disc list-inside mt-2">${errorMessages}</ul></td></tr>`;
+                
+                if (studentList.length > 0) {
+                    tableBody.insertAdjacentHTML('afterbegin', errorRow);
+                } else {
+                    tableBody.innerHTML = errorRow;
+                }
+            }
         } else {
             // Para uma única unidade, chama a função com o status selecionado
             const result = await listAllMembers({ unitId: selectedUnit, status: selectedStatus });
