@@ -44,8 +44,8 @@
                 <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
 
                 <!-- Unit Filter (Moved to be always visible) -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
-                    <div>
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+                    <div class="w-full md:w-auto">
                         <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
                         <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="all">Todas as Unidades</option>
@@ -85,8 +85,8 @@
                 <!-- Tab Content: Gerenciamento de Alunos -->
                 <div id="tab-content-manage-students" class="tab-content">
                     <!-- Filters (Search and Status only) -->
-                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex items-center space-x-4">
-                        <div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+                        <div class="w-full md:w-auto">
                             <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
                             <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
@@ -202,8 +202,8 @@
     </div>
 
     <!-- Student Details Modal -->
-    <div id="student-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div id="student-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-md md:max-w-2xl lg:max-w-3xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4">
                 <h2 class="text-xl font-bold text-white">Detalhes do Aluno</h2>
                 <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>

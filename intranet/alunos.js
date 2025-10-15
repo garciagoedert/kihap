@@ -22,6 +22,12 @@ let allBadges = []; // This will be populated by loadAllSelectableContent and us
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
         if (user) {
+            // Oculta o botão de adicionar prospect no header
+            const addProspectBtn = document.getElementById('addProspectBtnHeader');
+            if (addProspectBtn) {
+                addProspectBtn.style.display = 'none';
+            }
+
             // --- DOM Elements ---
             const unitFilter = document.getElementById('unit-filter');
             const searchInput = document.getElementById('search-input');
