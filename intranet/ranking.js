@@ -1,7 +1,8 @@
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions } from './firebase-config.js';
 
-const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
+// Usando a mesma Cloud Function que a página de alunos para garantir dados atualizados
+const listAllMembers = httpsCallable(functions, 'listAllMembers');
 
 async function fetchAndDisplayRanking() {
     const rankingBody = document.getElementById('ranking-body');
@@ -13,11 +14,21 @@ async function fetchAndDisplayRanking() {
         </tr>`;
 
     try {
-        // Call the public Cloud Function to get all students
-        const result = await getPublicRanking();
-        const allStudents = result.data || [];
+        // Lista de todas as unidades para buscar um ranking global
+        const unitIds = [
+            "centro", "coqueiros", "asa-sul", "sudoeste", "lago-sul", 
+            "pontos-de-ensino", "jardim-botanico", "dourados", 
+            "santa-monica", "noroeste"
+        ];
 
-        // Remove duplicates based on idMember
+        // Busca alunos ativos (status: 1) de todas as unidades em paralelo
+        const promises = unitIds.map(unitId => listAllMembers({ unitId: unitId, status: 1 }));
+        const results = await Promise.all(promises);
+        
+        // Junta os resultados de todas as unidades em uma única lista
+        const allStudents = results.flatMap(result => result.data || []);
+
+        // Remove duplicatas caso um aluno esteja em mais de uma lista (pouco provável, mas seguro)
         const uniqueStudentsMap = new Map();
         allStudents.forEach(student => {
             if (!uniqueStudentsMap.has(student.idMember)) {
@@ -26,7 +37,7 @@ async function fetchAndDisplayRanking() {
         });
         const uniqueStudentList = Array.from(uniqueStudentsMap.values());
 
-        // Filter and sort students by totalFitCoins
+        // Filtra e ordena os alunos pelo totalFitCoins (KihapCoins)
         const rankedStudents = uniqueStudentList
             .filter(student => student.totalFitCoins > 0)
             .sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));
@@ -46,7 +57,7 @@ async function fetchAndDisplayRanking() {
 
 function renderRanking(students) {
     const rankingBody = document.getElementById('ranking-body');
-    rankingBody.innerHTML = ''; // Clear previous content
+    rankingBody.innerHTML = ''; // Limpa o conteúdo anterior
 
     if (students.length === 0) {
         rankingBody.innerHTML = `
@@ -58,7 +69,8 @@ function renderRanking(students) {
         return;
     }
 
-    const rowsHtml = students.slice(0, 10).map((student, index) => { // Display top 10
+    // Mantém a exibição do Top 10 como no original
+    const rowsHtml = students.slice(0, 10).map((student, index) => { 
         const fullName = `${student.firstName || ''} ${student.lastName || ''}`;
         const fitCoins = student.totalFitCoins || 0;
         const photoUrl = student.photoUrl || 'default-profile.svg';
@@ -92,7 +104,7 @@ function initVideoSlider() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAndDisplayRanking(); // Initial load
-    setInterval(fetchAndDisplayRanking, 300000); // Refresh every 5 minutes (300000 ms)
+    fetchAndDisplayRanking(); // Carga inicial
+    setInterval(fetchAndDisplayRanking, 300000); // Atualiza a cada 5 minutos
     initVideoSlider();
 });
