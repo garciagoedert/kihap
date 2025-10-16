@@ -143,6 +143,11 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
             apiParams.status = status;
         }
 
+        // Adiciona um filtro de teste para buscar por um nome específico
+        if (unitId === 'asa-sul') {
+            apiParams.name = "Claudia";
+        }
+
         const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
         const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
         let allMembers = firstPageResponse.data || [];

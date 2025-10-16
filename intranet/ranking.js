@@ -1,7 +1,8 @@
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions } from './firebase-config.js';
 
-const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
+const listAllMembers = httpsCallable(functions, 'listAllMembers');
+const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 
 async function fetchAndDisplayRanking() {
     const rankingBody = document.getElementById('ranking-body');
@@ -13,9 +14,21 @@ async function fetchAndDisplayRanking() {
         </tr>`;
 
     try {
-        // Call the public Cloud Function to get all students
-        const result = await getPublicRanking();
-        const allStudents = result.data || [];
+        // Busca a lista de unidades antes de chamar a função para cada uma
+        const unitsResult = await getEvoUnits();
+        const unitIds = unitsResult.data || [];
+
+        if (unitIds.length === 0) {
+            throw new Error("Nenhuma unidade encontrada para buscar o ranking.");
+        }
+
+        // Para cada unidade, chama a função para buscar os alunos ativos
+        const promises = unitIds.map(unitId => listAllMembers({ unitId: unitId, status: 1 }));
+        const results = await Promise.allSettled(promises);
+
+        const allStudents = results
+            .filter(result => result.status === 'fulfilled')
+            .flatMap(result => result.value.data || []);
 
         // Remove duplicates based on idMember
         const uniqueStudentsMap = new Map();
