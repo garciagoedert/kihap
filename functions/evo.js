@@ -131,18 +131,20 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId = 'centro', status = 1 } = data;
+    const { unitId = 'centro', status = 1, name } = data;
     const PAGE_SIZE = 500; // Um tamanho de página alto e seguro para a API.
 
     try {
         const apiClientV2 = getEvoApiClient(unitId, 'v2');
         const apiParams = { page: 1, take: PAGE_SIZE };
 
-        // Apenas adiciona o filtro de status se ele for diferente de 0 (Todos).
-        if (status !== 0) {
+        // Se um nome for fornecido, use-o para a busca e não filtre por status.
+        // Caso contrário, aplique o filtro de status (a menos que seja "Todos").
+        if (name && name.trim() !== '') {
+            apiParams.name = name;
+        } else if (status !== 0) {
             apiParams.status = status;
         }
-
 
         const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
         const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);

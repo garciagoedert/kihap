@@ -8,6 +8,16 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gsta
 // Import functions for badge management from gerenciar-emblemas.js
 import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js'; 
 
+// Debounce function to limit the rate of function execution
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
@@ -66,7 +76,7 @@ export function setupAlunosPage() {
             // --- Event Listeners ---
             unitFilter.addEventListener('change', () => loadStudents());
             checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
-            searchInput.addEventListener('input', () => renderStudents(allStudents));
+            searchInput.addEventListener('input', debounce(loadStudents, 500)); // Use debounce to avoid excessive API calls
             statusFilter.addEventListener('change', () => loadStudents());
 
             // Event listener delegated for the students table
@@ -198,19 +208,26 @@ async function loadStudents() {
     const tableBody = document.getElementById('students-table-body');
     const unitFilter = document.getElementById('unit-filter');
     const statusFilter = document.getElementById('status-filter');
+    const searchInput = document.getElementById('search-input');
     const selectedUnit = unitFilter.value;
     const selectedStatus = parseInt(statusFilter.value, 10);
+    const searchTerm = searchInput.value.trim();
 
     tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
+        const params = { status: selectedStatus };
+        if (searchTerm) {
+            params.name = searchTerm;
+        }
+
         let studentList = [];
         if (selectedUnit === 'all') {
             const unitOptions = Array.from(unitFilter.options)
                 .filter(opt => opt.value !== 'all')
                 .map(opt => opt.value);
 
-            const promises = unitOptions.map(unitId => listAllMembers({ unitId: unitId, status: selectedStatus }));
+            const promises = unitOptions.map(unitId => listAllMembers({ unitId, ...params }));
             
             const results = await Promise.allSettled(promises);
             
@@ -256,13 +273,15 @@ async function loadStudents() {
                 }
             }
         } else {
-            // Para uma única unidade, chama a função com o status selecionado
-            const result = await listAllMembers({ unitId: selectedUnit, status: selectedStatus });
+            // Para uma única unidade, chama a função com os parâmetros
+            const result = await listAllMembers({ unitId: selectedUnit, ...params });
             studentList = result.data || [];
         }
         
-        allStudents = studentList; // Armazena no cache a lista sem duplicatas
-        renderStudents(allStudents);
+        // Atualiza a lista de alunos que será usada pelo evento de clique do modal.
+        // Isso garante que o modal funcione para os resultados da busca.
+        allStudents = studentList;
+        renderStudents(studentList);
 
     } catch (error) {
         console.error("Erro ao carregar lista de alunos:", error);
@@ -273,16 +292,9 @@ async function loadStudents() {
 
 function renderStudents(students) {
     const tableBody = document.getElementById('students-table-body');
-    const searchInput = document.getElementById('search-input');
-    const searchTerm = searchInput.value.toLowerCase();
 
-    const filteredStudents = students.filter(student => {
-        const fullName = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase();
-        return fullName.includes(searchTerm);
-    });
-
-    if (filteredStudents.length > 0) {
-        const rowsHtml = filteredStudents.map(member => {
+    if (students.length > 0) {
+        const rowsHtml = students.map(member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
@@ -298,7 +310,7 @@ function renderStudents(students) {
         tableBody.innerHTML = rowsHtml;
 
         // Agora, chame a Cloud Function para obter os status e aplicar os destaques
-        highlightRegisteredStudents(filteredStudents.map(s => s.idMember));
+        highlightRegisteredStudents(students.map(s => s.idMember));
 
     } else {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
