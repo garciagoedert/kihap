@@ -26,7 +26,7 @@ export function setupAdminPage() {
 
     const userTableBody = document.getElementById('user-table-body');
     const userForm = document.getElementById('user-form');
-    const userFormContainer = document.getElementById('user-form-container');
+    const userModal = document.getElementById('user-modal');
     const formTitle = document.getElementById('form-title');
     const nameInput = document.getElementById('name');
     const emailInput = document.getElementById('email');
@@ -45,7 +45,7 @@ export function setupAdminPage() {
 
     addUserBtn.addEventListener('click', () => {
         resetForm();
-        userFormContainer.classList.remove('hidden');
+        userModal.classList.remove('hidden');
         formTitle.textContent = 'Adicionar Novo Usuário';
     });
 
@@ -116,8 +116,8 @@ export function setupAdminPage() {
         emailInput.disabled = false;
         passwordInput.disabled = false;
         passwordInput.placeholder = "";
-        cancelEditBtn.classList.add('hidden');
-        userFormContainer.classList.add('hidden');
+        cancelEditBtn.classList.remove('hidden');
+        userModal.classList.add('hidden');
     }
 
     userTableBody.addEventListener('click', async function(e) {
@@ -136,7 +136,7 @@ export function setupAdminPage() {
             const users = await getAllUsers();
             const user = users.find(u => u.id === userId);
             if (user) {
-                userFormContainer.classList.remove('hidden');
+                userModal.classList.remove('hidden');
                 formTitle.textContent = 'Editar Usuário';
                 nameInput.value = user.name;
                 emailInput.value = user.email;
