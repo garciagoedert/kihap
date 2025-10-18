@@ -14,23 +14,13 @@ async function fetchAndDisplayRanking() {
         </tr>`;
 
     try {
-        // Busca a lista de unidades antes de chamar a função para cada uma
-        const unitsResult = await getEvoUnits();
-        const unitIds = unitsResult.data || [];
+        // Faz uma única chamada para buscar TODOS os alunos de TODAS as unidades
+        const result = await listAllMembers({ unitId: 'all', status: 0 });
+        const allStudents = result.data || [];
 
-        if (unitIds.length === 0) {
-            throw new Error("Nenhuma unidade encontrada para buscar o ranking.");
-        }
-
-        // Para cada unidade, chama a função para buscar os alunos ativos
-        const promises = unitIds.map(unitId => listAllMembers({ unitId: unitId, status: 1 }));
-        const results = await Promise.allSettled(promises);
-
-        const allStudents = results
-            .filter(result => result.status === 'fulfilled')
-            .flatMap(result => result.value.data || []);
-
-        // Remove duplicates based on idMember
+        // A função `listAllMembers` já retorna uma lista única de alunos do Firestore,
+        // então a remoção de duplicatas no cliente não é mais estritamente necessária,
+        // mas mantemos como uma garantia extra.
         const uniqueStudentsMap = new Map();
         allStudents.forEach(student => {
             if (!uniqueStudentsMap.has(student.idMember)) {
@@ -39,7 +29,7 @@ async function fetchAndDisplayRanking() {
         });
         const uniqueStudentList = Array.from(uniqueStudentsMap.values());
 
-        // Filter and sort students by totalFitCoins
+        // Filtra e ordena os alunos pelas KihapCoins
         const rankedStudents = uniqueStudentList
             .filter(student => student.totalFitCoins > 0)
             .sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));

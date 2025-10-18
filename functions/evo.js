@@ -48,6 +48,10 @@ const EVO_CREDENTIALS = {
     noroeste: {
         dns: "atadf",
         token: "EB5D8DDB-7263-476D-9491-2DD3F4BB7414",
+    },
+    atadf: {
+        dns: "atadf",
+        token: "F5389AF2-DEA8-49E4-850F-7365A5077CC6",
     }
 };
 
@@ -127,7 +131,7 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
 /**
  * Lista todos os membros (para a visão do professor) a partir da coleção do Firestore.
  */
-exports.listAllMembers = functions.https.onCall(async (data, context) => {
+exports.listAllMembers = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
@@ -140,8 +144,13 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
 
         // Aplica filtro de status (membershipStatus)
         if (status && status !== 0) {
-            const statusString = status === 1 ? "Active" : "Blocked";
-            query = query.where('membershipStatus', '==', statusString);
+            if (status === 1) {
+                // Filtro para ATIVOS
+                query = query.where('membershipStatus', '==', "Active");
+            } else {
+                // Filtro para INATIVOS (qualquer status que NÃO seja 'Active')
+                query = query.where('membershipStatus', '!=', "Active");
+            }
         }
 
         // Aplica filtro de unidade usando o campo 'unitId' que agora é salvo no documento.
@@ -747,71 +756,80 @@ exports.getPublicRanking = functions.https.onCall(async (data, context) => {
  * e salvá-los na coleção 'evo_students' do Firestore.
  */
 const _syncAllStudentsToFirestore = async () => {
-    functions.logger.info("Iniciando sincronização de todos os alunos do EVO para o Firestore.");
+    functions.logger.info("Iniciando sincronização COMPLETA de todos os alunos do EVO para o Firestore.");
     const unitIds = Object.keys(EVO_CREDENTIALS);
-    let allStudents = [];
+    let allStudentSummaries = [];
 
-    // Processa uma unidade de cada vez para evitar timeouts e sobrecarga
+    // 1. Coletar a lista 'leve' de todos os alunos de todas as unidades
     for (const unitId of unitIds) {
-        const members = [];
-        const PAGE_SIZE = 500;
-        let currentPage = 1;
-        let totalMembers = 0;
-        let hasMorePages = true;
-
         try {
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            
-            while(hasMorePages) {
-                const response = await apiClientV2.get("/members", { 
-                    params: { page: currentPage, take: PAGE_SIZE } 
+            let currentPage = 1;
+            let hasMorePages = true;
+            let membersInUnit = 0;
+            while (hasMorePages) {
+                const response = await apiClientV2.get("/members", {
+                    params: { page: currentPage, take: 500, status: 0 } // status 0 = todos
                 });
-                
-                const newMembers = response.data || [];
-                if (newMembers.length > 0) {
-                    // Adiciona o slug da unidade em cada aluno para facilitar a filtragem.
-                    newMembers.forEach(member => member.unitId = unitId);
-                    members.push(...newMembers);
+                const members = response.data || [];
+                if (members.length > 0) {
+                    members.forEach(m => m.unitId = unitId); // Adiciona unitId para referência
+                    allStudentSummaries.push(...members);
+                    membersInUnit += members.length;
                 }
-
-                totalMembers = parseInt(response.headers["total"] || "0", 10);
-                
-                if (members.length >= totalMembers || newMembers.length < PAGE_SIZE) {
+                if (members.length < 500) {
                     hasMorePages = false;
                 }
-                
                 currentPage++;
             }
-            
-            functions.logger.info(`Unidade '${unitId}': ${members.length} alunos encontrados.`);
-            allStudents.push(...members);
-
+            functions.logger.info(`Unidade '${unitId}': ${membersInUnit} resumos de alunos coletados.`);
         } catch (error) {
-            functions.logger.error(`Falha ao buscar alunos para a unidade '${unitId}' durante a sincronização.`, error.message);
-            // Continua para a próxima unidade em caso de erro
+            functions.logger.error(`Falha ao buscar lista de alunos para a unidade '${unitId}'.`, error.message);
         }
     }
 
-    if (allStudents.length === 0) {
+    if (allStudentSummaries.length === 0) {
         functions.logger.warn("Nenhum aluno encontrado para sincronizar. O processo será encerrado.");
         return;
     }
+    
+    functions.logger.info(`Total de ${allStudentSummaries.length} alunos para detalhar. Processando em chunks...`);
 
-    // Usando Batch Writes para eficiência, mas em chunks para não exceder o limite do Firestore
+    // 2. Processar em chunks para buscar detalhes e salvar no Firestore
     const studentsCollection = db.collection('evo_students');
-    const chunkSize = 400; // O limite do batch é 500, usamos 400 por segurança.
-    for (let i = 0; i < allStudents.length; i += chunkSize) {
-        const chunk = allStudents.slice(i, i + chunkSize);
-        const batch = db.batch();
-        chunk.forEach(student => {
-            const docRef = studentsCollection.doc(String(student.idMember));
-            batch.set(docRef, student, { merge: true });
+    const chunkSize = 50; // Chunks de 50 para buscar detalhes e salvar
+    for (let i = 0; i < allStudentSummaries.length; i += chunkSize) {
+        const chunkSummaries = allStudentSummaries.slice(i, i + chunkSize);
+        
+        // Mapeia cada resumo de aluno para uma promise que busca seus detalhes completos
+        const detailPromises = chunkSummaries.map(summary => {
+            const apiClientV2 = getEvoApiClient(summary.unitId, 'v2');
+            return apiClientV2.get(`/members/${summary.idMember}`, {
+                params: { showMemberships: true, showsResponsibles: true }
+            }).then(response => {
+                const detailedMember = response.data;
+                detailedMember.unitId = summary.unitId; // Garante que o unitId seja mantido
+                return detailedMember;
+            }).catch(error => {
+                functions.logger.error(`Falha ao buscar detalhes para o aluno ID ${summary.idMember} na unidade ${summary.unitId}.`, error.message);
+                return null; // Retorna null em caso de erro para não quebrar o Promise.all
+            });
         });
-        await batch.commit();
-        functions.logger.info(`Chunk ${i / chunkSize + 1} de alunos salvo no Firestore.`);
+
+        const detailedStudents = (await Promise.all(detailPromises)).filter(s => s !== null); // Filtra os que falharam
+
+        if (detailedStudents.length > 0) {
+            const batch = db.batch();
+            detailedStudents.forEach(student => {
+                const docRef = studentsCollection.doc(String(student.idMember));
+                batch.set(docRef, student, { merge: true });
+            });
+            await batch.commit();
+            functions.logger.info(`Chunk ${Math.floor(i / chunkSize) + 1} de ${Math.ceil(allStudentSummaries.length / chunkSize)} (${detailedStudents.length} alunos) salvo no Firestore.`);
+        }
     }
 
-    functions.logger.info(`Sincronização concluída! ${allStudents.length} registros de alunos foram salvos/atualizados no Firestore.`);
+    functions.logger.info(`Sincronização detalhada concluída! ${allStudentSummaries.length} registros de alunos foram processados.`);
 };
 
 

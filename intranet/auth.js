@@ -23,8 +23,7 @@ export async function getUserData(uid) {
 
 // Função para verificar se o usuário é admin
 export async function checkAdminStatus(user) {
-    // A função getCurrentUser() já retorna o objeto completo do usuário,
-    // incluindo a flag isAdmin. Não é necessário buscar novamente.
+    // Verifica a propriedade 'isAdmin' no objeto de dados do usuário vindo do Firestore.
     if (!user) return false;
     return user.isAdmin === true;
 }
@@ -50,7 +49,8 @@ export function onAuthReady(callback) {
             // Usuário está logado. Força a atualização do token para obter as claims mais recentes.
             await forceTokenRefresh();
             console.log('Usuário logado e token atualizado:', user.uid);
-            callback(user);
+            const userData = await getUserData(user.uid);
+            callback(userData);
         } else {
             // Usuário está deslogado.
             // Redireciona para a página de login se não estiver nela.

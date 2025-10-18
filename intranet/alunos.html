@@ -59,6 +59,7 @@
                             <option value="dourados">Unidade Dourados</option>
                             <option value="santa-monica">Unidade Santa Mônica</option>
                             <option value="noroeste">Unidade Noroeste</option>
+                            <option value="atadf">Unidade Store</option>
                         </select>
                     </div>
                     <!-- Search and Status filters remain in the first tab -->
@@ -186,7 +187,13 @@
                 <!-- Tab Content: Ranking -->
                 <div id="tab-content-ranking" class="tab-content hidden">
                     <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
-                        <h2 class="text-xl font-bold mb-4">Ranking de KihapCoins</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Ranking de KihapCoins</h2>
+                            <button id="sync-evo-ranking-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
+                                <i class="fas fa-sync"></i>
+                                <span>Sincronizar com EVO</span>
+                            </button>
+                        </div>
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="border-b border-gray-700">

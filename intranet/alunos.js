@@ -210,6 +210,11 @@ export function setupAlunosPage() {
                 syncEvoBtn.classList.remove('hidden');
                 syncEvoBtn.addEventListener('click', handleSyncEvoClick);
             }
+            const syncEvoRankingBtn = document.getElementById('sync-evo-ranking-btn');
+            if (syncEvoRankingBtn) {
+                syncEvoRankingBtn.classList.remove('hidden');
+                syncEvoRankingBtn.addEventListener('click', handleSyncEvoClick);
+            }
         }
     });
 }
@@ -916,29 +921,40 @@ function renderRanking(students) {
 
 async function handleSyncEvoClick() {
     const syncButton = document.getElementById('sync-evo-btn');
-    const icon = syncButton.querySelector('i');
-    const text = syncButton.querySelector('span');
+    const syncRankingButton = document.getElementById('sync-evo-ranking-btn');
+    const buttons = [syncButton, syncRankingButton].filter(btn => btn); // Filtra botões que existem na página
 
-    if (!syncButton || !icon || !text) return;
+    if (buttons.length === 0) return;
 
     showConfirm(
         "Tem certeza que deseja sincronizar todos os alunos com a API do EVO? Esta ação pode levar alguns minutos e irá atualizar a base de dados local.",
         async () => {
-            syncButton.disabled = true;
-            icon.classList.add('fa-spin');
-            text.textContent = 'Sincronizando...';
+            // Desabilita e atualiza o texto de todos os botões de sync
+            buttons.forEach(button => {
+                button.disabled = true;
+                const icon = button.querySelector('i');
+                const text = button.querySelector('span');
+                if (icon) icon.classList.add('fa-spin');
+                if (text) text.textContent = 'Sincronizando...';
+            });
 
             try {
                 const result = await triggerEvoSync();
                 alert(result.data.message || "Sincronização concluída com sucesso!");
                 await loadStudents(); // Recarrega a lista de alunos
+                loadRankingData();    // Recarrega os dados do ranking
             } catch (error) {
                 console.error("Erro ao sincronizar com o EVO:", error);
                 alert(`Erro ao sincronizar: ${error.message}`);
             } finally {
-                syncButton.disabled = false;
-                icon.classList.remove('fa-spin');
-                text.textContent = 'Sincronizar com EVO';
+                // Reabilita e restaura o texto de todos os botões de sync
+                buttons.forEach(button => {
+                    button.disabled = false;
+                    const icon = button.querySelector('i');
+                    const text = button.querySelector('span');
+                    if (icon) icon.classList.remove('fa-spin');
+                    if (text) text.textContent = 'Sincronizar com EVO';
+                });
             }
         },
         "Confirmar Sincronização"
