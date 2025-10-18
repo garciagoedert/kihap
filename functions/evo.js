@@ -139,50 +139,20 @@ exports.listAllMembers = functions.https.onCall(async (data, context) => {
         let query = db.collection('evo_students');
 
         // Aplica filtro de status (membershipStatus)
-        // O status 1 (Ativo) e 2 (Bloqueado) são os mais comuns. 0 para todos.
         if (status && status !== 0) {
             const statusString = status === 1 ? "Active" : "Blocked";
             query = query.where('membershipStatus', '==', statusString);
         }
 
-        // Aplica filtro de unidade (branchName)
+        // Aplica filtro de unidade usando o campo 'unitId' que agora é salvo no documento.
         if (unitId && unitId !== 'all') {
-            // O nome da unidade no seletor do frontend é o slug (ex: 'asa-sul').
-            // Precisamos encontrar o 'branchName' correspondente (ex: 'KIHAP - Asa Sul').
-            // Esta é uma limitação que exigiria um mapeamento ou uma busca mais complexa.
-            // Por enquanto, vamos assumir uma correspondência direta ou parcial.
-            // A melhor abordagem é salvar um 'unitSlug' no documento do aluno durante a sincronização.
-            // Vamos adicionar isso no futuro. Por agora, filtramos pelo 'branchName' que pode não ser ideal.
-            
-            // Tentativa de mapear slug para nome completo (pode precisar de ajustes)
-            const unitName = Object.keys(EVO_CREDENTIALS).find(key => key === unitId);
-            if (unitName) {
-                 // A API retorna nomes como "KIHAP - Centro". A busca deve ser flexível.
-                 // Firestore não suporta busca de substring. A filtragem por nome completo será feita no cliente.
-                 // Por enquanto, se uma unidade específica for selecionada, filtramos por ela.
-                 // Esta lógica pode precisar de refinamento.
-                 // Vamos assumir que o `branchName` no Firestore corresponde ao que esperamos.
-                 // Ex: 'KIHAP - Asa Sul'. O ideal seria ter um campo 'unitId' no documento.
-                 // Vamos filtrar por `idBranch` que é mais confiável.
-                 
-                 // Para fazer isso, precisamos do mapeamento de slug para idBranch.
-                 // Por enquanto, vamos filtrar pelo nome da unidade que vem da API.
-                 // Esta parte é complexa e será melhorada.
-                 // A busca por nome completo será feita no cliente por enquanto.
-            }
+            query = query.where('unitId', '==', unitId);
         }
 
         const snapshot = await query.get();
         let students = snapshot.docs.map(doc => doc.data());
 
-        // Filtros que são melhor aplicados no lado do servidor após a busca inicial
-        if (unitId && unitId !== 'all') {
-            // O `branchName` pode variar (ex: "KIHAP - Centro"). Normalizamos para comparar.
-            const normalize = (str) => str ? str.toLowerCase().replace(/kihap|-/g, '').trim() : '';
-            const normalizedUnitId = normalize(unitId);
-            students = students.filter(s => s.branchName && normalize(s.branchName).includes(normalizedUnitId));
-        }
-
+        // A filtragem por nome continua sendo feita no lado do servidor após a busca inicial.
         if (name && name.trim() !== '') {
             const searchTerm = name.trim().toLowerCase();
             students = students.filter(s => {
@@ -799,6 +769,8 @@ const _syncAllStudentsToFirestore = async () => {
                 
                 const newMembers = response.data || [];
                 if (newMembers.length > 0) {
+                    // Adiciona o slug da unidade em cada aluno para facilitar a filtragem.
+                    newMembers.forEach(member => member.unitId = unitId);
                     members.push(...newMembers);
                 }
 
