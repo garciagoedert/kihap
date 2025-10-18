@@ -21,6 +21,7 @@ function debounce(func, delay) {
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
+const triggerEvoSync = httpsCallable(functions, 'triggerEvoSync');
 const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
 
@@ -70,8 +71,10 @@ export function setupAlunosPage() {
             const contentPhysicalTest = document.getElementById('tab-content-physical-test');
             const contentBadgesModal = document.getElementById('tab-content-badges'); // Renamed to avoid conflict
 
-            // Set default date to today
-            dailyEntriesDate.value = new Date().toISOString().split('T')[0];
+            // Set default date to today, only if the element exists
+            if (dailyEntriesDate) {
+                dailyEntriesDate.value = new Date().toISOString().split('T')[0];
+            }
 
             // --- Event Listeners ---
             unitFilter.addEventListener('change', () => loadStudents());
@@ -199,7 +202,14 @@ export function setupAlunosPage() {
             // Load students and other necessary data for the page
             Promise.all([loadStudents(), loadAllSelectableContent()]);
             // Set the default active tab to "Gerenciamento de Alunos"
-            switchMainTab('manage-students'); 
+            switchMainTab('manage-students');
+
+            // --- Admin-only Features ---
+            const syncEvoBtn = document.getElementById('sync-evo-btn');
+            if (syncEvoBtn) {
+                syncEvoBtn.classList.remove('hidden');
+                syncEvoBtn.addEventListener('click', handleSyncEvoClick);
+            }
         }
     });
 }
@@ -216,70 +226,17 @@ async function loadStudents() {
     tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
-        const params = { status: selectedStatus };
-        if (searchTerm) {
-            params.name = searchTerm;
-        }
+        // Lógica simplificada: sempre faz uma única chamada para o backend.
+        // O backend agora é inteligente o suficiente para lidar com os filtros.
+        const result = await listAllMembers({
+            unitId: selectedUnit,
+            status: selectedStatus,
+            name: searchTerm
+        });
 
-        let studentList = [];
-        if (selectedUnit === 'all') {
-            const unitOptions = Array.from(unitFilter.options)
-                .filter(opt => opt.value !== 'all')
-                .map(opt => opt.value);
-
-            const promises = unitOptions.map(unitId => listAllMembers({ unitId, ...params }));
-            
-            const results = await Promise.allSettled(promises);
-            
-            studentList = results
-                .filter(result => result.status === 'fulfilled')
-                .flatMap(result => result.value.data || []);
-
-            const failedUnits = results
-                .map((result, index) => ({ result, unit: unitOptions[index] }))
-                .filter(({ result }) => result.status === 'rejected');
-
-            if (failedUnits.length > 0) {
-                let errorMessages = '';
-                failedUnits.forEach(({ unit, result }) => {
-                    const error = result.reason;
-                    // Prioriza a mensagem de erro detalhada vinda do backend.
-                    let displayMessage = error?.message || 'Erro desconhecido';
-
-                    // O Firebase HttpsError anexa dados customizados na propriedade 'details'.
-                    // Verificamos se os detalhes que enviamos do backend existem.
-                    if (error?.details) {
-                        displayMessage = `Erro na unidade '${error.details.unitId}'.`;
-                        if (error.details.status) {
-                            displayMessage += ` Status da API: ${error.details.status}.`;
-                        } else if (error.details.errorCode) {
-                            displayMessage += ` Erro de rede: ${error.details.errorCode}.`;
-                        } else {
-                            displayMessage += " Não foi possível conectar à API.";
-                        }
-                    }
-                    
-                    console.error(`Falha ao carregar alunos da unidade '${unit}':`, error); // Log do objeto de erro completo para depuração.
-                    errorMessages += `<li><b>${unit}</b>: ${displayMessage}</li>`;
-                });
-                
-                const tableBody = document.getElementById('students-table-body');
-                const errorRow = `<tr><td colspan="4" class="p-4 text-yellow-500"><b class='font-bold'>Ocorreram erros ao carregar os dados de algumas unidades:</b><ul class="list-disc list-inside mt-2">${errorMessages}</ul></td></tr>`;
-                
-                if (studentList.length > 0) {
-                    tableBody.insertAdjacentHTML('afterbegin', errorRow);
-                } else {
-                    tableBody.innerHTML = errorRow;
-                }
-            }
-        } else {
-            // Para uma única unidade, chama a função com os parâmetros
-            const result = await listAllMembers({ unitId: selectedUnit, ...params });
-            studentList = result.data || [];
-        }
+        const studentList = result.data || [];
         
-        // Atualiza a lista de alunos que será usada pelo evento de clique do modal.
-        // Isso garante que o modal funcione para os resultados da busca.
+        // Atualiza o cache local para o modal e outras interações da página.
         allStudents = studentList;
         renderStudents(studentList);
 
@@ -955,4 +912,35 @@ function renderRanking(students) {
     }).join('');
 
     rankingTableBody.innerHTML = rowsHtml;
+}
+
+async function handleSyncEvoClick() {
+    const syncButton = document.getElementById('sync-evo-btn');
+    const icon = syncButton.querySelector('i');
+    const text = syncButton.querySelector('span');
+
+    if (!syncButton || !icon || !text) return;
+
+    showConfirm(
+        "Tem certeza que deseja sincronizar todos os alunos com a API do EVO? Esta ação pode levar alguns minutos e irá atualizar a base de dados local.",
+        async () => {
+            syncButton.disabled = true;
+            icon.classList.add('fa-spin');
+            text.textContent = 'Sincronizando...';
+
+            try {
+                const result = await triggerEvoSync();
+                alert(result.data.message || "Sincronização concluída com sucesso!");
+                await loadStudents(); // Recarrega a lista de alunos
+            } catch (error) {
+                console.error("Erro ao sincronizar com o EVO:", error);
+                alert(`Erro ao sincronizar: ${error.message}`);
+            } finally {
+                syncButton.disabled = false;
+                icon.classList.remove('fa-spin');
+                text.textContent = 'Sincronizar com EVO';
+            }
+        },
+        "Confirmar Sincronização"
+    );
 }

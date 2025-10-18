@@ -5,6 +5,7 @@ const cors = require("cors")({origin: true});
 const https = require("https");
 
 // A inicialização do Admin SDK é feita no index.js
+const db = admin.firestore();
 
 // Configuração das credenciais por unidade. No futuro, isso pode vir de secrets ou do Firestore.
 const EVO_CREDENTIALS = {
@@ -124,69 +125,78 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
 });
 
 /**
- * Lista todos os membros (para a visão do professor), lidando com paginação.
+ * Lista todos os membros (para a visão do professor) a partir da coleção do Firestore.
  */
 exports.listAllMembers = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId = 'centro', status = 1, name } = data;
-    const PAGE_SIZE = 500; // Um tamanho de página alto e seguro para a API.
+    const { unitId, status = 1, name } = data;
+    functions.logger.info(`Buscando alunos no Firestore com filtros: unitId=${unitId}, status=${status}, name=${name}`);
 
     try {
-        const apiClientV2 = getEvoApiClient(unitId, 'v2');
-        const apiParams = { page: 1, take: PAGE_SIZE };
+        let query = db.collection('evo_students');
 
-        // Se um nome for fornecido, use-o para a busca e não filtre por status.
-        // Caso contrário, aplique o filtro de status (a menos que seja "Todos").
-        if (name && name.trim() !== '') {
-            apiParams.name = name;
-        } else if (status !== 0) {
-            apiParams.status = status;
+        // Aplica filtro de status (membershipStatus)
+        // O status 1 (Ativo) e 2 (Bloqueado) são os mais comuns. 0 para todos.
+        if (status && status !== 0) {
+            const statusString = status === 1 ? "Active" : "Blocked";
+            query = query.where('membershipStatus', '==', statusString);
         }
 
-        const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
-        const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
-        let allMembers = firstPageResponse.data || [];
-
-        if (totalMembers > PAGE_SIZE) {
-            const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
-            for (let page = 2; page <= totalPages; page++) {
-                try {
-                    apiParams.page = page;
-                    const subsequentPageResponse = await apiClientV2.get("/members", { params: apiParams });
-                    if (subsequentPageResponse.data) {
-                        allMembers = allMembers.concat(subsequentPageResponse.data);
-                    }
-                } catch (pageError) {
-                    functions.logger.error(`Erro ao buscar a página ${page} para a unidade ${unitId}:`, pageError.message);
-                }
+        // Aplica filtro de unidade (branchName)
+        if (unitId && unitId !== 'all') {
+            // O nome da unidade no seletor do frontend é o slug (ex: 'asa-sul').
+            // Precisamos encontrar o 'branchName' correspondente (ex: 'KIHAP - Asa Sul').
+            // Esta é uma limitação que exigiria um mapeamento ou uma busca mais complexa.
+            // Por enquanto, vamos assumir uma correspondência direta ou parcial.
+            // A melhor abordagem é salvar um 'unitSlug' no documento do aluno durante a sincronização.
+            // Vamos adicionar isso no futuro. Por agora, filtramos pelo 'branchName' que pode não ser ideal.
+            
+            // Tentativa de mapear slug para nome completo (pode precisar de ajustes)
+            const unitName = Object.keys(EVO_CREDENTIALS).find(key => key === unitId);
+            if (unitName) {
+                 // A API retorna nomes como "KIHAP - Centro". A busca deve ser flexível.
+                 // Firestore não suporta busca de substring. A filtragem por nome completo será feita no cliente.
+                 // Por enquanto, se uma unidade específica for selecionada, filtramos por ela.
+                 // Esta lógica pode precisar de refinamento.
+                 // Vamos assumir que o `branchName` no Firestore corresponde ao que esperamos.
+                 // Ex: 'KIHAP - Asa Sul'. O ideal seria ter um campo 'unitId' no documento.
+                 // Vamos filtrar por `idBranch` que é mais confiável.
+                 
+                 // Para fazer isso, precisamos do mapeamento de slug para idBranch.
+                 // Por enquanto, vamos filtrar pelo nome da unidade que vem da API.
+                 // Esta parte é complexa e será melhorada.
+                 // A busca por nome completo será feita no cliente por enquanto.
             }
         }
-        
-        functions.logger.info(`Total de ${allMembers.length} membros carregados para a unidade ${unitId} com status ${status}.`);
-        return allMembers;
 
-    } catch (error) {
-        // Log a estrutura completa do erro para depuração nos logs do Firebase.
-        functions.logger.error(`Erro completo ao listar membros na EVO API para unidade ${unitId}:`, error);
+        const snapshot = await query.get();
+        let students = snapshot.docs.map(doc => doc.data());
 
-        const status = error.response?.status;
-        const errorData = error.response?.data;
-        
-        let errorMessage = `Erro na unidade '${unitId}'.`;
-        if (status) {
-            errorMessage += ` Status da API: ${status}.`;
-        } else if (error.code) {
-            // Captura erros de rede de baixo nível (ex: ECONNRESET, ETIMEDOUT).
-            errorMessage += ` Erro de rede: ${error.code}.`;
-        } else {
-            errorMessage += " Não foi possível conectar à API.";
+        // Filtros que são melhor aplicados no lado do servidor após a busca inicial
+        if (unitId && unitId !== 'all') {
+            // O `branchName` pode variar (ex: "KIHAP - Centro"). Normalizamos para comparar.
+            const normalize = (str) => str ? str.toLowerCase().replace(/kihap|-/g, '').trim() : '';
+            const normalizedUnitId = normalize(unitId);
+            students = students.filter(s => s.branchName && normalize(s.branchName).includes(normalizedUnitId));
         }
 
-        // Passa o código de erro de rede para o cliente.
-        throw new functions.https.HttpsError("unavailable", errorMessage, { unitId, status, errorCode: error.code, errorData });
+        if (name && name.trim() !== '') {
+            const searchTerm = name.trim().toLowerCase();
+            students = students.filter(s => {
+                const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
+                return fullName.includes(searchTerm);
+            });
+        }
+        
+        functions.logger.info(`Retornando ${students.length} alunos do Firestore.`);
+        return students;
+
+    } catch (error) {
+        functions.logger.error("Erro ao listar alunos do Firestore:", error);
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar os alunos do banco de dados.");
     }
 });
 
@@ -759,6 +769,109 @@ exports.getPublicRanking = functions.https.onCall(async (data, context) => {
             message: error.message,
         });
         throw new functions.https.HttpsError("internal", "Não foi possível gerar o ranking.");
+    }
+});
+
+/**
+ * Lógica principal para buscar todos os alunos de todas as unidades na API EVO
+ * e salvá-los na coleção 'evo_students' do Firestore.
+ */
+const _syncAllStudentsToFirestore = async () => {
+    functions.logger.info("Iniciando sincronização de todos os alunos do EVO para o Firestore.");
+    const unitIds = Object.keys(EVO_CREDENTIALS);
+    let allStudents = [];
+
+    // Processa uma unidade de cada vez para evitar timeouts e sobrecarga
+    for (const unitId of unitIds) {
+        const members = [];
+        const PAGE_SIZE = 500;
+        let currentPage = 1;
+        let totalMembers = 0;
+        let hasMorePages = true;
+
+        try {
+            const apiClientV2 = getEvoApiClient(unitId, 'v2');
+            
+            while(hasMorePages) {
+                const response = await apiClientV2.get("/members", { 
+                    params: { page: currentPage, take: PAGE_SIZE } 
+                });
+                
+                const newMembers = response.data || [];
+                if (newMembers.length > 0) {
+                    members.push(...newMembers);
+                }
+
+                totalMembers = parseInt(response.headers["total"] || "0", 10);
+                
+                if (members.length >= totalMembers || newMembers.length < PAGE_SIZE) {
+                    hasMorePages = false;
+                }
+                
+                currentPage++;
+            }
+            
+            functions.logger.info(`Unidade '${unitId}': ${members.length} alunos encontrados.`);
+            allStudents.push(...members);
+
+        } catch (error) {
+            functions.logger.error(`Falha ao buscar alunos para a unidade '${unitId}' durante a sincronização.`, error.message);
+            // Continua para a próxima unidade em caso de erro
+        }
+    }
+
+    if (allStudents.length === 0) {
+        functions.logger.warn("Nenhum aluno encontrado para sincronizar. O processo será encerrado.");
+        return;
+    }
+
+    // Usando Batch Writes para eficiência, mas em chunks para não exceder o limite do Firestore
+    const studentsCollection = db.collection('evo_students');
+    const chunkSize = 400; // O limite do batch é 500, usamos 400 por segurança.
+    for (let i = 0; i < allStudents.length; i += chunkSize) {
+        const chunk = allStudents.slice(i, i + chunkSize);
+        const batch = db.batch();
+        chunk.forEach(student => {
+            const docRef = studentsCollection.doc(String(student.idMember));
+            batch.set(docRef, student, { merge: true });
+        });
+        await batch.commit();
+        functions.logger.info(`Chunk ${i / chunkSize + 1} de alunos salvo no Firestore.`);
+    }
+
+    functions.logger.info(`Sincronização concluída! ${allStudents.length} registros de alunos foram salvos/atualizados no Firestore.`);
+};
+
+
+/**
+ * Função acionável manualmente para sincronizar os alunos.
+ */
+exports.triggerEvoSync = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    
+    try {
+        await _syncAllStudentsToFirestore();
+        return { success: true, message: "Sincronização com a API do EVO concluída com sucesso." };
+    } catch (error) {
+        functions.logger.error("Erro ao acionar a sincronização manual do EVO:", error);
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro durante a sincronização.");
+    }
+});
+
+/**
+ * Função agendada para sincronizar os alunos do EVO para o Firestore.
+ * Executa a cada 4 horas.
+ */
+exports.scheduledEvoSync = functions.pubsub.schedule('every 4 hours').onRun(async (context) => {
+    functions.logger.info("Iniciando sincronização agendada de alunos do EVO.");
+    try {
+        await _syncAllStudentsToFirestore();
+        return null;
+    } catch (error) {
+        functions.logger.error("Erro na sincronização agendada do EVO:", error);
+        return null;
     }
 });
 
