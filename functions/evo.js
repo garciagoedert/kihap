@@ -115,6 +115,17 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
                 // A função continua mesmo que o instrutor não seja encontrado.
             }
         }
+
+        // Normaliza o campo de FitCoins para consistência com o frontend
+        let totalCoins = 0;
+        if (memberData.hasOwnProperty('totalFitCoins')) {
+            totalCoins = memberData.totalFitCoins;
+        } else if (memberData.hasOwnProperty('fitCoins')) {
+            totalCoins = memberData.fitCoins;
+        } else if (Array.isArray(memberData.memberships) && memberData.memberships.length > 0) {
+            totalCoins = memberData.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+        }
+        memberData.totalFitCoins = totalCoins;
         
         functions.logger.info(`Resposta da API EVO para getMemberData (ID: ${memberId}):`, memberData);
         return memberData;
@@ -129,53 +140,115 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
 });
 
 /**
- * Lista todos os membros (para a visão do professor) a partir da coleção do Firestore.
+ * Lista todos os membros (para a visão do professor) diretamente da API da EVO.
  */
-exports.listAllMembers = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const { unitId, status = 1, name } = data;
-    functions.logger.info(`Buscando alunos no Firestore com filtros: unitId=${unitId}, status=${status}, name=${name}`);
+    const { unitId, name } = data;
+    functions.logger.info(`Buscando alunos da API EVO com filtros: unitId=${unitId}, name=${name}`);
+
+    const unitIdsToFetch = (unitId && unitId !== 'all') ? [unitId] : Object.keys(EVO_CREDENTIALS);
+    let allMembers = [];
+    const PAGE_SIZE = 500; // Restaurado para o valor estável conhecido
 
     try {
-        let query = db.collection('evo_students');
-
-        // Aplica filtro de status (membershipStatus)
-        if (status && status !== 0) {
-            if (status === 1) {
-                // Filtro para ATIVOS
-                query = query.where('membershipStatus', '==', "Active");
-            } else {
-                // Filtro para INATIVOS (qualquer status que NÃO seja 'Active')
-                query = query.where('membershipStatus', '!=', "Active");
+        const allUnitPromises = unitIdsToFetch.map(async (currentUnitId) => {
+            const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
+            
+            // Busca todos os alunos (ativos e inativos) passando um array de status
+            const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: [1, 0] };
+            if (name && name.trim() !== '') {
+                apiParams.name = name.trim();
             }
-        }
 
-        // Aplica filtro de unidade usando o campo 'unitId' que agora é salvo no documento.
-        if (unitId && unitId !== 'all') {
-            query = query.where('unitId', '==', unitId);
-        }
+            let currentPage = 1;
+            let hasMorePages = true;
+            let unitMembers = [];
 
-        const snapshot = await query.get();
-        let students = snapshot.docs.map(doc => doc.data());
+            while (hasMorePages) {
+                try {
+                    apiParams.page = currentPage;
+                    const response = await apiClientV2.get("/members", { params: apiParams });
+                    const members = response.data || [];
+                    
+                    if (members.length > 0) {
+                        unitMembers = unitMembers.concat(members);
+                    }
 
-        // A filtragem por nome continua sendo feita no lado do servidor após a busca inicial.
-        if (name && name.trim() !== '') {
-            const searchTerm = name.trim().toLowerCase();
-            students = students.filter(s => {
-                const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
-                return fullName.includes(searchTerm);
+                    if (members.length < PAGE_SIZE) {
+                        hasMorePages = false;
+                    }
+                    currentPage++;
+                } catch (pageError) {
+                    functions.logger.error(`Erro ao buscar a página ${currentPage} para a unidade ${currentUnitId}:`, pageError.message);
+                    hasMorePages = false;
+                }
+            }
+            
+            // Normaliza o campo de FitCoins e adiciona o nome da unidade para consistência
+            unitMembers.forEach(member => {
+                member.branchName = member.branchName || currentUnitId;
+                let totalCoins = 0;
+                if (member.hasOwnProperty('totalFitCoins')) {
+                    totalCoins = member.totalFitCoins;
+                } else if (member.hasOwnProperty('fitCoins')) {
+                    totalCoins = member.fitCoins;
+                } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                    totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+                }
+                member.totalFitCoins = totalCoins;
             });
-        }
+
+            return unitMembers;
+        });
+
+        const results = await Promise.all(allUnitPromises);
+        allMembers = results.flatMap(result => result || []);
+
+        const uniqueStudentsMap = new Map();
+        allMembers.forEach(student => {
+            // Garante que totalFitCoins é um número para comparações seguras
+            const studentCoins = Number(student.totalFitCoins) || 0;
+            student.totalFitCoins = studentCoins;
+
+            if (uniqueStudentsMap.has(student.idMember)) {
+                // Se o aluno já existe no mapa, compara e mantém o que tiver mais FitCoins
+                const existingStudent = uniqueStudentsMap.get(student.idMember);
+                if (studentCoins > existingStudent.totalFitCoins) {
+                    uniqueStudentsMap.set(student.idMember, student);
+                }
+            } else {
+                // Adiciona o aluno se for a primeira vez que o vemos
+                uniqueStudentsMap.set(student.idMember, student);
+            }
+        });
+        let uniqueMembers = Array.from(uniqueStudentsMap.values());
+
+        uniqueMembers.forEach(member => {
+            let totalCoins = 0;
+            if (member.hasOwnProperty('totalFitCoins')) {
+                totalCoins = member.totalFitCoins;
+            } else if (member.hasOwnProperty('fitCoins')) {
+                totalCoins = member.fitCoins;
+            } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+            }
+            member.totalFitCoins = totalCoins;
+        });
         
-        functions.logger.info(`Retornando ${students.length} alunos do Firestore.`);
-        return students;
+        functions.logger.info(`Retornando ${uniqueMembers.length} alunos únicos da API EVO.`);
+        return uniqueMembers;
 
     } catch (error) {
-        functions.logger.error("Erro ao listar alunos do Firestore:", error);
-        throw new functions.https.HttpsError("internal", "Não foi possível buscar os alunos do banco de dados.");
+        functions.logger.error(`Erro detalhado ao listar membros da API EVO:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+        throw new functions.https.HttpsError("internal", "Não foi possível buscar os alunos da API.");
     }
 });
 
@@ -699,47 +772,99 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
 
 /**
  * Busca e retorna os dados do ranking de forma pública, sem necessidade de autenticação.
- * Lógica alinhada com listAllMembers para garantir consistência dos dados.
+ * Agora busca todos os alunos (status 0) e seus detalhes de membresia para garantir a precisão dos FitCoins.
  */
-exports.getPublicRanking = functions.https.onCall(async (data, context) => {
+exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     const unitIds = Object.keys(EVO_CREDENTIALS);
     let allMembers = [];
-    const PAGE_SIZE = 500; // Padronizado com listAllMembers para eficiência
+    const PAGE_SIZE = 500; // Restaurado para o valor estável conhecido
 
     try {
         const allUnitPromises = unitIds.map(async (unitId) => {
-            // Lógica de busca e paginação robusta, copiada de listAllMembers
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            const apiParams = { page: 1, take: PAGE_SIZE, status: 1 }; // Sempre status 1 (ativos) para o ranking
+            
+            // Busca todos os alunos (ativos e inativos) passando um array de status
+            const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: [1, 0] };
 
-            const firstPageResponse = await apiClientV2.get("/members", { params: apiParams });
-            const totalMembers = parseInt(firstPageResponse.headers["total"] || "0", 10);
-            let unitMembers = firstPageResponse.data || [];
+            let currentPage = 1;
+            let hasMorePages = true;
+            let unitMembers = [];
 
-            if (totalMembers > PAGE_SIZE) {
-                const totalPages = Math.ceil(totalMembers / PAGE_SIZE);
-                // Loop sequencial para evitar sobrecarregar a API com muitas requisições simultâneas
-                for (let page = 2; page <= totalPages; page++) {
-                    try {
-                        apiParams.page = page;
-                        const subsequentPageResponse = await apiClientV2.get("/members", { params: apiParams });
-                        if (subsequentPageResponse.data) {
-                            unitMembers = unitMembers.concat(subsequentPageResponse.data);
-                        }
-                    } catch (pageError) {
-                        functions.logger.error(`Erro ao buscar a página ${page} para a unidade ${unitId} no ranking público:`, pageError.message);
-                        // Continua para as próximas páginas mesmo que uma falhe
+            while (hasMorePages) {
+                try {
+                    apiParams.page = currentPage;
+                    const response = await apiClientV2.get("/members", { params: apiParams });
+                    const members = response.data || [];
+                    
+                    if (members.length > 0) {
+                        unitMembers = unitMembers.concat(members);
                     }
+
+                    if (members.length < PAGE_SIZE) {
+                        hasMorePages = false;
+                    }
+                    currentPage++;
+                } catch (pageError) {
+                    functions.logger.error(`Erro ao buscar a página ${currentPage} para a unidade ${unitId} no ranking público:`, pageError.message);
+                    hasMorePages = false;
                 }
             }
+            
+            // Normaliza o campo de FitCoins para consistência
+            unitMembers.forEach(member => {
+                let totalCoins = 0;
+                if (member.hasOwnProperty('totalFitCoins')) {
+                    totalCoins = member.totalFitCoins;
+                } else if (member.hasOwnProperty('fitCoins')) {
+                    totalCoins = member.fitCoins;
+                } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                    totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+                }
+                member.totalFitCoins = totalCoins;
+            });
+
             return unitMembers;
         });
 
         const results = await Promise.all(allUnitPromises);
         allMembers = results.flatMap(result => result || []);
+
+        const uniqueStudentsMap = new Map();
+        allMembers.forEach(student => {
+            // Garante que totalFitCoins é um número para comparações seguras
+            const studentCoins = Number(student.totalFitCoins) || 0;
+            student.totalFitCoins = studentCoins;
+
+            if (uniqueStudentsMap.has(student.idMember)) {
+                // Se o aluno já existe no mapa, compara e mantém o que tiver mais FitCoins
+                const existingStudent = uniqueStudentsMap.get(student.idMember);
+                if (studentCoins > existingStudent.totalFitCoins) {
+                    uniqueStudentsMap.set(student.idMember, student);
+                }
+            } else {
+                // Adiciona o aluno se for a primeira vez que o vemos
+                uniqueStudentsMap.set(student.idMember, student);
+            }
+        });
         
-        functions.logger.info(`Total de ${allMembers.length} membros carregados para o ranking público.`);
-        return allMembers;
+        // Ordena os alunos pelo totalFitCoins no backend antes de retornar, garantindo a ordem correta.
+        let uniqueMembers = Array.from(uniqueStudentsMap.values())
+            .sort((a, b) => b.totalFitCoins - a.totalFitCoins);
+
+        uniqueMembers.forEach(member => {
+            let totalCoins = 0;
+            if (member.hasOwnProperty('totalFitCoins')) {
+                totalCoins = member.totalFitCoins;
+            } else if (member.hasOwnProperty('fitCoins')) {
+                totalCoins = member.fitCoins;
+            } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+            }
+            member.totalFitCoins = totalCoins;
+        });
+        
+        functions.logger.info(`Total de ${uniqueMembers.length} membros únicos carregados para o ranking público.`);
+        return uniqueMembers;
 
     } catch (error) {
         functions.logger.error(`Erro detalhado ao gerar ranking público:`, {
@@ -751,119 +876,6 @@ exports.getPublicRanking = functions.https.onCall(async (data, context) => {
     }
 });
 
-/**
- * Lógica principal para buscar todos os alunos de todas as unidades na API EVO
- * e salvá-los na coleção 'evo_students' do Firestore.
- */
-const _syncAllStudentsToFirestore = async () => {
-    functions.logger.info("Iniciando sincronização COMPLETA de todos os alunos do EVO para o Firestore.");
-    const unitIds = Object.keys(EVO_CREDENTIALS);
-    let allStudentSummaries = [];
-
-    // 1. Coletar a lista 'leve' de todos os alunos de todas as unidades
-    for (const unitId of unitIds) {
-        try {
-            const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            let currentPage = 1;
-            let hasMorePages = true;
-            let membersInUnit = 0;
-            while (hasMorePages) {
-                const response = await apiClientV2.get("/members", {
-                    params: { page: currentPage, take: 500, status: 0 } // status 0 = todos
-                });
-                const members = response.data || [];
-                if (members.length > 0) {
-                    members.forEach(m => m.unitId = unitId); // Adiciona unitId para referência
-                    allStudentSummaries.push(...members);
-                    membersInUnit += members.length;
-                }
-                if (members.length < 500) {
-                    hasMorePages = false;
-                }
-                currentPage++;
-            }
-            functions.logger.info(`Unidade '${unitId}': ${membersInUnit} resumos de alunos coletados.`);
-        } catch (error) {
-            functions.logger.error(`Falha ao buscar lista de alunos para a unidade '${unitId}'.`, error.message);
-        }
-    }
-
-    if (allStudentSummaries.length === 0) {
-        functions.logger.warn("Nenhum aluno encontrado para sincronizar. O processo será encerrado.");
-        return;
-    }
-    
-    functions.logger.info(`Total de ${allStudentSummaries.length} alunos para detalhar. Processando em chunks...`);
-
-    // 2. Processar em chunks para buscar detalhes e salvar no Firestore
-    const studentsCollection = db.collection('evo_students');
-    const chunkSize = 50; // Chunks de 50 para buscar detalhes e salvar
-    for (let i = 0; i < allStudentSummaries.length; i += chunkSize) {
-        const chunkSummaries = allStudentSummaries.slice(i, i + chunkSize);
-        
-        // Mapeia cada resumo de aluno para uma promise que busca seus detalhes completos
-        const detailPromises = chunkSummaries.map(summary => {
-            const apiClientV2 = getEvoApiClient(summary.unitId, 'v2');
-            return apiClientV2.get(`/members/${summary.idMember}`, {
-                params: { showMemberships: true, showsResponsibles: true }
-            }).then(response => {
-                const detailedMember = response.data;
-                detailedMember.unitId = summary.unitId; // Garante que o unitId seja mantido
-                return detailedMember;
-            }).catch(error => {
-                functions.logger.error(`Falha ao buscar detalhes para o aluno ID ${summary.idMember} na unidade ${summary.unitId}.`, error.message);
-                return null; // Retorna null em caso de erro para não quebrar o Promise.all
-            });
-        });
-
-        const detailedStudents = (await Promise.all(detailPromises)).filter(s => s !== null); // Filtra os que falharam
-
-        if (detailedStudents.length > 0) {
-            const batch = db.batch();
-            detailedStudents.forEach(student => {
-                const docRef = studentsCollection.doc(String(student.idMember));
-                batch.set(docRef, student, { merge: true });
-            });
-            await batch.commit();
-            functions.logger.info(`Chunk ${Math.floor(i / chunkSize) + 1} de ${Math.ceil(allStudentSummaries.length / chunkSize)} (${detailedStudents.length} alunos) salvo no Firestore.`);
-        }
-    }
-
-    functions.logger.info(`Sincronização detalhada concluída! ${allStudentSummaries.length} registros de alunos foram processados.`);
-};
-
-
-/**
- * Função acionável manualmente para sincronizar os alunos.
- */
-exports.triggerEvoSync = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
-    }
-    
-    try {
-        await _syncAllStudentsToFirestore();
-        return { success: true, message: "Sincronização com a API do EVO concluída com sucesso." };
-    } catch (error) {
-        functions.logger.error("Erro ao acionar a sincronização manual do EVO:", error);
-        throw new functions.https.HttpsError("internal", "Ocorreu um erro durante a sincronização.");
-    }
-});
-
-/**
- * Função agendada para sincronizar os alunos do EVO para o Firestore.
- * Executa a cada 4 horas.
- */
-exports.scheduledEvoSync = functions.pubsub.schedule('every 4 hours').onRun(async (context) => {
-    functions.logger.info("Iniciando sincronização agendada de alunos do EVO.");
-    try {
-        await _syncAllStudentsToFirestore();
-        return null;
-    } catch (error) {
-        functions.logger.error("Erro na sincronização agendada do EVO:", error);
-        return null;
-    }
-});
 
 
 /**

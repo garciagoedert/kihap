@@ -1,8 +1,7 @@
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions } from './firebase-config.js';
 
-const listAllMembers = httpsCallable(functions, 'listAllMembers');
-const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
 
 async function fetchAndDisplayRanking() {
     const rankingBody = document.getElementById('ranking-body');
@@ -14,13 +13,11 @@ async function fetchAndDisplayRanking() {
         </tr>`;
 
     try {
-        // Faz uma única chamada para buscar TODOS os alunos de TODAS as unidades
-        const result = await listAllMembers({ unitId: 'all', status: 0 });
+        // Chama a função getPublicRanking para buscar os dados diretamente da API EVO
+        const result = await getPublicRanking();
         const allStudents = result.data || [];
 
-        // A função `listAllMembers` já retorna uma lista única de alunos do Firestore,
-        // então a remoção de duplicatas no cliente não é mais estritamente necessária,
-        // mas mantemos como uma garantia extra.
+        // A remoção de duplicatas é importante aqui, pois a busca por unidade pode retornar o mesmo aluno
         const uniqueStudentsMap = new Map();
         allStudents.forEach(student => {
             if (!uniqueStudentsMap.has(student.idMember)) {
@@ -61,7 +58,7 @@ function renderRanking(students) {
         return;
     }
 
-    const rowsHtml = students.slice(0, 10).map((student, index) => { // Display top 10
+    const rowsHtml = students.map((student, index) => {
         const fullName = `${student.firstName || ''} ${student.lastName || ''}`;
         const fitCoins = student.totalFitCoins || 0;
         const photoUrl = student.photoUrl || 'default-profile.svg';

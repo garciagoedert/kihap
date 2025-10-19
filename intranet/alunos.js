@@ -42,7 +42,6 @@ export function setupAlunosPage() {
             // --- DOM Elements ---
             const unitFilter = document.getElementById('unit-filter');
             const searchInput = document.getElementById('search-input');
-            const statusFilter = document.getElementById('status-filter');
             const modal = document.getElementById('student-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const savePermissionsBtn = document.getElementById('modal-save-permissions-btn');
@@ -78,9 +77,10 @@ export function setupAlunosPage() {
 
             // --- Event Listeners ---
             unitFilter.addEventListener('change', () => loadStudents());
-            checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
-            searchInput.addEventListener('input', debounce(loadStudents, 500)); // Use debounce to avoid excessive API calls
-            statusFilter.addEventListener('change', () => loadStudents());
+            if (checkEntriesBtn) {
+                checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
+            }
+            searchInput.addEventListener('input', debounce(() => loadStudents(), 500)); // Restaurado para chamar a função de busca
 
             // Event listener delegated for the students table
             const tableBody = document.getElementById('students-table-body');
@@ -207,13 +207,11 @@ export function setupAlunosPage() {
             // --- Admin-only Features ---
             const syncEvoBtn = document.getElementById('sync-evo-btn');
             if (syncEvoBtn) {
-                syncEvoBtn.classList.remove('hidden');
-                syncEvoBtn.addEventListener('click', handleSyncEvoClick);
+                syncEvoBtn.style.display = 'none';
             }
             const syncEvoRankingBtn = document.getElementById('sync-evo-ranking-btn');
             if (syncEvoRankingBtn) {
-                syncEvoRankingBtn.classList.remove('hidden');
-                syncEvoRankingBtn.addEventListener('click', handleSyncEvoClick);
+                syncEvoRankingBtn.style.display = 'none';
             }
         }
     });
@@ -222,20 +220,16 @@ export function setupAlunosPage() {
 async function loadStudents() {
     const tableBody = document.getElementById('students-table-body');
     const unitFilter = document.getElementById('unit-filter');
-    const statusFilter = document.getElementById('status-filter');
     const searchInput = document.getElementById('search-input');
     const selectedUnit = unitFilter.value;
-    const selectedStatus = parseInt(statusFilter.value, 10);
     const searchTerm = searchInput.value.trim();
 
     tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
-        // Lógica simplificada: sempre faz uma única chamada para o backend.
-        // O backend agora é inteligente o suficiente para lidar com os filtros.
+        // A lógica de filtro de status foi removida. O backend agora sempre busca todos.
         const result = await listAllMembers({
             unitId: selectedUnit,
-            status: selectedStatus,
             name: searchTerm
         });
 
@@ -255,8 +249,11 @@ async function loadStudents() {
 function renderStudents(students) {
     const tableBody = document.getElementById('students-table-body');
 
-    if (students.length > 0) {
-        const rowsHtml = students.map(member => {
+    // Filtra alunos com dados removidos
+    const validStudents = students.filter(student => student.firstName !== '***Dados Removidos***');
+
+    if (validStudents.length > 0) {
+        const rowsHtml = validStudents.map(member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
@@ -272,7 +269,7 @@ function renderStudents(students) {
         tableBody.innerHTML = rowsHtml;
 
         // Agora, chame a Cloud Function para obter os status e aplicar os destaques
-        highlightRegisteredStudents(students.map(s => s.idMember));
+        highlightRegisteredStudents(validStudents.map(s => s.idMember));
 
     } else {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
@@ -872,25 +869,26 @@ async function handleCheckEntriesClick() {
     }
 }
 
-function loadRankingData() {
+async function loadRankingData() {
     const rankingTableBody = document.getElementById('ranking-table-body');
-    rankingTableBody.innerHTML = ''; // Limpa a tabela
+    rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando ranking...</td></tr>';
 
-    // Usa a lista de alunos já carregada da API do EVO
-    if (!allStudents || allStudents.length === 0) {
-        rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando dados dos alunos... Por favor, aguarde.</td></tr>';
-        // Se os alunos ainda não foram carregados, podemos esperar um pouco ou mostrar uma mensagem.
-        // A chamada inicial `loadStudents()` deve cuidar disso.
-        return;
+    try {
+        const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
+        const result = await getPublicRanking();
+        const allStudentsForRanking = result.data || [];
+
+        // Filtra e ordena os alunos pelas KihapCoins
+        const rankedStudents = allStudentsForRanking
+            .filter(student => student.totalFitCoins > 0)
+            .sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));
+
+        renderRanking(rankedStudents);
+
+    } catch (error) {
+        console.error("Erro ao carregar o ranking:", error);
+        rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar o ranking.</td></tr>';
     }
-
-    // Cria uma cópia para não alterar a ordem original e filtra alunos com FitCoins
-    const studentsWithCoins = [...allStudents].filter(student => student.totalFitCoins > 0);
-
-    // Ordena os alunos pelo campo 'totalFitCoins'
-    studentsWithCoins.sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));
-
-    renderRanking(studentsWithCoins);
 }
 
 function renderRanking(students) {
@@ -917,46 +915,4 @@ function renderRanking(students) {
     }).join('');
 
     rankingTableBody.innerHTML = rowsHtml;
-}
-
-async function handleSyncEvoClick() {
-    const syncButton = document.getElementById('sync-evo-btn');
-    const syncRankingButton = document.getElementById('sync-evo-ranking-btn');
-    const buttons = [syncButton, syncRankingButton].filter(btn => btn); // Filtra botões que existem na página
-
-    if (buttons.length === 0) return;
-
-    showConfirm(
-        "Tem certeza que deseja sincronizar todos os alunos com a API do EVO? Esta ação pode levar alguns minutos e irá atualizar a base de dados local.",
-        async () => {
-            // Desabilita e atualiza o texto de todos os botões de sync
-            buttons.forEach(button => {
-                button.disabled = true;
-                const icon = button.querySelector('i');
-                const text = button.querySelector('span');
-                if (icon) icon.classList.add('fa-spin');
-                if (text) text.textContent = 'Sincronizando...';
-            });
-
-            try {
-                const result = await triggerEvoSync();
-                alert(result.data.message || "Sincronização concluída com sucesso!");
-                await loadStudents(); // Recarrega a lista de alunos
-                loadRankingData();    // Recarrega os dados do ranking
-            } catch (error) {
-                console.error("Erro ao sincronizar com o EVO:", error);
-                alert(`Erro ao sincronizar: ${error.message}`);
-            } finally {
-                // Reabilita e restaura o texto de todos os botões de sync
-                buttons.forEach(button => {
-                    button.disabled = false;
-                    const icon = button.querySelector('i');
-                    const text = button.querySelector('span');
-                    if (icon) icon.classList.remove('fa-spin');
-                    if (text) text.textContent = 'Sincronizar com EVO';
-                });
-            }
-        },
-        "Confirmar Sincronização"
-    );
 }
