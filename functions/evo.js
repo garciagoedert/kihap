@@ -157,36 +157,47 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
     try {
         const allUnitPromises = unitIdsToFetch.map(async (currentUnitId) => {
             const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
-            
-            // Busca todos os alunos (ativos e inativos) passando um array de status
-            const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: [1, 0] };
-            if (name && name.trim() !== '') {
-                apiParams.name = name.trim();
-            }
-
-            let currentPage = 1;
-            let hasMorePages = true;
             let unitMembers = [];
 
-            while (hasMorePages) {
-                try {
-                    apiParams.page = currentPage;
-                    const response = await apiClientV2.get("/members", { params: apiParams });
-                    const members = response.data || [];
-                    
-                    if (members.length > 0) {
-                        unitMembers = unitMembers.concat(members);
-                    }
-
-                    if (members.length < PAGE_SIZE) {
-                        hasMorePages = false;
-                    }
-                    currentPage++;
-                } catch (pageError) {
-                    functions.logger.error(`Erro ao buscar a página ${currentPage} para a unidade ${currentUnitId}:`, pageError.message);
-                    hasMorePages = false;
+            // Função auxiliar para buscar todas as páginas de um determinado status
+            const fetchAllPagesForStatus = async (status) => {
+                const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: status };
+                if (name && name.trim() !== '') {
+                    apiParams.name = name.trim();
                 }
-            }
+
+                let currentPage = 1;
+                let hasMorePages = true;
+                let statusMembers = [];
+
+                while (hasMorePages) {
+                    try {
+                        apiParams.page = currentPage;
+                        const response = await apiClientV2.get("/members", { params: apiParams });
+                        const members = response.data || [];
+                        
+                        if (members.length > 0) {
+                            statusMembers = statusMembers.concat(members);
+                        }
+
+                        if (members.length < PAGE_SIZE) {
+                            hasMorePages = false;
+                        }
+                        currentPage++;
+                    } catch (pageError) {
+                        functions.logger.error(`Erro ao buscar a página ${currentPage} para status ${status} na unidade ${currentUnitId}:`, pageError.message);
+                        hasMorePages = false; // Interrompe em caso de erro
+                    }
+                }
+                return statusMembers;
+            };
+
+            // Busca alunos ativos (1) e inativos (2) em paralelo
+            const [activeMembers, inactiveMembers] = await Promise.all([
+                fetchAllPagesForStatus(1),
+                fetchAllPagesForStatus(2)
+            ]);
+            unitMembers = (activeMembers || []).concat(inactiveMembers || []);
             
             // Normaliza o campo de FitCoins e adiciona o nome da unidade para consistência
             unitMembers.forEach(member => {
@@ -214,14 +225,8 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             const studentCoins = Number(student.totalFitCoins) || 0;
             student.totalFitCoins = studentCoins;
 
-            if (uniqueStudentsMap.has(student.idMember)) {
-                // Se o aluno já existe no mapa, compara e mantém o que tiver mais FitCoins
-                const existingStudent = uniqueStudentsMap.get(student.idMember);
-                if (studentCoins > existingStudent.totalFitCoins) {
-                    uniqueStudentsMap.set(student.idMember, student);
-                }
-            } else {
-                // Adiciona o aluno se for a primeira vez que o vemos
+            const existingStudent = uniqueStudentsMap.get(student.idMember);
+            if (!existingStudent || studentCoins > existingStudent.totalFitCoins) {
                 uniqueStudentsMap.set(student.idMember, student);
             }
         });
@@ -782,33 +787,44 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB
     try {
         const allUnitPromises = unitIds.map(async (unitId) => {
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            
-            // Busca todos os alunos (ativos e inativos) passando um array de status
-            const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: [1, 0] };
-
-            let currentPage = 1;
-            let hasMorePages = true;
             let unitMembers = [];
 
-            while (hasMorePages) {
-                try {
-                    apiParams.page = currentPage;
-                    const response = await apiClientV2.get("/members", { params: apiParams });
-                    const members = response.data || [];
-                    
-                    if (members.length > 0) {
-                        unitMembers = unitMembers.concat(members);
-                    }
+            // Função auxiliar para buscar todas as páginas de um determinado status
+            const fetchAllPagesForStatus = async (status) => {
+                const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: status };
+                
+                let currentPage = 1;
+                let hasMorePages = true;
+                let statusMembers = [];
 
-                    if (members.length < PAGE_SIZE) {
-                        hasMorePages = false;
+                while (hasMorePages) {
+                    try {
+                        apiParams.page = currentPage;
+                        const response = await apiClientV2.get("/members", { params: apiParams });
+                        const members = response.data || [];
+                        
+                        if (members.length > 0) {
+                            statusMembers = statusMembers.concat(members);
+                        }
+
+                        if (members.length < PAGE_SIZE) {
+                            hasMorePages = false;
+                        }
+                        currentPage++;
+                    } catch (pageError) {
+                        functions.logger.error(`Erro ao buscar a página ${currentPage} para status ${status} na unidade ${unitId} no ranking público:`, pageError.message);
+                        hasMorePages = false; // Interrompe em caso de erro
                     }
-                    currentPage++;
-                } catch (pageError) {
-                    functions.logger.error(`Erro ao buscar a página ${currentPage} para a unidade ${unitId} no ranking público:`, pageError.message);
-                    hasMorePages = false;
                 }
-            }
+                return statusMembers;
+            };
+
+            // Busca alunos ativos (1) e inativos (2) em paralelo
+            const [activeMembers, inactiveMembers] = await Promise.all([
+                fetchAllPagesForStatus(1),
+                fetchAllPagesForStatus(2)
+            ]);
+            unitMembers = (activeMembers || []).concat(inactiveMembers || []);
             
             // Normaliza o campo de FitCoins para consistência
             unitMembers.forEach(member => {
@@ -835,14 +851,8 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB
             const studentCoins = Number(student.totalFitCoins) || 0;
             student.totalFitCoins = studentCoins;
 
-            if (uniqueStudentsMap.has(student.idMember)) {
-                // Se o aluno já existe no mapa, compara e mantém o que tiver mais FitCoins
-                const existingStudent = uniqueStudentsMap.get(student.idMember);
-                if (studentCoins > existingStudent.totalFitCoins) {
-                    uniqueStudentsMap.set(student.idMember, student);
-                }
-            } else {
-                // Adiciona o aluno se for a primeira vez que o vemos
+            const existingStudent = uniqueStudentsMap.get(student.idMember);
+            if (!existingStudent || studentCoins > existingStudent.totalFitCoins) {
                 uniqueStudentsMap.set(student.idMember, student);
             }
         });
