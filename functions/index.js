@@ -1,197 +1,111 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const stripe = require('stripe')('sk_test_51SL5x1FzkLWBAYFuXrxzbncorzQSCGlyqHg04GAF2jEBMrfnAvXe78JGaB2AFzEKhXzYRpreZJXcYsaxn5O1IDkh00cPcfOYtn'); // Substitua pela sua chave secreta do Stripe
+
 admin.initializeApp();
+const db = admin.firestore();
 
-exports.updateUserPassword = functions.https.onCall(async (data, context) => {
-    // Verifica se o usuário que chama a função é um administrador.
-    if (!context.auth.token.isAdmin) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "Apenas administradores podem alterar senhas."
-        );
+// Cloud Function para criar a sessão de checkout do Stripe
+// Forçando a reimplementação para atualizar as permissões
+exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
+    // Permitir CORS para o frontend
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
     }
 
-    const { userId, password } = data;
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
 
-    if (!userId || !password) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "O ID do usuário e a nova senha são obrigatórios."
-        );
+    const { userName, userEmail, userPhone, userId, amount, currency, productName } = req.body;
+
+    if (!amount || !currency || !productName) {
+        return res.status(400).send('Missing required payment details.');
     }
 
     try {
-        await admin.auth().updateUser(userId, {
-            password: password,
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: currency,
+                        product_data: {
+                            name: productName,
+                        },
+                        unit_amount: amount, // amount in cents
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'https://kihap.com.br/faixa-preta-success.html?session_id={CHECKOUT_SESSION_ID}', // Substitua pelo seu domínio
+            cancel_url: 'https://kihap.com.br/faixa-preta.html', // Substitua pelo seu domínio
+            metadata: {
+                userId: userId,
+                userName: userName,
+                userEmail: userEmail,
+                userPhone: userPhone,
+                productName: productName,
+            },
         });
-        return { success: true, message: "Senha atualizada com sucesso." };
+
+        res.status(200).json({ sessionId: session.id });
     } catch (error) {
-        console.error("Erro ao atualizar a senha:", error);
-        throw new functions.https.HttpsError(
-            "internal",
-            "Ocorreu um erro ao atualizar a senha."
-        );
+        console.error('Error creating checkout session:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Ponto de entrada principal para as Firebase Functions.
-
-// Carrega as funções da API EVO
-const evoFunctions = require('./evo.js');
-
-// Exporta todas as funções encontradas em evo.js
-Object.keys(evoFunctions).forEach(key => {
-  exports[key] = evoFunctions[key];
-});
-
-// Você pode adicionar outras funções aqui no futuro, se necessário.
-// Exemplo:
-// const outrasFuncoes = require('./outras.js');
-// Object.keys(outrasFuncoes).forEach(key => {
-//   exports[key] = outrasFuncoes[key];
-// });
-
-exports.getRegisteredUsersByEvoId = functions.https.onCall(
-    async (data, context) => {
-      // Apenas administradores podem chamar esta função.
-      if (!context.auth.token.isAdmin) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "Apenas administradores podem consultar os status de registro.",
-        );
-      }
-
-      const {evoIds} = data;
-
-      if (!Array.isArray(evoIds) || evoIds.length === 0) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "Um array de 'evoIds' é obrigatório.",
-        );
-      }
-
-      try {
-        const usersRef = admin.firestore().collection("users");
-        // O Firestore limita o operador 'in' a 10 itens por query.
-        // Se houver mais de 10, precisaremos dividir em múltiplos chunks.
-        const chunks = [];
-        for (let i = 0; i < evoIds.length; i += 10) {
-          chunks.push(evoIds.slice(i, i + 10));
-        }
-
-        const registeredIds = new Set();
-
-        for (const chunk of chunks) {
-          const snapshot = await usersRef.where("evoMemberId", "in", chunk).get();
-          snapshot.forEach((doc) => {
-            registeredIds.add(doc.data().evoMemberId);
-          });
-        }
-
-        return {registeredEvoIds: Array.from(registeredIds)};
-      } catch (error) {
-        console.error("Erro ao buscar usuários registrados:", error);
-        throw new functions.https.HttpsError(
-            "internal",
-            "Ocorreu um erro ao buscar os usuários.",
-        );
-      }
-    },
-);
-
-exports.updateStudentBadges = functions.https.onCall(async (data, context) => {
-    // Verifica se o usuário está autenticado.
-    if (!context.auth) {
-        throw new functions.https.HttpsError(
-            "unauthenticated",
-            "Você precisa estar autenticado para realizar esta ação."
-        );
-    }
-
-    const { studentUid, earnedBadges } = data;
-
-    if (!studentUid || !Array.isArray(earnedBadges)) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "O ID do aluno e um array de emblemas são obrigatórios."
-        );
-    }
+// Cloud Function (webhook) para lidar com eventos do Stripe
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
 
     try {
-        const userRef = admin.firestore().collection("users").doc(studentUid);
-        await userRef.set({
-            earnedBadges: earnedBadges,
-        }, { merge: true });
-        return { success: true, message: "Emblemas atualizados com sucesso." };
-    } catch (error) {
-        console.error("Erro ao atualizar emblemas:", error);
-        throw new functions.https.HttpsError(
-            "internal",
-            "Ocorreu um erro ao atualizar os emblemas do aluno."
-        );
-    }
-});
-
-exports.grantAdminRole = functions.https.onCall(async (data, context) => {
-    // Idealmente, verifique se o chamador já é um administrador
-    // if (!context.auth.token.isAdmin) {
-    //     throw new functions.https.HttpsError(
-    //         "permission-denied",
-    //         "Apenas administradores podem conceder privilégios."
-    //     );
-    // }
-
-    const { email } = data;
-    if (!email) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "O e-mail é obrigatório."
-        );
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, 'whsec_ZPO25QQbdYRxBr9Faa5CS03EgFFKan7J'); // Substitua pelo seu endpoint secret
+    } catch (err) {
+        console.error(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    try {
-        const user = await admin.auth().getUserByEmail(email);
-        await admin.auth().setCustomUserClaims(user.uid, { isAdmin: true });
-        return { message: `Sucesso! ${email} agora é um administrador.` };
-    } catch (error) {
-        console.error("Erro ao conceder privilégio de administrador:", error);
-        throw new functions.https.HttpsError("internal", "Ocorreu um erro.");
-    }
-});
+    // Handle the event
+    switch (event.type) {
+        case 'checkout.session.completed':
+            const session = event.data.object;
+            console.log('Checkout session completed:', session);
 
-exports.grantInstructorRole = functions.https.onCall(async (data, context) => {
-    // Apenas administradores podem conceder a permissão de instrutor.
-    if (!context.auth.token.isAdmin) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "Apenas administradores podem conceder esta permissão."
-        );
+            // Salvar os dados da inscrição no Firestore
+            const inscriptionData = {
+                userId: session.metadata.userId,
+                userName: session.metadata.userName,
+                userEmail: session.metadata.userEmail,
+                userPhone: session.metadata.userPhone,
+                productName: session.metadata.productName,
+                amountTotal: session.amount_total,
+                currency: session.currency,
+                paymentStatus: session.payment_status,
+                checkoutSessionId: session.id,
+                created: admin.firestore.FieldValue.serverTimestamp(),
+            };
+
+            try {
+                await db.collection('inscricoesFaixaPreta').add(inscriptionData);
+                console.log('Inscription saved to Firestore:', inscriptionData);
+            } catch (error) {
+                console.error('Error saving inscription to Firestore:', error);
+                return res.status(500).send('Error saving inscription');
+            }
+            break;
+        // Outros tipos de eventos podem ser tratados aqui
+        default:
+            console.log(`Unhandled event type ${event.type}`);
     }
 
-    const { email } = data;
-    if (!email) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "O e-mail é obrigatório."
-        );
-    }
-
-    try {
-        const user = await admin.auth().getUserByEmail(email);
-        // Define a custom claim 'isInstructor'
-        await admin.auth().setCustomUserClaims(user.uid, { ...user.customClaims, isInstructor: true });
-        
-        // Atualiza também o documento no Firestore para consistência
-        await admin.firestore().collection('users').doc(user.uid).set({
-            isInstructor: true
-        }, { merge: true });
-
-        return { message: `Sucesso! ${email} agora tem permissão de instrutor.` };
-    } catch (error) {
-        console.error("Erro ao conceder permissão de instrutor:", error);
-        if (error.code === 'auth/user-not-found') {
-            throw new functions.https.HttpsError("not-found", "Usuário não encontrado com este e-mail.");
-        }
-        throw new functions.https.HttpsError("internal", "Ocorreu um erro ao processar a solicitação.");
-    }
+    res.status(200).send('OK');
 });

@@ -1,9 +1,6 @@
 {
   "functions": {
     "source": "functions",
-    "predeploy": [
-      "gcloud functions set-iam-policy-binding Kihap --region=us-central1 --member=allUsers --role=roles/cloudfunctions.invoker"
-    ],
     "cors": "cors.json"
   },
   "firestore": {
