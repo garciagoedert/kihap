@@ -49,7 +49,7 @@ const EVO_CREDENTIALS = {
         dns: "atadf",
         token: "EB5D8DDB-7263-476D-9491-2DD3F4BB7414",
     },
-    atadf: {
+    store: {
         dns: "atadf",
         token: "F5389AF2-DEA8-49E4-850F-7365A5077CC6",
     }
