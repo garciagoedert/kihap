@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')('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'); // Chave Secreta de Produção
+const stripe = require('stripe')(functions.config().stripe.secret);
 
 admin.initializeApp();
 const db = admin.firestore();
