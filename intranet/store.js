@@ -32,6 +32,7 @@ export async function setupStorePage() {
     const productPriceInput = document.getElementById('product-price');
     const productDescriptionInput = document.getElementById('product-description');
     const productImageInput = document.getElementById('product-image');
+    const productVisibleInput = document.getElementById('product-visible');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
@@ -136,7 +137,7 @@ export async function setupStorePage() {
 
     // --- Product Management Logic ---
     const fetchProducts = async () => {
-        productsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando produtos...</td></tr>';
+        productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando produtos...</td></tr>';
         try {
             const q = query(collection(db, 'products'), orderBy('name', 'asc'));
             const querySnapshot = await getDocs(q);
@@ -144,14 +145,14 @@ export async function setupStorePage() {
             displayProducts(allProducts);
         } catch (error) {
             console.error('Error fetching products:', error);
-            productsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
         }
     };
 
     const displayProducts = (productsToDisplay) => {
         productsTableBody.innerHTML = '';
         if (productsToDisplay.length === 0) {
-            productsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
             return;
         }
 
@@ -160,10 +161,12 @@ export async function setupStorePage() {
             row.classList.add('border-b', 'border-gray-700');
             const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const productUrl = `${window.location.origin.replace('/intranet', '')}/produto.html?id=${product.id}`;
+            const status = product.visible ? '<span class="text-green-400">Visível</span>' : '<span class="text-gray-400">Oculto</span>';
 
             row.innerHTML = `
                 <td class="p-4">${product.name}</td>
                 <td class="p-4">${price}</td>
+                <td class="p-4">${status}</td>
                 <td class="p-4">
                     <button class="copy-link-btn text-green-400 hover:text-green-300" data-link="${productUrl}">
                         <i class="fas fa-copy"></i> Copiar
@@ -181,6 +184,7 @@ export async function setupStorePage() {
         productForm.reset();
         productIdInput.value = '';
         productImageInput.dataset.existingImageUrl = '';
+        productVisibleInput.checked = false;
         productFormTitle.textContent = 'Adicionar Novo Produto';
         saveProductBtn.textContent = 'Salvar Produto';
         cancelEditBtn.classList.add('hidden');
@@ -208,6 +212,7 @@ export async function setupStorePage() {
                 price: parseInt(productPriceInput.value, 10),
                 description: productDescriptionInput.value,
                 imageUrl: imageUrl,
+                visible: productVisibleInput.checked,
             };
 
             if (id) {
@@ -255,6 +260,7 @@ export async function setupStorePage() {
                 productPriceInput.value = product.price;
                 productDescriptionInput.value = product.description;
                 productImageInput.dataset.existingImageUrl = product.imageUrl || '';
+                productVisibleInput.checked = product.visible || false;
                 saveProductBtn.textContent = 'Atualizar Produto';
                 cancelEditBtn.classList.remove('hidden');
             }

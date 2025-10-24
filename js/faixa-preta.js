@@ -59,8 +59,7 @@ form.addEventListener('submit', async (e) => {
 
         if (sessionId) {
             // Redirecionar para o checkout do Stripe
-            // Substitua 'SUA_CHAVE_PÚBLICA_DO_STRIPE' pela sua chave pública do Stripe
-            const stripe = Stripe('pk_test_51SL5x1FzkLWBAYFuS8NZubHjVpZiwMRQ7Y2JgR1AIiXDhlNDmmnFu65vGGMsgm99RntNW364LhcHO4KEyD48mQPq00UZkdGIRR'); 
+            const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8aOHoXXBM7w6uqT4kaQ6SpspJBe0YAwSmyPLCjxnRJzF32vIQNcZ4ot7MVkhaurUF6gh2Wr040075KVzRiP'); // Chave Publicável de Produção
             stripe.redirectToCheckout({ sessionId: sessionId });
         } else {
             formStatus.textContent = 'Erro ao iniciar o pagamento. Tente novamente.';

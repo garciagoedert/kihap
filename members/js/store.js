@@ -1,12 +1,12 @@
 import { db } from '../../intranet/firebase-config.js';
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 export async function loadProducts() {
     const productList = document.getElementById('product-list');
     productList.innerHTML = '<p>Carregando produtos...</p>';
 
     try {
-        const q = query(collection(db, 'products'), orderBy('name'));
+        const q = query(collection(db, 'products'), where('visible', '==', true), orderBy('name'));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
