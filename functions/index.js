@@ -1,6 +1,7 @@
+require('dotenv').config({ path: '.env.production' });
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')(functions.config().stripe.secret);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 admin.initializeApp();
 const db = admin.firestore();
