@@ -394,7 +394,8 @@ async function loadComponents(pageSpecificSetup) {
                 'estoque.html',
                 'pedidos-faixas.html',
                 'chat.html',
-                'feed.html'
+                'feed.html',
+                'store.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
