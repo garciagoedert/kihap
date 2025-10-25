@@ -44,7 +44,14 @@ body {
 }
 
 .hero-section {
-    background-image: url('/imgs/fundogero.jpg');
+    background-image: url('../imgs/fundogero.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hero-faixa-preta {
+    background-image: url('../imgs/fxpretas.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
