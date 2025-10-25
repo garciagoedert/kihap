@@ -59,7 +59,7 @@ form.addEventListener('submit', async (e) => {
 
         if (sessionId) {
             // Redirecionar para o checkout do Stripe
-            const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8u5Oybo7ewhymCYmEfl86PSRYyFivTGwX89PBu6mQsMlgEHgQRnzLpla9BWEVChS4NW2LQB7U0062dCs3FO'); // Chave Publicável de Produção
+            const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8iVZ7c7tB8PEIoiczwTEAUoRhe4dXusoilvXxm4vkgmbrcnMdCrXnOiIpvc0nw6FBhxYbnryl00gTmK12WA'); // Chave Publicável de Produção
             stripe.redirectToCheckout({ sessionId: sessionId });
         } else {
             formStatus.textContent = 'Erro ao iniciar o pagamento. Tente novamente.';

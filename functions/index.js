@@ -1,3 +1,4 @@
+// Forçando a atualização do ambiente
 require('dotenv').config({ path: '.env.production' });
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');

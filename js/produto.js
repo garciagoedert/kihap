@@ -5,7 +5,7 @@ import { onAuthReady, getUserData } from '../members/js/auth.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // A chave pública do Stripe deve ser a mesma usada em outras partes do site.
-    const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8u5Oybo7ewhymCYmEfl86PSRYyFivTGwX89PBu6mQsMlgEHgQRnzLpla9BWEVChS4NW2LQB7U0062dCs3FO'); // Chave Publicável de Produção
+    const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8iVZ7c7tB8PEIoiczwTEAUoRhe4dXusoilvXxm4vkgmbrcnMdCrXnOiIpvc0nw6FBhxYbnryl00gTmK12WA'); // Chave Publicável de Produção
 
     const productLoading = document.getElementById('product-loading');
     const productContent = document.getElementById('product-content');
