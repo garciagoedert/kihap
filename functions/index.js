@@ -1,5 +1,6 @@
 // Forçando a atualização do ambiente - v2
-require('dotenv').config({ path: '.env.production' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env.production') });
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -23,7 +24,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { userName, userEmail, userPhone, userCpf, userUnit, userId, productId } = req.body;
+    const { userName, userEmail, userPhone, userCpf, userUnit, userPrograma, userGraduacao, userId, productId } = req.body;
 
     if (!userName || !userEmail || !productId || !userCpf || !userUnit) {
         return res.status(400).send('Missing required fields: userName, userEmail, productId, userCpf, userUnit.');
@@ -51,6 +52,8 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             userPhone: userPhone,
             userCpf: userCpf,
             userUnit: userUnit,
+            userPrograma: userPrograma,
+            userGraduacao: userGraduacao,
             productId: productId,
             productName: productName,
             amountTotal: amount,

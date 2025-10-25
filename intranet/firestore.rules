@@ -171,6 +171,12 @@ service cloud.firestore {
 
     // Regra para a coleção de Produtos da Loja
     match /products/{productId} {
+      allow read: if resource.data.acessoPublico == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Banners da Loja
+    match /banners/{bannerId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
