@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const telefoneInput = document.getElementById('telefone');
     const cpfInput = document.getElementById('cpf');
     const unidadeSelect = document.getElementById('unidade');
+    const programaSelect = document.getElementById('programa');
+    const graduacaoContainer = document.getElementById('graduacao-container');
+    const graduacaoSelect = document.getElementById('graduacao');
 
     let productId = null;
     let productData = null;
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const displayProduct = (product) => {
+        console.log(product);
         productNameTitle.textContent = product.name;
         document.title = `Kihap - ${product.name}`; // Update page title
         productDescription.textContent = product.description || '';
@@ -71,6 +75,41 @@ document.addEventListener('DOMContentLoaded', () => {
         productContent.classList.remove('hidden');
     };
 
+    const populateGraduacao = (program) => {
+        const graduacoes = {
+            tradicional: [
+                'Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida',
+                'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida',
+                'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida',
+                'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida',
+                'Vermelha e preta', 'Preta'
+            ],
+            littles: [
+                'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta',
+                'Littles Jacaré', 'Littles Coruja', 'Littles Arara', 'Littles Macaco', 'Littles Fênix'
+            ]
+        };
+
+        const options = graduacoes[program];
+
+        if (options) {
+            graduacaoContainer.classList.remove('hidden');
+            graduacaoSelect.innerHTML = '<option value="">Selecione sua graduação</option>';
+            options.forEach(grad => {
+                const option = document.createElement('option');
+                option.value = grad;
+                option.textContent = grad;
+                graduacaoSelect.appendChild(option);
+            });
+        } else {
+            graduacaoContainer.classList.add('hidden');
+        }
+    };
+
+    programaSelect.addEventListener('change', (event) => {
+        populateGraduacao(event.target.value);
+    });
+
     const handleFormSubmit = async (event) => {
         event.preventDefault();
         payButton.disabled = true;
@@ -81,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const userPhone = telefoneInput.value;
         const userCpf = cpfInput.value;
         const userUnit = unidadeSelect.value;
+        const userPrograma = programaSelect.value;
+        const userGraduacao = graduacaoContainer.classList.contains('hidden') ? null : graduacaoSelect.value;
         const userId = currentUser ? currentUser.uid : null;
 
         try {
@@ -95,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     userPhone,
                     userCpf,
                     userUnit,
+                    userPrograma,
+                    userGraduacao,
                     userId,
                     productId,
                 }),
@@ -140,10 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             unidadeSelect.innerHTML = '<option value="">Selecione sua unidade</option>'; // Placeholder
             units.forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
-                unidadeSelect.appendChild(option);
+                if (unit.toLowerCase() !== 'atadf') {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+                    unidadeSelect.appendChild(option);
+                }
             });
         } catch (error) {
             console.error("Error fetching units:", error);

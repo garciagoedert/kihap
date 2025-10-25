@@ -64,7 +64,7 @@ export async function setupStorePage() {
 
     // --- Sales Log Logic ---
     const fetchSales = async () => {
-        salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8">Carregando vendas...</td></tr>';
+        salesTableBody.innerHTML = '<tr><td colspan="10" class="text-center p-8">Carregando vendas...</td></tr>';
         try {
             const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
             const querySnapshot = await getDocs(q);
@@ -79,7 +79,7 @@ export async function setupStorePage() {
     const displaySales = (salesToDisplay) => {
         salesTableBody.innerHTML = '';
         if (salesToDisplay.length === 0) {
-            salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
+            salesTableBody.innerHTML = '<tr><td colspan="10" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
             return;
         }
 
@@ -96,6 +96,8 @@ export async function setupStorePage() {
                 <td class="p-4">${sale.userEmail || 'N/A'}</td>
                 <td class="p-4">${sale.userPhone || 'N/A'}</td>
                 <td class="p-4">${sale.productName || 'N/A'}</td>
+                <td class="p-4">${sale.userPrograma || 'N/A'}</td>
+                <td class="p-4">${sale.userGraduacao || 'N/A'}</td>
                 <td class="p-4">${amount}</td>
                 <td class="p-4">${sale.paymentStatus || 'N/A'}</td>
                 <td class="p-4">${date}</td>
@@ -299,6 +301,8 @@ export async function setupStorePage() {
             <p><strong>Telefone:</strong> ${sale.userPhone || 'N/A'}</p>
             <p><strong>CPF:</strong> ${sale.userCpf || 'N/A'}</p>
             <p><strong>Unidade:</strong> ${sale.userUnit || 'N/A'}</p>
+            <p><strong>Programa:</strong> ${sale.userPrograma || 'N/A'}</p>
+            <p><strong>Graduação:</strong> ${sale.userGraduacao || 'N/A'}</p>
             <p><strong>Produto:</strong> ${sale.productName || 'N/A'}</p>
             <p><strong>Valor:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
             <p><strong>Status do Pagamento:</strong> ${sale.paymentStatus || 'N/A'}</p>
