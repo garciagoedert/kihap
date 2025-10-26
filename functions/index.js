@@ -1,9 +1,7 @@
 // Forçando a atualização do ambiente - v2
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env.production') });
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')(functions.config().stripe.secret_key);
 
 admin.initializeApp();
 const db = admin.firestore();
