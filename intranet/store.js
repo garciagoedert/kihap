@@ -36,6 +36,11 @@ export async function setupStorePage() {
     const productPriceInput = document.getElementById('product-price');
     const productDescriptionInput = document.getElementById('product-description');
     const productImageInput = document.getElementById('product-image');
+    const priceTypeRadios = document.querySelectorAll('input[name="price-type"]');
+    const fixedPriceContainer = document.getElementById('fixed-price-container');
+    const variablePricesContainer = document.getElementById('variable-prices-container');
+    const addPriceVariantBtn = document.getElementById('add-price-variant-btn');
+    const priceVariantsList = document.getElementById('price-variants-list');
     const productVisibleInput = document.getElementById('product-visible');
     const productPublicInput = document.getElementById('product-public');
     const saveProductBtn = document.getElementById('save-product-btn');
@@ -250,7 +255,17 @@ export async function setupStorePage() {
         productsToDisplay.forEach(product => {
             const row = productsTableBody.insertRow();
             row.classList.add('border-b', 'border-gray-700');
-            const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            let price;
+            if (product.priceType === 'variable' && product.priceVariants) {
+                const prices = product.priceVariants.map(v => v.price / 100);
+                const minPrice = Math.min(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const maxPrice = Math.max(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                price = `${minPrice} - ${maxPrice}`;
+            } else {
+                price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
             const productUrl = `${window.location.origin.replace('/intranet', '')}/produto.html?id=${product.id}`;
             const status = product.visible ? '<span class="text-green-400">Visível</span>' : '<span class="text-gray-400">Oculto</span>';
             const publicStatus = product.acessoPublico ? '<span class="text-blue-400">Público</span>' : '<span class="text-gray-400">Privado</span>';
@@ -278,6 +293,10 @@ export async function setupStorePage() {
         productImageInput.dataset.existingImageUrl = '';
         productVisibleInput.checked = false;
         productPublicInput.checked = false;
+        priceVariantsList.innerHTML = '';
+        document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
+        fixedPriceContainer.classList.remove('hidden');
+        variablePricesContainer.classList.add('hidden');
         productFormTitle.textContent = 'Adicionar Novo Produto';
         saveProductBtn.textContent = 'Salvar Produto';
         cancelEditBtn.classList.add('hidden');
@@ -300,14 +319,32 @@ export async function setupStorePage() {
                 imageUrl = await getDownloadURL(snapshot.ref);
             }
 
+            const priceType = document.querySelector('input[name="price-type"]:checked').value;
             const productData = {
                 name: productNameInput.value,
-                price: parseInt(productPriceInput.value, 10),
                 description: productDescriptionInput.value,
                 imageUrl: imageUrl,
+                priceType: priceType,
                 visible: productVisibleInput.checked,
                 acessoPublico: productPublicInput.checked,
             };
+
+            if (priceType === 'fixed') {
+                productData.price = parseInt(productPriceInput.value, 10);
+            } else {
+                const variants = [];
+                const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
+                variantElements.forEach(item => {
+                    const name = item.querySelector('input[name="variant-name"]').value;
+                    const price = parseInt(item.querySelector('input[name="variant-price"]').value, 10);
+                    if (name && !isNaN(price)) {
+                        variants.push({ name, price });
+                    }
+                });
+                productData.priceVariants = variants;
+                // Set a default price for sorting/filtering if needed
+                productData.price = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 0;
+            }
 
             if (id) {
                 const productRef = doc(db, 'products', id);
@@ -351,9 +388,22 @@ export async function setupStorePage() {
                 productFormTitle.textContent = 'Editar Produto';
                 productIdInput.value = product.id;
                 productNameInput.value = product.name;
-                productPriceInput.value = product.price;
                 productDescriptionInput.value = product.description;
                 productImageInput.dataset.existingImageUrl = product.imageUrl || '';
+                
+                if (product.priceType === 'variable' && product.priceVariants) {
+                    document.querySelector('input[name="price-type"][value="variable"]').checked = true;
+                    fixedPriceContainer.classList.add('hidden');
+                    variablePricesContainer.classList.remove('hidden');
+                    priceVariantsList.innerHTML = '';
+                    product.priceVariants.forEach(variant => addPriceVariant(variant.name, variant.price));
+                } else {
+                    document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
+                    fixedPriceContainer.classList.remove('hidden');
+                    variablePricesContainer.classList.add('hidden');
+                    productPriceInput.value = product.price;
+                }
+
                 productVisibleInput.checked = product.visible || false;
                 productPublicInput.checked = product.acessoPublico || false;
                 saveProductBtn.textContent = 'Atualizar Produto';
@@ -381,6 +431,42 @@ export async function setupStorePage() {
     };
 
     cancelEditBtn.addEventListener('click', resetProductForm);
+
+    // --- Price Type Switching Logic ---
+    priceTypeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value === 'fixed') {
+                fixedPriceContainer.classList.remove('hidden');
+                variablePricesContainer.classList.add('hidden');
+            } else {
+                fixedPriceContainer.classList.add('hidden');
+                variablePricesContainer.classList.remove('hidden');
+                if (priceVariantsList.children.length === 0) {
+                    addPriceVariant(); // Add one by default
+                }
+            }
+        });
+    });
+
+    const addPriceVariant = (name = '', price = '') => {
+        const variantId = Date.now();
+        const variantItem = document.createElement('div');
+        variantItem.className = 'price-variant-item flex items-center space-x-2';
+        variantItem.innerHTML = `
+            <input type="text" name="variant-name" placeholder="Nome da Variação (ex: 1BD)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400">&times;</button>
+        `;
+        priceVariantsList.appendChild(variantItem);
+    };
+
+    addPriceVariantBtn.addEventListener('click', () => addPriceVariant());
+
+    priceVariantsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-price-variant-btn')) {
+            e.target.closest('.price-variant-item').remove();
+        }
+    });
 
     // --- Modal Logic ---
     const openModalWithSaleDetails = (saleId) => {

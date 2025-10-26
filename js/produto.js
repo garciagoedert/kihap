@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const productDescription = document.getElementById('product-description');
     const productImageDisplay = document.getElementById('product-image-display');
     const productPriceDisplay = document.getElementById('product-price-display');
+    const priceVariantSelectorContainer = document.getElementById('price-variant-selector-container');
+    const priceVariantSelector = document.getElementById('price-variant-selector');
     const paymentForm = document.getElementById('payment-form');
     const payButton = document.getElementById('pay-button');
     const formStatus = document.getElementById('form-status');
@@ -68,11 +70,38 @@ document.addEventListener('DOMContentLoaded', () => {
             productImageDisplay.classList.remove('hidden');
         }
 
-        const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        productPriceDisplay.textContent = price;
+        if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
+            priceVariantSelectorContainer.classList.remove('hidden');
+            priceVariantSelector.innerHTML = ''; // Clear existing options
+
+            product.priceVariants.forEach((variant, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${variant.name} - ${(variant.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                priceVariantSelector.appendChild(option);
+            });
+
+            // Set initial price
+            updatePrice(product.priceVariants[0].price);
+
+            // Add event listener to update price on change
+            priceVariantSelector.addEventListener('change', (e) => {
+                const selectedVariant = product.priceVariants[e.target.value];
+                updatePrice(selectedVariant.price);
+            });
+
+        } else {
+            priceVariantSelectorContainer.classList.add('hidden');
+            updatePrice(product.price);
+        }
 
         productLoading.classList.add('hidden');
         productContent.classList.remove('hidden');
+    };
+
+    const updatePrice = (priceInCents) => {
+        const price = (priceInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        productPriceDisplay.textContent = price;
     };
 
     const populateGraduacao = (program) => {
@@ -123,6 +152,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const userPrograma = programaSelect.value;
         const userGraduacao = graduacaoContainer.classList.contains('hidden') ? null : graduacaoSelect.value;
         const userId = currentUser ? currentUser.uid : null;
+        
+        let priceData = {};
+        if (productData.priceType === 'variable') {
+            const selectedVariantIndex = priceVariantSelector.value;
+            const selectedVariant = productData.priceVariants[selectedVariantIndex];
+            priceData.variantName = selectedVariant.name;
+            priceData.amount = selectedVariant.price;
+        } else {
+            priceData.amount = productData.price;
+        }
 
         try {
             const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCheckoutSession', {
@@ -140,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     userGraduacao,
                     userId,
                     productId,
+                    priceData, // Send price data to backend
                 }),
             });
 

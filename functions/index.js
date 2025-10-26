@@ -22,10 +22,10 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { userName, userEmail, userPhone, userCpf, userUnit, userPrograma, userGraduacao, userId, productId } = req.body;
+    const { userName, userEmail, userPhone, userCpf, userUnit, userPrograma, userGraduacao, userId, productId, priceData } = req.body;
 
-    if (!userName || !userEmail || !productId || !userCpf || !userUnit) {
-        return res.status(400).send('Missing required fields: userName, userEmail, productId, userCpf, userUnit.');
+    if (!userName || !userEmail || !productId || !userCpf || !userUnit || !priceData) {
+        return res.status(400).send('Missing required fields: userName, userEmail, productId, userCpf, userUnit, priceData.');
     }
 
     try {
@@ -38,9 +38,12 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         }
 
         const product = productDoc.data();
-        const amount = product.price; // price in cents from Firestore
-        const productName = product.name;
-        const currency = 'brl'; // Assuming BRL, or you can add it to the product data
+        const amount = priceData.amount;
+        let productName = product.name;
+        if (priceData.variantName) {
+            productName = `${product.name} - ${priceData.variantName}`;
+        }
+        const currency = 'brl';
 
         // 2. Salvar os dados da inscrição/venda no Firestore
         const saleData = {
