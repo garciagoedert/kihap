@@ -25,7 +25,7 @@ const triggerEvoSync = httpsCallable(functions, 'triggerEvoSync');
 const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
 
-let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
+export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
 let allTatameContents = [];
 let allBadges = []; // This will be populated by loadAllSelectableContent and used by the modal
@@ -199,6 +199,12 @@ export function setupAlunosPage() {
             tabBadgesModal.addEventListener('click', () => switchModalTab('badges')); // Use renamed variable
 
             // --- Initial Load ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchName = urlParams.get('search');
+            if (searchName) {
+                searchInput.value = searchName;
+            }
+
             // Load students and other necessary data for the page
             Promise.all([loadStudents(), loadAllSelectableContent()]);
             // Set the default active tab to "Gerenciamento de Alunos"
@@ -300,7 +306,7 @@ async function highlightRegisteredStudents(evoIds) {
     }
 }
 
-async function openStudentModal(student) {
+export async function openStudentModal(student) {
     const modal = document.getElementById('student-modal');
     const photoEl = document.getElementById('modal-student-photo');
     const mainContentEl = document.getElementById('modal-content-main');

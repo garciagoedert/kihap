@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { 
     collection, getDocs, query, orderBy, where, 
-    addDoc, doc, updateDoc, deleteDoc, serverTimestamp
+    addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { 
     getStorage, ref, uploadBytes, getDownloadURL 
@@ -452,9 +452,11 @@ export async function setupStorePage() {
         const variantId = Date.now();
         const variantItem = document.createElement('div');
         variantItem.className = 'price-variant-item flex items-center space-x-2';
+        const isVariablePrice = document.querySelector('input[name="price-type"]:checked').value === 'variable';
+
         variantItem.innerHTML = `
-            <input type="text" name="variant-name" placeholder="Nome da Variação (ex: 1BD)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" name="variant-name" placeholder="Nome da Variação (ex: 1BD)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
             <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400">&times;</button>
         `;
         priceVariantsList.appendChild(variantItem);
@@ -469,14 +471,34 @@ export async function setupStorePage() {
     });
 
     // --- Modal Logic ---
-    const openModalWithSaleDetails = (saleId) => {
+    const openModalWithSaleDetails = async (saleId) => {
         const sale = allSales.find(s => s.id === saleId);
         if (!sale) return;
 
         currentOpenSaleId = saleId;
 
+        let studentInfoHtml = '';
+        if (sale.userId) {
+            try {
+                const userRef = doc(db, 'users', sale.userId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const studentData = userSnap.data();
+                    const studentName = studentData.name || 'Nome não encontrado';
+                    const searchUrl = `alunos.html?search=${encodeURIComponent(studentName)}`;
+                    studentInfoHtml = `<p><strong>Aluno Vinculado:</strong> <a href="${searchUrl}" target="_blank" class="text-blue-400 hover:underline">${studentName}</a></p>`;
+                } else {
+                    studentInfoHtml = `<p><strong>Aluno Vinculado:</strong> ID ${sale.userId} (não encontrado no banco de dados)</p>`;
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados do aluno:", error);
+                studentInfoHtml = `<p><strong>Aluno Vinculado:</strong> Erro ao buscar dados</p>`;
+            }
+        }
+
         modalContent.innerHTML = `
             <p><strong>ID da Venda:</strong> ${sale.id}</p>
+            ${studentInfoHtml}
             <p><strong>Nome do Cliente:</strong> ${sale.userName || 'N/A'}</p>
             <p><strong>Email:</strong> ${sale.userEmail || 'N/A'}</p>
             <p><strong>Telefone:</strong> ${sale.userPhone || 'N/A'}</p>

@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
             priceVariantSelectorContainer.classList.add('hidden');
+            priceVariantSelector.required = false;
             updatePrice(product.price);
         }
 
