@@ -107,12 +107,12 @@
 
     <!-- Modal de Detalhes do Pedido -->
     <div id="details-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
                 <h2 class="text-xl font-bold text-white">Detalhes do Pedido</h2>
                 <button id="close-details-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 overflow-y-auto">
                 <p><strong>Unidade:</strong> <span id="details-unidade"></span></p>
                 <p><strong>Data do Pedido:</strong> <span id="details-data"></span></p>
                 <p><strong>Status:</strong> <span id="details-status"></span></p>
