@@ -81,6 +81,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const programaSelect = formInstance.querySelector('[name="programa"]');
             programaSelect.addEventListener('change', () => populateGraduacao(programaSelect.value, formInstance));
 
+            const priceVariantSelectorContainer = formInstance.querySelector('.price-variant-selector-container');
+            const priceVariantSelector = formInstance.querySelector('[name="price-variant-selector"]');
+
+            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
+                priceVariantSelectorContainer.classList.remove('hidden');
+                priceVariantSelector.required = true;
+                priceVariantSelector.innerHTML = '';
+
+                productData.priceVariants.forEach((variant, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${variant.name} - ${(variant.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                    priceVariantSelector.appendChild(option);
+                });
+
+                priceVariantSelector.addEventListener('change', updateTotalPrice);
+            } else {
+                priceVariantSelectorContainer.classList.add('hidden');
+                priceVariantSelector.required = false;
+            }
+
             formsContainer.appendChild(formClone);
         }
 
@@ -120,15 +141,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateTotalPrice = () => {
-        const quantity = parseInt(quantitySelector.value, 10);
-        let basePrice = 0;
-        if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
-            basePrice = productData.priceVariants[0].price;
-        } else {
-            basePrice = productData.price;
-        }
-        const totalPrice = basePrice * quantity;
-        productPriceDisplay.textContent = (totalPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let totalAmount = 0;
+        const formInstances = formsContainer.querySelectorAll('.form-instance');
+
+        formInstances.forEach(form => {
+            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
+                const selector = form.querySelector('[name="price-variant-selector"]');
+                const selectedVariant = productData.priceVariants[selector.value];
+                if (selectedVariant) {
+                    totalAmount += selectedVariant.price;
+                }
+            } else {
+                totalAmount += productData.price;
+            }
+        });
+
+        productPriceDisplay.textContent = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
     quantitySelector.addEventListener('change', () => {
@@ -157,11 +185,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             let priceData = {};
-            if (productData.priceType === 'variable') {
+            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = productData.priceVariants[selector.value];
-                priceData.variantName = selectedVariant.name;
-                priceData.amount = selectedVariant.price;
+                if (selectedVariant) {
+                    priceData.variantName = selectedVariant.name;
+                    priceData.amount = selectedVariant.price;
+                } else {
+                    priceData.amount = productData.price; 
+                }
             } else {
                 priceData.amount = productData.price;
             }

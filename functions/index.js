@@ -25,7 +25,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
     const { formDataList, productId, totalAmount } = req.body;
 
     if (!formDataList || !productId || !totalAmount || formDataList.length === 0) {
-        return res.status(400).send('Missing required fields: formDataList, productId, totalAmount.');
+        return res.status(400).json({ error: 'Missing required fields: formDataList, productId, totalAmount.' });
     }
 
     try {
