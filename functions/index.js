@@ -22,80 +22,60 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { userName, userEmail, userPhone, userCpf, userUnit, userPrograma, userGraduacao, userId, productId, priceData } = req.body;
+    const { formDataList, productId, totalAmount } = req.body;
 
-    if (!userName || !userEmail || !productId || !userCpf || !userUnit || !priceData) {
-        return res.status(400).send('Missing required fields: userName, userEmail, productId, userCpf, userUnit, priceData.');
+    if (!formDataList || !productId || !totalAmount || formDataList.length === 0) {
+        return res.status(400).send('Missing required fields: formDataList, productId, totalAmount.');
     }
 
     try {
-        // 1. Buscar o produto no Firestore
         const productRef = db.collection('products').doc(productId);
         const productDoc = await productRef.get();
-
         if (!productDoc.exists) {
             return res.status(404).send('Product not found.');
         }
-
         const product = productDoc.data();
-        const amount = priceData.amount;
-        let productName = product.name;
-        if (priceData.variantName) {
-            productName = `${product.name} - ${priceData.variantName}`;
-        }
         const currency = 'brl';
 
-        // 2. Salvar os dados da inscrição/venda no Firestore
-        const saleData = {
-            userId: userId,
-            userName: userName,
-            userEmail: userEmail,
-            userPhone: userPhone,
-            userCpf: userCpf,
-            userUnit: userUnit,
-            userPrograma: userPrograma,
-            userGraduacao: userGraduacao,
-            productId: productId,
-            productName: productName,
-            amountTotal: amount,
-            currency: currency,
-            paymentStatus: 'pending',
-            created: admin.firestore.FieldValue.serverTimestamp(),
-        };
+        const saleDocIds = [];
+        for (const formData of formDataList) {
+            const saleData = {
+                ...formData,
+                productId: productId,
+                productName: product.name,
+                amountTotal: formData.priceData.amount,
+                currency: currency,
+                paymentStatus: 'pending',
+                created: admin.firestore.FieldValue.serverTimestamp(),
+            };
+            const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+            saleDocIds.push(docRef.id);
+        }
 
-        const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
-        console.log('Sale saved to Firestore with ID:', docRef.id);
-
-        // 3. Criar a sessão de checkout do Stripe
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: currency,
-                        product_data: {
-                            name: productName,
-                        },
-                        unit_amount: amount,
+            line_items: [{
+                price_data: {
+                    currency: currency,
+                    product_data: {
+                        name: `${product.name} (x${formDataList.length})`,
                     },
-                    quantity: 1,
+                    unit_amount: totalAmount,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
             success_url: `https://www.kihap.com.br/compra-success.html?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: 'https://www.kihap.com.br/produto.html?id=${productId}',
+            cancel_url: `https://www.kihap.com.br/produto.html?id=${productId}`,
             metadata: {
-                firestoreDocId: docRef.id,
-                userId: userId,
-                userName: userName,
-                userEmail: userEmail,
-                userPhone: userPhone,
-                productName: productName,
+                firestoreDocIds: JSON.stringify(saleDocIds),
             },
         });
 
-        // Atualiza o documento no Firestore com o ID da sessão do Stripe
-        await docRef.update({ checkoutSessionId: session.id });
+        // Update all sale documents with the checkout session ID
+        for (const docId of saleDocIds) {
+            await db.collection('inscricoesFaixaPreta').doc(docId).update({ checkoutSessionId: session.id });
+        }
 
         res.status(200).json({ sessionId: session.id });
     } catch (error) {
@@ -125,20 +105,24 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
         if (session.payment_status === 'paid') {
-            const firestoreDocId = session.metadata.firestoreDocId;
-            if (firestoreDocId) {
-                const docRef = db.collection('inscricoesFaixaPreta').doc(firestoreDocId);
-                await docRef.update({ paymentStatus: 'paid' });
-                console.log(`Updated payment status to 'paid' for doc ${firestoreDocId}`);
-                return res.status(200).json({ status: 'success', message: 'Payment verified and status updated.' });
+            const firestoreDocIdsString = session.metadata.firestoreDocIds;
+            if (firestoreDocIdsString) {
+                const firestoreDocIds = JSON.parse(firestoreDocIdsString);
+                for (const docId of firestoreDocIds) {
+                    const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                    await docRef.update({ paymentStatus: 'paid' });
+                    console.log(`Updated payment status to 'paid' for doc ${docId}`);
+                }
+                return res.status(200).json({ status: 'success', message: 'All payments verified and statuses updated.' });
             } else {
-                // Fallback para sessões antigas sem o ID do documento nos metadados
-                const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).limit(1).get();
+                // Fallback for older sessions
+                const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
                 if (!querySnapshot.empty) {
-                    const doc = querySnapshot.docs[0];
-                    await doc.ref.update({ paymentStatus: 'paid' });
-                    console.log(`Updated payment status to 'paid' for doc ${doc.id} (fallback)`);
-                    return res.status(200).json({ status: 'success', message: 'Payment verified and status updated.' });
+                    for (const doc of querySnapshot.docs) {
+                        await doc.ref.update({ paymentStatus: 'paid' });
+                        console.log(`Updated payment status to 'paid' for doc ${doc.id} (fallback)`);
+                    }
+                    return res.status(200).json({ status: 'success', message: 'Payment verified and status updated (fallback).' });
                 }
             }
         }
