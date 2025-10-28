@@ -168,7 +168,7 @@ async function handleSubmitPedido() {
                 unidade: unidadeSelecionada,
                 itens: itensPedido,
                 status: document.getElementById('status-select').value, // Assume que o status pode ser editado
-                lastUpdatedBy: { uid: user.uid, nome: user.name || user.email },
+                lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                 lastUpdatedAt: serverTimestamp()
             });
             alert("Pedido atualizado com sucesso!");
@@ -179,7 +179,7 @@ async function handleSubmitPedido() {
                 itens: itensPedido,
                 data: serverTimestamp(),
                 status: "Pendente",
-                solicitante: { uid: user.uid, nome: user.name || user.email }
+                solicitante: { uid: user.id, nome: user.name || user.email }
             });
             alert("Pedido enviado com sucesso!");
         }
