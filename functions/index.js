@@ -135,6 +135,55 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
 
 // A função de webhook não está sendo utilizada e pode ser removida.
 
+exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    const { formDataList, productId } = req.body;
+
+    if (!formDataList || !productId || formDataList.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields: formDataList, productId.' });
+    }
+
+    try {
+        const productRef = db.collection('products').doc(productId);
+        const productDoc = await productRef.get();
+        if (!productDoc.exists) {
+            return res.status(404).send('Product not found.');
+        }
+        const product = productDoc.data();
+        const currency = 'brl';
+
+        for (const formData of formDataList) {
+            const saleData = {
+                ...formData,
+                productId: productId,
+                productName: product.name,
+                amountTotal: 0,
+                currency: currency,
+                paymentStatus: 'paid',
+                created: admin.firestore.FieldValue.serverTimestamp(),
+            };
+            await db.collection('inscricoesFaixaPreta').add(saleData);
+        }
+
+        res.status(200).json({ status: 'success', message: 'Free purchase processed successfully.' });
+    } catch (error) {
+        console.error('Error processing free purchase:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Importa e exporta todas as funções do evo.js
 const evoFunctions = require('./evo.js');
 Object.assign(exports, evoFunctions);

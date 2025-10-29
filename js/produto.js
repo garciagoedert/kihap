@@ -203,25 +203,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         try {
-            const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCheckoutSession', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    formDataList,
-                    productId,
-                    totalAmount
-                }),
-            });
+            if (totalAmount === 0) {
+                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/processFreePurchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        formDataList,
+                        productId
+                    }),
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Falha ao criar a sessão de checkout.');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Falha ao processar a compra gratuita.');
+                }
+
+                window.location.href = '/compra-success.html';
+            } else {
+                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCheckoutSession', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        formDataList,
+                        productId,
+                        totalAmount
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Falha ao criar a sessão de checkout.');
+                }
+
+                const { sessionId } = await response.json();
+                const { error } = await stripe.redirectToCheckout({ sessionId });
+                if (error) throw new Error(error.message);
             }
-
-            const { sessionId } = await response.json();
-            const { error } = await stripe.redirectToCheckout({ sessionId });
-            if (error) throw new Error(error.message);
-
         } catch (error) {
             console.error('Payment Error:', error);
             formStatus.textContent = `Erro: ${error.message}`;
