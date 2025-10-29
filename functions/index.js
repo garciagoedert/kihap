@@ -134,3 +134,7 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
 });
 
 // A função de webhook não está sendo utilizada e pode ser removida.
+
+// Importa e exporta todas as funções do evo.js
+const evoFunctions = require('./evo.js');
+Object.assign(exports, evoFunctions);

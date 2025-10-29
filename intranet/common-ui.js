@@ -442,6 +442,36 @@ function showAlert(message, title = "Aviso") {
     };
 }
 
+function showInviteLinkModal(link) {
+    const modal = document.getElementById('inviteLinkModal');
+    const linkInput = document.getElementById('inviteLinkInput');
+    const copyBtn = document.getElementById('copyInviteLinkBtn');
+    const closeBtn = document.getElementById('closeInviteLinkModalBtn');
+
+    if (!modal || !linkInput || !copyBtn || !closeBtn) return;
+
+    linkInput.value = link;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const close = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    };
+
+    copyBtn.onclick = () => {
+        linkInput.select();
+        document.execCommand('copy');
+        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => {
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        }, 2000);
+    };
+
+    closeBtn.onclick = close;
+}
+
 function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     const confirmModal = document.getElementById('confirmModal');
     const confirmTitle = document.getElementById('confirmTitle');
@@ -469,4 +499,4 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     };
 }
 
-export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm };
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal };

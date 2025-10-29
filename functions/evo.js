@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const axios = require("axios");
 const admin = require("firebase-admin");
-const cors = require("cors")({origin: true});
+// const cors = require("cors")({origin: true}); // Replaced with manual CORS handling
 const https = require("https");
 
 // A inicialização do Admin SDK é feita no index.js
@@ -66,11 +66,10 @@ function getEvoApiClient(unitId, apiVersion = 'v2') {
     const httpsAgent = new https.Agent({ family: 4 });
 
     return axios.create({
-        baseURL: `https://172.64.151.155/api/${apiVersion}`,
+        baseURL: `https://evo-integracao-api.w12app.com.br/api/${apiVersion}`,
         headers: {
             "Authorization": `Basic ${Buffer.from(`${credentials.dns}:${credentials.token}`).toString("base64")}`,
-            "Content-Type": "application/json",
-            "Host": "evo-integracao-api.w12app.com.br"
+            "Content-Type": "application/json"
         },
         httpsAgent: httpsAgent
     });
@@ -79,30 +78,47 @@ function getEvoApiClient(unitId, apiVersion = 'v2') {
 /**
  * Busca os dados de um membro específico na API da EVO.
  */
-exports.getMemberData = functions.https.onCall(async (data, context) => {
-    // Verifique se o usuário está autenticado
-    if (!context.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para acessar esta função.");
+exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
+    // Manual CORS handling
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
     }
 
-    const { memberId, unitId } = data;
+    // Authentication check
+    if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+        functions.logger.error("Unauthorized: No authorization token.");
+        return res.status(403).send('Unauthorized');
+    }
+
+    const idToken = req.headers.authorization.split('Bearer ')[1];
+    try {
+        await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+        functions.logger.error("Invalid token:", error);
+        return res.status(403).send('Unauthorized');
+    }
+
+    const { memberId, unitId } = req.body.data;
     if (!memberId) {
-        throw new functions.https.HttpsError("invalid-argument", "O ID do membro é obrigatório.");
+        return res.status(400).send({ error: "O ID do membro é obrigatório." });
     }
+    const memberIdInt = parseInt(memberId, 10);
 
-    // Valida a unitId para garantir que ela existe em nossas credenciais.
-    // Se for inválida ou não fornecida, usa 'centro' como fallback.
     const validUnitId = unitId && EVO_CREDENTIALS[unitId] ? unitId : 'centro';
 
     try {
         const apiClientV2 = getEvoApiClient(validUnitId, 'v2');
-        const response = await apiClientV2.get(`/members/${memberId}`, {
+        const response = await apiClientV2.get(`/members/${memberIdInt}`, {
             params: { showMemberships: true, showsResponsibles: true }
         });
         
         const memberData = response.data;
 
-        // Se o aluno tiver um instrutor associado, busca o nome do instrutor.
         if (memberData && memberData.idEmployeeInstructor) {
             try {
                 const employeeResponse = await apiClientV2.get(`/employees/${memberData.idEmployeeInstructor}`);
@@ -111,12 +127,10 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
                     memberData.nameEmployeeInstructor = `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim();
                 }
             } catch (employeeError) {
-                functions.logger.warn(`Não foi possível buscar o instrutor com ID ${memberData.idEmployeeInstructor}.`, employeeError.message);
-                // A função continua mesmo que o instrutor não seja encontrado.
+                functions.logger.warn(`Could not fetch instructor with ID ${memberData.idEmployeeInstructor}.`, employeeError.message);
             }
         }
 
-        // Normaliza o campo de FitCoins para consistência com o frontend
         let totalCoins = 0;
         if (memberData.hasOwnProperty('totalFitCoins')) {
             totalCoins = memberData.totalFitCoins;
@@ -127,15 +141,15 @@ exports.getMemberData = functions.https.onCall(async (data, context) => {
         }
         memberData.totalFitCoins = totalCoins;
         
-        functions.logger.info(`Resposta da API EVO para getMemberData (ID: ${memberId}):`, memberData);
-        return memberData;
+        functions.logger.info(`EVO API response for getMemberDetails (ID: ${memberId}):`, memberData);
+        return res.status(200).send({ data: memberData });
     } catch (error) {
-        functions.logger.error(`Erro detalhado ao buscar membro ${memberId}:`, {
+        functions.logger.error(`Detailed error fetching member ${memberId}:`, {
             status: error.response?.status,
             data: error.response?.data,
             message: error.message,
         });
-        throw new functions.https.HttpsError("internal", "Não foi possível buscar os dados do membro.");
+        return res.status(500).send({ error: "Could not fetch member data." });
     }
 });
 
@@ -202,6 +216,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             // Normaliza o campo de FitCoins e adiciona o nome da unidade para consistência
             unitMembers.forEach(member => {
                 member.branchName = member.branchName || currentUnitId;
+                member.unitId = currentUnitId;
                 let totalCoins = 0;
                 if (member.hasOwnProperty('totalFitCoins')) {
                     totalCoins = member.totalFitCoins;
@@ -388,8 +403,18 @@ exports.updateStudentPermissions = functions.https.onCall(async (data, context) 
 /**
  * Busca o número de contratos ativos para uma ou todas as unidades, com cache para resiliência.
  */
-exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {
-    cors(req, res, async () => {
+exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {
+    // Manual CORS handling
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    
+    (async () => {
         try {
             // O cliente pode enviar os dados diretamente no corpo ou dentro de um objeto 'data'.
             const { unitId } = req.body.data || req.body;
@@ -501,24 +526,32 @@ exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).htt
             const message = error.message || "Não foi possível buscar a contagem de contratos ativos.";
             res.status(500).send({ error: { message } });
         }
-    });
+    })();
 });
 
 /**
  * Retorna a lista de unidades configuradas para a API EVO.
  */
-exports.getEvoUnits = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
+exports.getEvoUnitsHttp = functions.https.onRequest((req, res) => {
+    // Manual CORS handling
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    (async () => {
         try {
             const units = Object.keys(EVO_CREDENTIALS);
-            // As funções chamáveis envolvem a resposta em um objeto 'data'.
-            // Fazemos o mesmo para manter a consistência com o que o cliente pode esperar.
             res.status(200).send({ data: units });
         } catch (error) {
-            functions.logger.error("Erro em getEvoUnits:", error);
+            functions.logger.error("Erro em getEvoUnitsHttp:", error);
             res.status(500).send({ error: { message: "Erro interno ao buscar unidades." } });
         }
-    });
+    })();
 });
 
 /**
@@ -896,8 +929,18 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB
 /**
  * Busca o total de entries (check-ins) de hoje para uma unidade específica ou para todas.
  */
-exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {
-    cors(req, res, async () => {
+exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {
+    // Manual CORS handling
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    (async () => {
         try {
             const { unitId } = req.body.data || req.body;
 
@@ -945,5 +988,5 @@ exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https
             const message = error.message || "Não foi possível buscar o total de check-ins de hoje.";
             res.status(500).send({ error: { message } });
         }
-    });
+    })();
 });
