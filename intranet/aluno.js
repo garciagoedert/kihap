@@ -11,6 +11,7 @@ const updateStudentBadges = httpsCallable(functions, 'updateStudentBadges');
 
 // Cache
 let currentStudent = null;
+let currentUnitId = null; // Armazenar o ID da unidade
 let allCourses = [];
 let allTatameContents = [];
 let allBadges = [];
@@ -20,7 +21,7 @@ export function setupAlunoPage() {
         if (user) {
             const urlParams = new URLSearchParams(window.location.search);
             const studentId = urlParams.get('id');
-            const unitId = urlParams.get('unit'); // Ler o ID da unidade
+            currentUnitId = urlParams.get('unit'); // Armazenar o ID da unidade
 
             if (!studentId) {
                 document.body.innerHTML = '<div class="text-red-500 text-center p-8">ID do aluno não fornecido.</div>';
@@ -28,7 +29,7 @@ export function setupAlunoPage() {
             }
 
             await loadAllSelectableContent();
-            await loadStudentData(studentId, unitId); // Passar o ID da unidade
+            await loadStudentData(studentId, currentUnitId); // Passar o ID da unidade
         }
     });
 }
@@ -191,7 +192,7 @@ async function handleInviteClick() {
                     email: email,
                     firstName: currentStudent.firstName,
                     lastName: currentStudent.lastName,
-                    unitId: currentStudent.branchSlug // Assumindo que o backend adiciona 'branchSlug'
+                    unitId: currentUnitId // Usar o ID da unidade armazenado
                 });
                 showInviteLinkModal(result.data.link);
                 button.textContent = 'Convite Enviado';
