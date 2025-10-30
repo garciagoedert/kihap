@@ -1,5 +1,5 @@
 import { db } from '../intranet/firebase-config.js';
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { onAuthReady, getUserData } from '../members/js/auth.js';
 
@@ -18,11 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const formTemplate = document.getElementById('form-template');
     const payButton = document.getElementById('pay-button');
     const formStatus = document.getElementById('form-status');
+    const couponCodeInput = document.getElementById('coupon-code');
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    const couponStatus = document.getElementById('coupon-status');
 
     let productId = null;
     let productData = null;
     let currentUser = null;
     let unitsCache = [];
+    let appliedCoupon = null;
 
     const getProductId = () => {
         const params = new URLSearchParams(window.location.search);
@@ -156,8 +160,61 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        if (appliedCoupon) {
+            if (appliedCoupon.type === 'percentage') {
+                totalAmount -= totalAmount * (appliedCoupon.value / 100);
+            } else if (appliedCoupon.type === 'fixed') {
+                totalAmount -= appliedCoupon.value;
+            }
+        }
+
         productPriceDisplay.textContent = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
+
+    const applyCoupon = async () => {
+        const code = couponCodeInput.value.trim();
+        if (!code) {
+            couponStatus.textContent = 'Por favor, insira um código de cupom.';
+            couponStatus.className = 'mt-2 text-sm text-red-400';
+            return;
+        }
+
+        try {
+            const q = query(collection(db, 'coupons'), where('code', '==', code));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                couponStatus.textContent = 'Cupom inválido.';
+                couponStatus.className = 'mt-2 text-sm text-red-400';
+                appliedCoupon = null;
+                updateTotalPrice();
+                return;
+            }
+
+            const couponDoc = querySnapshot.docs[0];
+            const coupon = { id: couponDoc.id, ...couponDoc.data() };
+
+            if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
+                couponStatus.textContent = 'Cupom expirado.';
+                couponStatus.className = 'mt-2 text-sm text-red-400';
+                appliedCoupon = null;
+                updateTotalPrice();
+                return;
+            }
+
+            appliedCoupon = coupon;
+            couponStatus.textContent = 'Cupom aplicado com sucesso!';
+            couponStatus.className = 'mt-2 text-sm text-green-400';
+            updateTotalPrice();
+
+        } catch (error) {
+            console.error('Error applying coupon:', error);
+            couponStatus.textContent = 'Erro ao aplicar o cupom.';
+            couponStatus.className = 'mt-2 text-sm text-red-400';
+        }
+    };
+
+    applyCouponBtn.addEventListener('click', applyCoupon);
 
     quantitySelector.addEventListener('change', () => {
         renderForms(parseInt(quantitySelector.value, 10));
@@ -202,14 +259,23 @@ document.addEventListener('DOMContentLoaded', () => {
             formDataList.push(formData);
         });
 
+        if (appliedCoupon) {
+            if (appliedCoupon.type === 'percentage') {
+                totalAmount -= totalAmount * (appliedCoupon.value / 100);
+            } else if (appliedCoupon.type === 'fixed') {
+                totalAmount -= appliedCoupon.value;
+            }
+        }
+
         try {
-            if (totalAmount === 0) {
+            if (totalAmount <= 0) {
                 const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/processFreePurchase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         formDataList,
-                        productId
+                        productId,
+                        couponCode: appliedCoupon ? appliedCoupon.code : null
                     }),
                 });
 
@@ -226,7 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         formDataList,
                         productId,
-                        totalAmount
+                        totalAmount,
+                        couponCode: appliedCoupon ? appliedCoupon.code : null
                     }),
                 });
 

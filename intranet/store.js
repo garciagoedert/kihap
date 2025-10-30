@@ -12,9 +12,11 @@ export async function setupStorePage() {
     const tabSalesLog = document.getElementById('tab-sales-log');
     const tabManageProducts = document.getElementById('tab-manage-products');
     const tabManageBanners = document.getElementById('tab-manage-banners');
+    const tabManageCoupons = document.getElementById('tab-manage-coupons');
     const contentSalesLog = document.getElementById('content-sales-log');
     const contentManageProducts = document.getElementById('content-manage-products');
     const contentManageBanners = document.getElementById('content-manage-banners');
+    const contentManageCoupons = document.getElementById('content-manage-coupons');
 
     // Sales Log elements
     const salesTableBody = document.getElementById('sales-table-body');
@@ -58,9 +60,22 @@ export async function setupStorePage() {
     const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
     const bannersList = document.getElementById('banners-list');
 
+    // Coupon Management elements
+    const couponForm = document.getElementById('coupon-form');
+    const couponFormTitle = document.getElementById('coupon-form-title');
+    const couponIdInput = document.getElementById('coupon-id');
+    const couponCodeInput = document.getElementById('coupon-code');
+    const couponTypeInput = document.getElementById('coupon-type');
+    const couponValueInput = document.getElementById('coupon-value');
+    const couponExpiryInput = document.getElementById('coupon-expiry');
+    const saveCouponBtn = document.getElementById('save-coupon-btn');
+    const cancelCouponEditBtn = document.getElementById('cancel-coupon-edit-btn');
+    const couponsTableBody = document.getElementById('coupons-table-body');
+
     let allSales = [];
     let allProducts = [];
     let allBanners = [];
+    let allCoupons = [];
     let currentOpenSaleId = null;
 
     // --- Tab Switching Logic ---
@@ -91,15 +106,32 @@ export async function setupStorePage() {
             tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
             tabManageProducts.classList.remove('text-white', 'border-blue-500');
             tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageCoupons.classList.remove('text-white', 'border-blue-500');
+            tabManageCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
             contentManageBanners.classList.remove('hidden');
             contentSalesLog.classList.add('hidden');
             contentManageProducts.classList.add('hidden');
+            contentManageCoupons.classList.add('hidden');
+        } else if (activeTab === 'coupons') {
+            tabManageCoupons.classList.add('text-white', 'border-blue-500');
+            tabManageCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
+            tabSalesLog.classList.remove('text-white', 'border-blue-500');
+            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageProducts.classList.remove('text-white', 'border-blue-500');
+            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageBanners.classList.remove('text-white', 'border-blue-500');
+            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            contentManageCoupons.classList.remove('hidden');
+            contentSalesLog.classList.add('hidden');
+            contentManageProducts.classList.add('hidden');
+            contentManageBanners.classList.add('hidden');
         }
     }
 
     tabSalesLog.addEventListener('click', () => switchTab('sales'));
     tabManageProducts.addEventListener('click', () => switchTab('products'));
     tabManageBanners.addEventListener('click', () => switchTab('banners'));
+    tabManageCoupons.addEventListener('click', () => switchTab('coupons'));
 
     // --- Helper Functions ---
     const renderStatusTag = (status) => {
@@ -577,6 +609,7 @@ export async function setupStorePage() {
         await fetchSales();   // Fetch sales
         populateFilters();    // Then populate filters with data from both
         await fetchBanners();
+        await fetchCoupons();
     };
 
     // --- Banner Management Logic ---
@@ -712,6 +745,129 @@ export async function setupStorePage() {
     };
 
     cancelBannerEditBtn.addEventListener('click', resetBannerForm);
+
+    // --- Coupon Management Logic ---
+    const fetchCoupons = async () => {
+        couponsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando cupons...</td></tr>';
+        try {
+            const q = query(collection(db, 'coupons'), orderBy('code', 'asc'));
+            const querySnapshot = await getDocs(q);
+            allCoupons = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            displayCoupons(allCoupons);
+        } catch (error) {
+            console.error('Error fetching coupons:', error);
+            couponsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-red-500">Erro ao carregar cupons.</td></tr>';
+        }
+    };
+
+    const displayCoupons = (couponsToDisplay) => {
+        couponsTableBody.innerHTML = '';
+        if (couponsToDisplay.length === 0) {
+            couponsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum cupom cadastrado.</td></tr>';
+            return;
+        }
+
+        couponsToDisplay.forEach(coupon => {
+            const row = couponsTableBody.insertRow();
+            row.classList.add('border-b', 'border-gray-700');
+
+            const value = coupon.type === 'percentage' ? `${coupon.value}%` : (coupon.value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const expiry = coupon.expiry ? new Date(coupon.expiry).toLocaleDateString('pt-BR') : 'Sem validade';
+
+            row.innerHTML = `
+                <td class="p-4">${coupon.code}</td>
+                <td class="p-4">${coupon.type === 'percentage' ? 'Porcentagem' : 'Valor Fixo'}</td>
+                <td class="p-4">${value}</td>
+                <td class="p-4">${expiry}</td>
+                <td class="p-4">
+                    <button class="edit-coupon-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${coupon.id}"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="delete-coupon-btn text-red-500 hover:text-red-400" data-id="${coupon.id}"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            `;
+        });
+    };
+
+    const resetCouponForm = () => {
+        couponForm.reset();
+        couponIdInput.value = '';
+        couponFormTitle.textContent = 'Adicionar Novo Cupom';
+        saveCouponBtn.textContent = 'Salvar Cupom';
+        cancelCouponEditBtn.classList.add('hidden');
+    };
+
+    couponForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        saveCouponBtn.disabled = true;
+        saveCouponBtn.textContent = 'Salvando...';
+
+        const id = couponIdInput.value;
+        const couponData = {
+            code: couponCodeInput.value,
+            type: couponTypeInput.value,
+            value: parseInt(couponValueInput.value, 10),
+            expiry: couponExpiryInput.value || null,
+        };
+
+        try {
+            if (id) {
+                const couponRef = doc(db, 'coupons', id);
+                await updateDoc(couponRef, couponData);
+                alert('Cupom atualizado com sucesso!');
+            } else {
+                await addDoc(collection(db, 'coupons'), couponData);
+                alert('Cupom adicionado com sucesso!');
+            }
+            
+            resetCouponForm();
+            fetchCoupons();
+        } catch (error) {
+            console.error('Error saving coupon:', error);
+            alert('Erro ao salvar cupom.');
+        } finally {
+            saveCouponBtn.disabled = false;
+            saveCouponBtn.textContent = 'Salvar Cupom';
+        }
+    });
+
+    couponsTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-coupon-btn');
+        const deleteBtn = e.target.closest('.delete-coupon-btn');
+
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            const coupon = allCoupons.find(c => c.id === id);
+            if (coupon) {
+                couponFormTitle.textContent = 'Editar Cupom';
+                couponIdInput.value = coupon.id;
+                couponCodeInput.value = coupon.code;
+                couponTypeInput.value = coupon.type;
+                couponValueInput.value = coupon.value;
+                couponExpiryInput.value = coupon.expiry || '';
+                saveCouponBtn.textContent = 'Atualizar Cupom';
+                cancelCouponEditBtn.classList.remove('hidden');
+            }
+        }
+
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (confirm('Tem certeza que deseja excluir este cupom?')) {
+                deleteCoupon(id);
+            }
+        }
+    });
+
+    const deleteCoupon = async (id) => {
+        try {
+            await deleteDoc(doc(db, 'coupons', id));
+            alert('Cupom excluído com sucesso!');
+            fetchCoupons();
+        } catch (error) {
+            console.error('Error deleting coupon:', error);
+            alert('Erro ao excluir cupom.');
+        }
+    };
+
+    cancelCouponEditBtn.addEventListener('click', resetCouponForm);
 
     initialLoad();
 }
