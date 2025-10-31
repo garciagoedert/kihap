@@ -211,6 +211,7 @@ export async function setupStorePage() {
         });
 
         displaySales(filteredSales);
+        displayStoreKpis(filteredSales);
     };
 
     [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
@@ -614,6 +615,7 @@ export async function setupStorePage() {
         populateFilters();    // Then populate filters with data from both
         await fetchBanners();
         await fetchCoupons();
+        displayStoreKpis();
     };
 
     // --- Banner Management Logic ---
@@ -872,6 +874,74 @@ export async function setupStorePage() {
     };
 
     cancelCouponEditBtn.addEventListener('click', resetCouponForm);
+
+    async function displayStoreKpis(sales = allSales) {
+        const kpiContainer = document.getElementById('store-kpi-container');
+        kpiContainer.innerHTML = `
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+                <div class="text-3xl mr-4">🔄</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Total de Vendas</p>
+                    <p class="text-2xl font-bold text-white">...</p>
+                </div>
+            </div>
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+                <div class="text-3xl mr-4">🔄</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Receita Total</p>
+                    <p class="text-2xl font-bold text-white">...</p>
+                </div>
+            </div>
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+                <div class="text-3xl mr-4">🔄</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Ticket Médio</p>
+                    <p class="text-2xl font-bold text-white">...</p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const totalSales = sales.length;
+            const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
+            const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+            kpiContainer.innerHTML = `
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">🛒</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Total de Vendas</p>
+                        <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
+                    </div>
+                </div>
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">💰</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Receita Total</p>
+                        <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                </div>
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">📊</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Ticket Médio</p>
+                        <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error("Erro ao carregar KPIs da loja:", error);
+            kpiContainer.innerHTML = `
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">⚠️</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Store</p>
+                        <p class="text-xl font-bold text-red-500">Erro ao carregar</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
 
     initialLoad();
 }

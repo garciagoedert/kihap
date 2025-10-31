@@ -1,6 +1,6 @@
 import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
 
@@ -34,8 +34,10 @@ async function initializeDashboard() {
     const locationFilter = document.getElementById('location-filter');
 
     const updateAllKpis = () => {
+        const selectedUnit = document.getElementById('location-filter').value;
         displayEvoKpi();
         displayDailyEntriesKpi();
+        displayStoreSalesKpi(selectedUnit);
     };
 
     locationFilter.addEventListener('change', updateAllKpis);
@@ -43,6 +45,7 @@ async function initializeDashboard() {
     await fetchSnapshots();
     renderSnapshotLog();
     renderEvolutionCharts();
+    renderStoreSalesChart();
     setupModal();
     document.getElementById('snapshot-search').addEventListener('input', (e) => {
         renderSnapshotLog(e.target.value);
@@ -62,6 +65,7 @@ async function initializeDashboard() {
         weeklySummaryBtn.style.display = 'none';
     }
     setupWeeklySummaryModal();
+    displayStoreSalesKpi(locationFilter.value);
 }
 
 async function handleManualSnapshot() {
@@ -539,4 +543,174 @@ function renderEvolutionCharts() {
             }]
         }
     });
+}
+
+async function renderStoreSalesChart() {
+    const salesCtx = document.getElementById('store-sales-evolution-chart').getContext('2d');
+    
+    try {
+        const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'asc'));
+        const querySnapshot = await getDocs(q);
+        const sales = querySnapshot.docs.map(doc => doc.data());
+
+        const salesByDay = sales.reduce((acc, sale) => {
+            if (sale.created) {
+                const date = sale.created.toDate().toLocaleDateString('pt-BR');
+                if (!acc[date]) {
+                    acc[date] = 0;
+                }
+                acc[date] += sale.amountTotal || 0;
+            }
+            return acc;
+        }, {});
+
+        const labels = Object.keys(salesByDay);
+        const data = Object.values(salesByDay).map(total => total / 100);
+
+        new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Store',
+                    data: data,
+                    backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#2d3748',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#4a5568',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#a0aec0',
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#a0aec0',
+                            callback: function(value) {
+                                return 'R$ ' + value;
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao renderizar gráfico de vendas da loja:", error);
+    }
+}
+
+async function displayStoreSalesKpi(unitId = 'geral') {
+    const kpiContainer = document.getElementById('store-sales-kpi-container');
+    kpiContainer.innerHTML = `
+        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+            <div class="text-3xl mr-4">🔄</div>
+            <div>
+                <p class="text-gray-400 text-sm">Total de Vendas</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>
+        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+            <div class="text-3xl mr-4">🔄</div>
+            <div>
+                <p class="text-gray-400 text-sm">Receita Total</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>
+        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+            <div class="text-3xl mr-4">🔄</div>
+            <div>
+                <p class="text-gray-400 text-sm">Ticket Médio</p>
+                <p class="text-2xl font-bold text-white">...</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        let salesQuery;
+        if (unitId !== 'geral') {
+            salesQuery = query(
+                collection(db, 'inscricoesFaixaPreta'),
+                where('userUnit', '==', unitId),
+                where('created', '>=', today),
+                where('created', '<', tomorrow)
+            );
+        } else {
+            salesQuery = query(
+                collection(db, 'inscricoesFaixaPreta'),
+                where('created', '>=', today),
+                where('created', '<', tomorrow)
+            );
+        }
+        
+        const querySnapshot = await getDocs(salesQuery);
+        const sales = querySnapshot.docs.map(doc => doc.data());
+
+        const totalSales = sales.length;
+        const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
+        const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+        kpiContainer.innerHTML = `
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">🛒</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Total de Vendas</p>
+                    <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">💰</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Receita Total</p>
+                    <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+            </div>
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">📊</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Ticket Médio</p>
+                    <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Erro ao carregar KPIs de vendas da loja:", error);
+        kpiContainer.innerHTML = `
+            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="text-3xl mr-4">⚠️</div>
+                <div>
+                    <p class="text-gray-400 text-sm">Store</p>
+                    <p class="text-xl font-bold text-red-500">Erro ao carregar</p>
+                </div>
+            </div>
+        `;
+    }
 }

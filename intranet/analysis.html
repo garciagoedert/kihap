@@ -89,6 +89,14 @@
                     <!-- KPI Cards will be injected here by JavaScript -->
                 </div>
 
+                <!-- Store Sales Card -->
+                <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex flex-col mb-6">
+                    <h2 class="text-lg font-semibold mb-4 text-white">Store</h2>
+                    <div id="store-sales-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        <!-- Store Sales KPI Cards will be injected here by JavaScript -->
+                    </div>
+                </div>
+
                 <!-- Evolution Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
                     <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex flex-col">
@@ -101,6 +109,12 @@
                         <h2 class="text-lg font-semibold mb-4 text-white">Evolução dos Alunos Ativos</h2>
                         <div class="relative h-80">
                             <canvas id="students-evolution-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex flex-col">
+                        <h2 class="text-lg font-semibold mb-4 text-white">Evolução da Store</h2>
+                        <div class="relative h-80">
+                            <canvas id="store-sales-evolution-chart"></canvas>
                         </div>
                     </div>
                 </div>
