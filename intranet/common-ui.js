@@ -373,6 +373,17 @@ async function loadComponents(pageSpecificSetup) {
 
         // Show/hide elements based on page and user role
         const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+        const adminOnlyElements = document.querySelectorAll('.admin-only');
+        
+        adminOnlyElements.forEach(el => {
+            // Mostra o link de suporte para todos, mas outros elementos admin-only apenas para admins
+            if (el.getAttribute('href') === 'suporte.html') {
+                el.classList.remove('hidden');
+            } else if (isAdmin) {
+                el.classList.remove('hidden');
+            }
+        });
+
         const adminLink = document.getElementById('admin-link');
         if (isAdmin && adminLink) {
             adminLink.classList.remove('hidden');

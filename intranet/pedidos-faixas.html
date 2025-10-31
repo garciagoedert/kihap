@@ -17,6 +17,7 @@
             overflow-x: auto;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-[#111111] text-gray-200">
     <div class="flex h-screen">
@@ -36,6 +37,9 @@
                             </button>
                             <button id="open-pedido-modal-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
                                 Fazer Novo Pedido
+                            </button>
+                            <button id="export-pedidos-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                                Exportar Pendentes
                             </button>
                              <button id="open-faixa-preta-modal-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded hidden">
                                 Novo Pedido Faixa Preta
@@ -189,10 +193,11 @@
                     <label for="aluno-preta-input" class="block text-sm font-medium text-gray-300">Nome do Aluno</label>
                     <input type="text" id="aluno-preta-input" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md" placeholder="Nome completo do aluno">
                 </div>
-                <div class="mb-4">
-                    <label for="faixa-preta-select" class="block text-sm font-medium text-gray-300">Faixa</label>
-                    <select id="faixa-preta-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <option>1º Dan</option>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="faixa-preta-select" class="block text-sm font-medium text-gray-300">Faixa</label>
+                        <select id="faixa-preta-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option>1º Dan</option>
                         <option>2º Dan</option>
                         <option>3º Dan</option>
                         <option>4º Dan</option>
@@ -200,8 +205,13 @@
                         <option>6º Dan</option>
                         <option>7º Dan</option>
                         <option>8º Dan</option>
-                        <option>9º Dan</option>
-                    </select>
+                            <option>9º Dan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tamanho-preta-input" class="block text-sm font-medium text-gray-300">Tamanho (cm)</label>
+                        <input type="number" id="tamanho-preta-input" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md" placeholder="Ex: 280">
+                    </div>
                 </div>
             </div>
             <div class="flex justify-end p-4 border-t border-gray-700">
@@ -224,6 +234,7 @@
                 <p><strong>Solicitante:</strong> <span id="details-preta-solicitante"></span></p>
                 <p><strong>Aluno:</strong> <span id="details-preta-aluno"></span></p>
                 <p><strong>Faixa:</strong> <span id="details-preta-faixa"></span></p>
+                <p><strong>Tamanho:</strong> <span id="details-preta-tamanho"></span> cm</p>
             </div>
             <div id="details-preta-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
                 <button id="delete-preta-pedido-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>

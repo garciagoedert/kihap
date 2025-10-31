@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
 const faixas = [
@@ -348,6 +348,69 @@ async function handleDeletePedido(event) {
     }
 }
 
+// --- Função de Exportação ---
+async function exportPedidosPendentes() {
+    try {
+        const q = query(collection(db, "pedidosFaixas"), where("status", "==", "Pendente"));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("Nenhum pedido pendente para exportar.");
+            return;
+        }
+
+        const faixasAgregadas = {};
+
+        querySnapshot.forEach(doc => {
+            const pedido = doc.data();
+            if (pedido.itens && Array.isArray(pedido.itens)) {
+                pedido.itens.forEach(item => {
+                    const chave = `${item.faixa} | ${item.tamanho}`;
+                    if (faixasAgregadas[chave]) {
+                        faixasAgregadas[chave] += item.quantidade;
+                    } else {
+                        faixasAgregadas[chave] = item.quantidade;
+                    }
+                });
+            }
+        });
+
+        const dataParaPlanilha = [
+            ["Faixa", "Tamanho", "Quantidade Total"]
+        ];
+
+        // Converte o objeto agregado em array e ordena
+        const sortedItems = Object.keys(faixasAgregadas).map(chave => {
+            const [faixa, tamanho] = chave.split(' | ');
+            return [faixa, tamanho, faixasAgregadas[chave]];
+        }).sort((a, b) => {
+            // Ordena por nome da faixa
+            if (a[0] < b[0]) return -1;
+            if (a[0] > b[0]) return 1;
+            // Se as faixas forem iguais, ordena por tamanho
+            if (a[1] < b[1]) return -1;
+            if (a[1] > b[1]) return 1;
+            return 0;
+        });
+
+        // Adiciona os itens ordenados à planilha
+        sortedItems.forEach(item => {
+            dataParaPlanilha.push(item);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(dataParaPlanilha);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Pedidos Pendentes");
+
+        const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        XLSX.writeFile(wb, `Pedidos_Faixas_Pendentes_${today}.xlsx`);
+
+    } catch (error) {
+        console.error("Erro ao exportar pedidos: ", error);
+        alert("Ocorreu um erro ao exportar os pedidos. Verifique o console para mais detalhes.");
+    }
+}
+
 // --- Setup da Página ---
 
 export function setupPedidosFaixasPage() {
@@ -368,6 +431,7 @@ export function setupPedidosFaixasPage() {
     document.getElementById('close-details-modal-btn')?.addEventListener('click', closeDetailsModal);
     document.getElementById('edit-pedido-btn')?.addEventListener('click', handleEditPedido);
     document.getElementById('delete-pedido-btn')?.addEventListener('click', handleDeletePedido);
+    document.getElementById('export-pedidos-btn')?.addEventListener('click', exportPedidosPendentes);
 
     // --- Funções e Listeners da Aba de Faixas Pretas ---
 
@@ -387,6 +451,7 @@ export function setupPedidosFaixasPage() {
             document.getElementById('aluno-preta-input').value = '';
             document.getElementById('unidade-preta-select').value = '';
             document.getElementById('faixa-preta-select').value = '1º Dan';
+            document.getElementById('tamanho-preta-input').value = '';
         }
     }
 
@@ -401,9 +466,10 @@ export function setupPedidosFaixasPage() {
         const status = document.getElementById('status-preta-select').value;
         const aluno = document.getElementById('aluno-preta-input').value.trim();
         const faixa = document.getElementById('faixa-preta-select').value;
+        const tamanho = document.getElementById('tamanho-preta-input').value;
 
-        if (!unidade || !aluno) {
-            alert("Por favor, preencha a unidade e o nome do aluno.");
+        if (!unidade || !aluno || !tamanho) {
+            alert("Por favor, preencha todos os campos, incluindo o tamanho da faixa.");
             return;
         }
 
@@ -414,6 +480,7 @@ export function setupPedidosFaixasPage() {
                     unidade,
                     aluno,
                     faixa,
+                    tamanho,
                     status,
                     lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                     lastUpdatedAt: serverTimestamp()
@@ -425,6 +492,7 @@ export function setupPedidosFaixasPage() {
                     unidade,
                     aluno,
                     faixa,
+                    tamanho,
                     status,
                     data: serverTimestamp(),
                     solicitante: { uid: user.id, nome: user.name || user.email }
@@ -551,6 +619,7 @@ export function setupPedidosFaixasPage() {
             document.getElementById('details-preta-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
             document.getElementById('details-preta-aluno').textContent = pedido.aluno;
             document.getElementById('details-preta-faixa').textContent = pedido.faixa;
+            document.getElementById('details-preta-tamanho').textContent = pedido.tamanho || 'N/A';
 
             const user = await getCurrentUser();
             const isAdmin = user ? await checkAdminStatus(user) : false;
@@ -597,6 +666,7 @@ export function setupPedidosFaixasPage() {
             document.getElementById('status-preta-select').value = pedido.status;
             document.getElementById('aluno-preta-input').value = pedido.aluno;
             document.getElementById('faixa-preta-select').value = pedido.faixa;
+            document.getElementById('tamanho-preta-input').value = pedido.tamanho || '';
             
             openFaixaPretaModal();
         }
