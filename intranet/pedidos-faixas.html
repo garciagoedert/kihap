@@ -37,9 +37,26 @@
                             <button id="open-pedido-modal-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
                                 Fazer Novo Pedido
                             </button>
+                             <button id="open-faixa-preta-modal-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded hidden">
+                                Novo Pedido Faixa Preta
+                            </button>
                         </div>
                     </div>
-                    <div class="table-responsive flex-grow">
+
+                    <!-- Abas de Navegação -->
+                    <div class="border-b border-gray-700 mb-4">
+                        <nav class="flex space-x-4" aria-label="Tabs">
+                            <button id="tab-coloridas" class="tab-btn text-yellow-400 border-b-2 border-yellow-400 px-3 py-2 text-sm font-medium">
+                                Faixas Coloridas
+                            </button>
+                            <button id="tab-pretas" class="tab-btn text-gray-400 hover:text-white px-3 py-2 text-sm font-medium">
+                                Faixas Pretas
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div id="tab-content-coloridas" class="tab-content table-responsive flex-grow">
                         <table class="table w-full text-left">
                             <thead>
                                 <tr class="border-b border-gray-700">
@@ -50,6 +67,21 @@
                                 </tr>
                             </thead>
                             <tbody id="pedidos-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="tab-content-pretas" class="tab-content table-responsive flex-grow hidden">
+                        <table class="table w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Data</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4">Aluno</th>
+                                    <th class="p-4">Faixa</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pedidos-pretas-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -125,6 +157,77 @@
             <div id="details-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
                 <button id="delete-pedido-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
                 <button id="edit-pedido-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Novo Pedido de Faixa Preta -->
+    <div id="faixa-preta-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-white">Novo Pedido de Faixa Preta</h2>
+                <button id="close-faixa-preta-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 flex-grow overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="unidade-preta-select" class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <select id="unidade-preta-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                    </div>
+                    <div>
+                        <label for="status-preta-select" class="block text-sm font-medium text-gray-300">Status</label>
+                        <select id="status-preta-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option>Pendente</option>
+                            <option>Em produção</option>
+                            <option>Enviado</option>
+                            <option>Entregue</option>
+                            <option>Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="aluno-preta-input" class="block text-sm font-medium text-gray-300">Nome do Aluno</label>
+                    <input type="text" id="aluno-preta-input" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md" placeholder="Nome completo do aluno">
+                </div>
+                <div class="mb-4">
+                    <label for="faixa-preta-select" class="block text-sm font-medium text-gray-300">Faixa</label>
+                    <select id="faixa-preta-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <option>1º Dan</option>
+                        <option>2º Dan</option>
+                        <option>3º Dan</option>
+                        <option>4º Dan</option>
+                        <option>5º Dan</option>
+                        <option>6º Dan</option>
+                        <option>7º Dan</option>
+                        <option>8º Dan</option>
+                        <option>9º Dan</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t border-gray-700">
+                <button id="submit-faixa-preta-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded">Salvar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes do Pedido de Faixa Preta -->
+    <div id="details-preta-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-white">Detalhes do Pedido de Faixa Preta</h2>
+                <button id="close-details-preta-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <p><strong>Unidade:</strong> <span id="details-preta-unidade"></span></p>
+                <p><strong>Data do Pedido:</strong> <span id="details-preta-data"></span></p>
+                <p><strong>Status:</strong> <span id="details-preta-status"></span></p>
+                <p><strong>Solicitante:</strong> <span id="details-preta-solicitante"></span></p>
+                <p><strong>Aluno:</strong> <span id="details-preta-aluno"></span></p>
+                <p><strong>Faixa:</strong> <span id="details-preta-faixa"></span></p>
+            </div>
+            <div id="details-preta-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
+                <button id="delete-preta-pedido-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
+                <button id="edit-preta-pedido-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
             </div>
         </div>
     </div>

@@ -16,6 +16,7 @@ const tamanhos = ["PP", "P", "M", "G", "GG"];
 
 let itensPedido = [];
 let currentEditingPedidoId = null;
+let currentEditingPretaPedidoId = null;
 
 // --- Funções do Modal de Novo Pedido ---
 
@@ -54,23 +55,33 @@ async function fetchEvoUnits() {
 }
 
 async function loadUnidades() {
-    const unidadeSelect = document.getElementById('unidade-select');
-    if (!unidadeSelect) return;
+    const unidadeSelects = [
+        document.getElementById('unidade-select'),
+        document.getElementById('unidade-preta-select')
+    ];
 
     try {
         const unidades = await fetchEvoUnits();
         unidades.sort();
 
-        unidadeSelect.innerHTML = '<option value="">Selecione uma unidade</option>';
-        unidades.forEach(unidade => {
-            const option = document.createElement('option');
-            option.value = unidade;
-            option.textContent = unidade.charAt(0).toUpperCase() + unidade.slice(1).replace(/-/g, ' ');
-            unidadeSelect.appendChild(option);
+        unidadeSelects.forEach(select => {
+            if (select) {
+                select.innerHTML = '<option value="">Selecione uma unidade</option>';
+                unidades.forEach(unidade => {
+                    const option = document.createElement('option');
+                    option.value = unidade;
+                    option.textContent = unidade.charAt(0).toUpperCase() + unidade.slice(1).replace(/-/g, ' ');
+                    select.appendChild(option.cloneNode(true));
+                });
+            }
         });
     } catch (error) {
         console.error("Erro ao carregar unidades:", error);
-        unidadeSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        unidadeSelects.forEach(select => {
+            if (select) {
+                select.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        });
     }
 }
 
@@ -357,4 +368,254 @@ export function setupPedidosFaixasPage() {
     document.getElementById('close-details-modal-btn')?.addEventListener('click', closeDetailsModal);
     document.getElementById('edit-pedido-btn')?.addEventListener('click', handleEditPedido);
     document.getElementById('delete-pedido-btn')?.addEventListener('click', handleDeletePedido);
+
+    // --- Funções e Listeners da Aba de Faixas Pretas ---
+
+    function openFaixaPretaModal() {
+        const modal = document.getElementById('faixa-preta-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function closeFaixaPretaModal() {
+        const modal = document.getElementById('faixa-preta-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('aluno-preta-input').value = '';
+            document.getElementById('unidade-preta-select').value = '';
+            document.getElementById('faixa-preta-select').value = '1º Dan';
+        }
+    }
+
+    async function handleSubmitFaixaPretaPedido() {
+        const user = await getCurrentUser();
+        if (!user) {
+            alert("Você precisa estar logado para fazer um pedido.");
+            return;
+        }
+
+        const unidade = document.getElementById('unidade-preta-select').value;
+        const status = document.getElementById('status-preta-select').value;
+        const aluno = document.getElementById('aluno-preta-input').value.trim();
+        const faixa = document.getElementById('faixa-preta-select').value;
+
+        if (!unidade || !aluno) {
+            alert("Por favor, preencha a unidade e o nome do aluno.");
+            return;
+        }
+
+        try {
+            if (currentEditingPretaPedidoId) {
+                const pedidoRef = doc(db, "pedidosFaixasPretas", currentEditingPretaPedidoId);
+                await updateDoc(pedidoRef, {
+                    unidade,
+                    aluno,
+                    faixa,
+                    status,
+                    lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
+                    lastUpdatedAt: serverTimestamp()
+                });
+                alert("Pedido de faixa preta atualizado com sucesso!");
+                currentEditingPretaPedidoId = null;
+            } else {
+                await addDoc(collection(db, "pedidosFaixasPretas"), {
+                    unidade,
+                    aluno,
+                    faixa,
+                    status,
+                    data: serverTimestamp(),
+                    solicitante: { uid: user.id, nome: user.name || user.email }
+                });
+                alert("Pedido de faixa preta enviado com sucesso!");
+            }
+            closeFaixaPretaModal();
+            loadPedidosPretas();
+        } catch (error) {
+            console.error("Erro ao salvar pedido de faixa preta: ", error);
+            alert("Ocorreu um erro ao salvar o pedido. Tente novamente.");
+        }
+    }
+
+    async function loadPedidosPretas() {
+        const tableBody = document.getElementById('pedidos-pretas-table-body');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Carregando...</td></tr>';
+
+        try {
+            const q = query(collection(db, "pedidosFaixasPretas"), orderBy("data", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de faixa preta encontrado.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            querySnapshot.forEach(doc => {
+                const pedido = doc.data();
+                const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
+                html += `
+                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
+                        <td class="p-4">${data}</td>
+                        <td class="p-4">${pedido.unidade}</td>
+                        <td class="p-4">${pedido.aluno}</td>
+                        <td class="p-4">${pedido.faixa}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        } catch (error) {
+            console.error("Erro ao carregar pedidos de faixas pretas: ", error);
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-red-500">Erro ao carregar pedidos.</td></tr>';
+        }
+    }
+
+    function setupTabs() {
+        const tabColoridas = document.getElementById('tab-coloridas');
+        const tabPretas = document.getElementById('tab-pretas');
+        const contentColoridas = document.getElementById('tab-content-coloridas');
+        const contentPretas = document.getElementById('tab-content-pretas');
+        const btnNovoColorida = document.getElementById('open-pedido-modal-btn');
+        const btnNovoPreta = document.getElementById('open-faixa-preta-modal-btn');
+
+        tabColoridas.addEventListener('click', () => {
+            tabColoridas.classList.add('text-yellow-400', 'border-yellow-400');
+            tabColoridas.classList.remove('text-gray-400', 'hover:text-white');
+            tabPretas.classList.remove('text-yellow-400', 'border-yellow-400');
+            tabPretas.classList.add('text-gray-400', 'hover:text-white');
+            
+            contentColoridas.classList.remove('hidden');
+            contentPretas.classList.add('hidden');
+            btnNovoColorida.classList.remove('hidden');
+            btnNovoPreta.classList.add('hidden');
+        });
+
+        tabPretas.addEventListener('click', () => {
+            tabPretas.classList.add('text-yellow-400', 'border-yellow-400');
+            tabPretas.classList.remove('text-gray-400', 'hover:text-white');
+            tabColoridas.classList.remove('text-yellow-400', 'border-yellow-400');
+            tabColoridas.classList.add('text-gray-400', 'hover:text-white');
+
+            contentPretas.classList.remove('hidden');
+            contentColoridas.classList.add('hidden');
+            btnNovoPreta.classList.remove('hidden');
+            btnNovoColorida.classList.add('hidden');
+            loadPedidosPretas(); // Carrega os pedidos ao ativar a aba
+        });
+    }
+    
+    // Setup da nova funcionalidade
+    setupTabs();
+    loadPedidosPretas();
+    document.getElementById('open-faixa-preta-modal-btn')?.addEventListener('click', openFaixaPretaModal);
+    document.getElementById('close-faixa-preta-modal-btn')?.addEventListener('click', closeFaixaPretaModal);
+    document.getElementById('submit-faixa-preta-btn')?.addEventListener('click', handleSubmitFaixaPretaPedido);
+    document.getElementById('pedidos-pretas-table-body')?.addEventListener('click', handlePretasTableClick);
+    document.getElementById('close-details-preta-modal-btn')?.addEventListener('click', closeDetailsPretaModal);
+    document.getElementById('edit-preta-pedido-btn')?.addEventListener('click', handleEditPretaPedido);
+    document.getElementById('delete-preta-pedido-btn')?.addEventListener('click', handleDeletePretaPedido);
+
+    function handlePretasTableClick(event) {
+        const row = event.target.closest('tr');
+        if (row && row.dataset.id) {
+            openDetailsPretaModal(row.dataset.id);
+        }
+    }
+
+    async function openDetailsPretaModal(pedidoId) {
+        const modal = document.getElementById('details-preta-modal');
+        if (!modal) return;
+
+        try {
+            const pedidoRef = doc(db, "pedidosFaixasPretas", pedidoId);
+            const pedidoSnap = await getDoc(pedidoRef);
+
+            if (!pedidoSnap.exists()) {
+                alert("Pedido não encontrado.");
+                return;
+            }
+
+            const pedido = pedidoSnap.data();
+            const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
+            
+            document.getElementById('details-preta-unidade').textContent = pedido.unidade;
+            document.getElementById('details-preta-data').textContent = data;
+            document.getElementById('details-preta-status').textContent = pedido.status;
+            document.getElementById('details-preta-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
+            document.getElementById('details-preta-aluno').textContent = pedido.aluno;
+            document.getElementById('details-preta-faixa').textContent = pedido.faixa;
+
+            const user = await getCurrentUser();
+            const isAdmin = user ? await checkAdminStatus(user) : false;
+            
+            const adminActions = document.getElementById('details-preta-admin-actions');
+            if (isAdmin) {
+                adminActions.classList.remove('hidden');
+                document.getElementById('edit-preta-pedido-btn').dataset.id = pedidoId;
+                document.getElementById('delete-preta-pedido-btn').dataset.id = pedidoId;
+            } else {
+                adminActions.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+        } catch (error) {
+            console.error("Erro ao abrir detalhes do pedido:", error);
+            alert("Não foi possível carregar os detalhes do pedido.");
+        }
+    }
+
+    function closeDetailsPretaModal() {
+        const modal = document.getElementById('details-preta-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    async function handleEditPretaPedido(event) {
+        const pedidoId = event.target.dataset.id;
+        if (!pedidoId) return;
+
+        closeDetailsPretaModal();
+        
+        const pedidoRef = doc(db, "pedidosFaixasPretas", pedidoId);
+        const pedidoSnap = await getDoc(pedidoRef);
+        if (pedidoSnap.exists()) {
+            const pedido = pedidoSnap.data();
+            currentEditingPretaPedidoId = pedidoId;
+            
+            document.getElementById('unidade-preta-select').value = pedido.unidade;
+            document.getElementById('status-preta-select').value = pedido.status;
+            document.getElementById('aluno-preta-input').value = pedido.aluno;
+            document.getElementById('faixa-preta-select').value = pedido.faixa;
+            
+            openFaixaPretaModal();
+        }
+    }
+
+    async function handleDeletePretaPedido(event) {
+        const pedidoId = event.target.dataset.id;
+        if (!pedidoId) return;
+
+        if (confirm("Tem certeza que deseja excluir este pedido de faixa preta?")) {
+            try {
+                await deleteDoc(doc(db, "pedidosFaixasPretas", pedidoId));
+                alert("Pedido excluído com sucesso.");
+                closeDetailsPretaModal();
+                loadPedidosPretas();
+            } catch (error) {
+                console.error("Erro ao excluir pedido:", error);
+                alert("Não foi possível excluir o pedido.");
+            }
+        }
+    }
 }
