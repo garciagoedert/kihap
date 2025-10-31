@@ -54,6 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const displayProduct = async (product) => {
+        if (product.availabilityDate) {
+            const availabilityDate = new Date(product.availabilityDate);
+            const now = new Date();
+            if (now > availabilityDate) {
+                productLoading.innerHTML = '<p class="text-2xl text-red-500">Este produto não está mais disponível.</p>';
+                return;
+            }
+        }
+
         productNameTitle.textContent = product.name;
         document.title = `Kihap - ${product.name}`;
         productDescription.textContent = product.description || '';

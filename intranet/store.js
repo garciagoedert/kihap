@@ -45,6 +45,7 @@ export async function setupStorePage() {
     const priceVariantsList = document.getElementById('price-variants-list');
     const productVisibleInput = document.getElementById('product-visible');
     const productPublicInput = document.getElementById('product-public');
+    const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
@@ -325,6 +326,7 @@ export async function setupStorePage() {
         productImageInput.dataset.existingImageUrl = '';
         productVisibleInput.checked = false;
         productPublicInput.checked = false;
+        productAvailabilityDateInput.value = '';
         priceVariantsList.innerHTML = '';
         document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
         fixedPriceContainer.classList.remove('hidden');
@@ -359,6 +361,7 @@ export async function setupStorePage() {
                 priceType: priceType,
                 visible: productVisibleInput.checked,
                 acessoPublico: productPublicInput.checked,
+                availabilityDate: productAvailabilityDateInput.value || null,
             };
 
             if (priceType === 'fixed') {
@@ -438,6 +441,7 @@ export async function setupStorePage() {
 
                 productVisibleInput.checked = product.visible || false;
                 productPublicInput.checked = product.acessoPublico || false;
+                productAvailabilityDateInput.value = product.availabilityDate || '';
                 saveProductBtn.textContent = 'Atualizar Produto';
                 cancelEditBtn.classList.remove('hidden');
             }
