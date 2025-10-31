@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Suporte</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .accordion-header {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .accordion-header:hover {
+            background-color: #2a2a2a;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 500px; /* Adjust as needed */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .accordion-item.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
+                <h1 class="text-2xl font-bold mb-6">Página de Suporte</h1>
+                
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">Central de Ajuda</h2>
+                    <p class="text-gray-400 mb-6">Esta página serve como um guia de referência para as funcionalidades da intranet. Use os tópicos abaixo para encontrar a ajuda que precisa.</p>
+
+                    <!-- Search Input -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </span>
+                            <input type="text" id="search-input" placeholder="Buscar por um tópico..." class="form-input pl-10 w-full">
+                        </div>
+                    </div>
+
+                    <div class="space-y-4" id="tutorial-accordion">
+                        <!-- Accordion Item 1 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-globe w-6 mr-2"></i>Visão Geral</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>A intranet é a sua ferramenta central para gestão de alunos, cursos, comunicação e muito mais. O menu à esquerda (sidebar) é seu principal ponto de partida para acessar todas as funcionalidades.</p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 2 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-user-circle w-6 mr-2"></i>Gerenciando seu Perfil</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Nesta área, você pode manter suas informações pessoais atualizadas. Manter o perfil em dia é importante para a comunicação interna.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li>Altere seu nome de exibição.</li>
+                                    <li>Atualize sua senha de acesso.</li>
+                                    <li>Faça o upload de uma nova foto de perfil.</li>
+                                </ul>
+                                <p class="mt-3"><a href="perfil.html" class="text-blue-400 hover:underline">Ir para o Perfil →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 3 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-users w-6 mr-2"></i>Alunos</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Esta é a área central para a gestão de todos os alunos da academia.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Listagem de Alunos:</strong> Visualize todos os alunos cadastrados com informações rápidas.</li>
+                                    <li><strong>Cadastro:</strong> Adicione novos alunos preenchendo o formulário de cadastro.</li>
+                                    <li><strong>Perfil do Aluno:</strong> Clique em um aluno para ver seu perfil detalhado, incluindo histórico e progresso.</li>
+                                </ul>
+                                <p class="mt-3"><a href="alunos.html" class="text-blue-400 hover:underline">Ir para Alunos →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 4 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-graduation-cap w-6 mr-2"></i>Cursos e Conteúdo</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Aqui você gerencia todo o material didático e os cursos oferecidos.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Criar e Editar Cursos:</strong> Organize o conteúdo em módulos e aulas.</li>
+                                    <li><strong>Adicionar Conteúdo:</strong> Faça upload de vídeos, PDFs e outros materiais.</li>
+                                    <li><strong>Tatame:</strong> A seção "Tatame" é a visualização do aluno, onde o conteúdo é exibido para eles.</li>
+                                </ul>
+                                <p class="mt-3"><a href="cursos.html" class="text-blue-400 hover:underline">Ir para Cursos →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 5 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-calendar-alt w-6 mr-2"></i>Calendário</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>A ferramenta para organizar a agenda de aulas e eventos da academia.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Agendar Aulas:</strong> Crie novos eventos no calendário, definindo data, hora e instrutor.</li>
+                                    <li><strong>Visualização:</strong> Alterne entre as visualizações de mês, semana e dia.</li>
+                                    <li><strong>Eventos:</strong> Adicione eventos especiais, como seminários ou graduações.</li>
+                                </ul>
+                                <p class="mt-3"><a href="calendario.html" class="text-blue-400 hover:underline">Ir para Calendário →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 6 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-check-circle w-6 mr-2"></i>Tarefas e Projetos</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Ferramentas para a gestão de atividades e projetos internos da equipe.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Tarefas:</strong> Crie, atribua e acompanhe o status de tarefas individuais para o dia a dia.</li>
+                                    <li><strong>Projetos:</strong> Organize tarefas maiores em projetos, com prazos e responsáveis.</li>
+                                </ul>
+                                <p class="mt-3"><a href="tarefas.html" class="text-blue-400 hover:underline">Ir para Tarefas →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 7 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-comments w-6 mr-2"></i>Comunicação</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Mantenha a equipe informada e conectada.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Feed:</strong> Um mural de notícias para comunicados importantes e atualizações.</li>
+                                    <li><strong>Chat:</strong> Para conversas rápidas e em tempo real com outros membros da equipe.</li>
+                                </ul>
+                                <p class="mt-3"><a href="feed.html" class="text-blue-400 hover:underline">Ir para o Feed →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 8 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-tasks w-6 mr-2"></i>Prospecção</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Esta é a sua ferramenta de CRM para gerenciar novos contatos.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Cadastrar Leads:</strong> Adicione informações de pessoas interessadas.</li>
+                                    <li><strong>Acompanhar Contatos:</strong> Registre interações e mova o lead pelo funil de vendas.</li>
+                                    <li><strong>Análise:</strong> Visualize dados sobre a origem e conversão de novos alunos.</li>
+                                </ul>
+                                <p class="mt-3"><a href="prospeccao.html" class="text-blue-400 hover:underline">Ir para Prospecção →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 9 -->
+                        <div class="accordion-item border-b border-gray-700">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-ribbon w-6 mr-2"></i>Pedidos de Faixas</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>Centralize e organize as solicitações de graduação dos alunos.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Criar Pedido:</strong> Inicie um novo pedido de faixa para um aluno apto a graduar.</li>
+                                    <li><strong>Acompanhar Status:</strong> Monitore o andamento do pedido, da solicitação à entrega.</li>
+                                    <li><strong>Histórico:</strong> Mantenha um registro de todas as graduações.</li>
+                                </ul>
+                                <p class="mt-3"><a href="pedidos-faixas.html" class="text-blue-400 hover:underline">Ir para Pedidos de Faixas →</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 10 -->
+                        <div class="accordion-item">
+                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
+                                <h3 class="font-semibold text-lg"><i class="fas fa-store w-6 mr-2"></i>Store</h3>
+                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                            </div>
+                            <div class="accordion-content px-4 text-gray-300">
+                                <p>A loja interna da Kihap, para venda de produtos como uniformes e equipamentos.</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>Gestão de Produtos:</strong> Cadastre produtos, edite informações e controle o estoque.</li>
+                                    <li><strong>Pedidos:</strong> Visualize e processe os pedidos feitos pelos alunos.</li>
+                                </ul>
+                                <p class="mt-3"><a href="store.html" class="text-blue-400 hover:underline">Ir para a Store →</a></p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+
+            const accordion = document.getElementById('tutorial-accordion');
+            const searchInput = document.getElementById('search-input');
+            const accordionItems = Array.from(accordion.querySelectorAll('.accordion-item'));
+
+            // Accordion functionality
+            accordion.addEventListener('click', (event) => {
+                const header = event.target.closest('.accordion-header');
+                if (!header) return;
+
+                const item = header.parentElement;
+                const currentlyActive = accordion.querySelector('.accordion-item.active');
+
+                if (currentlyActive && currentlyActive !== item) {
+                    currentlyActive.classList.remove('active');
+                }
+
+                item.classList.toggle('active');
+            });
+
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+
+                accordionItems.forEach(item => {
+                    const headerText = item.querySelector('.accordion-header h3').textContent.toLowerCase();
+                    const contentText = item.querySelector('.accordion-content').textContent.toLowerCase();
+                    
+                    if (headerText.includes(searchTerm) || contentText.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
