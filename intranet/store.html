@@ -148,6 +148,10 @@
                                         <input type="radio" name="price-type" value="variable" class="form-radio text-blue-500 bg-gray-700 border-gray-600">
                                         <span class="ml-2">Preço Variável</span>
                                     </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="price-type" value="lotes" class="form-radio text-blue-500 bg-gray-700 border-gray-600">
+                                        <span class="ml-2">Lotes</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -165,6 +169,17 @@
                                 </div>
                                 <button type="button" id="add-price-variant-btn" class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
                                     <i class="fas fa-plus mr-1"></i> Adicionar Variação
+                                </button>
+                            </div>
+
+                            <!-- Lotes Input -->
+                            <div id="lotes-container" class="mb-4 hidden">
+                                <label class="block text-sm font-medium text-gray-400">Lotes</label>
+                                <div id="lotes-list" class="space-y-2 mt-1">
+                                    <!-- Dynamic lotes will be added here -->
+                                </div>
+                                <button type="button" id="add-lote-btn" class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
+                                    <i class="fas fa-plus mr-1"></i> Adicionar Lote
                                 </button>
                             </div>
 

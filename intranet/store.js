@@ -43,6 +43,9 @@ export async function setupStorePage() {
     const variablePricesContainer = document.getElementById('variable-prices-container');
     const addPriceVariantBtn = document.getElementById('add-price-variant-btn');
     const priceVariantsList = document.getElementById('price-variants-list');
+    const lotesContainer = document.getElementById('lotes-container');
+    const addLoteBtn = document.getElementById('add-lote-btn');
+    const lotesList = document.getElementById('lotes-list');
     const productVisibleInput = document.getElementById('product-visible');
     const productPublicInput = document.getElementById('product-public');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
@@ -367,7 +370,7 @@ export async function setupStorePage() {
 
             if (priceType === 'fixed') {
                 productData.price = parseInt(productPriceInput.value, 10);
-            } else {
+            } else if (priceType === 'variable') {
                 const variants = [];
                 const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
                 variantElements.forEach(item => {
@@ -378,8 +381,20 @@ export async function setupStorePage() {
                     }
                 });
                 productData.priceVariants = variants;
-                // Set a default price for sorting/filtering if needed
                 productData.price = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 0;
+            } else if (priceType === 'lotes') {
+                const lotes = [];
+                const loteElements = lotesList.querySelectorAll('.lote-item');
+                loteElements.forEach(item => {
+                    const name = item.querySelector('input[name="lote-name"]').value;
+                    const price = parseInt(item.querySelector('input[name="lote-price"]').value, 10);
+                    const startDate = item.querySelector('input[name="lote-start-date"]').value;
+                    if (name && !isNaN(price)) {
+                        lotes.push({ name, price, startDate: startDate || null });
+                    }
+                });
+                productData.lotes = lotes;
+                productData.price = lotes.length > 0 ? lotes[0].price : 0;
             }
 
             if (id) {
@@ -431,12 +446,21 @@ export async function setupStorePage() {
                     document.querySelector('input[name="price-type"][value="variable"]').checked = true;
                     fixedPriceContainer.classList.add('hidden');
                     variablePricesContainer.classList.remove('hidden');
+                    lotesContainer.classList.add('hidden');
                     priceVariantsList.innerHTML = '';
                     product.priceVariants.forEach(variant => addPriceVariant(variant.name, variant.price));
+                } else if (product.priceType === 'lotes' && product.lotes) {
+                    document.querySelector('input[name="price-type"][value="lotes"]').checked = true;
+                    fixedPriceContainer.classList.add('hidden');
+                    variablePricesContainer.classList.add('hidden');
+                    lotesContainer.classList.remove('hidden');
+                    lotesList.innerHTML = '';
+                    product.lotes.forEach(lote => addLote(lote.name, lote.price, lote.startDate));
                 } else {
                     document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
                     fixedPriceContainer.classList.remove('hidden');
                     variablePricesContainer.classList.add('hidden');
+                    lotesContainer.classList.add('hidden');
                     productPriceInput.value = product.price;
                 }
 
@@ -472,14 +496,21 @@ export async function setupStorePage() {
     // --- Price Type Switching Logic ---
     priceTypeRadios.forEach(radio => {
         radio.addEventListener('change', () => {
+            fixedPriceContainer.classList.add('hidden');
+            variablePricesContainer.classList.add('hidden');
+            lotesContainer.classList.add('hidden');
+
             if (radio.value === 'fixed') {
                 fixedPriceContainer.classList.remove('hidden');
-                variablePricesContainer.classList.add('hidden');
-            } else {
-                fixedPriceContainer.classList.add('hidden');
+            } else if (radio.value === 'variable') {
                 variablePricesContainer.classList.remove('hidden');
                 if (priceVariantsList.children.length === 0) {
                     addPriceVariant(); // Add one by default
+                }
+            } else if (radio.value === 'lotes') {
+                lotesContainer.classList.remove('hidden');
+                if (lotesList.children.length === 0) {
+                    addLote(); // Add one by default
                 }
             }
         });
@@ -504,6 +535,29 @@ export async function setupStorePage() {
     priceVariantsList.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-price-variant-btn')) {
             e.target.closest('.price-variant-item').remove();
+        }
+    });
+
+    const addLote = (name = '', price = '', startDate = '') => {
+        const loteId = Date.now();
+        const loteItem = document.createElement('div');
+        loteItem.className = 'lote-item grid grid-cols-3 gap-2 items-center';
+        const isLotePrice = document.querySelector('input[name="price-type"]:checked').value === 'lotes';
+
+        loteItem.innerHTML = `
+            <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3">&times; Remover</button>
+        `;
+        lotesList.appendChild(loteItem);
+    };
+
+    addLoteBtn.addEventListener('click', () => addLote());
+
+    lotesList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-lote-btn')) {
+            e.target.closest('.lote-item').remove();
         }
     });
 

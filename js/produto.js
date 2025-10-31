@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productDescription = document.getElementById('product-description');
     const productImageDisplay = document.getElementById('product-image-display');
     const productPriceDisplay = document.getElementById('product-price-display');
+    const productLoteDisplay = document.getElementById('product-lote-display');
     const quantitySelector = document.getElementById('quantity-selector');
     const paymentForm = document.getElementById('payment-form');
     const formsContainer = document.getElementById('forms-container');
@@ -156,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTotalPrice = () => {
         let totalAmount = 0;
         const formInstances = formsContainer.querySelectorAll('.form-instance');
+        let activeLoteName = null;
 
         formInstances.forEach(form => {
             if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
@@ -164,10 +166,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedVariant) {
                     totalAmount += selectedVariant.price;
                 }
+            } else if (productData.priceType === 'lotes' && productData.lotes && productData.lotes.length > 0) {
+                const now = new Date();
+                let activeLote = null;
+                for (const lote of productData.lotes) {
+                    const startDate = new Date(lote.startDate);
+                    if (startDate <= now) {
+                        activeLote = lote;
+                    }
+                }
+                if (activeLote) {
+                    totalAmount += activeLote.price;
+                    activeLoteName = activeLote.name;
+                } else {
+                    // Fallback to the first lote if none is active yet
+                    totalAmount += productData.lotes[0].price;
+                    activeLoteName = productData.lotes[0].name;
+                }
             } else {
                 totalAmount += productData.price;
             }
         });
+
+        if (activeLoteName) {
+            productLoteDisplay.textContent = activeLoteName;
+            productLoteDisplay.classList.remove('hidden');
+        } else {
+            productLoteDisplay.classList.add('hidden');
+        }
 
         if (appliedCoupon) {
             if (appliedCoupon.type === 'percentage') {
