@@ -5,31 +5,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const productsGrid = document.getElementById('products-grid');
     const bannerContainer = document.getElementById('banner-container');
 
-    const fetchActiveBanner = async () => {
+    const fetchActiveBanners = async () => {
         if (!bannerContainer) return;
 
         try {
-            const q = query(
-                collection(db, 'banners'),
-                where('active', '==', true),
-                limit(1)
-            );
+            const q = query(collection(db, 'banners'), where('active', '==', true));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
-                const banner = querySnapshot.docs[0].data();
-                displayBanner(banner);
+                const banners = querySnapshot.docs.map(doc => doc.data());
+                displayBanners(banners);
             }
         } catch (error) {
-            console.error('Error fetching active banner:', error);
+            console.error('Error fetching active banners:', error);
         }
     };
 
-    const displayBanner = (banner) => {
-        bannerContainer.innerHTML = `
-            <a href="${banner.link || '#'}" target="_blank" class="block">
-                <img src="${banner.imageUrl}" alt="Banner" class="w-full h-auto rounded-lg shadow-lg">
-            </a>
-        `;
+    const displayBanners = (banners) => {
+        if (!banners || banners.length === 0) return;
+        let currentIndex = 0;
+
+        function showNextBanner() {
+            const banner = banners[currentIndex];
+            bannerContainer.innerHTML = `
+                <a href="${banner.link || '#'}" target="_blank" class="block">
+                    <img src="${banner.imageUrl}" alt="Banner" class="w-full h-auto rounded-lg shadow-lg">
+                </a>
+            `;
+            currentIndex = (currentIndex + 1) % banners.length;
+        }
+
+        if (banners.length > 1) {
+            setInterval(showNextBanner, 5000); // Troca a cada 5 segundos
+        }
+        showNextBanner(); // Mostra o primeiro banner imediatamente
     };
 
     const fetchPublicProducts = async () => {
@@ -75,6 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    fetchActiveBanner();
+    fetchActiveBanners();
     fetchPublicProducts();
 });
