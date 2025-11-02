@@ -47,8 +47,10 @@ export async function setupStorePage() {
     const addLoteBtn = document.getElementById('add-lote-btn');
     const lotesList = document.getElementById('lotes-list');
     const productVisibleInput = document.getElementById('product-visible');
+    const productAvailableInput = document.getElementById('product-available');
     const productPublicInput = document.getElementById('product-public');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
+    const recommendedProductsSelect = document.getElementById('recommended-products');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
@@ -283,6 +285,7 @@ export async function setupStorePage() {
     };
 
     const displayProducts = (productsToDisplay) => {
+        populateRecommendedProductsSelect();
         productsTableBody.innerHTML = '';
         if (productsToDisplay.length === 0) {
             productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
@@ -304,13 +307,14 @@ export async function setupStorePage() {
             }
 
             const productUrl = `${window.location.origin.replace('/intranet', '')}/produto.html?id=${product.id}`;
-            const status = product.visible ? '<span class="text-green-400">Visível</span>' : '<span class="text-gray-400">Oculto</span>';
-            const publicStatus = product.acessoPublico ? '<span class="text-blue-400">Público</span>' : '<span class="text-gray-400">Privado</span>';
+            const visibilityStatus = product.visible ? '<span class="text-green-400">Visível</span>' : '<span class="text-gray-400">Invisível</span>';
+            const availabilityStatus = product.available ? '<span class="text-blue-400">Disponível</span>' : '<span class="text-red-400">Indisponível</span>';
+            const publicStatus = product.acessoPublico ? '<span class="text-indigo-400">Público</span>' : '<span class="text-gray-500">Privado</span>';
 
             row.innerHTML = `
                 <td class="p-4">${product.name}</td>
                 <td class="p-4">${price}</td>
-                <td class="p-4">${status} / ${publicStatus}</td>
+                <td class="p-4">${visibilityStatus} / ${availabilityStatus} / ${publicStatus}</td>
                 <td class="p-4">
                     <button class="copy-link-btn text-green-400 hover:text-green-300" data-link="${productUrl}">
                         <i class="fas fa-copy"></i> Copiar
@@ -324,14 +328,30 @@ export async function setupStorePage() {
         });
     };
     
+    const populateRecommendedProductsSelect = () => {
+        const currentProductId = productIdInput.value;
+        recommendedProductsSelect.innerHTML = '';
+        allProducts.forEach(product => {
+            if (product.id !== currentProductId) {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                recommendedProductsSelect.appendChild(option);
+            }
+        });
+    };
+
     const resetProductForm = () => {
         productForm.reset();
         productIdInput.value = '';
         productImageInput.dataset.existingImageUrl = '';
         productVisibleInput.checked = false;
+        productAvailableInput.checked = true; // Default to available
         productPublicInput.checked = false;
         productAvailabilityDateInput.value = '';
         priceVariantsList.innerHTML = '';
+        recommendedProductsSelect.value = '';
+        Array.from(recommendedProductsSelect.options).forEach(option => option.selected = false);
         document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
         fixedPriceContainer.classList.remove('hidden');
         variablePricesContainer.classList.add('hidden');
@@ -364,8 +384,10 @@ export async function setupStorePage() {
                 imageUrl: imageUrl,
                 priceType: priceType,
                 visible: productVisibleInput.checked,
+                available: productAvailableInput.checked,
                 acessoPublico: productPublicInput.checked,
                 availabilityDate: productAvailabilityDateInput.value || null,
+                recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value)
             };
 
             if (priceType === 'fixed') {
@@ -438,6 +460,7 @@ export async function setupStorePage() {
             if (product) {
                 productFormTitle.textContent = 'Editar Produto';
                 productIdInput.value = product.id;
+                populateRecommendedProductsSelect(); // Repopulate to exclude current product
                 productNameInput.value = product.name;
                 productDescriptionInput.value = product.description;
                 productImageInput.dataset.existingImageUrl = product.imageUrl || '';
@@ -465,8 +488,18 @@ export async function setupStorePage() {
                 }
 
                 productVisibleInput.checked = product.visible || false;
+                productAvailableInput.checked = product.available !== false; // Default to true if undefined
                 productPublicInput.checked = product.acessoPublico || false;
                 productAvailabilityDateInput.value = product.availabilityDate || '';
+                
+                if (product.recommendedProducts) {
+                    Array.from(recommendedProductsSelect.options).forEach(option => {
+                        if (product.recommendedProducts.includes(option.value)) {
+                            option.selected = true;
+                        }
+                    });
+                }
+
                 saveProductBtn.textContent = 'Atualizar Produto';
                 cancelEditBtn.classList.remove('hidden');
             }

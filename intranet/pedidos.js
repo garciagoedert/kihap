@@ -13,10 +13,13 @@ const faixas = [
 ];
 
 const tamanhos = ["PP", "P", "M", "G", "GG"];
+const tamanhosDobok = ["1", "2", "PP", "P", "0", "00", "M0", "M1", "M2", "M3", "A0", "A1", "A2", "A3", "A4", "A5"];
+
 
 let itensPedido = [];
 let currentEditingPedidoId = null;
 let currentEditingPretaPedidoId = null;
+let currentEditingDobokPedidoId = null;
 
 // --- Funções do Modal de Novo Pedido ---
 
@@ -57,7 +60,8 @@ async function fetchEvoUnits() {
 async function loadUnidades() {
     const unidadeSelects = [
         document.getElementById('unidade-select'),
-        document.getElementById('unidade-preta-select')
+        document.getElementById('unidade-preta-select'),
+        document.getElementById('unidade-dobok-select')
     ];
 
     try {
@@ -88,6 +92,7 @@ async function loadUnidades() {
 function populateSelects() {
     const faixaSelect = document.getElementById('faixa-select');
     const tamanhoSelect = document.getElementById('tamanho-select');
+    const tamanhoDobokSelect = document.getElementById('tamanho-dobok-select');
 
     if (faixaSelect) {
         faixas.forEach(faixa => {
@@ -104,6 +109,15 @@ function populateSelects() {
             option.value = tamanho;
             option.textContent = tamanho;
             tamanhoSelect.appendChild(option);
+        });
+    }
+
+    if (tamanhoDobokSelect) {
+        tamanhosDobok.forEach(tamanho => {
+            const option = document.createElement('option');
+            option.value = tamanho;
+            option.textContent = tamanho;
+            tamanhoDobokSelect.appendChild(option);
         });
     }
 }
@@ -413,7 +427,7 @@ async function exportPedidosPendentes() {
 
 // --- Setup da Página ---
 
-export function setupPedidosFaixasPage() {
+export function setupPedidosPage() {
     loadPedidos();
     populateSelects();
     loadUnidades();
@@ -548,34 +562,44 @@ export function setupPedidosFaixasPage() {
     function setupTabs() {
         const tabColoridas = document.getElementById('tab-coloridas');
         const tabPretas = document.getElementById('tab-pretas');
+        const tabDoboks = document.getElementById('tab-doboks');
         const contentColoridas = document.getElementById('tab-content-coloridas');
         const contentPretas = document.getElementById('tab-content-pretas');
+        const contentDoboks = document.getElementById('tab-content-doboks');
         const btnNovoColorida = document.getElementById('open-pedido-modal-btn');
         const btnNovoPreta = document.getElementById('open-faixa-preta-modal-btn');
+        const btnNovoDobok = document.getElementById('open-dobok-modal-btn');
 
-        tabColoridas.addEventListener('click', () => {
-            tabColoridas.classList.add('text-yellow-400', 'border-yellow-400');
-            tabColoridas.classList.remove('text-gray-400', 'hover:text-white');
-            tabPretas.classList.remove('text-yellow-400', 'border-yellow-400');
-            tabPretas.classList.add('text-gray-400', 'hover:text-white');
-            
-            contentColoridas.classList.remove('hidden');
-            contentPretas.classList.add('hidden');
-            btnNovoColorida.classList.remove('hidden');
-            btnNovoPreta.classList.add('hidden');
-        });
+        const tabs = [tabColoridas, tabPretas, tabDoboks];
+        const contents = [contentColoridas, contentPretas, contentDoboks];
 
-        tabPretas.addEventListener('click', () => {
-            tabPretas.classList.add('text-yellow-400', 'border-yellow-400');
-            tabPretas.classList.remove('text-gray-400', 'hover:text-white');
-            tabColoridas.classList.remove('text-yellow-400', 'border-yellow-400');
-            tabColoridas.classList.add('text-gray-400', 'hover:text-white');
+        tabs.forEach((tab, index) => {
+            if (tab) {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('text-yellow-400', 'border-yellow-400'));
+                    contents.forEach(c => c.classList.add('hidden'));
 
-            contentPretas.classList.remove('hidden');
-            contentColoridas.classList.add('hidden');
-            btnNovoPreta.classList.remove('hidden');
-            btnNovoColorida.classList.add('hidden');
-            loadPedidosPretas(); // Carrega os pedidos ao ativar a aba
+                    tab.classList.add('text-yellow-400', 'border-yellow-400');
+                    if (contents[index]) {
+                        contents[index].classList.remove('hidden');
+                    }
+
+                // Lógica para exibir os botões corretos
+                btnNovoColorida.classList.add('hidden');
+                btnNovoPreta.classList.add('hidden');
+                if (btnNovoDobok) btnNovoDobok.classList.add('hidden');
+
+                if (index === 0) { // Faixas Coloridas
+                    btnNovoColorida.classList.remove('hidden');
+                } else if (index === 1) { // Faixas Pretas
+                    btnNovoPreta.classList.remove('hidden');
+                    loadPedidosPretas();
+                } else if (index === 2) { // Doboks
+                    if (btnNovoDobok) btnNovoDobok.classList.remove('hidden');
+                    loadPedidosDoboks();
+                }
+                });
+            }
         });
     }
     
@@ -688,4 +712,118 @@ export function setupPedidosFaixasPage() {
             }
         }
     }
+
+    // --- Funções e Listeners da Aba de Doboks ---
+
+    function openDobokModal() {
+        const modal = document.getElementById('dobok-modal');
+        if (modal) {
+            document.getElementById('dobok-modal-title').textContent = 'Novo Pedido de Dobok';
+            currentEditingDobokPedidoId = null;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function closeDobokModal() {
+        const modal = document.getElementById('dobok-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('aluno-dobok-input').value = '';
+            document.getElementById('unidade-dobok-select').value = '';
+            document.getElementById('tamanho-dobok-select').value = '';
+        }
+    }
+
+    async function handleSubmitDobokPedido() {
+        const user = await getCurrentUser();
+        if (!user) {
+            alert("Você precisa estar logado para fazer um pedido.");
+            return;
+        }
+
+        const unidade = document.getElementById('unidade-dobok-select').value;
+        const status = document.getElementById('status-dobok-select').value;
+        const aluno = document.getElementById('aluno-dobok-input').value.trim();
+        const tamanho = document.getElementById('tamanho-dobok-select').value;
+
+        if (!unidade || !tamanho) {
+            alert("Por favor, preencha a unidade e o tamanho.");
+            return;
+        }
+
+        try {
+            if (currentEditingDobokPedidoId) {
+                const pedidoRef = doc(db, "pedidosDoboks", currentEditingDobokPedidoId);
+                await updateDoc(pedidoRef, {
+                    unidade,
+                    aluno: aluno || null,
+                    tamanho,
+                    status,
+                    lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
+                    lastUpdatedAt: serverTimestamp()
+                });
+                alert("Pedido de dobok atualizado com sucesso!");
+                currentEditingDobokPedidoId = null;
+            } else {
+                await addDoc(collection(db, "pedidosDoboks"), {
+                    unidade,
+                    aluno: aluno || null,
+                    tamanho,
+                    status,
+                    data: serverTimestamp(),
+                    solicitante: { uid: user.id, nome: user.name || user.email }
+                });
+                alert("Pedido de dobok enviado com sucesso!");
+            }
+            closeDobokModal();
+            loadPedidosDoboks();
+        } catch (error) {
+            console.error("Erro ao salvar pedido de dobok: ", error);
+            alert("Ocorreu um erro ao salvar o pedido. Tente novamente.");
+        }
+    }
+
+    async function loadPedidosDoboks() {
+        const tableBody = document.getElementById('pedidos-doboks-table-body');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Carregando...</td></tr>';
+
+        try {
+            const q = query(collection(db, "pedidosDoboks"), orderBy("data", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de dobok encontrado.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            querySnapshot.forEach(doc => {
+                const pedido = doc.data();
+                const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
+                html += `
+                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
+                        <td class="p-4">${data}</td>
+                        <td class="p-4">${pedido.unidade}</td>
+                        <td class="p-4">${pedido.aluno || 'N/A'}</td>
+                        <td class="p-4">${pedido.tamanho}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        } catch (error) {
+            console.error("Erro ao carregar pedidos de doboks: ", error);
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-red-500">Erro ao carregar pedidos.</td></tr>';
+        }
+    }
+
+    document.getElementById('open-dobok-modal-btn')?.addEventListener('click', openDobokModal);
+    document.getElementById('close-dobok-modal-btn')?.addEventListener('click', closeDobokModal);
+    document.getElementById('submit-dobok-btn')?.addEventListener('click', handleSubmitDobokPedido);
 }

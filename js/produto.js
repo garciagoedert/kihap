@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const couponCodeInput = document.getElementById('coupon-code');
     const applyCouponBtn = document.getElementById('apply-coupon-btn');
     const couponStatus = document.getElementById('coupon-status');
+    const recommendedProductsContainer = document.getElementById('recommended-products-container');
+    const recommendedProductsList = document.getElementById('recommended-products-list');
 
     let productId = null;
     let productData = null;
@@ -36,34 +38,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchProduct = async (id) => {
         if (!id) {
-            productLoading.innerHTML = '<p class="text-2xl text-red-500">ID do produto não encontrado na URL.</p>';
+            productLoading.innerHTML = `
+                <div class="text-center">
+                    <p class="text-2xl text-red-500 mb-4">ID do produto não encontrado na URL.</p>
+                    <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
+                </div>`;
             return;
         }
         try {
             const productRef = doc(db, 'products', id);
             const docSnap = await getDoc(productRef);
+
             if (docSnap.exists()) {
-                productData = docSnap.data();
+                productData = { id: docSnap.id, ...docSnap.data() };
+
+                const isAvailable = productData.available !== false; // Default to true if undefined
+                const hasExpired = productData.availabilityDate && new Date() > new Date(productData.availabilityDate);
+
+                if (!isAvailable || hasExpired) {
+                    productLoading.innerHTML = `
+                        <div class="text-center">
+                            <h1 class="text-4xl font-bold mb-4">Produto Indisponível</h1>
+                            <p class="text-lg text-gray-400 mb-8">Este produto não está mais disponível para compra.</p>
+                            <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
+                        </div>`;
+                    productContent.classList.add('hidden');
+                    productLoading.classList.remove('hidden');
+                    return;
+                }
+
                 await displayProduct(productData);
+                if (productData.recommendedProducts && productData.recommendedProducts.length > 0) {
+                    await fetchAndDisplayRecommendedProducts(productData.recommendedProducts);
+                }
             } else {
-                productLoading.innerHTML = '<p class="text-2xl text-red-500">Produto não encontrado.</p>';
+                productLoading.innerHTML = `
+                    <div class="text-center">
+                        <p class="text-2xl text-red-500 mb-4">Produto não encontrado.</p>
+                        <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
+                    </div>`;
             }
         } catch (error) {
             console.error("Error fetching product:", error);
-            productLoading.innerHTML = '<p class="text-2xl text-red-500">Erro ao carregar o produto.</p>';
+            productLoading.innerHTML = `
+                <div class="text-center">
+                    <p class="text-2xl text-red-500 mb-4">Erro ao carregar o produto.</p>
+                    <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
+                </div>`;
         }
     };
 
     const displayProduct = async (product) => {
-        if (product.availabilityDate) {
-            const availabilityDate = new Date(product.availabilityDate);
-            const now = new Date();
-            if (now > availabilityDate) {
-                productLoading.innerHTML = '<p class="text-2xl text-red-500">Este produto não está mais disponível.</p>';
-                return;
-            }
-        }
-
         productNameTitle.textContent = product.name;
         document.title = `Kihap - ${product.name}`;
         productDescription.textContent = product.description || '';
@@ -74,6 +99,48 @@ document.addEventListener('DOMContentLoaded', () => {
         await renderForms(1);
         productLoading.classList.add('hidden');
         productContent.classList.remove('hidden');
+    };
+
+    const fetchAndDisplayRecommendedProducts = async (productIds) => {
+        try {
+            const productsRef = collection(db, 'products');
+            const q = query(productsRef, where('__name__', 'in', productIds));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                recommendedProductsList.innerHTML = '';
+                querySnapshot.forEach(doc => {
+                    const product = { id: doc.id, ...doc.data() };
+                    const productElement = document.createElement('div');
+                    productElement.className = 'bg-gray-700 p-4 rounded-lg flex items-center justify-between';
+                    productElement.innerHTML = `
+                        <div class="flex items-center">
+                            <img src="${product.imageUrl || 'imgs/placeholder.jpg'}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md mr-4">
+                            <div>
+                                <h4 class="font-bold">${product.name}</h4>
+                                <p class="text-yellow-400">${(product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            </div>
+                        </div>
+                        <select data-product-id="${product.id}" data-product-price="${product.price}" class="recommended-product-quantity w-20 px-2 py-1 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    `;
+                    recommendedProductsList.appendChild(productElement);
+                });
+                recommendedProductsContainer.classList.remove('hidden');
+
+                document.querySelectorAll('.recommended-product-quantity').forEach(select => {
+                    select.addEventListener('change', updateTotalPrice);
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching recommended products:", error);
+        }
     };
 
     const renderForms = async (quantity) => {
@@ -203,6 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        document.querySelectorAll('.recommended-product-quantity').forEach(select => {
+            const quantity = parseInt(select.value, 10);
+            if (quantity > 0) {
+                const price = parseInt(select.dataset.productPrice, 10);
+                totalAmount += price * quantity;
+            }
+        });
+
         productPriceDisplay.textContent = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
@@ -263,6 +338,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const formInstances = formsContainer.querySelectorAll('.form-instance');
         const formDataList = [];
         let totalAmount = 0;
+        const recommendedItems = [];
+
+        document.querySelectorAll('.recommended-product-quantity').forEach(select => {
+            const quantity = parseInt(select.value, 10);
+            if (quantity > 0) {
+                const productId = select.dataset.productId;
+                const productPrice = parseInt(select.dataset.productPrice, 10);
+                recommendedItems.push({
+                    productId: productId,
+                    productName: select.closest('.flex').querySelector('h4').textContent,
+                    amount: productPrice * quantity,
+                    quantity: quantity
+                });
+                totalAmount += productPrice * quantity;
+            }
+        });
 
         formInstances.forEach(form => {
             const formData = {
@@ -310,6 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         formDataList,
                         productId,
+                        recommendedItems,
                         couponCode: appliedCoupon ? appliedCoupon.code : null
                     }),
                 });
@@ -327,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         formDataList,
                         productId,
+                        recommendedItems,
                         totalAmount,
                         couponCode: appliedCoupon ? appliedCoupon.code : null
                     }),

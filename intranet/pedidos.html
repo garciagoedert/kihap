@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pedidos de Faixas - Intranet KIHAP</title>
+    <title>Pedidos - Intranet KIHAP</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <link rel="stylesheet" href="log.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,7 +30,7 @@
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg flex-grow flex flex-col">
                     <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-2xl font-bold">Pedidos de Faixas</h1>
+                        <h1 class="text-2xl font-bold">Pedidos</h1>
                         <div class="flex items-center gap-2">
                             <button id="refresh-pedidos" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded" aria-label="Atualizar Histórico">
                                 <i class="fas fa-sync-alt"></i>
@@ -44,6 +44,9 @@
                              <button id="open-faixa-preta-modal-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded hidden">
                                 Novo Pedido Faixa Preta
                             </button>
+                            <button id="open-dobok-modal-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded hidden">
+                                Novo Pedido Dobok
+                            </button>
                         </div>
                     </div>
 
@@ -55,6 +58,9 @@
                             </button>
                             <button id="tab-pretas" class="tab-btn text-gray-400 hover:text-white px-3 py-2 text-sm font-medium">
                                 Faixas Pretas
+                            </button>
+                            <button id="tab-doboks" class="tab-btn text-gray-400 hover:text-white px-3 py-2 text-sm font-medium">
+                                Doboks
                             </button>
                         </nav>
                     </div>
@@ -86,6 +92,21 @@
                                 </tr>
                             </thead>
                             <tbody id="pedidos-pretas-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="tab-content-doboks" class="tab-content table-responsive flex-grow hidden">
+                        <table class="table w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Data</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4">Aluno</th>
+                                    <th class="p-4">Tamanho</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pedidos-doboks-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -243,12 +264,51 @@
         </div>
     </div>
 
+    <!-- Modal de Novo Pedido de Dobok -->
+    <div id="dobok-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 id="dobok-modal-title" class="text-xl font-bold text-white">Novo Pedido de Dobok</h2>
+                <button id="close-dobok-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 flex-grow overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="unidade-dobok-select" class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <select id="unidade-dobok-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                    </div>
+                    <div>
+                        <label for="status-dobok-select" class="block text-sm font-medium text-gray-300">Status</label>
+                        <select id="status-dobok-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option>Pendente</option>
+                            <option>Em produção</option>
+                            <option>Enviado</option>
+                            <option>Entregue</option>
+                            <option>Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="aluno-dobok-input" class="block text-sm font-medium text-gray-300">Nome do Aluno (Opcional)</label>
+                    <input type="text" id="aluno-dobok-input" class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md" placeholder="Nome completo do aluno">
+                </div>
+                <div class="mb-4">
+                    <label for="tamanho-dobok-select" class="block text-sm font-medium text-gray-300">Tamanho</label>
+                    <select id="tamanho-dobok-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t border-gray-700">
+                <button id="submit-dobok-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded">Salvar Pedido</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
-        import { setupPedidosFaixasPage } from './pedidos-faixas.js';
+        import { setupPedidosPage } from './pedidos.js';
         document.addEventListener('DOMContentLoaded', () => {
-            loadComponents(setupPedidosFaixasPage);
+            loadComponents(setupPedidosPage);
         });
     </script>
 </body>

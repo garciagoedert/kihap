@@ -27,6 +27,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Regra para a coleção de Pedidos de Doboks
+    match /pedidosDoboks/{pedidoId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Regra para a coleção de Processos
     match /processos_articles/{articleId} {
       allow read, write: if request.auth != null;

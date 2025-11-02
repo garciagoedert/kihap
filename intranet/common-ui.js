@@ -403,7 +403,7 @@ async function loadComponents(pageSpecificSetup) {
                 'conteudo-editor.html',
                 'conteudo-viewer.html',
                 'estoque.html',
-                'pedidos-faixas.html',
+                'pedidos.html',
                 'chat.html',
                 'feed.html',
                 'store.html',
