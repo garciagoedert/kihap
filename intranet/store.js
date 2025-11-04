@@ -158,7 +158,6 @@ export async function setupStorePage() {
             const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
             const querySnapshot = await getDocs(q);
             allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            displaySales(allSales);
         } catch (error) {
             console.error('Error fetching sales:', error);
             salesTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-8 text-red-500">Erro ao carregar vendas.</td></tr>';
@@ -214,6 +213,18 @@ export async function setupStorePage() {
 
             return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
         });
+
+        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate;
+        if (noFiltersApplied) {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            sevenDaysAgo.setHours(0, 0, 0, 0);
+
+            filteredSales = filteredSales.filter(sale => {
+                if (!sale.created) return false;
+                return sale.created.toDate() >= sevenDaysAgo;
+            });
+        }
 
         displaySales(filteredSales);
         displayStoreKpis(filteredSales);
@@ -702,7 +713,7 @@ export async function setupStorePage() {
         populateFilters();    // Then populate filters with data from both
         await fetchBanners();
         await fetchCoupons();
-        displayStoreKpis();
+        applyFilters();
     };
 
     // --- Banner Management Logic ---

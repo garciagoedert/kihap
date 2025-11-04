@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Vendas - Kihap Store</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200 h-screen">
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out">
+        <div id="header-container"></div>
+
+        <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold">Histórico de Vendas</h1>
+                    <p class="text-gray-400 text-sm">Todos os registros da loja</p>
+                </div>
+                <a href="store.html" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
+                    <i class="fas fa-arrow-left mr-2"></i>Voltar para a Loja
+                </a>
+            </div>
+
+            <!-- Sales Log Content -->
+            <div id="content-sales-log" class="tab-content">
+                <!-- Filters -->
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome/Email:</label>
+                            <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..." class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="filter-unit" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
+                            <select id="filter-unit" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-product" class="text-sm font-medium text-gray-400">Filtrar por Produto:</label>
+                            <select id="filter-product" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Produtos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-date" class="text-sm font-medium text-gray-400">Filtrar por Data:</label>
+                            <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sales Table -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Nome do Cliente</th>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Telefone</th>
+                                <th class="p-4">Produto</th>
+                                <th class="p-4">Programa</th>
+                                <th class="p-4">Graduação</th>
+                                <th class="p-4">Valor</th>
+                                <th class="p-4">Status do Pagamento</th>
+                                <th class="p-4">Data da Compra</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body">
+                            <tr>
+                                <td colspan="9" class="text-center p-8">Carregando vendas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="pagination-container" class="flex justify-between items-center mt-4">
+                        <!-- Pagination controls will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="sales-history.js"></script>
+</body>
+</html>

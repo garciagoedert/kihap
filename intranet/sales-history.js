@@ -1,0 +1,200 @@
+import { db } from './firebase-config.js';
+import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { loadComponents } from './common-ui.js';
+import { onAuthReady } from './auth.js';
+
+let allSales = [];
+let allProducts = [];
+let currentPage = 1;
+const rowsPerPage = 15;
+
+document.addEventListener('DOMContentLoaded', () => {
+    onAuthReady(user => {
+        loadComponents(initializeHistory);
+    });
+});
+
+async function initializeHistory() {
+    await fetchProducts();
+    await fetchSales();
+    populateFilters();
+    applyFilters();
+
+    const searchInput = document.getElementById('search-input');
+    const unitFilter = document.getElementById('filter-unit');
+    const productFilter = document.getElementById('filter-product');
+    const dateFilter = document.getElementById('filter-date');
+
+    [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
+        el.addEventListener('change', () => {
+            currentPage = 1;
+            applyFilters();
+        });
+        if (el.tagName === 'INPUT') {
+            el.addEventListener('keyup', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+        }
+    });
+}
+
+async function fetchProducts() {
+    try {
+        const q = query(collection(db, 'products'), orderBy('name', 'asc'));
+        const querySnapshot = await getDocs(q);
+        allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error('Error fetching products:', error);
+    }
+}
+
+async function fetchSales() {
+    try {
+        const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
+        const querySnapshot = await getDocs(q);
+        allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error('Error fetching sales:', error);
+    }
+}
+
+function applyFilters() {
+    const searchInput = document.getElementById('search-input');
+    const unitFilter = document.getElementById('filter-unit');
+    const productFilter = document.getElementById('filter-product');
+    const dateFilter = document.getElementById('filter-date');
+
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedUnit = unitFilter.value;
+    const selectedProduct = productFilter.value;
+    const selectedDate = dateFilter.value;
+
+    let filteredSales = allSales.filter(sale => {
+        const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+        const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
+        const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
+        const productMatch = !selectedProduct || sale.productId === selectedProduct;
+        
+        let dateMatch = true;
+        if (selectedDate && sale.created) {
+            const saleDate = sale.created.toDate().toISOString().split('T')[0];
+            dateMatch = saleDate === selectedDate;
+        }
+
+        return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+    });
+
+    renderSalesLog(filteredSales);
+}
+
+function renderSalesLog(salesToDisplay) {
+    const logBody = document.getElementById('sales-table-body');
+    if (!logBody) return;
+
+    const paginatedSales = salesToDisplay.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+    if (paginatedSales.length === 0) {
+        logBody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-gray-500">Nenhuma venda encontrada.</td></tr>`;
+        renderPagination(0);
+        return;
+    }
+
+    logBody.innerHTML = paginatedSales.map(sale => {
+        const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
+        const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
+        const status = renderStatusTag(sale.paymentStatus);
+
+        return `
+            <tr class="hover:bg-[#2a2a2a]">
+                <td class="p-4">${sale.userName || 'N/A'}</td>
+                <td class="p-4">${sale.userEmail || 'N/A'}</td>
+                <td class="p-4">${sale.userPhone || 'N/A'}</td>
+                <td class="p-4">${sale.productName || 'N/A'}</td>
+                <td class="p-4">${sale.userPrograma || 'N/A'}</td>
+                <td class="p-4">${sale.userGraduacao || 'N/A'}</td>
+                <td class="p-4">${amount}</td>
+                <td class="p-4">${status}</td>
+                <td class="p-4">${date}</td>
+            </tr>
+        `;
+    }).join('');
+
+    renderPagination(salesToDisplay.length);
+}
+
+function renderPagination(totalItems) {
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer) return;
+
+    const totalPages = Math.ceil(totalItems / rowsPerPage);
+    if (totalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+
+    let paginationHTML = `
+        <span class="text-sm text-gray-400">
+            Página ${currentPage} de ${totalPages}
+        </span>
+        <div class="flex items-center gap-2">
+    `;
+
+    paginationHTML += `
+        <button id="prev-page-btn" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}" ${currentPage === 1 ? 'disabled' : ''}>
+            Anterior
+        </button>
+    `;
+
+    paginationHTML += `
+        <button id="next-page-btn" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}" ${currentPage === totalPages ? 'disabled' : ''}>
+            Próxima
+        </button>
+    `;
+
+    paginationHTML += `</div>`;
+    paginationContainer.innerHTML = paginationHTML;
+
+    document.getElementById('prev-page-btn')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            applyFilters();
+        }
+    });
+
+    document.getElementById('next-page-btn')?.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            applyFilters();
+        }
+    });
+}
+
+function populateFilters() {
+    const unitFilter = document.getElementById('filter-unit');
+    const productFilter = document.getElementById('filter-product');
+
+    const units = [...new Set(allSales.map(sale => sale.userUnit).filter(Boolean))];
+    unitFilter.innerHTML = '<option value="">Todas as Unidades</option>';
+    units.sort().forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit;
+        option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+        unitFilter.appendChild(option);
+    });
+
+    productFilter.innerHTML = '<option value="">Todos os Produtos</option>';
+    allProducts.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = product.name;
+        productFilter.appendChild(option);
+    });
+}
+
+const renderStatusTag = (status) => {
+    if (!status) return 'N/A';
+    const statusText = status === 'paid' ? 'Pago' : 'Pendente';
+    const colorClasses = status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
+    return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
+};
