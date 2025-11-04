@@ -8,20 +8,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const appId = '1:1055939458006:web:1d67459a0bc0da60cf2a77' || 'default-app';
     const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
     const meetingsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'meetings');
+    const eventsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'events'); // Coleção para Eventos
     const prospectsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
     
     loadComponents(() => {
-        initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef);
+        initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, eventsCollectionRef, prospectsCollectionRef);
         setupUIListeners();
     });
 });
 
-async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, prospectsCollectionRef) {
+async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef, eventsCollectionRef, prospectsCollectionRef) {
     const systemUsers = await getAllUsers();
     let tasks = [];
     let meetings = [];
+    let events = []; // Array para eventos
     let prospects = [];
     let calendar;
+
+    // --- Elementos do DOM para o Modal de Seleção ---
+    const selectionModal = document.getElementById('selection-modal');
+    const closeSelectionModalBtn = document.getElementById('close-selection-modal-btn');
+    const addEventBtn = document.getElementById('add-event-btn');
+    const selectMeetingBtn = document.getElementById('select-meeting-btn');
+    const selectTaskBtn = document.getElementById('select-task-btn');
+    const selectEventBtn = document.getElementById('select-event-btn');
 
     // --- Elementos do DOM para o Modal de Tarefas ---
     const taskModal = document.getElementById('task-modal');
@@ -34,7 +44,6 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
     const taskLinkedCardSearch = document.getElementById('task-linked-card-search');
     const taskLinkedCardId = document.getElementById('task-linked-card-id');
     const taskLinkedCardResults = document.getElementById('task-linked-card-results');
-    const createTaskBtnCalendar = document.getElementById('create-task-btn-calendar');
     
     // --- Elementos do DOM para o Modal de Reuniões ---
     const meetingModal = document.getElementById('meeting-modal');
@@ -46,7 +55,14 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
     const meetingLinkedCardSearch = document.getElementById('meeting-linked-card-search');
     const meetingLinkedCardId = document.getElementById('meeting-linked-card-id');
     const meetingLinkedCardResults = document.getElementById('meeting-linked-card-results');
-    const createMeetingBtnCalendar = document.getElementById('create-meeting-btn-calendar');
+
+    // --- Elementos do DOM para o Modal de Eventos ---
+    const eventModal = document.getElementById('event-modal');
+    const closeEventModalBtn = document.getElementById('close-event-modal-btn');
+    const cancelEventBtn = document.getElementById('cancel-event-btn');
+    const deleteEventBtn = document.getElementById('delete-event-btn');
+    const eventForm = document.getElementById('event-form');
+    const eventModalTitle = document.getElementById('event-modal-title');
 
     const addProspectBtnHeader = document.getElementById('addProspectBtnHeader');
 
@@ -54,6 +70,17 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
     if (addProspectBtnHeader) {
         addProspectBtnHeader.style.display = 'none';
     }
+
+    // --- Funções do Modal de Seleção ---
+    const openSelectionModal = () => {
+        selectionModal.classList.remove('hidden');
+        selectionModal.classList.add('flex');
+    };
+
+    const closeSelectionModal = () => {
+        selectionModal.classList.add('hidden');
+        selectionModal.classList.remove('flex');
+    };
 
     // --- Funções do Modal de Tarefas ---
     const openTaskModal = () => {
@@ -83,6 +110,21 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         document.getElementById('meeting-id').value = '';
         meetingModalTitle.textContent = 'Agendar Nova Reunião';
         deleteMeetingBtn.classList.add('hidden');
+    };
+
+    // --- Funções do Modal de Eventos ---
+    const openEventModal = () => {
+        eventModal.classList.remove('hidden');
+        eventModal.classList.add('flex');
+    };
+
+    const closeEventModal = () => {
+        eventModal.classList.add('hidden');
+        eventModal.classList.remove('flex');
+        eventForm.reset();
+        document.getElementById('event-id').value = '';
+        eventModalTitle.textContent = 'Novo Evento';
+        deleteEventBtn.classList.add('hidden');
     };
 
     const populateUsers = () => {
@@ -261,15 +303,80 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         }
     };
 
+    // --- Funções de CRUD para Eventos ---
+    const openModalForEventEdit = (event) => {
+        document.getElementById('event-id').value = event.id;
+        document.getElementById('event-title').value = event.title;
+        document.getElementById('event-start-date').value = event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : '';
+        document.getElementById('event-end-date').value = event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '';
+        document.getElementById('event-description').value = event.description || '';
+        document.getElementById('event-color').value = event.color || '#8b5cf6';
+        
+        eventModalTitle.textContent = 'Editar Evento';
+        deleteEventBtn.classList.remove('hidden');
+        openEventModal();
+    };
+
+    const handleEventFormSubmit = async (event) => {
+        event.preventDefault();
+        const eventId = document.getElementById('event-id').value;
+        const eventData = {
+            title: document.getElementById('event-title').value,
+            startDate: document.getElementById('event-start-date').value,
+            endDate: document.getElementById('event-end-date').value,
+            description: document.getElementById('event-description').value,
+            color: document.getElementById('event-color').value,
+            updatedAt: serverTimestamp()
+        };
+
+        try {
+            if (eventId) {
+                const eventRef = doc(eventsCollectionRef, eventId);
+                await updateDoc(eventRef, eventData);
+            } else {
+                eventData.createdAt = serverTimestamp();
+                await addDoc(eventsCollectionRef, eventData);
+            }
+            closeEventModal();
+        } catch (error) {
+            console.error("Erro ao salvar evento:", error);
+            alert("Não foi possível salvar o evento.");
+        }
+    };
+
+    const handleDeleteEvent = async () => {
+        const eventId = document.getElementById('event-id').value;
+        if (!eventId) return;
+
+        if (confirm('Você tem certeza que deseja apagar este evento?')) {
+            try {
+                const eventRef = doc(eventsCollectionRef, eventId);
+                await deleteDoc(eventRef);
+                closeEventModal();
+            } catch (error) {
+                console.error("Erro ao apagar evento:", error);
+                alert("Não foi possível apagar o evento.");
+            }
+        }
+    };
+
     // Inicialização do Calendário
     const calendarEl = document.getElementById('calendar');
+
+    const isMobile = () => window.innerWidth < 768;
+
     calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
+        initialView: isMobile() ? 'timeGridWeek' : 'dayGridMonth',
+        headerToolbar: isMobile() ? {
+            left: 'prev,next',
+            center: 'title',
+            right: 'today'
+        } : {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
+        dayHeaderFormat: isMobile() ? { weekday: 'narrow' } : { weekday: 'short' },
         events: [], // Inicia vazio, será populado pelo Firebase
         eventClick: function(info) {
             const eventId = info.event.id;
@@ -281,6 +388,9 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
             } else if (eventType === 'meeting') {
                 const meeting = meetings.find(m => m.id === eventId);
                 if (meeting) openModalForMeetingEdit(meeting);
+            } else if (eventType === 'event') {
+                const event = events.find(e => e.id === eventId);
+                if (event) openModalForEventEdit(event);
             }
         },
         locale: 'pt-br',
@@ -292,20 +402,57 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         },
         height: '100%',
         windowResize: function(arg) {
-            calendar.updateSize();
+            const mobile = isMobile();
+            const newView = mobile ? 'timeGridWeek' : 'dayGridMonth';
+            if (calendar.view.type !== newView) {
+                calendar.changeView(newView);
+            }
+            calendar.setOption('headerToolbar', mobile ? {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            } : {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            });
+            calendar.setOption('dayHeaderFormat', mobile ? { weekday: 'narrow' } : { weekday: 'short' });
         }
     });
     calendar.render();
 
-    // Listeners do Modal e Botão
-    // --- Listeners do Modal de Tarefas e Botão ---
-    createTaskBtnCalendar.addEventListener('click', () => {
+    // --- Listeners do Modal de Seleção e Botão Principal ---
+    addEventBtn.addEventListener('click', openSelectionModal);
+    closeSelectionModalBtn.addEventListener('click', closeSelectionModal);
+
+    selectTaskBtn.addEventListener('click', () => {
+        closeSelectionModal();
         taskForm.reset();
         document.getElementById('task-id').value = '';
         taskModalTitle.textContent = 'Nova Tarefa';
         deleteTaskBtn.classList.add('hidden');
         openTaskModal();
     });
+
+    selectMeetingBtn.addEventListener('click', () => {
+        closeSelectionModal();
+        meetingForm.reset();
+        document.getElementById('meeting-id').value = '';
+        meetingModalTitle.textContent = 'Agendar Nova Reunião';
+        deleteMeetingBtn.classList.add('hidden');
+        openMeetingModal();
+    });
+
+    selectEventBtn.addEventListener('click', () => {
+        closeSelectionModal();
+        eventForm.reset();
+        document.getElementById('event-id').value = '';
+        eventModalTitle.textContent = 'Novo Evento';
+        deleteEventBtn.classList.add('hidden');
+        openEventModal();
+    });
+
+    // --- Listeners do Modal de Tarefas ---
     closeTaskModalBtn.addEventListener('click', closeTaskModal);
     cancelTaskBtn.addEventListener('click', closeTaskModal);
     deleteTaskBtn.addEventListener('click', handleDeleteTask);
@@ -320,14 +467,7 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         renderCardSearchResults(results);
     });
 
-    // --- Listeners do Modal de Reuniões e Botão ---
-    createMeetingBtnCalendar.addEventListener('click', () => {
-        meetingForm.reset();
-        document.getElementById('meeting-id').value = '';
-        meetingModalTitle.textContent = 'Agendar Nova Reunião';
-        deleteMeetingBtn.classList.add('hidden');
-        openMeetingModal();
-    });
+    // --- Listeners do Modal de Reuniões ---
     closeMeetingModalBtn.addEventListener('click', closeMeetingModal);
     cancelMeetingBtn.addEventListener('click', closeMeetingModal);
     deleteMeetingBtn.addEventListener('click', handleDeleteMeeting);
@@ -361,6 +501,11 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         meetingResultsContainer.classList.remove('hidden');
     });
 
+    // --- Listeners do Modal de Eventos ---
+    closeEventModalBtn.addEventListener('click', closeEventModal);
+    cancelEventBtn.addEventListener('click', closeEventModal);
+    deleteEventBtn.addEventListener('click', handleDeleteEvent);
+    eventForm.addEventListener('submit', handleEventFormSubmit);
 
     // Inicialização
     populateUsers();
@@ -407,7 +552,17 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
             };
         });
 
-        const allEvents = [...taskEvents, ...meetingEvents];
+        const generalEvents = events.filter(e => e.startDate).map(event => ({
+            id: event.id,
+            title: event.title,
+            start: event.startDate,
+            end: event.endDate,
+            allDay: false,
+            color: event.color || '#8b5cf6',
+            extendedProps: { type: 'event' }
+        }));
+
+        const allEvents = [...taskEvents, ...meetingEvents, ...generalEvents];
         calendar.getEventSources().forEach(source => source.remove());
         calendar.addEventSource(allEvents);
     };
@@ -425,5 +580,12 @@ async function initializeCalendarPage(tasksCollectionRef, meetingsCollectionRef,
         updateCalendarEvents();
     }, (error) => {
         console.error("Erro ao buscar reuniões:", error);
+    });
+
+    onSnapshot(eventsCollectionRef, (snapshot) => {
+        events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateCalendarEvents();
+    }, (error) => {
+        console.error("Erro ao buscar eventos:", error);
     });
 }
