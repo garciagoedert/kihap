@@ -113,11 +113,16 @@ function renderSnapshotLog(searchTerm = '') {
     const logBody = document.getElementById('snapshot-log-body');
     if (!logBody) return;
 
-    const filteredSnapshots = snapshots.filter(item => {
+    let filteredSnapshots = snapshots.filter(item => {
         const date = item.timestamp.toDate();
         const displayDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         return displayDate.includes(searchTerm);
     });
+
+    // Na página principal, se não houver busca, mostramos apenas os últimos 7 dias.
+    if (!searchTerm) {
+        filteredSnapshots = filteredSnapshots.slice(0, 7);
+    }
 
     if (filteredSnapshots.length === 0) {
         logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-3">Nenhum snapshot encontrado para "${searchTerm}".</div>`;

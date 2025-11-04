@@ -1,4 +1,18 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/:path((?!.*\\.).*)",
+        "destination": "/:path.html"
+      }
+    ]
+  },
   "functions": {
     "source": "functions",
     "cors": "cors.json"
