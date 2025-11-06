@@ -73,8 +73,8 @@
                 </div>
                 <!-- Filters -->
                 <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div class="lg:col-span-2">
                             <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome/Email:</label>
                             <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..." class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
@@ -93,6 +93,14 @@
                         <div>
                             <label for="filter-date" class="text-sm font-medium text-gray-400">Filtrar por Data:</label>
                             <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="filter-status" class="text-sm font-medium text-gray-400">Filtrar por Status:</label>
+                            <select id="filter-status" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Status</option>
+                                <option value="paid">Pago</option>
+                                <option value="pending">Pendente</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mt-4 flex flex-wrap justify-end gap-2">

@@ -24,6 +24,7 @@ export async function setupStorePage() {
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
+    const statusFilter = document.getElementById('filter-status');
     const exportBtn = document.getElementById('export-btn');
     const modal = document.getElementById('sale-details-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -198,12 +199,14 @@ export async function setupStorePage() {
         const selectedUnit = unitFilter.value;
         const selectedProduct = productFilter.value;
         const selectedDate = dateFilter.value;
+        const selectedStatus = statusFilter.value;
 
         let filteredSales = allSales.filter(sale => {
             const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const productMatch = !selectedProduct || sale.productId === selectedProduct;
+            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
             
             let dateMatch = true;
             if (selectedDate && sale.created) {
@@ -211,10 +214,10 @@ export async function setupStorePage() {
                 dateMatch = saleDate === selectedDate;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
         });
 
-        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate;
+        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate && !selectedStatus;
         if (noFiltersApplied) {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -230,7 +233,7 @@ export async function setupStorePage() {
         displayStoreKpis(filteredSales);
     };
 
-    [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
+    [searchInput, unitFilter, productFilter, dateFilter, statusFilter].forEach(el => {
         el.addEventListener('change', applyFilters);
         el.addEventListener('keyup', applyFilters);
     });

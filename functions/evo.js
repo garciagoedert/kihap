@@ -691,7 +691,6 @@ const _snapshotDailyEvoData = async () => {
     functions.logger.info("Iniciando snapshot diário de dados do EVO...");
     const db = admin.firestore();
     
-    // Corrigido para usar o fuso horário de São Paulo
     const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
     const year = nowInSaoPaulo.getFullYear();
     const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
@@ -728,7 +727,7 @@ const _snapshotDailyEvoData = async () => {
         const promises = unitIds.map(id => getUnitData(id));
         const results = await Promise.all(promises);
 
-        const snapshotData = results.reduce((acc, result) => {
+        let snapshotData = results.reduce((acc, result) => {
             acc.units[result.id] = {
                 contracts: result.contractsCount,
                 dailyActives: result.dailyActivesCount
@@ -738,13 +737,34 @@ const _snapshotDailyEvoData = async () => {
             return acc;
         }, { totalContracts: 0, totalDailyActives: 0, units: {} });
 
+        // Buscar dados de vendas da loja para o dia
+        const todayStart = new Date(nowInSaoPaulo);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(nowInSaoPaulo);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const salesQuery = db.collection('inscricoesFaixaPreta')
+            .where('created', '>=', todayStart)
+            .where('created', '<=', todayEnd)
+            .where('paymentStatus', '==', 'paid');
+
+        const salesSnapshot = await salesQuery.get();
+        const sales = salesSnapshot.docs.map(doc => doc.data());
+
+        const totalSales = sales.length;
+        const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
+
+        // Adicionar totais da loja ao snapshot
+        snapshotData.storeTotalSales = totalSales;
+        snapshotData.storeTotalRevenue = totalRevenue;
+
         snapshotData.timestamp = admin.firestore.FieldValue.serverTimestamp();
 
         await db.collection('evo_daily_snapshots').add(snapshotData);
-        functions.logger.info("Snapshot diário do EVO salvo com sucesso:", snapshotData);
+        functions.logger.info("Snapshot diário do EVO e da Loja salvo com sucesso:", snapshotData);
     } catch (error) {
-        functions.logger.error("Falha ao criar snapshot diário do EVO:", error);
-        throw error; // Lança o erro para a função chamadora
+        functions.logger.error("Falha ao criar snapshot diário:", error);
+        throw error;
     }
 };
 
@@ -752,41 +772,28 @@ exports.snapshotDailyEvoData = functions.pubsub.schedule('0 23 * * *').timeZone(
     await _snapshotDailyEvoData();
 });
 
-exports.triggerSnapshot = functions.https.onRequest((req, res) => {
-    cors(req, res, async () => {
-        // Verificação de autenticação e permissão para onRequest
-        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-            functions.logger.error("Não autorizado: Sem token de autorização.");
-            res.status(403).send('Unauthorized');
-            return;
-        }
+exports.triggerSnapshot = functions.https.onCall(async (data, context) => {
+    // Verificação de autenticação e permissão para onCall
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
 
-        const idToken = req.headers.authorization.split('Bearer ')[1];
+    const uid = context.auth.uid;
+    const userDoc = await admin.firestore().collection('users').doc(uid).get();
 
-        try {
-            const decodedToken = await admin.auth().verifyIdToken(idToken);
-            const uid = decodedToken.uid;
-            const userDoc = await admin.firestore().collection('users').doc(uid).get();
+    if (!userDoc.exists || !userDoc.data().isAdmin) {
+        functions.logger.error(`Permissão negada para UID: ${uid}.`);
+        throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
+    }
 
-            if (!userDoc.exists || !userDoc.data().isAdmin) {
-                functions.logger.error(`Permissão negada para UID: ${uid}.`);
-                res.status(403).send('Permission Denied');
-                return;
-            }
-
-            // Lógica principal da função
-            await _snapshotDailyEvoData();
-            res.status(200).send({ data: { success: true, message: "Snapshot manual gerado com sucesso!" } });
-
-        } catch (error) {
-            functions.logger.error("Falha ao acionar snapshot manual:", error);
-            if (error.code === 'auth/id-token-expired') {
-                res.status(401).send('Token expired');
-            } else {
-                res.status(500).send('Internal Server Error');
-            }
-        }
-    });
+    try {
+        // Lógica principal da função
+        await _snapshotDailyEvoData();
+        return { success: true, message: "Snapshot manual gerado com sucesso!" };
+    } catch (error) {
+        functions.logger.error("Falha ao acionar snapshot manual:", error);
+        throw new functions.https.HttpsError("internal", "Falha ao gerar snapshot.", error.message);
+    }
 });
 
 exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {

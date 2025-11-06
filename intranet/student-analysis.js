@@ -119,25 +119,27 @@ function renderSnapshotLog(searchTerm = '') {
         return displayDate.includes(searchTerm);
     });
 
-    // Na página principal, se não houver busca, mostramos apenas os últimos 7 dias.
     if (!searchTerm) {
         filteredSnapshots = filteredSnapshots.slice(0, 7);
     }
 
     if (filteredSnapshots.length === 0) {
-        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-3">Nenhum snapshot encontrado para "${searchTerm}".</div>`;
+        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-5">Nenhum snapshot encontrado para "${searchTerm}".</div>`;
         return;
     }
 
     logBody.innerHTML = filteredSnapshots.map(item => {
         const date = item.timestamp.toDate();
         const displayDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const storeRevenue = (item.storeTotalRevenue || 0) / 100;
 
         return `
             <tr class="log-item cursor-pointer hover:bg-[#2a2a2a]" data-id="${item.id}">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">${displayDate}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalContracts || 0}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalDailyActives || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.storeTotalSales || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }).join('');
@@ -247,7 +249,6 @@ function handleViewSnapshot(event) {
     const deleteBtn = document.getElementById('delete-snapshot-btn');
     if (isAdmin) {
         deleteBtn.classList.remove('hidden');
-        // Clonar e substituir o botão para remover event listeners antigos
         const newDeleteBtn = deleteBtn.cloneNode(true);
         deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
         newDeleteBtn.addEventListener('click', () => handleDeleteSnapshot(docId));
@@ -268,9 +269,12 @@ function handleViewSnapshot(event) {
                 <tbody>
     `;
 
-    for (const unitId in snapshot.units) {
+    const sortedUnitIds = Object.keys(snapshot.units).sort();
+
+    for (const unitId of sortedUnitIds) {
         const unitData = snapshot.units[unitId];
         const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
         tableHtml += `
             <tr class="border-b border-gray-700">
                 <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">${displayName}</th>
