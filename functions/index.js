@@ -22,7 +22,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { formDataList, productId, totalAmount, couponCode } = req.body;
+    const { formDataList, productId, totalAmount, couponCode, recommendedItems } = req.body;
 
     if (!formDataList || !productId || !totalAmount || formDataList.length === 0) {
         return res.status(400).json({ error: 'Missing required fields: formDataList, productId, totalAmount.' });
@@ -47,6 +47,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 currency: currency,
                 paymentStatus: 'pending',
                 couponCode: couponCode || null,
+                recommendedItems: recommendedItems || [],
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
@@ -150,7 +151,7 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { formDataList, productId, couponCode } = req.body;
+    const { formDataList, productId, couponCode, recommendedItems } = req.body;
 
     if (!formDataList || !productId || formDataList.length === 0) {
         return res.status(400).json({ error: 'Missing required fields: formDataList, productId.' });
@@ -174,6 +175,7 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
                 currency: currency,
                 paymentStatus: 'paid',
                 couponCode: couponCode || null,
+                recommendedItems: recommendedItems || [],
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             await db.collection('inscricoesFaixaPreta').add(saleData);

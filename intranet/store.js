@@ -6,6 +6,7 @@ import {
 import { 
     getStorage, ref, uploadBytes, getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getCurrentUser } from './auth.js';
 
 export async function setupStorePage() {
     // Tab elements
@@ -180,11 +181,17 @@ export async function setupStorePage() {
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
             const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
 
+            let productDisplay = sale.productName || 'N/A';
+            if (sale.recommendedItems && sale.recommendedItems.length > 0) {
+                const recommendedNames = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
+                productDisplay += `<br><span class="text-xs text-gray-400">+ ${recommendedNames}</span>`;
+            }
+
             row.innerHTML = `
                 <td class="p-4">${sale.userName || 'N/A'}</td>
                 <td class="p-4">${sale.userEmail || 'N/A'}</td>
                 <td class="p-4">${sale.userPhone || 'N/A'}</td>
-                <td class="p-4">${sale.productName || 'N/A'}</td>
+                <td class="p-4">${productDisplay}</td>
                 <td class="p-4">${sale.userPrograma || 'N/A'}</td>
                 <td class="p-4">${sale.userGraduacao || 'N/A'}</td>
                 <td class="p-4">${amount}</td>
@@ -634,6 +641,21 @@ export async function setupStorePage() {
             }
         }
 
+        let productDetailsHtml = `<p><strong>Produto:</strong> ${sale.productName || 'N/A'}</p>`;
+        if (sale.recommendedItems && sale.recommendedItems.length > 0) {
+            const recommendedItemsHtml = sale.recommendedItems.map(item => 
+                `<li>${item.productName} (x${item.quantity}) - ${(item.amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</li>`
+            ).join('');
+            productDetailsHtml += `
+                <div class="mt-2">
+                    <strong class="text-sm text-gray-400">Comprado Junto:</strong>
+                    <ul class="list-disc list-inside text-sm text-gray-300">
+                        ${recommendedItemsHtml}
+                    </ul>
+                </div>
+            `;
+        }
+
         modalContent.innerHTML = `
             <p><strong>ID da Venda:</strong> ${sale.id}</p>
             ${studentInfoHtml}
@@ -644,12 +666,19 @@ export async function setupStorePage() {
             <p><strong>Unidade:</strong> ${sale.userUnit || 'N/A'}</p>
             <p><strong>Programa:</strong> ${sale.userPrograma || 'N/A'}</p>
             <p><strong>Graduação:</strong> ${sale.userGraduacao || 'N/A'}</p>
-            <p><strong>Produto:</strong> ${sale.productName || 'N/A'}</p>
-            <p><strong>Valor:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+            ${productDetailsHtml}
+            <p><strong>Valor Total:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
             <p><strong>Status do Pagamento:</strong> ${renderStatusTag(sale.paymentStatus)}</p>
             <p><strong>Data da Compra:</strong> ${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
         `;
         modal.classList.remove('hidden');
+
+        const currentUser = await getCurrentUser();
+        if (currentUser && currentUser.isAdmin) {
+            deleteSaleBtnModal.style.display = 'inline-block';
+        } else {
+            deleteSaleBtnModal.style.display = 'none';
+        }
     };
 
     const closeModal = () => {
@@ -670,6 +699,12 @@ export async function setupStorePage() {
     });
 
     const deleteSaleLog = async (saleId) => {
+        const currentUser = await getCurrentUser();
+        if (!currentUser || !currentUser.isAdmin) {
+            alert('Você não tem permissão para executar esta ação.');
+            return;
+        }
+
         try {
             await deleteDoc(doc(db, 'inscricoesFaixaPreta', saleId));
             alert('Log de venda excluído com sucesso!');
