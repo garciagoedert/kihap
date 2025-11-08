@@ -264,6 +264,28 @@
         </div>
     </div>
 
+    <!-- Modal de Detalhes do Pedido de Dobok -->
+    <div id="details-dobok-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-white">Detalhes do Pedido de Dobok</h2>
+                <button id="close-details-dobok-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <p><strong>Unidade:</strong> <span id="details-dobok-unidade"></span></p>
+                <p><strong>Data do Pedido:</strong> <span id="details-dobok-data"></span></p>
+                <p><strong>Status:</strong> <span id="details-dobok-status"></span></p>
+                <p><strong>Solicitante:</strong> <span id="details-dobok-solicitante"></span></p>
+                <p><strong>Aluno:</strong> <span id="details-dobok-aluno"></span></p>
+                <p><strong>Tamanho:</strong> <span id="details-dobok-tamanho"></span></p>
+            </div>
+            <div id="details-dobok-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
+                <button id="delete-dobok-pedido-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
+                <button id="edit-dobok-pedido-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Novo Pedido de Dobok -->
     <div id="dobok-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
         <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">

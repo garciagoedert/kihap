@@ -826,4 +826,107 @@ export function setupPedidosPage() {
     document.getElementById('open-dobok-modal-btn')?.addEventListener('click', openDobokModal);
     document.getElementById('close-dobok-modal-btn')?.addEventListener('click', closeDobokModal);
     document.getElementById('submit-dobok-btn')?.addEventListener('click', handleSubmitDobokPedido);
+    document.getElementById('pedidos-doboks-table-body')?.addEventListener('click', handleDoboksTableClick);
+    document.getElementById('close-details-dobok-modal-btn')?.addEventListener('click', closeDetailsDobokModal);
+    document.getElementById('edit-dobok-pedido-btn')?.addEventListener('click', handleEditDobokPedido);
+    document.getElementById('delete-dobok-pedido-btn')?.addEventListener('click', handleDeleteDobokPedido);
+
+
+    function handleDoboksTableClick(event) {
+        const row = event.target.closest('tr');
+        if (row && row.dataset.id) {
+            openDetailsDobokModal(row.dataset.id);
+        }
+    }
+
+    async function openDetailsDobokModal(pedidoId) {
+        const modal = document.getElementById('details-dobok-modal');
+        if (!modal) return;
+
+        try {
+            const pedidoRef = doc(db, "pedidosDoboks", pedidoId);
+            const pedidoSnap = await getDoc(pedidoRef);
+
+            if (!pedidoSnap.exists()) {
+                alert("Pedido de Dobok não encontrado.");
+                return;
+            }
+
+            const pedido = pedidoSnap.data();
+            const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
+            
+            document.getElementById('details-dobok-unidade').textContent = pedido.unidade;
+            document.getElementById('details-dobok-data').textContent = data;
+            document.getElementById('details-dobok-status').textContent = pedido.status;
+            document.getElementById('details-dobok-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
+            document.getElementById('details-dobok-aluno').textContent = pedido.aluno || 'N/A';
+            document.getElementById('details-dobok-tamanho').textContent = pedido.tamanho;
+
+            const user = await getCurrentUser();
+            const isAdmin = user ? await checkAdminStatus(user) : false;
+            
+            const adminActions = document.getElementById('details-dobok-admin-actions');
+            if (isAdmin) {
+                adminActions.classList.remove('hidden');
+                document.getElementById('edit-dobok-pedido-btn').dataset.id = pedidoId;
+                document.getElementById('delete-dobok-pedido-btn').dataset.id = pedidoId;
+            } else {
+                adminActions.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+        } catch (error) {
+            console.error("Erro ao abrir detalhes do pedido de dobok:", error);
+            alert("Não foi possível carregar os detalhes do pedido.");
+        }
+    }
+
+    function closeDetailsDobokModal() {
+        const modal = document.getElementById('details-dobok-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    async function handleEditDobokPedido(event) {
+        const pedidoId = event.target.dataset.id;
+        if (!pedidoId) return;
+
+        closeDetailsDobokModal();
+        
+        const pedidoRef = doc(db, "pedidosDoboks", pedidoId);
+        const pedidoSnap = await getDoc(pedidoRef);
+        if (pedidoSnap.exists()) {
+            const pedido = pedidoSnap.data();
+            currentEditingDobokPedidoId = pedidoId;
+            
+            document.getElementById('dobok-modal-title').textContent = 'Editar Pedido de Dobok';
+            document.getElementById('unidade-dobok-select').value = pedido.unidade;
+            document.getElementById('status-dobok-select').value = pedido.status;
+            document.getElementById('aluno-dobok-input').value = pedido.aluno || '';
+            document.getElementById('tamanho-dobok-select').value = pedido.tamanho;
+            
+            openDobokModal();
+        }
+    }
+
+    async function handleDeleteDobokPedido(event) {
+        const pedidoId = event.target.dataset.id;
+        if (!pedidoId) return;
+
+        if (confirm("Tem certeza que deseja excluir este pedido de dobok?")) {
+            try {
+                await deleteDoc(doc(db, "pedidosDoboks", pedidoId));
+                alert("Pedido de dobok excluído com sucesso.");
+                closeDetailsDobokModal();
+                loadPedidosDoboks();
+            } catch (error) {
+                console.error("Erro ao excluir pedido de dobok:", error);
+                alert("Não foi possível excluir o pedido.");
+            }
+        }
+    }
 }
