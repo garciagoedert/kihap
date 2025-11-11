@@ -60,6 +60,7 @@ export async function setupStorePage() {
     const productVisibleInput = document.getElementById('product-visible');
     const productAvailableInput = document.getElementById('product-available');
     const productPublicInput = document.getElementById('product-public');
+    const productIsTicketInput = document.getElementById('product-is-ticket');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const recommendedProductsSelect = document.getElementById('recommended-products');
     const saveProductBtn = document.getElementById('save-product-btn');
@@ -482,6 +483,7 @@ export async function setupStorePage() {
         productVisibleInput.checked = false;
         productAvailableInput.checked = true; // Default to available
         productPublicInput.checked = false;
+        productIsTicketInput.checked = false;
         productAvailabilityDateInput.value = '';
         priceVariantsList.innerHTML = '';
         recommendedProductsSelect.value = '';
@@ -520,6 +522,7 @@ export async function setupStorePage() {
                 visible: productVisibleInput.checked,
                 available: productAvailableInput.checked,
                 acessoPublico: productPublicInput.checked,
+                isTicket: productIsTicketInput.checked,
                 availabilityDate: productAvailabilityDateInput.value || null,
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value)
             };
@@ -624,6 +627,7 @@ export async function setupStorePage() {
                 productVisibleInput.checked = product.visible || false;
                 productAvailableInput.checked = product.available !== false; // Default to true if undefined
                 productPublicInput.checked = product.acessoPublico || false;
+                productIsTicketInput.checked = product.isTicket || false;
                 productAvailabilityDateInput.value = product.availabilityDate || '';
                 
                 if (product.recommendedProducts) {

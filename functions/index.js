@@ -2,9 +2,54 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(functions.config().stripe.secret_key);
+const nodemailer = require('nodemailer');
+const qrcode = require('qrcode');
 
 admin.initializeApp();
 const db = admin.firestore();
+
+// Função para enviar o e-mail com o ingresso
+const sendTicketEmail = async (saleId, saleData) => {
+    // Lazy initialization do transporter para evitar erro de config no deploy
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: functions.config().gmail.email,
+            pass: functions.config().gmail.password,
+        },
+    });
+
+    try {
+        const qrCodeDataURL = await qrcode.toDataURL(saleId);
+        
+        const mailOptions = {
+            from: `Kihap <${functions.config().gmail.email}>`,
+            to: saleData.userEmail,
+            subject: `Seu Ingresso para ${saleData.productName}`,
+            html: `
+                <h1>Compra Confirmada!</h1>
+                <p>Olá, ${saleData.userName}.</p>
+                <p>Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
+                <p>Apresente este QR Code no dia do evento para fazer o check-in.</p>
+                <img src="${qrCodeDataURL}" alt="QR Code do Ingresso">
+                <hr>
+                <p>ID da Compra: ${saleId}</p>
+            `,
+            attachments: [
+                {
+                    filename: 'ingresso.png',
+                    path: qrCodeDataURL
+                }
+            ]
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`E-mail de ingresso enviado para ${saleData.userEmail} para a venda ${saleId}`);
+    } catch (error) {
+        console.error(`Erro ao enviar e-mail de ingresso para ${saleData.userEmail}:`, error);
+    }
+};
+
 
 // Cloud Function para criar a sessão de checkout do Stripe
 exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
@@ -114,17 +159,37 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
                     await docRef.update({ paymentStatus: 'paid' });
                     console.log(`Updated payment status to 'paid' for doc ${docId}`);
+
+                    // Após confirmar o pagamento, verifica se é um ingresso e envia o e-mail
+                    const saleSnap = await docRef.get();
+                    if (saleSnap.exists()) {
+                        const saleData = saleSnap.data();
+                        const productRef = db.collection('products').doc(saleData.productId);
+                        const productSnap = await productRef.get();
+                        if (productSnap.exists() && productSnap.data().isTicket) {
+                            await sendTicketEmail(docId, saleData);
+                        }
+                    }
                 }
-                return res.status(200).json({ status: 'success', message: 'All payments verified and statuses updated.' });
+                return res.status(200).json({ status: 'success', saleId: firestoreDocIds[0], message: 'All payments verified and statuses updated.' });
             } else {
                 // Fallback for older sessions
                 const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
                 if (!querySnapshot.empty) {
+                    const firstDoc = querySnapshot.docs[0];
                     for (const doc of querySnapshot.docs) {
                         await doc.ref.update({ paymentStatus: 'paid' });
                         console.log(`Updated payment status to 'paid' for doc ${doc.id} (fallback)`);
+                        
+                        // Envia e-mail de ingresso no fallback também
+                        const saleData = doc.data();
+                        const productRef = db.collection('products').doc(saleData.productId);
+                        const productSnap = await productRef.get();
+                        if (productSnap.exists() && productSnap.data().isTicket) {
+                            await sendTicketEmail(doc.id, saleData);
+                        }
                     }
-                    return res.status(200).json({ status: 'success', message: 'Payment verified and status updated (fallback).' });
+                    return res.status(200).json({ status: 'success', saleId: firstDoc.id, message: 'Payment verified and status updated (fallback).' });
                 }
             }
         }
