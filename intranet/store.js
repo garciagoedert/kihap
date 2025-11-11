@@ -17,16 +17,25 @@ export async function setupStorePage() {
     const tabManageProducts = document.getElementById('tab-manage-products');
     const tabManageBanners = document.getElementById('tab-manage-banners');
     const tabManageCoupons = document.getElementById('tab-manage-coupons');
+    const tabEvents = document.getElementById('tab-events');
     const contentSalesLog = document.getElementById('content-sales-log');
     const contentManageProducts = document.getElementById('content-manage-products');
     const contentManageBanners = document.getElementById('content-manage-banners');
     const contentManageCoupons = document.getElementById('content-manage-coupons');
+    const contentEvents = document.getElementById('content-events');
 
     if (!isAdmin) {
         tabManageProducts.style.display = 'none';
         tabManageBanners.style.display = 'none';
         tabManageCoupons.style.display = 'none';
+        tabEvents.style.display = 'none';
     }
+
+    // Events Tab elements
+    const eventProductFilter = document.getElementById('event-product-filter');
+    const eventSearchInput = document.getElementById('event-search-input');
+    const eventsTableBody = document.getElementById('events-table-body');
+    let allCheckins = [];
 
     // Sales Log elements
     const salesTableBody = document.getElementById('sales-table-body');
@@ -119,6 +128,7 @@ export async function setupStorePage() {
             contentSalesLog.classList.remove('hidden');
             contentManageProducts.classList.add('hidden');
             contentManageBanners.classList.add('hidden');
+            contentEvents.classList.add('hidden');
         } else if (activeTab === 'products') {
             tabManageProducts.classList.add('text-white', 'border-blue-500');
             tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
@@ -126,9 +136,12 @@ export async function setupStorePage() {
             tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
             tabManageBanners.classList.remove('text-white', 'border-blue-500');
             tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabEvents.classList.remove('text-white', 'border-blue-500');
+            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
             contentManageProducts.classList.remove('hidden');
             contentSalesLog.classList.add('hidden');
             contentManageBanners.classList.add('hidden');
+            contentEvents.classList.add('hidden');
         } else if (activeTab === 'banners') {
             tabManageBanners.classList.add('text-white', 'border-blue-500');
             tabManageBanners.classList.remove('text-gray-400', 'hover:border-gray-500');
@@ -138,10 +151,13 @@ export async function setupStorePage() {
             tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
             tabManageCoupons.classList.remove('text-white', 'border-blue-500');
             tabManageCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabEvents.classList.remove('text-white', 'border-blue-500');
+            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
             contentManageBanners.classList.remove('hidden');
             contentSalesLog.classList.add('hidden');
             contentManageProducts.classList.add('hidden');
             contentManageCoupons.classList.add('hidden');
+            contentEvents.classList.add('hidden');
         } else if (activeTab === 'coupons') {
             tabManageCoupons.classList.add('text-white', 'border-blue-500');
             tabManageCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
@@ -151,10 +167,30 @@ export async function setupStorePage() {
             tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
             tabManageBanners.classList.remove('text-white', 'border-blue-500');
             tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabEvents.classList.remove('text-white', 'border-blue-500');
+            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
             contentManageCoupons.classList.remove('hidden');
             contentSalesLog.classList.add('hidden');
             contentManageProducts.classList.add('hidden');
             contentManageBanners.classList.add('hidden');
+            contentEvents.classList.add('hidden');
+        } else if (activeTab === 'events') {
+            fetchCheckins(); // Recarrega os check-ins toda vez que a aba é aberta
+            tabEvents.classList.add('text-white', 'border-blue-500');
+            tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
+            tabSalesLog.classList.remove('text-white', 'border-blue-500');
+            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageProducts.classList.remove('text-white', 'border-blue-500');
+            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageBanners.classList.remove('text-white', 'border-blue-500');
+            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            tabManageCoupons.classList.remove('text-white', 'border-blue-500');
+            tabManageCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
+            contentEvents.classList.remove('hidden');
+            contentSalesLog.classList.add('hidden');
+            contentManageProducts.classList.add('hidden');
+            contentManageBanners.classList.add('hidden');
+            contentManageCoupons.classList.add('hidden');
         }
     }
 
@@ -162,6 +198,7 @@ export async function setupStorePage() {
     tabManageProducts.addEventListener('click', () => switchTab('products'));
     tabManageBanners.addEventListener('click', () => switchTab('banners'));
     tabManageCoupons.addEventListener('click', () => switchTab('coupons'));
+    tabEvents.addEventListener('click', () => switchTab('events'));
 
     // --- Manual Sale Modal Logic ---
     const openManualSaleModal = () => {
@@ -891,8 +928,82 @@ export async function setupStorePage() {
         populateFilters();    // Then populate filters with data from both
         await fetchBanners();
         await fetchCoupons();
+        // fetchCheckins() is now called when switching to the tab
         applyFilters();
     };
+
+    // --- Events Tab Logic ---
+    const fetchCheckins = async () => {
+        eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando check-ins...</td></tr>';
+        try {
+            const q = query(collection(db, 'inscricoesFaixaPreta'), where('checkinStatus', '==', 'realizado'), orderBy('checkinTimestamp', 'desc'));
+            const querySnapshot = await getDocs(q);
+            allCheckins = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            populateEventFilter();
+        } catch (error) {
+            console.error('Error fetching check-ins:', error);
+            eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar check-ins.</td></tr>';
+        }
+    };
+
+    const populateEventFilter = () => {
+        const eventProducts = allProducts.filter(p => p.isTicket);
+        eventProductFilter.innerHTML = '<option value="">Todos os Eventos</option>';
+        eventProducts.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = product.name;
+            eventProductFilter.appendChild(option);
+        });
+    };
+
+    const displayCheckins = (checkinsToDisplay) => {
+        eventsTableBody.innerHTML = '';
+        if (checkinsToDisplay.length === 0) {
+            eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum check-in encontrado.</td></tr>';
+            return;
+        }
+
+        checkinsToDisplay.forEach(checkin => {
+            const row = eventsTableBody.insertRow();
+            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer');
+            row.dataset.saleId = checkin.id; // Reutiliza o modal de detalhes da venda
+            const checkinDate = checkin.checkinTimestamp ? new Date(checkin.checkinTimestamp.toDate()).toLocaleString('pt-BR') : 'N/A';
+
+            row.innerHTML = `
+                <td class="p-4">${checkin.userName || 'N/A'}</td>
+                <td class="p-4">${checkin.userEmail || 'N/A'}</td>
+                <td class="p-4">${checkin.productName || 'N/A'}</td>
+                <td class="p-4">${checkinDate}</td>
+            `;
+        });
+    };
+
+    const applyEventFilters = () => {
+        const selectedProductId = eventProductFilter.value;
+        const searchTerm = eventSearchInput.value.toLowerCase();
+
+        let filteredCheckins = allCheckins.filter(checkin => {
+            const productMatch = !selectedProductId || checkin.productId === selectedProductId;
+            const nameMatch = !searchTerm || (checkin.userName && checkin.userName.toLowerCase().includes(searchTerm));
+            const emailMatch = !searchTerm || (checkin.userEmail && checkin.userEmail.toLowerCase().includes(searchTerm));
+
+            return productMatch && (nameMatch || emailMatch);
+        });
+
+        displayCheckins(filteredCheckins);
+    };
+
+    eventProductFilter.addEventListener('change', applyEventFilters);
+    eventSearchInput.addEventListener('keyup', applyEventFilters);
+
+    eventsTableBody.addEventListener('click', (e) => {
+        const row = e.target.closest('tr');
+        if (row && row.dataset.saleId) {
+            openModalWithSaleDetails(row.dataset.saleId);
+        }
+    });
+
 
     // --- Banner Management Logic ---
     const fetchBanners = async () => {
