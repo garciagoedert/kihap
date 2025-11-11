@@ -220,6 +220,10 @@ export async function setupStorePage() {
                 }
             };
 
+            if (saleData.paymentDetails.method === 'credit') {
+                saleData.amountTotal = 0;
+            }
+
             if (saleData.paymentDetails.method === 'card') {
                 saleData.paymentDetails.cardLast4 = document.getElementById('manual-sale-card-last4').value;
                 saleData.paymentDetails.cardBrand = document.getElementById('manual-sale-card-brand').value;
