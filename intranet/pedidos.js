@@ -293,13 +293,23 @@ async function openDetailsModal(pedidoId) {
         document.getElementById('details-itens').innerHTML = pedido.itens.map(item => `<li>${item.quantidade}x ${item.faixa} (${item.tamanho})</li>`).join('');
 
         const user = await getCurrentUser();
-        const isAdmin = user ? await checkAdminStatus(user) : false;
-        
         const adminActions = document.getElementById('details-admin-actions');
-        if (isAdmin) {
+        const editBtn = document.getElementById('edit-pedido-btn');
+        const deleteBtn = document.getElementById('delete-pedido-btn');
+
+        if (user) {
+            const isAdmin = await checkAdminStatus(user);
             adminActions.classList.remove('hidden');
-            document.getElementById('edit-pedido-btn').dataset.id = pedidoId;
-            document.getElementById('delete-pedido-btn').dataset.id = pedidoId;
+            
+            editBtn.classList.remove('hidden');
+            editBtn.dataset.id = pedidoId;
+
+            if (isAdmin) {
+                deleteBtn.classList.remove('hidden');
+                deleteBtn.dataset.id = pedidoId;
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
         } else {
             adminActions.classList.add('hidden');
         }
@@ -646,13 +656,23 @@ export function setupPedidosPage() {
             document.getElementById('details-preta-tamanho').textContent = pedido.tamanho || 'N/A';
 
             const user = await getCurrentUser();
-            const isAdmin = user ? await checkAdminStatus(user) : false;
-            
             const adminActions = document.getElementById('details-preta-admin-actions');
-            if (isAdmin) {
+            const editBtn = document.getElementById('edit-preta-pedido-btn');
+            const deleteBtn = document.getElementById('delete-preta-pedido-btn');
+
+            if (user) {
+                const isAdmin = await checkAdminStatus(user);
                 adminActions.classList.remove('hidden');
-                document.getElementById('edit-preta-pedido-btn').dataset.id = pedidoId;
-                document.getElementById('delete-preta-pedido-btn').dataset.id = pedidoId;
+
+                editBtn.classList.remove('hidden');
+                editBtn.dataset.id = pedidoId;
+
+                if (isAdmin) {
+                    deleteBtn.classList.remove('hidden');
+                    deleteBtn.dataset.id = pedidoId;
+                } else {
+                    deleteBtn.classList.add('hidden');
+                }
             } else {
                 adminActions.classList.add('hidden');
             }
@@ -715,11 +735,13 @@ export function setupPedidosPage() {
 
     // --- Funções e Listeners da Aba de Doboks ---
 
-    function openDobokModal() {
+    function openDobokModal(isEditing = false) {
         const modal = document.getElementById('dobok-modal');
         if (modal) {
-            document.getElementById('dobok-modal-title').textContent = 'Novo Pedido de Dobok';
-            currentEditingDobokPedidoId = null;
+            if (!isEditing) {
+                document.getElementById('dobok-modal-title').textContent = 'Novo Pedido de Dobok';
+                currentEditingDobokPedidoId = null;
+            }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
@@ -733,6 +755,8 @@ export function setupPedidosPage() {
             document.getElementById('aluno-dobok-input').value = '';
             document.getElementById('unidade-dobok-select').value = '';
             document.getElementById('tamanho-dobok-select').value = '';
+            document.getElementById('colarinho-dobok-select').value = '';
+            document.getElementById('faixa-preta-dobok-checkbox').checked = false;
         }
     }
 
@@ -747,6 +771,8 @@ export function setupPedidosPage() {
         const status = document.getElementById('status-dobok-select').value;
         const aluno = document.getElementById('aluno-dobok-input').value.trim();
         const tamanho = document.getElementById('tamanho-dobok-select').value;
+        const isFaixaPreta = document.getElementById('faixa-preta-dobok-checkbox').checked;
+        const colarinho = document.getElementById('colarinho-dobok-select').value;
 
         if (!unidade || !tamanho) {
             alert("Por favor, preencha a unidade e o tamanho.");
@@ -761,6 +787,8 @@ export function setupPedidosPage() {
                     aluno: aluno || null,
                     tamanho,
                     status,
+                    isFaixaPreta,
+                    colarinho: colarinho || null,
                     lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                     lastUpdatedAt: serverTimestamp()
                 });
@@ -772,6 +800,8 @@ export function setupPedidosPage() {
                     aluno: aluno || null,
                     tamanho,
                     status,
+                    isFaixaPreta,
+                    colarinho: colarinho || null,
                     data: serverTimestamp(),
                     solicitante: { uid: user.id, nome: user.name || user.email }
                 });
@@ -804,12 +834,14 @@ export function setupPedidosPage() {
             querySnapshot.forEach(doc => {
                 const pedido = doc.data();
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
+                const faixaPretaIndicator = pedido.isFaixaPreta ? '<span class="ml-2 px-2 py-1 text-xs font-semibold text-white bg-black rounded-full">Faixa Preta</span>' : '';
+                const colarinhoInfo = pedido.colarinho ? ` (${pedido.colarinho})` : '';
                 html += `
                     <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
                         <td class="p-4">${data}</td>
                         <td class="p-4">${pedido.unidade}</td>
-                        <td class="p-4">${pedido.aluno || 'N/A'}</td>
-                        <td class="p-4">${pedido.tamanho}</td>
+                        <td class="p-4">${pedido.aluno || 'N/A'} ${faixaPretaIndicator}</td>
+                        <td class="p-4">${pedido.tamanho}${colarinhoInfo}</td>
                         <td class="p-4">
                             <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
                         </td>
@@ -861,15 +893,27 @@ export function setupPedidosPage() {
             document.getElementById('details-dobok-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
             document.getElementById('details-dobok-aluno').textContent = pedido.aluno || 'N/A';
             document.getElementById('details-dobok-tamanho').textContent = pedido.tamanho;
+            document.getElementById('details-dobok-colarinho').textContent = pedido.colarinho || 'Padrão';
+            document.getElementById('details-dobok-tipo').textContent = pedido.isFaixaPreta ? 'Faixa Preta' : 'Comum';
 
             const user = await getCurrentUser();
-            const isAdmin = user ? await checkAdminStatus(user) : false;
-            
             const adminActions = document.getElementById('details-dobok-admin-actions');
-            if (isAdmin) {
+            const editBtn = document.getElementById('edit-dobok-pedido-btn');
+            const deleteBtn = document.getElementById('delete-dobok-pedido-btn');
+
+            if (user) {
+                const isAdmin = await checkAdminStatus(user);
                 adminActions.classList.remove('hidden');
-                document.getElementById('edit-dobok-pedido-btn').dataset.id = pedidoId;
-                document.getElementById('delete-dobok-pedido-btn').dataset.id = pedidoId;
+
+                editBtn.classList.remove('hidden');
+                editBtn.dataset.id = pedidoId;
+
+                if (isAdmin) {
+                    deleteBtn.classList.remove('hidden');
+                    deleteBtn.dataset.id = pedidoId;
+                } else {
+                    deleteBtn.classList.add('hidden');
+                }
             } else {
                 adminActions.classList.add('hidden');
             }
@@ -908,8 +952,10 @@ export function setupPedidosPage() {
             document.getElementById('status-dobok-select').value = pedido.status;
             document.getElementById('aluno-dobok-input').value = pedido.aluno || '';
             document.getElementById('tamanho-dobok-select').value = pedido.tamanho;
+            document.getElementById('colarinho-dobok-select').value = pedido.colarinho || '';
+            document.getElementById('faixa-preta-dobok-checkbox').checked = pedido.isFaixaPreta || false;
             
-            openDobokModal();
+            openDobokModal(true);
         }
     }
 

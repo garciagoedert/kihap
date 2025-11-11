@@ -278,6 +278,8 @@
                 <p><strong>Solicitante:</strong> <span id="details-dobok-solicitante"></span></p>
                 <p><strong>Aluno:</strong> <span id="details-dobok-aluno"></span></p>
                 <p><strong>Tamanho:</strong> <span id="details-dobok-tamanho"></span></p>
+                <p><strong>Colarinho:</strong> <span id="details-dobok-colarinho"></span></p>
+                <p><strong>Tipo:</strong> <span id="details-dobok-tipo"></span></p>
             </div>
             <div id="details-dobok-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
                 <button id="delete-dobok-pedido-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
@@ -317,6 +319,19 @@
                 <div class="mb-4">
                     <label for="tamanho-dobok-select" class="block text-sm font-medium text-gray-300">Tamanho</label>
                     <select id="tamanho-dobok-select" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                </div>
+                <div class="mb-4">
+                    <label for="colarinho-dobok-select" class="block text-sm font-medium text-gray-300">Colarinho</label>
+                    <select id="colarinho-dobok-select" class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <option value="">Padrão</option>
+                        <option>Vermelho</option>
+                        <option>Vermelho e Preto</option>
+                        <option>Preto</option>
+                    </select>
+                </div>
+                <div class="flex items-center mb-4">
+                    <input id="faixa-preta-dobok-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                    <label for="faixa-preta-dobok-checkbox" class="ml-2 block text-sm text-gray-300">Dobok de Faixa Preta</label>
                 </div>
             </div>
             <div class="flex justify-end p-4 border-t border-gray-700">
