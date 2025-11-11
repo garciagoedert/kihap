@@ -319,7 +319,9 @@ export async function setupStorePage() {
             const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-            const productMatch = !selectedProduct || sale.productId === selectedProduct;
+            const mainProductMatch = sale.productId === selectedProduct;
+            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
+            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
             const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
             
             let dateMatch = true;
