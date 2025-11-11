@@ -89,6 +89,18 @@ export async function setupStorePage() {
     const cancelCouponEditBtn = document.getElementById('cancel-coupon-edit-btn');
     const couponsTableBody = document.getElementById('coupons-table-body');
 
+    // Manual Sale elements
+    const addManualSaleBtn = document.getElementById('add-manual-sale-btn');
+    const manualSaleModal = document.getElementById('manual-sale-modal');
+    const manualSaleForm = document.getElementById('manual-sale-form');
+    const closeManualSaleModalBtn = document.getElementById('close-manual-sale-modal-btn');
+    const cancelManualSaleBtn = document.getElementById('cancel-manual-sale-btn');
+    const manualSalePaymentMethod = document.getElementById('manual-sale-payment-method');
+    const manualSaleCardDetails = document.getElementById('manual-sale-card-details');
+    const manualSalePixDetails = document.getElementById('manual-sale-pix-details');
+    const manualSaleCashDetails = document.getElementById('manual-sale-cash-details');
+    const manualSaleProductSelect = document.getElementById('manual-sale-product');
+
     let allSales = [];
     let allProducts = [];
     let allBanners = [];
@@ -150,6 +162,87 @@ export async function setupStorePage() {
     tabManageBanners.addEventListener('click', () => switchTab('banners'));
     tabManageCoupons.addEventListener('click', () => switchTab('coupons'));
 
+    // --- Manual Sale Modal Logic ---
+    const openManualSaleModal = () => {
+        manualSaleForm.reset();
+        manualSaleProductSelect.innerHTML = '<option value="">Selecione um produto</option>';
+        allProducts.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = product.name;
+            option.dataset.price = product.price; // Store price in data attribute
+            manualSaleProductSelect.appendChild(option);
+        });
+        manualSaleModal.classList.remove('hidden');
+    };
+
+    const closeManualSaleModal = () => {
+        manualSaleModal.classList.add('hidden');
+    };
+
+    addManualSaleBtn.addEventListener('click', openManualSaleModal);
+    closeManualSaleModalBtn.addEventListener('click', closeManualSaleModal);
+    cancelManualSaleBtn.addEventListener('click', closeManualSaleModal);
+
+    manualSalePaymentMethod.addEventListener('change', (e) => {
+        manualSaleCardDetails.classList.add('hidden');
+        manualSalePixDetails.classList.add('hidden');
+        manualSaleCashDetails.classList.add('hidden');
+        if (e.target.value === 'card') {
+            manualSaleCardDetails.classList.remove('hidden');
+        } else if (e.target.value === 'pix') {
+            manualSalePixDetails.classList.remove('hidden');
+        } else if (e.target.value === 'cash') {
+            manualSaleCashDetails.classList.remove('hidden');
+        }
+    });
+
+    manualSaleForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('save-manual-sale-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+
+        try {
+            const selectedProductOption = manualSaleProductSelect.options[manualSaleProductSelect.selectedIndex];
+            const saleData = {
+                saleType: 'manual',
+                userName: document.getElementById('manual-sale-user-name').value,
+                userEmail: document.getElementById('manual-sale-user-email').value,
+                userPhone: document.getElementById('manual-sale-user-phone').value,
+                productId: selectedProductOption.value,
+                productName: selectedProductOption.textContent,
+                amountTotal: parseInt(document.getElementById('manual-sale-amount').value, 10),
+                paymentStatus: 'paid',
+                created: serverTimestamp(),
+                paymentDetails: {
+                    method: manualSalePaymentMethod.value,
+                }
+            };
+
+            if (saleData.paymentDetails.method === 'card') {
+                saleData.paymentDetails.cardLast4 = document.getElementById('manual-sale-card-last4').value;
+                saleData.paymentDetails.cardBrand = document.getElementById('manual-sale-card-brand').value;
+                saleData.paymentDetails.authCode = document.getElementById('manual-sale-card-auth').value;
+            }
+
+            await addDoc(collection(db, 'inscricoesFaixaPreta'), saleData);
+            
+            alert('Venda manual adicionada com sucesso!');
+            closeManualSaleModal();
+            await fetchSales();
+            applyFilters();
+
+        } catch (error) {
+            console.error('Error adding manual sale:', error);
+            alert('Erro ao adicionar venda manual.');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar Venda';
+        }
+    });
+
+
     // --- Helper Functions ---
     const renderStatusTag = (status) => {
         if (!status) return 'N/A';
@@ -190,6 +283,11 @@ export async function setupStorePage() {
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
             const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
 
+            let nameDisplay = sale.userName || 'N/A';
+            if (sale.saleType === 'manual') {
+                nameDisplay += ` <span class="ml-2 px-2 py-1 text-xs font-semibold text-blue-300 bg-blue-800/50 rounded-full">Manual</span>`;
+            }
+
             let productDisplay = sale.productName || 'N/A';
             if (sale.recommendedItems && sale.recommendedItems.length > 0) {
                 const recommendedNames = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
@@ -197,7 +295,7 @@ export async function setupStorePage() {
             }
 
             row.innerHTML = `
-                <td class="p-4">${sale.userName || 'N/A'}</td>
+                <td class="p-4">${nameDisplay}</td>
                 <td class="p-4">${sale.userEmail || 'N/A'}</td>
                 <td class="p-4">${sale.userPhone || 'N/A'}</td>
                 <td class="p-4">${productDisplay}</td>
@@ -665,6 +763,28 @@ export async function setupStorePage() {
             `;
         }
 
+        let paymentDetailsHtml = '';
+        if (sale.saleType === 'manual' && sale.paymentDetails) {
+            const details = sale.paymentDetails;
+            let method = 'N/A';
+            if (details.method === 'card') method = 'Cartão';
+            if (details.method === 'pix') method = 'PIX';
+            if (details.method === 'cash') method = 'Dinheiro';
+
+            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700">
+                <h3 class="text-lg font-bold mb-2">Detalhes do Pagamento Manual</h3>
+                <p><strong>Método:</strong> ${method}</p>`;
+            
+            if (details.method === 'card') {
+                paymentDetailsHtml += `
+                    <p><strong>Final do Cartão:</strong> ${details.cardLast4 || 'N/A'}</p>
+                    <p><strong>Bandeira:</strong> ${details.cardBrand || 'N/A'}</p>
+                    <p><strong>Autorização:</strong> ${details.authCode || 'N/A'}</p>
+                `;
+            }
+            paymentDetailsHtml += `</div>`;
+        }
+
         modalContent.innerHTML = `
             <p><strong>ID da Venda:</strong> ${sale.id}</p>
             ${studentInfoHtml}
@@ -679,6 +799,7 @@ export async function setupStorePage() {
             <p><strong>Valor Total:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
             <p><strong>Status do Pagamento:</strong> ${renderStatusTag(sale.paymentStatus)}</p>
             <p><strong>Data da Compra:</strong> ${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
+            ${paymentDetailsHtml}
         `;
         modal.classList.remove('hidden');
 
