@@ -49,7 +49,6 @@ export async function setupStorePage() {
     const closeModalBtn = document.getElementById('close-modal-btn');
     const modalContent = document.getElementById('modal-content');
     const deleteSaleBtnModal = document.getElementById('delete-sale-btn-modal');
-    const editSaleBtnModal = document.getElementById('edit-sale-btn-modal');
 
     // Product Management elements
     const productForm = document.getElementById('product-form');
@@ -202,13 +201,8 @@ export async function setupStorePage() {
     tabEvents.addEventListener('click', () => switchTab('events'));
 
     // --- Manual Sale Modal Logic ---
-    const openManualSaleModal = (saleToEdit = null) => {
+    const openManualSaleModal = () => {
         manualSaleForm.reset();
-        document.getElementById('manual-sale-id').value = '';
-        
-        const modalTitle = document.getElementById('manual-sale-modal-title');
-        const saveBtn = document.getElementById('save-manual-sale-btn');
-
         manualSaleProductSelect.innerHTML = '<option value="">Selecione um produto</option>';
         allProducts.forEach(product => {
             const option = document.createElement('option');
@@ -217,31 +211,6 @@ export async function setupStorePage() {
             option.dataset.price = product.price; // Store price in data attribute
             manualSaleProductSelect.appendChild(option);
         });
-
-        if (saleToEdit) {
-            modalTitle.textContent = 'Editar Venda Manual';
-            saveBtn.textContent = 'Atualizar Venda';
-            document.getElementById('manual-sale-id').value = saleToEdit.id;
-            document.getElementById('manual-sale-user-name').value = saleToEdit.userName || '';
-            document.getElementById('manual-sale-user-email').value = saleToEdit.userEmail || '';
-            document.getElementById('manual-sale-user-phone').value = saleToEdit.userPhone || '';
-            manualSaleProductSelect.value = saleToEdit.productId || '';
-            document.getElementById('manual-sale-amount').value = saleToEdit.amountTotal || 0;
-            manualSalePaymentMethod.value = saleToEdit.paymentDetails?.method || 'card';
-            
-            // Trigger change to show correct details fields
-            manualSalePaymentMethod.dispatchEvent(new Event('change'));
-
-            if (saleToEdit.paymentDetails?.method === 'card') {
-                document.getElementById('manual-sale-card-last4').value = saleToEdit.paymentDetails.cardLast4 || '';
-                document.getElementById('manual-sale-card-brand').value = saleToEdit.paymentDetails.cardBrand || '';
-                document.getElementById('manual-sale-card-auth').value = saleToEdit.paymentDetails.authCode || '';
-            }
-        } else {
-            modalTitle.textContent = 'Adicionar Venda Manual';
-            saveBtn.textContent = 'Salvar Venda';
-        }
-
         manualSaleModal.classList.remove('hidden');
     };
 
@@ -272,8 +241,6 @@ export async function setupStorePage() {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Salvando...';
 
-        const saleId = document.getElementById('manual-sale-id').value;
-
         try {
             const selectedProductOption = manualSaleProductSelect.options[manualSaleProductSelect.selectedIndex];
             const saleData = {
@@ -285,16 +252,11 @@ export async function setupStorePage() {
                 productName: selectedProductOption.textContent,
                 amountTotal: parseInt(document.getElementById('manual-sale-amount').value, 10),
                 paymentStatus: 'paid',
+                created: serverTimestamp(),
                 paymentDetails: {
                     method: manualSalePaymentMethod.value,
                 }
             };
-
-            if (saleId) {
-                saleData.lastUpdatedAt = serverTimestamp();
-            } else {
-                saleData.created = serverTimestamp();
-            }
 
             if (saleData.paymentDetails.method === 'credit') {
                 saleData.amountTotal = 0;
@@ -306,17 +268,9 @@ export async function setupStorePage() {
                 saleData.paymentDetails.authCode = document.getElementById('manual-sale-card-auth').value;
             }
 
-            if (saleId) {
-                // Update existing sale
-                const saleRef = doc(db, 'inscricoesFaixaPreta', saleId);
-                await updateDoc(saleRef, saleData);
-                alert('Venda atualizada com sucesso!');
-            } else {
-                // Add new sale
-                await addDoc(collection(db, 'inscricoesFaixaPreta'), saleData);
-                alert('Venda manual adicionada com sucesso!');
-            }
+            await addDoc(collection(db, 'inscricoesFaixaPreta'), saleData);
             
+            alert('Venda manual adicionada com sucesso!');
             closeManualSaleModal();
             await fetchSales();
             applyFilters();
@@ -899,10 +853,8 @@ export async function setupStorePage() {
         const currentUser = await getCurrentUser();
         if (currentUser && currentUser.isAdmin) {
             deleteSaleBtnModal.style.display = 'inline-block';
-            editSaleBtnModal.style.display = 'inline-block';
         } else {
             deleteSaleBtnModal.style.display = 'none';
-            editSaleBtnModal.style.display = 'none';
         }
     };
 
@@ -920,16 +872,6 @@ export async function setupStorePage() {
     deleteSaleBtnModal.addEventListener('click', () => {
         if (currentOpenSaleId && confirm('Tem certeza que deseja excluir este log de venda?')) {
             deleteSaleLog(currentOpenSaleId);
-        }
-    });
-
-    editSaleBtnModal.addEventListener('click', () => {
-        if (currentOpenSaleId) {
-            const saleToEdit = allSales.find(s => s.id === currentOpenSaleId);
-            if (saleToEdit) {
-                closeModal();
-                openManualSaleModal(saleToEdit);
-            }
         }
     });
 
