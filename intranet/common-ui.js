@@ -407,6 +407,7 @@ async function loadComponents(pageSpecificSetup) {
                 'chat.html',
                 'feed.html',
                 'store.html',
+                'checkin.html',
                 'suporte.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
