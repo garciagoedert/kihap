@@ -182,7 +182,8 @@ service cloud.firestore {
     // Regra para a coleção de Inscrições de Faixa Preta
     match /inscricoesFaixaPreta/{inscriptionId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow create: if request.auth != null; // Qualquer usuário logado pode criar (venda manual)
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true; // Apenas admins podem modificar ou apagar
     }
 
     // Regra para a coleção de Produtos da Loja
