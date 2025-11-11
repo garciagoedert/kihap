@@ -687,7 +687,7 @@ async function displayStoreSalesKpi(unitId = 'geral') {
         const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
         const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
-        kpiContainer.innerHTML = `
+        let kpiHtml = `
             <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
                 <div class="text-3xl mr-4">🛒</div>
                 <div>
@@ -695,21 +695,28 @@ async function displayStoreSalesKpi(unitId = 'geral') {
                     <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">💰</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Receita Total</p>
-                    <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-            </div>
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">📊</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Ticket Médio</p>
-                    <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-            </div>
         `;
+
+        if (isAdmin) {
+            kpiHtml += `
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">💰</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Receita Total</p>
+                        <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                </div>
+                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                    <div class="text-3xl mr-4">📊</div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Ticket Médio</p>
+                        <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        kpiContainer.innerHTML = kpiHtml;
     } catch (error) {
         console.error("Erro ao carregar KPIs de vendas da loja:", error);
         kpiContainer.innerHTML = `

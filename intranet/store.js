@@ -1192,17 +1192,16 @@ export async function setupStorePage() {
                         </div>
                     </div>
                 `;
-            }
-
-            kpiHtml += `
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                    <div class="text-3xl mr-4">📊</div>
-                    <div>
-                        <p class="text-gray-400 text-sm">Ticket Médio</p>
-                        <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                kpiHtml += `
+                    <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                        <div class="text-3xl mr-4">📊</div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Ticket Médio</p>
+                            <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
             kpiContainer.innerHTML = kpiHtml;
         } catch (error) {
