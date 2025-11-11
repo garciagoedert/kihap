@@ -6,9 +6,12 @@ import {
 import { 
     getStorage, ref, uploadBytes, getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
-import { getCurrentUser } from './auth.js';
+import { getCurrentUser, checkAdminStatus } from './auth.js';
 
 export async function setupStorePage() {
+    const currentUser = await getCurrentUser();
+    const isAdmin = await checkAdminStatus(currentUser);
+
     // Tab elements
     const tabSalesLog = document.getElementById('tab-sales-log');
     const tabManageProducts = document.getElementById('tab-manage-products');
@@ -18,6 +21,12 @@ export async function setupStorePage() {
     const contentManageProducts = document.getElementById('content-manage-products');
     const contentManageBanners = document.getElementById('content-manage-banners');
     const contentManageCoupons = document.getElementById('content-manage-coupons');
+
+    if (!isAdmin) {
+        tabManageProducts.style.display = 'none';
+        tabManageBanners.style.display = 'none';
+        tabManageCoupons.style.display = 'none';
+    }
 
     // Sales Log elements
     const salesTableBody = document.getElementById('sales-table-body');
