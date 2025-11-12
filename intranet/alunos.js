@@ -207,9 +207,14 @@ async function loadStudents() {
 
 function renderStudents(students) {
     const tableBody = document.getElementById('students-table-body');
+    const totalStudentsCountEl = document.getElementById('total-students-count');
 
     // Filtra alunos com dados removidos
     const validStudents = students.filter(student => student.firstName !== '***Dados Removidos***');
+
+    // Atualiza o contador total de alunos
+    totalStudentsCountEl.textContent = validStudents.length;
+
 
     if (validStudents.length > 0) {
         const rowsHtml = validStudents.map(member => {
@@ -236,11 +241,18 @@ function renderStudents(students) {
 }
 
 async function highlightRegisteredStudents(evoIds) {
-    if (evoIds.length === 0) return;
+    const registeredStudentsCountEl = document.getElementById('registered-students-count');
+    if (evoIds.length === 0) {
+        registeredStudentsCountEl.textContent = '0';
+        return;
+    }
 
     try {
         const result = await getRegisteredUsersByEvoId({ evoIds });
         const registeredEvoIds = new Set(result.data.registeredEvoIds);
+
+        // Atualiza o contador de alunos registrados
+        registeredStudentsCountEl.textContent = registeredEvoIds.size;
 
         const rows = document.querySelectorAll('.student-row');
         rows.forEach(row => {

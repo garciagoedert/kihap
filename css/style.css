@@ -50,6 +50,12 @@ body {
     background-repeat: no-repeat;
 }
 
+@media (max-width: 768px) {
+    .hero-section {
+        background-position: 65% center;
+    }
+}
+
 .hero-faixa-preta {
     background-image: url('../imgs/fxpretas.jpg');
     background-size: cover;
