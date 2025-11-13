@@ -600,8 +600,9 @@ exports.getStudentDataByEmail = functions.https.onCall(async (data, context) => 
 exports.setStudentPassword = functions.https.onCall(async (data, context) => {
     const { email, newPassword, evoMemberId, firstName, lastName, unitId } = data;
 
-    if (!email || !newPassword || !evoMemberId || !firstName || !unitId) {
-        throw new functions.https.HttpsError("invalid-argument", "Dados insuficientes para criar o perfil do aluno.");
+    // Validação mais flexível: firstName não é mais obrigatório.
+    if (!email || !newPassword || !evoMemberId || !unitId) {
+        throw new functions.https.HttpsError("invalid-argument", "Dados essenciais (email, senha, id, unidade) são obrigatórios.");
     }
 
     if (newPassword.length < 6) {
@@ -622,10 +623,11 @@ exports.setStudentPassword = functions.https.onCall(async (data, context) => {
             if (error.code === 'auth/user-not-found') {
                 // Se o usuário não existe, cria um novo com o e-mail e a senha
                 functions.logger.info(`Usuário não encontrado. Criando novo usuário para: ${email}`);
+                const displayName = (`${firstName || ''} ${lastName || ''}`.trim()) || email.split('@')[0];
                 userRecord = await admin.auth().createUser({
                     email: email,
                     password: newPassword,
-                    displayName: `${firstName} ${lastName || ''}`.trim(),
+                    displayName: displayName,
                     emailVerified: true,
                 });
             } else {
@@ -636,8 +638,9 @@ exports.setStudentPassword = functions.https.onCall(async (data, context) => {
 
         // Após garantir que o usuário Auth existe, cria/atualiza o documento no Firestore
         const userDocRef = db.collection('users').doc(userRecord.uid);
+        const name = (`${firstName || ''} ${lastName || ''}`.trim()) || email.split('@')[0];
         await userDocRef.set({
-            name: `${firstName} ${lastName || ''}`.trim(),
+            name: name,
             email: email,
             isAdmin: false,
             evoMemberId: evoMemberId,
