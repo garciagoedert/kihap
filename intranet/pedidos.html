@@ -96,6 +96,22 @@
                     </div>
 
                     <div id="tab-content-doboks" class="tab-content table-responsive flex-grow hidden">
+                        <div id="dobok-filters" class="flex items-center space-x-4 mb-4 p-4 bg-gray-800 rounded-lg">
+                            <div>
+                                <label for="filter-unidade-dobok" class="block text-sm font-medium text-gray-300">Unidade</label>
+                                <select id="filter-unidade-dobok" class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center pt-6">
+                                <input id="filter-faixa-preta-dobok" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                                <label for="filter-faixa-preta-dobok" class="ml-2 block text-sm text-gray-300">Apenas Faixa Preta</label>
+                            </div>
+                            <div class="flex items-center pt-6">
+                                <input id="filter-tradicional-dobok" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                                <label for="filter-tradicional-dobok" class="ml-2 block text-sm text-gray-300">Apenas Tradicional</label>
+                            </div>
+                        </div>
                         <table class="table w-full text-left">
                             <thead>
                                 <tr class="border-b border-gray-700">

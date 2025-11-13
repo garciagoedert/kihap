@@ -61,7 +61,8 @@ async function loadUnidades() {
     const unidadeSelects = [
         document.getElementById('unidade-select'),
         document.getElementById('unidade-preta-select'),
-        document.getElementById('unidade-dobok-select')
+        document.getElementById('unidade-dobok-select'),
+        document.getElementById('filter-unidade-dobok')
     ];
 
     try {
@@ -822,7 +823,22 @@ export function setupPedidosPage() {
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Carregando...</td></tr>';
 
         try {
-            const q = query(collection(db, "pedidosDoboks"), orderBy("data", "desc"));
+            const filterUnidade = document.getElementById('filter-unidade-dobok').value;
+            const filterFaixaPreta = document.getElementById('filter-faixa-preta-dobok').checked;
+            const filterTradicional = document.getElementById('filter-tradicional-dobok').checked;
+
+            let constraints = [orderBy("data", "desc")];
+            if (filterUnidade) {
+                constraints.unshift(where("unidade", "==", filterUnidade));
+            }
+            if (filterFaixaPreta) {
+                constraints.unshift(where("isFaixaPreta", "==", true));
+            }
+            if (filterTradicional) {
+                constraints.unshift(where("isFaixaPreta", "==", false));
+            }
+
+            const q = query(collection(db, "pedidosDoboks"), ...constraints);
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
@@ -860,6 +876,9 @@ export function setupPedidosPage() {
     document.getElementById('submit-dobok-btn')?.addEventListener('click', handleSubmitDobokPedido);
     document.getElementById('pedidos-doboks-table-body')?.addEventListener('click', handleDoboksTableClick);
     document.getElementById('close-details-dobok-modal-btn')?.addEventListener('click', closeDetailsDobokModal);
+    document.getElementById('filter-unidade-dobok')?.addEventListener('change', loadPedidosDoboks);
+    document.getElementById('filter-faixa-preta-dobok')?.addEventListener('change', loadPedidosDoboks);
+    document.getElementById('filter-tradicional-dobok')?.addEventListener('change', loadPedidosDoboks);
     document.getElementById('edit-dobok-pedido-btn')?.addEventListener('click', handleEditDobokPedido);
     document.getElementById('delete-dobok-pedido-btn')?.addEventListener('click', handleDeleteDobokPedido);
 
