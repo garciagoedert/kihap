@@ -531,10 +531,10 @@ exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 })
 
 /**
  * Verifica se um aluno com um determinado e-mail existe em qualquer uma das unidades EVO.
- * Esta função é pública e pode ser chamada pelo cliente para validar um e-mail antes de
- * solicitar a redefinição de senha.
+ * Busca os dados de um aluno no EVO pelo e-mail.
+ * Retorna os dados do aluno se encontrado, ou null caso contrário.
  */
-exports.checkStudentExistsByEmail = functions.https.onCall(async (data, context) => {
+exports.getStudentDataByEmail = functions.https.onCall(async (data, context) => {
     const { email } = data;
     if (!email) {
         throw new functions.https.HttpsError("invalid-argument", "O e-mail é obrigatório.");
@@ -543,8 +543,8 @@ exports.checkStudentExistsByEmail = functions.https.onCall(async (data, context)
 
     const unitIds = Object.keys(EVO_CREDENTIALS);
     
-    // Executa a busca em todas as unidades em paralelo para otimizar o tempo.
-    const searchPromises = unitIds.map(async (unitId) => {
+    // Tenta encontrar o aluno em qualquer unidade.
+    for (const unitId of unitIds) {
         try {
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
             const PAGE_SIZE = 500;
@@ -553,19 +553,28 @@ exports.checkStudentExistsByEmail = functions.https.onCall(async (data, context)
 
             while (hasMorePages) {
                 const response = await apiClientV2.get("/members", {
-                    params: { page: currentPage, take: PAGE_SIZE, status: 0 } // status 0 = todos (ativos e inativos)
+                    params: { page: currentPage, take: PAGE_SIZE, status: 0 } // status 0 = todos
                 });
                 const members = response.data || [];
 
-                const found = members.find(member => 
+                const foundMember = members.find(member => 
                     member.contacts?.some(contact => 
-                        (contact.idContactType === 4 || contact.contactType === 'E-mail') && // Garante a verificação pelo tipo
+                        (contact.idContactType === 4 || contact.contactType === 'E-mail') &&
                         contact.description?.toLowerCase().trim() === normalizedEmail
                     )
                 );
 
-                if (found) {
-                    return true; // Encontrado, pode parar de procurar nesta unidade.
+                if (foundMember) {
+                    functions.logger.info(`Aluno encontrado para o e-mail ${normalizedEmail} na unidade ${unitId}.`, foundMember);
+                    // Retorna os dados essenciais para criar o perfil
+                    return {
+                        exists: true,
+                        evoMemberId: foundMember.idMember,
+                        firstName: foundMember.firstName,
+                        lastName: foundMember.lastName,
+                        email: normalizedEmail,
+                        unitId: unitId // Retorna a unidade onde o aluno foi encontrado
+                    };
                 }
 
                 if (members.length < PAGE_SIZE) {
@@ -573,35 +582,26 @@ exports.checkStudentExistsByEmail = functions.https.onCall(async (data, context)
                 }
                 currentPage++;
             }
-            return false; // Não encontrado nesta unidade após percorrer todas as páginas.
         } catch (error) {
             functions.logger.error(`Erro ao buscar membros na unidade ${unitId} para o email ${normalizedEmail}:`, error.message);
-            return false; // Retorna false em caso de erro para não bloquear a verificação nas outras unidades.
+            // Continua para a próxima unidade em caso de erro
         }
-    });
-
-    const results = await Promise.all(searchPromises);
-    const memberExists = results.some(result => result === true);
-
-    if (memberExists) {
-        functions.logger.info(`Verificação de e-mail bem-sucedida: ${normalizedEmail} encontrado no sistema EVO.`);
-    } else {
-        functions.logger.warn(`Verificação de e-mail: ${normalizedEmail} NÃO encontrado no sistema EVO.`);
     }
 
-    // Retorna um booleano simples indicando se o aluno existe.
-    return { exists: memberExists };
+    // Se o loop terminar sem encontrar o aluno
+    functions.logger.warn(`Nenhum aluno encontrado para o e-mail: ${normalizedEmail}`);
+    return { exists: false };
 });
 
 /**
- * Define a senha de um usuário do Firebase Auth com base no e-mail.
- * Requer que o e-mail já tenha sido validado como um aluno existente.
+ * Define a senha de um usuário do Firebase Auth e cria seu perfil no Firestore.
+ * Recebe todos os dados do aluno para garantir a criação completa do perfil.
  */
 exports.setStudentPassword = functions.https.onCall(async (data, context) => {
-    const { email, newPassword } = data;
+    const { email, newPassword, evoMemberId, firstName, lastName, unitId } = data;
 
-    if (!email || !newPassword) {
-        throw new functions.https.HttpsError("invalid-argument", "E-mail e nova senha são obrigatórios.");
+    if (!email || !newPassword || !evoMemberId || !firstName || !unitId) {
+        throw new functions.https.HttpsError("invalid-argument", "Dados insuficientes para criar o perfil do aluno.");
     }
 
     if (newPassword.length < 6) {
@@ -614,26 +614,37 @@ exports.setStudentPassword = functions.https.onCall(async (data, context) => {
             // Tenta buscar o usuário existente
             userRecord = await admin.auth().getUserByEmail(email);
             functions.logger.info(`Usuário encontrado (${userRecord.uid}). Atualizando senha para: ${email}`);
-            // Se o usuário existe, atualiza a senha
+            // Se o usuário existe, apenas atualiza a senha
             await admin.auth().updateUser(userRecord.uid, {
                 password: newPassword,
             });
         } catch (error) {
             if (error.code === 'auth/user-not-found') {
-                // Se o usuário não existe, cria um novo com o e-mail e a senha fornecidos
+                // Se o usuário não existe, cria um novo com o e-mail e a senha
                 functions.logger.info(`Usuário não encontrado. Criando novo usuário para: ${email}`);
                 userRecord = await admin.auth().createUser({
                     email: email,
                     password: newPassword,
-                    emailVerified: true, // Consideramos verificado pois ele provou acesso ao e-mail no EVO
+                    displayName: `${firstName} ${lastName || ''}`.trim(),
+                    emailVerified: true,
                 });
             } else {
-                // Se for outro erro, propaga o erro
+                // Propaga outros erros
                 throw error;
             }
         }
 
-        functions.logger.info(`Operação de senha concluída com sucesso para o usuário: ${userRecord.uid}`);
+        // Após garantir que o usuário Auth existe, cria/atualiza o documento no Firestore
+        const userDocRef = db.collection('users').doc(userRecord.uid);
+        await userDocRef.set({
+            name: `${firstName} ${lastName || ''}`.trim(),
+            email: email,
+            isAdmin: false,
+            evoMemberId: evoMemberId,
+            unitId: unitId
+        }, { merge: true }); // Usa merge: true para não sobrescrever outros campos se o doc já existir
+
+        functions.logger.info(`Perfil do Firestore criado/atualizado para o usuário: ${userRecord.uid}`);
         
         // Retorna sucesso e o UID do usuário para o cliente poder fazer o login
         return { success: true, uid: userRecord.uid };

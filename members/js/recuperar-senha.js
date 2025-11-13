@@ -18,8 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const messageContainer = document.getElementById('message-container');
 
-    const checkStudentExistsByEmail = httpsCallable(functions, 'checkStudentExistsByEmail');
+    const getStudentDataByEmail = httpsCallable(functions, 'getStudentDataByEmail');
     const setStudentPassword = httpsCallable(functions, 'setStudentPassword');
+
+    let studentData = null; // Armazena os dados do aluno após a verificação
 
     // O botão de verificação agora tem seu próprio evento de clique
     verifyEmailBtn.addEventListener('click', handleEmailVerification);
@@ -42,8 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.innerHTML = '';
 
         try {
-            const result = await checkStudentExistsByEmail({ email: email });
+            const result = await getStudentDataByEmail({ email: email });
             if (result.data.exists) {
+                studentData = result.data; // Armazena os dados do aluno
                 // E-mail válido, avança para a próxima etapa
                 emailStep.classList.add('hidden');
                 passwordStep.classList.remove('hidden');
@@ -80,10 +83,18 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContainer.innerHTML = '';
 
         try {
-            const email = emailInput.value.trim();
-            await setStudentPassword({ email: email, newPassword: newPassword });
+            if (!studentData) {
+                throw new Error("Dados do aluno não encontrados. Verifique o e-mail novamente.");
+            }
+
+            // DEBUG: Log para verificar os dados que serão enviados para a Cloud Function
+            console.log("Dados enviados para setStudentPassword:", { ...studentData, newPassword: newPassword });
+            
+            // Envia todos os dados do aluno para a função de definir senha
+            await setStudentPassword({ ...studentData, newPassword: newPassword });
 
             // Senha definida com sucesso, agora tenta fazer o login
+            const email = emailInput.value.trim();
             messageContainer.innerHTML = `<p class="text-green-400">Senha definida com sucesso! Fazendo login...</p>`;
             
             const userCredential = await signInWithEmailAndPassword(auth, email, newPassword);
