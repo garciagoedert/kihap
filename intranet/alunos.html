@@ -90,6 +90,9 @@
                         <button id="tab-ranking" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
                             Ranking
                         </button>
+                        <button id="tab-access-ranking" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                            Ranking de Acessos
+                        </button>
                     </nav>
                 </div>
 
@@ -208,6 +211,27 @@
                             <tbody id="ranking-table-body">
                                 <tr>
                                     <td colspan="4" class="text-center p-8">Carregando ranking...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Ranking de Acessos -->
+                <div id="tab-content-access-ranking" class="tab-content hidden">
+                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                        <h2 class="text-xl font-bold mb-4">Ranking de Acessos à Plataforma por Unidade</h2>
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Posição</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4">Alunos com Acesso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="access-ranking-table-body">
+                                <tr>
+                                    <td colspan="3" class="text-center p-8">Carregando ranking de acessos...</td>
                                 </tr>
                             </tbody>
                         </table>

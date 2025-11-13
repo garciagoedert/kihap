@@ -77,30 +77,45 @@
                     });
                     const data = await response.json();
 
-                    if (data.status === 'success' && data.saleId) {
-                        statusMessage.textContent = 'Parabéns! Sua compra foi realizada com sucesso.';
+                    if (data.status === 'success' && data.saleIds && data.saleIds.length > 0) {
+                        if (data.saleIds.length > 1) {
+                            statusMessage.textContent = `Parabéns! Seus ${data.saleIds.length} itens foram comprados com sucesso.`;
+                        } else {
+                            statusMessage.textContent = 'Parabéns! Sua compra foi realizada com sucesso.';
+                        }
                         
-                        // Check if it's a ticket
-                        const saleRef = doc(db, 'inscricoesFaixaPreta', data.saleId);
+                        // Pega o primeiro ID para verificar se é um ingresso e mostrar um QR code de exemplo
+                        const firstSaleId = data.saleIds[0];
+                        const saleRef = doc(db, 'inscricoesFaixaPreta', firstSaleId);
                         const saleSnap = await getDoc(saleRef);
+
                         if (saleSnap.exists()) {
                             const saleData = saleSnap.data();
                             const productRef = doc(db, 'products', saleData.productId);
                             const productSnap = await getDoc(productRef);
+
                             if (productSnap.exists() && productSnap.data().isTicket) {
-                                // Generate QR Code
+                                // Gera o QR Code para o primeiro ingresso
                                 const qr = qrcode(0, 'L');
-                                qr.addData(data.saleId);
+                                qr.addData(firstSaleId);
                                 qr.make();
                                 qrcodeContainer.innerHTML = qr.createImgTag(8, 16);
                                 ticketContainer.classList.remove('hidden');
 
-                                // Download functionality
+                                // Adiciona uma nota se houver múltiplos ingressos
+                                if (data.saleIds.length > 1) {
+                                    const note = document.createElement('p');
+                                    note.textContent = 'Este é o seu primeiro ingresso. Os demais foram enviados para o seu e-mail.';
+                                    note.className = 'text-gray-400 mt-4';
+                                    ticketContainer.insertBefore(note, downloadBtn);
+                                }
+
+                                // Funcionalidade de download
                                 downloadBtn.addEventListener('click', () => {
                                     const qrImage = qrcodeContainer.querySelector('img');
                                     const link = document.createElement('a');
                                     link.href = qrImage.src;
-                                    link.download = 'ingresso-kihap.png';
+                                    link.download = `ingresso-kihap-${firstSaleId.substring(0, 6)}.png`;
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
@@ -114,29 +129,6 @@
                     console.error('Error verifying payment:', error);
                     statusMessage.textContent = 'Ocorreu um erro ao verificar seu pagamento. Por favor, entre em contato com o suporte.';
                 }
-            }
-        });
-    </script>
-</body>
-</html>
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ sessionId: sessionId }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        statusMessage.textContent = 'Parabéns! Sua compra foi realizada com sucesso.';
-                    } else {
-                        statusMessage.textContent = 'Seu pagamento foi concluído, mas houve um erro ao atualizar o status. Por favor, entre em contato com o suporte.';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error verifying payment:', error);
-                    statusMessage.textContent = 'Ocorreu um erro ao verificar seu pagamento. Por favor, entre em contato com o suporte.';
-                });
             }
         });
     </script>

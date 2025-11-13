@@ -171,7 +171,7 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                         }
                     }
                 }
-                return res.status(200).json({ status: 'success', saleId: firestoreDocIds[0], message: 'All payments verified and statuses updated.' });
+                return res.status(200).json({ status: 'success', saleIds: firestoreDocIds, message: 'All payments verified and statuses updated.' });
             } else {
                 // Fallback for older sessions
                 const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
@@ -189,7 +189,8 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                             await sendTicketEmail(doc.id, saleData);
                         }
                     }
-                    return res.status(200).json({ status: 'success', saleId: firstDoc.id, message: 'Payment verified and status updated (fallback).' });
+                    const allDocIds = querySnapshot.docs.map(doc => doc.id);
+                    return res.status(200).json({ status: 'success', saleIds: allDocIds, message: 'Payment verified and status updated (fallback).' });
                 }
             }
         }

@@ -55,10 +55,12 @@ export function setupAlunosPage() {
             const tabCheckEntries = document.getElementById('tab-check-entries');
             const tabManageBadges = document.getElementById('tab-manage-badges');
             const tabRanking = document.getElementById('tab-ranking');
+            const tabAccessRanking = document.getElementById('tab-access-ranking');
             const contentManageStudents = document.getElementById('tab-content-manage-students');
             const contentCheckEntries = document.getElementById('tab-content-check-entries');
             const contentManageBadges = document.getElementById('tab-content-manage-badges');
             const contentRanking = document.getElementById('tab-content-ranking');
+            const contentAccessRanking = document.getElementById('tab-content-access-ranking');
 
             // --- Modal Tab Elements ---
             const tabDetails = document.getElementById('tab-details');
@@ -116,7 +118,8 @@ export function setupAlunosPage() {
                     'manage-students': { content: contentManageStudents, button: tabManageStudents },
                     'check-entries': { content: contentCheckEntries, button: tabCheckEntries },
                     'manage-badges': { content: contentManageBadges, button: tabManageBadges },
-                    'ranking': { content: contentRanking, button: tabRanking }
+                    'ranking': { content: contentRanking, button: tabRanking },
+                    'access-ranking': { content: contentAccessRanking, button: tabAccessRanking }
                 };
 
                 // Hide all content and reset button styles
@@ -141,6 +144,8 @@ export function setupAlunosPage() {
                     setupBadgeManagement(); 
                 } else if (activeTabName === 'ranking') {
                     loadRankingData();
+                } else if (activeTabName === 'access-ranking') {
+                    loadAndRenderAccessRanking();
                 }
             }
             
@@ -148,6 +153,7 @@ export function setupAlunosPage() {
             tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
             tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
             tabRanking.addEventListener('click', () => switchMainTab('ranking'));
+            tabAccessRanking.addEventListener('click', () => switchMainTab('access-ranking'));
 
             // Modal Tab Switching Logic (REMOVED)
 
@@ -360,4 +366,67 @@ function renderRanking(students) {
     }).join('');
 
     rankingTableBody.innerHTML = rowsHtml;
+}
+
+async function loadAndRenderAccessRanking() {
+    const tableBody = document.getElementById('access-ranking-table-body');
+    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Calculando ranking...</td></tr>';
+
+    try {
+        // 1. Get all students from all units
+        const allStudentsResult = await listAllMembers({ unitId: 'all', name: '' });
+        const allStudentsList = allStudentsResult.data.filter(s => s.firstName !== '***Dados Removidos***') || [];
+        
+        if (allStudentsList.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Nenhum aluno encontrado.</td></tr>';
+            return;
+        }
+
+        // 2. Get all registered users
+        const allStudentIds = allStudentsList.map(s => s.idMember);
+        const registeredUsersResult = await getRegisteredUsersByEvoId({ evoIds: allStudentIds });
+        const registeredEvoIds = new Set(registeredUsersResult.data.registeredEvoIds);
+
+        // 3. Calculate counts per unit
+        const unitCounts = {};
+        allStudentsList.forEach(student => {
+            if (registeredEvoIds.has(student.idMember)) {
+                const unitName = student.branchName || 'Centro'; // Default to 'Centro' if null
+                unitCounts[unitName] = (unitCounts[unitName] || 0) + 1;
+            }
+        });
+
+        // 4. Sort units by count
+        const rankedUnits = Object.entries(unitCounts)
+            .map(([unitName, count]) => ({ unitName, count }))
+            .sort((a, b) => b.count - a.count);
+
+        // 5. Render the ranking
+        renderAccessRanking(rankedUnits);
+
+    } catch (error) {
+        console.error("Erro ao carregar ranking de acessos:", error);
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-8 text-red-500">Erro ao carregar ranking: ${error.message}</td></tr>`;
+    }
+}
+
+function renderAccessRanking(rankedUnits) {
+    const tableBody = document.getElementById('access-ranking-table-body');
+
+    if (rankedUnits.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Nenhum aluno com acesso à plataforma encontrado.</td></tr>';
+        return;
+    }
+
+    const rowsHtml = rankedUnits.map((unit, index) => {
+        return `
+            <tr class="border-b border-gray-800">
+                <td class="p-4 text-center font-medium">${index + 1}º</td>
+                <td class="p-4">${unit.unitName}</td>
+                <td class="p-4 font-bold text-blue-400">${unit.count}</td>
+            </tr>
+        `;
+    }).join('');
+
+    tableBody.innerHTML = rowsHtml;
 }
