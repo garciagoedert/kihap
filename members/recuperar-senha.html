@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha - Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../intranet/theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="text-center mb-8">
+                <img src="../imgs/logo.png" alt="Logo Kihap" class="mx-auto h-12">
+                <h1 class="text-2xl font-bold mt-4">Primeiro Acesso ou Recuperar Senha</h1>
+                <p class="text-gray-400 mt-2">Digite seu e-mail cadastrado para receber o link de criação/recuperação de senha.</p>
+            </div>
+            <form id="reset-form" class="space-y-6">
+                <!-- Etapa 1: Verificação de E-mail -->
+                <div id="email-step">
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                        <input type="email" id="email" name="email" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                    </div>
+                    <button type="button" id="verify-email-btn" class="w-full bg-yellow-500 text-gray-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-300">Verificar E-mail</button>
+                </div>
+
+                <!-- Etapa 2: Definir Senha (Oculto por padrão) -->
+                <div id="password-step" class="hidden">
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Nova Senha</label>
+                        <input type="password" id="password" name="password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirm-password" class="block text-sm font-medium text-gray-300 mb-2">Confirmar Nova Senha</label>
+                        <input type="password" id="confirm-password" name="confirm-password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                    </div>
+                    <button type="submit" id="set-password-btn" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">Definir Senha e Acessar</button>
+                </div>
+            </form>
+            <div id="message-container" class="mt-4 text-center"></div>
+            <div class="text-center mt-6">
+                <a href="../intranet/login.html" class="text-blue-400 hover:text-blue-300">Voltar para o Login</a>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="js/recuperar-senha.js"></script>
+</body>
+</html>

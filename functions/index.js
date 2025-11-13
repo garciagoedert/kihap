@@ -256,4 +256,8 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
 
 // Importa e exporta todas as funções do evo.js
 const evoFunctions = require('./evo.js');
-Object.assign(exports, evoFunctions);
+// Itera sobre as chaves do objeto evoFunctions e as exporta individualmente
+// Isso garante que o Firebase Functions reconheça cada função corretamente.
+Object.keys(evoFunctions).forEach(key => {
+    exports[key] = evoFunctions[key];
+});
