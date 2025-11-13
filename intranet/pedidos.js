@@ -71,12 +71,16 @@ async function loadUnidades() {
 
         unidadeSelects.forEach(select => {
             if (select) {
-                select.innerHTML = '<option value="">Selecione uma unidade</option>';
+                // Preserva a primeira opção se for o filtro
+                const isFilter = select.id === 'filter-unidade-dobok';
+                const firstOptionText = isFilter ? 'Todas' : 'Selecione uma unidade';
+                select.innerHTML = `<option value="">${firstOptionText}</option>`;
+
                 unidades.forEach(unidade => {
                     const option = document.createElement('option');
                     option.value = unidade;
                     option.textContent = unidade.charAt(0).toUpperCase() + unidade.slice(1).replace(/-/g, ' ');
-                    select.appendChild(option.cloneNode(true));
+                    select.appendChild(option);
                 });
             }
         });
@@ -831,29 +835,35 @@ export function setupPedidosPage() {
             if (filterUnidade) {
                 constraints.unshift(where("unidade", "==", filterUnidade));
             }
-            if (filterFaixaPreta) {
-                constraints.unshift(where("isFaixaPreta", "==", true));
-            }
-            if (filterTradicional) {
-                constraints.unshift(where("isFaixaPreta", "==", false));
-            }
-
+            
             const q = query(collection(db, "pedidosDoboks"), ...constraints);
             const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de dobok encontrado.</td></tr>';
+            let pedidos = [];
+            querySnapshot.forEach(doc => {
+                pedidos.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Filtragem no lado do cliente
+            if (filterFaixaPreta) {
+                pedidos = pedidos.filter(p => p.isFaixaPreta === true);
+            }
+            if (filterTradicional) {
+                pedidos = pedidos.filter(p => p.isFaixaPreta === false);
+            }
+
+            if (pedidos.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de dobok encontrado com os filtros aplicados.</td></tr>';
                 return;
             }
 
             let html = '';
-            querySnapshot.forEach(doc => {
-                const pedido = doc.data();
+            pedidos.forEach(pedido => {
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
                 const faixaPretaIndicator = pedido.isFaixaPreta ? '<span class="ml-2 px-2 py-1 text-xs font-semibold text-white bg-black rounded-full">Faixa Preta</span>' : '';
                 const colarinhoInfo = pedido.colarinho ? ` (${pedido.colarinho})` : '';
                 html += `
-                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
+                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
                         <td class="p-4">${data}</td>
                         <td class="p-4">${pedido.unidade}</td>
                         <td class="p-4">${pedido.aluno || 'N/A'} ${faixaPretaIndicator}</td>
@@ -877,8 +887,24 @@ export function setupPedidosPage() {
     document.getElementById('pedidos-doboks-table-body')?.addEventListener('click', handleDoboksTableClick);
     document.getElementById('close-details-dobok-modal-btn')?.addEventListener('click', closeDetailsDobokModal);
     document.getElementById('filter-unidade-dobok')?.addEventListener('change', loadPedidosDoboks);
-    document.getElementById('filter-faixa-preta-dobok')?.addEventListener('change', loadPedidosDoboks);
-    document.getElementById('filter-tradicional-dobok')?.addEventListener('change', loadPedidosDoboks);
+    
+    const faixaPretaCheckbox = document.getElementById('filter-faixa-preta-dobok');
+    const tradicionalCheckbox = document.getElementById('filter-tradicional-dobok');
+
+    faixaPretaCheckbox?.addEventListener('change', () => {
+        if (faixaPretaCheckbox.checked) {
+            tradicionalCheckbox.checked = false;
+        }
+        loadPedidosDoboks();
+    });
+
+    tradicionalCheckbox?.addEventListener('change', () => {
+        if (tradicionalCheckbox.checked) {
+            faixaPretaCheckbox.checked = false;
+        }
+        loadPedidosDoboks();
+    });
+
     document.getElementById('edit-dobok-pedido-btn')?.addEventListener('click', handleEditDobokPedido);
     document.getElementById('delete-dobok-pedido-btn')?.addEventListener('click', handleDeleteDobokPedido);
 
