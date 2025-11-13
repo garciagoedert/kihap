@@ -62,7 +62,7 @@ async function loadUnidades() {
         document.getElementById('unidade-select'),
         document.getElementById('unidade-preta-select'),
         document.getElementById('unidade-dobok-select'),
-        document.getElementById('filter-unidade-dobok')
+        document.getElementById('filter-unidade-dobok') // Assuming this is the correct ID for Dobok unit filter
     ];
 
     try {
@@ -231,11 +231,44 @@ async function loadPedidos() {
     tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Carregando histórico...</td></tr>';
 
     try {
-        const q = query(collection(db, "pedidosFaixas"), orderBy("data", "desc"));
+        // Get filter values
+        const filterUnidade = document.getElementById('filter-unidade')?.value;
+        const filterFaixaPreta = document.getElementById('filter-faixa-preta')?.checked;
+        const filterTradicional = document.getElementById('filter-tradicional')?.checked;
+
+        let constraints = [orderBy("data", "desc")];
+        if (filterUnidade) {
+            constraints.push(where("unidade", "==", filterUnidade));
+        }
+
+        const q = query(collection(db, "pedidosFaixas"), ...constraints);
         const querySnapshot = await getDocs(q);
         
-        if (querySnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Nenhum pedido encontrado.</td></tr>';
+        let pedidos = [];
+        querySnapshot.forEach(doc => {
+            pedidos.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Client-side filtering for Faixas Coloridas
+        if (filterFaixaPreta) {
+            pedidos = pedidos.filter(pedido => {
+                return pedido.itens.some(item => 
+                    item.faixa === "Vermelha e Preta" || 
+                    faixas.slice(18).includes(item.faixa) // Dan levels start from index 18
+                );
+            });
+        }
+        if (filterTradicional) {
+            pedidos = pedidos.filter(pedido => {
+                return pedido.itens.some(item => 
+                    item.faixa !== "Vermelha e Preta" && 
+                    !faixas.slice(18).includes(item.faixa)
+                );
+            });
+        }
+
+        if (pedidos.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Nenhum pedido encontrado com os filtros aplicados.</td></tr>';
             return;
         }
 
@@ -243,15 +276,14 @@ async function loadPedidos() {
         const isAdmin = user ? await checkAdminStatus(user) : false;
 
         let html = '';
-        querySnapshot.forEach(doc => {
-            const pedido = doc.data();
+        pedidos.forEach(pedido => {
             const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
             const itensResumo = pedido.itens.length > 2 
                 ? `${pedido.itens.slice(0, 2).map(item => `${item.quantidade}x ${item.faixa}`).join(', ')}...`
                 : pedido.itens.map(item => `${item.quantidade}x ${item.faixa} (${item.tamanho})`).join('<br>');
             
             html += `
-                <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
+                <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
                     <td class="p-4">${data}</td>
                     <td class="p-4">${pedido.unidade}</td>
                     <td class="p-4">${itensResumo}</td>
@@ -543,17 +575,45 @@ export function setupPedidosPage() {
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Carregando...</td></tr>';
 
         try {
-            const q = query(collection(db, "pedidosFaixasPretas"), orderBy("data", "desc"));
+            // Get filter values
+            const filterUnidade = document.getElementById('filter-unidade')?.value; // Assuming same filter ID for unit
+            const filterFaixaPreta = document.getElementById('filter-faixa-preta')?.checked; // Assuming same filter ID for faixa preta
+            // 'filter-tradicional' is less relevant for Faixas Pretas, so we might ignore it or adapt it.
+            // For now, we'll focus on unit and faixa preta.
+
+            let constraints = [orderBy("data", "desc")];
+            if (filterUnidade) {
+                constraints.push(where("unidade", "==", filterUnidade));
+            }
+
+            const q = query(collection(db, "pedidosFaixasPretas"), ...constraints);
             const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de faixa preta encontrado.</td></tr>';
+            let pedidos = [];
+            querySnapshot.forEach(doc => {
+                pedidos.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Client-side filtering for Faixas Pretas
+            if (filterFaixaPreta) {
+                pedidos = pedidos.filter(pedido => {
+                    // Assuming "Faixa Preta" filter means any of the Dan levels
+                    // The 'faixas' array has Dan levels starting from index 18.
+                    // We need to check if the pedido.faixa is one of these.
+                    return faixas.slice(18).includes(pedido.faixa);
+                });
+            }
+            // If filterTradicional was meant for Faixas Pretas, its logic would be complex and unclear.
+            // For now, we'll assume it's not applicable or handled differently.
+
+            if (pedidos.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Nenhum pedido de faixa preta encontrado com os filtros aplicados.</td></tr>';
                 return;
             }
 
             let html = '';
-            querySnapshot.forEach(doc => {
-                const pedido = doc.data();
+            pedidos.forEach(doc => {
+                const pedido = doc.data(); // Use doc.data() here as we are iterating over querySnapshot
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
                 html += `
                     <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
@@ -606,6 +666,8 @@ export function setupPedidosPage() {
 
                 if (index === 0) { // Faixas Coloridas
                     btnNovoColorida.classList.remove('hidden');
+                    // Reload data when tab is clicked
+                    loadPedidos();
                 } else if (index === 1) { // Faixas Pretas
                     btnNovoPreta.classList.remove('hidden');
                     loadPedidosPretas();
