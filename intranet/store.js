@@ -109,7 +109,11 @@ export async function setupStorePage() {
     const manualSaleCardDetails = document.getElementById('manual-sale-card-details');
     const manualSalePixDetails = document.getElementById('manual-sale-pix-details');
     const manualSaleCashDetails = document.getElementById('manual-sale-cash-details');
-    const manualSaleProductSelect = document.getElementById('manual-sale-product');
+    const manualSaleProductsContainer = document.getElementById('manual-sale-products-container');
+    const addManualSaleProductBtn = document.getElementById('add-manual-sale-product-btn');
+    const manualSaleAmountInput = document.getElementById('manual-sale-amount');
+    const manualSaleUnitSelect = document.getElementById('manual-sale-user-unit');
+
 
     let allSales = [];
     let allProducts = [];
@@ -201,18 +205,83 @@ export async function setupStorePage() {
     tabEvents.addEventListener('click', () => switchTab('events'));
 
     // --- Manual Sale Modal Logic ---
-    const openManualSaleModal = () => {
-        manualSaleForm.reset();
-        manualSaleProductSelect.innerHTML = '<option value="">Selecione um produto</option>';
+    const updateManualSaleTotal = () => {
+        let total = 0;
+        const productRows = manualSaleProductsContainer.querySelectorAll('.manual-sale-product-row');
+        productRows.forEach(row => {
+            const priceInput = row.querySelector('.manual-sale-product-price');
+            const price = parseInt(priceInput.value, 10) || 0;
+            total += price;
+        });
+        manualSaleAmountInput.value = total;
+    };
+
+    const addManualSaleProductRow = () => {
+        const row = document.createElement('div');
+        row.className = 'manual-sale-product-row grid grid-cols-3 gap-2 items-center';
+        
+        const productSelect = document.createElement('select');
+        productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        productSelect.innerHTML = '<option value="">Selecione um produto</option>';
         allProducts.forEach(product => {
             const option = document.createElement('option');
             option.value = product.id;
             option.textContent = product.name;
-            option.dataset.price = product.price; // Store price in data attribute
-            manualSaleProductSelect.appendChild(option);
+            option.dataset.price = product.price;
+            productSelect.appendChild(option);
         });
+
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.className = 'manual-sale-product-price w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        priceInput.placeholder = 'Preço';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-manual-sale-product-btn text-red-500 hover:text-red-400';
+        removeBtn.innerHTML = '&times;';
+
+        row.appendChild(productSelect);
+        row.appendChild(priceInput);
+        row.appendChild(removeBtn);
+        manualSaleProductsContainer.appendChild(row);
+
+        productSelect.addEventListener('change', () => {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            if (selectedOption.dataset.price) {
+                priceInput.value = selectedOption.dataset.price;
+            }
+            updateManualSaleTotal();
+        });
+
+        priceInput.addEventListener('input', updateManualSaleTotal);
+
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateManualSaleTotal();
+        });
+    };
+
+    const openManualSaleModal = () => {
+        manualSaleForm.reset();
+        manualSaleProductsContainer.innerHTML = '';
+        addManualSaleProductRow();
+        updateManualSaleTotal();
+
+        // Populate units
+        const units = [...new Set(allSales.map(sale => sale.userUnit).filter(Boolean))];
+        manualSaleUnitSelect.innerHTML = '<option value="">Selecione uma unidade</option>';
+        units.sort().forEach(unit => {
+            const option = document.createElement('option');
+            option.value = unit;
+            option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+            manualSaleUnitSelect.appendChild(option);
+        });
+
         manualSaleModal.classList.remove('hidden');
     };
+
+    addManualSaleProductBtn.addEventListener('click', addManualSaleProductRow);
 
     const closeManualSaleModal = () => {
         manualSaleModal.classList.add('hidden');
@@ -242,17 +311,41 @@ export async function setupStorePage() {
         saveBtn.textContent = 'Salvando...';
 
         try {
-            const selectedProductOption = manualSaleProductSelect.options[manualSaleProductSelect.selectedIndex];
+            const productRows = manualSaleProductsContainer.querySelectorAll('.manual-sale-product-row');
+            const items = [];
+            productRows.forEach(row => {
+                const productSelect = row.querySelector('.manual-sale-product-select');
+                const priceInput = row.querySelector('.manual-sale-product-price');
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                if (selectedOption.value) {
+                    items.push({
+                        productId: selectedOption.value,
+                        productName: selectedOption.textContent,
+                        amount: parseInt(priceInput.value, 10) || 0
+                    });
+                }
+            });
+
+            if (items.length === 0) {
+                alert('Adicione pelo menos um produto.');
+                return;
+            }
+
             const saleData = {
                 saleType: 'manual',
                 userName: document.getElementById('manual-sale-user-name').value,
                 userEmail: document.getElementById('manual-sale-user-email').value,
                 userPhone: document.getElementById('manual-sale-user-phone').value,
-                productId: selectedProductOption.value,
-                productName: selectedProductOption.textContent,
-                amountTotal: parseInt(document.getElementById('manual-sale-amount').value, 10),
+                userCpf: document.getElementById('manual-sale-user-cpf').value,
+                userGraduacao: document.getElementById('manual-sale-user-graduacao').value,
+                userUnit: document.getElementById('manual-sale-user-unit').value,
+                items: items,
+                productName: items.map(i => i.productName).join(', '), // For compatibility with table display
+                productId: items[0].productId, // For compatibility with filters
+                amountTotal: parseInt(manualSaleAmountInput.value, 10),
                 paymentStatus: 'paid',
                 created: serverTimestamp(),
+                details: document.getElementById('manual-sale-details').value,
                 paymentDetails: {
                     method: manualSalePaymentMethod.value,
                 }
