@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Relatórios - Intranet Kihap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div id="app-container" class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <!-- Page Content -->
+            <div id="reports-container" class="flex-grow p-4 md:p-6 flex flex-col custom-scrollbar">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 flex-shrink-0">
+                    <h1 class="text-2xl font-semibold text-white mb-4 md:mb-0">Relatórios de Presença</h1>
+                    <button id="export-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">
+                        <i class="fas fa-file-excel mr-2"></i>Exportar para CSV
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-wrap items-center gap-4">
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="unit-filter" class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
+                        <select id="unit-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="period-filter" class="block text-sm font-medium text-gray-400 mb-1">Período</label>
+                        <input type="date" id="period-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="range-filter" class="block text-sm font-medium text-gray-400 mb-1">Visualização</label>
+                        <select id="range-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="day">Dia</option>
+                            <option value="week">Semana</option>
+                            <option value="month">Mês</option>
+                        </select>
+                    </div>
+                    <div class="self-end">
+                        <button id="generate-report-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Gerar Relatório</button>
+                    </div>
+                </div>
+
+                <!-- Report Results -->
+                <div id="report-results" class="flex-grow bg-[#1a1a1a] p-4 rounded-lg">
+                    <p class="text-center text-gray-400">Selecione os filtros e gere um relatório para ver os dados.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './auth.js';
+        import './relatorios.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
+</body>
+</html>

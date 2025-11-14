@@ -264,6 +264,7 @@ function handleViewSnapshot(event) {
                         <th scope="col" class="px-6 py-3">Unidade</th>
                         <th scope="col" class="px-6 py-3">Contratos Ativos</th>
                         <th scope="col" class="px-6 py-3">Alunos Ativos (Dia)</th>
+                        <th scope="col" class="px-6 py-3">Receita (Loja)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -274,18 +275,29 @@ function handleViewSnapshot(event) {
     for (const unitId of sortedUnitIds) {
         const unitData = snapshot.units[unitId];
         const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const storeRevenue = (unitData.storeRevenue || 0) / 100;
         
         tableHtml += `
             <tr class="border-b border-gray-700">
                 <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">${displayName}</th>
                 <td class="px-6 py-4">${unitData.contracts || 0}</td>
                 <td class="px-6 py-4">${unitData.dailyActives || 0}</td>
+                <td class="px-6 py-4">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }
 
+    const totalRevenue = (snapshot.storeTotalRevenue || 0) / 100;
     tableHtml += `
                 </tbody>
+                <tfoot class="bg-[#2a2a2a]">
+                    <tr class="font-semibold text-white">
+                        <th scope="row" class="px-6 py-3 text-base">Total</th>
+                        <td class="px-6 py-3">${snapshot.totalContracts || 0}</td>
+                        <td class="px-6 py-3">${snapshot.totalDailyActives || 0}</td>
+                        <td class="px-6 py-3">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     `;

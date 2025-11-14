@@ -65,6 +65,28 @@ service cloud.firestore {
       allow write: if false; // Apenas o backend (Cloud Functions) pode escrever
     }
 
+    // Regra para Unidades
+    match /units/{unitId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Regra para Aulas (Grade)
+    match /classes/{classId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Permite que usuários autenticados (professores) atualizem a presença
+    }
+
+    // Regra para Modelos de Aulas Recorrentes
+    match /classTemplates/{templateId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para Instâncias de Aulas (presença)
+    match /classInstances/{instanceId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Regra existente para prospects
     match /artifacts/{appId}/public/data/prospects/{prospectId} {
       // Permite que qualquer pessoa crie um novo lead (formulário público) e leia a lista de prospects

@@ -874,14 +874,39 @@ const _snapshotDailyEvoData = async () => {
 
         const salesQuery = db.collection('inscricoesFaixaPreta')
             .where('created', '>=', todayStart)
-            .where('created', '<=', todayEnd)
-            .where('paymentStatus', '==', 'paid');
+            .where('created', '<=', todayEnd);
 
         const salesSnapshot = await salesQuery.get();
-        const sales = salesSnapshot.docs.map(doc => doc.data());
+        const sales = salesSnapshot.docs
+            .map(doc => doc.data())
+            .filter(sale => sale.paymentStatus === 'paid');
 
         const totalSales = sales.length;
         const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
+
+        // Calcula a receita por unidade
+        const revenueByUnit = sales.reduce((acc, sale) => {
+            const unitId = sale.userUnit || 'desconhecida';
+            if (!acc[unitId]) {
+                acc[unitId] = 0;
+            }
+            acc[unitId] += sale.amountTotal || 0;
+            return acc;
+        }, {});
+
+        // Adiciona a receita da loja a cada unidade no snapshot
+        for (const unitId in revenueByUnit) {
+            if (snapshotData.units[unitId]) {
+                snapshotData.units[unitId].storeRevenue = revenueByUnit[unitId];
+            } else {
+                // Caso a unidade da venda não exista na lista de unidades EVO (ex: 'store')
+                snapshotData.units[unitId] = {
+                    contracts: 0,
+                    dailyActives: 0,
+                    storeRevenue: revenueByUnit[unitId]
+                };
+            }
+        }
 
         // Adicionar totais da loja ao snapshot
         snapshotData.storeTotalSales = totalSales;

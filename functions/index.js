@@ -192,8 +192,9 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     return res.status(200).json({ status: 'success', saleIds: allDocIds, message: 'Payment verified and status updated (fallback).' });
                 }
             }
+        } else {
+            return res.status(200).json({ status: 'not_paid', message: 'Payment not completed.' });
         }
-        return res.status(200).json({ status: 'not_paid', message: 'Payment not completed.' });
     } catch (error) {
         console.error('Error verifying payment:', error);
         return res.status(500).json({ status: 'error', message: error.message });

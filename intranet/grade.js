@@ -1,0 +1,442 @@
+import { db, functions } from './firebase-config.js';
+import { onAuthReady } from './auth.js';
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Elementos da Grade
+    const unitFilter = document.getElementById('unit-filter');
+    const dateRangeDisplay = document.getElementById('date-range-display');
+    const scheduleGrid = document.getElementById('schedule-grid');
+    const prevWeekBtn = document.getElementById('prev-week-btn');
+    const nextWeekBtn = document.getElementById('next-week-btn');
+    const addClassBtn = document.getElementById('add-class-btn');
+
+    // Elementos do Modal de Presença
+    const attendanceModal = document.getElementById('attendance-modal');
+    const closeAttendanceModalBtn = document.getElementById('close-attendance-modal-btn');
+    const modalClassTitle = document.getElementById('modal-class-title');
+    const modalClassTime = document.getElementById('modal-class-time');
+    const modalClassOccupation = document.getElementById('modal-class-occupation');
+    const modalClassTeacher = document.getElementById('modal-class-teacher');
+    const studentList = document.getElementById('student-list');
+
+    // Elementos do Modal de Aula
+    const classModal = document.getElementById('class-modal');
+    const closeClassModalBtn = document.getElementById('close-class-modal-btn');
+    const cancelClassBtn = document.getElementById('cancel-class-btn');
+    const classForm = document.getElementById('class-form');
+    const classModalTitle = document.getElementById('class-modal-title');
+    const classTeacherSelect = document.getElementById('class-teacher');
+    const classStudentsSelect = document.getElementById('class-students');
+
+    let currentClassId = null; // Armazena o ID da instância da aula (templateId_data)
+    let currentWeekStartDate = getStartOfWeek(new Date());
+    let selectedUnitId = null;
+
+    // --- Funções de Data ---
+    function getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
+
+    function formatDate(date) {
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+
+    // --- Funções de Renderização ---
+    async function renderGrid() {
+        if (!selectedUnitId) {
+            scheduleGrid.innerHTML = '<p class="text-center text-gray-400">Selecione uma unidade para ver a grade.</p>';
+            return;
+        }
+        
+        updateDateRangeDisplay();
+        scheduleGrid.innerHTML = '';
+
+        const days = Array.from({ length: 7 }).map((_, i) => {
+            const date = new Date(currentWeekStartDate);
+            date.setDate(date.getDate() + i);
+            return date;
+        });
+
+        const header = document.createElement('div');
+        header.className = 'grid grid-cols-8 gap-2 sticky top-0 bg-[#1a1a1a] z-20';
+        header.innerHTML = '<div class="p-2"></div>' + days.map(d => `
+            <div class="text-center p-2">
+                <div class="font-semibold">${d.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase()}</div>
+                <div class="text-gray-400 text-sm">${formatDate(d)}</div>
+            </div>
+        `).join('');
+        scheduleGrid.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'grid grid-cols-8 gap-2 relative';
+
+        const timeColumn = document.createElement('div');
+        for (let hour = 7; hour < 22; hour++) {
+            timeColumn.innerHTML += `<div class="hour-label flex items-start justify-center pt-1 text-sm text-gray-400">${String(hour).padStart(2, '0')}:00</div>`;
+        }
+        body.appendChild(timeColumn);
+
+        for (let i = 0; i < 7; i++) {
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'relative border-l border-gray-700';
+            dayColumn.dataset.date = days[i].toISOString().split('T')[0];
+            for (let hour = 7; hour < 22; hour++) {
+                dayColumn.innerHTML += '<div class="time-slot border-t border-dashed border-gray-700"></div><div class="time-slot border-t border-dashed border-gray-700"></div>';
+            }
+            body.appendChild(dayColumn);
+        }
+        scheduleGrid.appendChild(body);
+
+        await fetchAndRenderClasses(days);
+    }
+
+    function updateDateRangeDisplay() {
+        const endDate = new Date(currentWeekStartDate);
+        endDate.setDate(endDate.getDate() + 6);
+        dateRangeDisplay.textContent = `${formatDate(currentWeekStartDate)} - ${formatDate(endDate)}`;
+    }
+
+    async function fetchAndRenderClasses(days) {
+        try {
+            console.log(`Buscando templates para unidade: ${selectedUnitId}`);
+            const templatesQuery = query(collection(db, 'classTemplates'), where('unitId', '==', selectedUnitId));
+            const templatesSnapshot = await getDocs(templatesQuery);
+            const templates = [];
+            templatesSnapshot.forEach(doc => {
+                templates.push({ id: doc.id, ...doc.data() });
+            });
+            console.log(`Encontrados ${templates.length} templates de aula.`);
+
+            for (const day of days) {
+                const dayOfWeek = day.getDay();
+                for (const template of templates) {
+                    console.log(`VERIFICANDO: Template '${template.name}', Dias salvos: [${template.daysOfWeek}], Dia da semana atual: ${dayOfWeek}`);
+                    if (template.daysOfWeek && template.daysOfWeek.includes(dayOfWeek) && template.time) {
+                        console.log(`CORRESPONDÊNCIA ENCONTRADA: Template ${template.name} para o dia da semana ${dayOfWeek}.`);
+                        const [hour, minute] = template.time.split(':').map(Number);
+                        const startTime = new Date(day);
+                        startTime.setHours(hour, minute, 0, 0);
+
+                        const endTime = new Date(startTime.getTime() + template.duration * 60000);
+                        const instanceId = `${template.id}_${day.toISOString().split('T')[0]}`;
+
+                        const instanceRef = doc(db, 'classInstances', instanceId);
+                        const instanceSnap = await getDoc(instanceRef);
+                        const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
+
+                        const classInstanceData = {
+                            ...template,
+                            templateId: template.id,
+                            id: instanceId,
+                            startTime: startTime,
+                            endTime: endTime,
+                            presentStudents: presentStudents
+                        };
+                        console.log('Renderizando card para:', classInstanceData);
+                        renderClassCard(classInstanceData);
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error("Erro ao buscar modelos de aula:", error);
+        }
+    }
+
+    function renderClassCard(classData) {
+        const startTime = classData.startTime;
+        const endTime = classData.endTime;
+        const dayDateStr = startTime.toISOString().split('T')[0];
+        
+        const dayColumn = scheduleGrid.querySelector(`[data-date="${dayDateStr}"]`);
+        if (!dayColumn) return;
+
+        const startHour = 7;
+        const pixelsPerHour = 120;
+        const pixelsPerMinute = pixelsPerHour / 60;
+
+        const startMinutes = (startTime.getHours() - startHour) * 60 + startTime.getMinutes();
+        const durationMinutes = (endTime - startTime) / 60000;
+        
+        const top = startMinutes * pixelsPerMinute;
+        const height = durationMinutes * pixelsPerMinute;
+
+        const card = document.createElement('div');
+        card.className = 'class-card absolute w-full bg-yellow-500/20 border-l-4 border-yellow-500 p-2 rounded-r-lg cursor-pointer overflow-hidden';
+        card.style.top = `${top}px`;
+        card.style.height = `${height - 2}px`;
+        card.dataset.classId = classData.id;
+        card.dataset.templateId = classData.templateId;
+
+        card.innerHTML = `
+            <div class="font-bold text-sm text-white">${classData.name}</div>
+            <div class="text-xs text-gray-300">${classData.teacherName}</div>
+            <div class="text-xs text-gray-400 mt-1">Presença: ${classData.presentStudents.length}/${classData.students.length}</div>
+        `;
+
+        card.addEventListener('click', () => openAttendanceModal(classData));
+        dayColumn.appendChild(card);
+    }
+
+    async function openClassModal() {
+        classForm.reset();
+        classModalTitle.textContent = 'Agendar Nova Aula';
+        
+        if (selectedUnitId) {
+            await populateTeacherAndStudentSelectors(selectedUnitId);
+            classModal.classList.remove('hidden');
+        } else {
+            alert("Por favor, selecione uma unidade primeiro.");
+        }
+    }
+
+    function closeClassModal() {
+        classModal.classList.add('hidden');
+    }
+
+    async function populateTeacherAndStudentSelectors(unitId) {
+        classTeacherSelect.innerHTML = '<option value="">Carregando...</option>';
+        classStudentsSelect.innerHTML = '<option value="">Carregando...</option>';
+
+        try {
+            classTeacherSelect.innerHTML = '<option value="">Selecione um Professor</option>';
+            const instructorsQuery = query(collection(db, 'users'), where('isInstructor', '==', true));
+            const instructorsSnapshot = await getDocs(instructorsQuery);
+            if (instructorsSnapshot.empty) {
+                classTeacherSelect.innerHTML = '<option value="">Nenhum professor encontrado</option>';
+            } else {
+                instructorsSnapshot.forEach((doc) => {
+                    const instructor = doc.data();
+                    const option = new Option(instructor.name, doc.id);
+                    classTeacherSelect.add(option);
+                });
+            }
+
+            const listAllMembers = httpsCallable(functions, 'listAllMembers');
+            const result = await listAllMembers({ unitId });
+            const members = result.data;
+            
+            classStudentsSelect.innerHTML = '';
+            const studentsOfUnit = members.filter(m => !m.isInstructor);
+            if (studentsOfUnit.length > 0) {
+                studentsOfUnit.forEach(student => {
+                    const option = new Option(`${student.firstName} ${student.lastName || ''}`, student.idMember);
+                    classStudentsSelect.add(option);
+                });
+            } else {
+                 classStudentsSelect.innerHTML = '<option value="">Nenhum aluno encontrado</option>';
+            }
+
+        } catch (error) {
+            console.error("Erro ao carregar dados para o modal:", error);
+            classTeacherSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            classStudentsSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
+    }
+
+    async function handleClassFormSubmit(e) {
+        e.preventDefault();
+        if (!selectedUnitId) {
+            alert("Unidade não selecionada.");
+            return;
+        }
+
+        const selectedDays = Array.from(document.querySelectorAll('#class-days-of-week .day-toggle.bg-blue-600')).map(btn => parseInt(btn.dataset.day));
+        if (selectedDays.length === 0) {
+            alert("Selecione pelo menos um dia da semana.");
+            return;
+        }
+
+        const formData = new FormData(classForm);
+        const selectedStudents = Array.from(classStudentsSelect.selectedOptions).map(opt => opt.value);
+        
+        const classTemplate = {
+            name: formData.get('class-name'),
+            teacherId: formData.get('class-teacher'),
+            teacherName: classTeacherSelect.options[classTeacherSelect.selectedIndex].text,
+            daysOfWeek: selectedDays,
+            time: formData.get('class-time'),
+            duration: parseInt(formData.get('class-duration'), 10),
+            capacity: parseInt(formData.get('class-capacity'), 10),
+            students: selectedStudents,
+            unitId: selectedUnitId
+        };
+
+        try {
+            await addDoc(collection(db, 'classTemplates'), classTemplate);
+            closeClassModal();
+            renderGrid();
+        } catch (error) {
+            console.error("Erro ao salvar modelo de aula:", error);
+            alert("Falha ao salvar a aula.");
+        }
+    }
+
+    async function openAttendanceModal(classData) {
+        currentClassId = classData.id;
+        studentList.innerHTML = '<p class="text-gray-400">Carregando alunos...</p>';
+        attendanceModal.classList.remove('hidden');
+
+        try {
+            const startTime = classData.startTime;
+            const endTime = classData.endTime;
+            modalClassTitle.textContent = classData.name;
+            modalClassTime.textContent = `${startTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })} - ${startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} às ${endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            modalClassTeacher.textContent = classData.teacherName;
+
+            const instanceRef = doc(db, 'classInstances', classData.id);
+            const instanceSnap = await getDoc(instanceRef);
+            const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
+
+            modalClassOccupation.textContent = `${presentStudents.length}/${classData.students.length}`;
+            
+            studentList.innerHTML = '';
+            if (!classData.students || classData.students.length === 0) {
+                studentList.innerHTML = '<p class="text-gray-400">Nenhum aluno inscrito.</p>';
+                return;
+            }
+
+            const listAllMembers = httpsCallable(functions, 'listAllMembers');
+            const result = await listAllMembers({ unitId: classData.unitId });
+            const allUnitMembers = result.data;
+            const membersMap = new Map(allUnitMembers.map(m => [m.idMember.toString(), m]));
+
+            for (const studentId of classData.students) {
+                const studentData = membersMap.get(studentId.toString());
+                if (studentData) {
+                    const isPresent = presentStudents.includes(studentId);
+                    const studentElement = document.createElement('div');
+                    studentElement.className = 'flex items-center justify-between p-2 bg-gray-800 rounded-lg';
+                    studentElement.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${studentData.photoUrl || 'default-profile.svg'}" alt="Foto" class="w-10 h-10 rounded-full object-cover">
+                            <div>
+                                <div class="font-medium text-white">${studentData.firstName} ${studentData.lastName || ''}</div>
+                                <div class="text-sm ${isPresent ? 'text-green-400' : 'text-gray-400'}">${isPresent ? 'Presente' : 'Ausente'}</div>
+                            </div>
+                        </div>
+                        <button data-student-id="${studentId}" class="toggle-presence-btn text-sm py-1 px-3 rounded-lg ${isPresent ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}">
+                            ${isPresent ? 'Marcar Ausência' : 'Marcar Presença'}
+                        </button>
+                    `;
+                    studentList.appendChild(studentElement);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao abrir modal de presença:", error);
+            studentList.innerHTML = '<p class="text-red-400">Erro ao carregar.</p>';
+        }
+    }
+
+    function closeAttendanceModal() {
+        attendanceModal.classList.add('hidden');
+        currentClassId = null;
+    }
+
+    async function handlePresenceToggle(e) {
+        if (!e.target.classList.contains('toggle-presence-btn')) return;
+        const button = e.target;
+        const studentId = button.dataset.studentId;
+        if (!studentId || !currentClassId) return;
+
+        const instanceRef = doc(db, 'classInstances', currentClassId);
+        try {
+            const instanceSnap = await getDoc(instanceRef);
+            const isPresent = button.textContent.trim() === 'Marcar Ausência';
+
+            if (instanceSnap.exists()) {
+                await updateDoc(instanceRef, {
+                    presentStudents: isPresent ? arrayRemove(studentId) : arrayUnion(studentId)
+                });
+            } else if (!isPresent) {
+                const [templateId, date] = currentClassId.split('_');
+                await setDoc(instanceRef, {
+                    templateId: templateId,
+                    date: date,
+                    unitId: selectedUnitId,
+                    presentStudents: [studentId]
+                });
+            }
+            
+            const statusDiv = button.closest('.flex').querySelector('.text-sm');
+            button.textContent = isPresent ? 'Marcar Presença' : 'Marcar Ausência';
+            button.classList.toggle('bg-red-600');
+            button.classList.toggle('hover:bg-red-700');
+            button.classList.toggle('bg-green-600');
+            button.classList.toggle('hover:bg-green-700');
+            statusDiv.textContent = isPresent ? 'Ausente' : 'Presente';
+            statusDiv.classList.toggle('text-green-400');
+            statusDiv.classList.toggle('text-gray-400');
+
+            const updatedSnap = await getDoc(instanceRef);
+            const presentStudents = updatedSnap.exists() ? updatedSnap.data().presentStudents : [];
+            const totalStudents = classStudentsSelect.length;
+            modalClassOccupation.textContent = `${presentStudents.length}/${totalStudents}`;
+            
+            renderGrid();
+        } catch (error) {
+            console.error("Erro ao atualizar presença:", error);
+        }
+    }
+
+    async function initialize() {
+        try {
+            const getPublicEvoUnits = httpsCallable(functions, 'getPublicEvoUnits');
+            const result = await getPublicEvoUnits();
+            const units = result.data;
+            
+            unitFilter.innerHTML = '<option value="">Selecione a Unidade</option>';
+            units.forEach(unitId => {
+                const option = document.createElement('option');
+                option.value = unitId;
+                option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                unitFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Erro ao carregar unidades do EVO:", error);
+            unitFilter.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
+        renderGrid();
+    }
+
+    unitFilter.addEventListener('change', (e) => {
+        selectedUnitId = e.target.value;
+        renderGrid();
+    });
+    prevWeekBtn.addEventListener('click', () => {
+        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
+        renderGrid();
+    });
+    nextWeekBtn.addEventListener('click', () => {
+        currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7);
+        renderGrid();
+    });
+
+    closeAttendanceModalBtn.addEventListener('click', closeAttendanceModal);
+    studentList.addEventListener('click', handlePresenceToggle);
+    
+    addClassBtn.addEventListener('click', openClassModal);
+    closeClassModalBtn.addEventListener('click', closeClassModal);
+    cancelClassBtn.addEventListener('click', closeClassModal);
+    classForm.addEventListener('submit', handleClassFormSubmit);
+
+    document.getElementById('class-days-of-week').addEventListener('click', (e) => {
+        if (e.target.classList.contains('day-toggle')) {
+            e.target.classList.toggle('bg-gray-600');
+            e.target.classList.toggle('bg-blue-600');
+        }
+    });
+
+    onAuthReady(user => {
+        if (user) {
+            initialize();
+        } else {
+            console.log("Usuário não autenticado.");
+        }
+    });
+});
