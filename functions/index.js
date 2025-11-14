@@ -176,7 +176,6 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                 // Fallback for older sessions
                 const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
                 if (!querySnapshot.empty) {
-                    const firstDoc = querySnapshot.docs[0];
                     for (const doc of querySnapshot.docs) {
                         await doc.ref.update({ paymentStatus: 'paid' });
                         console.log(`Updated payment status to 'paid' for doc ${doc.id} (fallback)`);
@@ -253,6 +252,76 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Função para corrigir o status de pagamentos antigos
+exports.fixOldSalesStatus = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*'); // Permitir CORS para ser chamado do navegador
+
+    // Uma chave secreta simples para evitar execuções acidentais.
+    const SECRET_KEY = "kihap-corrige"; // Você pode mudar isso se quiser
+    if (req.query.secret !== SECRET_KEY) {
+        return res.status(403).send('Acesso não autorizado.');
+    }
+
+    try {
+        console.log('Iniciando processo para corrigir status de vendas antigas...');
+        const salesRef = db.collection('inscricoesFaixaPreta');
+        
+        // 1. Encontrar todas as vendas pendentes que têm um ID de sessão do Stripe
+        const pendingSalesSnapshot = await salesRef.where('paymentStatus', '==', 'pending').get();
+
+        if (pendingSalesSnapshot.empty) {
+            console.log('Nenhuma venda pendente encontrada para processar.');
+            return res.status(200).send('Nenhuma venda pendente encontrada para processar.');
+        }
+
+        // 2. Agrupar vendas pendentes por checkoutSessionId
+        const salesBySession = {};
+        pendingSalesSnapshot.docs.forEach(doc => {
+            const sale = doc.data();
+            if (sale.checkoutSessionId) {
+                if (!salesBySession[sale.checkoutSessionId]) {
+                    salesBySession[sale.checkoutSessionId] = [];
+                }
+                salesBySession[sale.checkoutSessionId].push({ id: doc.id, ...sale });
+            }
+        });
+
+        let updatedCount = 0;
+
+        // 3. Iterar sobre cada sessão que tem vendas pendentes
+        for (const sessionId in salesBySession) {
+            // 4. Verificar se existe PELO MENOS UMA venda paga para esta mesma sessão
+            const paidSaleSnapshot = await salesRef
+                .where('checkoutSessionId', '==', sessionId)
+                .where('paymentStatus', '==', 'paid')
+                .limit(1)
+                .get();
+
+            // 5. Se encontrarmos uma venda paga, significa que o pagamento da sessão foi bem-sucedido
+            if (!paidSaleSnapshot.empty) {
+                const pendingSalesInSession = salesBySession[sessionId];
+                console.log(`Sessão ${sessionId} tem um pagamento confirmado. Corrigindo ${pendingSalesInSession.length} venda(s) pendente(s).`);
+
+                // Atualiza todas as vendas pendentes desta sessão para "pago"
+                for (const pendingSale of pendingSalesInSession) {
+                    await salesRef.doc(pendingSale.id).update({ paymentStatus: 'paid' });
+                    updatedCount++;
+                    console.log(`Status da venda ${pendingSale.id} atualizado para 'pago'.`);
+                }
+            }
+        }
+
+        const message = `Processo concluído. ${updatedCount} venda(s) foram atualizadas.`;
+        console.log(message);
+        return res.status(200).send(message);
+
+    } catch (error) {
+        console.error('Erro ao corrigir status de vendas antigas:', error);
+        return res.status(500).send('Ocorreu um erro durante o processo. Verifique os logs da função.');
+    }
+});
+
 
 // Importa e exporta todas as funções do evo.js
 const evoFunctions = require('./evo.js');
