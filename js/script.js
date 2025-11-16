@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const isSubPage = window.location.pathname.includes('/programas/') || window.location.pathname.includes('/unidades/') || window.location.pathname.includes('/desenvolvimento/');
+    const isSubPage = window.location.pathname.includes('/programas/') || 
+                      window.location.pathname.includes('/unidades/') || 
+                      window.location.pathname.includes('/desenvolvimento/') ||
+                      window.location.pathname.includes('/members/');
     const componentBasePath = isSubPage ? '../components/' : 'components/';
     const assetBasePath = isSubPage ? '../' : './';
 
@@ -47,21 +50,25 @@ document.addEventListener("DOMContentLoaded", function() {
         const closeButton = document.getElementById('mobile-menu-close-button');
         const menu = document.getElementById('mobile-menu');
         const overlay = document.getElementById('mobile-menu-overlay');
-        const menuLinks = menu.querySelectorAll('a');
 
         const openMenu = () => {
-            menu.classList.add('is-open');
-            overlay.classList.add('is-open');
-            document.body.classList.add('no-scroll');
+            if (menu && overlay) {
+                menu.classList.add('is-open');
+                overlay.classList.add('is-open');
+                document.body.classList.add('no-scroll');
+            }
         };
 
         const closeMenu = () => {
-            menu.classList.remove('is-open');
-            overlay.classList.remove('is-open');
-            document.body.classList.remove('no-scroll');
+            if (menu && overlay) {
+                menu.classList.remove('is-open');
+                overlay.classList.remove('is-open');
+                document.body.classList.remove('no-scroll');
+            }
         };
 
         if (openButton && menu && overlay && closeButton) {
+            const menuLinks = menu.querySelectorAll('a');
             openButton.addEventListener('click', openMenu);
             closeButton.addEventListener('click', closeMenu);
             overlay.addEventListener('click', closeMenu);
@@ -72,33 +79,35 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // Inicializar o Swiper
-    var swiper = new Swiper('.program-swiper', {
-        loop: true,
-        slidesPerView: 'auto',
-        spaceBetween: 15,
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-        },
-        navigation: {
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-        },
-        breakpoints: {
-            640: {
-                slidesPerView: 2,
-                spaceBetween: 20,
+    if (document.querySelector('.program-swiper')) {
+        var swiper = new Swiper('.program-swiper', {
+            loop: true,
+            slidesPerView: 'auto',
+            spaceBetween: 15,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
             },
-            768: {
-                slidesPerView: 3,
-                spaceBetween: 30,
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
             },
-            1024: {
-                slidesPerView: 4,
-                spaceBetween: 40,
-            },
-        }
-    });
+            breakpoints: {
+                640: {
+                    slidesPerView: 2,
+                    spaceBetween: 20,
+                },
+                768: {
+                    slidesPerView: 3,
+                    spaceBetween: 30,
+                },
+                1024: {
+                    slidesPerView: 4,
+                    spaceBetween: 40,
+                },
+            }
+        });
+    }
 
     // Aplicar fundos dinâmicos aos cards de unidade
     document.querySelectorAll('.unit-card').forEach(card => {

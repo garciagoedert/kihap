@@ -53,7 +53,18 @@ async function fetchSales() {
     try {
         const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
         const querySnapshot = await getDocs(q);
-        allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const salesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const salesBySession = salesData.reduce((acc, sale) => {
+            const key = sale.checkoutSessionId || sale.id;
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(sale);
+            return acc;
+        }, {});
+
+        allSales = Object.values(salesBySession);
     } catch (error) {
         console.error('Error fetching sales:', error);
     }
@@ -70,49 +81,58 @@ function applyFilters() {
     const selectedProduct = productFilter.value;
     const selectedDate = dateFilter.value;
 
-    let filteredSales = allSales.filter(sale => {
-        const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
-        const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
-        const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-        const productMatch = !selectedProduct || sale.productId === selectedProduct;
-        
-        let dateMatch = true;
-        if (selectedDate && sale.created) {
-            const saleDate = sale.created.toDate().toISOString().split('T')[0];
-            dateMatch = saleDate === selectedDate;
-        }
+    let filteredGroups = allSales.filter(group => {
+        return group.some(sale => {
+            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+            const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
+            const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
+            const productMatch = !selectedProduct || sale.productId === selectedProduct;
 
-        return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+            let dateMatch = true;
+            if (selectedDate && sale.created) {
+                const saleDate = sale.created.toDate().toISOString().split('T')[0];
+                dateMatch = saleDate === selectedDate;
+            }
+
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+        });
     });
 
-    renderSalesLog(filteredSales);
+    renderSalesLog(filteredGroups);
 }
 
-function renderSalesLog(salesToDisplay) {
+function renderSalesLog(groupsToDisplay) {
     const logBody = document.getElementById('sales-table-body');
     if (!logBody) return;
 
-    const paginatedSales = salesToDisplay.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const paginatedGroups = groupsToDisplay.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-    if (paginatedSales.length === 0) {
+    if (paginatedGroups.length === 0) {
         logBody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-gray-500">Nenhuma venda encontrada.</td></tr>`;
         renderPagination(0);
         return;
     }
 
-    logBody.innerHTML = paginatedSales.map(sale => {
-        const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
-        const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
-        const status = renderStatusTag(sale.paymentStatus);
+    logBody.innerHTML = paginatedGroups.map(group => {
+        const mainSale = group[0];
+        const totalAmount = group.reduce((sum, sale) => sum + sale.amountTotal, 0);
+        const date = mainSale.created ? new Date(mainSale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
+        const amount = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: mainSale.currency || 'BRL' });
+        const status = renderStatusTag(mainSale.paymentStatus);
+        const productName = group.length > 1 ? `${mainSale.productName} (x${group.length})` : mainSale.productName;
+        
+        const namesList = group.map(sale => sale.userName || 'N/A').join('<br>');
+        const emailsList = group.map(sale => sale.userEmail || 'N/A').join('<br>');
+        const phonesList = group.map(sale => sale.userPhone || 'N/A').join('<br>');
 
         return `
             <tr class="hover:bg-[#2a2a2a]">
-                <td class="p-4">${sale.userName || 'N/A'}</td>
-                <td class="p-4">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4">${sale.userPhone || 'N/A'}</td>
-                <td class="p-4">${sale.productName || 'N/A'}</td>
-                <td class="p-4">${sale.userPrograma || 'N/A'}</td>
-                <td class="p-4">${sale.userGraduacao || 'N/A'}</td>
+                <td class="p-4">${namesList}</td>
+                <td class="p-4">${emailsList}</td>
+                <td class="p-4">${phonesList}</td>
+                <td class="p-4">${productName}</td>
+                <td class="p-4">${mainSale.userPrograma || 'N/A'}</td>
+                <td class="p-4">${mainSale.userGraduacao || 'N/A'}</td>
                 <td class="p-4">${amount}</td>
                 <td class="p-4">${status}</td>
                 <td class="p-4">${date}</td>
@@ -120,7 +140,7 @@ function renderSalesLog(salesToDisplay) {
         `;
     }).join('');
 
-    renderPagination(salesToDisplay.length);
+    renderPagination(groupsToDisplay.length);
 }
 
 function renderPagination(totalItems) {

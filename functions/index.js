@@ -92,11 +92,43 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 currency: currency,
                 paymentStatus: 'pending',
                 couponCode: couponCode || null,
-                recommendedItems: recommendedItems || [],
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
             saleDocIds.push(docRef.id);
+        }
+
+        // Process recommended items as separate sales
+        if (recommendedItems && recommendedItems.length > 0 && formDataList.length > 0) {
+            const primaryBuyerData = formDataList[0]; // Associate with the first buyer
+
+            for (const item of recommendedItems) {
+                const recommendedProductRef = db.collection('products').doc(item.productId);
+                const recommendedProductDoc = await recommendedProductRef.get();
+                const recommendedProductName = recommendedProductDoc.exists ? recommendedProductDoc.data().name : item.productName;
+
+                for (let i = 0; i < item.quantity; i++) {
+                    const saleData = {
+                        userName: primaryBuyerData.userName,
+                        userEmail: primaryBuyerData.userEmail,
+                        userPhone: primaryBuyerData.userPhone,
+                        userCpf: primaryBuyerData.userCpf,
+                        userUnit: primaryBuyerData.userUnit,
+                        userId: primaryBuyerData.userId,
+                        userPrograma: null,
+                        userGraduacao: null,
+                        productId: item.productId,
+                        productName: recommendedProductName,
+                        amountTotal: item.amount / item.quantity,
+                        currency: currency,
+                        paymentStatus: 'pending',
+                        couponCode: couponCode || null,
+                        created: admin.firestore.FieldValue.serverTimestamp(),
+                    };
+                    const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+                    saleDocIds.push(docRef.id);
+                }
+            }
         }
 
         const session = await stripe.checkout.sessions.create({
@@ -241,10 +273,41 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
                 currency: currency,
                 paymentStatus: 'paid',
                 couponCode: couponCode || null,
-                recommendedItems: recommendedItems || [],
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             await db.collection('inscricoesFaixaPreta').add(saleData);
+        }
+
+        // Process recommended items for free purchases
+        if (recommendedItems && recommendedItems.length > 0 && formDataList.length > 0) {
+            const primaryBuyerData = formDataList[0]; // Associate with the first buyer
+
+            for (const item of recommendedItems) {
+                const recommendedProductRef = db.collection('products').doc(item.productId);
+                const recommendedProductDoc = await recommendedProductRef.get();
+                const recommendedProductName = recommendedProductDoc.exists ? recommendedProductDoc.data().name : item.productName;
+
+                for (let i = 0; i < item.quantity; i++) {
+                    const saleData = {
+                        userName: primaryBuyerData.userName,
+                        userEmail: primaryBuyerData.userEmail,
+                        userPhone: primaryBuyerData.userPhone,
+                        userCpf: primaryBuyerData.userCpf,
+                        userUnit: primaryBuyerData.userUnit,
+                        userId: primaryBuyerData.userId,
+                        userPrograma: null,
+                        userGraduacao: null,
+                        productId: item.productId,
+                        productName: recommendedProductName,
+                        amountTotal: 0, // Free
+                        currency: currency,
+                        paymentStatus: 'paid',
+                        couponCode: couponCode || null,
+                        created: admin.firestore.FieldValue.serverTimestamp(),
+                    };
+                    await db.collection('inscricoesFaixaPreta').add(saleData);
+                }
+            }
         }
 
         res.status(200).json({ status: 'success', message: 'Free purchase processed successfully.' });
@@ -321,6 +384,169 @@ exports.fixOldSalesStatus = functions.https.onRequest(async (req, res) => {
         console.error('Erro ao corrigir status de vendas antigas:', error);
         return res.status(500).send('Ocorreu um erro durante o processo. Verifique os logs da função.');
     }
+});
+
+
+// Cloud Function para criar uma sessão de checkout para assinatura (versão robusta)
+exports.createSubscriptionCheckout = functions.https.onCall(async (data, context) => {
+    // 1. Validação de Autenticação e Dados de Entrada
+    if (!context.auth || !context.auth.token.email) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado com um e-mail válido para assinar.');
+    }
+    const { priceId } = data;
+    if (!priceId) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID do plano (priceId) é obrigatório.');
+    }
+
+    const userId = context.auth.uid;
+    const userEmail = context.auth.token.email;
+
+    try {
+        // 2. Validação do Usuário no Firestore
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists()) {
+            console.error(`Usuário ${userId} autenticado mas não encontrado no Firestore.`);
+            throw new functions.https.HttpsError('not-found', 'Não foi possível encontrar os dados do usuário.');
+        }
+        
+        const userData = userSnap.data();
+        let customerId = userData.stripeCustomerId;
+
+        // 3. Criação de Cliente Stripe (se necessário)
+        if (!customerId) {
+            console.log(`Criando novo cliente Stripe para o usuário ${userId}`);
+            const customer = await stripe.customers.create({
+                email: userEmail,
+                name: userData.name || userEmail,
+                metadata: { firebaseUID: userId }
+            });
+            customerId = customer.id;
+            await userRef.update({ stripeCustomerId: customerId });
+            console.log(`Cliente Stripe ${customerId} criado e associado ao usuário ${userId}`);
+        }
+
+        // 4. Criação da Sessão de Checkout no Stripe
+        console.log(`Criando sessão de checkout para o cliente ${customerId} com o plano ${priceId}`);
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer: customerId,
+            line_items: [{ price: priceId, quantity: 1 }],
+            mode: 'subscription',
+            success_url: `https://www.kihap.com.br/members/index.html?subscription_success=true`,
+            cancel_url: `https://www.kihap.com.br/members/assinatura.html`,
+            metadata: { firebaseUID: userId }
+        });
+
+        return { sessionId: session.id };
+
+    } catch (error) {
+        // 5. Tratamento de Erros Detalhado
+        console.error("Erro detalhado ao criar sessão de checkout:", error);
+        if (error.type) {
+            // Erro específico da API do Stripe (ex: priceId inválido)
+            console.error("Erro da API do Stripe:", error.message);
+            throw new functions.https.HttpsError('aborted', `Erro de pagamento: ${error.message}`);
+        } else {
+            // Outro erro interno (ex: problema de permissão no Firebase)
+            console.error("Erro interno da função:", error.message);
+            throw new functions.https.HttpsError('internal', 'Não foi possível criar a sessão de checkout. Verifique os logs da função no Firebase Console.');
+        }
+    }
+});
+
+// Cloud Function para criar uma sessão do Portal do Cliente Stripe
+exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado.');
+    }
+
+    const userId = context.auth.uid;
+
+    try {
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+
+        if (!userSnap.exists()) {
+            console.error(`Usuário ${userId} autenticado mas não encontrado no Firestore ao tentar acessar o portal.`);
+            throw new functions.https.HttpsError('not-found', 'Não foi possível encontrar os dados do usuário.');
+        }
+
+        const userData = userSnap.data();
+        const customerId = userData.stripeCustomerId;
+
+        if (!customerId) {
+            throw new functions.https.HttpsError('not-found', 'Nenhum cliente Stripe encontrado para este usuário.');
+        }
+
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: `https://www.kihap.com.br/members/perfil.html`,
+        });
+
+        return { url: portalSession.url };
+
+    } catch (error) {
+        console.error("Erro ao criar a sessão do portal do cliente:", error);
+        throw new functions.https.HttpsError('internal', 'Não foi possível acessar o portal do cliente.');
+    }
+});
+
+// Cloud Function para lidar com os webhooks da Stripe
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = functions.config().stripe.webhook_secret;
+
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    } catch (err) {
+        console.error('⚠️  Webhook signature verification failed.', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Lida com o evento
+    switch (event.type) {
+        case 'checkout.session.completed': {
+            const session = event.data.object;
+            const userId = session.metadata.firebaseUID;
+            const subscriptionId = session.subscription;
+
+            // Atualiza o documento do usuário com o ID da assinatura e o status
+            await db.collection('users').doc(userId).update({
+                stripeSubscriptionId: subscriptionId,
+                subscriptionStatus: 'active'
+            });
+            break;
+        }
+        case 'customer.subscription.updated': {
+            const subscription = event.data.object;
+            const userIdQuery = await db.collection('users').where('stripeCustomerId', '==', subscription.customer).get();
+            if (!userIdQuery.empty) {
+                const userId = userIdQuery.docs[0].id;
+                await db.collection('users').doc(userId).update({
+                    subscriptionStatus: subscription.status
+                });
+            }
+            break;
+        }
+        case 'customer.subscription.deleted': {
+            const subscription = event.data.object;
+            const userIdQuery = await db.collection('users').where('stripeCustomerId', '==', subscription.customer).get();
+            if (!userIdQuery.empty) {
+                const userId = userIdQuery.docs[0].id;
+                await db.collection('users').doc(userId).update({
+                    subscriptionStatus: 'canceled'
+                });
+            }
+            break;
+        }
+        default:
+            console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.status(200).send();
 });
 
 

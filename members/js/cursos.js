@@ -6,6 +6,14 @@ export function loadStudentCourses() {
     onAuthReady(async (user) => {
         if (user) {
             const userData = await getUserData(user.uid);
+
+            // Controle de Acesso por Assinatura
+            if (!userData || userData.subscriptionStatus !== 'active') {
+                // Se não tiver dados ou a assinatura não estiver ativa, redireciona
+                window.location.href = 'assinatura.html';
+                return; 
+            }
+
             const accessibleContent = userData?.accessibleContent || [];
             
             const courseListContainer = document.getElementById('course-list');
