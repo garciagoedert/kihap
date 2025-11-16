@@ -149,9 +149,10 @@ function renderSalesLog(groupsToDisplay) {
         const phonesList = group.map(sale => sale.userPhone || 'N/A').join('<br>');
 
         // Verifica se pelo menos um e-mail no grupo foi enviado
-        const emailSentIcon = group.some(sale => sale.emailSent) 
-            ? '<i class="fas fa-check-circle text-green-500"></i>' 
-            : '<i class="fas fa-times-circle text-red-500"></i>';
+        const isAnyEmailSent = group.some(sale => sale.emailSent);
+        const emailSentStatusHtml = isAnyEmailSent
+            ? `<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">Enviado</span>`
+            : `<span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">Pendente</span>`;
 
         return `
             <tr class="hover:bg-[#2a2a2a]">
@@ -163,7 +164,7 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4">${mainSale.userGraduacao || 'N/A'}</td>
                 <td class="p-4">${amount}</td>
                 <td class="p-4">${status}</td>
-                <td class="p-4 text-center">${emailSentIcon}</td>
+                <td class="p-4">${emailSentStatusHtml}</td>
                 <td class="p-4">${date}</td>
             </tr>
         `;
