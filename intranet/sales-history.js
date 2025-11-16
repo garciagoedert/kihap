@@ -1,5 +1,6 @@
 import { db } from './firebase-config.js';
 import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady } from './auth.js';
 
@@ -24,6 +25,7 @@ async function initializeHistory() {
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
+    const syncBtn = document.getElementById('sync-status-btn');
 
     [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
         el.addEventListener('change', () => {
@@ -35,6 +37,27 @@ async function initializeHistory() {
                 currentPage = 1;
                 applyFilters();
             });
+        }
+    });
+
+    syncBtn.addEventListener('click', async () => {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Sincronizando...';
+        
+        try {
+            const functions = getFunctions();
+            const fixOldSalesStatus = httpsCallable(functions, 'fixOldSalesStatus');
+            const result = await fixOldSalesStatus();
+            alert(result.data.message);
+            // Recarregar os dados para refletir as atualizações
+            await fetchSales();
+            applyFilters();
+        } catch (error) {
+            console.error('Erro ao sincronizar status:', error);
+            alert(`Erro: ${error.message}`);
+        } finally {
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Status';
         }
     });
 }

@@ -184,17 +184,43 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
         if (session.payment_status === 'paid') {
-            const firestoreDocIdsString = session.metadata.firestoreDocIds;
-            if (firestoreDocIdsString) {
-                const firestoreDocIds = JSON.parse(firestoreDocIdsString);
+            let firestoreDocIds;
+            let attempt = 0;
+            const maxAttempts = 4; // Try for ~3 seconds
+
+            while (attempt < maxAttempts) {
+                // Re-fetch session inside the loop to ensure metadata is fresh
+                const refreshedSession = await stripe.checkout.sessions.retrieve(sessionId);
+                const firestoreDocIdsString = refreshedSession.metadata.firestoreDocIds;
+
+                if (firestoreDocIdsString) {
+                    firestoreDocIds = JSON.parse(firestoreDocIdsString);
+                    break; // Found via metadata, exit loop
+                }
+
+                // Fallback if metadata is not present
+                const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
+                if (!querySnapshot.empty) {
+                    firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
+                    break; // Found via fallback, exit loop
+                }
+
+                attempt++;
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+                }
+            }
+
+            if (firestoreDocIds && firestoreDocIds.length > 0) {
                 for (const docId of firestoreDocIds) {
                     const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
-                    await docRef.update({ paymentStatus: 'paid' });
-                    console.log(`Updated payment status to 'paid' for doc ${docId}`);
-
-                    // Após confirmar o pagamento, verifica se é um ingresso e envia o e-mail
                     const saleSnap = await docRef.get();
-                    if (saleSnap.exists()) {
+
+                    // Only update if status is 'pending' to avoid redundant triggers
+                    if (saleSnap.exists() && saleSnap.data().paymentStatus === 'pending') {
+                        await docRef.update({ paymentStatus: 'paid' });
+                        console.log(`Updated payment status to 'paid' for doc ${docId}`);
+
                         const saleData = saleSnap.data();
                         const productRef = db.collection('products').doc(saleData.productId);
                         const productSnap = await productRef.get();
@@ -205,24 +231,8 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                 }
                 return res.status(200).json({ status: 'success', saleIds: firestoreDocIds, message: 'All payments verified and statuses updated.' });
             } else {
-                // Fallback for older sessions
-                const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
-                if (!querySnapshot.empty) {
-                    for (const doc of querySnapshot.docs) {
-                        await doc.ref.update({ paymentStatus: 'paid' });
-                        console.log(`Updated payment status to 'paid' for doc ${doc.id} (fallback)`);
-                        
-                        // Envia e-mail de ingresso no fallback também
-                        const saleData = doc.data();
-                        const productRef = db.collection('products').doc(saleData.productId);
-                        const productSnap = await productRef.get();
-                        if (productSnap.exists() && productSnap.data().isTicket) {
-                            await sendTicketEmail(doc.id, saleData);
-                        }
-                    }
-                    const allDocIds = querySnapshot.docs.map(doc => doc.id);
-                    return res.status(200).json({ status: 'success', saleIds: allDocIds, message: 'Payment verified and status updated (fallback).' });
-                }
+                console.error(`Critical: Payment success for session ${sessionId}, but no corresponding Firestore docs found after ${maxAttempts} attempts.`);
+                return res.status(200).json({ status: 'error_registration', message: 'Payment verified but sale registration failed.' });
             }
         } else {
             return res.status(200).json({ status: 'not_paid', message: 'Payment not completed.' });
@@ -318,28 +328,23 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
 });
 
 // Função para corrigir o status de pagamentos antigos
-exports.fixOldSalesStatus = functions.https.onRequest(async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*'); // Permitir CORS para ser chamado do navegador
-
-    // Uma chave secreta simples para evitar execuções acidentais.
-    const SECRET_KEY = "kihap-corrige"; // Você pode mudar isso se quiser
-    if (req.query.secret !== SECRET_KEY) {
-        return res.status(403).send('Acesso não autorizado.');
+exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
+    // Apenas usuários autenticados podem chamar esta função
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
     }
 
     try {
         console.log('Iniciando processo para corrigir status de vendas antigas...');
         const salesRef = db.collection('inscricoesFaixaPreta');
         
-        // 1. Encontrar todas as vendas pendentes que têm um ID de sessão do Stripe
         const pendingSalesSnapshot = await salesRef.where('paymentStatus', '==', 'pending').get();
 
         if (pendingSalesSnapshot.empty) {
             console.log('Nenhuma venda pendente encontrada para processar.');
-            return res.status(200).send('Nenhuma venda pendente encontrada para processar.');
+            return { message: 'Nenhuma venda pendente encontrada para processar.' };
         }
 
-        // 2. Agrupar vendas pendentes por checkoutSessionId
         const salesBySession = {};
         pendingSalesSnapshot.docs.forEach(doc => {
             const sale = doc.data();
@@ -353,36 +358,31 @@ exports.fixOldSalesStatus = functions.https.onRequest(async (req, res) => {
 
         let updatedCount = 0;
 
-        // 3. Iterar sobre cada sessão que tem vendas pendentes
         for (const sessionId in salesBySession) {
-            // 4. Verificar se existe PELO MENOS UMA venda paga para esta mesma sessão
-            const paidSaleSnapshot = await salesRef
-                .where('checkoutSessionId', '==', sessionId)
-                .where('paymentStatus', '==', 'paid')
-                .limit(1)
-                .get();
+            try {
+                const session = await stripe.checkout.sessions.retrieve(sessionId);
+                if (session.payment_status === 'paid') {
+                    const pendingSalesInSession = salesBySession[sessionId];
+                    console.log(`Sessão ${sessionId} tem um pagamento confirmado. Corrigindo ${pendingSalesInSession.length} venda(s) pendente(s).`);
 
-            // 5. Se encontrarmos uma venda paga, significa que o pagamento da sessão foi bem-sucedido
-            if (!paidSaleSnapshot.empty) {
-                const pendingSalesInSession = salesBySession[sessionId];
-                console.log(`Sessão ${sessionId} tem um pagamento confirmado. Corrigindo ${pendingSalesInSession.length} venda(s) pendente(s).`);
-
-                // Atualiza todas as vendas pendentes desta sessão para "pago"
-                for (const pendingSale of pendingSalesInSession) {
-                    await salesRef.doc(pendingSale.id).update({ paymentStatus: 'paid' });
-                    updatedCount++;
-                    console.log(`Status da venda ${pendingSale.id} atualizado para 'pago'.`);
+                    for (const pendingSale of pendingSalesInSession) {
+                        await salesRef.doc(pendingSale.id).update({ paymentStatus: 'paid' });
+                        updatedCount++;
+                        console.log(`Status da venda ${pendingSale.id} atualizado para 'pago'.`);
+                    }
                 }
+            } catch (stripeError) {
+                console.warn(`Não foi possível verificar a sessão ${sessionId} no Stripe: ${stripeError.message}. Pulando...`);
             }
         }
 
         const message = `Processo concluído. ${updatedCount} venda(s) foram atualizadas.`;
         console.log(message);
-        return res.status(200).send(message);
+        return { message: message };
 
     } catch (error) {
         console.error('Erro ao corrigir status de vendas antigas:', error);
-        return res.status(500).send('Ocorreu um erro durante o processo. Verifique os logs da função.');
+        throw new functions.https.HttpsError('internal', 'Ocorreu um erro durante o processo. Verifique os logs da função.');
     }
 });
 
