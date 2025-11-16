@@ -148,6 +148,11 @@ function renderSalesLog(groupsToDisplay) {
         const emailsList = group.map(sale => sale.userEmail || 'N/A').join('<br>');
         const phonesList = group.map(sale => sale.userPhone || 'N/A').join('<br>');
 
+        // Verifica se pelo menos um e-mail no grupo foi enviado
+        const emailSentIcon = group.some(sale => sale.emailSent) 
+            ? '<i class="fas fa-check-circle text-green-500"></i>' 
+            : '<i class="fas fa-times-circle text-red-500"></i>';
+
         return `
             <tr class="hover:bg-[#2a2a2a]">
                 <td class="p-4">${namesList}</td>
@@ -158,6 +163,7 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4">${mainSale.userGraduacao || 'N/A'}</td>
                 <td class="p-4">${amount}</td>
                 <td class="p-4">${status}</td>
+                <td class="p-4 text-center">${emailSentIcon}</td>
                 <td class="p-4">${date}</td>
             </tr>
         `;

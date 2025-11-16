@@ -10,12 +10,23 @@ const db = admin.firestore();
 
 // Função para enviar o e-mail com o ingresso
 const sendTicketEmail = async (saleId, saleData) => {
+    console.log(`[sendTicketEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
+    
+    const gmailEmail = functions.config().gmail.email;
+    const gmailPassword = functions.config().gmail.password;
+
+    if (!gmailEmail || !gmailPassword) {
+        console.error('[sendTicketEmail] Erro Crítico: As credenciais do Gmail (email/senha) não estão configuradas no Firebase. Verifique as variáveis de ambiente.');
+        return; // Interrompe a execução se as credenciais não estiverem definidas
+    }
+    console.log(`[sendTicketEmail] Usando o e-mail: ${gmailEmail} para autenticação.`);
+
     // Lazy initialization do transporter para evitar erro de config no deploy
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: functions.config().gmail.email,
-            pass: functions.config().gmail.password,
+            user: gmailEmail,
+            pass: gmailPassword,
         },
     });
 
@@ -43,10 +54,15 @@ const sendTicketEmail = async (saleId, saleData) => {
             ]
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`E-mail de ingresso enviado para ${saleData.userEmail} para a venda ${saleId}`);
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[sendTicketEmail] Sucesso! E-mail de ingresso enviado para ${saleData.userEmail}. ID da Mensagem: ${info.messageId}`);
+
+        // Marca a venda como tendo o e-mail enviado
+        await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
+        console.log(`[sendTicketEmail] Venda ${saleId} marcada como 'emailSent: true' no Firestore.`);
+
     } catch (error) {
-        console.error(`Erro ao enviar e-mail de ingresso para ${saleData.userEmail}:`, error);
+        console.error(`[sendTicketEmail] Falha ao enviar e-mail de ingresso para ${saleData.userEmail}. Erro:`, error);
     }
 };
 
@@ -148,6 +164,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             cancel_url: `https://www.kihap.com.br/produto.html?id=${productId}`,
             metadata: {
                 firestoreDocIds: JSON.stringify(saleDocIds),
+                type: 'product_purchase' // Adiciona um tipo para diferenciar no webhook
             },
         });
 
@@ -217,14 +234,14 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     const saleSnap = await docRef.get();
 
                     // Only update if status is 'pending' to avoid redundant triggers
-                    if (saleSnap.exists() && saleSnap.data().paymentStatus === 'pending') {
+                    if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
                         await docRef.update({ paymentStatus: 'paid' });
                         console.log(`Updated payment status to 'paid' for doc ${docId}`);
 
                         const saleData = saleSnap.data();
                         const productRef = db.collection('products').doc(saleData.productId);
                         const productSnap = await productRef.get();
-                        if (productSnap.exists() && productSnap.data().isTicket) {
+                        if (productSnap.exists && productSnap.data().isTicket) {
                             await sendTicketEmail(docId, saleData);
                         }
                     }
@@ -242,74 +259,6 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
         return res.status(500).json({ status: 'error', message: error.message });
     }
 });
-
-// Webhook para lidar com eventos do Stripe em tempo real
-exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const endpointSecret = functions.config().stripe.webhook_secret;
-
-    let event;
-
-    try {
-        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
-    } catch (err) {
-        console.error('⚠️  Webhook signature verification failed.', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    // Lida com o evento de checkout bem-sucedido
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        
-        // A lógica de repetição para garantir que os documentos do Firestore sejam encontrados
-        let attempt = 0;
-        const maxAttempts = 4;
-        let firestoreDocIds;
-
-        while (attempt < maxAttempts) {
-            const firestoreDocIdsString = session.metadata.firestoreDocIds;
-            if (firestoreDocIdsString) {
-                firestoreDocIds = JSON.parse(firestoreDocIdsString);
-                break;
-            }
-
-            const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', session.id).get();
-            if (!querySnapshot.empty) {
-                firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
-                break;
-            }
-
-            attempt++;
-            if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
-        if (firestoreDocIds && firestoreDocIds.length > 0) {
-            for (const docId of firestoreDocIds) {
-                const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
-                const saleSnap = await docRef.get();
-
-                if (saleSnap.exists() && saleSnap.data().paymentStatus === 'pending') {
-                    await docRef.update({ paymentStatus: 'paid' });
-                    console.log(`Webhook: Status atualizado para 'pago' para a venda ${docId}`);
-
-                    const saleData = saleSnap.data();
-                    const productRef = db.collection('products').doc(saleData.productId);
-                    const productSnap = await productRef.get();
-                    if (productSnap.exists() && productSnap.data().isTicket) {
-                        await sendTicketEmail(docId, saleData);
-                    }
-                }
-            }
-        } else {
-            console.error(`Critical Webhook Error: Checkout session ${session.id} bem-sucedida, mas documentos no Firestore não encontrados.`);
-        }
-    }
-
-    res.status(200).send();
-});
-
 
 exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -351,7 +300,13 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
                 couponCode: couponCode || null,
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
-            await db.collection('inscricoesFaixaPreta').add(saleData);
+            const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+
+            // Se o produto for um ingresso, envie o e-mail
+            if (product.isTicket) {
+                console.log(`[processFreePurchase] Produto gratuito é um ingresso. Enviando e-mail para a venda ${docRef.id}.`);
+                await sendTicketEmail(docRef.id, saleData);
+            }
         }
 
         // Process recommended items for free purchases
@@ -452,6 +407,91 @@ exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
     }
 });
 
+// Função para reenviar o e-mail do ingresso
+exports.resendTicketEmail = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
+    }
+
+    const { saleId } = data;
+    if (!saleId) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID da venda é obrigatório.');
+    }
+
+    try {
+        const saleRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+        const saleSnap = await saleRef.get();
+
+        if (!saleSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Venda não encontrada.');
+        }
+
+        const saleData = saleSnap.data();
+        
+        const productRef = db.collection('products').doc(saleData.productId);
+        const productSnap = await productRef.get();
+
+        if (productSnap.exists && productSnap.data().isTicket) {
+            await sendTicketEmail(saleId, saleData);
+            return { message: `E-mail de ingresso reenviado com sucesso para ${saleData.userEmail}.` };
+        } else {
+            return { message: 'Este produto não é um ingresso, nenhum e-mail foi enviado.' };
+        }
+
+    } catch (error) {
+        console.error('Erro ao reenviar e-mail de ingresso:', error);
+        throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao tentar reenviar o e-mail.');
+    }
+});
+
+// Função para enviar e-mails de ingressos em massa para um produto específico
+exports.sendBulkTicketEmails = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
+    }
+
+    const { productId } = data;
+    if (!productId) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID do produto é obrigatório.');
+    }
+
+    try {
+        const productRef = db.collection('products').doc(productId);
+        const productSnap = await productRef.get();
+
+        if (!productSnap.exists || !productSnap.data().isTicket) {
+            throw new functions.https.HttpsError('not-found', 'Produto não encontrado ou não é um ingresso.');
+        }
+
+        const salesRef = db.collection('inscricoesFaixaPreta');
+        const querySnapshot = await salesRef
+            .where('productId', '==', productId)
+            .where('paymentStatus', '==', 'paid')
+            .get();
+
+        const salesToSend = querySnapshot.docs.filter(doc => doc.data().emailSent !== true);
+
+        if (salesToSend.length === 0) {
+            return { message: 'Nenhum ingresso pendente de envio para este produto.' };
+        }
+
+        let emailCount = 0;
+        const emailPromises = salesToSend.map(doc => {
+            const saleData = doc.data();
+            emailCount++;
+            return sendTicketEmail(doc.id, saleData);
+        });
+
+        await Promise.all(emailPromises);
+
+        return { message: `${emailCount} e-mails de ingresso foram enviados com sucesso.` };
+
+    } catch (error) {
+        console.error('Erro ao enviar e-mails em massa:', error);
+        throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao tentar enviar os e-mails em massa.');
+    }
+});
+
 
 // Cloud Function para criar uma sessão de checkout para assinatura (versão robusta)
 exports.createSubscriptionCheckout = functions.https.onCall(async (data, context) => {
@@ -471,7 +511,7 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
         // 2. Validação do Usuário no Firestore
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
-        if (!userSnap.exists()) {
+        if (!userSnap.exists) {
             console.error(`Usuário ${userId} autenticado mas não encontrado no Firestore.`);
             throw new functions.https.HttpsError('not-found', 'Não foi possível encontrar os dados do usuário.');
         }
@@ -501,7 +541,10 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
             mode: 'subscription',
             success_url: `https://www.kihap.com.br/members/index.html?subscription_success=true`,
             cancel_url: `https://www.kihap.com.br/members/assinatura.html`,
-            metadata: { firebaseUID: userId }
+            metadata: { 
+                firebaseUID: userId,
+                type: 'subscription' // Adiciona um tipo para diferenciar no webhook
+            }
         });
 
         return { sessionId: session.id };
@@ -533,7 +576,7 @@ exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
         const userRef = db.collection('users').doc(userId);
         const userSnap = await userRef.get();
 
-        if (!userSnap.exists()) {
+        if (!userSnap.exists) {
             console.error(`Usuário ${userId} autenticado mas não encontrado no Firestore ao tentar acessar o portal.`);
             throw new functions.https.HttpsError('not-found', 'Não foi possível encontrar os dados do usuário.');
         }
@@ -558,7 +601,7 @@ exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
     }
 });
 
-// Cloud Function para lidar com os webhooks da Stripe
+// Webhook UNIFICADO para lidar com eventos do Stripe em tempo real
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = functions.config().stripe.webhook_secret;
@@ -576,14 +619,76 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     switch (event.type) {
         case 'checkout.session.completed': {
             const session = event.data.object;
-            const userId = session.metadata.firebaseUID;
-            const subscriptionId = session.subscription;
+            
+            // Verifica o tipo de checkout (compra de produto ou assinatura)
+            if (session.metadata.type === 'product_purchase') {
+                // Lógica para compra de produto
+                let attempt = 0;
+                const maxAttempts = 4;
+                let firestoreDocIds;
 
-            // Atualiza o documento do usuário com o ID da assinatura e o status
-            await db.collection('users').doc(userId).update({
-                stripeSubscriptionId: subscriptionId,
-                subscriptionStatus: 'active'
-            });
+                while (attempt < maxAttempts) {
+                    const firestoreDocIdsString = session.metadata.firestoreDocIds;
+                    if (firestoreDocIdsString) {
+                        firestoreDocIds = JSON.parse(firestoreDocIdsString);
+                        break;
+                    }
+
+                    const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', session.id).get();
+                    if (!querySnapshot.empty) {
+                        firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
+                        break;
+                    }
+
+                    attempt++;
+                    if (attempt < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                if (firestoreDocIds && firestoreDocIds.length > 0) {
+                    for (const docId of firestoreDocIds) {
+                        const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                        const saleSnap = await docRef.get();
+
+                        if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
+                            await docRef.update({ paymentStatus: 'paid' });
+                            console.log(`Webhook: Status atualizado para 'pago' para a venda ${docId}`);
+
+                            const saleData = saleSnap.data();
+                            const productRef = db.collection('products').doc(saleData.productId);
+                            const productSnap = await productRef.get();
+                            
+                            const isTicket = productSnap.exists && productSnap.data().isTicket;
+                            console.log(`[Webhook] Verificando produto ${saleData.productId} para a venda ${docId}. É um ingresso? -> ${isTicket}`);
+
+                            if (isTicket) {
+                                console.log(`[Webhook] Condição atendida. Chamando sendTicketEmail para a venda ${docId}.`);
+                                await sendTicketEmail(docId, saleData);
+                            } else {
+                                console.log(`[Webhook] Produto não é um ingresso. E-mail não será enviado para a venda ${docId}.`);
+                            }
+                        }
+                    }
+                } else {
+                    console.error(`Critical Webhook Error: Checkout session ${session.id} bem-sucedida, mas documentos no Firestore não encontrados.`);
+                }
+
+            } else if (session.metadata.type === 'subscription') {
+                // Lógica para assinatura
+                const userId = session.metadata.firebaseUID;
+                const subscriptionId = session.subscription;
+
+                if (userId) {
+                    await db.collection('users').doc(userId).update({
+                        stripeSubscriptionId: subscriptionId,
+                        subscriptionStatus: 'active'
+                    });
+                    console.log(`Webhook: Assinatura ${subscriptionId} ativada para o usuário ${userId}.`);
+                } else {
+                    console.error(`Critical Webhook Error: Assinatura para a sessão ${session.id} não possui firebaseUID nos metadados.`);
+                }
+            }
             break;
         }
         case 'customer.subscription.updated': {
@@ -594,6 +699,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                 await db.collection('users').doc(userId).update({
                     subscriptionStatus: subscription.status
                 });
+                console.log(`Webhook: Status da assinatura ${subscription.id} atualizado para ${subscription.status} para o usuário ${userId}.`);
             }
             break;
         }
@@ -605,6 +711,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                 await db.collection('users').doc(userId).update({
                     subscriptionStatus: 'canceled'
                 });
+                console.log(`Webhook: Assinatura ${subscription.id} cancelada para o usuário ${userId}.`);
             }
             break;
         }
@@ -613,6 +720,48 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     }
 
     res.status(200).send();
+});
+
+
+// Função agendada para verificar e reenviar e-mails de ingressos não enviados
+exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
+    console.log('[scheduledEmailCheck] Iniciando verificação de e-mails de ingressos não enviados.');
+
+    try {
+        const salesRef = db.collection('inscricoesFaixaPreta');
+        const querySnapshot = await salesRef
+            .where('paymentStatus', '==', 'paid')
+            .where('emailSent', '!=', true)
+            .get();
+
+        if (querySnapshot.empty) {
+            console.log('[scheduledEmailCheck] Nenhum ingresso pendente de envio encontrado.');
+            return null;
+        }
+
+        console.log(`[scheduledEmailCheck] ${querySnapshot.size} venda(s) encontrada(s) com pagamento confirmado e sem e-mail enviado.`);
+
+        const emailPromises = querySnapshot.docs.map(async (doc) => {
+            const saleData = doc.data();
+            const saleId = doc.id;
+
+            // Verifica se o produto é um ingresso antes de enviar
+            const productRef = db.collection('products').doc(saleData.productId);
+            const productSnap = await productRef.get();
+
+            if (productSnap.exists && productSnap.data().isTicket) {
+                console.log(`[scheduledEmailCheck] Reenviando e-mail para a venda ${saleId}.`);
+                return sendTicketEmail(saleId, saleData);
+            }
+        });
+
+        await Promise.all(emailPromises);
+        console.log('[scheduledEmailCheck] Verificação concluída.');
+
+    } catch (error) {
+        console.error('[scheduledEmailCheck] Erro ao executar a verificação agendada:', error);
+    }
+    return null;
 });
 
 

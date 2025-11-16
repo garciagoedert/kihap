@@ -256,9 +256,14 @@
                                     <!-- Options will be populated by JS -->
                                 </select>
                             </div>
-                            <div class="flex items-center justify-end space-x-2">
-                                <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
-                                <button type="submit" id="save-product-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar Produto</button>
+                            <div class="flex items-center justify-between w-full">
+                                <button type="button" id="send-bulk-emails-btn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 hidden">
+                                    <i class="fas fa-envelope mr-2"></i>Enviar Ingressos em Massa
+                                </button>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                    <button type="submit" id="save-product-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar Produto</button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -445,7 +450,10 @@
             <div id="modal-content" class="space-y-4">
                 <!-- Content will be populated by JS -->
             </div>
-            <div class="mt-6 flex justify-end">
+            <div class="mt-6 flex justify-between items-center">
+                <button id="resend-email-btn-modal" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">
+                    <i class="fas fa-paper-plane mr-2"></i>Reenviar Email
+                </button>
                 <button id="delete-sale-btn-modal" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500">Apagar Log</button>
             </div>
         </div>

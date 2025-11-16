@@ -6,6 +6,7 @@ import {
 import { 
     getStorage, ref, uploadBytes, getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
 export async function setupStorePage() {
@@ -49,6 +50,7 @@ export async function setupStorePage() {
     const closeModalBtn = document.getElementById('close-modal-btn');
     const modalContent = document.getElementById('modal-content');
     const deleteSaleBtnModal = document.getElementById('delete-sale-btn-modal');
+    const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
 
     // Product Management elements
     const productForm = document.getElementById('product-form');
@@ -75,6 +77,7 @@ export async function setupStorePage() {
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
+    const sendBulkEmailsBtn = document.getElementById('send-bulk-emails-btn');
 
     // Banner Management elements
     const bannerForm = document.getElementById('banner-form');
@@ -624,6 +627,7 @@ export async function setupStorePage() {
         productFormTitle.textContent = 'Adicionar Novo Produto';
         saveProductBtn.textContent = 'Salvar Produto';
         cancelEditBtn.classList.add('hidden');
+        sendBulkEmailsBtn.classList.add('hidden');
     };
 
     productForm.addEventListener('submit', async (e) => {
@@ -759,6 +763,12 @@ export async function setupStorePage() {
                 productPublicInput.checked = product.acessoPublico || false;
                 productIsTicketInput.checked = product.isTicket || false;
                 productAvailabilityDateInput.value = product.availabilityDate || '';
+
+                if (product.isTicket) {
+                    sendBulkEmailsBtn.classList.remove('hidden');
+                } else {
+                    sendBulkEmailsBtn.classList.add('hidden');
+                }
                 
                 if (product.recommendedProducts) {
                     Array.from(recommendedProductsSelect.options).forEach(option => {
@@ -780,7 +790,35 @@ export async function setupStorePage() {
             }
         }
     });
-    
+
+    sendBulkEmailsBtn.addEventListener('click', async () => {
+        const productId = productIdInput.value;
+        if (!productId) {
+            alert('Nenhum produto selecionado.');
+            return;
+        }
+
+        if (!confirm('Tem certeza que deseja enviar os ingressos para todos os compradores deste produto que ainda não receberam o e-mail?')) {
+            return;
+        }
+
+        sendBulkEmailsBtn.disabled = true;
+        sendBulkEmailsBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Enviando...';
+
+        try {
+            const functions = getFunctions();
+            const sendBulkTicketEmails = httpsCallable(functions, 'sendBulkTicketEmails');
+            const result = await sendBulkTicketEmails({ productId: productId });
+            alert(result.data.message);
+        } catch (error) {
+            console.error('Erro ao enviar e-mails em massa:', error);
+            alert(`Erro: ${error.message}`);
+        } finally {
+            sendBulkEmailsBtn.disabled = false;
+            sendBulkEmailsBtn.innerHTML = '<i class="fas fa-envelope mr-2"></i>Enviar Ingressos em Massa';
+        }
+    });
+
     const deleteProduct = async (id) => {
         try {
             await deleteDoc(doc(db, 'products', id));
@@ -965,6 +1003,25 @@ export async function setupStorePage() {
     deleteSaleBtnModal.addEventListener('click', () => {
         if (currentOpenSaleId && confirm('Tem certeza que deseja excluir este log de venda?')) {
             deleteSaleLog(currentOpenSaleId);
+        }
+    });
+
+    resendEmailBtnModal.addEventListener('click', async () => {
+        if (currentOpenSaleId) {
+            resendEmailBtnModal.disabled = true;
+            resendEmailBtnModal.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Reenviando...';
+            try {
+                const functions = getFunctions();
+                const resendTicketEmail = httpsCallable(functions, 'resendTicketEmail');
+                const result = await resendTicketEmail({ saleId: currentOpenSaleId });
+                alert(result.data.message);
+            } catch (error) {
+                console.error('Erro ao reenviar email:', error);
+                alert(`Erro: ${error.message}`);
+            } finally {
+                resendEmailBtnModal.disabled = false;
+                resendEmailBtnModal.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Reenviar Email';
+            }
         }
     });
 
