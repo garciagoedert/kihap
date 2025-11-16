@@ -243,7 +243,73 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
     }
 });
 
-// A função de webhook não está sendo utilizada e pode ser removida.
+// Webhook para lidar com eventos do Stripe em tempo real
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = functions.config().stripe.webhook_secret;
+
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    } catch (err) {
+        console.error('⚠️  Webhook signature verification failed.', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Lida com o evento de checkout bem-sucedido
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        
+        // A lógica de repetição para garantir que os documentos do Firestore sejam encontrados
+        let attempt = 0;
+        const maxAttempts = 4;
+        let firestoreDocIds;
+
+        while (attempt < maxAttempts) {
+            const firestoreDocIdsString = session.metadata.firestoreDocIds;
+            if (firestoreDocIdsString) {
+                firestoreDocIds = JSON.parse(firestoreDocIdsString);
+                break;
+            }
+
+            const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', session.id).get();
+            if (!querySnapshot.empty) {
+                firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
+                break;
+            }
+
+            attempt++;
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        if (firestoreDocIds && firestoreDocIds.length > 0) {
+            for (const docId of firestoreDocIds) {
+                const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                const saleSnap = await docRef.get();
+
+                if (saleSnap.exists() && saleSnap.data().paymentStatus === 'pending') {
+                    await docRef.update({ paymentStatus: 'paid' });
+                    console.log(`Webhook: Status atualizado para 'pago' para a venda ${docId}`);
+
+                    const saleData = saleSnap.data();
+                    const productRef = db.collection('products').doc(saleData.productId);
+                    const productSnap = await productRef.get();
+                    if (productSnap.exists() && productSnap.data().isTicket) {
+                        await sendTicketEmail(docId, saleData);
+                    }
+                }
+            }
+        } else {
+            console.error(`Critical Webhook Error: Checkout session ${session.id} bem-sucedida, mas documentos no Firestore não encontrados.`);
+        }
+    }
+
+    res.status(200).send();
+});
+
 
 exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
