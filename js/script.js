@@ -23,14 +23,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     // Adjust paths inside the loaded HTML
                     const adjustedData = processedData.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
                     
-                    if (containerId === 'header-container' || containerId === 'footer-container') {
-                        container.outerHTML = adjustedData;
-                        if (containerId === 'header-container') {
-                            // Dispara um evento para notificar que o header foi carregado
-                            document.dispatchEvent(new Event('headerLoaded'));
-                        }
-                    } else {
-                        container.innerHTML = adjustedData;
+                    container.innerHTML = adjustedData;
+                    
+                    if (containerId === 'header-container') {
+                        // Dispara um evento para notificar que o header foi carregado
+                        document.dispatchEvent(new Event('headerLoaded'));
                     }
                 });
         }
