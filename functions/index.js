@@ -112,9 +112,9 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         const product = productDoc.data();
         const currency = 'brl';
 
-        // Determina o gateway a ser usado com base no campo do produto, com 'stripe' como padrão.
-        const usePagarme = product.paymentGateway === 'pagarme';
-        console.log(`[createCheckoutSession] Gateway para o produto ${productId}: ${usePagarme ? 'Pagar.me' : 'Stripe'}`);
+        // Força o uso do Pagar.me como gateway padrão.
+        const usePagarme = true;
+        console.log(`[createCheckoutSession] Gateway para o produto ${productId}: Pagar.me (forçado)`);
 
         const saleDocIds = [];
         for (const formData of formDataList) {
@@ -165,55 +165,23 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             }
         }
 
-        if (usePagarme) {
-            console.log('[createCheckoutSession] Criando pedido no Pagar.me...');
-            const pagarmeOrder = await createPagarmeOrder(product, formDataList, totalAmount, saleDocIds);
-            console.log('[createCheckoutSession] Pedido Pagar.me criado com sucesso:', JSON.stringify(pagarmeOrder, null, 2));
-            
-            // A URL de sucesso é definida no payload de criação do pedido no Pagar.me.
-            // A função `verifyPayment` na página de sucesso usará o `pagarme_order_id` da URL
-            // para verificar o status do pagamento.
-            const successUrl = `https://www.kihap.com.br/compra-success.html?pagarme_order_id=${pagarmeOrder.id}`;
+        console.log('[createCheckoutSession] Criando pedido no Pagar.me...');
+        const pagarmeOrder = await createPagarmeOrder(product, formDataList, totalAmount, saleDocIds);
+        console.log('[createCheckoutSession] Pedido Pagar.me criado com sucesso:', JSON.stringify(pagarmeOrder, null, 2));
+        
+        // A URL de sucesso é definida no payload de criação do pedido no Pagar.me.
+        // A função `verifyPayment` na página de sucesso usará o `pagarme_order_id` da URL
+        // para verificar o status do pagamento.
+        const successUrl = `https://www.kihap.com.br/compra-success.html?pagarme_order_id=${pagarmeOrder.id}`;
 
-            // Update all sale documents with the Pagar.me order ID
-            for (const docId of saleDocIds) {
-                await db.collection('inscricoesFaixaPreta').doc(docId).update({ pagarmeOrderId: pagarmeOrder.id });
-            }
-
-            const responsePayload = { checkoutUrl: pagarmeOrder.checkouts[0].payment_url, provider: 'pagarme' };
-            console.log('[createCheckoutSession] Enviando resposta para o cliente:', JSON.stringify(responsePayload, null, 2));
-            res.status(200).json(responsePayload);
-
-        } else {
-            console.log('[createCheckoutSession] Criando sessão de checkout no Stripe...');
-            const session = await stripeClient.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [{
-                    price_data: {
-                        currency: currency,
-                        product_data: {
-                            name: `${product.name} (x${formDataList.length})`,
-                        },
-                        unit_amount: totalAmount,
-                    },
-                    quantity: 1,
-                }],
-                mode: 'payment',
-                success_url: `https://www.kihap.com.br/compra-success.html?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `https://www.kihap.com.br/produto.html?id=${productId}`,
-                metadata: {
-                    firestoreDocIds: JSON.stringify(saleDocIds),
-                    type: 'product_purchase' // Adiciona um tipo para diferenciar no webhook
-                },
-            });
-
-            // Update all sale documents with the checkout session ID
-            for (const docId of saleDocIds) {
-                await db.collection('inscricoesFaixaPreta').doc(docId).update({ checkoutSessionId: session.id });
-            }
-
-            res.status(200).json({ sessionId: session.id, provider: 'stripe' });
+        // Update all sale documents with the Pagar.me order ID
+        for (const docId of saleDocIds) {
+            await db.collection('inscricoesFaixaPreta').doc(docId).update({ pagarmeOrderId: pagarmeOrder.id });
         }
+
+        const responsePayload = { checkoutUrl: pagarmeOrder.checkouts[0].payment_url, provider: 'pagarme' };
+        console.log('[createCheckoutSession] Enviando resposta para o cliente:', JSON.stringify(responsePayload, null, 2));
+        res.status(200).json(responsePayload);
     } catch (error) {
         console.error('Error creating checkout session:', error);
         // Log completo do erro para depuração
