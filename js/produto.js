@@ -431,17 +431,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const data = await response.json();
+                const sessionId = data.sessionId || data.id;
 
                 if (data.provider === 'pagarme' && data.checkoutUrl) {
                     window.location.href = data.checkoutUrl;
-                } else if (data.provider === 'stripe' && data.sessionId) {
-                    const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+                } else if (data.provider === 'stripe' && sessionId) {
+                    const { error } = await stripe.redirectToCheckout({ sessionId: sessionId });
                     if (error) throw new Error(error.message);
                 } else {
                     // Se a resposta não tiver um provedor claro, assume Stripe como fallback
                     // e tenta usar o sessionId se existir.
-                    if (data.sessionId) {
-                        const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+                    if (sessionId) {
+                        const { error } = await stripe.redirectToCheckout({ sessionId: sessionId });
                         if (error) throw new Error(error.message);
                     } else {
                         throw new Error('Resposta inválida do servidor de checkout.');
