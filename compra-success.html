@@ -59,21 +59,24 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const sessionId = urlParams.get('session_id');
+            const pagarmeOrderId = urlParams.get('pagarme_order_id');
             const statusMessage = document.querySelector('.text-lg.text-gray-300.mb-6');
             const ticketContainer = document.getElementById('ticket-container');
             const qrcodeContainer = document.getElementById('qrcode');
             const downloadBtn = document.getElementById('download-ticket-btn');
 
-            if (sessionId) {
+            const paymentId = sessionId || pagarmeOrderId;
+            if (paymentId) {
                 statusMessage.textContent = 'Verificando seu pagamento...';
                 
                 const verifyUrl = 'https://us-central1-intranet-kihap.cloudfunctions.net/verifyPayment';
+                const payload = sessionId ? { sessionId: sessionId } : { pagarme_order_id: pagarmeOrderId };
 
                 try {
                     const response = await fetch(verifyUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId: sessionId }),
+                        body: JSON.stringify(payload),
                     });
                     const data = await response.json();
 

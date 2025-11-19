@@ -1,19 +1,21 @@
-// Forçando a atualização do ambiente - v2
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const stripe = require('stripe')(functions.config().stripe.secret_key);
-const nodemailer = require('nodemailer');
-const qrcode = require('qrcode');
 
 admin.initializeApp();
+
+const stripe = require('stripe');
+let stripeClient; // Lazily initialize
+const nodemailer = require('nodemailer');
+const qrcode = require('qrcode');
+const { createPagarmeOrder, getPagarmeOrder } = require('./pagarme.js');
 const db = admin.firestore();
 
 // Função para enviar o e-mail com o ingresso
 const sendTicketEmail = async (saleId, saleData) => {
     console.log(`[sendTicketEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
     
-    const gmailEmail = functions.config().gmail.email;
-    const gmailPassword = functions.config().gmail.password;
+    const gmailEmail = process.env.GMAIL_EMAIL;
+    const gmailPassword = process.env.GMAIL_PASSWORD;
 
     if (!gmailEmail || !gmailPassword) {
         console.error('[sendTicketEmail] Erro Crítico: As credenciais do Gmail (email/senha) não estão configuradas no Firebase. Verifique as variáveis de ambiente.');
@@ -34,7 +36,7 @@ const sendTicketEmail = async (saleId, saleData) => {
         const qrCodeDataURL = await qrcode.toDataURL(saleId);
         
         const mailOptions = {
-            from: `Kihap <${functions.config().gmail.email}>`,
+            from: `Kihap <${process.env.GMAIL_EMAIL}>`,
             to: saleData.userEmail,
             subject: `Seu Ingresso para ${saleData.productName}`,
             html: `
@@ -69,6 +71,8 @@ const sendTicketEmail = async (saleId, saleData) => {
 
 // Cloud Function para criar a sessão de checkout do Stripe
 exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
+    console.log('[createCheckoutSession] Forçando a recarga do ambiente com um novo log.');
+    console.log('[createCheckoutSession] Iniciando a execução.');
     // Permitir CORS para o frontend
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -78,18 +82,28 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         res.status(204).send('');
         return;
     }
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
+    // A lógica de qual gateway usar será baseada no produto, não mais em uma variável de ambiente global.
+    // console.log(`[createCheckoutSession] Usando Pagar.me: ${usePagarme}`);
 
     if (req.method !== 'POST') {
+        console.log(`[createCheckoutSession] Método não permitido: ${req.method}`);
         return res.status(405).send('Method Not Allowed');
     }
 
     const { formDataList, productId, totalAmount, couponCode, recommendedItems } = req.body;
+    console.log('[createCheckoutSession] Corpo da requisição (req.body):', JSON.stringify(req.body, null, 2));
+
 
     if (!formDataList || !productId || !totalAmount || formDataList.length === 0) {
+        console.error('[createCheckoutSession] Erro: Campos obrigatórios ausentes.');
         return res.status(400).json({ error: 'Missing required fields: formDataList, productId, totalAmount.' });
     }
 
     try {
+        console.log(`[createCheckoutSession] Buscando produto: ${productId}`);
         const productRef = db.collection('products').doc(productId);
         const productDoc = await productRef.get();
         if (!productDoc.exists) {
@@ -97,6 +111,10 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         }
         const product = productDoc.data();
         const currency = 'brl';
+
+        // Determina o gateway a ser usado com base no campo do produto, com 'stripe' como padrão.
+        const usePagarme = product.paymentGateway === 'pagarme';
+        console.log(`[createCheckoutSession] Gateway para o produto ${productId}: ${usePagarme ? 'Pagar.me' : 'Stripe'}`);
 
         const saleDocIds = [];
         for (const formData of formDataList) {
@@ -147,41 +165,68 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             }
         }
 
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: [{
-                price_data: {
-                    currency: currency,
-                    product_data: {
-                        name: `${product.name} (x${formDataList.length})`,
+        if (usePagarme) {
+            console.log('[createCheckoutSession] Criando pedido no Pagar.me...');
+            const pagarmeOrder = await createPagarmeOrder(product, formDataList, totalAmount, saleDocIds);
+            console.log('[createCheckoutSession] Pedido Pagar.me criado com sucesso:', JSON.stringify(pagarmeOrder, null, 2));
+            
+            // A URL de sucesso é definida no payload de criação do pedido no Pagar.me.
+            // A função `verifyPayment` na página de sucesso usará o `pagarme_order_id` da URL
+            // para verificar o status do pagamento.
+            const successUrl = `https://www.kihap.com.br/compra-success.html?pagarme_order_id=${pagarmeOrder.id}`;
+
+            // Update all sale documents with the Pagar.me order ID
+            for (const docId of saleDocIds) {
+                await db.collection('inscricoesFaixaPreta').doc(docId).update({ pagarmeOrderId: pagarmeOrder.id });
+            }
+
+            const responsePayload = { checkoutUrl: pagarmeOrder.checkouts[0].payment_url, provider: 'pagarme' };
+            console.log('[createCheckoutSession] Enviando resposta para o cliente:', JSON.stringify(responsePayload, null, 2));
+            res.status(200).json(responsePayload);
+
+        } else {
+            console.log('[createCheckoutSession] Criando sessão de checkout no Stripe...');
+            const session = await stripeClient.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: [{
+                    price_data: {
+                        currency: currency,
+                        product_data: {
+                            name: `${product.name} (x${formDataList.length})`,
+                        },
+                        unit_amount: totalAmount,
                     },
-                    unit_amount: totalAmount,
+                    quantity: 1,
+                }],
+                mode: 'payment',
+                success_url: `https://www.kihap.com.br/compra-success.html?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `https://www.kihap.com.br/produto.html?id=${productId}`,
+                metadata: {
+                    firestoreDocIds: JSON.stringify(saleDocIds),
+                    type: 'product_purchase' // Adiciona um tipo para diferenciar no webhook
                 },
-                quantity: 1,
-            }],
-            mode: 'payment',
-            success_url: `https://www.kihap.com.br/compra-success.html?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `https://www.kihap.com.br/produto.html?id=${productId}`,
-            metadata: {
-                firestoreDocIds: JSON.stringify(saleDocIds),
-                type: 'product_purchase' // Adiciona um tipo para diferenciar no webhook
-            },
-        });
+            });
 
-        // Update all sale documents with the checkout session ID
-        for (const docId of saleDocIds) {
-            await db.collection('inscricoesFaixaPreta').doc(docId).update({ checkoutSessionId: session.id });
+            // Update all sale documents with the checkout session ID
+            for (const docId of saleDocIds) {
+                await db.collection('inscricoesFaixaPreta').doc(docId).update({ checkoutSessionId: session.id });
+            }
+
+            res.status(200).json({ sessionId: session.id, provider: 'stripe' });
         }
-
-        res.status(200).json({ sessionId: session.id });
     } catch (error) {
         console.error('Error creating checkout session:', error);
-        res.status(500).json({ error: error.message });
+        // Log completo do erro para depuração
+        console.error('Detalhes completos do erro:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        res.status(500).json({ error: 'Ocorreu um erro interno no servidor.', details: error.message });
     }
 });
 
 // Nova Cloud Function para verificar o pagamento na página de sucesso
 exports.verifyPayment = functions.https.onRequest(async (req, res) => {
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
     // Permitir CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -192,39 +237,46 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
         return;
     }
 
-    const { sessionId } = req.body;
-    if (!sessionId) {
-        return res.status(400).send('Session ID is required.');
+    const { sessionId, pagarme_order_id } = req.body;
+
+    if (!sessionId && !pagarme_order_id) {
+        return res.status(400).send('Session ID or Pagar.me Order ID is required.');
     }
 
     try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        let isPaid = false;
+        let firestoreDocIds;
+        let paymentProviderId;
 
-        if (session.payment_status === 'paid') {
-            let firestoreDocIds;
-            let attempt = 0;
-            const maxAttempts = 4; // Try for ~3 seconds
-
-            while (attempt < maxAttempts) {
-                // Re-fetch session inside the loop to ensure metadata is fresh
-                const refreshedSession = await stripe.checkout.sessions.retrieve(sessionId);
-                const firestoreDocIdsString = refreshedSession.metadata.firestoreDocIds;
-
+        if (sessionId) {
+            paymentProviderId = sessionId;
+            const session = await stripeClient.checkout.sessions.retrieve(sessionId);
+            isPaid = session.payment_status === 'paid';
+            if (isPaid) {
+                const firestoreDocIdsString = session.metadata.firestoreDocIds;
                 if (firestoreDocIdsString) {
                     firestoreDocIds = JSON.parse(firestoreDocIdsString);
-                    break; // Found via metadata, exit loop
                 }
+            }
+        } else if (pagarme_order_id) {
+            paymentProviderId = pagarme_order_id;
+            const order = await getPagarmeOrder(pagarme_order_id);
+            isPaid = order.status === 'paid';
+            if (isPaid) {
+                const firestoreDocIdsString = order.metadata.firestoreDocIds;
+                if (firestoreDocIdsString) {
+                    firestoreDocIds = JSON.parse(firestoreDocIdsString);
+                }
+            }
+        }
 
-                // Fallback if metadata is not present
-                const querySnapshot = await db.collection('inscricoesFaixaPreta').where('checkoutSessionId', '==', sessionId).get();
+        if (isPaid) {
+            // Fallback to find docs if metadata was not available
+            if (!firestoreDocIds || firestoreDocIds.length === 0) {
+                const fieldToQuery = sessionId ? 'checkoutSessionId' : 'pagarmeOrderId';
+                const querySnapshot = await db.collection('inscricoesFaixaPreta').where(fieldToQuery, '==', paymentProviderId).get();
                 if (!querySnapshot.empty) {
                     firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
-                    break; // Found via fallback, exit loop
-                }
-
-                attempt++;
-                if (attempt < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
                 }
             }
 
@@ -233,7 +285,6 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
                     const saleSnap = await docRef.get();
 
-                    // Only update if status is 'pending' to avoid redundant triggers
                     if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
                         await docRef.update({ paymentStatus: 'paid' });
                         console.log(`Updated payment status to 'paid' for doc ${docId}`);
@@ -248,7 +299,7 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                 }
                 return res.status(200).json({ status: 'success', saleIds: firestoreDocIds, message: 'All payments verified and statuses updated.' });
             } else {
-                console.error(`Critical: Payment success for session ${sessionId}, but no corresponding Firestore docs found after ${maxAttempts} attempts.`);
+                console.error(`Critical: Payment success for ID ${paymentProviderId}, but no corresponding Firestore docs found.`);
                 return res.status(200).json({ status: 'error_registration', message: 'Payment verified but sale registration failed.' });
             }
         } else {
@@ -350,6 +401,9 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
 
 // Função para corrigir o status de pagamentos antigos
 exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
     // Apenas usuários autenticados podem chamar esta função
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
@@ -381,7 +435,7 @@ exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
 
         for (const sessionId in salesBySession) {
             try {
-                const session = await stripe.checkout.sessions.retrieve(sessionId);
+                const session = await stripeClient.checkout.sessions.retrieve(sessionId);
                 if (session.payment_status === 'paid') {
                     const pendingSalesInSession = salesBySession[sessionId];
                     console.log(`Sessão ${sessionId} tem um pagamento confirmado. Corrigindo ${pendingSalesInSession.length} venda(s) pendente(s).`);
@@ -495,6 +549,9 @@ exports.sendBulkTicketEmails = functions.https.onCall(async (data, context) => {
 
 // Cloud Function para criar uma sessão de checkout para assinatura (versão robusta)
 exports.createSubscriptionCheckout = functions.https.onCall(async (data, context) => {
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
     // 1. Validação de Autenticação e Dados de Entrada
     if (!context.auth || !context.auth.token.email) {
         throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado com um e-mail válido para assinar.');
@@ -522,7 +579,7 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
         // 3. Criação de Cliente Stripe (se necessário)
         if (!customerId) {
             console.log(`Criando novo cliente Stripe para o usuário ${userId}`);
-            const customer = await stripe.customers.create({
+            const customer = await stripeClient.customers.create({
                 email: userEmail,
                 name: userData.name || userEmail,
                 metadata: { firebaseUID: userId }
@@ -534,7 +591,7 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
 
         // 4. Criação da Sessão de Checkout no Stripe
         console.log(`Criando sessão de checkout para o cliente ${customerId} com o plano ${priceId}`);
-        const session = await stripe.checkout.sessions.create({
+        const session = await stripeClient.checkout.sessions.create({
             payment_method_types: ['card'],
             customer: customerId,
             line_items: [{ price: priceId, quantity: 1 }],
@@ -566,6 +623,9 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
 
 // Cloud Function para criar uma sessão do Portal do Cliente Stripe
 exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado.');
     }
@@ -588,7 +648,7 @@ exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('not-found', 'Nenhum cliente Stripe encontrado para este usuário.');
         }
 
-        const portalSession = await stripe.billingPortal.sessions.create({
+        const portalSession = await stripeClient.billingPortal.sessions.create({
             customer: customerId,
             return_url: `https://www.kihap.com.br/members/perfil.html`,
         });
@@ -603,13 +663,16 @@ exports.createCustomerPortal = functions.https.onCall(async (data, context) => {
 
 // Webhook UNIFICADO para lidar com eventos do Stripe em tempo real
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    if (!stripeClient) {
+        stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+    }
     const sig = req.headers['stripe-signature'];
-    const endpointSecret = functions.config().stripe.webhook_secret;
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+        event = stripeClient.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
     } catch (err) {
         console.error('⚠️  Webhook signature verification failed.', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -722,9 +785,46 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     res.status(200).send();
 });
 
+// Webhook para lidar com eventos do Pagar.me em tempo real
+exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
+    // TODO: Adicionar verificação de assinatura do Pagar.me para segurança
+    const { id, status, metadata } = req.body;
+
+    if (req.body.type === 'order.paid') {
+        const order = req.body.data;
+        const firestoreDocIdsString = order.metadata.firestoreDocIds;
+
+        if (firestoreDocIdsString) {
+            const firestoreDocIds = JSON.parse(firestoreDocIdsString);
+
+            for (const docId of firestoreDocIds) {
+                const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                const saleSnap = await docRef.get();
+
+                if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
+                    await docRef.update({ paymentStatus: 'paid' });
+                    console.log(`Pagar.me Webhook: Status atualizado para 'pago' para a venda ${docId}`);
+
+                    const saleData = saleSnap.data();
+                    const productRef = db.collection('products').doc(saleData.productId);
+                    const productSnap = await productRef.get();
+                    
+                    if (productSnap.exists && productSnap.data().isTicket) {
+                        await sendTicketEmail(docId, saleData);
+                    }
+                }
+            }
+        } else {
+            console.error(`Critical Pagar.me Webhook Error: Pedido ${order.id} pago, mas sem firestoreDocIds nos metadados.`);
+        }
+    }
+
+    res.status(200).send();
+});
+
 
 // Função agendada para verificar e reenviar e-mails de ingressos não enviados
-exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
+exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').timeZone('America/Sao_Paulo').onRun(async (context) => {
     console.log('[scheduledEmailCheck] Iniciando verificação de e-mails de ingressos não enviados.');
 
     try {
@@ -766,9 +866,9 @@ exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').onRu
 
 
 // Importa e exporta todas as funções do evo.js
-const evoFunctions = require('./evo.js');
+// const evoFunctions = require('./evo.js');
 // Itera sobre as chaves do objeto evoFunctions e as exporta individualmente
 // Isso garante que o Firebase Functions reconheça cada função corretamente.
-Object.keys(evoFunctions).forEach(key => {
-    exports[key] = evoFunctions[key];
-});
+// Object.keys(evoFunctions).forEach(key => {
+//     exports[key] = evoFunctions[key];
+// });

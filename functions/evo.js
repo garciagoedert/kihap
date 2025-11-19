@@ -783,7 +783,7 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
 /**
  * Busca a evolução do número de contratos ativos ao longo do tempo.
  */
-exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GB" }).https.onCall(async (data, context) => {
+exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GiB" }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
@@ -978,7 +978,7 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
  * Busca e retorna os dados do ranking de forma pública, sem necessidade de autenticação.
  * Agora busca todos os alunos (status 0) e seus detalhes de membresia para garantir a precisão dos FitCoins.
  */
-exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
+exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GiB' }).https.onCall(async (data, context) => {
     const unitIds = Object.keys(EVO_CREDENTIALS);
     let allMembers = [];
     const PAGE_SIZE = 500; // Restaurado para o valor estável conhecido
@@ -1090,7 +1090,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB
 /**
  * Busca o total de entries (check-ins) de hoje para uma unidade específica ou para todas.
  */
-exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {
+exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).https.onRequest(async (req, res) => {
     // Manual CORS handling
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -1101,53 +1101,414 @@ exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).h
         return;
     }
 
-    (async () => {
-        try {
-            const { unitId } = req.body.data || req.body;
+    try {
+        const { unitId } = req.body.data || req.body;
 
-            const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-            const year = nowInSaoPaulo.getFullYear();
-            const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
-            const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
-            const today = `${year}-${month}-${day}`;
+        const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+        const year = nowInSaoPaulo.getFullYear();
+        const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+        const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
 
-            const getUnitEntries = async (unitId) => {
-                try {
-                    const apiClient = getEvoApiClient(unitId, 'v1');
-                    const response = await apiClient.get("/entries", {
-                        params: {
-                            registerDateStart: `${today}T00:00:00Z`,
-                            registerDateEnd: `${today}T23:59:59Z`,
-                            take: 1000
-                        }
-                    });
-                    const entriesData = response.data || [];
-                    return Array.isArray(entriesData) ? entriesData.length : 0;
-                } catch (error) {
-                    functions.logger.error(`Erro ao buscar entries da unidade '${unitId}' para hoje:`, error.message);
-                    return 0;
-                }
-            };
+        const getUnitEntries = async (unitId) => {
+            try {
+                const apiClient = getEvoApiClient(unitId, 'v1');
+                const response = await apiClient.get("/entries", {
+                    params: {
+                        registerDateStart: `${today}T00:00:00Z`,
+                        registerDateEnd: `${today}T23:59:59Z`,
+                        take: 1000
+                    }
+                });
+                const entriesData = response.data || [];
+                return Array.isArray(entriesData) ? entriesData.length : 0;
+            } catch (error) {
+                functions.logger.error(`Erro ao buscar entries da unidade '${unitId}' para hoje:`, error.message);
+                return 0;
+            }
+        };
 
-            const unitIdsToFetch = (unitId && unitId !== 'geral') ? [unitId] : Object.keys(EVO_CREDENTIALS);
+        const unitIdsToFetch = (unitId && unitId !== 'geral') ? [unitId] : Object.keys(EVO_CREDENTIALS);
 
-            const promises = unitIdsToFetch.map(id => getUnitEntries(id));
-            const results = await Promise.all(promises);
+        const promises = unitIdsToFetch.map(id => getUnitEntries(id));
+        const results = await Promise.all(promises);
 
-            const totalEntries = results.reduce((sum, count) => sum + count, 0);
-            
-            const logMessage = (unitId && unitId !== 'geral') 
-                ? `Total de entries para ${unitId} hoje (${today}): ${totalEntries}`
-                : `Total de entries de hoje (${today}): ${totalEntries}`;
-            functions.logger.info(logMessage);
+        const totalEntries = results.reduce((sum, count) => sum + count, 0);
+        
+        const logMessage = (unitId && unitId !== 'geral') 
+            ? `Total de entries para ${unitId} hoje (${today}): ${totalEntries}`
+            : `Total de entries de hoje (${today}): ${totalEntries}`;
+        functions.logger.info(logMessage);
 
-            const result = { totalEntries };
-            res.status(200).send({ data: result });
+        const result = { totalEntries };
+        res.status(200).send({ data: result });
 
-        } catch (error) {
-            functions.logger.error("Falha geral ao buscar o total de entries de hoje:", error);
-            const message = error.message || "Não foi possível buscar o total de check-ins de hoje.";
-            res.status(500).send({ error: { message } });
-        }
-    })();
+    } catch (error) {
+        functions.logger.error("Falha geral ao buscar o total de entries de hoje:", error);
+        const message = error.message || "Não foi possível buscar o total de check-ins de hoje.";
+        res.status(500).send({ error: { message } });
+    }
 });
+
+</final_file_content>
+
+IMPORTANT: For any future changes to this file, use the final_file_content shown above as your reference. This content reflects the current state of the file, including any auto-formatting (e.g., if you used single quotes but the formatter converted them to double quotes). Always base your SEARCH/REPLACE operations on this final version to ensure accuracy.
+
+
+
+New problems detected after saving the file:
+functions/evo.js
+- [ts Error] Line 165: Não é possível declarar novamente a variável de escopo de bloco 'data'.
+- [ts Error] Line 166: Não é possível declarar novamente a variável de escopo de bloco 'data'.<environment_details>
+# Visual Studio Code Visible Files
+functions/evo.js
+
+# Visual Studio Code Open Tabs
+components/form-cta.html
+../../kihap-analysis/index.html
+components/video.html
+programas/adolescentes.html
+programas/adultos.html
+programas/baby-littles.html
+programas/familia.html
+programas/kids.html
+programas/littles.html
+experience.html
+unidades/brasilia.html
+unidades/florianopolis.html
+unidades/dourados.html
+css/bundle.min.css
+imgs/kihap-mulheres.png
+programas/mulheres.html
+artes-marciais.html
+desenvolvimento-pessoal.html
+desenvolvimento/mente-faixa-preta.html
+imgs/favicon.png
+links.html
+intranet/aluno.html
+intranet/aluno.js
+README.md
+imgs/brasil.svg
+imgs/fundogero.jpg
+imgs/logo.png
+imgs/academy.png
+imgs/KI_academy.jpg
+components/testimonials.html
+intranet/arquivo-main.js
+intranet/theme.css
+intranet/course-editor.js
+intranet/cursos.js
+intranet/arquivo.js
+storage.rules
+intranet/projeto-editor.js
+intranet/player.js
+intranet/arquivo.html
+intranet/course-editor.html
+intranet/cursos.html
+intranet/player.html
+intranet/projeto-editor.html
+intranet/tarefas.html
+intranet/tarefas.js
+intranet/processos.html
+intranet/tatame.html
+intranet/tatame.js
+intranet/conteudo-viewer.html
+intranet/conteudo-editor.html
+intranet/header.html
+intranet/projetos.html
+intranet/projetos.js
+intranet/cadastro.html
+intranet/cadastro.js
+intranet/processos-editor.html
+intranet/processos.js
+intranet/processos-viewer.html
+members/js/login.js
+members/header.html
+intranet/login.js
+members/js/auth.js
+components/footer.html
+intranet/notification-container.html
+intranet/notification.js
+intranet/perfil.js
+intranet/chat.html
+intranet/chat.js
+intranet/firebase-config.js
+intranet/gerenciar-emblemas.html
+intranet/grant-admin-tool.html
+intranet/gerenciar-emblemas.js
+members/index.html
+js/store.js
+firebase.json
+intranet/snapshots-history.html
+intranet/snapshots-history.js
+members/js/cursos.js
+members/assinatura.html
+members/sidebar.html
+members/js/assinatura.js
+intranet/sales-history.html
+updateProduct.js
+intranet/store.html
+intranet/store.js
+.gitignore
+intranet/sales-history.js
+index.html
+css/tailwind.css
+js/script.js
+intranet/analysis.html
+js/produto.js
+js/faixa-preta.js
+compra-success.html
+functions/pagarme.js
+functions/index.js
+functions/evo.js
+members/js/dashboard.js
+components/header.html
+graduacao.html
+produto.html
+intranet/checkin.html
+intranet/qr-scanner.min.js
+functions/package.json
+intranet/checkin.js
+intranet/common-ui.js
+css/style.css
+faixa-preta.html
+intranet/alunos.html
+intranet/alunos.js
+intranet/login.html
+members/recuperar-senha.html
+intranet/pedidos.html
+intranet/pedidos.js
+members/js/recuperar-senha.js
+intranet/relatorios.js
+intranet/firestore.rules
+intranet/grade.html
+intranet/grade.js
+intranet/student-analysis.js
+intranet/suporte.html
+intranet/relatorios.html
+intranet/sidebar.html
+members/cursos.html
+members/tatame.html
+members/js/common-ui.js
+members/player.html
+members/conteudo-viewer.html
+members/js/tatame.js
+members/atividades.html
+members/js/atividades.js
+cors.json
+intranet/perfil.html
+intranet/log.css
+intranet/estoque.css
+intranet/estoque.html
+intranet/estoque.js
+.git/COMMIT_EDITMSG
+js/form-handler.js
+intranet/prospeccao.html
+imgs/QRCODETELA.jpg
+imgs/banner.jpg
+members/feed.html
+intranet/ranking.html
+intranet/admin.html
+intranet/admin.js
+intranet/auth.js
+intranet/ranking.js
+members/store.html
+store.html
+imgs/fxpretas.JPG
+members/perfil.html
+members/js/perfil.js
+members/js/store.js
+intranet/feed.html
+members/js/feed.js
+intranet/feed.js
+
+# Recently Modified Files
+These files have been modified since you last accessed them (file was just edited so you may need to re-read it before editing):
+functions/evo.js
+
+# Current Time
+19/11/2025, 7:02:37 AM (America/Sao_Paulo, UTC-3:00)
+
+# Context Window Usage
+745.815 / 1.048,576K tokens used (71%)
+
+# Current Mode
+ACT MODE
+</environment_details>
+
+</file_content>
+
+Now that you have the latest state of the file, try the operation again with fewer, more precise SEARCH blocks. For large files especially, it may be prudent to try to limit yourself to <5 SEARCH/REPLACE blocks at a time, then wait for the user to respond with the result of the operation before following up with another replace_in_file call to make additional edits.
+(If you run into this error 3 times in a row, you may use the write_to_file tool as a fallback.)
+</error><environment_details>
+# Visual Studio Code Visible Files
+functions/evo.js
+
+# Visual Studio Code Open Tabs
+components/form-cta.html
+../../kihap-analysis/index.html
+components/video.html
+programas/adolescentes.html
+programas/adultos.html
+programas/baby-littles.html
+programas/familia.html
+programas/kids.html
+programas/littles.html
+experience.html
+unidades/brasilia.html
+unidades/florianopolis.html
+unidades/dourados.html
+css/bundle.min.css
+imgs/kihap-mulheres.png
+programas/mulheres.html
+artes-marciais.html
+desenvolvimento-pessoal.html
+desenvolvimento/mente-faixa-preta.html
+imgs/favicon.png
+links.html
+intranet/aluno.html
+intranet/aluno.js
+README.md
+imgs/brasil.svg
+imgs/fundogero.jpg
+imgs/logo.png
+imgs/academy.png
+imgs/KI_academy.jpg
+components/testimonials.html
+intranet/arquivo-main.js
+intranet/theme.css
+intranet/course-editor.js
+intranet/cursos.js
+intranet/arquivo.js
+storage.rules
+intranet/projeto-editor.js
+intranet/player.js
+intranet/arquivo.html
+intranet/course-editor.html
+intranet/cursos.html
+intranet/player.html
+intranet/projeto-editor.html
+intranet/tarefas.html
+intranet/tarefas.js
+intranet/processos.html
+intranet/tatame.html
+intranet/tatame.js
+intranet/conteudo-viewer.html
+intranet/conteudo-editor.html
+intranet/header.html
+intranet/projetos.html
+intranet/projetos.js
+intranet/cadastro.html
+intranet/cadastro.js
+intranet/processos-editor.html
+intranet/processos.js
+intranet/processos-viewer.html
+members/js/login.js
+members/header.html
+intranet/login.js
+members/js/auth.js
+components/footer.html
+intranet/notification-container.html
+intranet/notification.js
+intranet/perfil.js
+intranet/chat.html
+intranet/chat.js
+intranet/firebase-config.js
+intranet/gerenciar-emblemas.html
+intranet/grant-admin-tool.html
+intranet/gerenciar-emblemas.js
+members/index.html
+js/store.js
+firebase.json
+intranet/snapshots-history.html
+intranet/snapshots-history.js
+members/js/cursos.js
+members/assinatura.html
+members/sidebar.html
+members/js/assinatura.js
+intranet/sales-history.html
+updateProduct.js
+intranet/store.html
+intranet/store.js
+.gitignore
+intranet/sales-history.js
+index.html
+css/tailwind.css
+js/script.js
+intranet/analysis.html
+js/produto.js
+js/faixa-preta.js
+compra-success.html
+functions/pagarme.js
+functions/package.json
+functions/index.js
+functions/evo.js
+members/js/dashboard.js
+components/header.html
+graduacao.html
+produto.html
+intranet/checkin.html
+intranet/qr-scanner.min.js
+intranet/checkin.js
+intranet/common-ui.js
+css/style.css
+faixa-preta.html
+intranet/alunos.html
+intranet/alunos.js
+intranet/login.html
+members/recuperar-senha.html
+intranet/pedidos.html
+intranet/pedidos.js
+members/js/recuperar-senha.js
+intranet/relatorios.js
+intranet/firestore.rules
+intranet/grade.html
+intranet/grade.js
+intranet/student-analysis.js
+intranet/suporte.html
+intranet/relatorios.html
+intranet/sidebar.html
+members/cursos.html
+members/tatame.html
+members/js/common-ui.js
+members/player.html
+members/conteudo-viewer.html
+members/js/tatame.js
+members/atividades.html
+members/js/atividades.js
+cors.json
+intranet/perfil.html
+intranet/log.css
+intranet/estoque.css
+intranet/estoque.html
+intranet/estoque.js
+.git/COMMIT_EDITMSG
+js/form-handler.js
+intranet/prospeccao.html
+imgs/QRCODETELA.jpg
+imgs/banner.jpg
+members/feed.html
+intranet/ranking.html
+intranet/admin.html
+intranet/admin.js
+intranet/auth.js
+intranet/ranking.js
+members/store.html
+store.html
+imgs/fxpretas.JPG
+members/perfil.html
+members/js/perfil.js
+members/js/store.js
+intranet/feed.html
+members/js/feed.js
+intranet/feed.js
+
+# Current Time
+19/11/2025, 7:29:03 AM (America/Sao_Paulo, UTC-3:00)
+
+# Context Window Usage
+197.730 / 1.048,576K tokens used (19%)
+
+# Current Mode
+ACT MODE
+</environment_details>

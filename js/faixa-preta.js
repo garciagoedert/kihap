@@ -39,20 +39,22 @@ form.addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                userName: nome,
-                userEmail: email,
-                userPhone: telefone,
-                userId: currentUser ? currentUser.uid : null,
-                amount: 10000, // Exemplo: R$100,00 em centavos
-                currency: 'brl',
-                productName: 'Inscrição Exame Faixa Preta',
-            }),
+            body: JSON.stringify({ formDataList, productId, totalAmount, couponCode: appliedCoupon ? appliedCoupon.code : null }),
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.provider === 'pagarme' && data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else if (data.provider === 'stripe' && data.sessionId) {
+                const stripe = Stripe('pk_live_51P6f2mRxzK85UT81651jodpLzQzU5k52zL8tq11xZgY2j231B350nCbdEa3z8j2b5nQJgI8e7f2p8d0000Q2Y8d0');
+                await stripe.redirectToCheckout({ sessionId: data.sessionId });
+            } else {
+                throw new Error('Resposta inválida do servidor de checkout.');
+            }
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create checkout session.');
         }
 
         const { sessionId } = await response.json();
