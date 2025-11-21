@@ -108,9 +108,15 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
     console.log('[createCheckoutSession] Corpo da requisição (req.body):', JSON.stringify(req.body, null, 2));
 
 
-    if (!formDataList || !productId || !totalAmount || formDataList.length === 0) {
-        console.error('[createCheckoutSession] Erro: Campos obrigatórios ausentes.');
-        return res.status(400).json({ error: 'Missing required fields: formDataList, productId, totalAmount.' });
+    if (!formDataList || !totalAmount || formDataList.length === 0) {
+        console.error('[createCheckoutSession] Erro: Campos obrigatórios ausentes (formDataList ou totalAmount).');
+        return res.status(400).json({ error: 'Missing required fields: formDataList, totalAmount.' });
+    }
+
+    // Validação robusta do productId
+    if (typeof productId !== 'string' || productId.trim() === '') {
+        console.error(`[createCheckoutSession] Erro: productId inválido. Valor recebido: "${productId}"`);
+        return res.status(400).json({ error: 'productId must be a non-empty string.' });
     }
 
     try {

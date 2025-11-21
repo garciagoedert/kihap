@@ -340,6 +340,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalAmount = 0;
         const recommendedItems = [];
 
+        // Re-read product ID at the time of submission for robustness
+        const currentProductId = getProductId();
+        if (!currentProductId) {
+            formStatus.textContent = 'Erro: ID do produto não encontrado. Por favor, recarregue a página.';
+            payButton.disabled = false;
+            return;
+        }
+
         document.querySelectorAll('.recommended-product-quantity').forEach(select => {
             const quantity = parseInt(select.value, 10);
             if (quantity > 0) {
@@ -400,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         formDataList,
-                        productId,
+                        productId: currentProductId,
                         recommendedItems,
                         couponCode: appliedCoupon ? appliedCoupon.code : null
                     }),
@@ -418,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         formDataList,
-                        productId,
+                        productId: currentProductId,
                         recommendedItems,
                         totalAmount,
                         couponCode: appliedCoupon ? appliedCoupon.code : null
