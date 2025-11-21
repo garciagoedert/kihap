@@ -26,6 +26,7 @@ async function initializeHistory() {
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
     const syncBtn = document.getElementById('sync-status-btn');
+    const syncPagarmeBtn = document.getElementById('sync-pagarme-btn');
 
     [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
         el.addEventListener('change', () => {
@@ -57,7 +58,28 @@ async function initializeHistory() {
             alert(`Erro: ${error.message}`);
         } finally {
             syncBtn.disabled = false;
-            syncBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Status';
+            syncBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Stripe';
+        }
+    });
+
+    syncPagarmeBtn.addEventListener('click', async () => {
+        syncPagarmeBtn.disabled = true;
+        syncPagarmeBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Sincronizando...';
+        
+        try {
+            const functions = getFunctions();
+            const syncPagarmeSalesStatus = httpsCallable(functions, 'syncPagarmeSalesStatus');
+            const result = await syncPagarmeSalesStatus();
+            alert(result.data.message);
+            // Recarregar os dados para refletir as atualizações
+            await fetchSales();
+            applyFilters();
+        } catch (error) {
+            console.error('Erro ao sincronizar status do Pagar.me:', error);
+            alert(`Erro: ${error.message}`);
+        } finally {
+            syncPagarmeBtn.disabled = false;
+            syncPagarmeBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Pagar.me';
         }
     });
 }

@@ -1,2 +1,13 @@
 # Firebase service account key
 intranet-kihap-firebase-adminsdk-fbsvc-43327c2f72.json
+
+# Environment variables
+.env
+functions/.env
+
+# Node modules
+node_modules/
+functions/node_modules/
+
+# Firebase cache
+.firebase/

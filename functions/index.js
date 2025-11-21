@@ -7,8 +7,16 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createPagarmeOrder, getPagarmeOrder } = require('./pagarme.js');
+const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus } = require('./pagarme.js');
 const db = admin.firestore();
+
+exports.syncPagarmeSalesStatus = functions.https.onCall(async (data, context) => {
+    // Opcional: Adicionar verificação de autenticação para garantir que apenas administradores possam chamar
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
+    }
+    return await syncPagarmeSalesStatus();
+});
 
 // Função para enviar o e-mail com o ingresso
 const sendTicketEmail = async (saleId, saleData) => {
@@ -82,9 +90,12 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         res.status(204).send('');
         return;
     }
-    if (!stripeClient) {
+
+    // Inicializa Stripe apenas se a chave estiver disponível, para evitar erros se não estivermos usando Stripe
+    if (!stripeClient && process.env.STRIPE_SECRET_KEY) {
         stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
     }
+
     // A lógica de qual gateway usar será baseada no produto, não mais em uma variável de ambiente global.
     // console.log(`[createCheckoutSession] Usando Pagar.me: ${usePagarme}`);
 
@@ -110,6 +121,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             return res.status(404).send('Product not found.');
         }
         const product = productDoc.data();
+        product.id = productDoc.id; // Adiciona o ID do documento ao objeto do produto
         const currency = 'brl';
 
         // Força o uso do Pagar.me como gateway padrão.
@@ -756,35 +768,115 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 // Webhook para lidar com eventos do Pagar.me em tempo real
 exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
     // TODO: Adicionar verificação de assinatura do Pagar.me para segurança
-    const { id, status, metadata } = req.body;
+    // A assinatura geralmente vem no header 'x-hub-signature'
 
-    if (req.body.type === 'order.paid') {
-        const order = req.body.data;
-        const firestoreDocIdsString = order.metadata.firestoreDocIds;
+    const eventType = req.body.type;
+    const data = req.body.data;
 
-        if (firestoreDocIdsString) {
-            const firestoreDocIds = JSON.parse(firestoreDocIdsString);
+    console.log(`[Pagar.me Webhook] Recebido evento: ${eventType}`, JSON.stringify(req.body, null, 2));
 
-            for (const docId of firestoreDocIds) {
+    // Log do evento no Firestore para debug e auditoria
+    try {
+        await db.collection('webhook_logs').add({
+            provider: 'pagarme',
+            eventType: eventType || 'unknown',
+            payload: req.body,
+            receivedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (logError) {
+        console.error('[Pagar.me Webhook] Falha ao salvar log no Firestore:', logError);
+    }
+
+    const orderData = data.order || data;
+
+    if (!orderData.metadata || !orderData.metadata.firestoreDocIds) {
+        console.warn(`[Pagar.me Webhook] Evento ${eventType} recebido, mas sem firestoreDocIds nos metadados do pedido.`);
+        return res.status(200).send();
+    }
+
+    const firestoreDocIdsString = orderData.metadata.firestoreDocIds;
+    if (!firestoreDocIdsString) {
+        console.warn(`[Pagar.me Webhook] Evento ${eventType} recebido, mas sem firestoreDocIds nos metadados.`);
+        return res.status(200).send();
+    }
+
+    let firestoreDocIds;
+    try {
+        firestoreDocIds = JSON.parse(firestoreDocIdsString);
+    } catch (e) {
+        console.error('[Pagar.me Webhook] Erro ao fazer parse de firestoreDocIds:', e);
+        return res.status(200).send();
+    }
+
+    try {
+        // Mapeamento de status do Pagar.me para status do Firestore
+        // Pagar.me Order Status: paid, canceled, failed
+        // Firestore Status: paid, canceled, failed, pending
+
+        // O status final da venda é determinado pelo status do PEDIDO (order),
+        // que é a fonte da verdade. O status do charge pode ser transitório.
+        const orderStatus = orderData.status;
+        let newStatus = null;
+
+        switch (orderStatus) {
+            case 'paid':
+                newStatus = 'paid';
+                break;
+            case 'canceled':
+                newStatus = 'canceled';
+                break;
+            case 'failed':
+                newStatus = 'failed';
+                break;
+            default:
+                console.log(`[Pagar.me Webhook] Status do pedido '${orderStatus}' (evento ${eventType}) não mapeado para alteração.`);
+                return res.status(200).send();
+        }
+
+        if (newStatus) {
+             for (const docId of firestoreDocIds) {
                 const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
                 const saleSnap = await docRef.get();
 
-                if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
-                    await docRef.update({ paymentStatus: 'paid' });
-                    console.log(`Pagar.me Webhook: Status atualizado para 'pago' para a venda ${docId}`);
+                if (!saleSnap.exists) {
+                    console.warn(`[Pagar.me Webhook] Documento de venda ${docId} não encontrado.`);
+                    continue;
+                }
 
+                const currentStatus = saleSnap.data().paymentStatus;
+
+                // Evitar atualizações desnecessárias ou retrocessos (ex: paid -> pending)
+                if (currentStatus === newStatus) {
+                     console.log(`[Pagar.me Webhook] Venda ${docId} já está com status '${newStatus}'. Nenhuma ação necessária.`);
+                     continue;
+                }
+                
+                // Atualiza o status
+                await docRef.update({ paymentStatus: newStatus });
+                console.log(`[Pagar.me Webhook] Status atualizado para '${newStatus}' para a venda ${docId}`);
+
+                // Lógica específica para 'paid'
+                if (newStatus === 'paid') {
                     const saleData = saleSnap.data();
                     const productRef = db.collection('products').doc(saleData.productId);
                     const productSnap = await productRef.get();
                     
                     if (productSnap.exists && productSnap.data().isTicket) {
-                        await sendTicketEmail(docId, saleData);
+                        // Verifica se o email já foi enviado para não enviar duplicado
+                        if (!saleData.emailSent) {
+                            await sendTicketEmail(docId, saleData);
+                        } else {
+                             console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado anteriormente para venda ${docId}.`);
+                        }
                     }
                 }
             }
-        } else {
-            console.error(`Critical Pagar.me Webhook Error: Pedido ${order.id} pago, mas sem firestoreDocIds nos metadados.`);
         }
+
+    } catch (error) {
+        console.error('[Pagar.me Webhook] Erro ao processar webhook:', error);
+        // Retornar 200 mesmo com erro interno para evitar retentativas infinitas do webhook se for um erro de lógica nossa
+        // Se for erro de rede/firebase, talvez valha a pena 500, mas por segurança 200 evita loops.
     }
 
     res.status(200).send();
