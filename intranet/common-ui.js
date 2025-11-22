@@ -93,7 +93,7 @@ function setupUIListeners(handlers = {}) {
             applyFilters();
         });
     }
-    
+
     // Add modal close listeners
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
 
@@ -204,7 +204,7 @@ async function listenForChatNotifications() {
 
     const chatsCollection = collection(db, 'chats');
     const q = query(chatsCollection, where('members', 'array-contains', currentUser.uid));
-    
+
     let isInitialLoad = true;
 
     onSnapshot(q, (snapshot) => {
@@ -259,7 +259,7 @@ async function listenForChatNotifications() {
                 }
             });
         }
-        
+
         isInitialLoad = false;
     });
 }
@@ -297,7 +297,7 @@ async function applyWhitelabelSettings() {
             sidebarLogo.src = settings.sidebarLogoUrl;
         }
     }
-    
+
     // Apply primary color
     const style = document.createElement('style');
     style.innerHTML = `
@@ -363,7 +363,7 @@ async function loadComponents(pageSpecificSetup) {
 
                 if (linkPage === 'index.html') {
                     const prospectActions = document.getElementById('prospect-actions');
-                    if(prospectActions) {
+                    if (prospectActions) {
                         prospectActions.classList.remove('hidden');
                         prospectActions.classList.add('flex');
                     }
@@ -374,7 +374,7 @@ async function loadComponents(pageSpecificSetup) {
         // Show/hide elements based on page and user role
         const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
         const adminOnlyElements = document.querySelectorAll('.admin-only');
-        
+
         adminOnlyElements.forEach(el => {
             // Mostra o link de suporte para todos, mas outros elementos admin-only apenas para admins
             if (el.getAttribute('href') === 'suporte.html') {
@@ -408,7 +408,8 @@ async function loadComponents(pageSpecificSetup) {
                 'feed.html',
                 'store.html',
                 'checkin.html',
-                'suporte.html'
+                'suporte.html',
+                'grade.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
