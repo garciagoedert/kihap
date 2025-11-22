@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,28 +14,37 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
         .accordion-header {
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         .accordion-header:hover {
             background-color: #2a2a2a;
         }
+
+        .accordion-item.active .accordion-content {
+            max-height: 2000px;
+            /* Increased to accommodate larger content */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            opacity: 1;
+        }
+
         .accordion-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            opacity: 0.5;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out, opacity 0.5s ease-in-out;
         }
-        .accordion-item.active .accordion-content {
-            max-height: 500px; /* Adjust as needed */
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
+
         .accordion-item.active .accordion-icon {
             transform: rotate(180deg);
         }
     </style>
 </head>
+
 <body class="bg-[#111111] text-gray-200">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
@@ -44,186 +54,585 @@
             <div id="header-container"></div>
 
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
-                <h1 class="text-2xl font-bold mb-6">Página de Suporte</h1>
-                
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4">Central de Ajuda</h2>
-                    <p class="text-gray-400 mb-6">Esta página serve como um guia de referência para as funcionalidades da intranet. Use os tópicos abaixo para encontrar a ajuda que precisa.</p>
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-white">Central de Suporte</h1>
+                    <span class="text-sm text-gray-400">v2.0</span>
+                </div>
 
-                    <!-- Search Input -->
-                    <div class="mb-6">
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fas fa-search text-gray-400"></i>
+                <!-- Novidades Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div
+                        class="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-700/30 p-6 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i class="fas fa-store text-8xl text-blue-400"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <span
+                                class="bg-blue-500/20 text-blue-300 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-500/30 mb-3 inline-block">NOVIDADE</span>
+                            <h3 class="text-xl font-bold text-white mb-2">Nova Store Kihap</h3>
+                            <p class="text-gray-300 text-sm mb-4">Gerencie produtos, estoque e pedidos com a nova
+                                interface da loja.</p>
+                            <a href="store.html"
+                                class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center transition-colors">
+                                Acessar Loja <i class="fas fa-arrow-right ml-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-700/30 p-6 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i class="fas fa-user-edit text-8xl text-purple-400"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <span
+                                class="bg-purple-500/20 text-purple-300 text-xs font-semibold px-2.5 py-0.5 rounded border border-purple-500/30 mb-3 inline-block">ATUALIZAÇÃO</span>
+                            <h3 class="text-xl font-bold text-white mb-2">Perfil Aprimorado</h3>
+                            <p class="text-gray-300 text-sm mb-4">Agora sua foto de perfil é sincronizada em toda a
+                                plataforma.</p>
+                            <a href="perfil.html"
+                                class="text-purple-400 hover:text-purple-300 text-sm font-medium inline-flex items-center transition-colors">
+                                Ver Perfil <i class="fas fa-arrow-right ml-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acesso Rápido -->
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-bolt text-yellow-400 mr-2"></i> Acesso Rápido
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <a href="alunos.html"
+                        class="bg-[#1a1a1a] hover:bg-[#252525] p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-all text-center group">
+                        <div
+                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white">Alunos</span>
+                    </a>
+                    <a href="grade.html"
+                        class="bg-[#1a1a1a] hover:bg-[#252525] p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-all text-center group">
+                        <div
+                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-green-500/20 group-hover:text-green-400 transition-colors">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white">Agenda</span>
+                    </a>
+                    <a href="store.html"
+                        class="bg-[#1a1a1a] hover:bg-[#252525] p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-all text-center group">
+                        <div
+                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-500/20 group-hover:text-orange-400 transition-colors">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white">Loja</span>
+                    </a>
+                    <a href="financeiro.html"
+                        class="bg-[#1a1a1a] hover:bg-[#252525] p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-all text-center group">
+                        <div
+                            class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-red-500/20 group-hover:text-red-400 transition-colors">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-300 group-hover:text-white">Financeiro</span>
+                    </a>
+                </div>
+
+                <!-- Base de Conhecimento Section -->
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-2 flex items-center">
+                                <i class="fas fa-book-reader mr-3 text-blue-500"></i> Base de Conhecimento
+                            </h2>
+                            <p class="text-gray-400 text-sm">Encontre respostas para suas dúvidas sobre as
+                                funcionalidades do sistema.</p>
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="mt-4 md:mt-0 w-full md:w-1/3 relative group">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <i
+                                    class="fas fa-search text-gray-500 group-focus-within:text-blue-400 transition-colors"></i>
                             </span>
-                            <input type="text" id="search-input" placeholder="Buscar por um tópico..." class="form-input pl-10 w-full">
+                            <input type="text" id="search-input" placeholder="Buscar na base de conhecimento..."
+                                class="w-full bg-[#1a1a1a] border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block pl-10 p-3 placeholder-gray-500 transition-all hover:border-gray-600 shadow-sm">
                         </div>
                     </div>
 
-                    <div class="space-y-4" id="tutorial-accordion">
+                    <div class="space-y-3" id="tutorial-accordion">
                         <!-- Accordion Item 1 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-globe w-6 mr-2"></i>Visão Geral</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-globe w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Visão
+                                    Geral
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>A intranet é a sua ferramenta central para gestão de alunos, cursos, comunicação e muito mais. O menu à esquerda (sidebar) é seu principal ponto de partida para acessar todas as funcionalidades.</p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p>A intranet é a sua ferramenta central para gestão de alunos, cursos, comunicação
+                                        e muito mais. O menu à esquerda (sidebar) é seu principal ponto de partida para
+                                        acessar todas as funcionalidades.</p>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 2 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-user-circle w-6 mr-2"></i>Gerenciando seu Perfil</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-user-circle w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Gerenciando
+                                    seu Perfil
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Nesta área, você pode manter suas informações pessoais atualizadas. Manter o perfil em dia é importante para a comunicação interna.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li>Altere seu nome de exibição.</li>
-                                    <li>Atualize sua senha de acesso.</li>
-                                    <li>Faça o upload de uma nova foto de perfil.</li>
-                                </ul>
-                                <p class="mt-3"><a href="perfil.html" class="text-blue-400 hover:underline">Ir para o Perfil →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Nesta área, você pode manter suas informações pessoais atualizadas.
+                                        Manter o perfil em dia é importante para a comunicação interna.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li>Altere seu nome de exibição.</li>
+                                        <li>Atualize sua senha de acesso.</li>
+                                        <li>Faça o upload de uma nova foto de perfil.</li>
+                                    </ul>
+                                    <a href="perfil.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para o Perfil <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 3 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-users w-6 mr-2"></i>Alunos</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-users w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Alunos
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Esta é a área central para a gestão de todos os alunos da academia.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Listagem de Alunos:</strong> Visualize todos os alunos cadastrados com informações rápidas.</li>
-                                    <li><strong>Cadastro:</strong> Adicione novos alunos preenchendo o formulário de cadastro.</li>
-                                    <li><strong>Perfil do Aluno:</strong> Clique em um aluno para ver seu perfil detalhado, incluindo histórico e progresso.</li>
-                                </ul>
-                                <p class="mt-3"><a href="alunos.html" class="text-blue-400 hover:underline">Ir para Alunos →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Esta é a área central para a gestão de todos os alunos da academia.
+                                    </p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Listagem de Alunos:</strong> Visualize todos os alunos cadastrados
+                                            com informações rápidas.</li>
+                                        <li><strong>Cadastro:</strong> Adicione novos alunos preenchendo o formulário de
+                                            cadastro.</li>
+                                        <li><strong>Perfil do Aluno:</strong> Clique em um aluno para ver seu perfil
+                                            detalhado, incluindo histórico e progresso.</li>
+                                    </ul>
+                                    <a href="alunos.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Alunos <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 4 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-graduation-cap w-6 mr-2"></i>Cursos e Conteúdo</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-graduation-cap w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Cursos
+                                    e Conteúdo
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Aqui você gerencia todo o material didático e os cursos oferecidos.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Criar e Editar Cursos:</strong> Organize o conteúdo em módulos e aulas.</li>
-                                    <li><strong>Adicionar Conteúdo:</strong> Faça upload de vídeos, PDFs e outros materiais.</li>
-                                    <li><strong>Tatame:</strong> A seção "Tatame" é a visualização do aluno, onde o conteúdo é exibido para eles.</li>
-                                </ul>
-                                <p class="mt-3"><a href="cursos.html" class="text-blue-400 hover:underline">Ir para Cursos →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Aqui você gerencia todo o material didático e os cursos oferecidos.
+                                    </p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Criar e Editar Cursos:</strong> Organize o conteúdo em módulos e
+                                            aulas.</li>
+                                        <li><strong>Adicionar Conteúdo:</strong> Faça upload de vídeos, PDFs e outros
+                                            materiais.</li>
+                                        <li><strong>Tatame:</strong> A seção "Tatame" é a visualização do aluno, onde o
+                                            conteúdo é exibido para eles.</li>
+                                    </ul>
+                                    <a href="cursos.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Cursos <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 5 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-calendar-alt w-6 mr-2"></i>Calendário</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-calendar-alt w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Calendário
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>A ferramenta para organizar a agenda de aulas e eventos da academia.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Agendar Aulas:</strong> Crie novos eventos no calendário, definindo data, hora e instrutor.</li>
-                                    <li><strong>Visualização:</strong> Alterne entre as visualizações de mês, semana e dia.</li>
-                                    <li><strong>Eventos:</strong> Adicione eventos especiais, como seminários ou graduações.</li>
-                                </ul>
-                                <p class="mt-3"><a href="grade.html" class="text-blue-400 hover:underline">Ir para Grade →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">A ferramenta para organizar a agenda de aulas e eventos da academia.
+                                    </p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Agendar Aulas:</strong> Crie novos eventos no calendário, definindo
+                                            data, hora e instrutor.</li>
+                                        <li><strong>Visualização:</strong> Alterne entre as visualizações de mês, semana
+                                            e dia.</li>
+                                        <li><strong>Eventos:</strong> Adicione eventos especiais, como seminários ou
+                                            graduações.</li>
+                                    </ul>
+                                    <a href="grade.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Grade <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 6 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-check-circle w-6 mr-2"></i>Tarefas e Projetos</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-check-circle w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Tarefas
+                                    e Projetos
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Ferramentas para a gestão de atividades e projetos internos da equipe.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Tarefas:</strong> Crie, atribua e acompanhe o status de tarefas individuais para o dia a dia.</li>
-                                    <li><strong>Projetos:</strong> Organize tarefas maiores em projetos, com prazos e responsáveis.</li>
-                                </ul>
-                                <p class="mt-3"><a href="tarefas.html" class="text-blue-400 hover:underline">Ir para Tarefas →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Ferramentas para a gestão de atividades e projetos internos da
+                                        equipe.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Tarefas:</strong> Crie, atribua e acompanhe o status de tarefas
+                                            individuais para o dia a dia.</li>
+                                        <li><strong>Projetos:</strong> Organize tarefas maiores em projetos, com prazos
+                                            e responsáveis.</li>
+                                    </ul>
+                                    <a href="tarefas.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Tarefas <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 7 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-comments w-6 mr-2"></i>Comunicação</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-comments w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Comunicação
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Mantenha a equipe informada e conectada.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Feed:</strong> Um mural de notícias para comunicados importantes e atualizações.</li>
-                                    <li><strong>Chat:</strong> Para conversas rápidas e em tempo real com outros membros da equipe.</li>
-                                </ul>
-                                <p class="mt-3"><a href="feed.html" class="text-blue-400 hover:underline">Ir para o Feed →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Mantenha a equipe informada e conectada.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Feed:</strong> Um mural de notícias para comunicados importantes e
+                                            atualizações.</li>
+                                        <li><strong>Chat:</strong> Para conversas rápidas e em tempo real com outros
+                                            membros da equipe.</li>
+                                    </ul>
+                                    <a href="feed.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para o Feed <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 8 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-tasks w-6 mr-2"></i>Prospecção</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-tasks w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Prospecção
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Esta é a sua ferramenta de CRM para gerenciar novos contatos.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Cadastrar Leads:</strong> Adicione informações de pessoas interessadas.</li>
-                                    <li><strong>Acompanhar Contatos:</strong> Registre interações e mova o lead pelo funil de vendas.</li>
-                                    <li><strong>Análise:</strong> Visualize dados sobre a origem e conversão de novos alunos.</li>
-                                </ul>
-                                <p class="mt-3"><a href="prospeccao.html" class="text-blue-400 hover:underline">Ir para Prospecção →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Esta é a sua ferramenta de CRM para gerenciar novos contatos.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Cadastrar Leads:</strong> Adicione informações de pessoas
+                                            interessadas.</li>
+                                        <li><strong>Acompanhar Contatos:</strong> Registre interações e mova o lead pelo
+                                            funil de vendas.</li>
+                                        <li><strong>Análise:</strong> Visualize dados sobre a origem e conversão de
+                                            novos alunos.</li>
+                                    </ul>
+                                    <a href="prospeccao.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Prospecção <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 9 -->
-                        <div class="accordion-item border-b border-gray-700">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-ribbon w-6 mr-2"></i>Pedidos de Faixas</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-ribbon w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Pedidos
+                                    de Faixas
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>Centralize e organize as solicitações de graduação dos alunos.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Criar Pedido:</strong> Inicie um novo pedido de faixa para um aluno apto a graduar.</li>
-                                    <li><strong>Acompanhar Status:</strong> Monitore o andamento do pedido, da solicitação à entrega.</li>
-                                    <li><strong>Histórico:</strong> Mantenha um registro de todas as graduações.</li>
-                                </ul>
-                                <p class="mt-3"><a href="pedidos-faixas.html" class="text-blue-400 hover:underline">Ir para Pedidos de Faixas →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Centralize e organize as solicitações de graduação dos alunos.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Criar Pedido:</strong> Inicie um novo pedido de faixa para um aluno
+                                            apto a graduar.</li>
+                                        <li><strong>Acompanhar Status:</strong> Monitore o andamento do pedido, da
+                                            solicitação à entrega.</li>
+                                        <li><strong>Histórico:</strong> Mantenha um registro de todas as graduações.
+                                        </li>
+                                    </ul>
+                                    <a href="pedidos-faixas.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Pedidos de Faixas <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Accordion Item 10 -->
-                        <div class="accordion-item">
-                            <div class="accordion-header flex justify-between items-center p-4 rounded-md">
-                                <h3 class="font-semibold text-lg"><i class="fas fa-store w-6 mr-2"></i>Store</h3>
-                                <i class="fas fa-chevron-down accordion-icon transition-transform"></i>
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-store w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Store
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
                             </div>
-                            <div class="accordion-content px-4 text-gray-300">
-                                <p>A loja interna da Kihap, para venda de produtos como uniformes e equipamentos.</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li><strong>Gestão de Produtos:</strong> Cadastre produtos, edite informações e controle o estoque.</li>
-                                    <li><strong>Pedidos:</strong> Visualize e processe os pedidos feitos pelos alunos.</li>
-                                </ul>
-                                <p class="mt-3"><a href="store.html" class="text-blue-400 hover:underline">Ir para a Store →</a></p>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">A loja interna da Kihap, para venda de produtos como uniformes e
+                                        equipamentos.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Gestão de Produtos:</strong> Cadastre produtos, edite informações e
+                                            controle o estoque.</li>
+                                        <li><strong>Pedidos:</strong> Visualize e processe os pedidos feitos pelos
+                                            alunos.</li>
+                                    </ul>
+                                    <a href="store.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para a Store <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- New Accordion Items -->
+                        <!-- Processos -->
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-project-diagram w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Processos
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Gerencie fluxos de trabalho e procedimentos padronizados.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Visualizar Processos:</strong> Acesse os manuais e fluxos
+                                            operacionais da academia.</li>
+                                        <li><strong>Editor:</strong> Crie e atualize processos para manter a equipe
+                                            alinhada.</li>
+                                    </ul>
+                                    <a href="processos.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Processos <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estoque -->
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-boxes w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Estoque
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Controle detalhado de itens e materiais da academia.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Inventário:</strong> Acompanhe a quantidade de itens disponíveis.
+                                        </li>
+                                        <li><strong>Movimentações:</strong> Registre entradas e saídas de materiais.
+                                        </li>
+                                    </ul>
+                                    <a href="estoque.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Estoque <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Relatórios -->
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-chart-bar w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Relatórios
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Análises e métricas para tomada de decisão.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Financeiro:</strong> Relatórios de receitas, despesas e
+                                            inadimplência.</li>
+                                        <li><strong>Operacional:</strong> Dados sobre frequência, retenção e matrículas.
+                                        </li>
+                                    </ul>
+                                    <a href="relatorios.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Relatórios <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Check-in -->
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-qrcode w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Check-in
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Sistema de registro de presença dos alunos.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>QR Code:</strong> Leitura rápida para entrada de alunos.</li>
+                                        <li><strong>Manual:</strong> Registro manual de presença quando necessário.</li>
+                                    </ul>
+                                    <a href="checkin.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Check-in <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ranking -->
+                        <div
+                            class="accordion-item group bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden hover:border-gray-600 transition-all duration-200 shadow-sm">
+                            <div
+                                class="accordion-header flex justify-between items-center p-5 cursor-pointer hover:bg-[#222] transition-colors">
+                                <h3
+                                    class="font-medium text-gray-200 flex items-center group-hover:text-white transition-colors">
+                                    <i
+                                        class="fas fa-trophy w-8 text-gray-500 group-hover:text-blue-400 transition-colors"></i>Ranking
+                                </h3>
+                                <i
+                                    class="fas fa-chevron-down accordion-icon text-gray-500 group-hover:text-white transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content px-5 bg-[#161616]">
+                                <div class="pb-5 text-gray-400 text-sm leading-relaxed">
+                                    <p class="mb-2">Gamificação e engajamento dos alunos.</p>
+                                    <ul class="list-disc list-inside space-y-1 mb-3">
+                                        <li><strong>Pontuação:</strong> Acompanhe quem são os alunos mais dedicados.
+                                        </li>
+                                        <li><strong>Critérios:</strong> Entenda como os pontos são distribuídos
+                                            (presença, eventos, etc).</li>
+                                    </ul>
+                                    <a href="ranking.html"
+                                        class="text-blue-400 hover:text-blue-300 text-sm font-medium inline-flex items-center">Ir
+                                        para Ranking <i class="fas fa-arrow-right ml-1 text-xs"></i></a>
+                                </div>
                             </div>
                         </div>
 
                     </div>
                 </div>
+
+                <!-- Fale Conosco Section -->
+                <div class="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 shadow-lg">
+                    <div class="flex flex-col md:flex-row items-center justify-between">
+                        <div class="mb-4 md:mb-0">
+                            <h2 class="text-xl font-semibold text-white mb-2">Ainda precisa de ajuda?</h2>
+                            <p class="text-gray-400 text-sm">Nossa equipe de suporte está pronta para te ajudar com
+                                qualquer dúvida técnica.</p>
+                        </div>
+                        <div class="flex space-x-4">
+                            <a href="mailto:comercial@kihap.com.br"
+                                class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center">
+                                <i class="fas fa-envelope mr-2"></i> Email
+                            </a>
+                            <a href="https://wa.me/5548988780389"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center shadow-lg shadow-blue-900/20">
+                                <i class="fab fa-whatsapp mr-2"></i> WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="mt-12 text-center text-gray-600 text-xs pb-4">
+                    <p>&copy; <span id="current-year"></span> Kihap. Todos os direitos reservados.</p>
+                </footer>
             </div>
         </main>
     </div>
@@ -234,6 +643,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents();
+            document.getElementById('current-year').innerText = new Date().getFullYear();
 
             const accordion = document.getElementById('tutorial-accordion');
             const searchInput = document.getElementById('search-input');
@@ -261,7 +671,7 @@
                 accordionItems.forEach(item => {
                     const headerText = item.querySelector('.accordion-header h3').textContent.toLowerCase();
                     const contentText = item.querySelector('.accordion-content').textContent.toLowerCase();
-                    
+
                     if (headerText.includes(searchTerm) || contentText.includes(searchTerm)) {
                         item.style.display = 'block';
                     } else {
@@ -272,4 +682,5 @@
         });
     </script>
 </body>
+
 </html>
