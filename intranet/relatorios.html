@@ -1,60 +1,138 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <title>Relatórios - Intranet Kihap</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="log.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
-    <div id="app-container" class="flex h-screen">
+
+<body class="bg-[#111111] text-gray-200 font-sans antialiased selection:bg-yellow-500/30 selection:text-yellow-200">
+    <div id="app-container" class="flex h-screen overflow-hidden">
         <div id="sidebar-container"></div>
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden backdrop-blur-sm transition-opacity">
+        </div>
 
         <!-- Main Content -->
-        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out relative">
             <div id="header-container"></div>
 
             <!-- Page Content -->
-            <div id="reports-container" class="flex-grow p-4 md:p-6 flex flex-col custom-scrollbar">
+            <div id="reports-container"
+                class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 flex-shrink-0">
-                    <h1 class="text-2xl font-semibold text-white mb-4 md:mb-0">Relatórios de Presença</h1>
-                    <button id="export-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">
-                        <i class="fas fa-file-excel mr-2"></i>Exportar para CSV
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 flex-shrink-0">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white tracking-tight">Relatórios de Presença</h1>
+                        <p class="text-gray-400 text-sm mt-1">Analise o desempenho e a frequência das turmas.</p>
+                    </div>
+                    <button id="export-btn"
+                        class="bg-[#1a1a1a] hover:bg-[#252525] text-gray-300 hover:text-white border border-gray-700 font-medium py-2.5 px-5 rounded-lg shadow-sm transition-all flex items-center gap-2 group">
+                        <i class="fas fa-file-csv text-green-500 group-hover:scale-110 transition-transform"></i>
+                        <span>Exportar CSV</span>
                     </button>
                 </div>
 
                 <!-- Filters -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-wrap items-center gap-4">
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="unit-filter" class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
-                        <select id="unit-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></select>
+                <div
+                    class="bg-[#1a1a1a] border border-gray-800 p-5 rounded-xl mb-8 shadow-lg relative overflow-hidden flex-shrink-0">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <i class="fas fa-filter text-6xl text-white"></i>
                     </div>
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="period-filter" class="block text-sm font-medium text-gray-400 mb-1">Período</label>
-                        <input type="date" id="period-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="range-filter" class="block text-sm font-medium text-gray-400 mb-1">Visualização</label>
-                        <select id="range-filter" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                            <option value="day">Dia</option>
-                            <option value="week">Semana</option>
-                            <option value="month">Mês</option>
-                        </select>
-                    </div>
-                    <div class="self-end">
-                        <button id="generate-report-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Gerar Relatório</button>
+                    <div class="flex flex-wrap items-end gap-4 relative z-10">
+                        <div class="flex-1 min-w-[200px]">
+                            <label for="unit-filter"
+                                class="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Unidade</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-map-marker-alt text-gray-500"></i>
+                                </div>
+                                <select id="unit-filter"
+                                    class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all appearance-none cursor-pointer text-sm"></select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="period-filter"
+                                class="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Data de
+                                Referência</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="far fa-calendar-alt text-gray-500"></i>
+                                </div>
+                                <input type="date" id="period-filter"
+                                    class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all text-sm [color-scheme:dark]">
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label for="range-filter"
+                                class="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Período</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-clock text-gray-500"></i>
+                                </div>
+                                <select id="range-filter"
+                                    class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all appearance-none cursor-pointer text-sm">
+                                    <option value="day">Dia</option>
+                                    <option value="week">Semana</option>
+                                    <option value="month">Mês</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-auto">
+                            <button id="generate-report-btn"
+                                class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-blue-900/20 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-search"></i>
+                                <span>Gerar Relatório</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Report Results -->
-                <div id="report-results" class="flex-grow bg-[#1a1a1a] p-4 rounded-lg">
-                    <p class="text-center text-gray-400">Selecione os filtros e gere um relatório para ver os dados.</p>
+                <div id="report-results" class="flex-grow space-y-6">
+                    <div
+                        class="flex flex-col items-center justify-center h-64 text-gray-500 gap-4 border-2 border-dashed border-gray-800 rounded-xl bg-[#1a1a1a]/50">
+                        <div class="bg-[#222] p-4 rounded-full">
+                            <i class="fas fa-chart-pie text-4xl opacity-50 text-gray-400"></i>
+                        </div>
+                        <p class="font-medium">Selecione os filtros acima para gerar o relatório.</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -70,4 +148,5 @@
         });
     </script>
 </body>
+
 </html>

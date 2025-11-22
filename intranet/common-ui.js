@@ -409,7 +409,8 @@ async function loadComponents(pageSpecificSetup) {
                 'store.html',
                 'checkin.html',
                 'suporte.html',
-                'grade.html'
+                'grade.html',
+                'relatorios.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
