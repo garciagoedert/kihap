@@ -12,11 +12,11 @@ export function loadMemberDashboard() {
             if (userData) {
                 document.getElementById('user-name-display').textContent = userData.name;
                 document.getElementById('user-email-display').textContent = userData.email;
-                
+
                 // Assumindo que o ID do membro da EVO está armazenado no documento do usuário no Firestore
                 if (userData.evoMemberId) {
                     try {
-                        const result = await getMemberData({ 
+                        const result = await getMemberData({
                             memberId: userData.evoMemberId,
                             unitId: userData.unitId // Passa a unidade do aluno para a função
                         });
@@ -28,8 +28,14 @@ export function loadMemberDashboard() {
 
                         // Atualiza a foto do perfil
                         const avatar = document.getElementById('user-avatar');
-                        if (member.photoUrl) {
+
+                        // Prioritize Firestore photoURL if available
+                        if (userData.photoURL) {
+                            avatar.src = userData.photoURL;
+                        } else if (member.photoUrl) {
                             avatar.src = member.photoUrl;
+                        } else {
+                            // No photo found, using default.
                         }
 
                         document.getElementById('member-name').textContent = fullName;
@@ -39,7 +45,7 @@ export function loadMemberDashboard() {
                         document.getElementById('member-status').textContent = member.membershipStatus || 'Não informado';
                         document.getElementById('member-register-date').textContent = member.registerDate ? new Date(member.registerDate).toLocaleDateString('pt-BR') : 'Não informada';
                         document.getElementById('member-instructor').textContent = member.nameEmployeeInstructor || 'Não informado';
-                        
+
                         const kihapCoins = member.totalFitCoins || 0;
                         document.getElementById('member-kihapcoins').textContent = kihapCoins;
                         document.getElementById('member-kihapcoins-highlight').textContent = kihapCoins;

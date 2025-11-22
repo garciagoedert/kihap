@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,10 +17,11 @@
         }
     </style>
 </head>
+
 <body class="bg-[#111111] text-gray-200">
     <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
-        
+
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
         <main id="main-content" class="flex-1">
@@ -27,11 +29,12 @@
 
             <div class="p-4 md:p-6 lg:p-8">
                 <h1 class="text-2xl font-bold mb-6">Painel do Aluno</h1>
-                
+
                 <!-- Profile Info -->
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
                     <div class="flex items-center space-x-6">
-                        <img id="user-avatar" src="../intranet/default-profile.svg" alt="User Avatar" class="w-24 h-24 rounded-full">
+                        <img id="user-avatar" src="../intranet/default-profile.svg" alt="User Avatar"
+                            class="w-24 h-24 rounded-full">
                         <div>
                             <h2 id="user-name-display" class="text-2xl font-bold">Carregando...</h2>
                             <p id="user-email-display" class="text-gray-400">Carregando...</p>
@@ -88,7 +91,9 @@
                 </div>
 
                 <div class="mt-6">
-                    <a href="perfil.html" class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Editar Perfil</a>
+                    <a href="perfil.html"
+                        class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Editar
+                        Perfil</a>
                 </div>
 
                 <!-- Badges Section -->
@@ -113,7 +118,7 @@
     <script type="module" src="js/auth.js"></script>
     <script type="module">
         import { loadComponents } from './js/common-ui.js';
-        import { loadMemberDashboard } from './js/dashboard.js';
+        import { loadMemberDashboard } from './js/dashboard.js?v=2';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
@@ -122,4 +127,5 @@
         });
     </script>
 </body>
+
 </html>

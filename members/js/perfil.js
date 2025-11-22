@@ -4,8 +4,10 @@ import { functions } from '../../intranet/firebase-config.js';
 // Importações do Firebase Auth e Firestore serão necessárias para a atualização
 import { updatePassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, updateDoc, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { auth, db } from '../../intranet/firebase-config.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { auth, db, app } from '../../intranet/firebase-config.js';
 
+const storage = getStorage(app);
 const getMemberData = httpsCallable(functions, 'getMemberData');
 const updateMemberData = httpsCallable(functions, 'updateMemberData');
 
@@ -14,9 +16,58 @@ export function setupProfilePage() {
     const userEmailDisplay = document.getElementById('user-email-display');
     const nameInput = document.getElementById('name');
     const editProfileForm = document.getElementById('edit-profile-form');
+    const photoInput = document.getElementById('photo-input');
+    const avatar = document.getElementById('user-avatar');
+    const changePhotoOverlay = document.getElementById('change-photo-overlay');
+    const profilePhotoContainer = document.getElementById('profile-photo-container');
 
     let currentUser = null;
     let evoMemberId = null;
+
+    // Handle photo click - attach to container for better hit area
+    if (profilePhotoContainer) {
+        profilePhotoContainer.addEventListener('click', (e) => {
+            if (photoInput) {
+                photoInput.click();
+            }
+        });
+    }
+
+    // Handle file selection
+    if (photoInput) {
+        photoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!currentUser) {
+                alert("Erro: Usuário não identificado.");
+                return;
+            }
+
+            // Show loading state (optional: could add a spinner overlay)
+            const originalSrc = avatar.src;
+            avatar.style.opacity = '0.5';
+
+            try {
+                const photoURL = await uploadProfilePicture(file, currentUser.uid);
+
+                // Update Firestore
+                const userRef = doc(db, "users", currentUser.uid);
+                await updateDoc(userRef, { photoURL: photoURL });
+
+                // Update UI
+                avatar.src = photoURL;
+                alert("Foto de perfil atualizada com sucesso!");
+
+            } catch (error) {
+                console.error("Erro ao atualizar foto:", error);
+                alert("Erro ao atualizar a foto de perfil.");
+                avatar.src = originalSrc;
+            } finally {
+                avatar.style.opacity = '1';
+            }
+        });
+    }
 
     onAuthReady(async (user) => {
         if (user) {
@@ -28,15 +79,19 @@ export function setupProfilePage() {
                 nameInput.value = userData.name;
                 evoMemberId = userData.evoMemberId; // Armazena o ID do membro
 
+                // Prioritize Firestore photoURL if available
+                if (userData.photoURL) {
+                    avatar.src = userData.photoURL;
+                }
+
                 // Se tivermos o ID, buscamos os dados da EVO para preencher o formulário
                 if (evoMemberId) {
                     try {
                         const result = await getMemberData({ memberId: evoMemberId });
                         const member = result.data;
-                        
-                        // Atualiza a foto do perfil
-                        const avatar = document.getElementById('user-avatar');
-                        if (member.photoUrl) {
+
+                        // Only use EVO photo if user hasn't uploaded one yet
+                        if (member.photoUrl && !userData.photoURL) {
                             avatar.src = member.photoUrl;
                         }
 
@@ -84,16 +139,22 @@ export function setupProfilePage() {
             }
 
             alert('Perfil atualizado com sucesso!');
-            
+
             // Atualiza a UI
             userNameDisplay.textContent = newName;
-            if(newPassword) document.getElementById('password').value = '';
+            if (newPassword) document.getElementById('password').value = '';
 
         } catch (error) {
             console.error("Erro ao atualizar perfil:", error);
             alert("Erro ao atualizar perfil: " + error.message);
         }
     });
+
+    async function uploadProfilePicture(file, userId) {
+        const storageRef = ref(storage, `profile_pictures/${userId}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytesResumable(storageRef, file);
+        return await getDownloadURL(snapshot.ref);
+    }
 
     async function fetchPaymentHistory(userId) {
         const paymentHistoryBody = document.getElementById('payment-history-body');
@@ -120,8 +181,8 @@ export function setupProfilePage() {
                 const row = paymentHistoryBody.insertRow();
                 const date = payment.created ? new Date(payment.created.toDate()).toLocaleDateString('pt-BR') : 'N/A';
                 const amount = (payment.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                const status = payment.paymentStatus === 'paid' 
-                    ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">Pago</span>' 
+                const status = payment.paymentStatus === 'paid'
+                    ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">Pago</span>'
                     : '<span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">Pendente</span>';
 
                 row.innerHTML = `

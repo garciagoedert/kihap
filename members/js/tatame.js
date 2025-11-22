@@ -5,30 +5,16 @@ import { collection, getDocs, query, where, documentId } from "https://www.gstat
 export function loadStudentTatameContent() {
     onAuthReady(async (user) => {
         if (user) {
-            const userData = await getUserData(user.uid);
-            const accessibleContent = userData?.accessibleContent || [];
-            
             const articlesList = document.getElementById('articles-list');
             articlesList.innerHTML = '';
 
-            if (!accessibleContent.length) {
-                articlesList.innerHTML = '<p class="text-gray-400 col-span-full">Você ainda não tem acesso a nenhum conteúdo do tatame. Fale com seu instrutor.</p>';
-                return;
-            }
-
-            const contentIds = accessibleContent.filter(id => id);
-
-            if (!contentIds.length) {
-                articlesList.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum conteúdo encontrado em suas permissões.</p>';
-                return;
-            }
-
             try {
-                const q = query(collection(db, "tatame_conteudos"), where(documentId(), "in", contentIds));
+                // Fetch all tatame content directly
+                const q = query(collection(db, "tatame_conteudos"));
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
-                    articlesList.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum dos conteúdos em suas permissões foi encontrado.</p>';
+                    articlesList.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum conteúdo encontrado.</p>';
                     return;
                 }
 
@@ -41,7 +27,7 @@ export function loadStudentTatameContent() {
 
             } catch (error) {
                 console.error("Error loading student tatame content: ", error);
-                articlesList.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar seus conteúdos.</p>';
+                articlesList.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar os conteúdos.</p>';
             }
         }
     });
@@ -50,8 +36,8 @@ export function loadStudentTatameContent() {
 function createArticleCard(article, articleId) {
     const card = document.createElement('div');
     card.className = 'article-card';
-    
-    const contentText = (article.content && article.content.ops) 
+
+    const contentText = (article.content && article.content.ops)
         ? article.content.ops.map(op => op.insert).join('').trim().substring(0, 150) + '...'
         : 'Nenhum conteúdo.';
 

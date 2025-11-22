@@ -60,6 +60,22 @@ const createPagarmeOrder = async (product, formDataList, totalAmount, saleDocIds
                 },
                 pix: {
                     expires_in: 1800 // 30 minutos
+                },
+                credit_card: {
+                    installments: [
+                        {
+                            number: 1,
+                            total: totalAmount
+                        },
+                        {
+                            number: 2,
+                            total: totalAmount
+                        },
+                        {
+                            number: 3,
+                            total: totalAmount
+                        }
+                    ]
                 }
             }
         }],

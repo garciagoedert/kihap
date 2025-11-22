@@ -5,39 +5,16 @@ import { collection, getDocs, query, where, documentId } from "https://www.gstat
 export function loadStudentCourses() {
     onAuthReady(async (user) => {
         if (user) {
-            const userData = await getUserData(user.uid);
-
-            // Controle de Acesso por Assinatura
-            if (!userData || userData.subscriptionStatus !== 'active') {
-                // Se não tiver dados ou a assinatura não estiver ativa, redireciona
-                window.location.href = 'assinatura.html';
-                return; 
-            }
-
-            const accessibleContent = userData?.accessibleContent || [];
-            
             const courseListContainer = document.getElementById('course-list');
             courseListContainer.innerHTML = '';
 
-            if (!accessibleContent.length) {
-                courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Você ainda não tem acesso a nenhum curso. Fale com seu instrutor.</p>';
-                return;
-            }
-
-            // Filtra apenas os IDs que podem ser de cursos (para otimizar a consulta)
-            const courseIds = accessibleContent.filter(id => id); // Simples verificação, pode ser melhorada se houver um padrão de ID
-
-            if (!courseIds.length) {
-                 courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum curso encontrado em suas permissões.</p>';
-                return;
-            }
-
             try {
-                const q = query(collection(db, "courses"), where(documentId(), "in", courseIds));
+                // Fetch all courses directly, ignoring subscription status
+                const q = query(collection(db, "courses"));
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
-                    courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum dos cursos em suas permissões foi encontrado.</p>';
+                    courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum curso encontrado.</p>';
                     return;
                 }
 
@@ -50,7 +27,7 @@ export function loadStudentCourses() {
 
             } catch (error) {
                 console.error("Error loading student courses: ", error);
-                courseListContainer.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar seus cursos.</p>';
+                courseListContainer.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar os cursos.</p>';
             }
         }
     });

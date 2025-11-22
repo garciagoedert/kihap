@@ -58,7 +58,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
 
         const result = await response.json();
         currentStudent = result.data;
-        
+
         if (!currentStudent) {
             throw new Error("Aluno não encontrado.");
         }
@@ -77,14 +77,26 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
     }
 }
 
-function renderStudentProfile() {
+async function renderStudentProfile() {
     const fullName = `${currentStudent.firstName || ''} ${currentStudent.lastName || ''}`;
     const email = currentStudent.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || 'N/A';
 
     document.getElementById('student-name-header').textContent = fullName;
     document.getElementById('student-name-sidebar').textContent = fullName;
     document.getElementById('student-email').textContent = email;
-    document.getElementById('student-photo').src = currentStudent.photoUrl || 'default-profile.svg';
+
+    const studentPhoto = document.getElementById('student-photo');
+    studentPhoto.src = currentStudent.photoUrl || 'default-profile.svg';
+
+    // Try to fetch Firestore user data to get the uploaded photo
+    try {
+        const studentUser = await findUserByEvoId(currentStudent.idMember);
+        if (studentUser && studentUser.photoURL) {
+            studentPhoto.src = studentUser.photoURL;
+        }
+    } catch (e) {
+        console.warn("Could not fetch Firestore user data for photo:", e);
+    }
 
     const statusBadge = document.getElementById('student-status-badge');
     if (currentStudent.membershipStatus === 'Active') {
@@ -98,7 +110,7 @@ function renderStudentProfile() {
 
 function renderDetailsTab() {
     const detailsContainer = document.getElementById('tab-content-details');
-    
+
     const translations = {
         idMember: "ID do Aluno",
         registerDate: "Data de Cadastro",
@@ -160,9 +172,9 @@ function switchTab(activeTabId) {
     tabs.forEach(tabId => {
         const tabButton = document.getElementById(`tab-${tabId}`);
         const tabContent = document.getElementById(`tab-content-${tabId}`);
-        
+
         const isActive = tabId === activeTabId;
-        
+
         tabContent.classList.toggle('hidden', !isActive);
         tabButton.classList.toggle('text-yellow-500', isActive);
         tabButton.classList.toggle('border-yellow-500', isActive);
@@ -228,7 +240,7 @@ async function loadAllSelectableContent() {
 async function populatePermissionsChecklists() {
     const coursesChecklist = document.getElementById('courses-checklist');
     const tatameChecklist = document.getElementById('tatame-checklist');
-    
+
     const studentUser = await findUserByEvoId(currentStudent.idMember);
     const studentPermissions = studentUser?.accessibleContent || [];
 
@@ -250,7 +262,7 @@ async function populatePermissionsChecklists() {
 async function handleSavePermissions() {
     const button = document.getElementById('save-permissions-btn');
     const studentUser = await findUserByEvoId(currentStudent.idMember);
-    
+
     if (!studentUser) {
         alert("Aluno não possui conta no sistema. Use o botão 'Convidar'.");
         return;
@@ -261,7 +273,7 @@ async function handleSavePermissions() {
 
     const selectedCourses = Array.from(document.querySelectorAll('#courses-checklist input:checked')).map(input => input.value);
     const selectedTatame = Array.from(document.querySelectorAll('#tatame-checklist input:checked')).map(input => input.value);
-    
+
     try {
         await updateStudentPermissions({ studentUid: studentUser.id, accessibleContent: [...selectedCourses, ...selectedTatame] });
         alert("Permissões salvas!");
@@ -332,7 +344,7 @@ async function populatePhysicalTestTab() {
         orderBy("date", "desc")
     );
     const testsSnapshot = await getDocs(testsQuery);
-    
+
     if (testsSnapshot.empty) {
         historyContainer.innerHTML = '<p class="text-gray-500">Nenhum teste físico registrado.</p>';
         return;
@@ -370,7 +382,7 @@ async function handleSavePhysicalTest() {
             evoMemberId: currentStudent.idMember,
             studentName: `${currentStudent.firstName} ${currentStudent.lastName}`
         });
-        
+
         dateInput.value = '';
         scoreInput.value = '';
         await populatePhysicalTestTab();
