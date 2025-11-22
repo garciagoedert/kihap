@@ -1,10 +1,10 @@
 import { db } from './firebase-config.js';
-import { 
-    collection, getDocs, query, orderBy, where, 
+import {
+    collection, getDocs, query, orderBy, where,
     addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { 
-    getStorage, ref, uploadBytes, getDownloadURL 
+import {
+    getStorage, ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
@@ -222,7 +222,7 @@ export async function setupStorePage() {
     const addManualSaleProductRow = () => {
         const row = document.createElement('div');
         row.className = 'manual-sale-product-row grid grid-cols-3 gap-2 items-center';
-        
+
         const productSelect = document.createElement('select');
         productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
         productSelect.innerHTML = '<option value="">Selecione um produto</option>';
@@ -365,7 +365,7 @@ export async function setupStorePage() {
             }
 
             await addDoc(collection(db, 'inscricoesFaixaPreta'), saleData);
-            
+
             alert('Venda manual adicionada com sucesso!');
             closeManualSaleModal();
             await fetchSales();
@@ -384,12 +384,12 @@ export async function setupStorePage() {
     // --- Helper Functions ---
     const renderStatusTag = (status) => {
         if (!status) return 'N/A';
-        
+
         const statusText = status === 'paid' ? 'Pago' : 'Pendente';
-        const colorClasses = status === 'paid' 
-            ? 'bg-green-500/20 text-green-400' 
+        const colorClasses = status === 'paid'
+            ? 'bg-green-500/20 text-green-400'
             : 'bg-yellow-500/20 text-yellow-400';
-            
+
         return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
     };
 
@@ -433,15 +433,15 @@ export async function setupStorePage() {
             }
 
             row.innerHTML = `
-                <td class="p-4">${nameDisplay}</td>
-                <td class="p-4">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4">${sale.userPhone || 'N/A'}</td>
-                <td class="p-4">${productDisplay}</td>
-                <td class="p-4">${sale.userPrograma || 'N/A'}</td>
-                <td class="p-4">${sale.userGraduacao || 'N/A'}</td>
-                <td class="p-4">${amount}</td>
-                <td class="p-4">${renderStatusTag(sale.paymentStatus)}</td>
-                <td class="p-4">${date}</td>
+                <td class="p-4" data-label="Nome do Cliente">${nameDisplay}</td>
+                <td class="p-4" data-label="Email">${sale.userEmail || 'N/A'}</td>
+                <td class="p-4" data-label="Telefone">${sale.userPhone || 'N/A'}</td>
+                <td class="p-4" data-label="Produto">${productDisplay}</td>
+                <td class="p-4" data-label="Programa">${sale.userPrograma || 'N/A'}</td>
+                <td class="p-4" data-label="Graduação">${sale.userGraduacao || 'N/A'}</td>
+                <td class="p-4" data-label="Valor">${amount}</td>
+                <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
+                <td class="p-4" data-label="Data da Compra">${date}</td>
             `;
         });
     };
@@ -461,7 +461,7 @@ export async function setupStorePage() {
             const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
             const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
             const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
-            
+
             let dateMatch = true;
             if (selectedDate && sale.created) {
                 const saleDate = sale.created.toDate().toISOString().split('T')[0];
@@ -508,7 +508,7 @@ export async function setupStorePage() {
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const productMatch = !selectedProduct || sale.productId === selectedProduct;
-            
+
             let dateMatch = true;
             if (selectedDate && sale.created) {
                 const saleDate = sale.created.toDate().toISOString().split('T')[0];
@@ -563,7 +563,7 @@ export async function setupStorePage() {
         productsToDisplay.forEach(product => {
             const row = productsTableBody.insertRow();
             row.classList.add('border-b', 'border-gray-700');
-            
+
             let price;
             if (product.priceType === 'variable' && product.priceVariants) {
                 const prices = product.priceVariants.map(v => v.price / 100);
@@ -580,22 +580,22 @@ export async function setupStorePage() {
             const publicStatus = product.acessoPublico ? '<span class="text-indigo-400">Público</span>' : '<span class="text-gray-500">Privado</span>';
 
             row.innerHTML = `
-                <td class="p-4">${product.name}</td>
-                <td class="p-4">${price}</td>
-                <td class="p-4">${visibilityStatus} / ${availabilityStatus} / ${publicStatus}</td>
-                <td class="p-4">
+                <td class="p-4" data-label="Nome">${product.name}</td>
+                <td class="p-4" data-label="Preço">${price}</td>
+                <td class="p-4" data-label="Status">${visibilityStatus} / ${availabilityStatus} / ${publicStatus}</td>
+                <td class="p-4" data-label="Link">
                     <button class="copy-link-btn text-green-400 hover:text-green-300" data-link="${productUrl}">
                         <i class="fas fa-copy"></i> Copiar
                     </button>
                 </td>
-                <td class="p-4">
+                <td class="p-4" data-label="Ações">
                     <button class="edit-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${product.id}"><i class="fas fa-pencil-alt"></i></button>
                     <button class="delete-btn text-red-500 hover:text-red-400" data-id="${product.id}"><i class="fas fa-trash-alt"></i></button>
                 </td>
             `;
         });
     };
-    
+
     const populateRecommendedProductsSelect = () => {
         const currentProductId = productIdInput.value;
         recommendedProductsSelect.innerHTML = '';
@@ -698,7 +698,7 @@ export async function setupStorePage() {
                 await addDoc(collection(db, 'products'), productData);
                 alert('Produto adicionado com sucesso!');
             }
-            
+
             resetProductForm();
             fetchProducts();
         } catch (error) {
@@ -735,7 +735,7 @@ export async function setupStorePage() {
                 productNameInput.value = product.name;
                 productDescriptionInput.value = product.description;
                 productImageInput.dataset.existingImageUrl = product.imageUrl || '';
-                
+
                 if (product.priceType === 'variable' && product.priceVariants) {
                     document.querySelector('input[name="price-type"][value="variable"]').checked = true;
                     fixedPriceContainer.classList.add('hidden');
@@ -769,7 +769,7 @@ export async function setupStorePage() {
                 } else {
                     sendBulkEmailsBtn.classList.add('hidden');
                 }
-                
+
                 if (product.recommendedProducts) {
                     Array.from(recommendedProductsSelect.options).forEach(option => {
                         if (product.recommendedProducts.includes(option.value)) {
@@ -928,7 +928,7 @@ export async function setupStorePage() {
 
         let productDetailsHtml = `<p><strong>Produto:</strong> ${sale.productName || 'N/A'}</p>`;
         if (sale.recommendedItems && sale.recommendedItems.length > 0) {
-            const recommendedItemsHtml = sale.recommendedItems.map(item => 
+            const recommendedItemsHtml = sale.recommendedItems.map(item =>
                 `<li>${item.productName} (x${item.quantity}) - ${(item.amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</li>`
             ).join('');
             productDetailsHtml += `
@@ -952,7 +952,7 @@ export async function setupStorePage() {
             paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700">
                 <h3 class="text-lg font-bold mb-2">Detalhes do Pagamento Manual</h3>
                 <p><strong>Método:</strong> ${method}</p>`;
-            
+
             if (details.method === 'card') {
                 paymentDetailsHtml += `
                     <p><strong>Final do Cartão:</strong> ${details.cardLast4 || 'N/A'}</p>
@@ -1121,10 +1121,10 @@ export async function setupStorePage() {
             const checkinDate = checkin.checkinTimestamp ? new Date(checkin.checkinTimestamp.toDate()).toLocaleString('pt-BR') : 'N/A';
 
             row.innerHTML = `
-                <td class="p-4">${checkin.userName || 'N/A'}</td>
-                <td class="p-4">${checkin.userEmail || 'N/A'}</td>
-                <td class="p-4">${checkin.productName || 'N/A'}</td>
-                <td class="p-4">${checkinDate}</td>
+                <td class="p-4" data-label="Nome do Cliente">${checkin.userName || 'N/A'}</td>
+                <td class="p-4" data-label="Email">${checkin.userEmail || 'N/A'}</td>
+                <td class="p-4" data-label="Produto (Evento)">${checkin.productName || 'N/A'}</td>
+                <td class="p-4" data-label="Data do Check-in">${checkinDate}</td>
             `;
         });
     };
@@ -1178,7 +1178,7 @@ export async function setupStorePage() {
 
         banners.forEach(banner => {
             const bannerEl = document.createElement('div');
-            bannerEl.className = 'bg-gray-800 p-4 rounded-lg flex items-center justify-between';
+            bannerEl.className = 'bg-gray-800 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4';
             bannerEl.innerHTML = `
                 <div class="flex items-center">
                     <img src="${banner.imageUrl}" class="w-24 h-12 object-cover rounded-md mr-4">
@@ -1238,7 +1238,7 @@ export async function setupStorePage() {
                 await addDoc(collection(db, 'banners'), bannerData);
                 alert('Banner adicionado com sucesso!');
             }
-            
+
             resetBannerForm();
             fetchBanners();
         } catch (error) {
@@ -1318,11 +1318,11 @@ export async function setupStorePage() {
             const expiry = coupon.expiry ? new Date(coupon.expiry).toLocaleDateString('pt-BR') : 'Sem validade';
 
             row.innerHTML = `
-                <td class="p-4">${coupon.code}</td>
-                <td class="p-4">${coupon.type === 'percentage' ? 'Porcentagem' : 'Valor Fixo'}</td>
-                <td class="p-4">${value}</td>
-                <td class="p-4">${expiry}</td>
-                <td class="p-4">
+                <td class="p-4" data-label="Código">${coupon.code}</td>
+                <td class="p-4" data-label="Tipo">${coupon.type === 'percentage' ? 'Porcentagem' : 'Valor Fixo'}</td>
+                <td class="p-4" data-label="Valor">${value}</td>
+                <td class="p-4" data-label="Validade">${expiry}</td>
+                <td class="p-4" data-label="Ações">
                     <button class="edit-coupon-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${coupon.id}"><i class="fas fa-pencil-alt"></i></button>
                     <button class="delete-coupon-btn text-red-500 hover:text-red-400" data-id="${coupon.id}"><i class="fas fa-trash-alt"></i></button>
                 </td>
@@ -1360,7 +1360,7 @@ export async function setupStorePage() {
                 await addDoc(collection(db, 'coupons'), couponData);
                 alert('Cupom adicionado com sucesso!');
             }
-            
+
             resetCouponForm();
             fetchCoupons();
         } catch (error) {
@@ -1415,26 +1415,26 @@ export async function setupStorePage() {
     async function displayStoreKpis(sales = allSales) {
         const kpiContainer = document.getElementById('store-kpi-container');
         kpiContainer.innerHTML = `
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-                <div class="text-3xl mr-4">🔄</div>
+            <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm">Total de Vendas</p>
-                    <p class="text-2xl font-bold text-white">...</p>
+                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
+                    <p class="text-3xl font-bold text-white mt-1">...</p>
                 </div>
+                <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
             </div>
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-                <div class="text-3xl mr-4">🔄</div>
+            <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm">Receita Total</p>
-                    <p class="text-2xl font-bold text-white">...</p>
+                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
+                    <p class="text-3xl font-bold text-white mt-1">...</p>
                 </div>
+                <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
             </div>
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-                <div class="text-3xl mr-4">🔄</div>
+            <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm">Ticket Médio</p>
-                    <p class="text-2xl font-bold text-white">...</p>
+                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
+                    <p class="text-3xl font-bold text-white mt-1">...</p>
                 </div>
+                <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
             </div>
         `;
 
@@ -1444,32 +1444,32 @@ export async function setupStorePage() {
             const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
             let kpiHtml = `
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                    <div class="text-3xl mr-4">🛒</div>
+                <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm">Total de Vendas</p>
-                        <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
+                        <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
+                        <p class="text-3xl font-bold text-white mt-1">${totalSales.toLocaleString('pt-BR')}</p>
                     </div>
+                    <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
                 </div>
             `;
 
             if (isAdmin) {
                 kpiHtml += `
-                    <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                        <div class="text-3xl mr-4">💰</div>
+                    <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm">Receita Total</p>
-                            <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
+                            <p class="text-3xl font-bold text-white mt-1">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
+                        <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
                     </div>
                 `;
                 kpiHtml += `
-                    <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                        <div class="text-3xl mr-4">📊</div>
+                    <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm">Ticket Médio</p>
-                            <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
+                            <p class="text-3xl font-bold text-white mt-1">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
+                        <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
                     </div>
                 `;
             }
@@ -1478,12 +1478,12 @@ export async function setupStorePage() {
         } catch (error) {
             console.error("Erro ao carregar KPIs da loja:", error);
             kpiContainer.innerHTML = `
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
-                    <div class="text-3xl mr-4">⚠️</div>
+                <div class="kpi-card p-6 rounded-xl flex items-center justify-between border-red-500/50">
                     <div>
-                        <p class="text-gray-400 text-sm">Store</p>
-                        <p class="text-xl font-bold text-red-500">Erro ao carregar</p>
+                        <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Erro</p>
+                        <p class="text-xl font-bold text-red-500 mt-1">Falha ao carregar</p>
                     </div>
+                    <div class="text-4xl text-red-500 opacity-80"><i class="fas fa-exclamation-triangle"></i></div>
                 </div>
             `;
         }
