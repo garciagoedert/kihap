@@ -213,7 +213,7 @@ async function handleSubmitPedido() {
             });
             alert("Pedido enviado com sucesso!");
         }
-        
+
         closeModal();
         loadPedidos();
     } catch (error) {
@@ -243,7 +243,7 @@ async function loadPedidos() {
 
         const q = query(collection(db, "pedidosFaixas"), ...constraints);
         const querySnapshot = await getDocs(q);
-        
+
         let pedidos = [];
         querySnapshot.forEach(doc => {
             pedidos.push({ id: doc.id, ...doc.data() });
@@ -252,16 +252,16 @@ async function loadPedidos() {
         // Client-side filtering for Faixas Coloridas
         if (filterFaixaPreta) {
             pedidos = pedidos.filter(pedido => {
-                return pedido.itens.some(item => 
-                    item.faixa === "Vermelha e Preta" || 
+                return pedido.itens.some(item =>
+                    item.faixa === "Vermelha e Preta" ||
                     faixas.slice(18).includes(item.faixa) // Dan levels start from index 18
                 );
             });
         }
         if (filterTradicional) {
             pedidos = pedidos.filter(pedido => {
-                return pedido.itens.some(item => 
-                    item.faixa !== "Vermelha e Preta" && 
+                return pedido.itens.some(item =>
+                    item.faixa !== "Vermelha e Preta" &&
                     !faixas.slice(18).includes(item.faixa)
                 );
             });
@@ -278,10 +278,10 @@ async function loadPedidos() {
         let html = '';
         pedidos.forEach(pedido => {
             const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
-            const itensResumo = pedido.itens.length > 2 
+            const itensResumo = pedido.itens.length > 2
                 ? `${pedido.itens.slice(0, 2).map(item => `${item.quantidade}x ${item.faixa}`).join(', ')}...`
                 : pedido.itens.map(item => `${item.quantidade}x ${item.faixa} (${item.tamanho})`).join('<br>');
-            
+
             html += `
                 <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
                     <td class="p-4">${data}</td>
@@ -322,7 +322,7 @@ async function openDetailsModal(pedidoId) {
 
         const pedido = pedidoSnap.data();
         const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
-        
+
         document.getElementById('details-unidade').textContent = pedido.unidade;
         document.getElementById('details-data').textContent = data;
         document.getElementById('details-status').textContent = pedido.status;
@@ -337,7 +337,7 @@ async function openDetailsModal(pedidoId) {
         if (user) {
             const isAdmin = await checkAdminStatus(user);
             adminActions.classList.remove('hidden');
-            
+
             editBtn.classList.remove('hidden');
             editBtn.dataset.id = pedidoId;
 
@@ -373,13 +373,13 @@ async function handleEditPedido(event) {
     if (!pedidoId) return;
 
     closeDetailsModal();
-    
+
     const pedidoRef = doc(db, "pedidosFaixas", pedidoId);
     const pedidoSnap = await getDoc(pedidoRef);
     if (pedidoSnap.exists()) {
         const pedido = pedidoSnap.data();
         currentEditingPedidoId = pedidoId;
-        
+
         document.getElementById('pedido-modal-title').textContent = 'Editar Pedido';
         document.getElementById('unidade-select').value = pedido.unidade;
         // Adicionar campo de status no modal de edição
@@ -485,7 +485,7 @@ export function setupPedidosPage() {
     document.getElementById('add-item-form')?.addEventListener('submit', handleAddItem);
     document.getElementById('itens-pedido-container')?.addEventListener('click', handleRemoveItem);
     document.getElementById('submit-pedido-btn')?.addEventListener('click', handleSubmitPedido);
-    
+
     // Listeners da Tabela Principal e Modal de Detalhes
     document.getElementById('refresh-pedidos')?.addEventListener('click', loadPedidos);
     document.getElementById('pedidos-table-body')?.addEventListener('click', handleTableClick);
@@ -612,11 +612,10 @@ export function setupPedidosPage() {
             }
 
             let html = '';
-            pedidos.forEach(doc => {
-                const pedido = doc.data(); // Use doc.data() here as we are iterating over querySnapshot
+            pedidos.forEach(pedido => {
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
                 html += `
-                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${doc.id}">
+                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
                         <td class="p-4">${data}</td>
                         <td class="p-4">${pedido.unidade}</td>
                         <td class="p-4">${pedido.aluno}</td>
@@ -659,27 +658,27 @@ export function setupPedidosPage() {
                         contents[index].classList.remove('hidden');
                     }
 
-                // Lógica para exibir os botões corretos
-                btnNovoColorida.classList.add('hidden');
-                btnNovoPreta.classList.add('hidden');
-                if (btnNovoDobok) btnNovoDobok.classList.add('hidden');
+                    // Lógica para exibir os botões corretos
+                    btnNovoColorida.classList.add('hidden');
+                    btnNovoPreta.classList.add('hidden');
+                    if (btnNovoDobok) btnNovoDobok.classList.add('hidden');
 
-                if (index === 0) { // Faixas Coloridas
-                    btnNovoColorida.classList.remove('hidden');
-                    // Reload data when tab is clicked
-                    loadPedidos();
-                } else if (index === 1) { // Faixas Pretas
-                    btnNovoPreta.classList.remove('hidden');
-                    loadPedidosPretas();
-                } else if (index === 2) { // Doboks
-                    if (btnNovoDobok) btnNovoDobok.classList.remove('hidden');
-                    loadPedidosDoboks();
-                }
+                    if (index === 0) { // Faixas Coloridas
+                        btnNovoColorida.classList.remove('hidden');
+                        // Reload data when tab is clicked
+                        loadPedidos();
+                    } else if (index === 1) { // Faixas Pretas
+                        btnNovoPreta.classList.remove('hidden');
+                        loadPedidosPretas();
+                    } else if (index === 2) { // Doboks
+                        if (btnNovoDobok) btnNovoDobok.classList.remove('hidden');
+                        loadPedidosDoboks();
+                    }
                 });
             }
         });
     }
-    
+
     // Setup da nova funcionalidade
     setupTabs();
     loadPedidosPretas();
@@ -713,7 +712,7 @@ export function setupPedidosPage() {
 
             const pedido = pedidoSnap.data();
             const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
-            
+
             document.getElementById('details-preta-unidade').textContent = pedido.unidade;
             document.getElementById('details-preta-data').textContent = data;
             document.getElementById('details-preta-status').textContent = pedido.status;
@@ -766,19 +765,19 @@ export function setupPedidosPage() {
         if (!pedidoId) return;
 
         closeDetailsPretaModal();
-        
+
         const pedidoRef = doc(db, "pedidosFaixasPretas", pedidoId);
         const pedidoSnap = await getDoc(pedidoRef);
         if (pedidoSnap.exists()) {
             const pedido = pedidoSnap.data();
             currentEditingPretaPedidoId = pedidoId;
-            
+
             document.getElementById('unidade-preta-select').value = pedido.unidade;
             document.getElementById('status-preta-select').value = pedido.status;
             document.getElementById('aluno-preta-input').value = pedido.aluno;
             document.getElementById('faixa-preta-select').value = pedido.faixa;
             document.getElementById('tamanho-preta-input').value = pedido.tamanho || '';
-            
+
             openFaixaPretaModal();
         }
     }
@@ -897,7 +896,7 @@ export function setupPedidosPage() {
             if (filterUnidade) {
                 constraints.unshift(where("unidade", "==", filterUnidade));
             }
-            
+
             const q = query(collection(db, "pedidosDoboks"), ...constraints);
             const querySnapshot = await getDocs(q);
 
@@ -949,7 +948,7 @@ export function setupPedidosPage() {
     document.getElementById('pedidos-doboks-table-body')?.addEventListener('click', handleDoboksTableClick);
     document.getElementById('close-details-dobok-modal-btn')?.addEventListener('click', closeDetailsDobokModal);
     document.getElementById('filter-unidade-dobok')?.addEventListener('change', loadPedidosDoboks);
-    
+
     const faixaPretaCheckbox = document.getElementById('filter-faixa-preta-dobok');
     const tradicionalCheckbox = document.getElementById('filter-tradicional-dobok');
 
@@ -993,7 +992,7 @@ export function setupPedidosPage() {
 
             const pedido = pedidoSnap.data();
             const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
-            
+
             document.getElementById('details-dobok-unidade').textContent = pedido.unidade;
             document.getElementById('details-dobok-data').textContent = data;
             document.getElementById('details-dobok-status').textContent = pedido.status;
@@ -1047,13 +1046,13 @@ export function setupPedidosPage() {
         if (!pedidoId) return;
 
         closeDetailsDobokModal();
-        
+
         const pedidoRef = doc(db, "pedidosDoboks", pedidoId);
         const pedidoSnap = await getDoc(pedidoRef);
         if (pedidoSnap.exists()) {
             const pedido = pedidoSnap.data();
             currentEditingDobokPedidoId = pedidoId;
-            
+
             document.getElementById('dobok-modal-title').textContent = 'Editar Pedido de Dobok';
             document.getElementById('unidade-dobok-select').value = pedido.unidade;
             document.getElementById('status-dobok-select').value = pedido.status;
@@ -1061,7 +1060,7 @@ export function setupPedidosPage() {
             document.getElementById('tamanho-dobok-select').value = pedido.tamanho;
             document.getElementById('colarinho-dobok-select').value = pedido.colarinho || '';
             document.getElementById('faixa-preta-dobok-checkbox').checked = pedido.isFaixaPreta || false;
-            
+
             openDobokModal(true);
         }
     }
