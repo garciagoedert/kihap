@@ -465,13 +465,14 @@ function setupCertificateHandlers() {
             const docRef = await addDoc(collection(db, "certificates"), certificateData);
             const certId = docRef.id;
 
-            // 2. Generate QR Code using inline canvas
+            // 2. Generate QR Code using QRious
             const validationUrl = `https://intranet-kihap.web.app/validar-certificado.html?id=${certId}`;
 
-            // Create QR code using canvas
-            const canvas = document.createElement('canvas');
-            await window.QRCode.toCanvas(canvas, validationUrl, { width: 150, margin: 1 });
-            const qrCodeDataUrl = canvas.toDataURL();
+            const qr = new QRious({
+                value: validationUrl,
+                size: 150
+            });
+            const qrCodeDataUrl = qr.toDataURL();
 
             // 3. Generate PDF
             const { jsPDF } = window.jspdf;
