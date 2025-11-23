@@ -7,7 +7,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus } = require('./pagarme.js');
+const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const db = admin.firestore();
 
 exports.syncPagarmeSalesStatus = functions.https.onCall(async (data, context) => {
@@ -21,7 +21,7 @@ exports.syncPagarmeSalesStatus = functions.https.onCall(async (data, context) =>
 // Função para enviar o e-mail com o ingresso
 const sendTicketEmail = async (saleId, saleData) => {
     console.log(`[sendTicketEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
-    
+
     const gmailEmail = process.env.GMAIL_EMAIL;
     const gmailPassword = process.env.GMAIL_PASSWORD;
 
@@ -42,7 +42,7 @@ const sendTicketEmail = async (saleId, saleData) => {
 
     try {
         const qrCodeDataURL = await qrcode.toDataURL(saleId);
-        
+
         const mailOptions = {
             from: `Kihap <${process.env.GMAIL_EMAIL}>`,
             to: saleData.userEmail,
@@ -186,7 +186,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         console.log('[createCheckoutSession] Criando pedido no Pagar.me...');
         const pagarmeOrder = await createPagarmeOrder(product, formDataList, totalAmount, saleDocIds);
         console.log('[createCheckoutSession] Pedido Pagar.me criado com sucesso:', JSON.stringify(pagarmeOrder, null, 2));
-        
+
         // A URL de sucesso é definida no payload de criação do pedido no Pagar.me.
         // A função `verifyPayment` na página de sucesso usará o `pagarme_order_id` da URL
         // para verificar o status do pagamento.
@@ -297,6 +297,141 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
     }
 });
 
+// Função para criar assinatura no Pagar.me
+exports.createSubscription = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para assinar.');
+    }
+
+    const { planId, cardData, paymentMethod, courseId } = data;
+    const userId = context.auth.uid;
+    const userEmail = context.auth.token.email;
+
+    if (!planId || !courseId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Plan ID e Course ID são obrigatórios.');
+    }
+
+    try {
+        // 1. Buscar dados do usuário
+        const userRef = db.collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        const userData = userSnap.data() || {};
+
+        // 2. Montar dados do cliente
+        const customerData = {
+            name: userData.name || userEmail,
+            email: userEmail,
+            document: userData.cpf || '00000000000', // Fallback ou exigir CPF no frontend
+            phone: userData.phone || '5511999999999' // Fallback
+        };
+
+        // 3. Criar assinatura no Pagar.me
+        const subscription = await createPagarmeSubscription(customerData, paymentMethod, planId, cardData);
+
+        // 4. Salvar no Firestore
+        await userRef.collection('subscriptions').add({
+            courseId: courseId,
+            pagarmeSubscriptionId: subscription.id,
+            status: subscription.status,
+            planId: planId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            paymentMethod: paymentMethod
+        });
+
+        // Atualizar status do usuário se necessário (ex: acesso global) ou apenas registrar a assinatura específica
+        // Aqui vamos focar na assinatura específica por curso.
+
+        return { success: true, subscriptionId: subscription.id, status: subscription.status };
+
+    } catch (error) {
+        console.error("Erro ao criar assinatura:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.cancelSubscription = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado.');
+    }
+
+    const { courseId } = data;
+    const userId = context.auth.uid;
+
+    if (!courseId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Course ID é obrigatório.');
+    }
+
+    try {
+        // 1. Buscar assinatura ativa para este curso
+        const subsRef = db.collection('users').doc(userId).collection('subscriptions');
+        const q = subsRef.where('courseId', '==', courseId).where('status', '==', 'active').limit(1);
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            throw new functions.https.HttpsError('not-found', 'Nenhuma assinatura ativa encontrada para este curso.');
+        }
+
+        const subDoc = snapshot.docs[0];
+        const subData = subDoc.data();
+
+        // 2. Cancelar no Pagar.me
+        await cancelPagarmeSubscription(subData.pagarmeSubscriptionId);
+
+        // 3. Atualizar no Firestore
+        await subDoc.ref.update({
+            status: 'canceled',
+            canceledAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { success: true, message: 'Assinatura cancelada com sucesso.' };
+
+    } catch (error) {
+        console.error("Erro ao cancelar assinatura:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.adminCancelSubscription = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+    }
+
+    // Ideal: Check for admin claim
+    // if (!context.auth.token.admin) { ... }
+
+    const { userId, courseId } = data;
+
+    if (!userId || !courseId) {
+        throw new functions.https.HttpsError('invalid-argument', 'User ID e Course ID são obrigatórios.');
+    }
+
+    try {
+        const subsRef = db.collection('users').doc(userId).collection('subscriptions');
+        const q = subsRef.where('courseId', '==', courseId).where('status', '==', 'active').limit(1);
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            throw new functions.https.HttpsError('not-found', 'Nenhuma assinatura ativa encontrada.');
+        }
+
+        const subDoc = snapshot.docs[0];
+        const subData = subDoc.data();
+
+        await cancelPagarmeSubscription(subData.pagarmeSubscriptionId);
+
+        await subDoc.ref.update({
+            status: 'canceled_by_admin',
+            canceledAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { success: true, message: 'Assinatura cancelada pelo admin.' };
+
+    } catch (error) {
+        console.error("Erro ao cancelar assinatura (admin):", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
 exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -398,7 +533,7 @@ exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
     try {
         console.log('Iniciando processo para corrigir status de vendas antigas...');
         const salesRef = db.collection('inscricoesFaixaPreta');
-        
+
         const pendingSalesSnapshot = await salesRef.where('paymentStatus', '==', 'pending').get();
 
         if (pendingSalesSnapshot.empty) {
@@ -467,7 +602,7 @@ exports.resendTicketEmail = functions.https.onCall(async (data, context) => {
         }
 
         const saleData = saleSnap.data();
-        
+
         const productRef = db.collection('products').doc(saleData.productId);
         const productSnap = await productRef.get();
 
@@ -558,7 +693,7 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
             console.error(`Usuário ${userId} autenticado mas não encontrado no Firestore.`);
             throw new functions.https.HttpsError('not-found', 'Não foi possível encontrar os dados do usuário.');
         }
-        
+
         const userData = userSnap.data();
         let customerId = userData.stripeCustomerId;
 
@@ -584,7 +719,7 @@ exports.createSubscriptionCheckout = functions.https.onCall(async (data, context
             mode: 'subscription',
             success_url: `https://www.kihap.com.br/members/index.html?subscription_success=true`,
             cancel_url: `https://www.kihap.com.br/members/assinatura.html`,
-            metadata: { 
+            metadata: {
                 firebaseUID: userId,
                 type: 'subscription' // Adiciona um tipo para diferenciar no webhook
             }
@@ -668,7 +803,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     switch (event.type) {
         case 'checkout.session.completed': {
             const session = event.data.object;
-            
+
             // Verifica o tipo de checkout (compra de produto ou assinatura)
             if (session.metadata.type === 'product_purchase') {
                 // Lógica para compra de produto
@@ -707,7 +842,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                             const saleData = saleSnap.data();
                             const productRef = db.collection('products').doc(saleData.productId);
                             const productSnap = await productRef.get();
-                            
+
                             const isTicket = productSnap.exists && productSnap.data().isTicket;
                             console.log(`[Webhook] Verificando produto ${saleData.productId} para a venda ${docId}. É um ingresso? -> ${isTicket}`);
 
@@ -840,7 +975,7 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
         }
 
         if (newStatus) {
-             for (const docId of firestoreDocIds) {
+            for (const docId of firestoreDocIds) {
                 const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
                 const saleSnap = await docRef.get();
 
@@ -853,10 +988,10 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
 
                 // Evitar atualizações desnecessárias ou retrocessos (ex: paid -> pending)
                 if (currentStatus === newStatus) {
-                     console.log(`[Pagar.me Webhook] Venda ${docId} já está com status '${newStatus}'. Nenhuma ação necessária.`);
-                     continue;
+                    console.log(`[Pagar.me Webhook] Venda ${docId} já está com status '${newStatus}'. Nenhuma ação necessária.`);
+                    continue;
                 }
-                
+
                 // Atualiza o status
                 await docRef.update({ paymentStatus: newStatus });
                 console.log(`[Pagar.me Webhook] Status atualizado para '${newStatus}' para a venda ${docId}`);
@@ -866,13 +1001,13 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
                     const saleData = saleSnap.data();
                     const productRef = db.collection('products').doc(saleData.productId);
                     const productSnap = await productRef.get();
-                    
+
                     if (productSnap.exists && productSnap.data().isTicket) {
                         // Verifica se o email já foi enviado para não enviar duplicado
                         if (!saleData.emailSent) {
                             await sendTicketEmail(docId, saleData);
                         } else {
-                             console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado anteriormente para venda ${docId}.`);
+                            console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado anteriormente para venda ${docId}.`);
                         }
                     }
                 }

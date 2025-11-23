@@ -12,7 +12,7 @@ const getPagarmeClient = () => {
         throw new Error("A variável de ambiente PAGARME_API_KEY não está definida.");
     }
     console.log('[getPagarmeClient] Chave da API Pagar.me carregada com sucesso para esta requisição.');
-    
+
     return axios.create({
         baseURL: 'https://api.pagar.me/core/v5',
         headers: {
@@ -166,5 +166,71 @@ const syncPagarmeSalesStatus = async () => {
 module.exports = {
     createPagarmeOrder,
     getPagarmeOrder,
-    syncPagarmeSalesStatus
+    syncPagarmeSalesStatus,
+    createPagarmeSubscription,
+    cancelPagarmeSubscription
+};
+
+const cancelPagarmeSubscription = async (subscriptionId) => {
+    console.log(`[cancelPagarmeSubscription] Cancelando assinatura ${subscriptionId}`);
+    const client = getPagarmeClient();
+
+    try {
+        const response = await client.delete(`/subscriptions/${subscriptionId}`);
+        console.log(`[cancelPagarmeSubscription] Assinatura ${subscriptionId} cancelada com sucesso.`);
+        return response.data;
+    } catch (error) {
+        console.error(`Erro ao cancelar assinatura ${subscriptionId}:`, error.response ? error.response.data : error.message);
+        throw new functions.https.HttpsError('internal', 'Não foi possível cancelar a assinatura no Pagar.me.');
+    }
+};
+
+const createPagarmeSubscription = async (customerData, paymentMethod, planId, cardData) => {
+    console.log('[createPagarmeSubscription] Iniciando criação de assinatura.');
+    const client = getPagarmeClient();
+
+    // 1. Criar ou atualizar cliente no Pagar.me (simplificado: sempre tenta criar, se falhar por duplicidade, busca - mas aqui vamos assumir criação direta ou passar ID se já tivermos)
+    // Na verdade, para simplificar e garantir, vamos passar os dados do cliente na criação da assinatura se não tivermos o ID dele no Pagar.me.
+    // Mas a API v5 permite passar o objeto customer completo.
+
+    const subscriptionPayload = {
+        customer: {
+            name: customerData.name,
+            email: customerData.email,
+            document: customerData.document.replace(/\D/g, ''),
+            type: 'individual',
+            phones: {
+                mobile_phone: {
+                    country_code: '55',
+                    area_code: customerData.phone.replace(/\D/g, '').substring(0, 2),
+                    number: customerData.phone.replace(/\D/g, '').substring(2)
+                }
+            }
+        },
+        plan_id: planId,
+        payment_method: paymentMethod, // 'credit_card'
+        card: cardData, // Objeto com dados do cartão (criptografados ou não, dependendo se usarmos token. Aqui assumiremos dados brutos por enquanto conforme pedido, mas o ideal é token)
+        // Se for boleto, não tem card.
+    };
+
+    if (paymentMethod === 'credit_card') {
+        subscriptionPayload.card = cardData;
+    }
+
+    console.log('[createPagarmeSubscription] Payload:', JSON.stringify(subscriptionPayload, null, 2));
+
+    try {
+        const response = await client.post('/subscriptions', subscriptionPayload);
+        const subscription = response.data;
+        console.log('[createPagarmeSubscription] Assinatura criada:', subscription.id);
+        return subscription;
+    } catch (error) {
+        console.error('Erro ao criar assinatura no Pagar.me:');
+        if (error.response) {
+            console.error('Dados do Erro:', JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error('Mensagem de Erro:', error.message);
+        }
+        throw new functions.https.HttpsError('internal', 'Não foi possível criar a assinatura no Pagar.me.');
+    }
 };

@@ -30,6 +30,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('add-module-btn').addEventListener('click', () => addModule());
     document.getElementById('course-form').addEventListener('submit', saveCourse);
+
+    const subCheckbox = document.getElementById('subscription-enabled');
+    const subFields = document.getElementById('subscription-fields');
+    subCheckbox.addEventListener('change', () => {
+        if (subCheckbox.checked) {
+            subFields.classList.remove('hidden');
+        } else {
+            subFields.classList.add('hidden');
+        }
+    });
 });
 
 function addModule(module = { title: '', lessons: [] }) {
@@ -84,7 +94,7 @@ function addLesson(moduleId, lesson = { title: '', type: 'video', content: '', d
             toolbar: [
                 [{ 'header': [1, 2, false] }],
                 ['bold', 'italic', 'underline'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                 ['link']
             ]
         }
@@ -106,7 +116,16 @@ async function loadCourseData(id) {
         document.getElementById('course-author').value = course.author || '';
         document.getElementById('course-description').value = course.description || '';
         document.getElementById('course-thumbnail').value = course.thumbnailURL || '';
-        
+
+        // Subscription fields
+        if (course.isSubscription) {
+            document.getElementById('subscription-enabled').checked = true;
+            document.getElementById('subscription-fields').classList.remove('hidden');
+            document.getElementById('subscription-plan-id').value = course.subscriptionPlanId || '';
+            document.getElementById('subscription-price').value = course.subscriptionPrice || '';
+            document.getElementById('subscription-interval').value = course.subscriptionInterval || 'month';
+        }
+
         if (course.modules) {
             course.modules.forEach(module => addModule(module));
         }
@@ -124,6 +143,8 @@ async function saveCourse(event) {
     saveButton.textContent = 'Salvando...';
 
     const user = JSON.parse(sessionStorage.getItem('currentUser'));
+    const isSubscription = document.getElementById('subscription-enabled').checked;
+
     const courseData = {
         title: document.getElementById('course-title').value,
         author: document.getElementById('course-author').value,
@@ -131,7 +152,11 @@ async function saveCourse(event) {
         thumbnailURL: document.getElementById('course-thumbnail').value,
         updatedAt: serverTimestamp(),
         ownerId: user.uid,
-        modules: []
+        modules: [],
+        isSubscription: isSubscription,
+        subscriptionPlanId: isSubscription ? document.getElementById('subscription-plan-id').value : null,
+        subscriptionPrice: isSubscription ? parseInt(document.getElementById('subscription-price').value) : null,
+        subscriptionInterval: isSubscription ? document.getElementById('subscription-interval').value : null
     };
 
     document.querySelectorAll('#modules-container > div').forEach(moduleDiv => {

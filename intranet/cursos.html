@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,24 +13,56 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="log.css">
 </head>
+
 <body class="bg-[#111111] text-gray-200">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
-        <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
             <div class="p-6 flex-1 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold">Meus Cursos</h1>
-                <a href="course-editor.html" id="add-course-btn" class="hidden bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">
-                    Adicionar Curso
-                </a>
-            </div>
-            <div id="course-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <!-- Cursos serão carregados aqui -->
-            </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Meus Cursos</h1>
+                    <a href="course-editor.html" id="add-course-btn"
+                        class="hidden bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">
+                        Adicionar Curso
+                    </a>
+                </div>
+                <div id="course-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Cursos serão carregados aqui -->
+                </div>
         </main>
     </div>
+    <!-- Subscribers Modal -->
+    <div id="subscribers-modal"
+        class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
+            <button id="close-subscribers-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-4 text-white">Assinantes do Curso: <span id="modal-course-name"
+                    class="text-blue-400"></span></h2>
+
+            <div class="overflow-y-auto flex-1">
+                <table class="w-full text-left text-gray-300">
+                    <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-3">Nome</th>
+                            <th class="px-4 py-3">Email</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Data Início</th>
+                            <th class="px-4 py-3">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscribers-list">
+                        <!-- Rows will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { loadComponents } from './common-ui.js';
         import './cursos.js';
@@ -39,4 +72,5 @@
         });
     </script>
 </body>
+
 </html>
