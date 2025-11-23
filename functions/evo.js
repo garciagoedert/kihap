@@ -683,12 +683,184 @@ exports.getEvoUnitsHttp = functions.https.onRequest((req, res) => {
     })();
 });
 
+
 /**
  * Retorna a lista de unidades configuradas para a API EVO (versão pública).
  */
 exports.getPublicEvoUnits = functions.https.onCall(async (data, context) => {
     // Esta função é pública e não requer autenticação.
     return Object.keys(EVO_CREDENTIALS);
+});
+
+/**
+ * Alias para getPublicEvoUnits (para compatibilidade com código existente).
+ */
+exports.getEvoUnits = functions.https.onCall(async (data, context) => {
+    return Object.keys(EVO_CREDENTIALS);
+});
+
+/**
+ * Busca o número de contratos ativos para uma ou todas as unidades (versão callable).
+ */
+exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+    const { unitId } = data || {};
+    const executionId = Math.random().toString(36).substring(2, 10);
+    functions.logger.info(`[${executionId}] Iniciando getActiveContractsCount (callable) para unitId: ${unitId || 'geral'}`);
+
+    const db = admin.firestore();
+    const CACHE_DURATION_HOURS = 4;
+
+    const getCountForUnit = async (id) => {
+        const cacheRef = db.collection('evo_cache').doc(id);
+        const MAX_RETRIES = 3;
+        let lastError = null;
+
+        // 1. Tenta ler do cache primeiro
+        try {
+            const cacheDoc = await cacheRef.get();
+            if (cacheDoc.exists) {
+                const cacheData = cacheDoc.data();
+                const cacheAgeHours = (Date.now() - cacheData.timestamp.toMillis()) / (1000 * 60 * 60);
+                if (cacheAgeHours < CACHE_DURATION_HOURS) {
+                    functions.logger.info(`[${executionId}] Usando cache para '${id}'. Contagem: ${cacheData.count}. Idade: ${cacheAgeHours.toFixed(2)}h.`);
+                    return cacheData.count;
+                }
+            }
+        } catch (cacheError) {
+            functions.logger.error(`[${executionId}] Erro ao ler cache para '${id}':`, cacheError);
+        }
+
+        // 2. Se o cache não existir ou estiver expirado, busca na API
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const apiClient = getEvoApiClient(id, 'v2');
+                const response = await apiClient.get("/members", { params: { status: 1, take: 1 } });
+                const count = parseInt(response.headers['total'] || '0', 10);
+
+                functions.logger.info(`[${executionId}] API | Tentativa ${attempt} para '${id}': Sucesso com contagem ${count}.`);
+
+                if (count > 0) {
+                    await cacheRef.set({
+                        count: count,
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    return count;
+                }
+
+                if (attempt < MAX_RETRIES) {
+                    const delay = 250 * attempt;
+                    functions.logger.warn(`[${executionId}] API | Tentativa ${attempt} para '${id}' retornou 0. Tentando novamente em ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    functions.logger.warn(`[${executionId}] API | Última tentativa para '${id}' retornou 0.`);
+                }
+
+            } catch (unitError) {
+                lastError = unitError;
+                functions.logger.error(`[${executionId}] API | Tentativa ${attempt} para '${id}' falhou:`, unitError.message);
+                if (attempt < MAX_RETRIES) {
+                    const delay = 500 * attempt;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        // Fallback para cache antigo se disponível
+        try {
+            const finalCacheDoc = await cacheRef.get();
+            if (finalCacheDoc.exists) {
+                const staleCount = finalCacheDoc.data().count;
+                functions.logger.warn(`[${executionId}] Usando cache antigo para '${id}' após falha: ${staleCount}`);
+                return staleCount;
+            }
+        } catch (e) {
+            // Ignorar erro de cache
+        }
+
+        functions.logger.error(`[${executionId}] Sem resposta da API e sem cache para '${id}'. Retornando 0.`);
+        return 0;
+    };
+
+    try {
+        if (unitId && unitId !== 'geral') {
+            const count = await getCountForUnit(unitId);
+            functions.logger.info(`[${executionId}] Retornando contagem única para '${unitId}': ${count}`);
+            return { unitId, count };
+        } else {
+            const unitIds = Object.keys(EVO_CREDENTIALS);
+            functions.logger.info(`[${executionId}] Buscando contagem para todas as ${unitIds.length} unidades.`);
+
+            const promises = unitIds.map(async (id) => {
+                const count = await getCountForUnit(id);
+                return { id, count };
+            });
+
+            const results = await Promise.all(promises);
+            functions.logger.info(`[${executionId}] Resultados individuais recebidos:`, results);
+
+            const finalCounts = results.reduce((acc, result) => {
+                if (result.count !== undefined) {
+                    acc.counts[result.id] = result.count;
+                    acc.totalGeral += result.count;
+                }
+                return acc;
+            }, { totalGeral: 0, counts: {} });
+
+            functions.logger.info(`[${executionId}] Contagem final calculada. Total: ${finalCounts.totalGeral}`, finalCounts.counts);
+            return { totalGeral: finalCounts.totalGeral, ...finalCounts.counts };
+        }
+    } catch (error) {
+        functions.logger.error(`[${executionId}] Erro em getActiveContractsCount:`, error);
+        throw new functions.https.HttpsError("internal", `Erro ao buscar contratos: ${error.message}`);
+    }
+});
+
+/**
+ * Busca o total de entries (check-ins) de hoje (versão callable).
+ */
+exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+    const { unitId } = data || {};
+
+    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const year = nowInSaoPaulo.getFullYear();
+    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    const getUnitEntries = async (unitId) => {
+        try {
+            const apiClient = getEvoApiClient(unitId, 'v1');
+            const response = await apiClient.get("/entries", {
+                params: {
+                    registerDateStart: `${today}T00:00:00Z`,
+                    registerDateEnd: `${today}T23:59:59Z`,
+                    take: 1000
+                }
+            });
+            const entriesData = response.data || [];
+            return Array.isArray(entriesData) ? entriesData.length : 0;
+        } catch (error) {
+            functions.logger.error(`Erro ao buscar entries da unidade '${unitId}' para hoje:`, error.message);
+            return 0;
+        }
+    };
+
+    try {
+        const unitIdsToFetch = (unitId && unitId !== 'geral') ? [unitId] : Object.keys(EVO_CREDENTIALS);
+        const promises = unitIdsToFetch.map(id => getUnitEntries(id));
+        const results = await Promise.all(promises);
+        const totalEntries = results.reduce((sum, count) => sum + count, 0);
+
+        const logMessage = (unitId && unitId !== 'geral')
+            ? `Total de entries para ${unitId} hoje (${today}): ${totalEntries}`
+            : `Total de entries de hoje (${today}): ${totalEntries}`;
+        functions.logger.info(logMessage);
+
+        return { totalEntries, date: today };
+    } catch (error) {
+        functions.logger.error("Erro em getTodaysTotalEntries:", error);
+        throw new functions.https.HttpsError("internal", `Erro ao buscar entries: ${error.message}`);
+    }
 });
 
 /**

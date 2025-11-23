@@ -17,6 +17,9 @@ let allTatameContents = [];
 let allBadges = [];
 
 export function setupAlunoPage() {
+    // Initialize certificate handlers
+    setupCertificateHandlers();
+
     onAuthReady(async (user) => {
         if (user) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -83,7 +86,8 @@ async function renderStudentProfile() {
 
     document.getElementById('student-name-header').textContent = fullName;
     document.getElementById('student-name-sidebar').textContent = fullName;
-    document.getElementById('student-email').textContent = email;
+    const emailEl = document.getElementById('student-email');
+    if (emailEl) emailEl.textContent = email;
 
     const studentPhoto = document.getElementById('student-photo');
     studentPhoto.src = currentStudent.photoUrl || 'default-profile.svg';
@@ -165,7 +169,7 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
-    document.getElementById('generate-certificate-btn').addEventListener('click', handleGenerateCertificate);
+
 }
 
 function switchTab(activeTabId) {
@@ -395,132 +399,156 @@ async function handleSavePhysicalTest() {
         button.textContent = 'Adicionar Log';
     }
 }
+// Certificate Modal Logic
+function setupCertificateHandlers() {
+    const certModal = document.getElementById('certificate-modal');
+    const closeCertModalBtn = document.getElementById('close-cert-modal');
+    const cancelCertBtn = document.getElementById('cancel-cert-btn');
+    const confirmGenerateCertBtn = document.getElementById('confirm-generate-cert-btn');
+    const certDateInput = document.getElementById('cert-date');
+    const certInstructorInput = document.getElementById('cert-instructor');
+    const generateCertBtn = document.getElementById('generate-certificate-btn');
 
-async function handleGenerateCertificate() {
-    const button = document.getElementById('generate-certificate-btn');
-
-    if (!currentStudent) {
-        alert("Dados do aluno não carregados.");
+    if (!certModal || !generateCertBtn) {
+        console.warn("Certificate modal elements not found. Skipping setup.");
         return;
     }
 
-    // Basic validation
-    if (!currentStudent.firstName || !currentStudent.lastName) {
-        alert("Nome do aluno incompleto.");
-        return;
-    }
-
-    showConfirm(
-        `Gerar certificado para ${currentStudent.firstName}?`,
-        async () => {
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...';
-
-            try {
-                // 1. Create Certificate Record in Firestore
-                const certificateData = {
-                    studentName: `${currentStudent.firstName} ${currentStudent.lastName}`,
-                    studentId: currentStudent.idMember,
-                    unitId: currentUnitId || 'unknown',
-                    date: Timestamp.now(),
-                    type: 'Faixa', // Could be dynamic later
-                    issuer: auth.currentUser.email
-                };
-
-                const docRef = await addDoc(collection(db, "certificates"), certificateData);
-                const certificateId = docRef.id;
-                const validationUrl = `${window.location.origin}/validar-certificado.html?id=${certificateId}`;
-
-                // 2. Generate PDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                // Background (Simple border for now)
-                doc.setLineWidth(2);
-                doc.setDrawColor(212, 175, 55); // Gold color
-                doc.rect(10, 10, 277, 190);
-
-                doc.setLineWidth(1);
-                doc.rect(15, 15, 267, 180);
-
-                // Header
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(40);
-                doc.setTextColor(30, 30, 30);
-                doc.text("CERTIFICADO", 148.5, 50, { align: "center" });
-
-                doc.setFontSize(20);
-                doc.setFont("helvetica", "normal");
-                doc.text("Certificamos que", 148.5, 80, { align: "center" });
-
-                // Student Name
-                doc.setFontSize(30);
-                doc.setFont("helvetica", "bold");
-                doc.text(certificateData.studentName.toUpperCase(), 148.5, 100, { align: "center" });
-
-                // Details
-                doc.setFontSize(16);
-                doc.setFont("helvetica", "normal");
-                doc.text(`Concluiu com êxito os requisitos para graduação.`, 148.5, 120, { align: "center" });
-
-                const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-                doc.text(`Data: ${dateStr}`, 148.5, 140, { align: "center" });
-
-                // QR Code
-                // Create a temporary div for QR code generation
-                const qrDiv = document.createElement('div');
-                const qrcode = new QRCode(qrDiv, {
-                    text: validationUrl,
-                    width: 128,
-                    height: 128
-                });
-
-                // Wait a bit for QR code to render (it's canvas based usually)
-                setTimeout(() => {
-                    const qrCanvas = qrDiv.querySelector('canvas');
-                    if (qrCanvas) {
-                        const qrDataUrl = qrCanvas.toDataURL('image/png');
-                        doc.addImage(qrDataUrl, 'PNG', 240, 150, 30, 30);
-
-                        doc.setFontSize(10);
-                        doc.text("Validar Certificado", 255, 185, { align: "center" });
-                    } else {
-                        // Fallback if canvas not found (img tag)
-                        const qrImg = qrDiv.querySelector('img');
-                        if (qrImg) {
-                            doc.addImage(qrImg.src, 'PNG', 240, 150, 30, 30);
-                        }
-                    }
-
-                    // Signatures (Mock)
-                    doc.setLineWidth(0.5);
-                    doc.setDrawColor(0, 0, 0);
-                    doc.line(60, 170, 120, 170);
-                    doc.setFontSize(12);
-                    doc.text("Instrutor Responsável", 90, 175, { align: "center" });
-
-                    // Save
-                    doc.save(`Certificado_${currentStudent.firstName}_${currentStudent.lastName}.pdf`);
-
-                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Gerado!';
-                    setTimeout(() => {
-                        button.innerHTML = '<i class="fas fa-certificate mr-2"></i>Gerar Certificado';
-                        button.disabled = false;
-                    }, 3000);
-                }, 500);
-
-            } catch (error) {
-                console.error("Erro ao gerar certificado:", error);
-                alert(`Erro: ${error.message}`);
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-certificate mr-2"></i>Gerar Certificado';
-            }
+    function openCertModal() {
+        if (!currentStudent) {
+            alert("Dados do aluno não carregados.");
+            return;
         }
-    );
+        // Set default date to today
+        certDateInput.valueAsDate = new Date();
+        certModal.classList.remove('hidden');
+        certModal.classList.add('flex');
+    }
+
+    function closeCertModal() {
+        certModal.classList.add('hidden');
+        certModal.classList.remove('flex');
+    }
+
+    // Event Listeners
+    generateCertBtn.addEventListener('click', openCertModal);
+    closeCertModalBtn.addEventListener('click', closeCertModal);
+    cancelCertBtn.addEventListener('click', closeCertModal);
+
+    confirmGenerateCertBtn.addEventListener('click', async () => {
+        const belt = document.getElementById('cert-belt').value;
+        const dateVal = certDateInput.value;
+        const instructor = certInstructorInput.value || "Mestre Kim"; // Default if empty
+
+        if (!dateVal) {
+            alert("Por favor, selecione uma data.");
+            return;
+        }
+
+        const button = confirmGenerateCertBtn;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...';
+
+        try {
+            // 1. Create Certificate Record in Firestore
+            const certificateData = {
+                studentName: `${currentStudent.firstName} ${currentStudent.lastName}`,
+                studentId: currentStudent.idMember,
+                unitId: currentUnitId || 'unknown',
+                date: Timestamp.fromDate(new Date(dateVal + 'T12:00:00')), // Noon to avoid timezone issues
+                type: `Faixa ${belt}`,
+                issuer: instructor, // Use instructor name as issuer for display
+                createdBy: auth.currentUser.email // Keep track of who generated it
+            };
+
+            const docRef = await addDoc(collection(db, "certificates"), certificateData);
+            const certId = docRef.id;
+
+            // 2. Generate QR Code
+            const validationUrl = `https://intranet-kihap.web.app/validar-certificado.html?id=${certId}`;
+            const qrCodeDataUrl = await QRCode.toDataURL(validationUrl, { margin: 1, width: 150 });
+
+            // 3. Generate PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Background (Optional - simple border for now)
+            doc.setLineWidth(2);
+            doc.setDrawColor(212, 175, 55); // Gold color
+            doc.rect(10, 10, 277, 190);
+
+            // Header
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(40);
+            doc.setTextColor(30, 30, 30);
+            doc.text("CERTIFICADO", 148.5, 40, { align: "center" });
+
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "normal");
+            doc.text("DE GRADUAÇÃO", 148.5, 50, { align: "center" });
+
+            // Body
+            doc.setFontSize(14);
+            doc.text("Certificamos que", 148.5, 70, { align: "center" });
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(30);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`${currentStudent.firstName} ${currentStudent.lastName}`.toUpperCase(), 148.5, 85, { align: "center" });
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(14);
+            doc.setTextColor(30, 30, 30);
+            doc.text("concluiu com êxito os requisitos para a graduação de", 148.5, 100, { align: "center" });
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(24);
+            doc.setTextColor(212, 175, 55); // Gold
+            doc.text(`FAIXA ${belt.toUpperCase()}`, 148.5, 115, { align: "center" });
+
+            // Date and Instructor
+            const dateObj = new Date(dateVal + 'T12:00:00');
+            const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Florianópolis, ${formattedDate}`, 148.5, 140, { align: "center" });
+
+            // Signatures line
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(0, 0, 0);
+            doc.line(100, 170, 197, 170); // Center line
+
+            doc.setFontSize(12);
+            doc.text(instructor, 148.5, 175, { align: "center" });
+            doc.setFontSize(10);
+            doc.text("Instrutor Responsável", 148.5, 180, { align: "center" });
+
+            // QR Code
+            doc.addImage(qrCodeDataUrl, 'PNG', 240, 150, 30, 30);
+            doc.setFontSize(8);
+            doc.text("Validar Autenticidade", 255, 185, { align: "center" });
+
+            // Save PDF
+            doc.save(`Certificado_${currentStudent.firstName}_${belt}.pdf`);
+
+            closeCertModal();
+            alert("Certificado gerado com sucesso!");
+
+        } catch (error) {
+            console.error("Erro ao gerar certificado:", error);
+            alert("Erro ao gerar certificado. Tente novamente.");
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    });
 }
 
 // Função auxiliar para encontrar usuário (deve ser otimizada no backend no futuro)

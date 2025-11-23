@@ -233,6 +233,82 @@
             </div>
         </div>
     </div>
+    <!-- Certificate Generation Modal -->
+    <div id="certificate-modal"
+        class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div
+            class="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Gerar Certificado</h3>
+                <button id="close-cert-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Tipo de Certificado / Faixa</label>
+                    <select id="cert-belt"
+                        class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors appearance-none">
+                        <option value="Branca Recomendada">Branca Recomendada</option>
+                        <option value="Branca Decidida">Branca Decidida</option>
+                        <option value="Laranja Recomendada">Laranja Recomendada</option>
+                        <option value="Laranja Decidida">Laranja Decidida</option>
+                        <option value="Amarela Recomendada">Amarela Recomendada</option>
+                        <option value="Amarela Decidida">Amarela Decidida</option>
+                        <option value="Camuflada Recomendada">Camuflada Recomendada</option>
+                        <option value="Camuflada Decidida">Camuflada Decidida</option>
+                        <option value="Verde Recomendada">Verde Recomendada</option>
+                        <option value="Verde Decidida">Verde Decidida</option>
+                        <option value="Roxa Recomendada">Roxa Recomendada</option>
+                        <option value="Roxa Decidida">Roxa Decidida</option>
+                        <option value="Azul Recomendada">Azul Recomendada</option>
+                        <option value="Azul Decidida">Azul Decidida</option>
+                        <option value="Marrom Recomendada">Marrom Recomendada</option>
+                        <option value="Marrom Decidida">Marrom Decidida</option>
+                        <option value="Vermelha Recomendada">Vermelha Recomendada</option>
+                        <option value="Vermelha Decidida">Vermelha Decidida</option>
+                        <option value="Vermelha e Preta">Vermelha e Preta</option>
+                        <optgroup label="Kihap Littles">
+                            <option value="Panda">Panda</option>
+                            <option value="Leão">Leão</option>
+                            <option value="Girafa">Girafa</option>
+                            <option value="Borboleta">Borboleta</option>
+                            <option value="Jacaré">Jacaré</option>
+                            <option value="Coruja">Coruja</option>
+                            <option value="Arara">Arara</option>
+                            <option value="Macaco">Macaco</option>
+                            <option value="Fênix">Fênix</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Data de Emissão</label>
+                    <input type="date" id="cert-date"
+                        class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Nome do Instrutor (Assinatura)</label>
+                    <input type="text" id="cert-instructor"
+                        class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                        placeholder="Ex: Mestre Kim">
+                </div>
+            </div>
+
+            <div class="mt-8 flex space-x-3">
+                <button id="cancel-cert-btn"
+                    class="flex-1 px-4 py-3 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors font-medium">
+                    Cancelar
+                </button>
+                <button id="confirm-generate-cert-btn"
+                    class="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold hover:from-yellow-400 hover:to-yellow-500 transition-all shadow-lg shadow-yellow-500/20">
+                    Gerar PDF
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
