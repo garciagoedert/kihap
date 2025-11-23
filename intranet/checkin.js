@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
-import { 
-    collection, getDocs, query, where, doc, getDoc, updateDoc, serverTimestamp 
+import {
+    collection, getDocs, query, where, doc, getDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 import QrScanner from './qr-scanner.min.js';
@@ -13,8 +13,8 @@ export async function setupCheckinPage() {
     const searchInput = document.getElementById('search-input');
 
     const currentUser = await getCurrentUser();
-    if (!currentUser || !currentUser.isAdmin) {
-        document.body.innerHTML = '<p class="text-center text-red-500 p-8">Acesso negado. Você precisa ser um administrador para acessar esta página.</p>';
+    if (!currentUser) {
+        window.location.href = 'login.html';
         return;
     }
 
@@ -92,12 +92,12 @@ export async function setupCheckinPage() {
         try {
             // Try searching by ID first
             if (searchTerm.length === 20) { // Firestore IDs are typically 20 chars
-                 const saleRef = doc(db, 'inscricoesFaixaPreta', searchTerm);
-                 const saleSnap = await getDoc(saleRef);
-                 if (saleSnap.exists()) {
+                const saleRef = doc(db, 'inscricoesFaixaPreta', searchTerm);
+                const saleSnap = await getDoc(saleRef);
+                if (saleSnap.exists()) {
                     await processSale(searchTerm);
                     return;
-                 }
+                }
             }
 
             // Fetch all sales and filter client-side for a case-insensitive, partial search
@@ -107,7 +107,7 @@ export async function setupCheckinPage() {
             querySnapshot.forEach(doc => allSales.push({ id: doc.id, ...doc.data() }));
 
             const lowerCaseSearchTerm = searchTerm.toLowerCase();
-            const matchingSales = allSales.filter(sale => 
+            const matchingSales = allSales.filter(sale =>
                 (sale.userName && sale.userName.toLowerCase().includes(lowerCaseSearchTerm)) ||
                 (sale.userEmail && sale.userEmail.toLowerCase().includes(lowerCaseSearchTerm))
             );
