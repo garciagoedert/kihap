@@ -165,6 +165,7 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
+    document.getElementById('generate-certificate-btn').addEventListener('click', handleGenerateCertificate);
 }
 
 function switchTab(activeTabId) {
@@ -393,6 +394,133 @@ async function handleSavePhysicalTest() {
         button.disabled = false;
         button.textContent = 'Adicionar Log';
     }
+}
+
+async function handleGenerateCertificate() {
+    const button = document.getElementById('generate-certificate-btn');
+
+    if (!currentStudent) {
+        alert("Dados do aluno não carregados.");
+        return;
+    }
+
+    // Basic validation
+    if (!currentStudent.firstName || !currentStudent.lastName) {
+        alert("Nome do aluno incompleto.");
+        return;
+    }
+
+    showConfirm(
+        `Gerar certificado para ${currentStudent.firstName}?`,
+        async () => {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...';
+
+            try {
+                // 1. Create Certificate Record in Firestore
+                const certificateData = {
+                    studentName: `${currentStudent.firstName} ${currentStudent.lastName}`,
+                    studentId: currentStudent.idMember,
+                    unitId: currentUnitId || 'unknown',
+                    date: Timestamp.now(),
+                    type: 'Faixa', // Could be dynamic later
+                    issuer: auth.currentUser.email
+                };
+
+                const docRef = await addDoc(collection(db, "certificates"), certificateData);
+                const certificateId = docRef.id;
+                const validationUrl = `${window.location.origin}/validar-certificado.html?id=${certificateId}`;
+
+                // 2. Generate PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Background (Simple border for now)
+                doc.setLineWidth(2);
+                doc.setDrawColor(212, 175, 55); // Gold color
+                doc.rect(10, 10, 277, 190);
+
+                doc.setLineWidth(1);
+                doc.rect(15, 15, 267, 180);
+
+                // Header
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(40);
+                doc.setTextColor(30, 30, 30);
+                doc.text("CERTIFICADO", 148.5, 50, { align: "center" });
+
+                doc.setFontSize(20);
+                doc.setFont("helvetica", "normal");
+                doc.text("Certificamos que", 148.5, 80, { align: "center" });
+
+                // Student Name
+                doc.setFontSize(30);
+                doc.setFont("helvetica", "bold");
+                doc.text(certificateData.studentName.toUpperCase(), 148.5, 100, { align: "center" });
+
+                // Details
+                doc.setFontSize(16);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Concluiu com êxito os requisitos para graduação.`, 148.5, 120, { align: "center" });
+
+                const dateStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+                doc.text(`Data: ${dateStr}`, 148.5, 140, { align: "center" });
+
+                // QR Code
+                // Create a temporary div for QR code generation
+                const qrDiv = document.createElement('div');
+                const qrcode = new QRCode(qrDiv, {
+                    text: validationUrl,
+                    width: 128,
+                    height: 128
+                });
+
+                // Wait a bit for QR code to render (it's canvas based usually)
+                setTimeout(() => {
+                    const qrCanvas = qrDiv.querySelector('canvas');
+                    if (qrCanvas) {
+                        const qrDataUrl = qrCanvas.toDataURL('image/png');
+                        doc.addImage(qrDataUrl, 'PNG', 240, 150, 30, 30);
+
+                        doc.setFontSize(10);
+                        doc.text("Validar Certificado", 255, 185, { align: "center" });
+                    } else {
+                        // Fallback if canvas not found (img tag)
+                        const qrImg = qrDiv.querySelector('img');
+                        if (qrImg) {
+                            doc.addImage(qrImg.src, 'PNG', 240, 150, 30, 30);
+                        }
+                    }
+
+                    // Signatures (Mock)
+                    doc.setLineWidth(0.5);
+                    doc.setDrawColor(0, 0, 0);
+                    doc.line(60, 170, 120, 170);
+                    doc.setFontSize(12);
+                    doc.text("Instrutor Responsável", 90, 175, { align: "center" });
+
+                    // Save
+                    doc.save(`Certificado_${currentStudent.firstName}_${currentStudent.lastName}.pdf`);
+
+                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Gerado!';
+                    setTimeout(() => {
+                        button.innerHTML = '<i class="fas fa-certificate mr-2"></i>Gerar Certificado';
+                        button.disabled = false;
+                    }, 3000);
+                }, 500);
+
+            } catch (error) {
+                console.error("Erro ao gerar certificado:", error);
+                alert(`Erro: ${error.message}`);
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-certificate mr-2"></i>Gerar Certificado';
+            }
+        }
+    );
 }
 
 // Função auxiliar para encontrar usuário (deve ser otimizada no backend no futuro)
