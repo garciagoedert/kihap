@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const axios = require("axios");
 const admin = require("firebase-admin");
 // const cors = require("cors")({origin: true}); // Replaced with manual CORS handling
@@ -116,7 +116,7 @@ exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
         const response = await apiClientV2.get(`/members/${memberIdInt}`, {
             params: { showMemberships: true, showsResponsibles: true }
         });
-        
+
         const memberData = response.data;
 
         if (memberData && memberData.idEmployeeInstructor) {
@@ -140,7 +140,7 @@ exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
             totalCoins = memberData.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
         }
         memberData.totalFitCoins = totalCoins;
-        
+
         functions.logger.info(`EVO API response for getMemberDetails (ID: ${memberId}):`, memberData);
         return res.status(200).send({ data: memberData });
     } catch (error) {
@@ -189,7 +189,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         apiParams.page = currentPage;
                         const response = await apiClientV2.get("/members", { params: apiParams });
                         const members = response.data || [];
-                        
+
                         if (members.length > 0) {
                             statusMembers = statusMembers.concat(members);
                         }
@@ -212,7 +212,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                 fetchAllPagesForStatus(2)
             ]);
             unitMembers = (activeMembers || []).concat(inactiveMembers || []);
-            
+
             // Normaliza o campo de FitCoins e adiciona o nome da unidade para consistência
             unitMembers.forEach(member => {
                 member.branchName = member.branchName || currentUnitId;
@@ -258,7 +258,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             }
             member.totalFitCoins = totalCoins;
         });
-        
+
         functions.logger.info(`Retornando ${uniqueMembers.length} alunos únicos da API EVO.`);
         return uniqueMembers;
 
@@ -357,11 +357,11 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
 
         // 4. Gera o link de redefinição de senha (convite)
         const link = await admin.auth().generatePasswordResetLink(email);
-        
+
         // TODO: Enviar o email para o aluno com o link.
         // Por enquanto, retornamos o link para o admin.
         functions.logger.info(`Link de convite para ${email}: ${link}`);
-        
+
         return { success: true, message: `Convite para ${email} gerado. O usuário precisa definir a senha através do link.`, link: link };
 
     } catch (error) {
@@ -413,7 +413,7 @@ exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 })
         res.status(204).send('');
         return;
     }
-    
+
     (async () => {
         try {
             // O cliente pode enviar os dados diretamente no corpo ou dentro de um objeto 'data'.
@@ -450,7 +450,7 @@ exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 })
                         const apiClient = getEvoApiClient(id, 'v2');
                         const response = await apiClient.get("/members", { params: { status: 1, take: 1 } });
                         const count = parseInt(response.headers['total'] || '0', 10);
-                        
+
                         functions.logger.info(`[${executionId}] API | Tentativa ${attempt} para '${id}': Sucesso com contagem ${count}.`);
 
                         if (count > 0) {
@@ -542,7 +542,7 @@ exports.getStudentDataByEmail = functions.https.onCall(async (data, context) => 
     const normalizedEmail = email.toLowerCase().trim();
 
     const unitIds = Object.keys(EVO_CREDENTIALS);
-    
+
     // Tenta encontrar o aluno em qualquer unidade.
     for (const unitId of unitIds) {
         try {
@@ -557,8 +557,8 @@ exports.getStudentDataByEmail = functions.https.onCall(async (data, context) => 
                 });
                 const members = response.data || [];
 
-                const foundMember = members.find(member => 
-                    member.contacts?.some(contact => 
+                const foundMember = members.find(member =>
+                    member.contacts?.some(contact =>
                         (contact.idContactType === 4 || contact.contactType === 'E-mail') &&
                         contact.description?.toLowerCase().trim() === normalizedEmail
                     )
@@ -648,7 +648,7 @@ exports.setStudentPassword = functions.https.onCall(async (data, context) => {
         }, { merge: true }); // Usa merge: true para não sobrescrever outros campos se o doc já existir
 
         functions.logger.info(`Perfil do Firestore criado/atualizado para o usuário: ${userRecord.uid}`);
-        
+
         // Retorna sucesso e o UID do usuário para o cliente poder fazer o login
         return { success: true, uid: userRecord.uid };
 
@@ -710,7 +710,7 @@ exports.getActivitiesSchedule = functions.https.onCall(async (data, context) => 
         const response = await apiClient.get("/activities/schedule", {
             params: { date: date }
         });
-        
+
         functions.logger.info(`Resposta da API EVO para getActivitiesSchedule (unidade: ${unitId}, data: ${date}):`, response.data);
         return response.data;
 
@@ -744,7 +744,7 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
     try {
         // O endpoint de 'entries' utiliza a v1 da API.
         const apiClient = getEvoApiClient(unitId, 'v1');
-        
+
         const response = await apiClient.get("/entries", {
             params: {
                 registerDateStart,
@@ -752,7 +752,7 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
                 take: 1000 // Valor máximo para buscar todas as entradas do dia.
             }
         });
-        
+
         functions.logger.info(`Resposta da API EVO para getDailyEntries (unidade: ${unitId}, data: ${date})`, response.data);
 
         // Calcula o número de membros únicos que fizeram entrada.
@@ -765,7 +765,7 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
             });
         }
 
-        return { 
+        return {
             totalEntries: response.data ? response.data.length : 0,
             uniqueMembersCount: uniqueMemberIds.size,
         };
@@ -783,7 +783,7 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
 /**
  * Busca a evolução do número de contratos ativos ao longo do tempo.
  */
-exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GiB" }).https.onCall(async (data, context) => {
+exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GB" }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
@@ -798,13 +798,13 @@ exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory:
 
     const labels = [];
     const evolutionData = [];
-    
+
     // Os snapshots são ordenados do mais recente para o mais antigo, então revertemos para o gráfico
     snapshot.docs.reverse().forEach(doc => {
         const docData = doc.data();
         const date = docData.timestamp.toDate();
         labels.push(date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
-        
+
         // Lógica para decidir qual dado usar (geral ou específico da unidade)
         if (data.unitId && data.unitId !== 'geral') {
             evolutionData.push(docData[data.unitId] || 0);
@@ -819,7 +819,7 @@ exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory:
 const _snapshotDailyEvoData = async () => {
     functions.logger.info("Iniciando snapshot diário de dados do EVO...");
     const db = admin.firestore();
-    
+
     const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
     const year = nowInSaoPaulo.getFullYear();
     const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
@@ -978,7 +978,7 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
  * Busca e retorna os dados do ranking de forma pública, sem necessidade de autenticação.
  * Agora busca todos os alunos (status 0) e seus detalhes de membresia para garantir a precisão dos FitCoins.
  */
-exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GiB' }).https.onCall(async (data, context) => {
+exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     const unitIds = Object.keys(EVO_CREDENTIALS);
     let allMembers = [];
     const PAGE_SIZE = 500; // Restaurado para o valor estável conhecido
@@ -991,7 +991,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1Gi
             // Função auxiliar para buscar todas as páginas de um determinado status
             const fetchAllPagesForStatus = async (status) => {
                 const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: status };
-                
+
                 let currentPage = 1;
                 let hasMorePages = true;
                 let statusMembers = [];
@@ -1001,7 +1001,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1Gi
                         apiParams.page = currentPage;
                         const response = await apiClientV2.get("/members", { params: apiParams });
                         const members = response.data || [];
-                        
+
                         if (members.length > 0) {
                             statusMembers = statusMembers.concat(members);
                         }
@@ -1024,7 +1024,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1Gi
                 fetchAllPagesForStatus(2)
             ]);
             unitMembers = (activeMembers || []).concat(inactiveMembers || []);
-            
+
             // Normaliza o campo de FitCoins para consistência
             unitMembers.forEach(member => {
                 let totalCoins = 0;
@@ -1055,7 +1055,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1Gi
                 uniqueStudentsMap.set(student.idMember, student);
             }
         });
-        
+
         // Ordena os alunos pelo totalFitCoins no backend antes de retornar, garantindo a ordem correta.
         let uniqueMembers = Array.from(uniqueStudentsMap.values())
             .sort((a, b) => b.totalFitCoins - a.totalFitCoins);
@@ -1071,7 +1071,7 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1Gi
             }
             member.totalFitCoins = totalCoins;
         });
-        
+
         functions.logger.info(`Total de ${uniqueMembers.length} membros únicos carregados para o ranking público.`);
         return uniqueMembers;
 
@@ -1134,8 +1134,8 @@ exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).h
         const results = await Promise.all(promises);
 
         const totalEntries = results.reduce((sum, count) => sum + count, 0);
-        
-        const logMessage = (unitId && unitId !== 'geral') 
+
+        const logMessage = (unitId && unitId !== 'geral')
             ? `Total de entries para ${unitId} hoje (${today}): ${totalEntries}`
             : `Total de entries de hoje (${today}): ${totalEntries}`;
         functions.logger.info(logMessage);
@@ -1150,365 +1150,3 @@ exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).h
     }
 });
 
-</final_file_content>
-
-IMPORTANT: For any future changes to this file, use the final_file_content shown above as your reference. This content reflects the current state of the file, including any auto-formatting (e.g., if you used single quotes but the formatter converted them to double quotes). Always base your SEARCH/REPLACE operations on this final version to ensure accuracy.
-
-
-
-New problems detected after saving the file:
-functions/evo.js
-- [ts Error] Line 165: Não é possível declarar novamente a variável de escopo de bloco 'data'.
-- [ts Error] Line 166: Não é possível declarar novamente a variável de escopo de bloco 'data'.<environment_details>
-# Visual Studio Code Visible Files
-functions/evo.js
-
-# Visual Studio Code Open Tabs
-components/form-cta.html
-../../kihap-analysis/index.html
-components/video.html
-programas/adolescentes.html
-programas/adultos.html
-programas/baby-littles.html
-programas/familia.html
-programas/kids.html
-programas/littles.html
-experience.html
-unidades/brasilia.html
-unidades/florianopolis.html
-unidades/dourados.html
-css/bundle.min.css
-imgs/kihap-mulheres.png
-programas/mulheres.html
-artes-marciais.html
-desenvolvimento-pessoal.html
-desenvolvimento/mente-faixa-preta.html
-imgs/favicon.png
-links.html
-intranet/aluno.html
-intranet/aluno.js
-README.md
-imgs/brasil.svg
-imgs/fundogero.jpg
-imgs/logo.png
-imgs/academy.png
-imgs/KI_academy.jpg
-components/testimonials.html
-intranet/arquivo-main.js
-intranet/theme.css
-intranet/course-editor.js
-intranet/cursos.js
-intranet/arquivo.js
-storage.rules
-intranet/projeto-editor.js
-intranet/player.js
-intranet/arquivo.html
-intranet/course-editor.html
-intranet/cursos.html
-intranet/player.html
-intranet/projeto-editor.html
-intranet/tarefas.html
-intranet/tarefas.js
-intranet/processos.html
-intranet/tatame.html
-intranet/tatame.js
-intranet/conteudo-viewer.html
-intranet/conteudo-editor.html
-intranet/header.html
-intranet/projetos.html
-intranet/projetos.js
-intranet/cadastro.html
-intranet/cadastro.js
-intranet/processos-editor.html
-intranet/processos.js
-intranet/processos-viewer.html
-members/js/login.js
-members/header.html
-intranet/login.js
-members/js/auth.js
-components/footer.html
-intranet/notification-container.html
-intranet/notification.js
-intranet/perfil.js
-intranet/chat.html
-intranet/chat.js
-intranet/firebase-config.js
-intranet/gerenciar-emblemas.html
-intranet/grant-admin-tool.html
-intranet/gerenciar-emblemas.js
-members/index.html
-js/store.js
-firebase.json
-intranet/snapshots-history.html
-intranet/snapshots-history.js
-members/js/cursos.js
-members/assinatura.html
-members/sidebar.html
-members/js/assinatura.js
-intranet/sales-history.html
-updateProduct.js
-intranet/store.html
-intranet/store.js
-.gitignore
-intranet/sales-history.js
-index.html
-css/tailwind.css
-js/script.js
-intranet/analysis.html
-js/produto.js
-js/faixa-preta.js
-compra-success.html
-functions/pagarme.js
-functions/index.js
-functions/evo.js
-members/js/dashboard.js
-components/header.html
-graduacao.html
-produto.html
-intranet/checkin.html
-intranet/qr-scanner.min.js
-functions/package.json
-intranet/checkin.js
-intranet/common-ui.js
-css/style.css
-faixa-preta.html
-intranet/alunos.html
-intranet/alunos.js
-intranet/login.html
-members/recuperar-senha.html
-intranet/pedidos.html
-intranet/pedidos.js
-members/js/recuperar-senha.js
-intranet/relatorios.js
-intranet/firestore.rules
-intranet/grade.html
-intranet/grade.js
-intranet/student-analysis.js
-intranet/suporte.html
-intranet/relatorios.html
-intranet/sidebar.html
-members/cursos.html
-members/tatame.html
-members/js/common-ui.js
-members/player.html
-members/conteudo-viewer.html
-members/js/tatame.js
-members/atividades.html
-members/js/atividades.js
-cors.json
-intranet/perfil.html
-intranet/log.css
-intranet/estoque.css
-intranet/estoque.html
-intranet/estoque.js
-.git/COMMIT_EDITMSG
-js/form-handler.js
-intranet/prospeccao.html
-imgs/QRCODETELA.jpg
-imgs/banner.jpg
-members/feed.html
-intranet/ranking.html
-intranet/admin.html
-intranet/admin.js
-intranet/auth.js
-intranet/ranking.js
-members/store.html
-store.html
-imgs/fxpretas.JPG
-members/perfil.html
-members/js/perfil.js
-members/js/store.js
-intranet/feed.html
-members/js/feed.js
-intranet/feed.js
-
-# Recently Modified Files
-These files have been modified since you last accessed them (file was just edited so you may need to re-read it before editing):
-functions/evo.js
-
-# Current Time
-19/11/2025, 7:02:37 AM (America/Sao_Paulo, UTC-3:00)
-
-# Context Window Usage
-745.815 / 1.048,576K tokens used (71%)
-
-# Current Mode
-ACT MODE
-</environment_details>
-
-</file_content>
-
-Now that you have the latest state of the file, try the operation again with fewer, more precise SEARCH blocks. For large files especially, it may be prudent to try to limit yourself to <5 SEARCH/REPLACE blocks at a time, then wait for the user to respond with the result of the operation before following up with another replace_in_file call to make additional edits.
-(If you run into this error 3 times in a row, you may use the write_to_file tool as a fallback.)
-</error><environment_details>
-# Visual Studio Code Visible Files
-functions/evo.js
-
-# Visual Studio Code Open Tabs
-components/form-cta.html
-../../kihap-analysis/index.html
-components/video.html
-programas/adolescentes.html
-programas/adultos.html
-programas/baby-littles.html
-programas/familia.html
-programas/kids.html
-programas/littles.html
-experience.html
-unidades/brasilia.html
-unidades/florianopolis.html
-unidades/dourados.html
-css/bundle.min.css
-imgs/kihap-mulheres.png
-programas/mulheres.html
-artes-marciais.html
-desenvolvimento-pessoal.html
-desenvolvimento/mente-faixa-preta.html
-imgs/favicon.png
-links.html
-intranet/aluno.html
-intranet/aluno.js
-README.md
-imgs/brasil.svg
-imgs/fundogero.jpg
-imgs/logo.png
-imgs/academy.png
-imgs/KI_academy.jpg
-components/testimonials.html
-intranet/arquivo-main.js
-intranet/theme.css
-intranet/course-editor.js
-intranet/cursos.js
-intranet/arquivo.js
-storage.rules
-intranet/projeto-editor.js
-intranet/player.js
-intranet/arquivo.html
-intranet/course-editor.html
-intranet/cursos.html
-intranet/player.html
-intranet/projeto-editor.html
-intranet/tarefas.html
-intranet/tarefas.js
-intranet/processos.html
-intranet/tatame.html
-intranet/tatame.js
-intranet/conteudo-viewer.html
-intranet/conteudo-editor.html
-intranet/header.html
-intranet/projetos.html
-intranet/projetos.js
-intranet/cadastro.html
-intranet/cadastro.js
-intranet/processos-editor.html
-intranet/processos.js
-intranet/processos-viewer.html
-members/js/login.js
-members/header.html
-intranet/login.js
-members/js/auth.js
-components/footer.html
-intranet/notification-container.html
-intranet/notification.js
-intranet/perfil.js
-intranet/chat.html
-intranet/chat.js
-intranet/firebase-config.js
-intranet/gerenciar-emblemas.html
-intranet/grant-admin-tool.html
-intranet/gerenciar-emblemas.js
-members/index.html
-js/store.js
-firebase.json
-intranet/snapshots-history.html
-intranet/snapshots-history.js
-members/js/cursos.js
-members/assinatura.html
-members/sidebar.html
-members/js/assinatura.js
-intranet/sales-history.html
-updateProduct.js
-intranet/store.html
-intranet/store.js
-.gitignore
-intranet/sales-history.js
-index.html
-css/tailwind.css
-js/script.js
-intranet/analysis.html
-js/produto.js
-js/faixa-preta.js
-compra-success.html
-functions/pagarme.js
-functions/package.json
-functions/index.js
-functions/evo.js
-members/js/dashboard.js
-components/header.html
-graduacao.html
-produto.html
-intranet/checkin.html
-intranet/qr-scanner.min.js
-intranet/checkin.js
-intranet/common-ui.js
-css/style.css
-faixa-preta.html
-intranet/alunos.html
-intranet/alunos.js
-intranet/login.html
-members/recuperar-senha.html
-intranet/pedidos.html
-intranet/pedidos.js
-members/js/recuperar-senha.js
-intranet/relatorios.js
-intranet/firestore.rules
-intranet/grade.html
-intranet/grade.js
-intranet/student-analysis.js
-intranet/suporte.html
-intranet/relatorios.html
-intranet/sidebar.html
-members/cursos.html
-members/tatame.html
-members/js/common-ui.js
-members/player.html
-members/conteudo-viewer.html
-members/js/tatame.js
-members/atividades.html
-members/js/atividades.js
-cors.json
-intranet/perfil.html
-intranet/log.css
-intranet/estoque.css
-intranet/estoque.html
-intranet/estoque.js
-.git/COMMIT_EDITMSG
-js/form-handler.js
-intranet/prospeccao.html
-imgs/QRCODETELA.jpg
-imgs/banner.jpg
-members/feed.html
-intranet/ranking.html
-intranet/admin.html
-intranet/admin.js
-intranet/auth.js
-intranet/ranking.js
-members/store.html
-store.html
-imgs/fxpretas.JPG
-members/perfil.html
-members/js/perfil.js
-members/js/store.js
-intranet/feed.html
-members/js/feed.js
-intranet/feed.js
-
-# Current Time
-19/11/2025, 7:29:03 AM (America/Sao_Paulo, UTC-3:00)
-
-# Context Window Usage
-197.730 / 1.048,576K tokens used (19%)
-
-# Current Mode
-ACT MODE
-</environment_details>

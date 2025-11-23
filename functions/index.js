@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -1067,9 +1067,10 @@ exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').time
 
 
 // Importa e exporta todas as funções do evo.js
-// const evoFunctions = require('./evo.js');
+// Importa e exporta todas as funções do evo.js
+const evoFunctions = require('./evo.js');
 // Itera sobre as chaves do objeto evoFunctions e as exporta individualmente
 // Isso garante que o Firebase Functions reconheça cada função corretamente.
-// Object.keys(evoFunctions).forEach(key => {
-//     exports[key] = evoFunctions[key];
-// });
+Object.keys(evoFunctions).forEach(key => {
+    exports[key] = evoFunctions[key];
+});

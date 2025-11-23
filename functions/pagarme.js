@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const axios = require('axios'); // Revertendo para axios
 
@@ -163,14 +163,6 @@ const syncPagarmeSalesStatus = async () => {
     }
 };
 
-module.exports = {
-    createPagarmeOrder,
-    getPagarmeOrder,
-    syncPagarmeSalesStatus,
-    createPagarmeSubscription,
-    cancelPagarmeSubscription
-};
-
 const cancelPagarmeSubscription = async (subscriptionId) => {
     console.log(`[cancelPagarmeSubscription] Cancelando assinatura ${subscriptionId}`);
     const client = getPagarmeClient();
@@ -233,4 +225,12 @@ const createPagarmeSubscription = async (customerData, paymentMethod, planId, ca
         }
         throw new functions.https.HttpsError('internal', 'Não foi possível criar a assinatura no Pagar.me.');
     }
+};
+
+module.exports = {
+    createPagarmeOrder,
+    getPagarmeOrder,
+    syncPagarmeSalesStatus,
+    createPagarmeSubscription,
+    cancelPagarmeSubscription
 };
