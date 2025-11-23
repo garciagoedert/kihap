@@ -20,7 +20,7 @@
 
     <div class="w-full max-w-md bg-[#1a1a1a] rounded-lg shadow-2xl p-8 text-center border border-gray-800">
         <div class="mb-6">
-            <img src="imgs/logo.png" alt="Kihap Logo" class="h-12 mx-auto">
+            <img src="/imgs/logo.png" alt="Kihap Logo" class="h-12 mx-auto">
         </div>
 
         <h1 class="text-2xl font-bold mb-6 text-white">Validação de Certificado</h1>
@@ -72,12 +72,8 @@
     </footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { firebaseConfig } from './intranet/firebase-config.js';
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { db } from './intranet/firebase-config.js';
 
         async function validateCertificate() {
             const urlParams = new URLSearchParams(window.location.search);
