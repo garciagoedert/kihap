@@ -467,7 +467,7 @@ function setupCertificateHandlers() {
 
             // 2. Generate QR Code
             const validationUrl = `https://intranet-kihap.web.app/validar-certificado.html?id=${certId}`;
-            const qrCodeDataUrl = await QRCode.toDataURL(validationUrl, { margin: 1, width: 150 });
+            const qrCodeDataUrl = await window.QRCode.toDataURL(validationUrl, { margin: 1, width: 150 });
 
             // 3. Generate PDF
             const { jsPDF } = window.jspdf;
