@@ -1,9 +1,32 @@
 import { onAuthReady, getUserData } from './auth.js';
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { functions, db } from '../../intranet/firebase-config.js';
+
+import { functions, db, auth } from '../../intranet/firebase-config.js';
 import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const getMemberData = httpsCallable(functions, 'getMemberData');
+// Substitui httpsCallable por fetch direto para lidar com a função HTTP getMemberDetails
+async function getMemberData(data) {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("Usuário não autenticado.");
+    }
+    const token = await user.getIdToken();
+
+    const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/getMemberDetails', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ data: data })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro na requisição: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+}
 
 export function loadMemberDashboard() {
     onAuthReady(async (user) => {
