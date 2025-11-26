@@ -16,10 +16,57 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .tab-btn {
-            transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        /* Enhanced Tab Styles */
+        .tab-btn,
+        .subtab-btn {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
-            /* Prevent text wrapping in tabs */
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn:hover,
+        .subtab-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active,
+        .tab-btn.text-white {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 3px 3px 0 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.text-white::before,
+        .tab-btn.active::before {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        .subtab-btn {
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .subtab-btn.text-white {
+            background: rgba(59, 130, 246, 0.15);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
         }
 
         .tab-content {
@@ -30,7 +77,6 @@
             opacity: 0;
             pointer-events: none;
             display: none;
-            /* Ensure it's not taking up space */
         }
 
         /* Toggle Switch */
@@ -71,25 +117,6 @@
 
         tbody tr:hover {
             background-color: #27272a !important;
-            /* gray-800 hover */
-        }
-
-        /* Tab Styles */
-        .tab-btn {
-            position: relative;
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: #3b82f6;
-            /* blue-500 */
-            transform: scaleX(1);
-            transition: transform 0.2s ease;
         }
 
         /* Responsive Table CSS (Mobile) */
@@ -112,11 +139,9 @@
 
             tr {
                 border: 1px solid #374151;
-                /* gray-700 */
                 margin-bottom: 1rem;
                 border-radius: 0.5rem;
                 background-color: #1f2937;
-                /* gray-800 */
                 padding: 1rem;
                 display: flex;
                 flex-direction: column;
@@ -146,7 +171,6 @@
                 text-align: left;
                 font-weight: 600;
                 color: #9ca3af;
-                /* gray-400 */
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
@@ -154,7 +178,6 @@
                 content: attr(data-label);
             }
 
-            /* Adjust specific cells if needed */
             td[data-label="Ações"],
             td[data-label="Link"] {
                 flex-direction: row;
@@ -164,9 +187,6 @@
 
             td[data-label="Ações"]:before,
             td[data-label="Link"]:before {
-                display: none;
-                /* Hide label for action buttons if self-explanatory, or keep it */
-                /* Let's keep it for consistency but maybe style differently if needed */
                 display: block;
             }
         }
@@ -188,25 +208,20 @@
             <!-- Tabs -->
             <div class="mb-6 border-b border-gray-700">
                 <nav class="flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
-                    <button id="tab-sales-log"
-                        class="tab-btn text-white border-b-2 border-blue-500 px-3 py-2 text-sm font-medium flex-shrink-0">
-                        Log de Vendas
+                    <button id="tab-sales-log" class="tab-btn text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        📊 Log de Vendas
                     </button>
                     <button id="tab-manage-products"
                         class="tab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium flex-shrink-0">
-                        Gerenciar Produtos
+                        📦 Produtos
                     </button>
-                    <button id="tab-manage-banners"
+                    <button id="tab-marketing"
                         class="tab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium flex-shrink-0">
-                        Gerenciar Banners
-                    </button>
-                    <button id="tab-manage-coupons"
-                        class="tab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium flex-shrink-0">
-                        Gerenciar Cupons
+                        🎯 Marketing
                     </button>
                     <button id="tab-events"
                         class="tab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium flex-shrink-0">
-                        Eventos
+                        🎫 Eventos
                     </button>
                 </nav>
             </div>
@@ -511,125 +526,142 @@
                 </div>
             </div>
 
-            <!-- Manage Banners Content -->
-            <div id="content-manage-banners" class="tab-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Add/Edit Banner Form -->
-                    <div class="lg:col-span-1 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 id="banner-form-title" class="text-xl font-bold mb-4">Adicionar Novo Banner</h2>
-                        <form id="banner-form">
-                            <input type="hidden" id="banner-id">
-                            <div class="mb-4">
-                                <label for="banner-image" class="block text-sm font-medium text-gray-400">Imagem do
-                                    Banner</label>
-                                <input type="file" id="banner-image"
-                                    class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
-                                    required />
-                            </div>
-                            <div class="mb-4">
-                                <label for="banner-link" class="block text-sm font-medium text-gray-400">Link
-                                    (opcional)</label>
-                                <input type="url" id="banner-link"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div class="mb-4">
-                                <label for="banner-active"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>Ativo</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="banner-active" id="banner-active"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="banner-active"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-end space-x-2">
-                                <button type="button" id="cancel-banner-edit-btn"
-                                    class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
-                                <button type="submit" id="save-banner-btn"
-                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
-                                    Banner</button>
-                            </div>
-                        </form>
+            <!-- Marketing Content (Banners + Coupons) -->
+            <div id="content-marketing" class="tab-content hidden">
+                <div class="mb-6">
+                    <div class="border-b border-gray-700">
+                        <nav class="flex space-x-4" aria-label="Marketing Tabs">
+                            <button id="subtab-banners" class="subtab-btn text-white px-3 py-2 text-sm font-medium">
+                                Banners
+                            </button>
+                            <button id="subtab-coupons"
+                                class="subtab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium">
+                                Cupons
+                            </button>
+                        </nav>
                     </div>
-                    <!-- Banners List -->
-                    <div class="lg:col-span-2 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold mb-4">Banners Cadastrados</h2>
-                        <div id="banners-list" class="space-y-4">
-                            <!-- Banners will be loaded here -->
+                </div>
+
+                <!-- Banners Sub-content -->
+                <div id="content-manage-banners" class="marketing-subcontent">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Add/Edit Banner Form -->
+                        <div class="lg:col-span-1 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                            <h2 id="banner-form-title" class="text-xl font-bold mb-4">Adicionar Novo Banner</h2>
+                            <form id="banner-form">
+                                <input type="hidden" id="banner-id">
+                                <div class="mb-4">
+                                    <label for="banner-image" class="block text-sm font-medium text-gray-400">Imagem do
+                                        Banner</label>
+                                    <input type="file" id="banner-image"
+                                        class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+                                        required />
+                                </div>
+                                <div class="mb-4">
+                                    <label for="banner-link" class="block text-sm font-medium text-gray-400">Link
+                                        (opcional)</label>
+                                    <input type="url" id="banner-link"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="banner-active"
+                                        class="flex items-center justify-between text-sm font-medium text-gray-400">
+                                        <span>Ativo</span>
+                                        <div
+                                            class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" name="banner-active" id="banner-active"
+                                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                            <label for="banner-active"
+                                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button type="button" id="cancel-banner-edit-btn"
+                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                    <button type="submit" id="save-banner-btn"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
+                                        Banner</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Banners List -->
+                        <div class="lg:col-span-2 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                            <h2 class="text-xl font-bold mb-4">Banners Cadastrados</h2>
+                            <div id="banners-list" class="space-y-4">
+                                <!-- Banners will be loaded here -->
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Manage Coupons Content -->
-            <div id="content-manage-coupons" class="tab-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Add/Edit Coupon Form -->
-                    <div class="lg:col-span-1 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 id="coupon-form-title" class="text-xl font-bold mb-4">Adicionar Novo Cupom</h2>
-                        <form id="coupon-form">
-                            <input type="hidden" id="coupon-id">
-                            <div class="mb-4">
-                                <label for="coupon-code" class="block text-sm font-medium text-gray-400">Código do
-                                    Cupom</label>
-                                <input type="text" id="coupon-code"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required>
+                <!-- Coupons Sub-content -->
+                <div id="content-manage-coupons" class="marketing-subcontent hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Add/Edit Coupon Form -->
+                        <div class="lg:col-span-1 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                            <h2 id="coupon-form-title" class="text-xl font-bold mb-4">Adicionar Novo Cupom</h2>
+                            <form id="coupon-form">
+                                <input type="hidden" id="coupon-id">
+                                <div class="mb-4">
+                                    <label for="coupon-code" class="block text-sm font-medium text-gray-400">Código do
+                                        Cupom</label>
+                                    <input type="text" id="coupon-code"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-type" class="block text-sm font-medium text-gray-400">Tipo de
+                                        Desconto</label>
+                                    <select id="coupon-type"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="percentage">Porcentagem</option>
+                                        <option value="fixed">Valor Fixo</option>
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-value" class="block text-sm font-medium text-gray-400">Valor do
+                                        Desconto</label>
+                                    <input type="number" id="coupon-value"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-expiry" class="block text-sm font-medium text-gray-400">Data de
+                                        Validade</label>
+                                    <input type="date" id="coupon-expiry"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button type="button" id="cancel-coupon-edit-btn"
+                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                    <button type="submit" id="save-coupon-btn"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
+                                        Cupom</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Coupons List -->
+                        <div class="lg:col-span-2 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                            <h2 class="text-xl font-bold mb-4">Cupons Cadastrados</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b border-gray-700">
+                                            <th class="p-4">Código</th>
+                                            <th class="p-4">Tipo</th>
+                                            <th class="p-4">Valor</th>
+                                            <th class="p-4">Validade</th>
+                                            <th class="p-4">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coupons-table-body">
+                                        <tr>
+                                            <td colspan="5" class="text-center p-8">Carregando cupons...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="mb-4">
-                                <label for="coupon-type" class="block text-sm font-medium text-gray-400">Tipo de
-                                    Desconto</label>
-                                <select id="coupon-type"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="percentage">Porcentagem</option>
-                                    <option value="fixed">Valor Fixo</option>
-                                </select>
-                            </div>
-                            <div class="mb-4">
-                                <label for="coupon-value" class="block text-sm font-medium text-gray-400">Valor do
-                                    Desconto</label>
-                                <input type="number" id="coupon-value"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="coupon-expiry" class="block text-sm font-medium text-gray-400">Data de
-                                    Validade</label>
-                                <input type="date" id="coupon-expiry"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div class="flex items-center justify-end space-x-2">
-                                <button type="button" id="cancel-coupon-edit-btn"
-                                    class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
-                                <button type="submit" id="save-coupon-btn"
-                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
-                                    Cupom</button>
-                            </div>
-                        </form>
-                    </div>
-                    <!-- Coupons List -->
-                    <div class="lg:col-span-2 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold mb-4">Cupons Cadastrados</h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="border-b border-gray-700">
-                                        <th class="p-4">Código</th>
-                                        <th class="p-4">Tipo</th>
-                                        <th class="p-4">Valor</th>
-                                        <th class="p-4">Validade</th>
-                                        <th class="p-4">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="coupons-table-body">
-                                    <tr>
-                                        <td colspan="5" class="text-center p-8">Carregando cupons...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -691,7 +723,7 @@
     <!-- Sale Details Modal -->
     <div id="sale-details-modal"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-[#1a1a1a] p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-[#1a1a1a] p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Detalhes da Venda</h2>
                 <button id="close-modal-btn" class="text-gray-400 hover:text-white">&times;</button>
@@ -699,10 +731,19 @@
             <div id="modal-content" class="space-y-4">
                 <!-- Content will be populated by JS -->
             </div>
+
+            <!-- Email Logs Section -->
+            <div id="email-logs-section" class="mt-6 pt-6 border-t border-gray-700 hidden">
+                <h3 class="text-lg font-bold mb-3">📧 Histórico de Emails</h3>
+                <div id="email-logs-list" class="space-y-2">
+                    <!-- Email logs will be loaded here -->
+                </div>
+            </div>
+
             <div class="mt-6 flex justify-between items-center">
                 <button id="resend-email-btn-modal"
                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">
-                    <i class="fas fa-paper-plane mr-2"></i>Reenviar Email
+                    <i class="fas fa-paper-plane mr-2"></i><span id="resend-email-text">Renviar Email</span>
                 </button>
                 <button id="delete-sale-btn-modal"
                     class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500">Apagar
