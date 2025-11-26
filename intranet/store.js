@@ -16,19 +16,22 @@ export async function setupStorePage() {
     // Tab elements
     const tabSalesLog = document.getElementById('tab-sales-log');
     const tabManageProducts = document.getElementById('tab-manage-products');
-    const tabManageBanners = document.getElementById('tab-manage-banners');
-    const tabManageCoupons = document.getElementById('tab-manage-coupons');
+    const tabMarketing = document.getElementById('tab-marketing');
     const tabEvents = document.getElementById('tab-events');
     const contentSalesLog = document.getElementById('content-sales-log');
     const contentManageProducts = document.getElementById('content-manage-products');
+    const contentMarketing = document.getElementById('content-marketing');
     const contentManageBanners = document.getElementById('content-manage-banners');
     const contentManageCoupons = document.getElementById('content-manage-coupons');
     const contentEvents = document.getElementById('content-events');
 
+    // Marketing sub-tab elements
+    const subtabBanners = document.getElementById('subtab-banners');
+    const subtabCoupons = document.getElementById('subtab-coupons');
+
     if (!isAdmin) {
         tabManageProducts.style.display = 'none';
-        tabManageBanners.style.display = 'none';
-        tabManageCoupons.style.display = 'none';
+        tabMarketing.style.display = 'none';
         tabEvents.style.display = 'none';
     }
 
@@ -126,86 +129,63 @@ export async function setupStorePage() {
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
+        // Remove active from all main tabs
+        [tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
+            tab.classList.remove('text-white', 'border-blue-500');
+            tab.classList.add('text-gray-400', 'hover:border-gray-500');
+        });
+
+        // Hide all main content
+        [contentSalesLog, contentManageProducts, contentMarketing, contentEvents].forEach(content => {
+            content.classList.add('hidden');
+        });
+
         if (activeTab === 'sales') {
             tabSalesLog.classList.add('text-white', 'border-blue-500');
             tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
-            tabManageProducts.classList.remove('text-white', 'border-blue-500');
-            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
             contentSalesLog.classList.remove('hidden');
-            contentManageProducts.classList.add('hidden');
-            contentManageBanners.classList.add('hidden');
-            contentEvents.classList.add('hidden');
         } else if (activeTab === 'products') {
             tabManageProducts.classList.add('text-white', 'border-blue-500');
             tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
-            tabSalesLog.classList.remove('text-white', 'border-blue-500');
-            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageBanners.classList.remove('text-white', 'border-blue-500');
-            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabEvents.classList.remove('text-white', 'border-blue-500');
-            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
             contentManageProducts.classList.remove('hidden');
-            contentSalesLog.classList.add('hidden');
-            contentManageBanners.classList.add('hidden');
-            contentEvents.classList.add('hidden');
-        } else if (activeTab === 'banners') {
-            tabManageBanners.classList.add('text-white', 'border-blue-500');
-            tabManageBanners.classList.remove('text-gray-400', 'hover:border-gray-500');
-            tabSalesLog.classList.remove('text-white', 'border-blue-500');
-            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageProducts.classList.remove('text-white', 'border-blue-500');
-            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageCoupons.classList.remove('text-white', 'border-blue-500');
-            tabManageCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabEvents.classList.remove('text-white', 'border-blue-500');
-            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
-            contentManageBanners.classList.remove('hidden');
-            contentSalesLog.classList.add('hidden');
-            contentManageProducts.classList.add('hidden');
-            contentManageCoupons.classList.add('hidden');
-            contentEvents.classList.add('hidden');
-        } else if (activeTab === 'coupons') {
-            tabManageCoupons.classList.add('text-white', 'border-blue-500');
-            tabManageCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
-            tabSalesLog.classList.remove('text-white', 'border-blue-500');
-            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageProducts.classList.remove('text-white', 'border-blue-500');
-            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageBanners.classList.remove('text-white', 'border-blue-500');
-            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabEvents.classList.remove('text-white', 'border-blue-500');
-            tabEvents.classList.add('text-gray-400', 'hover:border-gray-500');
-            contentManageCoupons.classList.remove('hidden');
-            contentSalesLog.classList.add('hidden');
-            contentManageProducts.classList.add('hidden');
-            contentManageBanners.classList.add('hidden');
-            contentEvents.classList.add('hidden');
+        } else if (activeTab === 'marketing') {
+            tabMarketing.classList.add('text-white', 'border-blue-500');
+            tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
+            contentMarketing.classList.remove('hidden');
         } else if (activeTab === 'events') {
-            fetchCheckins(); // Recarrega os check-ins toda vez que a aba é aberta
+            fetchCheckins();
             tabEvents.classList.add('text-white', 'border-blue-500');
             tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
-            tabSalesLog.classList.remove('text-white', 'border-blue-500');
-            tabSalesLog.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageProducts.classList.remove('text-white', 'border-blue-500');
-            tabManageProducts.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageBanners.classList.remove('text-white', 'border-blue-500');
-            tabManageBanners.classList.add('text-gray-400', 'hover:border-gray-500');
-            tabManageCoupons.classList.remove('text-white', 'border-blue-500');
-            tabManageCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
             contentEvents.classList.remove('hidden');
-            contentSalesLog.classList.add('hidden');
-            contentManageProducts.classList.add('hidden');
-            contentManageBanners.classList.add('hidden');
-            contentManageCoupons.classList.add('hidden');
         }
     }
 
-    tabSalesLog.addEventListener('click', () => switchTab('sales'));
-    tabManageProducts.addEventListener('click', () => switchTab('products'));
-    tabManageBanners.addEventListener('click', () => switchTab('banners'));
-    tabManageCoupons.addEventListener('click', () => switchTab('coupons'));
-    tabEvents.addEventListener('click', () => switchTab('events'));
+    // --- Marketing Sub-tab Switching Logic ---
+    function switchMarketingSubTab(activeSubTab) {
+        if (activeSubTab === 'banners') {
+            subtabBanners.classList.add('text-white', 'border-blue-500');
+            subtabBanners.classList.remove('text-gray-400', 'hover:border-gray-500');
+            subtabCoupons.classList.remove('text-white', 'border-blue-500');
+            subtabCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
+            contentManageBanners.classList.remove('hidden');
+            contentManageCoupons.classList.add('hidden');
+        } else if (activeSubTab === 'coupons') {
+            subtabCoupons.classList.add('text-white', 'border-blue-500');
+            subtabCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
+            subtabBanners.classList.remove('text-white', 'border-blue-500');
+            subtabBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            contentManageCoupons.classList.remove('hidden');
+            contentManageBanners.classList.add('hidden');
+        }
+    }
+
+    if (tabSalesLog) tabSalesLog.addEventListener('click', () => switchTab('sales'));
+    if (tabManageProducts) tabManageProducts.addEventListener('click', () => switchTab('products'));
+    if (tabMarketing) tabMarketing.addEventListener('click', () => switchTab('marketing'));
+    if (tabEvents) tabEvents.addEventListener('click', () => switchTab('events'));
+
+    if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
+    if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
 
     // --- Manual Sale Modal Logic ---
     const updateManualSaleTotal = () => {
@@ -284,17 +264,17 @@ export async function setupStorePage() {
         manualSaleModal.classList.remove('hidden');
     };
 
-    addManualSaleProductBtn.addEventListener('click', addManualSaleProductRow);
+    if (addManualSaleProductBtn) addManualSaleProductBtn.addEventListener('click', addManualSaleProductRow);
 
     const closeManualSaleModal = () => {
         manualSaleModal.classList.add('hidden');
     };
 
-    addManualSaleBtn.addEventListener('click', openManualSaleModal);
-    closeManualSaleModalBtn.addEventListener('click', closeManualSaleModal);
-    cancelManualSaleBtn.addEventListener('click', closeManualSaleModal);
+    if (addManualSaleBtn) addManualSaleBtn.addEventListener('click', openManualSaleModal);
+    if (closeManualSaleModalBtn) closeManualSaleModalBtn.addEventListener('click', closeManualSaleModal);
+    if (cancelManualSaleBtn) cancelManualSaleBtn.addEventListener('click', closeManualSaleModal);
 
-    manualSalePaymentMethod.addEventListener('change', (e) => {
+    if (manualSalePaymentMethod) manualSalePaymentMethod.addEventListener('change', (e) => {
         manualSaleCardDetails.classList.add('hidden');
         manualSalePixDetails.classList.add('hidden');
         manualSaleCashDetails.classList.add('hidden');
@@ -307,7 +287,7 @@ export async function setupStorePage() {
         }
     });
 
-    manualSaleForm.addEventListener('submit', async (e) => {
+    if (manualSaleForm) manualSaleForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveBtn = document.getElementById('save-manual-sale-btn');
         saveBtn.disabled = true;
@@ -488,11 +468,13 @@ export async function setupStorePage() {
     };
 
     [searchInput, unitFilter, productFilter, dateFilter, statusFilter].forEach(el => {
-        el.addEventListener('change', applyFilters);
-        el.addEventListener('keyup', applyFilters);
+        if (el) {
+            el.addEventListener('change', applyFilters);
+            el.addEventListener('keyup', applyFilters);
+        }
     });
 
-    exportBtn.addEventListener('click', () => {
+    if (exportBtn) exportBtn.addEventListener('click', () => {
         const filteredSales = getFilteredSales();
         exportToExcel(filteredSales);
     });
@@ -630,7 +612,7 @@ export async function setupStorePage() {
         sendBulkEmailsBtn.classList.add('hidden');
     };
 
-    productForm.addEventListener('submit', async (e) => {
+    if (productForm) productForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         saveProductBtn.disabled = true;
         saveProductBtn.textContent = 'Salvando...';
@@ -710,7 +692,7 @@ export async function setupStorePage() {
         }
     });
 
-    productsTableBody.addEventListener('click', (e) => {
+    if (productsTableBody) productsTableBody.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
         const copyLinkBtn = e.target.closest('.copy-link-btn');
@@ -791,7 +773,7 @@ export async function setupStorePage() {
         }
     });
 
-    sendBulkEmailsBtn.addEventListener('click', async () => {
+    if (sendBulkEmailsBtn) sendBulkEmailsBtn.addEventListener('click', async () => {
         const productId = productIdInput.value;
         if (!productId) {
             alert('Nenhum produto selecionado.');
@@ -830,7 +812,7 @@ export async function setupStorePage() {
         }
     };
 
-    cancelEditBtn.addEventListener('click', resetProductForm);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetProductForm);
 
     // --- Price Type Switching Logic ---
     priceTypeRadios.forEach(radio => {
@@ -869,9 +851,9 @@ export async function setupStorePage() {
         priceVariantsList.appendChild(variantItem);
     };
 
-    addPriceVariantBtn.addEventListener('click', () => addPriceVariant());
+    if (addPriceVariantBtn) addPriceVariantBtn.addEventListener('click', () => addPriceVariant());
 
-    priceVariantsList.addEventListener('click', (e) => {
+    if (priceVariantsList) priceVariantsList.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-price-variant-btn')) {
             e.target.closest('.price-variant-item').remove();
         }
@@ -892,9 +874,9 @@ export async function setupStorePage() {
         lotesList.appendChild(loteItem);
     };
 
-    addLoteBtn.addEventListener('click', () => addLote());
+    if (addLoteBtn) addLoteBtn.addEventListener('click', () => addLote());
 
-    lotesList.addEventListener('click', (e) => {
+    if (lotesList) lotesList.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-lote-btn')) {
             e.target.closest('.lote-item').remove();
         }
@@ -906,6 +888,26 @@ export async function setupStorePage() {
         if (!sale) return;
 
         currentOpenSaleId = saleId;
+
+        // Get product to determine if it's a ticket
+        let isTicket = false;
+        try {
+            const productRef = doc(db, 'products', sale.productId);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+                isTicket = productSnap.data().isTicket || false;
+            }
+        } catch (error) {
+            console.error('Error fetching product:', error);
+        }
+
+        // Update resend button text based on product type
+        const resendEmailText = document.getElementById('resend-email-text');
+        if (isTicket) {
+            resendEmailText.innerHTML = '🎫 Reenviar Ingresso';
+        } else {
+            resendEmailText.innerHTML = '📧 Reenviar Recibo';
+        }
 
         let studentInfoHtml = '';
         if (sale.userId) {
@@ -979,6 +981,10 @@ export async function setupStorePage() {
             <p><strong>Data da Compra:</strong> ${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
             ${paymentDetailsHtml}
         `;
+
+        // Load email logs
+        await loadEmailLogs(saleId);
+
         modal.classList.remove('hidden');
 
         const currentUser = await getCurrentUser();
@@ -989,38 +995,81 @@ export async function setupStorePage() {
         }
     };
 
+    // --- Email Logs Logic ---
+    const loadEmailLogs = async (saleId) => {
+        try {
+            const emailLogsRef = collection(db, 'inscricoesFaixaPreta', saleId, 'emailLogs');
+            const q = query(emailLogsRef, orderBy('sentAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+
+            const emailLogsSection = document.getElementById('email-logs-section');
+            const emailLogsList = document.getElementById('email-logs-list');
+
+            if (querySnapshot.empty) {
+                emailLogsSection.classList.add('hidden');
+                return;
+            }
+
+            emailLogsSection.classList.remove('hidden');
+            emailLogsList.innerHTML = '';
+
+            querySnapshot.forEach((doc) => {
+                const log = doc.data();
+                const typeIcon = log.type === 'ticket' ? '🎫' : '📧';
+                const statusIcon = log.success ? '✅' : '❌';
+                const dateStr = log.sentAt ? new Date(log.sentAt.toDate()).toLocaleString('pt-BR') : 'N/A';
+
+                const logItem = document.createElement('div');
+                logItem.className = 'bg-[#2a2a2a] p-3 rounded-lg text-sm';
+                logItem.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span>${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
+                        <span class="text-gray-400">${dateStr}</span>
+                    </div>
+                    ${log.error ? `<p class="text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
+                `;
+                emailLogsList.appendChild(logItem);
+            });
+        } catch (error) {
+            console.error('Error loading email logs:', error);
+        }
+    };
+
     const closeModal = () => {
         modal.classList.add('hidden');
     };
 
-    salesTableBody.addEventListener('click', (e) => {
+    if (salesTableBody) salesTableBody.addEventListener('click', (e) => {
         const row = e.target.closest('tr');
         if (row && row.dataset.saleId) {
             openModalWithSaleDetails(row.dataset.saleId);
         }
     });
 
-    deleteSaleBtnModal.addEventListener('click', () => {
+    if (deleteSaleBtnModal) deleteSaleBtnModal.addEventListener('click', () => {
         if (currentOpenSaleId && confirm('Tem certeza que deseja excluir este log de venda?')) {
             deleteSaleLog(currentOpenSaleId);
         }
     });
 
-    resendEmailBtnModal.addEventListener('click', async () => {
+    if (resendEmailBtnModal) resendEmailBtnModal.addEventListener('click', async () => {
         if (currentOpenSaleId) {
             resendEmailBtnModal.disabled = true;
+            const originalContent = resendEmailBtnModal.innerHTML;
             resendEmailBtnModal.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Reenviando...';
             try {
                 const functions = getFunctions();
-                const resendTicketEmail = httpsCallable(functions, 'resendTicketEmail');
-                const result = await resendTicketEmail({ saleId: currentOpenSaleId });
+                const resendEmail = httpsCallable(functions, 'resendEmail');
+                const result = await resendEmail({ saleId: currentOpenSaleId });
                 alert(result.data.message);
+                // Reload email logs after sending
+                await loadEmailLogs(currentOpenSaleId);
             } catch (error) {
                 console.error('Erro ao reenviar email:', error);
                 alert(`Erro: ${error.message}`);
             } finally {
                 resendEmailBtnModal.disabled = false;
-                resendEmailBtnModal.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Reenviar Email';
+                resendEmailBtnModal.innerHTML = originalContent;
             }
         }
     });
@@ -1043,8 +1092,8 @@ export async function setupStorePage() {
         }
     };
 
-    closeModalBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+    if (modal) modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             closeModal();
         }
@@ -1144,10 +1193,10 @@ export async function setupStorePage() {
         displayCheckins(filteredCheckins);
     };
 
-    eventProductFilter.addEventListener('change', applyEventFilters);
-    eventSearchInput.addEventListener('keyup', applyEventFilters);
+    if (eventProductFilter) eventProductFilter.addEventListener('change', applyEventFilters);
+    if (eventSearchInput) eventSearchInput.addEventListener('keyup', applyEventFilters);
 
-    eventsTableBody.addEventListener('click', (e) => {
+    if (eventsTableBody) eventsTableBody.addEventListener('click', (e) => {
         const row = e.target.closest('tr');
         if (row && row.dataset.saleId) {
             openModalWithSaleDetails(row.dataset.saleId);
@@ -1206,7 +1255,7 @@ export async function setupStorePage() {
         cancelBannerEditBtn.classList.add('hidden');
     };
 
-    bannerForm.addEventListener('submit', async (e) => {
+    if (bannerForm) bannerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         saveBannerBtn.disabled = true;
         saveBannerBtn.textContent = 'Salvando...';
@@ -1250,7 +1299,7 @@ export async function setupStorePage() {
         }
     });
 
-    bannersList.addEventListener('click', (e) => {
+    if (bannersList) bannersList.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-banner-btn');
         const deleteBtn = e.target.closest('.delete-banner-btn');
 
@@ -1287,7 +1336,7 @@ export async function setupStorePage() {
         }
     };
 
-    cancelBannerEditBtn.addEventListener('click', resetBannerForm);
+    if (cancelBannerEditBtn) cancelBannerEditBtn.addEventListener('click', resetBannerForm);
 
     // --- Coupon Management Logic ---
     const fetchCoupons = async () => {
@@ -1338,7 +1387,7 @@ export async function setupStorePage() {
         cancelCouponEditBtn.classList.add('hidden');
     };
 
-    couponForm.addEventListener('submit', async (e) => {
+    if (couponForm) couponForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         saveCouponBtn.disabled = true;
         saveCouponBtn.textContent = 'Salvando...';
@@ -1372,7 +1421,7 @@ export async function setupStorePage() {
         }
     });
 
-    couponsTableBody.addEventListener('click', (e) => {
+    if (couponsTableBody) couponsTableBody.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-coupon-btn');
         const deleteBtn = e.target.closest('.delete-coupon-btn');
 
@@ -1410,7 +1459,7 @@ export async function setupStorePage() {
         }
     };
 
-    cancelCouponEditBtn.addEventListener('click', resetCouponForm);
+    if (cancelCouponEditBtn) cancelCouponEditBtn.addEventListener('click', resetCouponForm);
 
     async function displayStoreKpis(sales = allSales) {
         const kpiContainer = document.getElementById('store-kpi-container');

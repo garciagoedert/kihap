@@ -71,8 +71,89 @@ const sendTicketEmail = async (saleId, saleData) => {
         await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
         console.log(`[sendTicketEmail] Venda ${saleId} marcada como 'emailSent: true' no Firestore.`);
 
+        // Registra o envio do e-mail
+        await logEmailSend(saleId, 'ticket', saleData.userEmail, true);
+
     } catch (error) {
         console.error(`[sendTicketEmail] Falha ao enviar e-mail de ingresso para ${saleData.userEmail}. Erro:`, error);
+        await logEmailSend(saleId, 'ticket', saleData.userEmail, false, error.message);
+    }
+};
+
+// Função para registrar o envio de e-mail
+const logEmailSend = async (saleId, type, recipient, success, error = null) => {
+    try {
+        await db.collection('inscricoesFaixaPreta').doc(saleId).collection('emailLogs').add({
+            type: type,
+            recipient: recipient,
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            success: success,
+            error: error
+        });
+        console.log(`[logEmailSend] Log de email registrado para venda ${saleId}: ${type}, sucesso=${success}`);
+    } catch (logError) {
+        console.error(`[logEmailSend] Falha ao registrar log de email para venda ${saleId}:`, logError);
+    }
+};
+
+// Função para enviar e-mail de recibo genérico (não-ingresso)
+const sendPurchaseReceiptEmail = async (saleId, saleData) => {
+    console.log(`[sendPurchaseReceiptEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
+
+    const gmailEmail = process.env.GMAIL_EMAIL;
+    const gmailPassword = process.env.GMAIL_PASSWORD;
+
+    if (!gmailEmail || !gmailPassword) {
+        console.error('[sendPurchaseReceiptEmail] Erro Crítico: As credenciais do Gmail não estão configuradas.');
+        await logEmailSend(saleId, 'receipt', saleData.userEmail, false, 'Credenciais Gmail não configuradas');
+        return;
+    }
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: gmailEmail,
+            pass: gmailPassword,
+        },
+    });
+
+    try {
+        const amountFormatted = (saleData.amountTotal / 100).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: saleData.currency || 'BRL'
+        });
+
+        const mailOptions = {
+            from: `Kihap <${gmailEmail}>`,
+            to: saleData.userEmail,
+            subject: `Recibo de Compra - ${saleData.productName}`,
+            html: `
+                <h1>Compra Confirmada!</h1>
+                <p>Olá, ${saleData.userName}.</p>
+                <p>Obrigado por sua compra. Aqui estão os detalhes do seu pedido:</p>
+                
+                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Detalhes da Compra</h3>
+                    <p><strong>Produto:</strong> ${saleData.productName}</p>
+                    <p><strong>Valor:</strong> ${amountFormatted}</p>
+                    <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+                    <p><strong>ID da Compra:</strong> ${saleId}</p>
+                </div>
+                
+                <p>Se você tiver qualquer dúvida, entre em contato conosco.</p>
+                <p>Atenciosamente,<br>Equipe Kihap</p>
+            `,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[sendPurchaseReceiptEmail] Sucesso! E-mail de recibo enviado para ${saleData.userEmail}. ID: ${info.messageId}`);
+
+        await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
+        await logEmailSend(saleId, 'receipt', saleData.userEmail, true);
+
+    } catch (error) {
+        console.error(`[sendPurchaseReceiptEmail] Falha ao enviar e-mail de recibo para ${saleData.userEmail}. Erro:`, error);
+        await logEmailSend(saleId, 'receipt', saleData.userEmail, false, error.message);
     }
 };
 
@@ -582,8 +663,8 @@ exports.fixOldSalesStatus = functions.https.onCall(async (data, context) => {
     }
 });
 
-// Função para reenviar o e-mail do ingresso
-exports.resendTicketEmail = functions.https.onCall(async (data, context) => {
+// Função para reenviar e-mail (ingresso ou recibo)
+exports.resendEmail = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
     }
@@ -608,16 +689,26 @@ exports.resendTicketEmail = functions.https.onCall(async (data, context) => {
 
         if (productSnap.exists && productSnap.data().isTicket) {
             await sendTicketEmail(saleId, saleData);
-            return { message: `E-mail de ingresso reenviado com sucesso para ${saleData.userEmail}.` };
+            return {
+                message: `E-mail de ingresso reenviado com sucesso para ${saleData.userEmail}.`,
+                type: 'ticket'
+            };
         } else {
-            return { message: 'Este produto não é um ingresso, nenhum e-mail foi enviado.' };
+            await sendPurchaseReceiptEmail(saleId, saleData);
+            return {
+                message: `E-mail de recibo reenviado com sucesso para ${saleData.userEmail}.`,
+                type: 'receipt'
+            };
         }
 
     } catch (error) {
-        console.error('Erro ao reenviar e-mail de ingresso:', error);
+        console.error('Erro ao reenviar e-mail:', error);
         throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao tentar reenviar o e-mail.');
     }
 });
+
+// Manter compatibilidade com código antigo - deprecado
+exports.resendTicketEmail = exports.resendEmail;
 
 // Função para enviar e-mails de ingressos em massa para um produto específico
 exports.sendBulkTicketEmails = functions.https.onCall(async (data, context) => {
