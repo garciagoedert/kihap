@@ -8,7 +8,31 @@ let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
+const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const db = admin.firestore();
+
+exports.syncEvoToOlist = syncEvoToOlist;
+exports.syncEvoToOlistScheduled = syncEvoToOlistScheduled;
+
+exports.getStudentPurchases = functions.https.onCall(async (data, context) => {
+    // Verifica autenticação
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'O usuário deve estar autenticado.');
+    }
+
+    const { cpf } = data;
+    if (!cpf) {
+        throw new functions.https.HttpsError('invalid-argument', 'O CPF é obrigatório.');
+    }
+
+    try {
+        const purchases = await getStudentPurchases(cpf);
+        return { purchases };
+    } catch (error) {
+        console.error("Erro ao buscar compras:", error);
+        throw new functions.https.HttpsError('internal', 'Erro ao buscar histórico de compras.');
+    }
+});
 
 exports.syncPagarmeSalesStatus = functions.https.onCall(async (data, context) => {
     // Opcional: Adicionar verificação de autenticação para garantir que apenas administradores possam chamar
@@ -31,16 +55,15 @@ const sendTicketEmail = async (saleId, saleData) => {
     }
     console.log(`[sendTicketEmail] Usando o e-mail: ${gmailEmail} para autenticação.`);
 
-    // Lazy initialization do transporter para evitar erro de config no deploy
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: gmailEmail,
-            pass: gmailPassword,
-        },
-    });
-
     try {
+        // Lazy initialization do transporter para evitar erro de config no deploy
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: gmailEmail,
+                pass: gmailPassword,
+            },
+        });
         const qrCodeDataURL = await qrcode.toDataURL(saleId);
 
         const mailOptions = {
@@ -109,15 +132,14 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
         return;
     }
 
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: gmailEmail,
-            pass: gmailPassword,
-        },
-    });
-
     try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: gmailEmail,
+                pass: gmailPassword,
+            },
+        });
         const amountFormatted = (saleData.amountTotal / 100).toLocaleString('pt-BR', {
             style: 'currency',
             currency: saleData.currency || 'BRL'
@@ -352,15 +374,23 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
                     const saleSnap = await docRef.get();
 
-                    if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
-                        await docRef.update({ paymentStatus: 'paid' });
-                        console.log(`Updated payment status to 'paid' for doc ${docId}`);
-
+                    if (saleSnap.exists) {
                         const saleData = saleSnap.data();
-                        const productRef = db.collection('products').doc(saleData.productId);
-                        const productSnap = await productRef.get();
-                        if (productSnap.exists && productSnap.data().isTicket) {
-                            await sendTicketEmail(docId, saleData);
+
+                        // Check if we need to update status OR if we need to send a missing email
+                        if (saleData.paymentStatus === 'pending') {
+                            await docRef.update({ paymentStatus: 'paid' });
+                            console.log(`Updated payment status to 'paid' for doc ${docId}`);
+                        }
+
+                        // Check if ticket email needs to be sent (idempotent check)
+                        if (!saleData.emailSent) {
+                            const productRef = db.collection('products').doc(saleData.productId);
+                            const productSnap = await productRef.get();
+                            if (productSnap.exists && productSnap.data().isTicket) {
+                                console.log(`[verifyPayment] Sending missing ticket email for ${docId}`);
+                                await sendTicketEmail(docId, saleData);
+                            }
                         }
                     }
                 }
@@ -684,6 +714,10 @@ exports.resendEmail = functions.https.onCall(async (data, context) => {
 
         const saleData = saleSnap.data();
 
+        if (!saleData.productId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Venda sem ID de produto associado.');
+        }
+
         const productRef = db.collection('products').doc(saleData.productId);
         const productSnap = await productRef.get();
 
@@ -703,7 +737,7 @@ exports.resendEmail = functions.https.onCall(async (data, context) => {
 
     } catch (error) {
         console.error('Erro ao reenviar e-mail:', error);
-        throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao tentar reenviar o e-mail.');
+        throw new functions.https.HttpsError('internal', `Erro ao reenviar e-mail: ${error.message}`);
     }
 });
 
@@ -1164,4 +1198,85 @@ const evoFunctions = require('./evo.js');
 // Isso garante que o Firebase Functions reconheça cada função corretamente.
 Object.keys(evoFunctions).forEach(key => {
     exports[key] = evoFunctions[key];
+});
+
+// Função para reenviar TODOS os ingressos pendentes (vendas pagas sem email enviado)
+exports.resendAllMissingTickets = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para executar esta ação.');
+    }
+
+    // Opcional: Verificar se é admin
+    // if (!context.auth.token.admin) { ... }
+
+    try {
+        console.log('[resendAllMissingTickets] Iniciando busca por ingressos não enviados...');
+        const salesRef = db.collection('inscricoesFaixaPreta');
+        
+        // Busca todas as vendas pagas
+        // Nota: Firestore não permite filtrar por 'emailSent == false' facilmente se o campo não existir em todos os docs.
+        // Vamos buscar os pagos e filtrar em memória ou usar um índice composto se necessário.
+        // Para evitar leituras excessivas, vamos limitar ou fazer em batches se fosse produção massiva.
+        // Aqui assumiremos volume razoável.
+        const querySnapshot = await salesRef
+            .where('paymentStatus', '==', 'paid')
+            .get();
+
+        if (querySnapshot.empty) {
+            return { message: 'Nenhuma venda paga encontrada.' };
+        }
+
+        let processedCount = 0;
+        let sentCount = 0;
+        let errorCount = 0;
+
+        // Cache de produtos para não ler o mesmo doc repetidamente
+        const productCache = {};
+
+        for (const doc of querySnapshot.docs) {
+            const saleData = doc.data();
+            
+            // Se já foi enviado, pula
+            if (saleData.emailSent === true) {
+                continue;
+            }
+
+            processedCount++;
+            const productId = saleData.productId;
+
+            if (!productId) continue;
+
+            // Verifica se o produto é ingresso (usando cache)
+            if (!productCache[productId]) {
+                const productRef = db.collection('products').doc(productId);
+                const productSnap = await productRef.get();
+                if (productSnap.exists) {
+                    productCache[productId] = productSnap.data();
+                } else {
+                    productCache[productId] = { isTicket: false }; // Marca como não encontrado/não ingresso
+                }
+            }
+
+            const product = productCache[productId];
+
+            if (product && product.isTicket) {
+                try {
+                    console.log(`[resendAllMissingTickets] Enviando ingresso para venda ${doc.id} (${saleData.userEmail})`);
+                    await sendTicketEmail(doc.id, saleData);
+                    sentCount++;
+                } catch (err) {
+                    console.error(`[resendAllMissingTickets] Erro ao enviar para ${doc.id}:`, err);
+                    errorCount++;
+                }
+            }
+        }
+
+        const message = `Processo finalizado. Verificados: ${processedCount}. Enviados: ${sentCount}. Erros: ${errorCount}.`;
+        console.log(`[resendAllMissingTickets] ${message}`);
+        return { message, sentCount, errorCount };
+
+    } catch (error) {
+        console.error('Erro ao reenviar todos os ingressos:', error);
+        throw new functions.https.HttpsError('internal', 'Erro interno ao processar reenvio em massa.');
+    }
 });

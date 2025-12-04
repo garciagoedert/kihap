@@ -76,6 +76,58 @@ function getEvoApiClient(unitId, apiVersion = 'v2') {
 }
 
 /**
+ * Busca alunos ativos de uma unidade específica.
+ * Usada internamente e por outras funções (como a integração Olist).
+ */
+async function getActiveStudentsFromUnit(unitId) {
+    const apiClientV2 = getEvoApiClient(unitId, 'v2');
+    const PAGE_SIZE = 500;
+    let allMembers = [];
+
+    // Função auxiliar para buscar páginas
+    const fetchAllPages = async (status) => {
+        let currentPage = 1;
+        let hasMorePages = true;
+        let members = [];
+
+        while (hasMorePages) {
+            try {
+                const response = await apiClientV2.get("/members", {
+                    params: {
+                        page: currentPage,
+                        take: PAGE_SIZE,
+                        status: status, // 1 = Ativo
+                        showMemberships: false, // Não precisamos de detalhes de contrato para essa sync, economiza banda
+                        showContacts: true // Precisamos dos contatos para extrair email e telefone
+                    }
+                });
+                const pageMembers = response.data || [];
+
+                if (pageMembers.length > 0) {
+                    members = members.concat(pageMembers);
+                }
+
+                if (pageMembers.length < PAGE_SIZE) {
+                    hasMorePages = false;
+                }
+                currentPage++;
+            } catch (error) {
+                console.error(`Erro ao buscar página ${currentPage} da unidade ${unitId}:`, error.message);
+                hasMorePages = false;
+            }
+        }
+        return members;
+    };
+
+    // Busca apenas ativos (status 1)
+    allMembers = await fetchAllPages(1);
+
+    return allMembers;
+}
+
+exports.getActiveStudentsFromUnit = getActiveStudentsFromUnit;
+
+/**
  * Busca os dados de um membro específico na API da EVO.
  */
 exports.getMemberDetails = functions.https.onRequest(async (req, res) => {

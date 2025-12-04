@@ -86,6 +86,11 @@ export function loadMemberDashboard() {
                 loadMemberPhysicalTestHistory(user.uid);
                 // Carrega os emblemas do aluno
                 loadMemberBadges(userData);
+
+                // Carrega histórico de compras (se tiver CPF no objeto member retornado do EVO)
+                if (member && member.document) {
+                    loadMemberPurchases(member.document);
+                }
             }
         }
     });
@@ -157,5 +162,78 @@ async function loadMemberBadges(userData) {
     } catch (error) {
         console.error("Erro ao carregar emblemas do aluno:", error);
         container.innerHTML = '<p class="text-red-500">Não foi possível carregar seus emblemas.</p>';
+    }
+}
+
+async function loadMemberPurchases(cpf) {
+    const container = document.getElementById('member-purchase-history');
+    if (!cpf) {
+        container.innerHTML = '<p class="text-gray-500">CPF não cadastrado para buscar compras.</p>';
+        return;
+    }
+
+    try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const token = await user.getIdToken();
+
+        // Chama a Cloud Function getStudentPurchases
+        const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/getStudentPurchases', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ data: { cpf: cpf } })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao buscar compras');
+        }
+
+        const result = await response.json();
+        const purchases = result.result.purchases; // Cloud Functions onCall returns data in 'result'
+
+        if (!purchases || purchases.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">Nenhuma compra encontrada.</p>';
+            return;
+        }
+
+        let html = '<div class="space-y-4">';
+
+        purchases.forEach(purchase => {
+            const date = purchase.data; // Já vem formatada do Tiny ou precisa formatar? Tiny manda DD/MM/YYYY
+            const total = parseFloat(purchase.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            let itemsHtml = '<ul class="mt-2 text-sm text-gray-400 pl-4 border-l-2 border-gray-700">';
+            purchase.itens.forEach(item => {
+                itemsHtml += `<li>${parseFloat(item.quantidade).toFixed(0)}x ${item.descricao}</li>`;
+            });
+            itemsHtml += '</ul>';
+
+            html += `
+                <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-semibold text-white">Pedido #${purchase.numero}</p>
+                            <p class="text-sm text-gray-400">${date}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-yellow-500">${total}</p>
+                            <span class="text-xs px-2 py-1 rounded bg-gray-700 text-gray-300">${purchase.situacao}</span>
+                        </div>
+                    </div>
+                    ${itemsHtml}
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error("Erro ao carregar compras:", error);
+        container.innerHTML = '<p class="text-red-500">Não foi possível carregar o histórico de compras.</p>';
     }
 }

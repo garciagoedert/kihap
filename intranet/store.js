@@ -474,6 +474,31 @@ export async function setupStorePage() {
         }
     });
 
+    const resendMissingTicketsBtn = document.getElementById('resend-missing-tickets-btn');
+    if (resendMissingTicketsBtn) resendMissingTicketsBtn.addEventListener('click', async () => {
+        if (!confirm('Tem certeza que deseja verificar e reenviar TODOS os ingressos pendentes? Isso pode levar alguns instantes.')) {
+            return;
+        }
+
+        resendMissingTicketsBtn.disabled = true;
+        const originalContent = resendMissingTicketsBtn.innerHTML;
+        resendMissingTicketsBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Processando...';
+
+        try {
+            const functions = getFunctions();
+            const resendAllMissingTickets = httpsCallable(functions, 'resendAllMissingTickets');
+            const result = await resendAllMissingTickets();
+            const { message, sentCount, errorCount } = result.data;
+            alert(`${message}\n\nEnviados: ${sentCount}\nErros: ${errorCount}`);
+        } catch (error) {
+            console.error('Erro ao processar reenvio em massa:', error);
+            alert(`Erro: ${error.message}`);
+        } finally {
+            resendMissingTicketsBtn.disabled = false;
+            resendMissingTicketsBtn.innerHTML = originalContent;
+        }
+    });
+
     if (exportBtn) exportBtn.addEventListener('click', () => {
         const filteredSales = getFilteredSales();
         exportToExcel(filteredSales);
