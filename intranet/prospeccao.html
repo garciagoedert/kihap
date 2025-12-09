@@ -97,7 +97,7 @@
                         <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
                             class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
-                    <div class="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
+                    <div class="flex flex-col sm:flex-row flex-wrap items-center w-full xl:w-auto gap-4">
                         <select id="priorityFilter"
                             class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                             aria-label="Filter by priority">
@@ -171,6 +171,21 @@
                     <label class="block text-sm font-medium text-gray-300 mb-1">Pergunta de Qualificação</label>
                     <input type="text" id="cfg_confirmation"
                         class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="form-group border-t border-gray-700 pt-4 mt-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Perguntas de Qualificação Extras</label>
+                    <p class="text-xs text-gray-500 mb-2">Adicione perguntas que serão feitas uma a uma após o filtro
+                        inicial.</p>
+
+                    <div id="extraQuestionsList" class="space-y-2 mb-2">
+                        <!-- Questions injected here -->
+                    </div>
+
+                    <button type="button" id="addQuestionBtn"
+                        class="text-xs text-yellow-500 hover:text-yellow-400 font-medium flex items-center gap-1">
+                        <i class="fas fa-plus"></i> Adicionar Pergunta
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -408,7 +423,7 @@
     <script type="module">
         // Firebase Imports
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, doc, addDoc, getDoc, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { db, appId, app, functions } from './firebase-config.js';
         import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         import { setupUIListeners, loadComponents } from './common-ui.js';
@@ -1554,6 +1569,8 @@
         const closeConfigModalBtn = document.getElementById('closeConfigModalBtn');
         const cancelConfigBtn = document.getElementById('cancelConfigBtn');
         const configForm = document.getElementById('configForm');
+        const extraQuestionsList = document.getElementById('extraQuestionsList');
+        const addQuestionBtn = document.getElementById('addQuestionBtn');
 
         function openConfigModal() {
             configModal.classList.remove('hidden');
@@ -1566,6 +1583,37 @@
             configModal.classList.remove('flex');
         }
 
+        function renderExtraQuestions(questions) {
+            extraQuestionsList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+                    <span class="text-xs text-gray-500 w-4">${index + 1}.</span>
+                    <input type="text" value="${q}" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
+                    <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                extraQuestionsList.appendChild(div);
+            });
+        }
+
+        if (addQuestionBtn) {
+            addQuestionBtn.addEventListener('click', () => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+                    <span class="text-xs text-gray-500 w-4">#</span>
+                    <input type="text" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
+                    <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                extraQuestionsList.appendChild(div);
+            });
+        }
+
         async function fetchConfig() {
             // Default Config (MUST Match Backend Defaults)
             const defaults = {
@@ -1573,7 +1621,8 @@
                 menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
                 menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
                 confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
-                handoff_message: "Em breve alguém de nosso time irá continuar o atendimento."
+                handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+                extra_questions: []
             };
 
             try {
@@ -1591,6 +1640,8 @@
                 document.getElementById('cfg_confirmation').value = data.confirmation_question;
                 document.getElementById('cfg_handoff').value = data.handoff_message;
 
+                renderExtraQuestions(data.extra_questions || []);
+
             } catch (error) {
                 console.error("Error fetching config:", error);
                 alert("Erro ao carregar configurações. Verifique permissões.");
@@ -1599,12 +1650,18 @@
 
         async function saveConfig(e) {
             e.preventDefault();
+
+            // Gather extra questions
+            const questionInputs = document.querySelectorAll('.extra-question-input');
+            const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
+
             const updates = {
                 welcome_message: document.getElementById('cfg_welcome').value,
                 menu_brasilia: document.getElementById('cfg_menu_bsb').value,
                 menu_floripa: document.getElementById('cfg_menu_floripa').value,
                 confirmation_question: document.getElementById('cfg_confirmation').value,
-                handoff_message: document.getElementById('cfg_handoff').value
+                handoff_message: document.getElementById('cfg_handoff').value,
+                extra_questions: extraQuestions
             };
 
             try {

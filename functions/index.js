@@ -1666,16 +1666,68 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         await notifyUnitManager('Kihap - Dourados', prospectTitle, cleanPhone);
                     }
                 }
-                // 3. Logic for Post-Answer Handoff
-                // If Unit IS set (from previous interactions), AND we haven't sent the handoff (flag check)
-                // AND we didn't just detect/change the unit above (detectedUnit is null)
-                else if (currentData.unidade && !currentData.bot_handoff_sent) {
-                    // This is likely the answer to "Pra quem é?" or subsequent chat
-                    routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
+                // 3. Logic for Post-Answer Handoff (or Dynamic Questions)
+                // If Unit IS set (from previous interactions)
+                else if (currentData.unidade) {
 
-                    updates.bot_handoff_sent = true;
+                    // Case A: Just finished Confirmation ("Pra você ou outra pessoa?")
+                    // We assume the answer to confirmation is what came in this message, IF we hadn't started questions yet.
+                    // But to be robust, let's track state.
+
+                    const extraQuestions = config.extra_questions || [];
+                    const currentQIndex = currentData.current_question_index !== undefined ? currentData.current_question_index : -1;
+
+                    // Logic:
+                    // Index -1: User hasn't started extra questions (just answered Confirmation)
+                    // Index 0: User just answered Question 0, send Question 1 (or finish)
+
+                    if (!currentData.bot_handoff_sent) {
+
+                        // If we haven't started extra questions yet
+                        if (currentQIndex === -1) {
+                            // User just answered "Pra quem é?". 
+                            // Check if there are extra questions
+                            if (extraQuestions.length > 0) {
+                                // Send First Question
+                                const nextQ = extraQuestions[0];
+                                routingLog = await sendMessageHelper(cleanPhone, nextQ);
+                                updates.current_question_index = 0;
+                            } else {
+                                // No extra questions, straight to handoff
+                                routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
+                                updates.bot_handoff_sent = true;
+                            }
+                        }
+                        // We are IN the question flow
+                        else {
+                            // User just answered Question [currentQIndex]
+                            // Save the answer
+                            const questionAsked = extraQuestions[currentQIndex];
+                            if (questionAsked) {
+                                // Store answer in a map 'answers' (create if needed) or just append to observacoes
+                                // Let's append to 'observacoes' for simplicity and visibility in the card
+                                const newObs = (currentData.observacoes || '') + `\n\n[Q: ${questionAsked}]\nR: ${messageText}`;
+                                updates.observacoes = newObs;
+                            }
+
+                            // Determine Next Step
+                            const nextIndex = currentQIndex + 1;
+
+                            if (nextIndex < extraQuestions.length) {
+                                // Send Next Question
+                                const nextQ = extraQuestions[nextIndex];
+                                routingLog = await sendMessageHelper(cleanPhone, nextQ);
+                                updates.current_question_index = nextIndex;
+                            } else {
+                                // Finished all questions
+                                routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
+                                updates.bot_handoff_sent = true;
+                            }
+                        }
+                    }
                 }
 
+                // If we sent a routing message, add it to the update operation
                 // If we sent a routing message, add it to the update operation
                 if (routingLog) {
                     updates.contactLog = admin.firestore.FieldValue.arrayUnion(logEntry, routingLog);
