@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kihap - Kanban</title>
     <!-- Favicon -->
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
-    
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -22,27 +23,63 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        
+
         /* Dragging styles */
         .dragging {
             opacity: 0.5;
             transform: rotate(2deg);
         }
+
         .drag-over {
             @apply border-dashed border-2 border-gray-500 bg-gray-500/10;
         }
+
+        /* Chat Styles */
+        .chat-bubble {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            position: relative;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.sent {
+            background-color: #005c4b;
+            /* WhatsApp Green */
+            color: #e9edef;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+
+        .chat-bubble.received {
+            background-color: #202c33;
+            /* Dark Gray */
+            color: #d1d7db;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        .chat-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: right;
+            margin-top: 4px;
+        }
     </style>
 </head>
+
 <body class="bg-[#111111] text-gray-200">
 
     <div id="kanban-container" class="flex h-screen">
         <div id="sidebar-container"></div>
-        
+
         <!-- Backdrop for mobile sidebar -->
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
         <!-- Main Content -->
-        <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container" class="flex-shrink-0"></div>
 
             <!-- Board Content -->
@@ -53,13 +90,17 @@
                 </div>
 
                 <!-- Filters -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-col xl:flex-row items-center gap-4 shadow-md flex-shrink-0">
-                     <div class="relative flex-grow w-full">
+                <div
+                    class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-col xl:flex-row items-center gap-4 shadow-md flex-shrink-0">
+                    <div class="relative flex-grow w-full">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..." class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
-                        <select id="priorityFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by priority">
+                        <select id="priorityFilter"
+                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                            aria-label="Filter by priority">
                             <option value="">Todas as Prioridades</option>
                             <option value="5">Máxima (5)</option>
                             <option value="4">Alta (4)</option>
@@ -67,13 +108,18 @@
                             <option value="2">Baixa (2)</option>
                             <option value="1">Mínima (1)</option>
                         </select>
-                        <select id="tagFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by tag">
+                        <select id="tagFilter"
+                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                            aria-label="Filter by tag">
                             <option value="">Todas as Tags</option>
                         </select>
-                        <select id="unidadeFilter" class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Filter by unit">
+                        <select id="unidadeFilter"
+                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                            aria-label="Filter by unit">
                             <option value="">Todas as Unidades</option>
                         </select>
-                        <button id="resetFiltersBtn" class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
+                        <button id="resetFiltersBtn"
+                            class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
                     </div>
                 </div>
 
@@ -87,105 +133,175 @@
 
     <!-- Add/Edit Prospect Modal -->
     <div id="formModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
-        <div class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
+        <div
+            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
                 <div class="flex items-center gap-4">
                     <h2 id="modalTitle" class="text-xl font-bold">Adicionar Novo Prospect</h2>
                 </div>
                 <button id="closeFormModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <form id="prospectForm" class="p-4 sm:p-6 overflow-y-auto">
-                <input type="hidden" id="prospectId">
-                <input type="hidden" id="prospectType">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do responsável</label>
-                        <input type="text" id="responsavel" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="form-group">
-                        <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
-                        <select id="unidade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                            <option value="">Selecione a Unidade</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
-                        <input type="text" id="setor" placeholder="Ex: Kids, Adultos" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="prioridade" class="block text-sm font-medium text-gray-300 mb-1">Prioridade *</label>
-                        <select id="prioridade" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
-                            <option value="">Selecione</option>
-                            <option value="5">5 - Máxima 🚀</option>
-                            <option value="4">4 - Alta 🔥</option>
-                            <option value="3">3 - Média ⭐</option>
-                            <option value="2">2 - Baixa ❄️</option>
-                            <option value="1">1 - Mínima 💤</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="ticketEstimado" class="block text-sm font-medium text-gray-300 mb-1">Ticket Estimado (R$)</label>
-                        <input type="number" id="ticketEstimado" placeholder="15000" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="form-group">
-                        <label for="origemLead" class="block text-sm font-medium text-gray-300 mb-1">Origem do Lead</label>
-                        <input type="text" id="origemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                     <div class="form-group">
-                        <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-                        <input type="text" id="telefone" placeholder="(48) 99999-9999" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <a id="whatsappLink" href="#" target="_blank" class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
-                            <i class="fab fa-whatsapp"></i>
-                            <span>Chamar no WhatsApp</span>
-                        </a>
-                    </div>
-                    <div class="form-group">
-                        <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                        <input type="email" id="email" placeholder="contato@empresa.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="form-group">
-                        <label for="cpf" class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
-                        <input type="text" id="cpf" placeholder="000.000.000-00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="redesSociais" class="block text-sm font-medium text-gray-300 mb-1">Redes Sociais</label>
-                        <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
-                    </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="observacoes" class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-                        <textarea id="observacoes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
-                    </div>
-                    <div class="form-group md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
-                        <div id="contactLogContainer" class="max-h-40 overflow-y-auto bg-gray-900/50 p-3 rounded-lg space-y-3 mb-3 border border-gray-700">
-                            <!-- Log entries will be injected here -->
+            <div class="flex border-b border-gray-700">
+                <button type="button" id="tabDetailsBtn"
+                    class="flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors">Detalhes</button>
+                <button type="button" id="tabWhatsAppBtn"
+                    class="flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors">WhatsApp</button>
+            </div>
+
+            <form id="prospectForm" class="p-4 sm:p-6 overflow-y-auto flex-1">
+                <div id="tabDetailsContent">
+                    <input type="hidden" id="prospectId">
+                    <input type="hidden" id="prospectType">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do
+                                responsável</label>
+                            <input type="text" id="responsavel"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         </div>
-                        <div class="flex gap-2">
-                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
-                            <button type="button" id="addContactLogBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar</button>
+                        <div class="form-group">
+                            <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
+                            <select id="unidade"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                <option value="">Selecione a Unidade</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
+                            <input type="text" id="setor" placeholder="Ex: Kids, Adultos"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prioridade" class="block text-sm font-medium text-gray-300 mb-1">Prioridade
+                                *</label>
+                            <select id="prioridade"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                required>
+                                <option value="">Selecione</option>
+                                <option value="5">5 - Máxima 🚀</option>
+                                <option value="4">4 - Alta 🔥</option>
+                                <option value="3">3 - Média ⭐</option>
+                                <option value="2">2 - Baixa ❄️</option>
+                                <option value="1">1 - Mínima 💤</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ticketEstimado" class="block text-sm font-medium text-gray-300 mb-1">Ticket
+                                Estimado
+                                (R$)</label>
+                            <input type="number" id="ticketEstimado" placeholder="15000"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div class="form-group">
+                            <label for="origemLead" class="block text-sm font-medium text-gray-300 mb-1">Origem do
+                                Lead</label>
+                            <input type="text" id="origemLead" placeholder="Ex: Indicação, Google"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div class="form-group">
+                            <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+                            <input type="text" id="telefone" placeholder="(48) 99999-9999"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <a id="whatsappLink" href="#" target="_blank"
+                                class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>Chamar no WhatsApp</span>
+                            </a>
+                        </div>
+                        <div class="form-group">
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                            <input type="email" id="email" placeholder="contato@empresa.com"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div class="form-group">
+                            <label for="cpf" class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
+                            <input type="text" id="cpf" placeholder="000.000.000-00"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label for="redesSociais" class="block text-sm font-medium text-gray-300 mb-1">Redes
+                                Sociais</label>
+                            <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc."
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label for="observacoes"
+                                class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+                            <textarea id="observacoes" rows="3"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
+                            <div id="contactLogContainer"
+                                class="max-h-40 overflow-y-auto bg-gray-900/50 p-3 rounded-lg space-y-3 mb-3 border border-gray-700">
+                                <!-- Log entries will be injected here -->
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                                <button type="button" id="addContactLogBtn"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar
+                                    Nota</button>
+                            </div>
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                            <div id="tagsContainer" class="flex flex-wrap gap-2">
+                                <!-- As tags serão inseridas aqui pelo JS -->
+                            </div>
+                        </div>
+                        <div id="createdByContainer" class="form-group md:col-span-2 mt-4 hidden">
+                            <p class="text-sm text-gray-400">Criado por: <span id="createdByInfo"
+                                    class="font-semibold"></span></p>
                         </div>
                     </div>
-                    <div class="form-group md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Tags</label>
-                        <div id="tagsContainer" class="flex flex-wrap gap-2">
-                            <!-- As tags serão inseridas aqui pelo JS -->
+                    <div
+                        class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-700">
+                        <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="archiveBtn"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Arquivar</button>
+                            <button type="button" id="deleteBtn"
+                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Excluir</button>
                         </div>
-                    </div>
-                    <div id="createdByContainer" class="form-group md:col-span-2 mt-4 hidden">
-                        <p class="text-sm text-gray-400">Criado por: <span id="createdByInfo" class="font-semibold"></span></p>
+                        <div id="formControls" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="editBtn"
+                                class="bg-primary hover:bg-primary-dark font-semibold py-2 px-4 rounded-lg w-full sm:w-auto">Editar</button>
+                            <button type="button" id="cancelFormBtn"
+                                class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Cancelar</button>
+                            <button type="submit" id="saveBtn"
+                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Salvar</button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-700">
-                    <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
-                        <button type="button" id="archiveBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Arquivar</button>
-                        <button type="button" id="deleteBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Excluir</button>
+                <!-- End Details Tab Content -->
+
+                <div id="tabWhatsAppContent" class="hidden flex flex-col" style="min-height: 400px;">
+                    <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-700">
+                        <h3 class="text-sm font-semibold text-gray-400">Conversa WhatsApp</h3>
+                        <button type="button" id="refreshChatBtn"
+                            class="text-gray-400 hover:text-green-500 transition-colors" title="Atualizar histórico">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
-                    <div id="formControls" class="flex gap-3 w-full sm:w-auto">
-                        <button type="button" id="editBtn" class="bg-primary hover:bg-primary-dark font-semibold py-2 px-4 rounded-lg w-full sm:w-auto">Editar</button>
-                        <button type="button" id="cancelFormBtn" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Cancelar</button>
-                        <button type="submit" id="saveBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Salvar</button>
+                    <div id="whatsappChatArea"
+                        class="flex-1 bg-gray-900 rounded-lg p-4 mb-4 overflow-y-auto space-y-4 max-h-[400px]">
+                        <div class="text-center text-gray-500 text-sm mt-4">Selecione um prospect com telefone para
+                            carregar o
+                            histórico.</div>
+                    </div>
+                    <div class="flex gap-2 p-2 bg-[#1a1a1a] sticky bottom-0">
+                        <input type="text" id="whatsappInput" placeholder="Digite sua mensagem..."
+                            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            disabled>
+                        <button type="button" id="whatsappSendBtn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
+
             </form>
         </div>
     </div>
@@ -198,13 +314,19 @@
                 <button id="closeImportModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="p-6 overflow-y-auto">
-                <p class="text-gray-400 mb-4">Copie e cole os dados da sua planilha (formato CSV). A primeira linha deve ser o cabeçalho e as colunas devem estar na seguinte ordem:</p>
-                <code class="block bg-gray-900 text-gray-300 p-2 rounded-md text-xs mb-4">Empresa,Setor,Prioridade,Ticket Estimado,Telefone,Email,CPF,CNPJ,Endereço,Redes Sociais,Site,Observações</code>
-                <textarea id="csvData" rows="10" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Cole seus dados aqui..."></textarea>
+                <p class="text-gray-400 mb-4">Copie e cole os dados da sua planilha (formato CSV). A primeira linha deve
+                    ser o cabeçalho e as colunas devem estar na seguinte ordem:</p>
+                <code
+                    class="block bg-gray-900 text-gray-300 p-2 rounded-md text-xs mb-4">Empresa,Setor,Prioridade,Ticket Estimado,Telefone,Email,CPF,CNPJ,Endereço,Redes Sociais,Site,Observações</code>
+                <textarea id="csvData" rows="10"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    placeholder="Cole seus dados aqui..."></textarea>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-700">
-                <button type="button" id="cancelImportBtn" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
-                <button type="button" id="processImportBtn" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">Importar</button>
+                <button type="button" id="cancelImportBtn"
+                    class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                <button type="button" id="processImportBtn"
+                    class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">Importar</button>
             </div>
         </div>
     </div>
@@ -215,8 +337,10 @@
             <h3 class="text-lg font-bold mb-2">Confirmar Ação</h3>
             <p id="confirmMessage" class="text-gray-300 mb-6">Você tem certeza?</p>
             <div class="flex justify-center gap-4">
-                <button id="cancelConfirmBtn" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-6 rounded-lg">Cancelar</button>
-                <button id="confirmActionBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Confirmar</button>
+                <button id="cancelConfirmBtn"
+                    class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-6 rounded-lg">Cancelar</button>
+                <button id="confirmActionBtn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Confirmar</button>
             </div>
         </div>
     </div>
@@ -229,10 +353,12 @@
         import { db, appId, app, functions } from './firebase-config.js';
         import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         import { setupUIListeners, loadComponents } from './common-ui.js';
-        
+
         // --- INITIALIZATION ---
         const auth = getAuth(app);
         const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+        const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
+        const getWhatsAppHistory = httpsCallable(functions, 'getWhatsAppHistory');
 
         // --- GLOBAL STATE ---
         let evoUnits = [];
@@ -258,7 +384,7 @@
         const confirmModal = document.getElementById('confirmModal');
         const kanbanContainer = document.getElementById('kanban-container');
         const importModal = document.getElementById('importModal');
-        
+
         // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -321,15 +447,15 @@
 
         // --- RENDERING ---
         function renderBoard() {
-            kanbanBoard.innerHTML = ''; 
+            kanbanBoard.innerHTML = '';
             const isMobile = window.innerWidth < 768;
 
             COLUMN_NAMES.forEach(status => {
                 const columnId = COLUMNS[status];
                 const columnProspects = filteredProspects.filter(p => p.status === status);
-                
+
                 const columnEl = document.createElement('div');
-                
+
                 let contentHTML;
                 if (isMobile) {
                     columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
@@ -357,7 +483,7 @@
                     ${contentHTML}
                 `;
                 kanbanBoard.appendChild(columnEl);
-                
+
                 const contentArea = columnEl.querySelector('.column-content');
                 if (columnProspects.length === 0) {
                     contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
@@ -400,7 +526,7 @@
                 <p class="text-sm text-green-400 font-semibold mb-2">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
                 ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
             `;
-            
+
             card.addEventListener('click', () => {
                 openFormModal(prospect);
             });
@@ -469,12 +595,12 @@
                 });
             });
         }
-        
+
         async function updateProspectStatus(prospectId, newStatus) {
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
             const item = combinedData.find(p => p.id === prospectId);
             const oldStatus = item ? item.status : 'N/A';
-            
+
             if (!item) {
                 console.error("Item not found:", prospectId);
                 return;
@@ -548,9 +674,12 @@
                     const author = log.author || 'Sistema';
                     const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-red-500 hover:text-red-400 text-xs ml-2">&times;</button>` : '';
                     return `
-                        <div class="bg-gray-700/50 p-2 rounded-md flex justify-between items-start">
+                        <div class="bg-gray-700/50 p-2 rounded-md flex justify-between items-start ${log.type === 'whatsapp-sent' ? 'border-l-4 border-green-500 bg-green-900/20' : ''}">
                             <div>
-                                <p class="text-sm text-gray-300 whitespace-pre-wrap">${log.description}</p>
+                                <p class="text-sm text-gray-300 whitespace-pre-wrap">
+                                    ${log.type === 'whatsapp-sent' ? '<i class="fab fa-whatsapp text-green-500 mr-1"></i> ' : ''}
+                                    ${log.description}
+                                </p>
                                 <p class="text-xs text-gray-500 mt-1">${author} - ${date}</p>
                             </div>
                             ${deleteButtonHTML}
@@ -563,7 +692,7 @@
                     button.addEventListener('click', async (e) => {
                         const logIndex = parseInt(e.target.dataset.logIndex, 10);
                         const logToDelete = logs[logIndex];
-                        
+
                         if (confirm('Tem certeza que deseja excluir este log?')) {
                             try {
                                 const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
@@ -598,7 +727,193 @@
             const cancelFormBtn = document.getElementById('cancelFormBtn');
             const addContactLogBtn = document.getElementById('addContactLogBtn');
             const newContactLogTextarea = document.getElementById('newContactLog');
-            const contactLogSection = newContactLogTextarea.parentElement;
+            const contactLogSection = newContactLogTextarea.parentElement.parentElement; // Correct parent
+            const whatsappChatArea = document.getElementById('whatsappChatArea');
+            const whatsappInput = document.getElementById('whatsappInput');
+            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
+
+            // Tab Switching Logic
+            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
+            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
+            const tabDetailsContent = document.getElementById('tabDetailsContent');
+            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+
+            function switchTab(tab) {
+                const modalActionButtons = document.getElementById('modalActionButtons');
+                const formControls = document.getElementById('formControls');
+
+                if (tab === 'details') {
+                    tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
+                    tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    tabDetailsContent.classList.remove('hidden');
+                    tabWhatsAppContent.classList.add('hidden');
+                    if (modalActionButtons) modalActionButtons.classList.remove('hidden');
+                    if (formControls) formControls.classList.remove('hidden');
+                } else {
+                    tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
+                    tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    tabWhatsAppContent.classList.remove('hidden');
+                    tabDetailsContent.classList.add('hidden');
+                    if (modalActionButtons) modalActionButtons.classList.add('hidden');
+                    if (formControls) formControls.classList.add('hidden');
+
+                    loadWhatsAppHistory(prospect);
+                }
+            }
+
+            tabDetailsBtn.onclick = () => switchTab('details');
+            tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
+            switchTab('details'); // Reset to details on open
+
+            async function loadWhatsAppHistory(currentProspect) {
+                if (!currentProspect || !currentProspect.telefone) {
+                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
+                    whatsappInput.disabled = true;
+                    whatsappSendBtn.disabled = true;
+                    return;
+                }
+
+                whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
+                whatsappInput.disabled = false;
+                whatsappSendBtn.disabled = false;
+
+                try {
+                    const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
+                    const messages = result.data.messages;
+
+                    if (messages.length === 0) {
+                        whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                    } else {
+                        renderChatMessages(messages.reverse()); // Show oldest first
+                    }
+                } catch (error) {
+                    console.error("Error loading history:", error);
+                    // Use a more user-friendly error message or just show the chat area empty
+                    whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+
+                    // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                }
+            }
+
+            function renderChatMessages(messages) {
+                whatsappChatArea.innerHTML = '';
+                if (!messages || messages.length === 0) {
+                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                    return;
+                }
+                messages.forEach(msg => {
+                    const bubble = document.createElement('div');
+                    bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
+
+                    // Simple text rendering. Whapi messages can be complex, this is basic.
+                    const text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text);
+                    const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    bubble.innerHTML = `
+                        ${text}
+                        <div class="chat-time">${time}</div>
+                    `;
+
+                    // Container for alignment
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
+                    wrapper.appendChild(bubble);
+                    whatsappChatArea.appendChild(wrapper);
+                });
+                whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
+            }
+
+            // WhatsApp Send Logic
+            const sendWhatsApp = async () => {
+                const text = whatsappInput.value.trim();
+                if (!text) return;
+
+                whatsappInput.disabled = true;
+                whatsappSendBtn.disabled = true;
+                const originalIcon = whatsappSendBtn.innerHTML;
+                whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    const phone = prospect.telefone;
+                    await sendWhatsAppMessage({
+                        prospectId: prospect.id,
+                        phone: phone,
+                        message: text
+                    });
+
+                    // Clear input immediately
+                    whatsappInput.value = '';
+
+                    // Reload history after a brief delay to show the sent message
+                    setTimeout(() => loadWhatsAppHistory(prospect), 1000);
+
+                } catch (error) {
+                    alert('Erro ao enviar: ' + error.message);
+                } finally {
+                    // Ensure input is cleared even if there was an error
+                    whatsappInput.value = '';
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                    whatsappSendBtn.innerHTML = originalIcon;
+                    whatsappInput.focus();
+                }
+            };
+
+            whatsappSendBtn.onclick = sendWhatsApp;
+            whatsappInput.onkeypress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendWhatsApp();
+                }
+            };
+
+            // Manual refresh button
+            const refreshChatBtn = document.getElementById('refreshChatBtn');
+            refreshChatBtn.onclick = () => {
+                const icon = refreshChatBtn.querySelector('i');
+                icon.classList.add('fa-spin');
+                loadWhatsAppHistory(prospect).finally(() => {
+                    icon.classList.remove('fa-spin');
+                });
+            };
+
+            // Auto-refresh polling for new messages (every 10 seconds)
+            let pollingInterval = null;
+
+            function startPolling() {
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(() => {
+                    // Only poll if WhatsApp tab is active
+                    if (!tabWhatsAppContent.classList.contains('hidden')) {
+                        loadWhatsAppHistory(prospect);
+                    }
+                }, 10000); // 10 seconds
+            }
+
+            function stopPolling() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+            }
+
+            // Start polling when WhatsApp tab is opened
+            const originalSwitchTab = switchTab;
+            switchTab = (tab) => {
+                originalSwitchTab(tab);
+                if (tab === 'whatsapp') {
+                    startPolling();
+                } else {
+                    stopPolling();
+                }
+            };
+
+            // Clean up on modal close
+            closeFormModalBtn.addEventListener('click', stopPolling);
+
+
 
             const setFormEditable = (isEditable) => {
                 fields.forEach(field => {
@@ -613,9 +928,10 @@
             const updateWhatsAppLink = () => {
                 const phone = telefoneInput.value.replace(/\D/g, '');
                 if (phone) {
-                    whatsappLink.href = `https://wa.me/55${phone}`;
                     whatsappLink.classList.remove('hidden');
                     whatsappLink.classList.add('flex');
+                    // We don't need href anymore if we capture click, but let's keep it valid or void
+                    whatsappLink.href = '#';
                 } else {
                     whatsappLink.classList.add('hidden');
                     whatsappLink.classList.remove('flex');
@@ -623,38 +939,56 @@
             };
             telefoneInput.addEventListener('input', updateWhatsAppLink);
 
+            // Redirect "Chamar no WhatsApp" button to the new tab
+            whatsappLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab('whatsapp');
+            });
+
+            // Removed redundant mode switching logic since WhatsApp now has its own tab.
+            // The "newAddContactBtn" now only handles "Nota Interna".
+
             const newAddContactBtn = addContactLogBtn.cloneNode(true);
             addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
             newAddContactBtn.addEventListener('click', async () => {
                 const description = newContactLogTextarea.value.trim();
-                if (!description) return alert('Por favor, adicione uma descrição para o contato.');
-                
+                if (!description) return alert('Por favor, digite o conteúdo da nota.');
+
                 if (!prospect || !prospect.id) {
-                    return alert('Salve o card antes de adicionar um log.');
+                    return alert('Salve o card antes de adicionar uma nota.');
                 }
 
+                newAddContactBtn.disabled = true;
+                const originalText = newAddContactBtn.textContent;
+                newAddContactBtn.textContent = 'Salvando...';
+
                 try {
+                    // Standard Internal Note
                     const newLog = {
                         author: sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
                         description: description,
-                        timestamp: new Date()
+                        timestamp: new Date(),
+                        type: 'note'
                     };
 
-                    const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
-                    await updateDoc(prospectRef, {
+                    let collectionName = prospect.type === 'lead' ? 'leads' : 'prospects';
+                    const itemRef = doc(db, collectionName, prospect.id);
+
+                    await updateDoc(itemRef, {
                         contactLog: arrayUnion(newLog)
                     });
 
-                    if (!prospect.contactLog) {
-                        prospect.contactLog = [];
-                    }
+                    if (!prospect.contactLog) prospect.contactLog = [];
                     prospect.contactLog.push(newLog);
                     renderContactLog(prospect);
 
                     newContactLogTextarea.value = '';
                 } catch (error) {
-                    console.error("Error adding contact log:", error);
-                    alert("Erro ao adicionar o registro de contato.");
+                    console.error("Error adding note:", error);
+                    alert("Erro: " + error.message);
+                } finally {
+                    newAddContactBtn.disabled = false;
+                    newAddContactBtn.textContent = originalText;
                 }
             });
 
@@ -672,7 +1006,7 @@
                 } else {
                     createdByContainer.classList.add('hidden');
                 }
-                
+
                 document.getElementById('unidade').value = prospect.unidade || '';
                 document.getElementById('setor').value = prospect.setor || '';
                 document.getElementById('prioridade').value = prospect.prioridade || '';
@@ -728,12 +1062,12 @@
             importModal.classList.remove('flex');
             document.getElementById('csvData').value = '';
         }
-        
+
         function showConfirmModal(message, onConfirm) {
             document.getElementById('confirmMessage').textContent = message;
             confirmModal.classList.remove('hidden');
             confirmModal.classList.add('flex');
-            
+
             const confirmBtn = document.getElementById('confirmActionBtn');
             const cancelBtn = document.getElementById('cancelConfirmBtn');
 
@@ -742,7 +1076,7 @@
                 closeConfirmModal();
                 cleanup();
             };
-            
+
             const cancelHandler = () => {
                 closeConfirmModal();
                 cleanup();
@@ -813,17 +1147,17 @@
                     data.pagina = 'Prospecção';
                     data.createdAt = serverTimestamp();
                     data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
-                    
+
                     const batch = writeBatch(db);
-                    
+
                     // 1. Create new prospect
                     const newProspectRef = doc(prospectsCollection);
                     batch.set(newProspectRef, data);
-                    
+
                     // 2. Delete old lead
                     const oldLeadRef = doc(db, 'leads', prospectId);
                     batch.delete(oldLeadRef);
-                    
+
                     await batch.commit();
                     generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
 
@@ -849,7 +1183,7 @@
                 alert(`Erro ao salvar: ${error.message}`);
             }
         }
-        
+
         async function deleteItem(itemId) {
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
             const item = combinedData.find(p => p.id === itemId);
@@ -866,9 +1200,9 @@
                 } else {
                     itemRef = doc(db, 'prospects', itemId);
                 }
-                
+
                 await deleteDoc(itemRef);
-                
+
                 const itemName = item.responsavel || item.nome || 'Item sem nome';
                 generalLog.add(user, 'Delete Card', `Card "${itemName}" (${item.type}) deleted`);
 
@@ -892,7 +1226,7 @@
                 if (item.type === 'lead') {
                     // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
                     const prospectsCollection = collection(db, 'prospects');
-                    
+
                     // Create a new object for the archived prospect from the lead data
                     const newArchivedProspect = {
                         responsavel: item.responsavel || '',
@@ -1021,7 +1355,7 @@
                 checkbox.id = `tag-${tag}`;
                 checkbox.value = tag;
                 checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
-                
+
                 const label = document.createElement('label');
                 label.htmlFor = `tag-${tag}`;
                 label.textContent = tag;
@@ -1063,11 +1397,11 @@
                 { bg: 'bg-indigo-900/50', text: 'text-indigo-200' },
                 { bg: 'bg-lime-900/50', text: 'text-lime-200' }
             ];
-            
+
             const index = stringToColorIndex(sector, colorPalette.length);
             return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
         }
-        
+
         async function populateEvoUnits() {
             const unidadeFilter = document.getElementById('unidadeFilter');
             const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
@@ -1075,14 +1409,14 @@
             try {
                 const result = await getEvoUnits();
                 evoUnits = result.data.sort();
-                
+
                 // Clear existing options except the first one
                 unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
                 unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
 
                 evoUnits.forEach(unitId => {
                     const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    
+
                     // Populate filter dropdown
                     const filterOption = document.createElement('option');
                     filterOption.value = displayName;
@@ -1122,7 +1456,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `prospects_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `prospects_${new Date().toISOString().slice(0, 10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1156,7 +1490,7 @@
                 }
                 // Pass handlers to setupUIListeners by calling it again
                 const unidadeFilter = document.getElementById('unidadeFilter');
-                if(unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
+                if (unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
 
                 setupUIListeners({
                     openFormModal,
@@ -1171,7 +1505,7 @@
 
                 // Override reset button to include unit filter
                 const resetBtn = document.getElementById('resetFiltersBtn');
-                if(resetBtn) {
+                if (resetBtn) {
                     resetBtn.addEventListener('click', () => {
                         document.getElementById('searchInput').value = '';
                         document.getElementById('priorityFilter').value = '';
@@ -1185,4 +1519,5 @@
     </script>
     <script src="geral_log.js"></script>
 </body>
+
 </html>

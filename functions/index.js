@@ -1,4 +1,5 @@
 const functions = require('firebase-functions/v1');
+const axios = require('axios');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -1212,7 +1213,7 @@ exports.resendAllMissingTickets = functions.https.onCall(async (data, context) =
     try {
         console.log('[resendAllMissingTickets] Iniciando busca por ingressos não enviados...');
         const salesRef = db.collection('inscricoesFaixaPreta');
-        
+
         // Busca todas as vendas pagas
         // Nota: Firestore não permite filtrar por 'emailSent == false' facilmente se o campo não existir em todos os docs.
         // Vamos buscar os pagos e filtrar em memória ou usar um índice composto se necessário.
@@ -1235,7 +1236,7 @@ exports.resendAllMissingTickets = functions.https.onCall(async (data, context) =
 
         for (const doc of querySnapshot.docs) {
             const saleData = doc.data();
-            
+
             // Se já foi enviado, pula
             if (saleData.emailSent === true) {
                 continue;
@@ -1278,5 +1279,280 @@ exports.resendAllMissingTickets = functions.https.onCall(async (data, context) =
     } catch (error) {
         console.error('Erro ao reenviar todos os ingressos:', error);
         throw new functions.https.HttpsError('internal', 'Erro interno ao processar reenvio em massa.');
+    }
+});
+
+exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
+    // Authentication check
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+
+    const { prospectId, phone, message } = data;
+
+    // Validation
+    if (!prospectId || !phone || !message) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: prospectId, phone, message.');
+    }
+
+    const token = process.env.WHAPI_TOKEN;
+    if (!token) {
+        console.error('WHAPI_TOKEN not found in environment variables.');
+        throw new functions.https.HttpsError('failed-precondition', 'WHAPI_TOKEN checksum failed (not configured).');
+    }
+
+    try {
+        // Prepare phone number (remove non-digits)
+        const cleanPhone = phone.replace(/\D/g, '');
+
+        let targetPhone = cleanPhone;
+        // Basic formatting for BR numbers if they come without country code
+        if (targetPhone.length >= 10 && targetPhone.length <= 11) {
+            targetPhone = '55' + targetPhone;
+        }
+
+        console.log(`[sendWhatsAppMessage] Sending to ${targetPhone} for prospect ${prospectId}`);
+
+        // Call Whapi
+        const whapiResponse = await axios.post('https://gate.whapi.cloud/messages/text', {
+            to: targetPhone,
+            body: message
+        }, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('[sendWhatsAppMessage] Whapi response:', whapiResponse.data);
+
+        // Log to Firestore
+        const userEmail = context.auth.token.email || 'unknown';
+        const logEntry = {
+            author: userEmail,
+            description: message,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            type: 'whatsapp-sent',
+            metadata: {
+                destination: targetPhone,
+                whapi_id: whapiResponse.data?.messages?.[0]?.id || 'unknown'
+            }
+        };
+
+        // Try to update prospect first
+        let docRef = db.collection('prospects').doc(prospectId);
+        let docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            // Try leads
+            docRef = db.collection('leads').doc(prospectId);
+            docSnap = await docRef.get();
+        }
+
+        if (docSnap.exists) {
+            await docRef.update({
+                contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
+            });
+            console.log(`[sendWhatsAppMessage] Logged to ${docRef.path}`);
+        } else {
+            console.warn(`[sendWhatsAppMessage] Prospect/Lead ${prospectId} not found to log message.`);
+        }
+
+        return { success: true, data: whapiResponse.data };
+
+    } catch (error) {
+        console.error('Error sending WhatsApp message:', error);
+        if (error.response) {
+            console.error('Whapi Error Details:', error.response.data);
+        }
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new functions.https.HttpsError('internal', `Failed to send message: ${errorMessage}`);
+    }
+});
+
+exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
+    // Authentication check
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+
+    const { phone, limit = 20 } = data;
+
+    if (!phone) {
+        throw new functions.https.HttpsError('invalid-argument', 'Phone number is required.');
+    }
+
+    const token = process.env.WHAPI_TOKEN;
+    if (!token) {
+        console.error('WHAPI_TOKEN is missing in environment variables.');
+        throw new functions.https.HttpsError('failed-precondition', 'WHAPI_TOKEN not configured.');
+    }
+
+    try {
+        const cleanPhone = phone.replace(/\D/g, '');
+        let targetPhone = cleanPhone;
+        // Basic formatting for BR numbers
+        if (targetPhone.length >= 10 && targetPhone.length <= 11) {
+            targetPhone = '55' + targetPhone;
+        }
+
+        // Whapi expects chatId like '554899999999@s.whatsapp.net' for private chats
+        const chatId = `${targetPhone}@s.whatsapp.net`;
+        console.log(`[getWhatsAppHistory] Fetching history for ${chatId}`);
+
+        // https://whapi.cloud/docs mentions /messages/list/{chatId} or /messages/list with params
+        // Let's use the list endpoint with chatId param if supported, or filter.
+        // Documentation says: GET /messages/list/{chat_id}
+        // Let's try that one first as it is more specific.
+
+        const response = await axios.get(`https://gate.whapi.cloud/messages/list/${chatId}`, {
+            params: {
+                count: limit
+            },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        // Transform data to a simpler format for frontend
+        const messages = response.data.messages.map(msg => ({
+            id: msg.id,
+            from_me: msg.from_me,
+            text: msg.text?.body || msg.caption || '[Media/Other]', // Handle text or caption
+            type: msg.type,
+            timestamp: msg.timestamp,
+            status: msg.status
+        }));
+
+        return { success: true, messages: messages };
+
+    } catch (error) {
+        console.error('Error fetching WhatsApp history details:', error.response?.data || error.message);
+        // Return a clean error to the client even if internal
+        if (error.response?.status === 404 || error.response?.status === 400) {
+            // Treat 404 as empty history
+            return { success: true, messages: [] };
+        }
+
+        throw new functions.https.HttpsError('internal', `Whapi Error: ${error.message}`);
+    }
+});
+
+exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
+    console.log('[whapiWebhook] Received webhook request');
+
+    // Only accept POST/PUT/PATCH as per Whapi docs
+    if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        console.warn(`[whapiWebhook] Invalid method: ${req.method}`);
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const payload = req.body;
+        console.log('[whapiWebhook] Payload:', JSON.stringify(payload, null, 2));
+
+        // Whapi sends different event types - we only care about messages
+        // Event structure: { messages: [...], event: "messages" }
+        if (!payload.messages || !Array.isArray(payload.messages)) {
+            console.log('[whapiWebhook] No messages in payload, ignoring');
+            return res.status(200).send('OK - No messages');
+        }
+
+        // Process each message in the payload
+        for (const message of payload.messages) {
+            // Only process incoming messages (from_me: false)
+            if (message.from_me) {
+                console.log(`[whapiWebhook] Skipping outgoing message ${message.id}`);
+                continue;
+            }
+
+            // Extract sender phone, name and message text
+            const fromPhone = message.from; // Format: "554899999999@s.whatsapp.net"
+            const fromName = message.from_name || null;
+            const cleanPhone = fromPhone.replace('@s.whatsapp.net', '').replace('@c.us', '');
+            const messageText = message.text?.body || message.caption || '[Media]';
+            const timestamp = message.timestamp ? new Date(message.timestamp * 1000) : new Date();
+
+            // Should prompt be the name if available, otherwise fallback (or phone?)
+            // User requested "name of the lead". 
+            // If name is present, use it. If not, maybe use phone number or "WhatsApp Lead".
+            const prospectTitle = fromName ? fromName : (messageText.substring(0, 100));
+
+            console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"`);
+
+            // Check if prospect/lead already exists
+            const prospectsSnapshot = await db.collection('prospects')
+                .where('telefone', '==', cleanPhone)
+                .limit(1)
+                .get();
+
+            const leadsSnapshot = await db.collection('leads')
+                .where('telefone', '==', cleanPhone)
+                .limit(1)
+                .get();
+
+            let existingDoc = null;
+            let existingCollection = null;
+
+            if (!prospectsSnapshot.empty) {
+                existingDoc = prospectsSnapshot.docs[0];
+                existingCollection = 'prospects';
+            } else if (!leadsSnapshot.empty) {
+                existingDoc = leadsSnapshot.docs[0];
+                existingCollection = 'leads';
+            }
+
+            const logEntry = {
+                author: cleanPhone,
+                description: messageText,
+                timestamp: new Date(), // Changed from serverTimestamp() - cannot use inside arrays
+                type: 'whatsapp-received',
+                metadata: {
+                    whapi_message_id: message.id,
+                    received_at: timestamp.toISOString()
+                }
+            };
+
+            if (existingDoc) {
+                // Update existing prospect/lead with new message
+                console.log(`[whapiWebhook] Updating existing ${existingCollection} doc: ${existingDoc.id}`);
+                await db.collection(existingCollection).doc(existingDoc.id).update({
+                    contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
+                });
+            } else {
+                // Create new prospect
+                console.log(`[whapiWebhook] Creating new prospect for ${cleanPhone}`);
+
+                const newProspect = {
+                    responsavel: prospectTitle,
+                    telefone: cleanPhone,
+                    status: 'Novo', // Fixed: Frontend expects 'Novo' not 'novo'
+                    prioridade: 3,
+                    origemLead: 'WhatsApp Inbound',
+                    setor: '',
+                    email: '',
+                    cpf: '',
+                    redesSociais: '',
+                    observacoes: `Mensagem inicial: ${messageText}`,
+                    ticketEstimado: 0,
+                    unidade: '',
+                    tags: [],
+                    contactLog: [logEntry],
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    createdBy: 'webhook',
+                    type: 'prospect'
+                };
+
+                await db.collection('prospects').add(newProspect);
+                console.log(`[whapiWebhook] Created new prospect for ${cleanPhone}`);
+            }
+        }
+
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('[whapiWebhook] Error processing webhook:', error);
+        // Still return 200 to prevent Whapi from retrying
+        res.status(200).send('Error logged');
     }
 });
