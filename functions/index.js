@@ -1566,7 +1566,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     updates.unidade = detectedUnit;
                     console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
 
-                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?";
+                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?\n\nEm breve alguém de nosso time irá continuar o atendimento.";
                     routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
                 }
                 // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
@@ -1588,7 +1588,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         // Let's use 'Kihap - Dourados' based on previous logic, but user did not specify Dourados units.
 
                         updates.unidade = 'Kihap - Dourados';
-                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?";
+                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?\n\nEm breve alguém de nosso time irá continuar o atendimento.";
                         routingLog = await sendMessageHelper(cleanPhone, douradosMsg);
                     }
                 }
