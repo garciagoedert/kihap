@@ -1539,6 +1539,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     unidade: '',
                     tags: [],
                     contactLog: [logEntry],
+                    unread: true, // Mark as unread for the visual indicator
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     createdBy: 'webhook',
                     type: 'prospect'

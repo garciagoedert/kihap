@@ -517,6 +517,7 @@
                 </div>
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">P${prospect.prioridade}</span>
+                    ${prospect.unread ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/50 animate-pulse">Novo</span>' : ''}
                 </div>
                 <div class="flex items-center gap-1 mb-3 flex-wrap">
                     ${tagsHTML}
@@ -709,7 +710,29 @@
             }
         }
 
-        function openFormModal(prospect = null) {
+        async function openFormModal(prospect = null) {
+            currentProspectId = prospect.id;
+
+            // Mark as read if unread
+            if (prospect.unread) {
+                try {
+                    await db.collection('prospects').doc(prospect.id).update({ unread: false });
+                    // Optimistic update of the local object
+                    prospect.unread = false;
+
+                    // Simple re-render logic - update element if it exists in DOM without full redraw
+                    const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
+                    if (card) {
+                        const badge = card.querySelector('.animate-pulse');
+                        if (badge) badge.remove();
+                    }
+                } catch (error) {
+                    console.error("Error marking prospect as read:", error);
+                }
+            }
+
+            // Reset to default tab (Details)
+            switchTab('details');
             prospectForm.reset();
             populateTagsInModal();
 
