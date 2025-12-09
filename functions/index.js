@@ -1720,11 +1720,13 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                             // User just answered Question [currentQIndex]
                             // Save the answer
                             const questionAsked = extraQuestions[currentQIndex];
+                            let currentObs = currentData.observacoes || '';
+
                             if (questionAsked) {
                                 // Store answer in a map 'answers' (create if needed) or just append to observacoes
                                 // Let's append to 'observacoes' for simplicity and visibility in the card
-                                const newObs = (currentData.observacoes || '') + `\n\n[Q: ${questionAsked}]\nR: ${messageText}`;
-                                updates.observacoes = newObs;
+                                currentObs = currentObs + `\n\n[Q: ${questionAsked}]\nR: ${messageText}`;
+                                updates.observacoes = currentObs;
                             }
 
                             // Determine Next Step
@@ -1741,7 +1743,8 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                                 updates.bot_handoff_sent = true;
 
                                 // Notify Manager with Summary (Q&A)
-                                await notifyUnitManager(currentData.unidade, currentData.responsavel, cleanPhone, currentData.observacoes || 'Sem respostas registradas.');
+                                // FIX: Use 'currentObs' which contains the latest answer, instead of stale 'currentData.observacoes'
+                                await notifyUnitManager(currentData.unidade, currentData.responsavel, cleanPhone, currentObs || 'Sem respostas registradas.');
                             }
                         }
                     }
