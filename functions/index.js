@@ -1545,8 +1545,42 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     type: 'prospect'
                 };
 
+                // Send Auto-Reply
+                const autoReplyText = "Olá! Obrigado pelo contato. Em breve alguém do nosso time irá atendê-lo.";
+                try {
+                    const token = process.env.WHAPI_TOKEN || functions.config().whapi?.token;
+                    // Send message via Whapi
+                    await axios.post('https://gate.whapi.cloud/messages/text', {
+                        to: cleanPhone,
+                        body: autoReplyText
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log(`[whapiWebhook] Auto-reply sent to ${cleanPhone}`);
+
+                    // Add auto-reply to contactLog
+                    const autoReplyLogEntry = {
+                        author: 'system',
+                        description: autoReplyText,
+                        timestamp: new Date(),
+                        type: 'whatsapp-sent',
+                        metadata: {
+                            destination: cleanPhone,
+                            auto_reply: true
+                        }
+                    };
+                    newProspect.contactLog.push(autoReplyLogEntry);
+
+                } catch (replyError) {
+                    console.error('[whapiWebhook] Failed to send auto-reply:', replyError.message);
+                }
+
                 await db.collection('prospects').add(newProspect);
-                console.log(`[whapiWebhook] Created new prospect for ${cleanPhone}`);
+                console.log(`[whapiWebhook] Created new prospect for ${cleanPhone} with auto-reply`);
             }
         }
 
