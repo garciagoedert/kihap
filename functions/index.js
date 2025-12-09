@@ -1331,7 +1331,7 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
         const logEntry = {
             author: userEmail,
             description: message,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: new Date(), // Using Client-side timestamp because ArrayUnion doesn't support serverTimestamp
             type: 'whatsapp-sent',
             metadata: {
                 destination: targetPhone,
