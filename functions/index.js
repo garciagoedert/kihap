@@ -1542,40 +1542,61 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
                 };
 
-                // Smart Routing Logic: Check for City Keywords if Unit is not set
+                // Smart Routing Logic: Check for City Keywords or Unit if Unit is not set
                 let routingLog = null;
-                if (!currentData.unidade) {
-                    const lowerText = messageText.toLowerCase();
-                    let newUnit = null;
+                const lowerText = messageText.toLowerCase();
 
+                // 1. Check for specific UNITS first (if user skips city or replies to unit prompt)
+                let detectedUnit = null;
+
+                // Brasília Units
+                if (lowerText.includes('asa sul')) detectedUnit = 'Kihap - Asa Sul';
+                else if (lowerText.includes('sudoeste')) detectedUnit = 'Kihap - Sudoeste';
+                else if (lowerText.includes('lago sul')) detectedUnit = 'Kihap - Lago Sul';
+                else if (lowerText.includes('noroeste')) detectedUnit = 'Kihap - Noroeste';
+                else if (lowerText.includes('pontos de ensino')) detectedUnit = 'Kihap - Pontos de Ensino';
+
+                // Florianópolis Units
+                else if (lowerText.includes('centro') && !lowerText.includes('dourados')) detectedUnit = 'Kihap - Centro (Floripa)'; // Disambiguate if needed
+                else if (lowerText.includes('coqueiros')) detectedUnit = 'Kihap - Coqueiros';
+                else if (lowerText.includes('santa monica') || lowerText.includes('santa mônica')) detectedUnit = 'Kihap - Santa Mônica';
+
+                if (detectedUnit) {
+                    updates.unidade = detectedUnit;
+                    console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
+
+                    const confirmationMsg = "Entendido. Acredito que seria legal termos essa continuidade.\n\nVocê busca arte marcial pra você mesmo ou pra outra pessoa?";
+                    routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
+                }
+                // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
+                else if (!currentData.unidade) {
                     if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
-                        newUnit = 'Kihap - Brasília';
+                        // Sub-menu for Brasília
+                        const bsbMsg = "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n\nQual fica melhor para você?";
+                        routingLog = await sendMessageHelper(cleanPhone, bsbMsg);
+
                     } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
-                        newUnit = 'Kihap - Florianópolis';
+                        // Sub-menu for Florianópolis
+                        const floripaMsg = "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?";
+                        routingLog = await sendMessageHelper(cleanPhone, floripaMsg);
+
                     } else if (lowerText.includes('dourados')) {
-                        newUnit = 'Kihap - Dourados';
-                    }
+                        // Direct routing for Dourados (Single unit?) OR check if Dourados has units. 
+                        // User said: "Dourados" -> "Perfeito! Você busca arte marcial..."
+                        // Assuming Dourados maps to 'Kihap - Dourados' generic or specific? 
+                        // Let's use 'Kihap - Dourados' based on previous logic, but user did not specify Dourados units.
 
-                    if (newUnit) {
-                        updates.unidade = newUnit;
-                        console.log(`[whapiWebhook] Routing ${cleanPhone} to ${newUnit}`);
-
-                        // Send confirmation
-                        const cityMap = {
-                            'Kihap - Brasília': 'Brasília',
-                            'Kihap - Florianópolis': 'Florianópolis',
-                            'Kihap - Dourados': 'Dourados'
-                        };
-                        const confirmationMsg = `Perfeito! Um consultor de ${cityMap[newUnit]} vai te atender.`;
-                        routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
+                        updates.unidade = 'Kihap - Dourados';
+                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?";
+                        routingLog = await sendMessageHelper(cleanPhone, douradosMsg);
                     }
                 }
 
                 // If we sent a routing message, add it to the update operation
                 if (routingLog) {
-                    // We need to add multiple items to arrayUnion. 
-                    // FieldValue.arrayUnion(...elements) supports multiple arguments
                     updates.contactLog = admin.firestore.FieldValue.arrayUnion(logEntry, routingLog);
+                } else {
+                    updates.contactLog = admin.firestore.FieldValue.arrayUnion(logEntry);
                 }
 
                 console.log(`[whapiWebhook] Updating existing ${existingCollection} doc: ${existingDoc.id}`);
