@@ -1456,7 +1456,7 @@ const UNIT_MANAGERS = {
 const CRM_URL = 'https://intranet-kihap.web.app/intranet/prospeccao.html'; // Default Firebase URL
 
 // Helper to notify Unit Manager
-async function notifyUnitManager(unitName, leadName, leadPhone) {
+async function notifyUnitManager(unitName, leadName, leadPhone, summaryDetails = null) {
     try {
         const managerPhone = UNIT_MANAGERS[unitName];
         if (!managerPhone || managerPhone === '5561999999999') {
@@ -1464,13 +1464,13 @@ async function notifyUnitManager(unitName, leadName, leadPhone) {
             return null;
         }
 
-        const message = `🔔 *Novo Lead para ${unitName}*\n\n👤 Nome: ${leadName}\n📱 Telefone: ${leadPhone}\n\n🔗 Acessar CRM: ${CRM_URL}`;
+        let message = `🔔 *Novo Lead para ${unitName}*\n\n👤 Nome: ${leadName}\n📱 Telefone: ${leadPhone}\n\n🔗 Acessar CRM: ${CRM_URL}`;
+
+        if (summaryDetails) {
+            message = `📝 *Resumo de Qualificação - ${unitName}*\n\n👤 Lead: ${leadName}\n📱 Telefone: ${leadPhone}\n\n${summaryDetails}\n\n🔗 Acessar CRM: ${CRM_URL}`;
+        }
 
         console.log(`[notifyUnitManager] Sending notification to ${managerPhone} for unit ${unitName}`);
-
-        // Use the existing sendMessageHelper logic directly roughly or call it if possible.
-        // Since sendMessageHelper sends to 'to' and returns a log entry, we can reuse it but we don't need the log entry for the prospect's history.
-        // We just want to fire and forget or log internal success.
 
         const token = process.env.WHAPI_TOKEN || functions.config().whapi?.token;
         if (!token) return null;
@@ -1722,6 +1722,9 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                                 // Finished all questions
                                 routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
                                 updates.bot_handoff_sent = true;
+
+                                // Notify Manager with Summary (Q&A)
+                                await notifyUnitManager(currentData.unidade, currentData.responsavel, cleanPhone, currentData.observacoes || 'Sem respostas registradas.');
                             }
                         }
                     }
