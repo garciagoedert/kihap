@@ -716,7 +716,8 @@
             // Mark as read if unread
             if (prospect.unread) {
                 try {
-                    await db.collection('prospects').doc(prospect.id).update({ unread: false });
+                    const prospectRef = doc(db, 'prospects', prospect.id);
+                    await updateDoc(prospectRef, { unread: false });
                     // Optimistic update of the local object
                     prospect.unread = false;
 
