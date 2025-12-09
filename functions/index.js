@@ -1434,49 +1434,71 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
             // Treat 404 as empty history
             return { success: true, messages: [] };
         }
-
         throw new functions.https.HttpsError('internal', `Whapi Error: ${error.message}`);
     }
 });
 
-exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
-    console.log('[whapiWebhook] Received webhook request');
+// Helper to send WhatsApp message via Whapi
+async function sendMessageHelper(to, body) {
+    try {
+        const token = process.env.WHAPI_TOKEN || functions.config().whapi?.token;
+        if (!token) {
+            console.error('[sendMessageHelper] No WHAPI_TOKEN configured');
+            return null;
+        }
+        await axios.post('https://gate.whapi.cloud/messages/text', {
+            to,
+            body
+        }, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
 
+        console.log(`[sendMessageHelper] Sent message to ${to}`);
+
+        return {
+            author: 'system',
+            description: body,
+            timestamp: new Date(),
+            type: 'whatsapp-sent',
+            metadata: {
+                destination: to,
+                auto_reply: true
+            }
+        };
+    } catch (error) {
+        console.error('[sendMessageHelper] Error:', error.message);
+        return null;
+    }
+}
+
+exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
     // Only accept POST/PUT/PATCH as per Whapi docs
     if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        console.warn(`[whapiWebhook] Invalid method: ${req.method}`);
         return res.status(405).send('Method Not Allowed');
     }
 
     try {
         const payload = req.body;
-        console.log('[whapiWebhook] Payload:', JSON.stringify(payload, null, 2));
-
         // Whapi sends different event types - we only care about messages
-        // Event structure: { messages: [...], event: "messages" }
         if (!payload.messages || !Array.isArray(payload.messages)) {
-            console.log('[whapiWebhook] No messages in payload, ignoring');
             return res.status(200).send('OK - No messages');
         }
 
         // Process each message in the payload
         for (const message of payload.messages) {
             // Only process incoming messages (from_me: false)
-            if (message.from_me) {
-                console.log(`[whapiWebhook] Skipping outgoing message ${message.id}`);
-                continue;
-            }
+            if (message.from_me) continue;
 
             // Extract sender phone, name and message text
-            const fromPhone = message.from; // Format: "554899999999@s.whatsapp.net"
+            const fromPhone = message.from;
             const fromName = message.from_name || null;
             const cleanPhone = fromPhone.replace('@s.whatsapp.net', '').replace('@c.us', '');
             const messageText = message.text?.body || message.caption || '[Media]';
             const timestamp = message.timestamp ? new Date(message.timestamp * 1000) : new Date();
 
-            // Should prompt be the name if available, otherwise fallback (or phone?)
-            // User requested "name of the lead". 
-            // If name is present, use it. If not, maybe use phone number or "WhatsApp Lead".
             const prospectTitle = fromName ? fromName : (messageText.substring(0, 100));
 
             console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"`);
@@ -1506,7 +1528,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
             const logEntry = {
                 author: cleanPhone,
                 description: messageText,
-                timestamp: new Date(), // Changed from serverTimestamp() - cannot use inside arrays
+                timestamp: new Date(),
                 type: 'whatsapp-received',
                 metadata: {
                     whapi_message_id: message.id,
@@ -1515,19 +1537,65 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
             };
 
             if (existingDoc) {
-                // Update existing prospect/lead with new message
-                console.log(`[whapiWebhook] Updating existing ${existingCollection} doc: ${existingDoc.id}`);
-                await db.collection(existingCollection).doc(existingDoc.id).update({
+                const currentData = existingDoc.data();
+                const updates = {
                     contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
-                });
+                };
+
+                // Smart Routing Logic: Check for City Keywords if Unit is not set
+                let routingLog = null;
+                if (!currentData.unidade) {
+                    const lowerText = messageText.toLowerCase();
+                    let newUnit = null;
+
+                    if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
+                        newUnit = 'Kihap - Brasília';
+                    } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
+                        newUnit = 'Kihap - Florianópolis';
+                    } else if (lowerText.includes('dourados')) {
+                        newUnit = 'Kihap - Dourados';
+                    }
+
+                    if (newUnit) {
+                        updates.unidade = newUnit;
+                        console.log(`[whapiWebhook] Routing ${cleanPhone} to ${newUnit}`);
+
+                        // Send confirmation
+                        const cityMap = {
+                            'Kihap - Brasília': 'Brasília',
+                            'Kihap - Florianópolis': 'Florianópolis',
+                            'Kihap - Dourados': 'Dourados'
+                        };
+                        const confirmationMsg = `Perfeito! Um consultor de ${cityMap[newUnit]} vai te atender.`;
+                        routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
+                    }
+                }
+
+                // If we sent a routing message, add it to the update operation
+                if (routingLog) {
+                    // We need to add multiple items to arrayUnion. 
+                    // FieldValue.arrayUnion(...elements) supports multiple arguments
+                    updates.contactLog = admin.firestore.FieldValue.arrayUnion(logEntry, routingLog);
+                }
+
+                console.log(`[whapiWebhook] Updating existing ${existingCollection} doc: ${existingDoc.id}`);
+                await db.collection(existingCollection).doc(existingDoc.id).update(updates);
+
             } else {
                 // Create new prospect
                 console.log(`[whapiWebhook] Creating new prospect for ${cleanPhone}`);
 
+                const welcomeText = "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?";
+
+                const welcomeLog = await sendMessageHelper(cleanPhone, welcomeText);
+
+                const initialLog = [logEntry];
+                if (welcomeLog) initialLog.push(welcomeLog);
+
                 const newProspect = {
                     responsavel: prospectTitle,
                     telefone: cleanPhone,
-                    status: 'Novo', // Fixed: Frontend expects 'Novo' not 'novo'
+                    status: 'Novo',
                     prioridade: 3,
                     origemLead: 'WhatsApp Inbound',
                     setor: '',
@@ -1538,56 +1606,21 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     ticketEstimado: 0,
                     unidade: '',
                     tags: [],
-                    contactLog: [logEntry],
-                    unread: true, // Mark as unread for the visual indicator
+                    contactLog: initialLog,
+                    unread: true,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     createdBy: 'webhook',
                     type: 'prospect'
                 };
 
-                // Send Auto-Reply
-                const autoReplyText = "Olá! Obrigado pelo contato. Em breve alguém do nosso time irá atendê-lo.";
-                try {
-                    const token = process.env.WHAPI_TOKEN || functions.config().whapi?.token;
-                    // Send message via Whapi
-                    await axios.post('https://gate.whapi.cloud/messages/text', {
-                        to: cleanPhone,
-                        body: autoReplyText
-                    }, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    console.log(`[whapiWebhook] Auto-reply sent to ${cleanPhone}`);
-
-                    // Add auto-reply to contactLog
-                    const autoReplyLogEntry = {
-                        author: 'system',
-                        description: autoReplyText,
-                        timestamp: new Date(),
-                        type: 'whatsapp-sent',
-                        metadata: {
-                            destination: cleanPhone,
-                            auto_reply: true
-                        }
-                    };
-                    newProspect.contactLog.push(autoReplyLogEntry);
-
-                } catch (replyError) {
-                    console.error('[whapiWebhook] Failed to send auto-reply:', replyError.message);
-                }
-
                 await db.collection('prospects').add(newProspect);
-                console.log(`[whapiWebhook] Created new prospect for ${cleanPhone} with auto-reply`);
+                console.log(`[whapiWebhook] Created new prospect for ${cleanPhone} with routing invite`);
             }
         }
 
         res.status(200).send('OK');
     } catch (error) {
         console.error('[whapiWebhook] Error processing webhook:', error);
-        // Still return 200 to prevent Whapi from retrying
         res.status(200).send('Error logged');
     }
 });
