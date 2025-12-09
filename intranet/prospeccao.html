@@ -714,6 +714,21 @@
         async function openFormModal(prospect = null) {
             currentProspectId = prospect.id;
 
+            // Declare UI elements first to avoid initialization errors
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelFormBtn = document.getElementById('cancelFormBtn');
+            const addContactLogBtn = document.getElementById('addContactLogBtn');
+            const newContactLogTextarea = document.getElementById('newContactLog');
+            const contactLogSection = newContactLogTextarea.parentElement.parentElement;
+            const whatsappChatArea = document.getElementById('whatsappChatArea');
+            const whatsappInput = document.getElementById('whatsappInput');
+            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
+            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
+            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
+            const tabDetailsContent = document.getElementById('tabDetailsContent');
+            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+
             // Mark as read if unread
             if (prospect.unread) {
                 try {
@@ -747,38 +762,25 @@
             const deleteBtn = document.getElementById('deleteBtn');
 
             const fields = prospectForm.querySelectorAll('input, select, textarea');
-            const editBtn = document.getElementById('editBtn');
-            const saveBtn = document.getElementById('saveBtn');
-            const cancelFormBtn = document.getElementById('cancelFormBtn');
-            const addContactLogBtn = document.getElementById('addContactLogBtn');
-            const newContactLogTextarea = document.getElementById('newContactLog');
-            const contactLogSection = newContactLogTextarea.parentElement.parentElement; // Correct parent
-            const whatsappChatArea = document.getElementById('whatsappChatArea');
-            const whatsappInput = document.getElementById('whatsappInput');
-            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
-
             // Tab Switching Logic
-            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
-            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
-            const tabDetailsContent = document.getElementById('tabDetailsContent');
-            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+            // (Elements declared at top of function)
 
             function switchTab(tab) {
                 const modalActionButtons = document.getElementById('modalActionButtons');
                 const formControls = document.getElementById('formControls');
 
                 if (tab === 'details') {
-                    tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
-                    tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
-                    tabDetailsContent.classList.remove('hidden');
-                    tabWhatsAppContent.classList.add('hidden');
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
+                    if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
                     if (modalActionButtons) modalActionButtons.classList.remove('hidden');
                     if (formControls) formControls.classList.remove('hidden');
                 } else {
-                    tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
-                    tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
-                    tabWhatsAppContent.classList.remove('hidden');
-                    tabDetailsContent.classList.add('hidden');
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
+                    if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
                     if (modalActionButtons) modalActionButtons.classList.add('hidden');
                     if (formControls) formControls.classList.add('hidden');
 
@@ -786,8 +788,8 @@
                 }
             }
 
-            tabDetailsBtn.onclick = () => switchTab('details');
-            tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
+            if (tabDetailsBtn) tabDetailsBtn.onclick = () => switchTab('details');
+            if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
             switchTab('details'); // Reset to details on open
 
             async function loadWhatsAppHistory(currentProspect) {
