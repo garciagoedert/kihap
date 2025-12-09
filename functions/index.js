@@ -1441,16 +1441,16 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
 // Map of Unit Names to Manager Phone Numbers
 // TODO: Replace with actual numbers provided by user
 const UNIT_MANAGERS = {
-    'Kihap - Asa Sul': '5561999999999',
-    'Kihap - Sudoeste': '5561999999999',
-    'Kihap - Lago Sul': '5561999999999',
-    'Kihap - Noroeste': '5561999999999',
-    'Kihap - Pontos de Ensino': '5561999999999',
-    'Kihap - Jardim Botânico': '5561999999999',
-    'Kihap - Centro (Floripa)': '5548992182423',
-    'Kihap - Coqueiros': '5548996296941',
+    'Kihap - Asa Sul': '556183007146',
+    'Kihap - Sudoeste': '556182107146',
+    'Kihap - Lago Sul': '556192028980',
+    'Kihap - Noroeste': '556184170472',
+    'Kihap - Pontos de Ensino': '556181724290',
+    'Kihap - Jardim Botânico': '556184171059',
+    'Kihap - Centro (Floripa)': '554892182423',
+    'Kihap - Coqueiros': '554896296941',
     'Kihap - Santa Mônica': '554892172423',
-    'Kihap - Dourados': '5567999999999'
+    'Kihap - Dourados': '556799597001'
 };
 
 const CRM_URL = 'https://intranet-kihap.web.app/intranet/prospeccao.html'; // Default Firebase URL
