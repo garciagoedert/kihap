@@ -1555,6 +1555,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 else if (lowerText.includes('lago sul')) detectedUnit = 'Kihap - Lago Sul';
                 else if (lowerText.includes('noroeste')) detectedUnit = 'Kihap - Noroeste';
                 else if (lowerText.includes('pontos de ensino')) detectedUnit = 'Kihap - Pontos de Ensino';
+                else if (lowerText.includes('jardim botanico') || lowerText.includes('jardim botânico')) detectedUnit = 'Kihap - Jardim Botânico';
 
                 // Florianópolis Units
                 else if (lowerText.includes('centro') && !lowerText.includes('dourados')) detectedUnit = 'Kihap - Centro (Floripa)'; // Disambiguate if needed
@@ -1565,14 +1566,14 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     updates.unidade = detectedUnit;
                     console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
 
-                    const confirmationMsg = "Entendido. Acredito que seria legal termos essa continuidade.\n\nVocê busca arte marcial pra você mesmo ou pra outra pessoa?";
+                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?";
                     routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
                 }
                 // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
                 else if (!currentData.unidade) {
                     if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
                         // Sub-menu for Brasília
-                        const bsbMsg = "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n\nQual fica melhor para você?";
+                        const bsbMsg = "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?";
                         routingLog = await sendMessageHelper(cleanPhone, bsbMsg);
 
                     } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
@@ -1581,9 +1582,9 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         routingLog = await sendMessageHelper(cleanPhone, floripaMsg);
 
                     } else if (lowerText.includes('dourados')) {
-                        // Direct routing for Dourados (Single unit?) OR check if Dourados has units. 
+                        // Direct routing for Dourados (Single unit?) OR check if Dourados has units.
                         // User said: "Dourados" -> "Perfeito! Você busca arte marcial..."
-                        // Assuming Dourados maps to 'Kihap - Dourados' generic or specific? 
+                        // Assuming Dourados maps to 'Kihap - Dourados' generic or specific?
                         // Let's use 'Kihap - Dourados' based on previous logic, but user did not specify Dourados units.
 
                         updates.unidade = 'Kihap - Dourados';
