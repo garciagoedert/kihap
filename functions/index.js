@@ -1531,7 +1531,8 @@ const DEFAULT_CONFIG = {
     menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
     menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
     confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
-    handoff_message: "Em breve alguém de nosso time irá continuar o atendimento."
+    handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+    extra_questions: []
 };
 
 async function getWhatsAppConfig() {
@@ -1577,6 +1578,22 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
             const prospectTitle = fromName ? fromName : (messageText.substring(0, 100));
 
             console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"`);
+            console.log(`[whapiWebhook] Config loaded. Extra Questions: ${config.extra_questions?.length || 0}`);
+
+            // DEBUG / RESET COMMAND
+            if (messageText.trim().toLowerCase() === '/reset') {
+                console.log(`[whapiWebhook] RESET command received from ${cleanPhone}`);
+                const pSnap = await db.collection('prospects').where('telefone', '==', cleanPhone).get();
+                const lSnap = await db.collection('leads').where('telefone', '==', cleanPhone).get();
+
+                const batch = db.batch();
+                pSnap.forEach(d => batch.delete(d.ref));
+                lSnap.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+
+                await sendMessageHelper(cleanPhone, "♻️ Seu histórico foi resetado. Mande um 'Oi' para começar de novo.");
+                continue;
+            }
 
             // Check if prospect/lead already exists
             const prospectsSnapshot = await db.collection('prospects')
