@@ -1525,6 +1525,27 @@ async function sendMessageHelper(to, body) {
     }
 }
 
+// Default Configuration for Auto-Reply
+const DEFAULT_CONFIG = {
+    welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+    menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
+    menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+    confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
+    handoff_message: "Em breve alguém de nosso time irá continuar o atendimento."
+};
+
+async function getWhatsAppConfig() {
+    try {
+        const configDoc = await db.collection('config').doc('whatsapp_auto_reply').get();
+        if (configDoc.exists) {
+            return { ...DEFAULT_CONFIG, ...configDoc.data() };
+        }
+    } catch (error) {
+        console.error('[getWhatsAppConfig] Error fetching config:', error);
+    }
+    return DEFAULT_CONFIG;
+}
+
 exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
     // Only accept POST/PUT/PATCH as per Whapi docs
     if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
@@ -1532,6 +1553,9 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
     }
 
     try {
+        // Fetch Config at start of request
+        const config = await getWhatsAppConfig();
+
         const payload = req.body;
         // Whapi sends different event types - we only care about messages
         if (!payload.messages || !Array.isArray(payload.messages)) {
@@ -1617,29 +1641,26 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     updates.unidade = detectedUnit;
                     console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
 
-                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?";
-                    routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
+                    routingLog = await sendMessageHelper(cleanPhone, config.confirmation_question);
 
                     // Notify Manager
                     await notifyUnitManager(detectedUnit, prospectTitle, cleanPhone);
                 }
-                // 2. If no Unit detected, check for CITY keywords (Level 1 routing) 
+                // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
                 else if (!currentData.unidade) {
                     if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
                         // Sub-menu for Brasília
-                        const bsbMsg = "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?";
-                        routingLog = await sendMessageHelper(cleanPhone, bsbMsg);
+                        routingLog = await sendMessageHelper(cleanPhone, config.menu_brasilia);
 
                     } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
                         // Sub-menu for Florianópolis
-                        const floripaMsg = "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?";
-                        routingLog = await sendMessageHelper(cleanPhone, floripaMsg);
+                        routingLog = await sendMessageHelper(cleanPhone, config.menu_floripa);
 
                     } else if (lowerText.includes('dourados')) {
                         // Direct routing for Dourados
                         updates.unidade = 'Kihap - Dourados';
-                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?";
-                        routingLog = await sendMessageHelper(cleanPhone, douradosMsg);
+                        // Dourados also asks confirmation question
+                        routingLog = await sendMessageHelper(cleanPhone, config.confirmation_question);
 
                         // Notify Manager
                         await notifyUnitManager('Kihap - Dourados', prospectTitle, cleanPhone);
@@ -1650,8 +1671,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 // AND we didn't just detect/change the unit above (detectedUnit is null)
                 else if (currentData.unidade && !currentData.bot_handoff_sent) {
                     // This is likely the answer to "Pra quem é?" or subsequent chat
-                    const handoffMsg = "Em breve alguém de nosso time irá continuar o atendimento.";
-                    routingLog = await sendMessageHelper(cleanPhone, handoffMsg);
+                    routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
 
                     updates.bot_handoff_sent = true;
                 }
@@ -1670,9 +1690,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 // Create new prospect
                 console.log(`[whapiWebhook] Creating new prospect for ${cleanPhone}`);
 
-                const welcomeText = "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?";
-
-                const welcomeLog = await sendMessageHelper(cleanPhone, welcomeText);
+                const welcomeLog = await sendMessageHelper(cleanPhone, config.welcome_message);
 
                 const initialLog = [logEntry];
                 if (welcomeLog) initialLog.push(welcomeLog);

@@ -120,6 +120,11 @@
                         </select>
                         <button id="resetFiltersBtn"
                             class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
+                        <button id="configBtn"
+                            class="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0"
+                            title="Configurar Bot">
+                            <i class="fas fa-cog"></i> Configurar Bot
+                        </button>
                     </div>
                 </div>
 
@@ -129,6 +134,60 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
+        <div
+            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
+                <h2 class="text-xl font-bold">Configuração do Bot WhatsApp</h2>
+                <button id="closeConfigModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="configForm" class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                <p class="text-sm text-gray-400 mb-4">Edite as mensagens automáticas enviadas pelo robô.</p>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Boas-vindas</label>
+                    <textarea id="cfg_welcome" rows="6"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Menu Brasília</label>
+                        <textarea id="cfg_menu_bsb" rows="5"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Menu Florianópolis</label>
+                        <textarea id="cfg_menu_floripa" rows="5"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Pergunta de Qualificação</label>
+                    <input type="text" id="cfg_confirmation"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Handoff (Transbordo)</label>
+                    <input type="text" id="cfg_handoff"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancelConfigBtn"
+                        class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium transition-colors">Cancelar</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold shadow-lg shadow-yellow-900/20 transition-colors">Salvar
+                        Configuração</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Add/Edit Prospect Modal -->
@@ -1487,6 +1546,88 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // --- CONFIGURATION MODAL LOGIC ---
+        const configModal = document.getElementById('configModal');
+        const openConfigBtn = document.getElementById('configBtn');
+        const closeConfigModalBtn = document.getElementById('closeConfigModalBtn');
+        const cancelConfigBtn = document.getElementById('cancelConfigBtn');
+        const configForm = document.getElementById('configForm');
+
+        function openConfigModal() {
+            configModal.classList.remove('hidden');
+            configModal.classList.add('flex');
+            fetchConfig();
+        }
+
+        function closeConfigModal() {
+            configModal.classList.add('hidden');
+            configModal.classList.remove('flex');
+        }
+
+        async function fetchConfig() {
+            // Default Config (MUST Match Backend Defaults)
+            const defaults = {
+                welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+                menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
+                menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+                confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
+                handoff_message: "Em breve alguém de nosso time irá continuar o atendimento."
+            };
+
+            try {
+                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                const docSnap = await getDoc(docRef);
+
+                let data = defaults;
+                if (docSnap.exists()) {
+                    data = { ...defaults, ...docSnap.data() };
+                }
+
+                document.getElementById('cfg_welcome').value = data.welcome_message;
+                document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
+                document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
+                document.getElementById('cfg_confirmation').value = data.confirmation_question;
+                document.getElementById('cfg_handoff').value = data.handoff_message;
+
+            } catch (error) {
+                console.error("Error fetching config:", error);
+                alert("Erro ao carregar configurações. Verifique permissões.");
+            }
+        }
+
+        async function saveConfig(e) {
+            e.preventDefault();
+            const updates = {
+                welcome_message: document.getElementById('cfg_welcome').value,
+                menu_brasilia: document.getElementById('cfg_menu_bsb').value,
+                menu_floripa: document.getElementById('cfg_menu_floripa').value,
+                confirmation_question: document.getElementById('cfg_confirmation').value,
+                handoff_message: document.getElementById('cfg_handoff').value
+            };
+
+            try {
+                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                await setDoc(docRef, updates, { merge: true });
+                alert("Configurações salvas com sucesso!");
+                closeConfigModal();
+            } catch (error) {
+                console.error("Error saving config:", error);
+                alert("Erro ao salvar: " + error.message);
+            }
+        }
+
+        if (openConfigBtn) openConfigBtn.addEventListener('click', openConfigModal);
+        if (closeConfigModalBtn) closeConfigModalBtn.addEventListener('click', closeConfigModal);
+        if (cancelConfigBtn) cancelConfigBtn.addEventListener('click', closeConfigModal);
+        if (configForm) configForm.addEventListener('submit', saveConfig);
+
+        // Close on backdrop click
+        if (configModal) {
+            configModal.addEventListener('click', (e) => {
+                if (e.target === configModal) closeConfigModal();
+            });
         }
 
         // --- INITIALIZE APP ---
