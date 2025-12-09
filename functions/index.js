@@ -1566,10 +1566,10 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     updates.unidade = detectedUnit;
                     console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
 
-                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?\n\nEm breve alguém de nosso time irá continuar o atendimento.";
+                    const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?";
                     routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
                 }
-                // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
+                // 2. If no Unit detected, check for CITY keywords (Level 1 routing) 
                 else if (!currentData.unidade) {
                     if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
                         // Sub-menu for Brasília
@@ -1582,15 +1582,21 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         routingLog = await sendMessageHelper(cleanPhone, floripaMsg);
 
                     } else if (lowerText.includes('dourados')) {
-                        // Direct routing for Dourados (Single unit?) OR check if Dourados has units.
-                        // User said: "Dourados" -> "Perfeito! Você busca arte marcial..."
-                        // Assuming Dourados maps to 'Kihap - Dourados' generic or specific?
-                        // Let's use 'Kihap - Dourados' based on previous logic, but user did not specify Dourados units.
-
+                        // Direct routing for Dourados
                         updates.unidade = 'Kihap - Dourados';
-                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?\n\nEm breve alguém de nosso time irá continuar o atendimento.";
+                        const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?";
                         routingLog = await sendMessageHelper(cleanPhone, douradosMsg);
                     }
+                }
+                // 3. Logic for Post-Answer Handoff
+                // If Unit IS set (from previous interactions), AND we haven't sent the handoff (flag check)
+                // AND we didn't just detect/change the unit above (detectedUnit is null)
+                else if (currentData.unidade && !currentData.bot_handoff_sent) {
+                    // This is likely the answer to "Pra quem é?" or subsequent chat
+                    const handoffMsg = "Em breve alguém de nosso time irá continuar o atendimento.";
+                    routingLog = await sendMessageHelper(cleanPhone, handoffMsg);
+
+                    updates.bot_handoff_sent = true;
                 }
 
                 // If we sent a routing message, add it to the update operation
