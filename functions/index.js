@@ -1449,7 +1449,7 @@ const UNIT_MANAGERS = {
     'Kihap - Jardim Botânico': '5561999999999',
     'Kihap - Centro (Floripa)': '5548992182423',
     'Kihap - Coqueiros': '5548996296941',
-    'Kihap - Santa Mônica': '5548992172423',
+    'Kihap - Santa Mônica': '554892172423',
     'Kihap - Dourados': '5567999999999'
 };
 
