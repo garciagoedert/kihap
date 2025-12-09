@@ -1438,6 +1438,57 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
     }
 });
 
+// Map of Unit Names to Manager Phone Numbers
+// TODO: Replace with actual numbers provided by user
+const UNIT_MANAGERS = {
+    'Kihap - Asa Sul': '5561999999999',
+    'Kihap - Sudoeste': '5561999999999',
+    'Kihap - Lago Sul': '5561999999999',
+    'Kihap - Noroeste': '5561999999999',
+    'Kihap - Pontos de Ensino': '5561999999999',
+    'Kihap - Jardim Botânico': '5561999999999',
+    'Kihap - Centro (Floripa)': '5548992182423',
+    'Kihap - Coqueiros': '5548996296941',
+    'Kihap - Santa Mônica': '5548992172423',
+    'Kihap - Dourados': '5567999999999'
+};
+
+const CRM_URL = 'https://intranet-kihap.web.app/intranet/prospeccao.html'; // Default Firebase URL
+
+// Helper to notify Unit Manager
+async function notifyUnitManager(unitName, leadName, leadPhone) {
+    try {
+        const managerPhone = UNIT_MANAGERS[unitName];
+        if (!managerPhone || managerPhone === '5561999999999') {
+            console.log(`[notifyUnitManager] No manager phone configured for ${unitName}`);
+            return null;
+        }
+
+        const message = `🔔 *Novo Lead para ${unitName}*\n\n👤 Nome: ${leadName}\n📱 Telefone: ${leadPhone}\n\n🔗 Acessar CRM: ${CRM_URL}`;
+
+        console.log(`[notifyUnitManager] Sending notification to ${managerPhone} for unit ${unitName}`);
+
+        // Use the existing sendMessageHelper logic directly roughly or call it if possible.
+        // Since sendMessageHelper sends to 'to' and returns a log entry, we can reuse it but we don't need the log entry for the prospect's history.
+        // We just want to fire and forget or log internal success.
+
+        const token = process.env.WHAPI_TOKEN || functions.config().whapi?.token;
+        if (!token) return null;
+
+        await axios.post('https://gate.whapi.cloud/messages/text', {
+            to: `${managerPhone}@s.whatsapp.net`,
+            body: message
+        }, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        });
+
+        return true;
+    } catch (error) {
+        console.error(`[notifyUnitManager] Failed to notify manager for ${unitName}:`, error.message);
+        return false;
+    }
+}
+
 // Helper to send WhatsApp message via Whapi
 async function sendMessageHelper(to, body) {
     try {
@@ -1568,6 +1619,9 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
 
                     const confirmationMsg = "Você busca arte marcial pra você mesmo ou pra outra pessoa?";
                     routingLog = await sendMessageHelper(cleanPhone, confirmationMsg);
+
+                    // Notify Manager
+                    await notifyUnitManager(detectedUnit, prospectTitle, cleanPhone);
                 }
                 // 2. If no Unit detected, check for CITY keywords (Level 1 routing) 
                 else if (!currentData.unidade) {
@@ -1586,6 +1640,9 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         updates.unidade = 'Kihap - Dourados';
                         const douradosMsg = "Perfeito! Você busca arte marcial pra você mesmo ou pra outra pessoa?";
                         routingLog = await sendMessageHelper(cleanPhone, douradosMsg);
+
+                        // Notify Manager
+                        await notifyUnitManager('Kihap - Dourados', prospectTitle, cleanPhone);
                     }
                 }
                 // 3. Logic for Post-Answer Handoff
