@@ -31,7 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
             end.setDate(0);
             end.setHours(23, 59, 59, 999);
         }
-        return { start: Timestamp.fromDate(start), end: Timestamp.fromDate(end) };
+        return { start, end };
+    }
+
+    function formatDateForFirestore(date) {
+        return date.toISOString().split('T')[0];
     }
 
     // --- Funções do Relatório ---
@@ -48,35 +52,94 @@ document.addEventListener('DOMContentLoaded', () => {
         reportResults.innerHTML = '<p class="text-center text-gray-400">Gerando relatório...</p>';
 
         const { start, end } = getReportDateRange(selectedDate, rangeType);
+        const startStr = formatDateForFirestore(start);
+        const endStr = formatDateForFirestore(end);
 
         try {
-            const q = query(collection(db, 'classes'),
-                where('unitId', '==', unitId),
-                where('startTime', '>=', start),
-                where('startTime', '<=', end)
-            );
+            // 1. Buscar Templates de Aula da Unidade
+            const templatesQuery = query(collection(db, 'classTemplates'), where('unitId', '==', unitId));
+            const templatesSnapshot = await getDocs(templatesQuery);
+            const templates = [];
+            templatesSnapshot.forEach(doc => {
+                templates.push({ id: doc.id, ...doc.data() });
+            });
 
-            const querySnapshot = await getDocs(q);
+            // 2. Buscar Instâncias de Aula (Presenças) no Período
+            // Nota: classInstances armazenam a data como string YYYY-MM-DD no campo 'date'
+            const instancesQuery = query(collection(db, 'classInstances'),
+                where('unitId', '==', unitId),
+                where('date', '>=', startStr),
+                where('date', '<=', endStr)
+            );
+            const instancesSnapshot = await getDocs(instancesQuery);
+            const instancesMap = new Map();
+            instancesSnapshot.forEach(doc => {
+                // Chave: templateId_data
+                // Mas vamos usar o ID do doc que já segue esse padrão ou criar um mapa mais flexível
+                // O ID do doc é templateId_YYYY-MM-DD
+                instancesMap.set(doc.id, doc.data());
+            });
 
             let totalStudentsInAllClasses = 0;
             let totalPresents = 0;
-            const classesData = [];
+            const classesStats = new Map(); // Mapa para agregar por Nome da Aula (ou Template ID)
 
-            querySnapshot.forEach(doc => {
-                const classData = doc.data();
-                const presences = classData.presentStudents?.length || 0;
-                const totalStudents = classData.students?.length || 0;
+            // 3. Iterar dia a dia no range para reconstruir o histórico
+            const currentDate = new Date(start);
+            while (currentDate <= end) {
+                const dateStr = formatDateForFirestore(currentDate);
+                const dayOfWeek = currentDate.getDay(); // 0 = Dom, 6 = Sab
 
-                totalPresents += presences;
-                totalStudentsInAllClasses += totalStudents;
+                for (const template of templates) {
+                    // Verifica se a aula acontece neste dia da semana
+                    if (template.daysOfWeek && template.daysOfWeek.includes(dayOfWeek)) {
+                        const instanceId = `${template.id}_${dateStr}`;
+                        const instance = instancesMap.get(instanceId);
 
-                classesData.push({
-                    name: classData.name,
-                    presences: presences,
-                    total: totalStudents,
-                    percentage: totalStudents > 0 ? ((presences / totalStudents) * 100).toFixed(1) : 0
-                });
+                        const totalStudents = template.students?.length || 0;
+                        const presences = instance?.presentStudents?.length || 0;
+
+                        totalStudentsInAllClasses += totalStudents;
+                        totalPresents += presences;
+
+                        // Agrega estatísticas por Template/Aula
+                        if (!classesStats.has(template.id)) {
+                            classesStats.set(template.id, {
+                                name: template.name,
+                                totalPresences: 0,
+                                totalOccurrences: 0,
+                                totalPossiblePresences: 0 // Soma de alunos inscritos em todas as ocorrências
+                            });
+                        }
+
+                        const stat = classesStats.get(template.id);
+                        stat.totalPresences += presences;
+                        stat.totalOccurrences += 1;
+                        stat.totalPossiblePresences += totalStudents;
+                    }
+                }
+
+                // Avança para o próximo dia
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Preparar dados para renderização
+            const classesData = Array.from(classesStats.values()).map(stat => {
+                const percentage = stat.totalPossiblePresences > 0
+                    ? ((stat.totalPresences / stat.totalPossiblePresences) * 100).toFixed(1)
+                    : 0;
+
+                return {
+                    name: stat.name,
+                    presences: stat.totalPresences,
+                    total: stat.totalPossiblePresences, // Total acumulado de vagas/inscritos no período
+                    percentage: percentage,
+                    occurrences: stat.totalOccurrences
+                };
             });
+
+            // Ordenar por porcentagem (opcional, ou por nome)
+            classesData.sort((a, b) => b.percentage - a.percentage);
 
             renderReport(classesData, totalPresents, totalStudentsInAllClasses);
 
@@ -107,10 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <i class="fas fa-users text-5xl text-purple-500"></i>
                     </div>
-                    <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Total de Alunos</h3>
+                    <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Total de Oportunidades</h3>
                     <div class="flex items-baseline gap-2">
                         <p class="text-4xl font-bold text-white">${totalStudentsInAllClasses}</p>
-                        <span class="text-xs text-gray-500">inscritos</span>
+                        <span class="text-xs text-gray-500">presenças possíveis</span>
                     </div>
                 </div>
 
@@ -150,8 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <thead class="bg-[#222]">
                             <tr>
                                 <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Turma</th>
+                                <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Aulas</th>
                                 <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Presenças</th>
-                                <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Total Alunos</th>
+                                <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Total Possível</th>
                                 <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">% Frequência</th>
                                 <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
                             </tr>
@@ -172,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHtml += `
                 <tr class="hover:bg-[#222] transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white border-l-2 border-transparent hover:border-blue-500 transition-all">${c.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center">${c.occurrences}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">${c.presences}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">${c.total}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-center ${c.percentage >= 75 ? 'text-green-500' : 'text-yellow-500'}">${c.percentage}%</td>
