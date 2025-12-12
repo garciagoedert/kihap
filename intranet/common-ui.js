@@ -100,7 +100,8 @@ function setupUIListeners(handlers = {}) {
     // Prospecção submenu toggle
     const prospeccaoMenuBtn = document.getElementById('prospeccao-menu-btn');
     const prospeccaoSubmenu = document.getElementById('prospeccao-submenu');
-    if (prospeccaoMenuBtn && prospeccaoSubmenu) {
+    if (prospeccaoMenuBtn && prospeccaoSubmenu && !prospeccaoMenuBtn.dataset.listenerAttached) {
+        prospeccaoMenuBtn.dataset.listenerAttached = 'true';
         prospeccaoMenuBtn.addEventListener('click', () => {
             prospeccaoSubmenu.classList.toggle('hidden');
             const icon = prospeccaoMenuBtn.querySelector('i.fa-chevron-down');

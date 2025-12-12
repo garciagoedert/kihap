@@ -85,47 +85,19 @@
             <!-- Board Content -->
             <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
                 <!-- Stats -->
-                <div id="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 flex-shrink-0">
-                    <!-- Stat cards will be injected here by JS -->
-                </div>
+                <!-- Stats Removed -->
 
                 <!-- Filters -->
-                <div
-                    class="bg-[#1a1a1a] p-4 rounded-lg mb-6 flex flex-col xl:flex-row items-center gap-4 shadow-md flex-shrink-0">
-                    <div class="relative flex-grow w-full">
+                <div class="flex flex-col sm:flex-row gap-2 mb-2 flex-shrink-0">
+                    <div class="relative flex-grow">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            class="w-full bg-[#1a1a1a] text-gray-200 border border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-md">
                     </div>
-                    <div class="flex flex-col sm:flex-row flex-wrap items-center w-full xl:w-auto gap-4">
-                        <select id="priorityFilter"
-                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            aria-label="Filter by priority">
-                            <option value="">Todas as Prioridades</option>
-                            <option value="5">Máxima (5)</option>
-                            <option value="4">Alta (4)</option>
-                            <option value="3">Média (3)</option>
-                            <option value="2">Baixa (2)</option>
-                            <option value="1">Mínima (1)</option>
-                        </select>
-                        <select id="tagFilter"
-                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            aria-label="Filter by tag">
-                            <option value="">Todas as Tags</option>
-                        </select>
-                        <select id="unidadeFilter"
-                            class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            aria-label="Filter by unit">
-                            <option value="">Todas as Unidades</option>
-                        </select>
-                        <button id="resetFiltersBtn"
-                            class="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0">Limpar</button>
-                        <button id="configBtn"
-                            class="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0"
-                            title="Configurar Bot">
-                            <i class="fas fa-cog"></i> Configurar Bot
-                        </button>
-                    </div>
+                    <button id="openFiltersBtn"
+                        class="bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        <i class="fas fa-filter text-yellow-500"></i> <span class="hidden sm:inline">Filtros</span>
+                    </button>
                 </div>
 
                 <!-- Kanban Board -->
@@ -416,177 +388,238 @@
                 <button id="confirmActionBtn"
                     class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Confirmar</button>
             </div>
-        </div>
-    </div>
+            <!-- Filters Modal -->
+            <div id="filtersModal"
+                class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
+                <div class="bg-[#1a1a1a] w-full max-w-lg rounded-xl shadow-2xl flex flex-col border border-gray-800">
+                    <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                        <h2 class="text-xl font-bold flex items-center gap-2"><i
+                                class="fas fa-filter text-yellow-500"></i> Filtros</h2>
+                        <button id="closeFiltersModalBtn"
+                            class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Prioridade</label>
+                                <select id="priorityFilter"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    <option value="">Todas</option>
+                                    <option value="5">Máxima (5)</option>
+                                    <option value="4">Alta (4)</option>
+                                    <option value="3">Média (3)</option>
+                                    <option value="2">Baixa (2)</option>
+                                    <option value="1">Mínima (1)</option>
+                                </select>
+                            </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Firebase Imports
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { collection, doc, addDoc, getDoc, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { db, appId, app, functions } from './firebase-config.js';
-        import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-        import { setupUIListeners, loadComponents } from './common-ui.js';
+                            <div class="form-group">
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
+                                <select id="unidadeFilter"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                        </div>
 
-        // --- INITIALIZATION ---
-        const auth = getAuth(app);
-        const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
-        const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
-        const getWhatsAppHistory = httpsCallable(functions, 'getWhatsAppHistory');
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Tags</label>
+                            <select id="tagFilter"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
 
-        // --- GLOBAL STATE ---
-        let evoUnits = [];
-        let prospects = [];
-        let leads = [];
-        let combinedData = [];
-        let filteredProspects = [];
-        let prospectsListener = null;
-        let leadsListener = null;
-        let currentProspectId = null;
+                        <div class="pt-4 border-t border-gray-700 flex flex-col gap-3">
+                            <button id="resetFiltersBtn"
+                                class="w-full bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                                Limpar Filtros
+                            </button>
+                            <button id="configBtn"
+                                class="w-full bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-cog"></i> Configurar Bot WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-gray-800 bg-[#111111]/50 rounded-b-xl flex justify-end">
+                        <button id="applyFiltersBtn"
+                            class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg">Ver
+                            Resultados</button>
+                    </div>
+                </div>
+            </div>
 
-        const COLUMNS = {
-            'Novo': 'novo', 'Contactado': 'contactado', 'Aula experimental': 'aula_experimental',
-            'Matrícula': 'matricula'
-        };
-        const COLUMN_NAMES = Object.keys(COLUMNS);
-        const TAGS = ['Whatsapp', 'Ligação', 'Email', 'Follow-up', 'Urgente'];
+            <!-- Firebase SDK -->
+            <script type="module">
+                // Firebase Imports
+                import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+                import { collection, doc, addDoc, getDoc, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                import { db, appId, app, functions } from './firebase-config.js';
+                import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+                import { setupUIListeners, loadComponents } from './common-ui.js';
 
-        // --- UI ELEMENTS ---
-        const kanbanBoard = document.getElementById('kanban-board');
-        const statsContainer = document.getElementById('stats');
-        const formModal = document.getElementById('formModal');
-        const prospectForm = document.getElementById('prospectForm');
-        const confirmModal = document.getElementById('confirmModal');
-        const kanbanContainer = document.getElementById('kanban-container');
-        const importModal = document.getElementById('importModal');
+                // --- INITIALIZATION ---
+                const auth = getAuth(app);
+                const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+                const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
+                const getWhatsAppHistory = httpsCallable(functions, 'getWhatsAppHistory');
 
-        // --- AUTHENTICATION ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                if (sessionStorage.getItem('isLoggedIn') === 'true') {
-                    document.getElementById('kanban-container').classList.remove('hidden');
-                    setupListeners();
-                } else {
-                    window.location.href = 'login.html';
+                // --- GLOBAL STATE ---
+                let evoUnits = [];
+                let prospects = [];
+                let leads = [];
+                let combinedData = [];
+                let filteredProspects = [];
+                let prospectsListener = null;
+                let leadsListener = null;
+                let currentProspectId = null;
+
+                const COLUMNS = {
+                    'Novo': 'novo', 'Contactado': 'contactado', 'Aula experimental': 'aula_experimental',
+                    'Matrícula': 'matricula'
+                };
+                const COLUMN_NAMES = Object.keys(COLUMNS);
+                const TAGS = ['Whatsapp', 'Ligação', 'Email', 'Follow-up', 'Urgente'];
+
+                // --- UI ELEMENTS ---
+                const kanbanBoard = document.getElementById('kanban-board');
+                // statsContainer removed
+                const formModal = document.getElementById('formModal');
+                const prospectForm = document.getElementById('prospectForm');
+                const confirmModal = document.getElementById('confirmModal');
+                const kanbanContainer = document.getElementById('kanban-container');
+                const importModal = document.getElementById('importModal');
+                const filtersModal = document.getElementById('filtersModal');
+                const openFiltersBtn = document.getElementById('openFiltersBtn');
+                const closeFiltersModalBtn = document.getElementById('closeFiltersModalBtn');
+                const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+
+                // --- AUTHENTICATION ---
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                            document.getElementById('kanban-container').classList.remove('hidden');
+                            setupListeners();
+                        } else {
+                            window.location.href = 'login.html';
+                        }
+                    } else {
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (error) {
+                            console.error("Anonymous Authentication Error:", error);
+                            document.body.innerHTML = `<div class="flex items-center justify-center h-screen text-red-500">Erro de autenticação com o servidor. Tente novamente mais tarde.</div>`;
+                        }
+                    }
+                });
+
+                // --- DATA HANDLING (FIRESTORE) ---
+                function setupListeners() {
+                    if (prospectsListener) prospectsListener();
+                    if (leadsListener) leadsListener();
+
+                    const prospectsCollection = collection(db, 'prospects');
+                    prospectsListener = onSnapshot(prospectsCollection, (snapshot) => {
+                        prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'prospect' })).filter(p => !p.pagina || p.pagina === 'Prospecção');
+                        combineAndRender();
+                    }, (error) => {
+                        console.error("Error fetching prospects:", error);
+                    });
+
+                    const leadsCollection = collection(db, 'leads');
+                    leadsListener = onSnapshot(leadsCollection, (snapshot) => {
+                        leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lead' }));
+                        combineAndRender();
+                    }, (error) => {
+                        console.error("Error fetching leads:", error);
+                    });
                 }
-            } else {
-                try {
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Anonymous Authentication Error:", error);
-                    document.body.innerHTML = `<div class="flex items-center justify-center h-screen text-red-500">Erro de autenticação com o servidor. Tente novamente mais tarde.</div>`;
+
+                function combineAndRender() {
+                    const formattedLeads = leads.map(lead => ({
+                        id: lead.id,
+                        responsavel: lead.nome,
+                        unidade: lead.unidade,
+                        setor: '', // Leads from website don't have a program yet
+                        prioridade: 3, // Default priority for leads
+                        status: lead.status || 'Novo',
+                        ticketEstimado: 0,
+                        origemLead: lead['origem do lead'] || 'Site',
+                        telefone: lead.telefone,
+                        email: lead.email,
+                        createdAt: lead.createdAt,
+                        type: 'lead'
+                    }));
+                    combinedData = [...prospects, ...formattedLeads];
+                    applyFilters();
                 }
-            }
-        });
 
-        // --- DATA HANDLING (FIRESTORE) ---
-        function setupListeners() {
-            if (prospectsListener) prospectsListener();
-            if (leadsListener) leadsListener();
+                // --- RENDERING ---
+                function renderBoard() {
+                    kanbanBoard.innerHTML = '';
+                    const isMobile = window.innerWidth < 768;
 
-            const prospectsCollection = collection(db, 'prospects');
-            prospectsListener = onSnapshot(prospectsCollection, (snapshot) => {
-                prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'prospect' })).filter(p => !p.pagina || p.pagina === 'Prospecção');
-                combineAndRender();
-            }, (error) => {
-                console.error("Error fetching prospects:", error);
-            });
+                    COLUMN_NAMES.forEach(status => {
+                        const columnId = COLUMNS[status];
+                        const columnProspects = filteredProspects.filter(p => p.status === status);
 
-            const leadsCollection = collection(db, 'leads');
-            leadsListener = onSnapshot(leadsCollection, (snapshot) => {
-                leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lead' }));
-                combineAndRender();
-            }, (error) => {
-                console.error("Error fetching leads:", error);
-            });
-        }
+                        const columnEl = document.createElement('div');
 
-        function combineAndRender() {
-            const formattedLeads = leads.map(lead => ({
-                id: lead.id,
-                responsavel: lead.nome,
-                unidade: lead.unidade,
-                setor: '', // Leads from website don't have a program yet
-                prioridade: 3, // Default priority for leads
-                status: lead.status || 'Novo',
-                ticketEstimado: 0,
-                origemLead: lead['origem do lead'] || 'Site',
-                telefone: lead.telefone,
-                email: lead.email,
-                createdAt: lead.createdAt,
-                type: 'lead'
-            }));
-            combinedData = [...prospects, ...formattedLeads];
-            applyFilters();
-        }
-
-        // --- RENDERING ---
-        function renderBoard() {
-            kanbanBoard.innerHTML = '';
-            const isMobile = window.innerWidth < 768;
-
-            COLUMN_NAMES.forEach(status => {
-                const columnId = COLUMNS[status];
-                const columnProspects = filteredProspects.filter(p => p.status === status);
-
-                const columnEl = document.createElement('div');
-
-                let contentHTML;
-                if (isMobile) {
-                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
-                    contentHTML = `
+                        let contentHTML;
+                        if (isMobile) {
+                            columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
+                            contentHTML = `
                         <div class="overflow-x-auto pb-3">
                             <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-3 p-2 min-h-[120px] pr-2">
                                 <!-- Cards will be injected here -->
                             </div>
                         </div>
                     `;
-                } else {
-                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col overflow-hidden';
-                    contentHTML = `
+                        } else {
+                            columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col overflow-hidden';
+                            contentHTML = `
                         <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-2 space-y-3 rounded-md overflow-y-auto">
                            <!-- Cards will be injected here -->
                         </div>
                     `;
-                }
+                        }
 
-                columnEl.innerHTML = `
+                        columnEl.innerHTML = `
                     <div class="flex justify-between items-center p-3 flex-shrink-0">
                         <h3 class="font-bold">${status}</h3>
                         <span class="bg-gray-700 text-gray-300 text-xs font-semibold px-2 py-1 rounded-full">${columnProspects.length}</span>
                     </div>
                     ${contentHTML}
                 `;
-                kanbanBoard.appendChild(columnEl);
+                        kanbanBoard.appendChild(columnEl);
 
-                const contentArea = columnEl.querySelector('.column-content');
-                if (columnProspects.length === 0) {
-                    contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
-                } else {
-                    columnProspects
-                        .sort((a, b) => b.prioridade - a.prioridade)
-                        .forEach(prospect => {
-                            contentArea.appendChild(createProspectCard(prospect, isMobile));
-                        });
+                        const contentArea = columnEl.querySelector('.column-content');
+                        if (columnProspects.length === 0) {
+                            contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
+                        } else {
+                            columnProspects
+                                .sort((a, b) => b.prioridade - a.prioridade)
+                                .forEach(prospect => {
+                                    contentArea.appendChild(createProspectCard(prospect, isMobile));
+                                });
+                        }
+                    });
+                    addDragAndDropHandlers();
                 }
-            });
-            addDragAndDropHandlers();
-            updateStats();
-        }
 
-        function createProspectCard(prospect, isMobile = false) {
-            const card = document.createElement('div');
-            const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
-            card.className = `prospect-card bg-[#111111] p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
-            card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
-            card.draggable = true;
-            card.dataset.id = prospect.id;
+                function createProspectCard(prospect, isMobile = false) {
+                    const card = document.createElement('div');
+                    const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
+                    card.className = `prospect-card bg-[#111111] p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
+                    card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
+                    card.draggable = true;
+                    card.dataset.id = prospect.id;
 
-            const sectorColor = getSectorColor(prospect.setor);
+                    const sectorColor = getSectorColor(prospect.setor);
 
-            const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200">${tag}</span>`).join('');
+                    const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200">${tag}</span>`).join('');
 
-            card.innerHTML = `
+                    card.innerHTML = `
                 <div class="flex justify-between items-start">
                     <h4 class="font-bold mb-2 flex-grow pr-2">${prospect.responsavel || 'Prospect sem nome'}</h4>
                 </div>
@@ -603,153 +636,125 @@
                 ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
             `;
 
-            card.addEventListener('click', () => {
-                openFormModal(prospect);
-            });
+                    card.addEventListener('click', () => {
+                        openFormModal(prospect);
+                    });
 
-            return card;
-        }
+                    return card;
+                }
 
-        function updateStats() {
-            const total = filteredProspects.length;
-            const highPriority = filteredProspects.filter(p => p.prioridade >= 4).length;
-            const totalPotential = filteredProspects.reduce((sum, p) => sum + (p.ticketEstimado || 0), 0);
-            const avgTicket = total > 0 ? totalPotential / total : 0;
+                // --- DRAG & DROP ---
+                function addDragAndDropHandlers() {
+                    const cards = document.querySelectorAll('.prospect-card');
+                    const columns = document.querySelectorAll('.column-content');
 
-            statsContainer.innerHTML = `
-                ${createStatCard('Total de Prospects', total, 'fa-users', 'text-gray-300')}
-                ${createStatCard('Alta Prioridade', highPriority, 'fa-star', 'text-yellow-400')}
-                ${createStatCard('Potencial Total', `R$ ${totalPotential.toLocaleString('pt-BR')}`, 'fa-dollar-sign', 'text-green-500')}
-                ${createStatCard('Ticket Médio', `R$ ${Math.round(avgTicket).toLocaleString('pt-BR')}`, 'fa-chart-pie', 'text-yellow-500')}
-            `;
-        }
+                    cards.forEach(card => {
+                        card.addEventListener('dragstart', () => card.classList.add('dragging'));
+                        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+                    });
 
-        function createStatCard(label, value, icon, iconColor) {
-            return `
-                <div class="bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-4 shadow-md">
-                    <div class="bg-gray-700 p-3 rounded-full">
-                        <i class="fas ${icon} fa-lg ${iconColor}"></i>
-                    </div>
-                    <div>
-                        <div class="text-2xl font-bold">${value}</div>
-                        <div class="text-sm text-gray-400">${label}</div>
-                    </div>
-                </div>
-            `;
-        }
+                    columns.forEach(column => {
+                        column.addEventListener('dragover', e => {
+                            e.preventDefault();
+                            const dropTarget = e.currentTarget;
+                            dropTarget.classList.add('drag-over');
+                        });
+                        column.addEventListener('dragleave', e => {
+                            const dropTarget = e.currentTarget;
+                            dropTarget.classList.remove('drag-over');
+                        });
+                        column.addEventListener('drop', e => {
+                            e.preventDefault();
+                            const dropTarget = e.currentTarget;
+                            dropTarget.classList.remove('drag-over');
+                            const draggingCard = document.querySelector('.dragging');
+                            if (draggingCard) {
+                                const prospectId = draggingCard.dataset.id;
+                                const newStatus = dropTarget.dataset.status;
+                                updateProspectStatus(prospectId, newStatus);
+                            }
+                        });
+                    });
+                }
 
-        // --- DRAG & DROP ---
-        function addDragAndDropHandlers() {
-            const cards = document.querySelectorAll('.prospect-card');
-            const columns = document.querySelectorAll('.column-content');
+                async function updateProspectStatus(prospectId, newStatus) {
+                    const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+                    const item = combinedData.find(p => p.id === prospectId);
+                    const oldStatus = item ? item.status : 'N/A';
 
-            cards.forEach(card => {
-                card.addEventListener('dragstart', () => card.classList.add('dragging'));
-                card.addEventListener('dragend', () => card.classList.remove('dragging'));
-            });
-
-            columns.forEach(column => {
-                column.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const dropTarget = e.currentTarget;
-                    dropTarget.classList.add('drag-over');
-                });
-                column.addEventListener('dragleave', e => {
-                    const dropTarget = e.currentTarget;
-                    dropTarget.classList.remove('drag-over');
-                });
-                column.addEventListener('drop', e => {
-                    e.preventDefault();
-                    const dropTarget = e.currentTarget;
-                    dropTarget.classList.remove('drag-over');
-                    const draggingCard = document.querySelector('.dragging');
-                    if (draggingCard) {
-                        const prospectId = draggingCard.dataset.id;
-                        const newStatus = dropTarget.dataset.status;
-                        updateProspectStatus(prospectId, newStatus);
+                    if (!item) {
+                        console.error("Item not found:", prospectId);
+                        return;
                     }
-                });
-            });
-        }
 
-        async function updateProspectStatus(prospectId, newStatus) {
-            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            const item = combinedData.find(p => p.id === prospectId);
-            const oldStatus = item ? item.status : 'N/A';
+                    try {
+                        let itemRef;
+                        if (item.type === 'lead') {
+                            itemRef = doc(db, 'leads', prospectId);
+                        } else {
+                            itemRef = doc(db, 'prospects', prospectId);
+                        }
 
-            if (!item) {
-                console.error("Item not found:", prospectId);
-                return;
-            }
+                        await updateDoc(itemRef, {
+                            status: newStatus,
+                            updatedAt: serverTimestamp()
+                        });
 
-            try {
-                let itemRef;
-                if (item.type === 'lead') {
-                    itemRef = doc(db, 'leads', prospectId);
-                } else {
-                    itemRef = doc(db, 'prospects', prospectId);
+                        const itemName = item.responsavel || item.empresa || 'N/A';
+                        generalLog.add(user, 'Move Card', `Card "${itemName}" moved from ${oldStatus} to ${newStatus}`);
+
+                        if (newStatus === 'Fechado' && item.type === 'prospect') {
+                            await archiveProspect(prospectId);
+                        }
+                    } catch (error) {
+                        console.error("Error updating status:", error);
+                    }
                 }
 
-                await updateDoc(itemRef, {
-                    status: newStatus,
-                    updatedAt: serverTimestamp()
-                });
+                // --- FILTERS ---
+                function applyFilters() {
+                    const search = document.getElementById('searchInput').value.toLowerCase();
+                    const priority = document.getElementById('priorityFilter').value;
+                    const tag = document.getElementById('tagFilter').value;
+                    const unidade = document.getElementById('unidadeFilter').value;
+                    const prospectingStatuses = Object.keys(COLUMNS);
 
-                const itemName = item.responsavel || item.empresa || 'N/A';
-                generalLog.add(user, 'Move Card', `Card "${itemName}" moved from ${oldStatus} to ${newStatus}`);
 
-                if (newStatus === 'Fechado' && item.type === 'prospect') {
-                    await archiveProspect(prospectId);
+                    filteredProspects = combinedData.filter(p => {
+                        const isProspecting = prospectingStatuses.includes(p.status);
+                        if (!isProspecting) return false;
+
+                        const searchableName = p.responsavel || p.empresa || '';
+                        const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
+                        const matchPriority = !priority || p.prioridade.toString() === priority;
+                        const matchTag = !tag || (p.tags && p.tags.includes(tag));
+                        const matchUnidade = !unidade || p.unidade === unidade;
+                        return matchSearch && matchPriority && matchTag && matchUnidade;
+                    });
+                    renderBoard();
                 }
-            } catch (error) {
-                console.error("Error updating status:", error);
-            }
-        }
 
-        // --- FILTERS ---
-        function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const priority = document.getElementById('priorityFilter').value;
-            const tag = document.getElementById('tagFilter').value;
-            const unidade = document.getElementById('unidadeFilter').value;
-            const prospectingStatuses = Object.keys(COLUMNS);
+                // --- MODAL HANDLING ---
+                function renderContactLog(prospect) {
+                    const logContainer = document.getElementById('contactLogContainer');
+                    if (!logContainer) return;
 
+                    const logs = prospect.contactLog || [];
 
-            filteredProspects = combinedData.filter(p => {
-                const isProspecting = prospectingStatuses.includes(p.status);
-                if (!isProspecting) return false;
+                    if (logs.length === 0) {
+                        logContainer.innerHTML = '<p class="text-gray-500 text-sm">Nenhum contato registrado.</p>';
+                        return;
+                    }
 
-                const searchableName = p.responsavel || p.empresa || '';
-                const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
-                const matchPriority = !priority || p.prioridade.toString() === priority;
-                const matchTag = !tag || (p.tags && p.tags.includes(tag));
-                const matchUnidade = !unidade || p.unidade === unidade;
-                return matchSearch && matchPriority && matchTag && matchUnidade;
-            });
-            renderBoard();
-        }
+                    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
 
-        // --- MODAL HANDLING ---
-        function renderContactLog(prospect) {
-            const logContainer = document.getElementById('contactLogContainer');
-            if (!logContainer) return;
-
-            const logs = prospect.contactLog || [];
-
-            if (logs.length === 0) {
-                logContainer.innerHTML = '<p class="text-gray-500 text-sm">Nenhum contato registrado.</p>';
-                return;
-            }
-
-            const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-
-            logContainer.innerHTML = logs
-                .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
-                .map((log, index) => {
-                    const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
-                    const author = log.author || 'Sistema';
-                    const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-red-500 hover:text-red-400 text-xs ml-2">&times;</button>` : '';
-                    return `
+                    logContainer.innerHTML = logs
+                        .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
+                        .map((log, index) => {
+                            const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
+                            const author = log.author || 'Sistema';
+                            const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-red-500 hover:text-red-400 text-xs ml-2">&times;</button>` : '';
+                            return `
                         <div class="bg-gray-700/50 p-2 rounded-md flex justify-between items-start ${log.type === 'whatsapp-sent' ? 'border-l-4 border-green-500 bg-green-900/20' : ''}">
                             <div>
                                 <p class="text-sm text-gray-300 whitespace-pre-wrap">
@@ -761,988 +766,1041 @@
                             ${deleteButtonHTML}
                         </div>
                     `;
-                }).join('');
+                        }).join('');
 
-            if (isAdmin) {
-                logContainer.querySelectorAll('.delete-log-btn').forEach(button => {
-                    button.addEventListener('click', async (e) => {
-                        const logIndex = parseInt(e.target.dataset.logIndex, 10);
-                        const logToDelete = logs[logIndex];
+                    if (isAdmin) {
+                        logContainer.querySelectorAll('.delete-log-btn').forEach(button => {
+                            button.addEventListener('click', async (e) => {
+                                const logIndex = parseInt(e.target.dataset.logIndex, 10);
+                                const logToDelete = logs[logIndex];
 
-                        if (confirm('Tem certeza que deseja excluir este log?')) {
-                            try {
-                                const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
-                                await updateDoc(prospectRef, {
-                                    contactLog: arrayRemove(logToDelete)
-                                });
-                            } catch (error) {
-                                console.error("Error deleting contact log:", error);
-                                alert("Erro ao excluir o registro de contato.");
+                                if (confirm('Tem certeza que deseja excluir este log?')) {
+                                    try {
+                                        const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
+                                        await updateDoc(prospectRef, {
+                                            contactLog: arrayRemove(logToDelete)
+                                        });
+                                    } catch (error) {
+                                        console.error("Error deleting contact log:", error);
+                                        alert("Erro ao excluir o registro de contato.");
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+
+                async function openFormModal(prospect = null) {
+                    currentProspectId = prospect.id;
+
+                    // Declare UI elements first to avoid initialization errors
+                    const editBtn = document.getElementById('editBtn');
+                    const saveBtn = document.getElementById('saveBtn');
+                    const cancelFormBtn = document.getElementById('cancelFormBtn');
+                    const addContactLogBtn = document.getElementById('addContactLogBtn');
+                    const newContactLogTextarea = document.getElementById('newContactLog');
+                    const contactLogSection = newContactLogTextarea.parentElement.parentElement;
+                    const whatsappChatArea = document.getElementById('whatsappChatArea');
+                    const whatsappInput = document.getElementById('whatsappInput');
+                    const whatsappSendBtn = document.getElementById('whatsappSendBtn');
+                    const tabDetailsBtn = document.getElementById('tabDetailsBtn');
+                    const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
+                    const tabDetailsContent = document.getElementById('tabDetailsContent');
+                    const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+
+                    // Mark as read if unread
+                    if (prospect.unread) {
+                        try {
+                            const prospectRef = doc(db, 'prospects', prospect.id);
+                            await updateDoc(prospectRef, { unread: false });
+                            // Optimistic update of the local object
+                            prospect.unread = false;
+
+                            // Simple re-render logic - update element if it exists in DOM without full redraw
+                            const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
+                            if (card) {
+                                const badge = card.querySelector('.animate-pulse');
+                                if (badge) badge.remove();
                             }
+                        } catch (error) {
+                            console.error("Error marking prospect as read:", error);
                         }
-                    });
-                });
-            }
-        }
-
-        async function openFormModal(prospect = null) {
-            currentProspectId = prospect.id;
-
-            // Declare UI elements first to avoid initialization errors
-            const editBtn = document.getElementById('editBtn');
-            const saveBtn = document.getElementById('saveBtn');
-            const cancelFormBtn = document.getElementById('cancelFormBtn');
-            const addContactLogBtn = document.getElementById('addContactLogBtn');
-            const newContactLogTextarea = document.getElementById('newContactLog');
-            const contactLogSection = newContactLogTextarea.parentElement.parentElement;
-            const whatsappChatArea = document.getElementById('whatsappChatArea');
-            const whatsappInput = document.getElementById('whatsappInput');
-            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
-            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
-            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
-            const tabDetailsContent = document.getElementById('tabDetailsContent');
-            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
-
-            // Mark as read if unread
-            if (prospect.unread) {
-                try {
-                    const prospectRef = doc(db, 'prospects', prospect.id);
-                    await updateDoc(prospectRef, { unread: false });
-                    // Optimistic update of the local object
-                    prospect.unread = false;
-
-                    // Simple re-render logic - update element if it exists in DOM without full redraw
-                    const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
-                    if (card) {
-                        const badge = card.querySelector('.animate-pulse');
-                        if (badge) badge.remove();
                     }
-                } catch (error) {
-                    console.error("Error marking prospect as read:", error);
-                }
-            }
 
-            // Reset to default tab (Details)
-            switchTab('details');
-            prospectForm.reset();
-            populateTagsInModal();
+                    // Reset to default tab (Details)
+                    switchTab('details');
+                    prospectForm.reset();
+                    populateTagsInModal();
 
-            const modalTitle = document.getElementById('modalTitle');
-            const prospectIdInput = document.getElementById('prospectId');
-            const whatsappLink = document.getElementById('whatsappLink');
-            const telefoneInput = document.getElementById('telefone');
-            const modalActionButtons = document.getElementById('modalActionButtons');
-            const archiveBtn = document.getElementById('archiveBtn');
-            const deleteBtn = document.getElementById('deleteBtn');
+                    const modalTitle = document.getElementById('modalTitle');
+                    const prospectIdInput = document.getElementById('prospectId');
+                    const whatsappLink = document.getElementById('whatsappLink');
+                    const telefoneInput = document.getElementById('telefone');
+                    const modalActionButtons = document.getElementById('modalActionButtons');
+                    const archiveBtn = document.getElementById('archiveBtn');
+                    const deleteBtn = document.getElementById('deleteBtn');
 
-            const fields = prospectForm.querySelectorAll('input, select, textarea');
-            // Tab Switching Logic
-            // (Elements declared at top of function)
+                    const fields = prospectForm.querySelectorAll('input, select, textarea');
+                    // Tab Switching Logic
+                    // (Elements declared at top of function)
 
-            function switchTab(tab) {
-                const modalActionButtons = document.getElementById('modalActionButtons');
-                const formControls = document.getElementById('formControls');
+                    function switchTab(tab) {
+                        const modalActionButtons = document.getElementById('modalActionButtons');
+                        const formControls = document.getElementById('formControls');
 
-                if (tab === 'details') {
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
-                    if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
-                    if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
-                    if (modalActionButtons) modalActionButtons.classList.remove('hidden');
-                    if (formControls) formControls.classList.remove('hidden');
-                } else {
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
-                    if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
-                    if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
-                    if (modalActionButtons) modalActionButtons.classList.add('hidden');
-                    if (formControls) formControls.classList.add('hidden');
+                        if (tab === 'details') {
+                            if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
+                            if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                            if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
+                            if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
+                            if (modalActionButtons) modalActionButtons.classList.remove('hidden');
+                            if (formControls) formControls.classList.remove('hidden');
+                        } else {
+                            if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
+                            if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                            if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
+                            if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
+                            if (modalActionButtons) modalActionButtons.classList.add('hidden');
+                            if (formControls) formControls.classList.add('hidden');
 
-                    loadWhatsAppHistory(prospect);
-                }
-            }
-
-            if (tabDetailsBtn) tabDetailsBtn.onclick = () => switchTab('details');
-            if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
-            switchTab('details'); // Reset to details on open
-
-            async function loadWhatsAppHistory(currentProspect) {
-                if (!currentProspect || !currentProspect.telefone) {
-                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
-                    whatsappInput.disabled = true;
-                    whatsappSendBtn.disabled = true;
-                    return;
-                }
-
-                whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
-                whatsappInput.disabled = false;
-                whatsappSendBtn.disabled = false;
-
-                try {
-                    const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
-                    const messages = result.data.messages;
-
-                    if (messages.length === 0) {
-                        whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
-                    } else {
-                        renderChatMessages(messages.reverse()); // Show oldest first
+                            loadWhatsAppHistory(prospect);
+                        }
                     }
-                } catch (error) {
-                    console.error("Error loading history:", error);
-                    // Use a more user-friendly error message or just show the chat area empty
-                    whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
 
-                    // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
-                    whatsappInput.disabled = false;
-                    whatsappSendBtn.disabled = false;
-                }
-            }
+                    if (tabDetailsBtn) tabDetailsBtn.onclick = () => switchTab('details');
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
+                    switchTab('details'); // Reset to details on open
 
-            function renderChatMessages(messages) {
-                whatsappChatArea.innerHTML = '';
-                if (!messages || messages.length === 0) {
-                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
-                    return;
-                }
-                messages.forEach(msg => {
-                    const bubble = document.createElement('div');
-                    bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
+                    async function loadWhatsAppHistory(currentProspect) {
+                        if (!currentProspect || !currentProspect.telefone) {
+                            whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
+                            whatsappInput.disabled = true;
+                            whatsappSendBtn.disabled = true;
+                            return;
+                        }
 
-                    // Simple text rendering. Whapi messages can be complex, this is basic.
-                    const text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text);
-                    const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
+                        whatsappInput.disabled = false;
+                        whatsappSendBtn.disabled = false;
 
-                    bubble.innerHTML = `
+                        try {
+                            const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
+                            const messages = result.data.messages;
+
+                            if (messages.length === 0) {
+                                whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                            } else {
+                                renderChatMessages(messages.reverse()); // Show oldest first
+                            }
+                        } catch (error) {
+                            console.error("Error loading history:", error);
+                            // Use a more user-friendly error message or just show the chat area empty
+                            whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+
+                            // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
+                            whatsappInput.disabled = false;
+                            whatsappSendBtn.disabled = false;
+                        }
+                    }
+
+                    function renderChatMessages(messages) {
+                        whatsappChatArea.innerHTML = '';
+                        if (!messages || messages.length === 0) {
+                            whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                            return;
+                        }
+                        messages.forEach(msg => {
+                            const bubble = document.createElement('div');
+                            bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
+
+                            // Simple text rendering. Whapi messages can be complex, this is basic.
+                            const text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text);
+                            const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                            bubble.innerHTML = `
                         ${text}
                         <div class="chat-time">${time}</div>
                     `;
 
-                    // Container for alignment
-                    const wrapper = document.createElement('div');
-                    wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
-                    wrapper.appendChild(bubble);
-                    whatsappChatArea.appendChild(wrapper);
-                });
-                whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
-            }
+                            // Container for alignment
+                            const wrapper = document.createElement('div');
+                            wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
+                            wrapper.appendChild(bubble);
+                            whatsappChatArea.appendChild(wrapper);
+                        });
+                        whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
+                    }
 
-            // WhatsApp Send Logic
-            const sendWhatsApp = async () => {
-                const text = whatsappInput.value.trim();
-                if (!text) return;
+                    // WhatsApp Send Logic
+                    const sendWhatsApp = async () => {
+                        const text = whatsappInput.value.trim();
+                        if (!text) return;
 
-                whatsappInput.disabled = true;
-                whatsappSendBtn.disabled = true;
-                const originalIcon = whatsappSendBtn.innerHTML;
-                whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        whatsappInput.disabled = true;
+                        whatsappSendBtn.disabled = true;
+                        const originalIcon = whatsappSendBtn.innerHTML;
+                        whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-                try {
-                    const phone = prospect.telefone;
-                    await sendWhatsAppMessage({
-                        prospectId: prospect.id,
-                        phone: phone,
-                        message: text
+                        try {
+                            const phone = prospect.telefone;
+                            await sendWhatsAppMessage({
+                                prospectId: prospect.id,
+                                phone: phone,
+                                message: text
+                            });
+
+                            // Clear input immediately
+                            whatsappInput.value = '';
+
+                            // Reload history after a brief delay to show the sent message
+                            setTimeout(() => loadWhatsAppHistory(prospect), 1000);
+
+                        } catch (error) {
+                            alert('Erro ao enviar: ' + error.message);
+                        } finally {
+                            // Ensure input is cleared even if there was an error
+                            whatsappInput.value = '';
+                            whatsappInput.disabled = false;
+                            whatsappSendBtn.disabled = false;
+                            whatsappSendBtn.innerHTML = originalIcon;
+                            whatsappInput.focus();
+                        }
+                    };
+
+                    whatsappSendBtn.onclick = sendWhatsApp;
+                    whatsappInput.onkeypress = (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendWhatsApp();
+                        }
+                    };
+
+                    // Manual refresh button
+                    const refreshChatBtn = document.getElementById('refreshChatBtn');
+                    refreshChatBtn.onclick = () => {
+                        const icon = refreshChatBtn.querySelector('i');
+                        icon.classList.add('fa-spin');
+                        loadWhatsAppHistory(prospect).finally(() => {
+                            icon.classList.remove('fa-spin');
+                        });
+                    };
+
+                    // Auto-refresh polling for new messages (every 10 seconds)
+                    let pollingInterval = null;
+
+                    function startPolling() {
+                        if (pollingInterval) clearInterval(pollingInterval);
+                        pollingInterval = setInterval(() => {
+                            // Only poll if WhatsApp tab is active
+                            if (!tabWhatsAppContent.classList.contains('hidden')) {
+                                loadWhatsAppHistory(prospect);
+                            }
+                        }, 10000); // 10 seconds
+                    }
+
+                    function stopPolling() {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                        }
+                    }
+
+                    // Start polling when WhatsApp tab is opened
+                    const originalSwitchTab = switchTab;
+                    switchTab = (tab) => {
+                        originalSwitchTab(tab);
+                        if (tab === 'whatsapp') {
+                            startPolling();
+                        } else {
+                            stopPolling();
+                        }
+                    };
+
+                    // Clean up on modal close
+                    closeFormModalBtn.addEventListener('click', stopPolling);
+
+
+
+                    const setFormEditable = (isEditable) => {
+                        fields.forEach(field => {
+                            if (field.id !== 'prospectId') field.disabled = !isEditable;
+                        });
+                        contactLogSection.style.display = isEditable ? 'flex' : 'none';
+                        editBtn.classList.toggle('hidden', isEditable);
+                        saveBtn.classList.toggle('hidden', !isEditable);
+                        cancelFormBtn.classList.toggle('hidden', !isEditable);
+                    };
+
+                    const updateWhatsAppLink = () => {
+                        const phone = telefoneInput.value.replace(/\D/g, '');
+                        if (phone) {
+                            whatsappLink.classList.remove('hidden');
+                            whatsappLink.classList.add('flex');
+                            // We don't need href anymore if we capture click, but let's keep it valid or void
+                            whatsappLink.href = '#';
+                        } else {
+                            whatsappLink.classList.add('hidden');
+                            whatsappLink.classList.remove('flex');
+                        }
+                    };
+                    telefoneInput.addEventListener('input', updateWhatsAppLink);
+
+                    // Redirect "Chamar no WhatsApp" button to the new tab
+                    whatsappLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        switchTab('whatsapp');
                     });
 
-                    // Clear input immediately
-                    whatsappInput.value = '';
+                    // Removed redundant mode switching logic since WhatsApp now has its own tab.
+                    // The "newAddContactBtn" now only handles "Nota Interna".
 
-                    // Reload history after a brief delay to show the sent message
-                    setTimeout(() => loadWhatsAppHistory(prospect), 1000);
+                    const newAddContactBtn = addContactLogBtn.cloneNode(true);
+                    addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
+                    newAddContactBtn.addEventListener('click', async () => {
+                        const description = newContactLogTextarea.value.trim();
+                        if (!description) return alert('Por favor, digite o conteúdo da nota.');
 
-                } catch (error) {
-                    alert('Erro ao enviar: ' + error.message);
-                } finally {
-                    // Ensure input is cleared even if there was an error
-                    whatsappInput.value = '';
-                    whatsappInput.disabled = false;
-                    whatsappSendBtn.disabled = false;
-                    whatsappSendBtn.innerHTML = originalIcon;
-                    whatsappInput.focus();
+                        if (!prospect || !prospect.id) {
+                            return alert('Salve o card antes de adicionar uma nota.');
+                        }
+
+                        newAddContactBtn.disabled = true;
+                        const originalText = newAddContactBtn.textContent;
+                        newAddContactBtn.textContent = 'Salvando...';
+
+                        try {
+                            // Standard Internal Note
+                            const newLog = {
+                                author: sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
+                                description: description,
+                                timestamp: new Date(),
+                                type: 'note'
+                            };
+
+                            let collectionName = prospect.type === 'lead' ? 'leads' : 'prospects';
+                            const itemRef = doc(db, collectionName, prospect.id);
+
+                            await updateDoc(itemRef, {
+                                contactLog: arrayUnion(newLog)
+                            });
+
+                            if (!prospect.contactLog) prospect.contactLog = [];
+                            prospect.contactLog.push(newLog);
+                            renderContactLog(prospect);
+
+                            newContactLogTextarea.value = '';
+                        } catch (error) {
+                            console.error("Error adding note:", error);
+                            alert("Erro: " + error.message);
+                        } finally {
+                            newAddContactBtn.disabled = false;
+                            newAddContactBtn.textContent = originalText;
+                        }
+                    });
+
+                    if (prospect) {
+                        document.getElementById('prospectType').value = prospect.type || 'prospect';
+                        modalActionButtons.classList.remove('hidden');
+                        modalTitle.textContent = 'Detalhes do Prospect';
+                        prospectIdInput.value = prospect.id;
+
+                        const createdByContainer = document.getElementById('createdByContainer');
+                        const createdByInfo = document.getElementById('createdByInfo');
+                        if (prospect.createdBy) {
+                            createdByInfo.textContent = prospect.createdBy;
+                            createdByContainer.classList.remove('hidden');
+                        } else {
+                            createdByContainer.classList.add('hidden');
+                        }
+
+                        document.getElementById('unidade').value = prospect.unidade || '';
+                        document.getElementById('setor').value = prospect.setor || '';
+                        document.getElementById('prioridade').value = prospect.prioridade || '';
+                        document.getElementById('ticketEstimado').value = prospect.ticketEstimado || '';
+                        document.getElementById('origemLead').value = prospect.origemLead || '';
+                        document.getElementById('responsavel').value = prospect.responsavel || '';
+                        document.getElementById('telefone').value = prospect.telefone || '';
+                        document.getElementById('email').value = prospect.email || '';
+                        document.getElementById('cpf').value = prospect.cpf || '';
+                        document.getElementById('redesSociais').value = prospect.redesSociais || '';
+                        document.getElementById('observacoes').value = prospect.observacoes || '';
+
+                        (prospect.tags || []).forEach(tag => {
+                            const checkbox = document.getElementById(`tag-${tag}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+
+                        renderContactLog(prospect);
+
+                        archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
+                        deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
+
+                        setFormEditable(false);
+                        editBtn.onclick = () => setFormEditable(true);
+                        cancelFormBtn.onclick = () => openFormModal(prospect);
+
+                    } else {
+                        document.getElementById('prospectType').value = 'prospect';
+                        modalActionButtons.classList.add('hidden');
+                        modalTitle.textContent = 'Adicionar Novo Prospect';
+                        prospectIdInput.value = '';
+                        renderContactLog({ contactLog: [] });
+                        setFormEditable(true);
+                    }
+
+                    updateWhatsAppLink();
+                    formModal.classList.remove('hidden');
+                    formModal.classList.add('flex');
                 }
-            };
 
-            whatsappSendBtn.onclick = sendWhatsApp;
-            whatsappInput.onkeypress = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                function closeFormModal() {
+                    formModal.classList.add('hidden');
+                    formModal.classList.remove('flex');
+                }
+
+                function openImportModal() {
+                    importModal.classList.remove('hidden');
+                    importModal.classList.add('flex');
+                }
+
+                function closeImportModal() {
+                    importModal.classList.add('hidden');
+                    importModal.classList.remove('flex');
+                    document.getElementById('csvData').value = '';
+                }
+
+                function showConfirmModal(message, onConfirm) {
+                    document.getElementById('confirmMessage').textContent = message;
+                    confirmModal.classList.remove('hidden');
+                    confirmModal.classList.add('flex');
+
+                    const confirmBtn = document.getElementById('confirmActionBtn');
+                    const cancelBtn = document.getElementById('cancelConfirmBtn');
+
+                    const confirmHandler = () => {
+                        onConfirm();
+                        closeConfirmModal();
+                        cleanup();
+                    };
+
+                    const cancelHandler = () => {
+                        closeConfirmModal();
+                        cleanup();
+                    };
+
+                    function cleanup() {
+                        confirmBtn.removeEventListener('click', confirmHandler);
+                        cancelBtn.removeEventListener('click', cancelHandler);
+                    }
+
+                    confirmBtn.addEventListener('click', confirmHandler);
+                    cancelBtn.addEventListener('click', cancelHandler);
+                }
+
+                function closeConfirmModal() {
+                    confirmModal.classList.add('hidden');
+                    confirmModal.classList.remove('flex');
+                }
+
+                // --- CRUD OPERATIONS ---
+                async function handleFormSubmit(e) {
                     e.preventDefault();
-                    sendWhatsApp();
-                }
-            };
 
-            // Manual refresh button
-            const refreshChatBtn = document.getElementById('refreshChatBtn');
-            refreshChatBtn.onclick = () => {
-                const icon = refreshChatBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                loadWhatsAppHistory(prospect).finally(() => {
-                    icon.classList.remove('fa-spin');
-                });
-            };
-
-            // Auto-refresh polling for new messages (every 10 seconds)
-            let pollingInterval = null;
-
-            function startPolling() {
-                if (pollingInterval) clearInterval(pollingInterval);
-                pollingInterval = setInterval(() => {
-                    // Only poll if WhatsApp tab is active
-                    if (!tabWhatsAppContent.classList.contains('hidden')) {
-                        loadWhatsAppHistory(prospect);
+                    const requiredFields = [
+                        { id: 'responsavel', name: 'Nome do responsável' },
+                        { id: 'setor', name: 'Aluno' },
+                        { id: 'prioridade', name: 'Prioridade' }
+                    ];
+                    for (const fieldInfo of requiredFields) {
+                        const field = document.getElementById(fieldInfo.id);
+                        if (!field.value) {
+                            alert(`Por favor, preencha o campo obrigatório: ${fieldInfo.name}`);
+                            field.focus();
+                            return;
+                        }
                     }
-                }, 10000); // 10 seconds
-            }
 
-            function stopPolling() {
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
-                }
-            }
-
-            // Start polling when WhatsApp tab is opened
-            const originalSwitchTab = switchTab;
-            switchTab = (tab) => {
-                originalSwitchTab(tab);
-                if (tab === 'whatsapp') {
-                    startPolling();
-                } else {
-                    stopPolling();
-                }
-            };
-
-            // Clean up on modal close
-            closeFormModalBtn.addEventListener('click', stopPolling);
-
-
-
-            const setFormEditable = (isEditable) => {
-                fields.forEach(field => {
-                    if (field.id !== 'prospectId') field.disabled = !isEditable;
-                });
-                contactLogSection.style.display = isEditable ? 'flex' : 'none';
-                editBtn.classList.toggle('hidden', isEditable);
-                saveBtn.classList.toggle('hidden', !isEditable);
-                cancelFormBtn.classList.toggle('hidden', !isEditable);
-            };
-
-            const updateWhatsAppLink = () => {
-                const phone = telefoneInput.value.replace(/\D/g, '');
-                if (phone) {
-                    whatsappLink.classList.remove('hidden');
-                    whatsappLink.classList.add('flex');
-                    // We don't need href anymore if we capture click, but let's keep it valid or void
-                    whatsappLink.href = '#';
-                } else {
-                    whatsappLink.classList.add('hidden');
-                    whatsappLink.classList.remove('flex');
-                }
-            };
-            telefoneInput.addEventListener('input', updateWhatsAppLink);
-
-            // Redirect "Chamar no WhatsApp" button to the new tab
-            whatsappLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchTab('whatsapp');
-            });
-
-            // Removed redundant mode switching logic since WhatsApp now has its own tab.
-            // The "newAddContactBtn" now only handles "Nota Interna".
-
-            const newAddContactBtn = addContactLogBtn.cloneNode(true);
-            addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
-            newAddContactBtn.addEventListener('click', async () => {
-                const description = newContactLogTextarea.value.trim();
-                if (!description) return alert('Por favor, digite o conteúdo da nota.');
-
-                if (!prospect || !prospect.id) {
-                    return alert('Salve o card antes de adicionar uma nota.');
-                }
-
-                newAddContactBtn.disabled = true;
-                const originalText = newAddContactBtn.textContent;
-                newAddContactBtn.textContent = 'Salvando...';
-
-                try {
-                    // Standard Internal Note
-                    const newLog = {
-                        author: sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
-                        description: description,
-                        timestamp: new Date(),
-                        type: 'note'
-                    };
-
-                    let collectionName = prospect.type === 'lead' ? 'leads' : 'prospects';
-                    const itemRef = doc(db, collectionName, prospect.id);
-
-                    await updateDoc(itemRef, {
-                        contactLog: arrayUnion(newLog)
+                    const prospectId = document.getElementById('prospectId').value;
+                    const prospectType = document.getElementById('prospectType').value;
+                    const selectedTags = [];
+                    document.querySelectorAll('#tagsContainer input[type="checkbox"]:checked').forEach(checkbox => {
+                        selectedTags.push(checkbox.value);
                     });
 
-                    if (!prospect.contactLog) prospect.contactLog = [];
-                    prospect.contactLog.push(newLog);
-                    renderContactLog(prospect);
-
-                    newContactLogTextarea.value = '';
-                } catch (error) {
-                    console.error("Error adding note:", error);
-                    alert("Erro: " + error.message);
-                } finally {
-                    newAddContactBtn.disabled = false;
-                    newAddContactBtn.textContent = originalText;
-                }
-            });
-
-            if (prospect) {
-                document.getElementById('prospectType').value = prospect.type || 'prospect';
-                modalActionButtons.classList.remove('hidden');
-                modalTitle.textContent = 'Detalhes do Prospect';
-                prospectIdInput.value = prospect.id;
-
-                const createdByContainer = document.getElementById('createdByContainer');
-                const createdByInfo = document.getElementById('createdByInfo');
-                if (prospect.createdBy) {
-                    createdByInfo.textContent = prospect.createdBy;
-                    createdByContainer.classList.remove('hidden');
-                } else {
-                    createdByContainer.classList.add('hidden');
-                }
-
-                document.getElementById('unidade').value = prospect.unidade || '';
-                document.getElementById('setor').value = prospect.setor || '';
-                document.getElementById('prioridade').value = prospect.prioridade || '';
-                document.getElementById('ticketEstimado').value = prospect.ticketEstimado || '';
-                document.getElementById('origemLead').value = prospect.origemLead || '';
-                document.getElementById('responsavel').value = prospect.responsavel || '';
-                document.getElementById('telefone').value = prospect.telefone || '';
-                document.getElementById('email').value = prospect.email || '';
-                document.getElementById('cpf').value = prospect.cpf || '';
-                document.getElementById('redesSociais').value = prospect.redesSociais || '';
-                document.getElementById('observacoes').value = prospect.observacoes || '';
-
-                (prospect.tags || []).forEach(tag => {
-                    const checkbox = document.getElementById(`tag-${tag}`);
-                    if (checkbox) checkbox.checked = true;
-                });
-
-                renderContactLog(prospect);
-
-                archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
-                deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
-
-                setFormEditable(false);
-                editBtn.onclick = () => setFormEditable(true);
-                cancelFormBtn.onclick = () => openFormModal(prospect);
-
-            } else {
-                document.getElementById('prospectType').value = 'prospect';
-                modalActionButtons.classList.add('hidden');
-                modalTitle.textContent = 'Adicionar Novo Prospect';
-                prospectIdInput.value = '';
-                renderContactLog({ contactLog: [] });
-                setFormEditable(true);
-            }
-
-            updateWhatsAppLink();
-            formModal.classList.remove('hidden');
-            formModal.classList.add('flex');
-        }
-
-        function closeFormModal() {
-            formModal.classList.add('hidden');
-            formModal.classList.remove('flex');
-        }
-
-        function openImportModal() {
-            importModal.classList.remove('hidden');
-            importModal.classList.add('flex');
-        }
-
-        function closeImportModal() {
-            importModal.classList.add('hidden');
-            importModal.classList.remove('flex');
-            document.getElementById('csvData').value = '';
-        }
-
-        function showConfirmModal(message, onConfirm) {
-            document.getElementById('confirmMessage').textContent = message;
-            confirmModal.classList.remove('hidden');
-            confirmModal.classList.add('flex');
-
-            const confirmBtn = document.getElementById('confirmActionBtn');
-            const cancelBtn = document.getElementById('cancelConfirmBtn');
-
-            const confirmHandler = () => {
-                onConfirm();
-                closeConfirmModal();
-                cleanup();
-            };
-
-            const cancelHandler = () => {
-                closeConfirmModal();
-                cleanup();
-            };
-
-            function cleanup() {
-                confirmBtn.removeEventListener('click', confirmHandler);
-                cancelBtn.removeEventListener('click', cancelHandler);
-            }
-
-            confirmBtn.addEventListener('click', confirmHandler);
-            cancelBtn.addEventListener('click', cancelHandler);
-        }
-
-        function closeConfirmModal() {
-            confirmModal.classList.add('hidden');
-            confirmModal.classList.remove('flex');
-        }
-
-        // --- CRUD OPERATIONS ---
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-
-            const requiredFields = [
-                { id: 'responsavel', name: 'Nome do responsável' },
-                { id: 'setor', name: 'Aluno' },
-                { id: 'prioridade', name: 'Prioridade' }
-            ];
-            for (const fieldInfo of requiredFields) {
-                const field = document.getElementById(fieldInfo.id);
-                if (!field.value) {
-                    alert(`Por favor, preencha o campo obrigatório: ${fieldInfo.name}`);
-                    field.focus();
-                    return;
-                }
-            }
-
-            const prospectId = document.getElementById('prospectId').value;
-            const prospectType = document.getElementById('prospectType').value;
-            const selectedTags = [];
-            document.querySelectorAll('#tagsContainer input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedTags.push(checkbox.value);
-            });
-
-            const data = {
-                responsavel: document.getElementById('responsavel').value,
-                unidade: document.getElementById('unidade').value,
-                setor: document.getElementById('setor').value,
-                prioridade: parseInt(document.getElementById('prioridade').value),
-                ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || 0,
-                origemLead: document.getElementById('origemLead').value,
-                telefone: document.getElementById('telefone').value,
-                email: document.getElementById('email').value,
-                cpf: document.getElementById('cpf').value,
-                redesSociais: document.getElementById('redesSociais').value,
-                observacoes: document.getElementById('observacoes').value,
-                tags: selectedTags,
-                updatedAt: serverTimestamp()
-            };
-
-            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            try {
-                const prospectsCollection = collection(db, 'prospects');
-
-                if (prospectId && prospectType === 'lead') {
-                    // Convert lead to prospect
-                    data.status = 'Novo';
-                    data.pagina = 'Prospecção';
-                    data.createdAt = serverTimestamp();
-                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
-
-                    const batch = writeBatch(db);
-
-                    // 1. Create new prospect
-                    const newProspectRef = doc(prospectsCollection);
-                    batch.set(newProspectRef, data);
-
-                    // 2. Delete old lead
-                    const oldLeadRef = doc(db, 'leads', prospectId);
-                    batch.delete(oldLeadRef);
-
-                    await batch.commit();
-                    generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
-
-                } else if (prospectId) { // Update existing prospect
-                    if (data.pagina === 'Produção') {
-                        data.status = 'Produção // V1';
-                    }
-                    const prospectRef = doc(prospectsCollection, prospectId);
-                    await updateDoc(prospectRef, data);
-                    generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
-
-                } else { // Create new prospect
-                    data.status = 'Novo'; // FIX: Was 'Pendente'
-                    data.pagina = 'Prospecção';
-                    data.createdAt = serverTimestamp();
-                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
-                    await addDoc(prospectsCollection, data);
-                    generalLog.add(user, 'Create Card', `New card "${data.responsavel}" created`);
-                }
-                closeFormModal();
-            } catch (error) {
-                console.error("Error saving prospect:", error);
-                alert(`Erro ao salvar: ${error.message}`);
-            }
-        }
-
-        async function deleteItem(itemId) {
-            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            const item = combinedData.find(p => p.id === itemId);
-            if (!item) {
-                console.error("Item not found for deletion:", itemId);
-                alert("Erro: Item não encontrado para exclusão.");
-                return;
-            }
-
-            try {
-                let itemRef;
-                if (item.type === 'lead') {
-                    itemRef = doc(db, 'leads', itemId);
-                } else {
-                    itemRef = doc(db, 'prospects', itemId);
-                }
-
-                await deleteDoc(itemRef);
-
-                const itemName = item.responsavel || item.nome || 'Item sem nome';
-                generalLog.add(user, 'Delete Card', `Card "${itemName}" (${item.type}) deleted`);
-
-            } catch (error) {
-                console.error("Error deleting item:", error);
-                alert(`Erro ao excluir o item: ${error.message}`);
-            }
-        }
-
-        async function archiveProspect(itemId) {
-            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            const item = combinedData.find(p => p.id === itemId);
-
-            if (!item) {
-                console.error("Error archiving: item not found with id", itemId);
-                alert("Erro: Item não encontrado para arquivar.");
-                return;
-            }
-
-            try {
-                if (item.type === 'lead') {
-                    // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
-                    const prospectsCollection = collection(db, 'prospects');
-
-                    // Create a new object for the archived prospect from the lead data
-                    const newArchivedProspect = {
-                        responsavel: item.responsavel || '',
-                        unidade: item.unidade || '',
-                        setor: item.setor || '',
-                        prioridade: item.prioridade || 3,
-                        ticketEstimado: item.ticketEstimado || 0,
-                        origemLead: item.origemLead || 'Site',
-                        telefone: item.telefone || '',
-                        email: item.email || '',
-                        cpf: item.cpf || '',
-                        redesSociais: item.redesSociais || '',
-                        observacoes: item.observacoes || '',
-                        tags: item.tags || [],
-                        pagina: 'Arquivo',
-                        status: 'Arquivado',
-                        updatedAt: serverTimestamp(),
-                        createdAt: item.createdAt || serverTimestamp(),
-                        createdBy: item.createdBy || 'System Conversion'
-                    };
-
-                    const batch = writeBatch(db);
-
-                    // 1. Create the new archived prospect
-                    const newProspectRef = doc(prospectsCollection);
-                    batch.set(newProspectRef, newArchivedProspect);
-
-                    // 2. Delete the old lead
-                    const oldLeadRef = doc(db, 'leads', itemId);
-                    batch.delete(oldLeadRef);
-
-                    await batch.commit();
-
-                } else { // It's a prospect, just update it
-                    const prospectRef = doc(db, 'prospects', itemId);
-                    await updateDoc(prospectRef, {
-                        pagina: 'Arquivo',
+                    const data = {
+                        responsavel: document.getElementById('responsavel').value,
+                        unidade: document.getElementById('unidade').value,
+                        setor: document.getElementById('setor').value,
+                        prioridade: parseInt(document.getElementById('prioridade').value),
+                        ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || 0,
+                        origemLead: document.getElementById('origemLead').value,
+                        telefone: document.getElementById('telefone').value,
+                        email: document.getElementById('email').value,
+                        cpf: document.getElementById('cpf').value,
+                        redesSociais: document.getElementById('redesSociais').value,
+                        observacoes: document.getElementById('observacoes').value,
+                        tags: selectedTags,
                         updatedAt: serverTimestamp()
+                    };
+
+                    const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+                    try {
+                        const prospectsCollection = collection(db, 'prospects');
+
+                        if (prospectId && prospectType === 'lead') {
+                            // Convert lead to prospect
+                            data.status = 'Novo';
+                            data.pagina = 'Prospecção';
+                            data.createdAt = serverTimestamp();
+                            data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+
+                            const batch = writeBatch(db);
+
+                            // 1. Create new prospect
+                            const newProspectRef = doc(prospectsCollection);
+                            batch.set(newProspectRef, data);
+
+                            // 2. Delete old lead
+                            const oldLeadRef = doc(db, 'leads', prospectId);
+                            batch.delete(oldLeadRef);
+
+                            await batch.commit();
+                            generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
+
+                        } else if (prospectId) { // Update existing prospect
+                            if (data.pagina === 'Produção') {
+                                data.status = 'Produção // V1';
+                            }
+                            const prospectRef = doc(prospectsCollection, prospectId);
+                            await updateDoc(prospectRef, data);
+                            generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
+
+                        } else { // Create new prospect
+                            data.status = 'Novo'; // FIX: Was 'Pendente'
+                            data.pagina = 'Prospecção';
+                            data.createdAt = serverTimestamp();
+                            data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                            await addDoc(prospectsCollection, data);
+                            generalLog.add(user, 'Create Card', `New card "${data.responsavel}" created`);
+                        }
+                        closeFormModal();
+                    } catch (error) {
+                        console.error("Error saving prospect:", error);
+                        alert(`Erro ao salvar: ${error.message}`);
+                    }
+                }
+
+                async function deleteItem(itemId) {
+                    const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+                    const item = combinedData.find(p => p.id === itemId);
+                    if (!item) {
+                        console.error("Item not found for deletion:", itemId);
+                        alert("Erro: Item não encontrado para exclusão.");
+                        return;
+                    }
+
+                    try {
+                        let itemRef;
+                        if (item.type === 'lead') {
+                            itemRef = doc(db, 'leads', itemId);
+                        } else {
+                            itemRef = doc(db, 'prospects', itemId);
+                        }
+
+                        await deleteDoc(itemRef);
+
+                        const itemName = item.responsavel || item.nome || 'Item sem nome';
+                        generalLog.add(user, 'Delete Card', `Card "${itemName}" (${item.type}) deleted`);
+
+                    } catch (error) {
+                        console.error("Error deleting item:", error);
+                        alert(`Erro ao excluir o item: ${error.message}`);
+                    }
+                }
+
+                async function archiveProspect(itemId) {
+                    const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+                    const item = combinedData.find(p => p.id === itemId);
+
+                    if (!item) {
+                        console.error("Error archiving: item not found with id", itemId);
+                        alert("Erro: Item não encontrado para arquivar.");
+                        return;
+                    }
+
+                    try {
+                        if (item.type === 'lead') {
+                            // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
+                            const prospectsCollection = collection(db, 'prospects');
+
+                            // Create a new object for the archived prospect from the lead data
+                            const newArchivedProspect = {
+                                responsavel: item.responsavel || '',
+                                unidade: item.unidade || '',
+                                setor: item.setor || '',
+                                prioridade: item.prioridade || 3,
+                                ticketEstimado: item.ticketEstimado || 0,
+                                origemLead: item.origemLead || 'Site',
+                                telefone: item.telefone || '',
+                                email: item.email || '',
+                                cpf: item.cpf || '',
+                                redesSociais: item.redesSociais || '',
+                                observacoes: item.observacoes || '',
+                                tags: item.tags || [],
+                                pagina: 'Arquivo',
+                                status: 'Arquivado',
+                                updatedAt: serverTimestamp(),
+                                createdAt: item.createdAt || serverTimestamp(),
+                                createdBy: item.createdBy || 'System Conversion'
+                            };
+
+                            const batch = writeBatch(db);
+
+                            // 1. Create the new archived prospect
+                            const newProspectRef = doc(prospectsCollection);
+                            batch.set(newProspectRef, newArchivedProspect);
+
+                            // 2. Delete the old lead
+                            const oldLeadRef = doc(db, 'leads', itemId);
+                            batch.delete(oldLeadRef);
+
+                            await batch.commit();
+
+                        } else { // It's a prospect, just update it
+                            const prospectRef = doc(db, 'prospects', itemId);
+                            await updateDoc(prospectRef, {
+                                pagina: 'Arquivo',
+                                updatedAt: serverTimestamp()
+                            });
+                        }
+
+                        const itemName = item.responsavel || item.nome || 'Item sem nome';
+                        generalLog.add(user, 'Archive Card', `Card "${itemName}" archived`);
+
+                    } catch (error) {
+                        console.error("Error archiving item:", error);
+                        alert("Erro ao arquivar o item.");
+                    }
+                }
+
+                async function handleImport() {
+                    const csvText = document.getElementById('csvData').value.trim();
+                    if (!csvText) {
+                        alert("Por favor, cole os dados CSV na área de texto.");
+                        return;
+                    }
+
+                    const rows = csvText.split('\n').slice(1); // Skip header row
+                    if (rows.length === 0) {
+                        alert("Nenhum dado para importar foi encontrado (ignorando a primeira linha como cabeçalho).");
+                        return;
+                    }
+
+                    const batch = writeBatch(db);
+                    const prospectsCollection = collection(db, 'prospects');
+                    let importedCount = 0;
+
+                    rows.forEach(row => {
+                        const columns = row.split(',');
+                        if (columns.length < 3) return; // Minimum required fields: Empresa, Setor, Prioridade
+
+                        const newProspect = {
+                            empresa: columns[0] || '',
+                            setor: columns[1] || '',
+                            prioridade: parseInt(columns[2]) || 3,
+                            ticketEstimado: parseInt(columns[3]) || 0,
+                            telefone: columns[4] || '',
+                            email: columns[5] || '',
+                            cpf: columns[6] || '',
+                            cnpj: columns[7] || '',
+                            endereco: columns[8] || '',
+                            redesSociais: columns[9] || '',
+                            siteAtual: columns[10] || '',
+                            observacoes: columns[11] || '',
+                            status: 'Pendente',
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        };
+
+                        const newDocRef = doc(prospectsCollection);
+                        batch.set(newDocRef, newProspect);
+                        importedCount++;
+                    });
+
+                    const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+                    try {
+                        await batch.commit();
+                        generalLog.add(user, 'Import Leads', `${importedCount} leads imported successfully`);
+                        alert(`${importedCount} leads importados com sucesso!`);
+                        closeImportModal();
+                    } catch (error) {
+                        console.error("Error importing leads:", error);
+                        alert("Ocorreu um erro ao importar os leads. Verifique o console para mais detalhes.");
+                    }
+                }
+
+                // --- TAGS UTILITY ---
+                function populateTags() {
+                    const tagFilter = document.getElementById('tagFilter');
+                    TAGS.forEach(tag => {
+                        const option = document.createElement('option');
+                        option.value = tag;
+                        option.textContent = tag;
+                        tagFilter.appendChild(option);
                     });
                 }
 
-                const itemName = item.responsavel || item.nome || 'Item sem nome';
-                generalLog.add(user, 'Archive Card', `Card "${itemName}" archived`);
+                function populateTagsInModal() {
+                    const tagsContainer = document.getElementById('tagsContainer');
+                    tagsContainer.innerHTML = ''; // Limpa para evitar duplicação
+                    TAGS.forEach(tag => {
+                        const checkboxContainer = document.createElement('div');
+                        checkboxContainer.className = 'flex items-center';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `tag-${tag}`;
+                        checkbox.value = tag;
+                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
 
-            } catch (error) {
-                console.error("Error archiving item:", error);
-                alert("Erro ao arquivar o item.");
-            }
-        }
+                        const label = document.createElement('label');
+                        label.htmlFor = `tag-${tag}`;
+                        label.textContent = tag;
+                        label.className = 'ml-2 block text-sm text-gray-300';
 
-        async function handleImport() {
-            const csvText = document.getElementById('csvData').value.trim();
-            if (!csvText) {
-                alert("Por favor, cole os dados CSV na área de texto.");
-                return;
-            }
+                        checkboxContainer.appendChild(checkbox);
+                        checkboxContainer.appendChild(label);
+                        tagsContainer.appendChild(checkboxContainer);
+                    });
+                }
 
-            const rows = csvText.split('\n').slice(1); // Skip header row
-            if (rows.length === 0) {
-                alert("Nenhum dado para importar foi encontrado (ignorando a primeira linha como cabeçalho).");
-                return;
-            }
+                // --- UTILITY ---
+                function getPriorityColor(priority) {
+                    const colors = {
+                        5: '#ef4444', 4: '#f97316', 3: '#eab308', 2: '#3b82f6', 1: '#8b5cf6',
+                    };
+                    return colors[priority] || '#6b7280';
+                }
 
-            const batch = writeBatch(db);
-            const prospectsCollection = collection(db, 'prospects');
-            let importedCount = 0;
+                function stringToColorIndex(str, colorArrayLength) {
+                    if (!str) return 0;
+                    let hash = 0;
+                    for (let i = 0; i < str.length; i++) {
+                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    return Math.abs(hash % colorArrayLength);
+                }
 
-            rows.forEach(row => {
-                const columns = row.split(',');
-                if (columns.length < 3) return; // Minimum required fields: Empresa, Setor, Prioridade
+                function getSectorColor(sector) {
+                    const colorPalette = [
+                        { bg: 'bg-gray-900/50', text: 'text-gray-200' },
+                        { bg: 'bg-purple-900/50', text: 'text-purple-200' },
+                        { bg: 'bg-teal-900/50', text: 'text-teal-200' },
+                        { bg: 'bg-red-900/50', text: 'text-red-200' },
+                        { bg: 'bg-cyan-900/50', text: 'text-cyan-200' },
+                        { bg: 'bg-green-900/50', text: 'text-green-200' },
+                        { bg: 'bg-amber-900/50', text: 'text-amber-200' },
+                        { bg: 'bg-pink-900/50', text: 'text-pink-200' },
+                        { bg: 'bg-indigo-900/50', text: 'text-indigo-200' },
+                        { bg: 'bg-lime-900/50', text: 'text-lime-200' }
+                    ];
 
-                const newProspect = {
-                    empresa: columns[0] || '',
-                    setor: columns[1] || '',
-                    prioridade: parseInt(columns[2]) || 3,
-                    ticketEstimado: parseInt(columns[3]) || 0,
-                    telefone: columns[4] || '',
-                    email: columns[5] || '',
-                    cpf: columns[6] || '',
-                    cnpj: columns[7] || '',
-                    endereco: columns[8] || '',
-                    redesSociais: columns[9] || '',
-                    siteAtual: columns[10] || '',
-                    observacoes: columns[11] || '',
-                    status: 'Pendente',
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                };
+                    const index = stringToColorIndex(sector, colorPalette.length);
+                    return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
+                }
 
-                const newDocRef = doc(prospectsCollection);
-                batch.set(newDocRef, newProspect);
-                importedCount++;
-            });
+                async function populateEvoUnits() {
+                    const unidadeFilter = document.getElementById('unidadeFilter');
+                    const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
 
-            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
-            try {
-                await batch.commit();
-                generalLog.add(user, 'Import Leads', `${importedCount} leads imported successfully`);
-                alert(`${importedCount} leads importados com sucesso!`);
-                closeImportModal();
-            } catch (error) {
-                console.error("Error importing leads:", error);
-                alert("Ocorreu um erro ao importar os leads. Verifique o console para mais detalhes.");
-            }
-        }
+                    try {
+                        const result = await getEvoUnits();
+                        evoUnits = result.data.sort();
 
-        // --- TAGS UTILITY ---
-        function populateTags() {
-            const tagFilter = document.getElementById('tagFilter');
-            TAGS.forEach(tag => {
-                const option = document.createElement('option');
-                option.value = tag;
-                option.textContent = tag;
-                tagFilter.appendChild(option);
-            });
-        }
+                        // Clear existing options except the first one
+                        unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
+                        unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
 
-        function populateTagsInModal() {
-            const tagsContainer = document.getElementById('tagsContainer');
-            tagsContainer.innerHTML = ''; // Limpa para evitar duplicação
-            TAGS.forEach(tag => {
-                const checkboxContainer = document.createElement('div');
-                checkboxContainer.className = 'flex items-center';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `tag-${tag}`;
-                checkbox.value = tag;
-                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
+                        evoUnits.forEach(unitId => {
+                            const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                const label = document.createElement('label');
-                label.htmlFor = `tag-${tag}`;
-                label.textContent = tag;
-                label.className = 'ml-2 block text-sm text-gray-300';
+                            // Populate filter dropdown
+                            const filterOption = document.createElement('option');
+                            filterOption.value = displayName;
+                            filterOption.textContent = displayName;
+                            unidadeFilter.appendChild(filterOption);
 
-                checkboxContainer.appendChild(checkbox);
-                checkboxContainer.appendChild(label);
-                tagsContainer.appendChild(checkboxContainer);
-            });
-        }
+                            // Populate modal dropdown
+                            const modalOption = document.createElement('option');
+                            modalOption.value = displayName;
+                            modalOption.textContent = displayName;
+                            unidadeModalSelect.appendChild(modalOption);
+                        });
 
-        // --- UTILITY ---
-        function getPriorityColor(priority) {
-            const colors = {
-                5: '#ef4444', 4: '#f97316', 3: '#eab308', 2: '#3b82f6', 1: '#8b5cf6',
-            };
-            return colors[priority] || '#6b7280';
-        }
+                    } catch (error) {
+                        console.error("Erro ao buscar unidades do EVO:", error);
+                        unidadeFilter.innerHTML = '<option value="">Erro ao carregar</option>';
+                        unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                    }
+                }
 
-        function stringToColorIndex(str, colorArrayLength) {
-            if (!str) return 0;
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return Math.abs(hash % colorArrayLength);
-        }
+                function exportData() {
+                    if (prospects.length === 0) {
+                        alert("Não há dados para exportar.");
+                        return;
+                    }
+                    const headers = ['ID', 'Empresa', 'Setor', 'Prioridade', 'Status', 'Ticket Estimado', 'Telefone', 'Email', 'CPF', 'CNPJ', 'Endereço', 'Redes Sociais', 'Site', 'Observações'];
+                    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
 
-        function getSectorColor(sector) {
-            const colorPalette = [
-                { bg: 'bg-gray-900/50', text: 'text-gray-200' },
-                { bg: 'bg-purple-900/50', text: 'text-purple-200' },
-                { bg: 'bg-teal-900/50', text: 'text-teal-200' },
-                { bg: 'bg-red-900/50', text: 'text-red-200' },
-                { bg: 'bg-cyan-900/50', text: 'text-cyan-200' },
-                { bg: 'bg-green-900/50', text: 'text-green-200' },
-                { bg: 'bg-amber-900/50', text: 'text-amber-200' },
-                { bg: 'bg-pink-900/50', text: 'text-pink-200' },
-                { bg: 'bg-indigo-900/50', text: 'text-indigo-200' },
-                { bg: 'bg-lime-900/50', text: 'text-lime-200' }
-            ];
+                    prospects.forEach(p => {
+                        const row = [
+                            p.id, `"${p.empresa}"`, p.setor, p.prioridade, p.status, p.ticketEstimado,
+                            `"${p.telefone}"`, p.email, p.cpf, p.cnpj, `"${p.endereco}"`, `"${p.redesSociais}"`, p.siteAtual, `"${(p.observacoes || '').replace(/"/g, '""')}"`
+                        ].join(",");
+                        csvContent += row + "\n";
+                    });
 
-            const index = stringToColorIndex(sector, colorPalette.length);
-            return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
-        }
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `prospects_${new Date().toISOString().slice(0, 10)}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
 
-        async function populateEvoUnits() {
-            const unidadeFilter = document.getElementById('unidadeFilter');
-            const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
+                // --- CONFIGURATION MODAL LOGIC ---
+                const configModal = document.getElementById('configModal');
+                const openConfigBtn = document.getElementById('configBtn');
+                const closeConfigModalBtn = document.getElementById('closeConfigModalBtn');
+                const cancelConfigBtn = document.getElementById('cancelConfigBtn');
+                const configForm = document.getElementById('configForm');
+                const extraQuestionsList = document.getElementById('extraQuestionsList');
+                const addQuestionBtn = document.getElementById('addQuestionBtn');
 
-            try {
-                const result = await getEvoUnits();
-                evoUnits = result.data.sort();
+                function openConfigModal() {
+                    configModal.classList.remove('hidden');
+                    configModal.classList.add('flex');
+                    fetchConfig();
+                }
 
-                // Clear existing options except the first one
-                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
-                unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
+                function closeConfigModal() {
+                    configModal.classList.add('hidden');
+                    configModal.classList.remove('flex');
+                }
 
-                evoUnits.forEach(unitId => {
-                    const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                    // Populate filter dropdown
-                    const filterOption = document.createElement('option');
-                    filterOption.value = displayName;
-                    filterOption.textContent = displayName;
-                    unidadeFilter.appendChild(filterOption);
-
-                    // Populate modal dropdown
-                    const modalOption = document.createElement('option');
-                    modalOption.value = displayName;
-                    modalOption.textContent = displayName;
-                    unidadeModalSelect.appendChild(modalOption);
-                });
-
-            } catch (error) {
-                console.error("Erro ao buscar unidades do EVO:", error);
-                unidadeFilter.innerHTML = '<option value="">Erro ao carregar</option>';
-                unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-            }
-        }
-
-        function exportData() {
-            if (prospects.length === 0) {
-                alert("Não há dados para exportar.");
-                return;
-            }
-            const headers = ['ID', 'Empresa', 'Setor', 'Prioridade', 'Status', 'Ticket Estimado', 'Telefone', 'Email', 'CPF', 'CNPJ', 'Endereço', 'Redes Sociais', 'Site', 'Observações'];
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
-
-            prospects.forEach(p => {
-                const row = [
-                    p.id, `"${p.empresa}"`, p.setor, p.prioridade, p.status, p.ticketEstimado,
-                    `"${p.telefone}"`, p.email, p.cpf, p.cnpj, `"${p.endereco}"`, `"${p.redesSociais}"`, p.siteAtual, `"${(p.observacoes || '').replace(/"/g, '""')}"`
-                ].join(",");
-                csvContent += row + "\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `prospects_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- CONFIGURATION MODAL LOGIC ---
-        const configModal = document.getElementById('configModal');
-        const openConfigBtn = document.getElementById('configBtn');
-        const closeConfigModalBtn = document.getElementById('closeConfigModalBtn');
-        const cancelConfigBtn = document.getElementById('cancelConfigBtn');
-        const configForm = document.getElementById('configForm');
-        const extraQuestionsList = document.getElementById('extraQuestionsList');
-        const addQuestionBtn = document.getElementById('addQuestionBtn');
-
-        function openConfigModal() {
-            configModal.classList.remove('hidden');
-            configModal.classList.add('flex');
-            fetchConfig();
-        }
-
-        function closeConfigModal() {
-            configModal.classList.add('hidden');
-            configModal.classList.remove('flex');
-        }
-
-        function renderExtraQuestions(questions) {
-            extraQuestionsList.innerHTML = '';
-            questions.forEach((q, index) => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-2 items-center';
-                div.innerHTML = `
+                function renderExtraQuestions(questions) {
+                    extraQuestionsList.innerHTML = '';
+                    questions.forEach((q, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'flex gap-2 items-center';
+                        div.innerHTML = `
                     <span class="text-xs text-gray-500 w-4">${index + 1}.</span>
                     <input type="text" value="${q}" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
                     <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
-                extraQuestionsList.appendChild(div);
-            });
-        }
+                        extraQuestionsList.appendChild(div);
+                    });
+                }
 
-        if (addQuestionBtn) {
-            addQuestionBtn.addEventListener('click', () => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-2 items-center';
-                div.innerHTML = `
+                if (addQuestionBtn) {
+                    addQuestionBtn.addEventListener('click', () => {
+                        const div = document.createElement('div');
+                        div.className = 'flex gap-2 items-center';
+                        div.innerHTML = `
                     <span class="text-xs text-gray-500 w-4">#</span>
                     <input type="text" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
                     <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
-                extraQuestionsList.appendChild(div);
-            });
-        }
-
-        async function fetchConfig() {
-            // Default Config (MUST Match Backend Defaults)
-            const defaults = {
-                welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
-                menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
-                menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
-                confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
-                handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
-                extra_questions: []
-            };
-
-            try {
-                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
-                const docSnap = await getDoc(docRef);
-
-                let data = defaults;
-                if (docSnap.exists()) {
-                    data = { ...defaults, ...docSnap.data() };
+                        extraQuestionsList.appendChild(div);
+                    });
                 }
 
-                document.getElementById('cfg_welcome').value = data.welcome_message;
-                document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
-                document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
-                document.getElementById('cfg_confirmation').value = data.confirmation_question;
-                document.getElementById('cfg_handoff').value = data.handoff_message;
+                async function fetchConfig() {
+                    // Default Config (MUST Match Backend Defaults)
+                    const defaults = {
+                        welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+                        menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
+                        menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+                        confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
+                        handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+                        extra_questions: []
+                    };
 
-                renderExtraQuestions(data.extra_questions || []);
+                    try {
+                        const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                        const docSnap = await getDoc(docRef);
 
-            } catch (error) {
-                console.error("Error fetching config:", error);
-                alert("Erro ao carregar configurações. Verifique permissões.");
-            }
-        }
+                        let data = defaults;
+                        if (docSnap.exists()) {
+                            data = { ...defaults, ...docSnap.data() };
+                        }
 
-        async function saveConfig(e) {
-            e.preventDefault();
+                        document.getElementById('cfg_welcome').value = data.welcome_message;
+                        document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
+                        document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
+                        document.getElementById('cfg_confirmation').value = data.confirmation_question;
+                        document.getElementById('cfg_handoff').value = data.handoff_message;
 
-            // Gather extra questions
-            const questionInputs = document.querySelectorAll('.extra-question-input');
-            const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
+                        renderExtraQuestions(data.extra_questions || []);
 
-            const updates = {
-                welcome_message: document.getElementById('cfg_welcome').value,
-                menu_brasilia: document.getElementById('cfg_menu_bsb').value,
-                menu_floripa: document.getElementById('cfg_menu_floripa').value,
-                confirmation_question: document.getElementById('cfg_confirmation').value,
-                handoff_message: document.getElementById('cfg_handoff').value,
-                extra_questions: extraQuestions
-            };
+                    } catch (error) {
+                        console.error("Error fetching config:", error);
+                        alert("Erro ao carregar configurações. Verifique permissões.");
+                    }
+                }
 
-            try {
-                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
-                await setDoc(docRef, updates, { merge: true });
-                alert("Configurações salvas com sucesso!");
-                closeConfigModal();
-            } catch (error) {
-                console.error("Error saving config:", error);
-                alert("Erro ao salvar: " + error.message);
-            }
-        }
+                async function saveConfig(e) {
+                    e.preventDefault();
 
-        if (openConfigBtn) openConfigBtn.addEventListener('click', openConfigModal);
-        if (closeConfigModalBtn) closeConfigModalBtn.addEventListener('click', closeConfigModal);
-        if (cancelConfigBtn) cancelConfigBtn.addEventListener('click', closeConfigModal);
-        if (configForm) configForm.addEventListener('submit', saveConfig);
+                    // Gather extra questions
+                    const questionInputs = document.querySelectorAll('.extra-question-input');
+                    const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
 
-        // Close on backdrop click
-        if (configModal) {
-            configModal.addEventListener('click', (e) => {
-                if (e.target === configModal) closeConfigModal();
-            });
-        }
+                    const updates = {
+                        welcome_message: document.getElementById('cfg_welcome').value,
+                        menu_brasilia: document.getElementById('cfg_menu_bsb').value,
+                        menu_floripa: document.getElementById('cfg_menu_floripa').value,
+                        confirmation_question: document.getElementById('cfg_confirmation').value,
+                        handoff_message: document.getElementById('cfg_handoff').value,
+                        extra_questions: extraQuestions
+                    };
 
-        // --- INITIALIZE APP ---
-        document.addEventListener('DOMContentLoaded', () => {
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    renderBoard();
-                }, 250);
-            });
+                    try {
+                        const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                        await setDoc(docRef, updates, { merge: true });
+                        alert("Configurações salvas com sucesso!");
+                        closeConfigModal();
+                    } catch (error) {
+                        console.error("Error saving config:", error);
+                        alert("Erro ao salvar: " + error.message);
+                    }
+                }
 
-            populateTags();
-            populateEvoUnits();
+                if (openConfigBtn) openConfigBtn.addEventListener('click', openConfigModal);
+                if (closeConfigModalBtn) closeConfigModalBtn.addEventListener('click', closeConfigModal);
+                if (cancelConfigBtn) cancelConfigBtn.addEventListener('click', closeConfigModal);
+                if (configForm) configForm.addEventListener('submit', saveConfig);
 
-            loadComponents(() => {
-                // This callback runs after header/sidebar are loaded
-                const urlParams = new URLSearchParams(window.location.search);
-                const cardIdToOpen = urlParams.get('cardId');
-                if (cardIdToOpen) {
-                    const unsubscribe = onSnapshot(collection(db, 'prospects'), (snapshot) => {
-                        const prospect = prospects.find(p => p.id === cardIdToOpen);
-                        if (prospect) {
-                            openFormModal(prospect);
-                            unsubscribe();
+                // Close on backdrop click
+                if (configModal) {
+                    configModal.addEventListener('click', (e) => {
+                        if (e.target === configModal) closeConfigModal();
+                    });
+                }
+
+                // --- INITIALIZE APP ---
+                document.addEventListener('DOMContentLoaded', () => {
+                    let resizeTimer;
+                    window.addEventListener('resize', () => {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(() => {
+                            renderBoard();
+                        }, 250);
+                    });
+
+                    populateTags();
+                    populateEvoUnits();
+
+                    loadComponents(() => {
+                        // This callback runs after header/sidebar are loaded
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const cardIdToOpen = urlParams.get('cardId');
+                        if (cardIdToOpen) {
+                            const unsubscribe = onSnapshot(collection(db, 'prospects'), (snapshot) => {
+                                const prospect = prospects.find(p => p.id === cardIdToOpen);
+                                if (prospect) {
+                                    openFormModal(prospect);
+                                    unsubscribe();
+                                }
+                            });
+                        }
+                        // Pass handlers to setupUIListeners by calling it again
+                        const unidadeFilter = document.getElementById('unidadeFilter');
+                        if (unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
+
+                        setupUIListeners({
+                            openFormModal,
+                            closeFormModal,
+                            handleFormSubmit,
+                            openImportModal,
+                            closeImportModal,
+                            handleImport,
+                            applyFilters,
+                            closeConfirmModal
+                        });
+
+                        // Override reset button to include unit filter
+                        const resetBtn = document.getElementById('resetFiltersBtn');
+                        if (resetBtn) {
+                            resetBtn.addEventListener('click', () => {
+                                document.getElementById('searchInput').value = '';
+                                document.getElementById('priorityFilter').value = '';
+                                document.getElementById('tagFilter').value = '';
+                                document.getElementById('unidadeFilter').value = '';
+                                applyFilters();
+                            });
                         }
                     });
-                }
-                // Pass handlers to setupUIListeners by calling it again
-                const unidadeFilter = document.getElementById('unidadeFilter');
-                if (unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
 
-                setupUIListeners({
-                    openFormModal,
-                    closeFormModal,
-                    handleFormSubmit,
-                    openImportModal,
-                    closeImportModal,
-                    handleImport,
-                    applyFilters,
-                    closeConfirmModal
                 });
 
-                // Override reset button to include unit filter
-                const resetBtn = document.getElementById('resetFiltersBtn');
-                if (resetBtn) {
-                    resetBtn.addEventListener('click', () => {
-                        document.getElementById('searchInput').value = '';
-                        document.getElementById('priorityFilter').value = '';
-                        document.getElementById('tagFilter').value = '';
-                        document.getElementById('unidadeFilter').value = '';
-                        applyFilters();
-                    });
-                }
-            });
-        });
-    </script>
-    <script src="geral_log.js"></script>
+                // --- GLOBAL EVENT DELEGATION (Reliable UI Handling) ---
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+
+                    // 1. Open Filters Modal
+                    const openBtn = target.closest('#openFiltersBtn');
+                    if (openBtn) {
+                        e.preventDefault();
+                        console.log("Click detected: Open Filters");
+                        const modal = document.getElementById('filtersModal');
+                        if (modal) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                        } else {
+                            console.error("Filters modal element not found!");
+                        }
+                    }
+
+                    // 2. Close Filters Modal (X Button)
+                    const closeBtn = target.closest('#closeFiltersModalBtn');
+                    if (closeBtn) {
+                        e.preventDefault();
+                        const modal = document.getElementById('filtersModal');
+                        if (modal) {
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        }
+                    }
+
+                    // 3. Apply Filters
+                    const applyBtn = target.closest('#applyFiltersBtn');
+                    if (applyBtn) {
+                        e.preventDefault();
+                        const modal = document.getElementById('filtersModal');
+                        if (modal) {
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        }
+                        if (typeof applyFilters === 'function') {
+                            applyFilters();
+                        } else {
+                            console.error("applyFilters function is not defined or accessible.");
+                        }
+                    }
+
+                    // 4. Close on Backdrop Click
+                    if (target.id === 'filtersModal') {
+                        target.classList.add('hidden');
+                        target.classList.remove('flex');
+                    }
+                });
+            </script>
+            <script src="geral_log.js"></script>
 </body>
 
 </html>
