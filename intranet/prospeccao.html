@@ -1226,7 +1226,8 @@
                 }
 
                 // Only show loading spinner if it's the first load (not background refresh)
-                if (!isBackground && whatsappChatArea.children.length === 0) {
+                // Also show if it contains the placeholder text
+                if (!isBackground && (whatsappChatArea.children.length === 0 || whatsappChatArea.innerText.includes('Selecione um prospect'))) {
                     whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
                 }
 

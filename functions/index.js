@@ -383,6 +383,8 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                         if (saleData.paymentStatus === 'pending') {
                             await docRef.update({ paymentStatus: 'paid' });
                             console.log(`Updated payment status to 'paid' for doc ${docId}`);
+                            // Update local variable to reflect change for notification logic
+                            saleData.paymentStatus = 'paid';
                         }
 
                         // Check if ticket email needs to be sent (idempotent check)
@@ -393,6 +395,11 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                                 console.log(`[verifyPayment] Sending missing ticket email for ${docId}`);
                                 await sendTicketEmail(docId, saleData);
                             }
+                        }
+
+                        // Notification to Unit Manager
+                        if (saleData.paymentStatus === 'paid') {
+                            await notifyManagerOfEnrollment(docId, saleData);
                         }
                     }
                 }
@@ -1131,12 +1138,17 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
 
                     if (productSnap.exists && productSnap.data().isTicket) {
                         // Verifica se o email já foi enviado para não enviar duplicado
-                        if (!saleData.emailSent) {
+                        if (!saleData.ticketEmailSent) {
                             await sendTicketEmail(docId, saleData);
                         } else {
-                            console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado anteriormente para venda ${docId}.`);
+                            console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado para a venda ${docId}.`);
                         }
+                    } else {
+                        console.log(`[Pagar.me Webhook] Produto não é um ingresso. E-mail não será enviado para a venda ${docId}.`);
                     }
+
+                    // Notification to Unit Manager
+                    await notifyManagerOfEnrollment(docId, saleData);
                 }
             }
         }
@@ -1399,12 +1411,7 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
 
         // Whapi expects chatId like '554899999999@s.whatsapp.net' for private chats
         const chatId = `${targetPhone}@s.whatsapp.net`;
-        console.log(`[getWhatsAppHistory] Fetching history for ${chatId}`);
-
-        // https://whapi.cloud/docs mentions /messages/list/{chatId} or /messages/list with params
-        // Let's use the list endpoint with chatId param if supported, or filter.
-        // Documentation says: GET /messages/list/{chat_id}
-        // Let's try that one first as it is more specific.
+        console.log(`[getWhatsAppHistory] Fetching history from Whapi for chatId: ${chatId}`);
 
         const response = await axios.get(`https://gate.whapi.cloud/messages/list/${chatId}`, {
             params: {
@@ -1413,8 +1420,11 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
-            }
+            },
+            timeout: 15000 // 15s timeout to prevent hanging
         });
+
+        console.log(`[getWhatsAppHistory] Whapi response status: ${response.status}`);
 
         // Transform data to a simpler format for frontend
         const messages = response.data.messages.map(msg => {
@@ -1459,6 +1469,7 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
 // Map of Unit Names to Manager Phone Numbers
 // TODO: Replace with actual numbers provided by user
 const UNIT_MANAGERS = {
+    // Legacy Keys (Full Name)
     'Kihap - Asa Sul': '556183007146',
     'Kihap - Sudoeste': '556182107146',
     'Kihap - Lago Sul': '556192028980',
@@ -1468,7 +1479,19 @@ const UNIT_MANAGERS = {
     'Kihap - Centro (Floripa)': '554892182423',
     'Kihap - Coqueiros': '554896296941',
     'Kihap - Santa Mônica': '554892172423',
-    'Kihap - Dourados': '556799597001'
+    'Kihap - Dourados': '556799597001',
+
+    // Slug Keys (Matches evo.js / checkout)
+    'asa-sul': '556183007146',
+    'sudoeste': '556182107146',
+    'lago-sul': '556192028980',
+    'noroeste': '556184170472',
+    'pontos-de-ensino': '556181724290',
+    'jardim-botanico': '556184171059',
+    'centro': '554892182423',
+    'coqueiros': '554896296941',
+    'santa-monica': '554892172423',
+    'dourados': '556799597001'
 };
 
 const CRM_URL = 'https://intranet-kihap.web.app/intranet/prospeccao.html'; // Default Firebase URL
@@ -1540,6 +1563,31 @@ async function sendMessageHelper(to, body) {
     } catch (error) {
         console.error('[sendMessageHelper] Error:', error.message);
         return null;
+    }
+}
+
+
+async function notifyManagerOfEnrollment(saleId, saleData) {
+    try {
+        const unitId = saleData.userUnit;
+        if (!unitId) {
+            console.warn(`[notifyManagerOfEnrollment] Venda ${saleId} sem userUnit. Notificação não enviada.`);
+            return;
+        }
+
+        const managerPhone = UNIT_MANAGERS[unitId];
+        if (!managerPhone || managerPhone === '5500000000000') {
+            console.warn(`[notifyManagerOfEnrollment] Telefone do gerente não configurado para unidade ${unitId}.`);
+            return;
+        }
+
+        const message = `🚀 Nova matrícula realizada via Bot!\n\n👤 Aluno: ${saleData.userName}\n📍 Unidade: ${unitId.toUpperCase()}\n📦 Produto: ${saleData.productName}\n💰 Valor: R$ ${(saleData.amountTotal / 100).toFixed(2)}`;
+
+        await sendMessageHelper(managerPhone, message);
+        console.log(`[notifyManagerOfEnrollment] Notificação enviada para gerente da unidade ${unitId} (${managerPhone}).`);
+
+    } catch (error) {
+        console.error(`[notifyManagerOfEnrollment] Erro ao notificar gerente: ${error.message}`);
     }
 }
 
