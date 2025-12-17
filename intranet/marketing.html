@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Marketing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111111;
+            color: #e5e7eb;
+        }
+
+        .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            appearance: none;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="p-6 max-w-4xl mx-auto w-full space-y-6">
+            <h1 class="text-3xl font-bold text-white mb-2"><i class="fas fa-bullhorn text-yellow-500 mr-2"></i> Disparo
+                em Massa</h1>
+            <p class="text-gray-400">Envie mensagens WhatsApp para seus alunos ou leads.</p>
+
+            <!-- Card Principal -->
+            <div class="bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-800 p-6 space-y-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Público-Alvo</label>
+                        <select id="audienceSelect"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none form-select transition-all">
+                            <option value="" disabled selected>Selecione quem receberá...</option>
+                            <option value="students">👩‍🎓 Alunos (EVO)</option>
+                            <option value="evo_prospects">🎯 Oportunidades (EVO)</option>
+                            <option value="crm_prospects">📂 Oportunidades (CRM Local)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Unidade</label>
+                        <select id="unitSelect"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none form-select transition-all">
+                            <option value="all">🏢 Todas as Unidades</option>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Mensagem</label>
+                    <div class="relative">
+                        <textarea id="messageInput" rows="6"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none resize-none"
+                            placeholder="Digite sua mensagem aqui... Use variáveis como {nome} se suportado (WIP)."></textarea>
+                        <div class="absolute bottom-3 right-3 text-xs text-gray-500" id="charCount">0 caracteres</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-gray-800 pt-6">
+
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="testMode" id="testModeToggle"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                                checked />
+                            <label for="testModeToggle"
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                        <label for="testModeToggle" class="text-sm text-gray-300 cursor-pointer select-none">Modo Teste
+                            (Simulação)</label>
+                    </div>
+
+                    <button id="sendBtn"
+                        class="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-paper-plane mr-2"></i> Enviar Disparo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Console de Status -->
+            <div id="statusConsole"
+                class="bg-black rounded-xl shadow-lg border border-gray-800 p-4 font-mono text-sm hidden">
+                <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
+                    <span class="text-green-500 font-bold">>>> Console de Execução</span>
+                    <button onclick="document.getElementById('statusConsole').classList.add('hidden')"
+                        class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="consoleOutput" class="h-48 overflow-y-auto space-y-1 text-gray-300 p-2">
+                    <!-- Logs go here -->
+                </div>
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="mt-2 hidden">
+                    <div class="w-full bg-gray-900 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-center mt-1 text-gray-500" id="progressText">0%</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">Confirmar Envio</h3>
+            <p class="text-gray-300 mb-6">
+                Você está prestes a iniciar um disparo para <strong class="text-yellow-500"
+                    id="confirmAudience">...</strong>.
+                <br><br>
+                <span id="testWarning" class="text-green-400 font-bold block mb-2"><i class="fas fa-flask"></i> MODO
+                    TESTE ATIVO: Nenhuma mensagem real será enviada.</span>
+                <span id="realWarning" class="text-red-400 font-bold hidden mb-2"><i
+                        class="fas fa-exclamation-triangle"></i> ATENÇÃO: Isso enviará mensagens REAIS. Custo
+                    envolvido.</span>
+            </p>
+            <div class="flex justify-end gap-3">
+                <button id="cancelConfirm"
+                    class="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">Cancelar</button>
+                <button id="confirmSend"
+                    class="px-4 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-500 font-bold">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // Config will be loaded from external file or common-ui logic usually, 
+        // but for now let's assume standard firebase-config.js import if available or inline.
+        // Checking sidebar.html or other files for how they import common-ui.js
+    </script>
+    <script src="firebase-config.js" type="module"></script>
+    <script src="common-ui.js" type="module"></script>
+    <script src="marketing.js" type="module"></script>
+
+    <style>
+        /* Checkbox Toggle Style */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</body>
+
+</html>

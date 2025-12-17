@@ -1374,3 +1374,67 @@ exports.getTodaysTotalEntriesHttp = functions.runWith({ timeoutSeconds: 120 }).h
     }
 });
 
+
+/**
+ * Busca prospects de uma unidade específica na API EVO (v1).
+ */
+async function getProspectsFromUnit(unitId) {
+    console.log(`[getProspectsFromUnit] Iniciando busca para unidade: ${unitId}`);
+
+    const apiClientV1 = getEvoApiClient(unitId, 'v1');
+    const PAGE_SIZE = 50; // Use a smaller page size for prospects as they might be heavier? Or standard 50. Docs example uses 'take'
+    let allProspects = [];
+
+    // Helper to fetch all pages
+    const fetchAllPages = async () => {
+        let currentSkip = 0;
+        let hasMore = true;
+        let prospects = [];
+
+        // Safety limit to avoid infinite loops in mass fetch
+        const MAX_PAGES = 100; // 5000 prospects max per fetch? Let's be careful.
+        let pagesFetched = 0;
+
+        while (hasMore && pagesFetched < MAX_PAGES) {
+            try {
+                console.log(`[getProspectsFromUnit] Fetching page ${pagesFetched + 1} (skip: ${currentSkip})...`);
+                // Params: take, skip
+                // Docs: curl .../api/v1/prospects?take&skip
+                const response = await apiClientV1.get("/prospects", {
+                    params: {
+                        take: PAGE_SIZE,
+                        skip: currentSkip
+                    }
+                });
+
+                const pageData = response.data || [];
+                console.log(`[getProspectsFromUnit] Page ${pagesFetched + 1} returned ${pageData.length} items.`);
+
+                if (pageData.length > 0) {
+                    prospects = prospects.concat(pageData);
+                    currentSkip += PAGE_SIZE;
+                }
+
+                if (pageData.length < PAGE_SIZE) {
+                    hasMore = false;
+                }
+                pagesFetched++;
+
+            } catch (error) {
+                console.error(`[getProspectsFromUnit] Erro ao buscar prospects (skip: ${currentSkip}):`, error.message);
+                if (error.response) {
+                    console.error('[getProspectsFromUnit] Response Status:', error.response.status);
+                    console.error('[getProspectsFromUnit] Response Data:', JSON.stringify(error.response.data));
+                }
+                hasMore = false; // Stop on error
+                throw error; // Re-throw to be caught by index.js
+            }
+        }
+        return prospects;
+    };
+
+    allProspects = await fetchAllPages();
+    return allProspects;
+}
+
+exports.getProspectsFromUnit = getProspectsFromUnit;

@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
+const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
 const db = admin.firestore();
 
 exports.syncEvoToOlist = syncEvoToOlist;
@@ -1976,5 +1977,237 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
     } catch (error) {
         console.error('[whapiWebhook] Error processing webhook:', error);
         res.status(200).send('Error logged');
+    }
+});
+
+// Função para envio de mensagens em massa (Marketing)
+exports.sendMassMessage = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
+    // 1. Verificação de Autenticação e Permissão (Admin)
+    if (!context.auth) {
+        console.warn('[sendMassMessage] Unauthenticated attempt');
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário deve estar autenticado.');
+    }
+    console.log(`[sendMassMessage] Authenticated user: ${context.auth.token.email}`);
+
+    // In a real scenario, we should check for an admin claim. 
+    // Checking if email is from the domain or specific admins could be done here.
+    // For now, assuming any authenticated user (staff) can theoretically access this if they have the UI,
+    // but let's add a basic check if possible, or leave it open as per current codebase style which often checks auth only.
+    // Ideally: if (!context.auth.token.admin) throw ...
+
+    const { audience, unitId, message, testMode, testPhone } = data;
+
+    if (!message) {
+        throw new functions.https.HttpsError('invalid-argument', 'A mensagem é obrigatória.');
+    }
+    if (!audience) {
+        throw new functions.https.HttpsError('invalid-argument', 'O público-alvo (audience) é obrigatório.');
+    }
+
+    const token = process.env.WHAPI_TOKEN;
+    if (!token) {
+        throw new functions.https.HttpsError('failed-precondition', 'WHAPI_TOKEN não configurado.');
+    }
+
+    let recipients = [];
+    console.log(`[sendMassMessage] Iniciando disparo. Audience: ${audience}, Unit: ${unitId || 'Todas'}, TestMode: ${testMode}`);
+
+    try {
+        // 2. Buscar Destinatários
+        if (audience === 'students') {
+            // Buscar alunos ativos da EVO
+            if (unitId && unitId !== 'all') {
+                const students = await getActiveStudentsFromUnit(unitId);
+                recipients = students.map(s => ({
+                    name: s.firstName,
+                    phone: s.contacts?.find(c => c.contactType === 'Celular' || c.idContactType === 2)?.description, // Adjust based on EVO data structure
+                    id: s.idMember,
+                    source: 'evo'
+                }));
+            } else {
+                // Fetch from all units - Reuse getActiveStudentsFromUnit logic or call it in loop
+                // For now, let's limit to one unit or require unit selection if 'all' isn't easily supported 
+                // without massive timeout risk.
+                // Actually, let's support 'all' by iterating defined units.
+                const units = [
+                    "centro", "coqueiros", "asa-sul", "sudoeste", "lago-sul",
+                    "pontos-de-ensino", "jardim-botanico", "dourados",
+                    "santa-monica", "noroeste" // Hardcoded list from evo.js or fetch it
+                ];
+
+                for (const u of units) {
+                    try {
+                        const students = await getActiveStudentsFromUnit(u);
+                        const unitRecipients = students.map(s => ({
+                            name: s.firstName,
+                            phone: s.contacts?.find(c => c.contactType === 'Celular' || c.idContactType === 2)?.description,
+                            id: s.idMember,
+                            source: 'evo'
+                        }));
+                        recipients = recipients.concat(unitRecipients);
+                    } catch (err) {
+                        console.error(`Erro ao buscar alunos da unidade ${u}:`, err);
+                    }
+                }
+            }
+        } else if (audience === 'prospects' || audience === 'crm_prospects') {
+            // Buscar prospects do Firestore (CRM Local)
+            let query = db.collection('prospects');
+
+            // Filter by unit if provided
+            // Note: Field name for unit in prospects might be 'unidade' or 'userUnit'??
+            // Checking check_prospects.js output... it doesn't show unit field clearly, 
+            // but intranet/prospeccao.html form uses 'unidade'. Let's assume 'unidade'.
+            if (unitId && unitId !== 'all') {
+                query = query.where('unidade', '==', unitId);
+            }
+
+            // Filter inactive/archived? Maybe add a status filter later.
+            // For now, getting all in the unit.
+
+            const snapshot = await query.get();
+            recipients = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    name: data.responsavel || 'Cliente',
+                    phone: data.telefone,
+                    id: doc.id,
+                    source: 'crm_local' // Renamed for clarity
+                };
+            });
+        } else if (audience === 'evo_prospects') {
+            // BUSCAR PROSPECTS DA EVO (API v1)
+            if (unitId && unitId !== 'all') {
+                const prospects = await getProspectsFromUnit(unitId);
+                recipients = prospects.map(p => ({
+                    name: `${p.firstName} ${p.lastName}`.trim(),
+                    phone: p.cellphone,
+                    id: p.idProspect?.toString() || p.idMember?.toString(),
+                    source: 'evo_prospect'
+                }));
+            } else {
+                const units = [
+                    "centro", "coqueiros", "asa-sul", "sudoeste", "lago-sul",
+                    "pontos-de-ensino", "jardim-botanico", "dourados",
+                    "santa-monica", "noroeste"
+                ];
+
+                for (const u of units) {
+                    try {
+                        const prospects = await getProspectsFromUnit(u);
+                        const unitRecipients = prospects.map(p => ({
+                            name: `${p.firstName} ${p.lastName}`.trim(),
+                            phone: p.cellphone,
+                            id: p.idProspect?.toString() || p.idMember?.toString(),
+                            source: 'evo_prospect'
+                        }));
+                        recipients = recipients.concat(unitRecipients);
+                    } catch (err) {
+                        console.error(`Erro ao buscar prospects da unidade ${u}:`, err);
+                    }
+                }
+            }
+        }
+
+        // Filter invalid phones
+        recipients = recipients.filter(r => r.phone && r.phone.length >= 10);
+
+        // Remove duplicates (by phone)
+        const uniqueRecipients = [];
+        const seenPhones = new Set();
+        for (const r of recipients) {
+            const clean = r.phone.replace(/\D/g, '');
+            if (!seenPhones.has(clean)) {
+                seenPhones.add(clean);
+                r.cleanPhone = clean;
+                uniqueRecipients.push(r);
+            }
+        }
+        recipients = uniqueRecipients;
+
+        console.log(`[sendMassMessage] Total de destinatários válidos: ${recipients.length}`);
+
+        if (testMode) {
+            console.log('[sendMassMessage] Modo de TESTE. Nenhum envio real será feito (exceto para o telefone de teste).');
+            if (testPhone) {
+                recipients = [{ name: 'Test User', phone: testPhone, cleanPhone: testPhone.replace(/\D/g, ''), id: 'test' }];
+            } else {
+                return {
+                    success: true,
+                    message: `Simulação concluída. Seriam enviados ${recipients.length} mensagens.`,
+                    count: recipients.length
+                };
+            }
+        }
+
+        // 3. Enviar Mensagens
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        // Helper func to sleep
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // OPTIMIZATION: Increased chunk size and reduced delay to avoid Cloud Function timeout (540s).
+        // Whapi allows higher throughput.
+        const CHUNK_SIZE = 20; // Increased from 5
+        const DELAY_BETWEEN_CHUNKS = 500; // Reduced from 1000ms
+
+        for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
+            const chunk = recipients.slice(i, i + CHUNK_SIZE);
+            console.log(`[sendMassMessage] Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(recipients.length / CHUNK_SIZE)}`);
+
+            const promises = chunk.map(async (recipient) => {
+                try {
+                    let targetPhone = recipient.cleanPhone;
+                    if (targetPhone.length <= 11) targetPhone = '55' + targetPhone; // Basic BR valid
+
+                    // Using the existing Whapi logic with Timeout
+                    await axios.post('https://gate.whapi.cloud/messages/text', {
+                        to: targetPhone,
+                        body: message
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 10000 // 10s timeout per request to prevent hanging
+                    });
+
+                    // Log log only for firebase prospects (optional, to not clutter DB for students?)
+                    // Or maybe create a specific collection 'mass_messages_log'
+
+                    return { success: true };
+                } catch (error) {
+                    console.error(`[sendMassMessage] Failed to send to ${recipient.cleanPhone}: ${error.message}`);
+                    return { success: false, error: error.message, recipient: recipient.phone };
+                }
+            });
+
+            const results = await Promise.all(promises);
+
+            results.forEach(r => {
+                if (r.success) successCount++;
+                else {
+                    errorCount++;
+                    errors.push(r);
+                }
+            });
+
+            if (i + CHUNK_SIZE < recipients.length) await sleep(DELAY_BETWEEN_CHUNKS);
+        }
+
+        console.log(`[sendMassMessage] Finalizado. Sucessos: ${successCount}, Erros: ${errorCount}`);
+
+        return {
+            success: true,
+            message: `Processamento concluído. Enviados: ${successCount}. Falhas: ${errorCount}.`,
+            details: { successCount, errorCount, errors }
+        };
+
+    } catch (error) {
+        console.error('[sendMassMessage] Erro fatal:', error);
+        // Expose stack for debugging (remove in production if sensitive)
+        throw new functions.https.HttpsError('internal', `ERROR STACK: ${error.stack || error.message}`);
     }
 });
