@@ -16,6 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.css">
     <link rel="stylesheet" href="log.css">
 
     <style>
@@ -65,7 +67,56 @@
             color: rgba(255, 255, 255, 0.6);
             text-align: right;
             margin-top: 4px;
-        }
+
+            .chat-time {
+                font-size: 0.65rem;
+                color: rgba(255, 255, 255, 0.6);
+                text-align: right;
+                margin-top: 4px;
+            }
+
+            /* Drawflow Customization */
+            #drawflow {
+                width: 100%;
+                height: 100%;
+                background: #1a1a1a;
+                background-size: 25px 25px;
+                background-image: linear-gradient(to right, #2a2a2a 1px, transparent 1px), linear-gradient(to bottom, #2a2a2a 1px, transparent 1px);
+            }
+
+            .drawflow .drawflow-node {
+                background: #2a2a2a;
+                border: 1px solid #4a4a4a;
+                color: white;
+                min-width: 250px;
+                padding: 0;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            }
+
+            .drawflow .drawflow-node .input,
+            .drawflow .drawflow-node .output {
+                background: #eab308;
+                /* Yellow-500 */
+            }
+
+            .drawflow .drawflow-node .title-box {
+                padding: 10px;
+                border-bottom: 1px solid #4a4a4a;
+                border-radius: 8px 8px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .drawflow .drawflow-node .box {
+                padding: 15px;
+            }
+
+            /* Modal Editor Fullscreen */
+            #visualEditorModal {
+                z-index: 1000;
+            }
     </style>
 </head>
 
@@ -98,6 +149,12 @@
                         class="bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
                         <i class="fas fa-filter text-yellow-500"></i> <span class="hidden sm:inline">Filtros</span>
                     </button>
+
+                    <button id="openFlowEditorBtn" onclick="openVisualEditor()" style="display: none !important;"
+                        class="hidden bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        <i class="fas fa-project-diagram text-blue-500"></i> <span class="hidden sm:inline">Editor de
+                            Fluxo</span>
+                    </button>
                     <button id="configBtn"
                         class="bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0 ml-2">
                         <i class="fas fa-robot text-purple-500"></i> <span class="hidden sm:inline">Config Bot</span>
@@ -124,9 +181,44 @@
                 <p class="text-sm text-gray-400 mb-4">Edite as mensagens automáticas enviadas pelo robô.</p>
 
                 <div class="form-group">
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Boas-vindas</label>
-                    <textarea id="cfg_welcome" rows="6"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Solicitação de Nome</label>
+                    <textarea id="cfg_ask_name" rows="2"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Boas Vindas
+                        (Matrícula)</label>
+                    <textarea id="cfg_welcome_new_student" rows="3"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Mensagem enviada após confirmação de pagamento da matrícula..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Brasília)</label>
+                        <input type="text" id="cfg_id_brasilia"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Floripa)</label>
+                        <input type="text" id="cfg_id_floripa"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Dourados)</label>
+                        <input type="text" id="cfg_id_dourados"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Atendimento Humano</label>
+                    <textarea id="cfg_human_handoff" rows="2"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Mensagem enviada quando solicitam humano..."></textarea>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -140,6 +232,35 @@
                         <label class="block text-sm font-medium text-gray-300 mb-1">Menu Florianópolis</label>
                         <textarea id="cfg_menu_floripa" rows="5"
                             class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Boas-vindas</label>
+                    <textarea id="cfg_welcome" rows="6"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Menu de Intenção (Qualificação)</label>
+                    <textarea id="cfg_intent_menu" rows="4"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                        placeholder="Como posso te ajudar? \n1. Agendar...\n2. Já sou aluno..."></textarea>
+                </div>
+
+                <div class="form-group border-t border-gray-700 pt-4 mt-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Conteúdo "Saber Mais"</label>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">URL do Vídeo (YouTube)</label>
+                            <input type="text" id="cfg_know_more_video"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Mensagem de Texto</label>
+                            <textarea id="cfg_know_more_message" rows="4"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -168,6 +289,12 @@
                     <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Handoff (Transbordo)</label>
                     <input type="text" id="cfg_handoff"
                         class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem para Alunos/Suporte</label>
+                    <textarea id="cfg_support_message" rows="3"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-700">
@@ -453,6 +580,219 @@
             </div>
         </div>
     </div>
+
+    <!-- Visual Flow Editor Modal -->
+    <!-- Visual Flow Editor Modal -->
+    <div id="visualEditorModal" class="fixed inset-0 bg-[#111111] hidden z-[9999]">
+        <!-- Toolbar -->
+        <div class="h-16 bg-[#1a1a1a] border-b border-gray-700 flex items-center justify-between px-6">
+            <h2 class="text-xl font-bold text-white"><i class="fas fa-project-diagram mr-2 text-yellow-500"></i> Editor
+                de Fluxo</h2>
+            <div class="flex gap-2">
+                <button onclick="saveFlow()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-save mr-2"></i> Salvar
+                </button>
+                <button onclick="generateDefaultMigrationFlow()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" title="Restaurar Fluxo Padrão">
+                    <i class="fas fa-magic mr-2"></i> Padrão
+                </button>
+                <button onclick="closeVisualEditor()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-times mr-2"></i> Fechar
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Content -->
+        <div class="flex-1 flex overflow-hidden h-full">
+            <!-- Sidebar / Nodes Palette -->
+            <div class="w-64 bg-[#111111] border-r border-gray-700 p-4 flex flex-col gap-3">
+                <h3 class="text-gray-400 text-sm font-semibold uppercase mb-2">Elementos</h3>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="message">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-comment text-blue-400"></i>
+                        <span>Mensagem</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="question">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-question-circle text-purple-400"></i>
+                        <span>Pergunta</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="condition">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-code-branch text-orange-400"></i>
+                        <span>Condição</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="action">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-bolt text-red-400"></i>
+                        <span>Ação</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div id="drawflow" class="drawflow flex-1 relative h-full w-full" ondrop="drop(event)"
+                ondragover="allowDrop(event)">
+                <!-- Nodes will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Drawflow CSS -->
+    <link href="https://unpkg.com/drawflow/dist/drawflow.min.css" rel="stylesheet">
+    <style>
+        /* Custom Drawflow Node Styling */
+        .drawflow-node {
+            background-color: #1f2937 !important;
+            /* bg-gray-800 */
+            border: 1px solid #374151 !important;
+            /* border-gray-700 */
+            color: white !important;
+            border-radius: 0.5rem !important;
+            /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            /* shadow-md */
+            padding: 0 !important;
+            /* Remove internal padding, use inner boxes */
+            width: 350px !important;
+            min-width: 350px !important;
+            display: flex;
+            /* Ensure flex layout */
+            flex-direction: column;
+            overflow: visible !important;
+            /* Allow handles to hang out */
+            z-index: 10;
+        }
+
+        .drawflow-node .inputs,
+        .drawflow-node .outputs {
+            width: 0;
+            height: 0;
+            position: absolute;
+            display: flex;
+            align-items: center;
+        }
+
+        .drawflow-node .inputs {
+            left: -16px !important;
+        }
+
+        .drawflow-node .outputs {
+            right: -16px !important;
+        }
+
+        .drawflow-node .input,
+        .drawflow-node .output {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            border: 1px solid #000;
+            margin-bottom: 5px;
+        }
+
+        /* Inner Content Styling */
+        .drawflow-node>div {
+            width: 100%;
+        }
+
+        .drawflow-node .title-box {
+            background: #111827;
+            /* gray-900 */
+            border-bottom: 1px solid #374151;
+            padding: 10px;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .drawflow-node .box {
+            padding: 12px;
+        }
+
+        .drawflow-node textarea {
+            background-color: #374151;
+            /* gray-700 */
+            border: 1px solid #4b5563;
+            /* gray-600 */
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            font-size: 0.875rem;
+            line-height: 1.25;
+        }
+
+        .drawflow-node textarea:focus {
+            outline: none;
+            border-color: #facc15;
+            /* yellow-400 */
+        }
+
+        .drawflow-node input[type="text"],
+        .drawflow-node select {
+            background-color: #374151;
+            /* gray-700 */
+            border: 1px solid #4b5563;
+            /* gray-600 */
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .drawflow-node.selected {
+            border: 1px solid #f6e05e !important;
+            /* border-yellow-400 */
+            box-shadow: 0 0 0 3px rgba(246, 224, 94, 0.5) !important;
+            /* ring-yellow-400 */
+        }
+
+
+        .drawflow {
+            background: #1a1a1a !important;
+            /* bg-[#1a1a1a] */
+            background-image: radial-gradient(#4a5568 1px, transparent 1px) !important;
+            /* bg-gray-700 for grid */
+            background-size: 20px 20px !important;
+            overflow: hidden !important;
+            cursor: grab;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drawflow:active {
+            cursor: grabbing;
+        }
+
+        .drawflow-base-node {
+            background: #2d3748 !important;
+            border: 1px solid #4a5568 !important;
+            color: #e2e8f0 !important;
+        }
+
+        .drawflow-delete {
+            background: #e53e3e !important;
+            /* bg-red-600 */
+            color: white !important;
+        }
+    </style>
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -876,7 +1216,7 @@
             if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
             switchTab('details'); // Reset to details on open
 
-            async function loadWhatsAppHistory(currentProspect) {
+            async function loadWhatsAppHistory(currentProspect, isBackground = false) {
                 if (!currentProspect || !currentProspect.telefone) {
                     whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
                     whatsappInput.disabled = true;
@@ -884,23 +1224,33 @@
                     return;
                 }
 
-                whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
-                whatsappInput.disabled = false;
-                whatsappSendBtn.disabled = false;
+                // Only show loading spinner if it's the first load (not background refresh)
+                if (!isBackground && whatsappChatArea.children.length === 0) {
+                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
+                }
+
+                if (!isBackground) {
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                }
 
                 try {
                     const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
                     const messages = result.data.messages;
 
                     if (messages.length === 0) {
-                        whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                        if (!isBackground) {
+                            whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                        }
                     } else {
-                        renderChatMessages(messages.reverse()); // Show oldest first
+                        renderChatMessages(messages.reverse(), isBackground); // Show oldest first
                     }
                 } catch (error) {
                     console.error("Error loading history:", error);
-                    // Use a more user-friendly error message or just show the chat area empty
-                    whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+                    // Only show error if it's not a background refresh, to avoid annoyance
+                    if (!isBackground) {
+                        whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+                    }
 
                     // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
                     whatsappInput.disabled = false;
@@ -908,32 +1258,94 @@
                 }
             }
 
-            function renderChatMessages(messages) {
-                whatsappChatArea.innerHTML = '';
-                if (!messages || messages.length === 0) {
-                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
-                    return;
-                }
+            function renderChatMessages(messages, isBackground = false) {
+                // Smart Rendering: Diffing and Scroll Management
+
+                // 1. Check if we need to scroll to bottom *before* updating
+                const isAtBottom = whatsappChatArea.scrollHeight - whatsappChatArea.scrollTop <= whatsappChatArea.clientHeight + 100; // 100px threshold
+
+                // 2. Simple comparison to avoid re-rendering if nothing changed (optional but good)
+                // For a robust check we would need message IDs. Assuming 'messages' contains objects.
+                // We'll proceed to re-build or append.
+
+                // If it's a full reload (not background) or empty, clear it.
+                // But for background, we want to be smarter. 
+                // However, without unique IDs on the DOM elements, appending only new messages is tricky if we don't know which are new.
+                // A simple strategy that works well for "refresh" is to rebuild the HTML string and replace `innerHTML` 
+                // BUT current browsers are fast. The flicker comes from `innerHTML = ''` happening *before* the new content is ready.
+                // So we will build the NEW content first, then swap.
+
+                const fragment = document.createDocumentFragment();
+
                 messages.forEach(msg => {
                     const bubble = document.createElement('div');
                     bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
 
-                    // Simple text rendering. Whapi messages can be complex, this is basic.
-                    const text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text);
+                    let content = '';
+
+                    // MEDIA RENDERING
+                    if (msg.media_url) {
+                        const mediaClass = "max-w-full rounded-lg mb-2";
+                        if (msg.type === 'image' || msg.type === 'sticker') {
+                            // For images/stickers, clickable to open full size
+                            content += `<img src="${msg.media_url}" class="${mediaClass} cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" alt="Image" loading="lazy">`;
+                        } else if (msg.type === 'video') {
+                            content += `<video src="${msg.media_url}" controls class="${mediaClass}"></video>`;
+                        } else if (msg.type === 'audio' || msg.type === 'voice') {
+                            content += `<audio src="${msg.media_url}" controls class="w-full mb-2"></audio>`;
+                        } else {
+                            // Documents and others
+                            const icon = msg.type === 'document' ? 'fa-file-alt' : 'fa-paperclip';
+                            content += `
+                                <a href="${msg.media_url}" target="_blank" class="flex items-center gap-3 bg-black/20 p-3 rounded-lg mb-2 hover:bg-black/30 transition-colors">
+                                    <div class="bg-gray-700/50 p-2 rounded-full w-10 h-10 flex items-center justify-center shrink-0">
+                                        <i class="fas ${icon} text-yellow-500"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-sm font-medium truncate text-white">Arquivo</p>
+                                        <p class="text-xs text-green-400">Clique para baixar</p>
+                                    </div>
+                                </a>
+                           `;
+                        }
+                    }
+
+                    // Decode text/caption safely
+                    let text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text || '');
+
+                    // Only show text if it exists (it might be empty if it's just media without caption)
+                    if (text && text !== '""') {
+                        // Simple URL linking for text
+                        text = text.replace(
+                            /(https?:\/\/[^\s]+)/g,
+                            '<a href="$1" target="_blank" class="text-blue-400 hover:underline break-all">$1</a>'
+                        );
+                        content += `<div class="whitespace-pre-wrap break-words">${text}</div>`;
+                    }
+
                     const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
                     bubble.innerHTML = `
-                        ${text}
-                        <div class="chat-time">${time}</div>
+                        ${content}
+                        <div class="chat-time select-none pt-1">${time}</div>
                     `;
 
                     // Container for alignment
                     const wrapper = document.createElement('div');
                     wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
                     wrapper.appendChild(bubble);
-                    whatsappChatArea.appendChild(wrapper);
+                    fragment.appendChild(wrapper);
                 });
-                whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
+
+                // 3. Update DOM
+                whatsappChatArea.innerHTML = '';
+                whatsappChatArea.appendChild(fragment);
+
+                // 4. Handle Scrolling
+                if (!isBackground || isAtBottom) {
+                    whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
+                }
+                // Else: User is scrolling up, do not disturb their position
             }
 
             // WhatsApp Send Logic
@@ -958,7 +1370,8 @@
                     whatsappInput.value = '';
 
                     // Reload history after a brief delay to show the sent message
-                    setTimeout(() => loadWhatsAppHistory(prospect), 1000);
+                    // Use background mode to prevent flashing
+                    setTimeout(() => loadWhatsAppHistory(prospect, true), 1000);
 
                 } catch (error) {
                     alert('Erro ao enviar: ' + error.message);
@@ -985,7 +1398,18 @@
             refreshChatBtn.onclick = () => {
                 const icon = refreshChatBtn.querySelector('i');
                 icon.classList.add('fa-spin');
-                loadWhatsAppHistory(prospect).finally(() => {
+                // For manual refresh, we probably WANT to scroll to bottom, so treat as foreground?
+                // Or maybe just background so it's smooth. Let's use background=true for smoothness, 
+                // but since user asked for it, maybe force scroll?
+                // The logical "Refresh" usually implies "I want to see new stuff", so scrolling to bottom is expected.
+                // Our logic `if (!isBackground || isAtBottom)` handles it if we pass isBackground=false.
+                // But we want smoothness...
+                // Let's pass isBackground=true to avoid the "spinner" clear, but we might want to force scroll.
+                // Actually, the issue is `loadWhatsAppHistory` logic for spinner.
+                // If we pass `true`, no spinner, no clear. Smooth.
+                // Our render logic will scroll to bottom IF user was at bottom.
+                // If user clicks refresh, they likely expect to see latest.
+                loadWhatsAppHistory(prospect, true).finally(() => {
                     icon.classList.remove('fa-spin');
                 });
             };
@@ -998,7 +1422,7 @@
                 pollingInterval = setInterval(() => {
                     // Only poll if WhatsApp tab is active
                     if (!tabWhatsAppContent.classList.contains('hidden')) {
-                        loadWhatsAppHistory(prospect);
+                        loadWhatsAppHistory(prospect, true);
                     }
                 }, 10000); // 10 seconds
             }
@@ -1630,8 +2054,17 @@
                 welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
                 menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
                 menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+                intent_menu_message: "Como posso te ajudar?\n1. Agendar aula experimental\n2. Já sou aluno\n3. Saber mais",
+                ask_name_message: "Antes de continuarmos, como posso te chamar?",
+                welcome_new_student_message: "Parabéns pela sua matrícula! Seja bem-vindo(a) à nossa família. Em breve entraremos em contato para te passar todos os detalhes.",
+                enrollment_product_id_brasilia: "",
+                enrollment_product_id_floripa: "",
+                enrollment_product_id_dourados: "",
+                know_more_message: "Embarque nessa jornada Conosco.\nNossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.",
+                know_more_video_url: "https://www.youtube.com/watch?v=tzFSjF5h-zA",
                 confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
                 handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+                support_message: "Que ótimo ter você por aqui! Para assuntos administrativos ou pedagógicos, por favor entre em contato com sua unidade diretamente ou aguarde que encaminharemos sua mensagem.",
                 extra_questions: []
             };
 
@@ -1647,8 +2080,19 @@
                 document.getElementById('cfg_welcome').value = data.welcome_message;
                 document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
                 document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
+                document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
+                document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
+                document.getElementById('cfg_intent_menu').value = data.intent_menu_message;
+                document.getElementById('cfg_ask_name').value = data.ask_name_message;
+                document.getElementById('cfg_welcome_new_student').value = data.welcome_new_student_message;
+                document.getElementById('cfg_id_brasilia').value = data.enrollment_product_id_brasilia;
+                document.getElementById('cfg_id_floripa').value = data.enrollment_product_id_floripa;
+                document.getElementById('cfg_id_dourados').value = data.enrollment_product_id_dourados;
+                document.getElementById('cfg_know_more_message').value = data.know_more_message;
+                document.getElementById('cfg_know_more_video').value = data.know_more_video_url;
                 document.getElementById('cfg_confirmation').value = data.confirmation_question;
                 document.getElementById('cfg_handoff').value = data.handoff_message;
+                document.getElementById('cfg_support_message').value = data.support_message;
 
                 renderExtraQuestions(data.extra_questions || []);
 
@@ -1667,10 +2111,21 @@
 
             const updates = {
                 welcome_message: document.getElementById('cfg_welcome').value,
+                human_handoff_message: document.getElementById('cfg_human_handoff').value,
+                human_handoff_message: document.getElementById('cfg_human_handoff').value,
                 menu_brasilia: document.getElementById('cfg_menu_bsb').value,
                 menu_floripa: document.getElementById('cfg_menu_floripa').value,
+                intent_menu_message: document.getElementById('cfg_intent_menu').value,
+                ask_name_message: document.getElementById('cfg_ask_name').value,
+                welcome_new_student_message: document.getElementById('cfg_welcome_new_student').value,
+                enrollment_product_id_brasilia: document.getElementById('cfg_id_brasilia').value,
+                enrollment_product_id_floripa: document.getElementById('cfg_id_floripa').value,
+                enrollment_product_id_dourados: document.getElementById('cfg_id_dourados').value,
+                know_more_message: document.getElementById('cfg_know_more_message').value,
+                know_more_video_url: document.getElementById('cfg_know_more_video').value,
                 confirmation_question: document.getElementById('cfg_confirmation').value,
                 handoff_message: document.getElementById('cfg_handoff').value,
+                support_message: document.getElementById('cfg_support_message').value,
                 extra_questions: extraQuestions
             };
 
@@ -1771,17 +2226,6 @@
                 }
             }
 
-            // 2. Close Filters Modal (X Button)
-            const closeBtn = target.closest('#closeFiltersModalBtn');
-            if (closeBtn) {
-                e.preventDefault();
-                const modal = document.getElementById('filtersModal');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }
-            }
-
             // 3. Apply Filters
             const applyBtn = target.closest('#applyFiltersBtn');
             if (applyBtn) {
@@ -1840,9 +2284,227 @@
                 target.classList.add('hidden');
                 target.classList.remove('flex');
             }
+
         });
     </script>
     <script src="geral_log.js"></script>
+
+    <script>
+        var id = document.getElementById("drawflow");
+        let editor;
+
+        function openVisualEditor() {
+            const modal = document.getElementById('visualEditorModal');
+            modal.classList.remove('hidden');
+            // Force reflow
+            void modal.offsetWidth;
+            modal.classList.add('flex', 'flex-col');
+
+            if (!editor) {
+                // Delay init to ensure dimensions are correct
+                setTimeout(() => {
+                    if (typeof Drawflow !== 'undefined') {
+                        editor = new Drawflow(id);
+                        editor.reroute = true;
+                        editor.editor_mode = 'edit';
+                        editor.start();
+                        console.log("Drawflow started (Lazy Init Delayed)");
+                    } else {
+                        console.error("Drawflow library not loaded!");
+                    }
+                }, 300);
+            }
+        }
+
+        function closeVisualEditor() {
+            const modal = document.getElementById('visualEditorModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex', 'flex-col');
+        }
+
+        // Drag & Drop Logic
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("node", ev.target.getAttribute('data-node'));
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            var nodeType = ev.dataTransfer.getData("node");
+            addNodeToBoard(nodeType, ev.clientX, ev.clientY);
+        }
+
+        function addNodeToBoard(type, pos_x, pos_y) {
+            if (editor.editor_mode === 'fixed') {
+                return false;
+            }
+
+
+            // Convert Page Coordinates to Canvas Coordinates
+            // simple approximation for now
+            pos_x = pos_x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
+            pos_y = pos_y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
+
+            // Basic HTML Templates for Nodes
+            let html = '';
+            let inputs = 1;
+            let outputs = 1;
+
+            if (type === 'message') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-comment"></i> Mensagem</div>
+                        <div class="box">
+                            <textarea rows="4" df-message placeholder="Digite a mensagem..." class="w-full"></textarea>
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'question') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-question-circle"></i> Pergunta</div>
+                        <div class="box">
+                             <textarea rows="4" df-question placeholder="Pergunta..." class="w-full"></textarea>
+                             <input type="text" df-variable placeholder="Nome da Variável" class="mt-2">
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'condition') {
+                inputs = 1;
+                outputs = 2;
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-code-branch"></i> Condição</div>
+                        <div class="box">
+                            <select df-condition>
+                                <option value="contains">Contém</option>
+                                <option value="equals">Igual a</option>
+                            </select>
+                            <input type="text" df-value placeholder="Valor" class="mt-2">
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'action') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-bolt"></i> Ação</div>
+                        <div class="box">
+                            <select df-action>
+                                <option value="notify_manager">Notificar Gerente</option>
+                                <option value="reset_flow">Resetar Fluxo</option>
+                                <option value="hand_off">Atendimento Humano</option>
+                                <option value="enrollment_link">Link Matrícula</option>
+                            </select>
+                        </div>
+                    </div>
+                 `;
+            }
+
+            // Add Node
+            editor.addNode(type, inputs, outputs, pos_x, pos_y, type, {}, html);
+        }
+
+        async function saveFlow() {
+            const flowData = editor.export();
+            console.log("Saving Flow:", flowData);
+
+            try {
+                // Save to Firestore
+                await db.collection('config').doc('bot_flow_v2').set({
+                    flow_data: JSON.stringify(flowData),
+                    updated_at: serverTimestamp()
+                });
+                alert('Fluxo salvo com sucesso!');
+            } catch (error) {
+                console.error("Error saving flow:", error);
+                alert('Erro ao salvar fluxo.');
+            }
+        }
+
+        async function generateDefaultMigrationFlow() {
+            if (!confirm("Isso irá apagar o fluxo atual e restaurar o padrão do sistema. Continuar?")) return;
+
+            editor.clearModuleSelected(); // Clear canvas
+
+            const configDefaults = {
+                welcome: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+                ask_name: "Antes de continuarmos, como posso te chamar?",
+                menu: "Como posso te ajudar?\n1. Agendar aula experimental\n2. Já sou aluno\n3. Saber mais\n4. Quero fazer minha matrícula",
+                support: "Que ótimo ter você por aqui! Para assuntos administrativos ou pedagógicos, por favor entre em contato com sua unidade diretamente ou aguarde que encaminharemos sua mensagem.",
+                know_more: "Embarque nessa jornada Conosco.\nNossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.",
+                handoff: "Entendi. Em breve um de nossos atendentes irá falar com você. Aguarde um momento."
+            };
+
+            // Helper to get raw template HTML (duplicated from addNodeToBoard for simplicity in this script)
+            const getHtml = (type, val1, val2) => {
+                if (type === 'message') return `<div><div class="title-box"><i class="fas fa-comment"></i> Mensagem</div><div class="box"><textarea rows="6" df-message>${val1}</textarea></div></div>`;
+                // Check if it's the large menu text to give it more space
+                let rows = 6;
+                if (val1 && val1.length > 200) rows = 12; // Menu has ~200 chars
+                if (type === 'question') return `<div><div class="title-box"><i class="fas fa-question-circle"></i> Pergunta</div><div class="box"><textarea rows="${rows}" df-question>${val1}</textarea><input type="text" df-variable value="${val2 || ''}" class="mt-2" placeholder="Nome da Variável"></div></div>`;
+
+                if (type === 'condition') return `<div><div class="title-box"><i class="fas fa-code-branch"></i> Condição</div><div class="box"><select df-condition><option value="contains" ${val1 === 'contains' ? 'selected' : ''}>Contém</option><option value="equals" ${val1 === 'equals' ? 'selected' : ''}>Igual a</option></select><input type="text" df-value value="${val2}" class="mt-2"></div></div>`;
+                if (type === 'action') return `<div><div class="title-box"><i class="fas fa-bolt"></i> Ação</div><div class="box"><select df-action><option value="notify_manager" ${val1 === 'notify_manager' ? 'selected' : ''}>Notificar Gerente</option><option value="reset_flow" ${val1 === 'reset_flow' ? 'selected' : ''}>Resetar Fluxo</option><option value="human_handoff" ${val1 === 'human_handoff' ? 'selected' : ''}>Atendimento Humano</option></select></div></div>`;
+                return '';
+            };
+
+            // 1. Welcome Message
+            const id_welcome = editor.addNode('message', 1, 1, 50, 200, 'message', { message: configDefaults.welcome }, getHtml('message', configDefaults.welcome));
+
+            // 2. Ask Name
+            const id_ask_name = editor.addNode('question', 1, 1, 400, 200, 'question', { question: configDefaults.ask_name, variable: 'responsavel' }, getHtml('question', configDefaults.ask_name, 'responsavel'));
+
+            // 3. Intent Menu
+            const id_menu = editor.addNode('question', 1, 1, 800, 200, 'question', { question: configDefaults.menu, variable: 'menu_selection' }, getHtml('question', configDefaults.menu, 'menu_selection'));
+
+            // CONNECTIONS: Welcome -> Ask Name -> Menu
+            editor.addConnection(id_welcome, id_ask_name, 'output_1', 'input_1');
+            editor.addConnection(id_ask_name, id_menu, 'output_1', 'input_1');
+
+            // --- BRANCHES ---
+
+            // Branch 1: Agendar (1)
+            const id_cond_1 = editor.addNode('condition', 1, 2, 1200, 50, 'condition', { condition: 'contains', value: '1' }, getHtml('condition', 'contains', '1'));
+            editor.addConnection(id_menu, id_cond_1, 'output_1', 'input_1');
+
+            // Action: Notify Manager (Simplification for now, usually asks Unit)
+            const id_action_notify = editor.addNode('action', 1, 1, 1600, 50, 'action', { action: 'notify_manager' }, getHtml('action', 'notify_manager'));
+            const id_msg_handoff = editor.addNode('message', 1, 1, 2000, 50, 'message', { message: configDefaults.handoff }, getHtml('message', configDefaults.handoff));
+
+            editor.addConnection(id_cond_1, id_action_notify, 'output_1', 'input_1');
+            editor.addConnection(id_action_notify, id_msg_handoff, 'output_1', 'input_1');
+
+
+            // Branch 2: Já sou Aluno (2)
+            const id_cond_2 = editor.addNode('condition', 1, 2, 1200, 300, 'condition', { condition: 'contains', value: '2' }, getHtml('condition', 'contains', '2'));
+            editor.addConnection(id_cond_1, id_cond_2, 'output_2', 'input_1'); // Chain False
+
+            // Message: Support
+            const id_msg_support = editor.addNode('message', 1, 1, 1600, 300, 'message', { message: configDefaults.support }, getHtml('message', configDefaults.support));
+            editor.addConnection(id_cond_2, id_msg_support, 'output_1', 'input_1');
+
+            // Branch 3: Saber Mais (3)
+            const id_cond_3 = editor.addNode('condition', 1, 2, 1200, 550, 'condition', { condition: 'contains', value: '3' }, getHtml('condition', 'contains', '3'));
+            editor.addConnection(id_cond_2, id_cond_3, 'output_2', 'input_1'); // Chain False
+
+            // Message: Know More
+            const id_msg_knowmore = editor.addNode('message', 1, 1, 1600, 550, 'message', { message: configDefaults.know_more }, getHtml('message', configDefaults.know_more));
+            editor.addConnection(id_cond_3, id_msg_knowmore, 'output_1', 'input_1');
+
+            // Branch 4: Matrícula (4) - Simplified as Notify for now
+            const id_cond_4 = editor.addNode('condition', 1, 2, 1200, 800, 'condition', { condition: 'contains', value: '4' }, getHtml('condition', 'contains', '4'));
+            editor.addConnection(id_cond_3, id_cond_4, 'output_2', 'input_1');
+
+            const id_action_enroll = editor.addNode('action', 1, 1, 1600, 800, 'action', { action: 'human_handoff' }, getHtml('action', 'human_handoff'));
+            editor.addConnection(id_cond_4, id_action_enroll, 'output_1', 'input_1');
+
+            alert("Fluxo padrão gerado! Clique em Salvar para ativar.");
+        }
+    </script>
+    <script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
 </body>
 
 </html>

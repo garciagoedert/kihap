@@ -1416,14 +1416,31 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
         });
 
         // Transform data to a simpler format for frontend
-        const messages = response.data.messages.map(msg => ({
-            id: msg.id,
-            from_me: msg.from_me,
-            text: msg.text?.body || msg.caption || '[Media/Other]', // Handle text or caption
-            type: msg.type,
-            timestamp: msg.timestamp,
-            status: msg.status
-        }));
+        const messages = response.data.messages.map(msg => {
+            const mediaTypes = ['image', 'video', 'audio', 'voice', 'document', 'sticker'];
+            const isMedia = mediaTypes.includes(msg.type);
+            const mediaData = isMedia ? msg[msg.type] : null;
+
+            return {
+                id: msg.id,
+                from_me: msg.from_me,
+                type: msg.type,
+                // Use explicit text, or caption, or empty string if it's just media (frontend handles media tag)
+                text: msg.text?.body || msg.caption || '',
+                media_url: mediaData?.link || null,
+                media_type: msg.type,
+                timestamp: msg.timestamp,
+                status: msg.status,
+                mime_type: mediaData?.mime_type // Useful for audio/video players
+            };
+
+            // DEBUG MEDIA
+            if (isMedia) {
+                console.log(`[getWhatsAppHistory] Media Message Debug (${msg.id}):`, JSON.stringify(msg[msg.type], null, 2));
+            }
+
+            return mappedMsg;
+        });
 
         return { success: true, messages: messages };
 
@@ -1530,17 +1547,40 @@ const DEFAULT_CONFIG = {
     welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
     menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
     menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+    intent_menu_message: "Como posso te ajudar?\n1. Agendar aula experimental\n2. Já sou aluno\n3. Saber mais\n4. Quero fazer minha matrícula",
+    ask_name_message: "Antes de continuarmos, como posso te chamar?",
+    welcome_new_student_message: "Parabéns pela sua matrícula! Seja bem-vindo(a) à nossa família. Em breve entraremos em contato para te passar todos os detalhes.",
+    enrollment_product_id_brasilia: "",
+    enrollment_product_id_floripa: "",
+    enrollment_product_id_dourados: "",
     confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
     handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+    human_handoff_message: "Entendi. Em breve um de nossos atendentes irá falar com você. Aguarde um momento.",
+    support_message: "Que ótimo ter você por aqui! Para assuntos administrativos ou pedagógicos, por favor entre em contato com sua unidade diretamente ou aguarde que encaminharemos sua mensagem.",
+    know_more_message: "Embarque nessa jornada Conosco.\nNossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.",
+    know_more_video_url: "https://www.youtube.com/watch?v=tzFSjF5h-zA",
     extra_questions: []
 };
 
 async function getWhatsAppConfig() {
     try {
-        const configDoc = await db.collection('config').doc('whatsapp_auto_reply').get();
+        const [configDoc, flowDoc] = await Promise.all([
+            db.collection('config').doc('whatsapp_auto_reply').get(),
+            db.collection('config').doc('bot_flow_v2').get()
+        ]);
+
+        let config = { ...DEFAULT_CONFIG };
+
         if (configDoc.exists) {
-            return { ...DEFAULT_CONFIG, ...configDoc.data() };
+            config = { ...config, ...configDoc.data() };
         }
+
+        if (flowDoc.exists) {
+            config.flow_data = flowDoc.data().flow_data;
+        }
+
+        return config;
+
     } catch (error) {
         console.error('[getWhatsAppConfig] Error fetching config:', error);
     }
@@ -1587,7 +1627,11 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 const lSnap = await db.collection('leads').where('telefone', '==', cleanPhone).get();
 
                 const batch = db.batch();
-                pSnap.forEach(d => batch.delete(d.ref));
+                pSnap.forEach(d => {
+                    batch.delete(d.ref);
+                    // Also clear current_node_id
+                    d.ref.update({ current_node_id: admin.firestore.FieldValue.delete() });
+                });
                 lSnap.forEach(d => batch.delete(d.ref));
                 await batch.commit();
 
@@ -1628,123 +1672,255 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 }
             };
 
+            // ATTEMPT DYNAMIC FLOW EXECUTION FIRST
+            let flowExecuted = false;
+            if (config.flow_data && existingDoc) {
+                // Check if user is already in a flow or if we want to force start?
+                // Let's try to execute flow. The engine handles "No Context" by finding Start.
+                try {
+                    // Pass docId explicitly
+                    const currentDataWithId = { ...existingDoc.data(), docId: existingDoc.id };
+                    // flowExecuted = await executeFlow(cleanPhone, messageText, currentDataWithId, config);
+                    flowExecuted = false; // TEMPORARILY DISABLED BY USER REQUEST
+                } catch (err) {
+                    console.error('[whapiWebhook] Flow Execution Error:', err);
+                }
+            }
+
+            if (flowExecuted) {
+                console.log('[whapiWebhook] Handled by Dynamic Flow Engine.');
+                // Always log the incoming message, even if handled by flow
+                if (existingDoc) {
+                    await db.collection(existingCollection).doc(existingDoc.id).update({
+                        contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
+                    });
+                }
+                continue;
+            }
+
+            // FALLBACK TO LEGACY LOGIC
             if (existingDoc) {
                 const currentData = existingDoc.data();
                 const updates = {
                     contactLog: admin.firestore.FieldValue.arrayUnion(logEntry)
                 };
-
-                // Smart Routing Logic: Check for City Keywords or Unit if Unit is not set
                 let routingLog = null;
                 const lowerText = messageText.toLowerCase();
 
-                // 1. Check for specific UNITS first (if user skips city or replies to unit prompt)
-                let detectedUnit = null;
+                // 0. CHECK FOR SUPPORT / EXISTING STUDENT TRIGGER (Global Bypass)
+                if (lowerText.includes('sou aluno') || lowerText.includes('já sou aluno') || lowerText.includes('ja sou aluno') || lowerText.includes('sou estudante')) {
+                    console.log(`[whapiWebhook] Support trigger detected for ${cleanPhone}`);
+                    routingLog = await sendMessageHelper(cleanPhone, config.support_message);
+                    // Tag as support if not already
+                    if (!currentData.tags || !currentData.tags.includes('Suporte')) {
+                        updates.tags = admin.firestore.FieldValue.arrayUnion('Suporte');
+                    }
+                    // Force state to support done
+                    updates.flow_state = 'support_done';
+                }
 
-                // Brasília Units
-                if (lowerText.includes('asa sul')) detectedUnit = 'Kihap - Asa Sul';
-                else if (lowerText.includes('sudoeste')) detectedUnit = 'Kihap - Sudoeste';
-                else if (lowerText.includes('lago sul')) detectedUnit = 'Kihap - Lago Sul';
-                else if (lowerText.includes('noroeste')) detectedUnit = 'Kihap - Noroeste';
-                else if (lowerText.includes('pontos de ensino')) detectedUnit = 'Kihap - Pontos de Ensino';
-                else if (lowerText.includes('jardim botanico') || lowerText.includes('jardim botânico')) detectedUnit = 'Kihap - Jardim Botânico';
+                // 0.1 HUMAN HANDOFF TRIGGER (New)
+                else if (lowerText.includes('humano') || lowerText.includes('atendente') || lowerText.includes('atendimento') || lowerText.includes('falar com alguém') || lowerText.includes('falar com alguem') || lowerText.includes('pessoa')) {
+                    console.log(`[whapiWebhook] Human Handoff requested by ${cleanPhone}`);
+                    routingLog = await sendMessageHelper(cleanPhone, config.human_handoff_message || "Em breve um atendente falará com você.");
 
-                // Florianópolis Units
-                else if (lowerText.includes('centro') && !lowerText.includes('dourados')) detectedUnit = 'Kihap - Centro (Floripa)'; // Disambiguate if needed
-                else if (lowerText.includes('coqueiros')) detectedUnit = 'Kihap - Coqueiros';
-                else if (lowerText.includes('santa monica') || lowerText.includes('santa mônica')) detectedUnit = 'Kihap - Santa Mônica';
-
-                if (detectedUnit) {
-                    updates.unidade = detectedUnit;
-                    console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
-
-                    routingLog = await sendMessageHelper(cleanPhone, config.confirmation_question);
+                    if (!currentData.tags || !currentData.tags.includes('Solicitou Atendimento')) {
+                        updates.tags = admin.firestore.FieldValue.arrayUnion('Solicitou Atendimento');
+                    }
 
                     // Notify Manager
-                    await notifyUnitManager(detectedUnit, prospectTitle, cleanPhone);
+                    const unitToNotify = currentData.unidade || 'Kihap - Asa Sul'; // Fallback if no unit yet
+                    await notifyUnitManager(unitToNotify, `🚨 SOLICITAÇÃO DE ATENDIMENTO HUMANO\n${prospectTitle}`, cleanPhone, "O lead solicitou falar com um humano/atendente.");
+
+                    // Stop Bot
+                    updates.flow_state = 'support_done';
                 }
-                // 2. If no Unit detected, check for CITY keywords (Level 1 routing)
-                else if (!currentData.unidade) {
-                    if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
-                        // Sub-menu for Brasília
-                        routingLog = await sendMessageHelper(cleanPhone, config.menu_brasilia);
 
-                    } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
-                        // Sub-menu for Florianópolis
-                        routingLog = await sendMessageHelper(cleanPhone, config.menu_floripa);
+                // 0.2 RESET / VOLTAR TRIGGER (New)
+                else if (lowerText === 'voltar' || lowerText === 'reiniciar' || lowerText === 'inicio' || lowerText === 'início' || lowerText === 'começar de novo' || lowerText === 'comecar de novo') {
+                    console.log(`[whapiWebhook] Reset requested by ${cleanPhone}`);
+                    // Reset relevant fields to allow restart
+                    updates.flow_state = admin.firestore.FieldValue.delete();
+                    updates.unidade = admin.firestore.FieldValue.delete();
+                    updates.responsavel = admin.firestore.FieldValue.delete();
+                    updates.current_question_index = admin.firestore.FieldValue.delete();
 
-                    } else if (lowerText.includes('dourados')) {
-                        // Direct routing for Dourados
-                        updates.unidade = 'Kihap - Dourados';
-                        // Dourados also asks confirmation question
+                    // Send Welcome Message again
+                    routingLog = await sendMessageHelper(cleanPhone, config.welcome_message);
+                }
+
+                // 0.1 WAITING FOR NAME STATE (New Step)
+                else if (currentData.flow_state === 'waiting_for_name') {
+                    // Treat input as Name
+                    const capturedName = messageText.trim();
+                    console.log(`[whapiWebhook] Captured Name for ${cleanPhone}: ${capturedName}`);
+
+                    updates.responsavel = capturedName; // Update Name in CRM
+
+                    // Move to Intent Selection
+                    routingLog = await sendMessageHelper(cleanPhone, config.intent_menu_message);
+                    updates.flow_state = 'intent_selection';
+                }
+
+                // 1. INTENT SELECTION STATE
+                else if (currentData.flow_state === 'intent_selection') {
+                    // Expecting: 1 (Agendar), 2 (Aluno), 3 (Saber mais)
+                    // Or keywords
+
+                    if (lowerText.includes('2') || lowerText.includes('aluno') || lowerText.includes('já sou') || lowerText.includes('ja sou')) {
+                        // IT IS A STUDENT
+                        routingLog = await sendMessageHelper(cleanPhone, config.support_message);
+                        if (!currentData.tags || !currentData.tags.includes('Suporte')) {
+                            updates.tags = admin.firestore.FieldValue.arrayUnion('Suporte');
+                        }
+                        updates.flow_state = 'support_done';
+
+                    } else if (lowerText.includes('3') || lowerText.includes('saber mais')) {
+                        // KNOW MORE (Video + Text + Confirmation)
+                        if (config.know_more_video_url) {
+                            await sendMessageHelper(cleanPhone, config.know_more_video_url);
+                        }
+                        if (config.know_more_message) {
+                            await sendMessageHelper(cleanPhone, config.know_more_message);
+                        }
+
+                        // Continue to Confirmation
                         routingLog = await sendMessageHelper(cleanPhone, config.confirmation_question);
+                        updates.flow_state = 'confirmation_question_sent';
 
-                        // Notify Manager
-                        await notifyUnitManager('Kihap - Dourados', prospectTitle, cleanPhone);
+                    } else if (lowerText.includes('4') || lowerText.includes('matrícula') || lowerText.includes('matricula') || lowerText.includes('fazer minha matrícula')) {
+                        // ENROLLMENT FLOW
+                        const unit = currentData.unidade || '';
+                        let productId = null;
+
+                        if (unit.includes('Dourados')) {
+                            productId = config.enrollment_product_id_dourados;
+                        } else if (unit.includes('Floripa') || unit.includes('Centro') || unit.includes('Coqueiros') || unit.includes('Santa Mônica')) {
+                            productId = config.enrollment_product_id_floripa;
+                        } else if (unit.includes('Brasília') || unit.includes('Asa Sul') || unit.includes('Sudoeste') || unit.includes('Lago Sul') || unit.includes('Noroeste') || unit.includes('Pontos de Ensino') || unit.includes('Jardim Botânico')) {
+                            productId = config.enrollment_product_id_brasilia;
+                        }
+
+                        if (productId) {
+                            const link = `https://intranet-kihap.web.app/produto.html?id=${productId}`;
+                            // You might want to consider appending ?name=${currentData.responsavel} etc if produto.js supported it, 
+                            // but for now ensuring the ID is correct is enough.
+
+                            await sendMessageHelper(cleanPhone, `Perfeito, ${currentData.responsavel || ''}! Para realizar sua matrícula, é só acessar o link abaixo:\n\n${link}\n\nAssim que o pagamento for confirmado, te enviarei uma mensagem de boas-vindas!`);
+                            updates.flow_state = 'waiting_for_enrollment_payment';
+                        } else {
+                            // Configuration missing fallback
+                            console.error(`[whapiWebhook] Enrollment Product ID missing for unit: ${unit}`);
+                            await sendMessageHelper(cleanPhone, config.handoff_message); // Fallback to handoff
+                            updates.bot_handoff_sent = true;
+                            updates.flow_state = 'handoff_sent';
+                        }
+
+                    } else {
+                        // ASSUME LEAD (Agendar / 1 / Fuzzy)
+                        // Move to Confirmation directly
+                        routingLog = await sendMessageHelper(cleanPhone, config.confirmation_question);
+                        updates.flow_state = 'confirmation_question_sent';
                     }
                 }
-                // 3. Logic for Post-Answer Handoff (or Dynamic Questions)
-                // If Unit IS set (from previous interactions)
-                else if (currentData.unidade) {
 
-                    // Case A: Just finished Confirmation ("Pra você ou outra pessoa?")
-                    // We assume the answer to confirmation is what came in this message, IF we hadn't started questions yet.
-                    // But to be robust, let's track state.
+                // 2. CHECK FOR UNIT OR CITY IF NO UNIT 
+                else {
+                    let detectedUnit = null;
 
-                    const extraQuestions = config.extra_questions || [];
-                    const currentQIndex = currentData.current_question_index !== undefined ? currentData.current_question_index : -1;
+                    // Brasília Units
+                    if (lowerText.includes('asa sul')) detectedUnit = 'Kihap - Asa Sul';
+                    else if (lowerText.includes('sudoeste')) detectedUnit = 'Kihap - Sudoeste';
+                    else if (lowerText.includes('lago sul')) detectedUnit = 'Kihap - Lago Sul';
+                    else if (lowerText.includes('noroeste')) detectedUnit = 'Kihap - Noroeste';
+                    else if (lowerText.includes('pontos de ensino')) detectedUnit = 'Kihap - Pontos de Ensino';
+                    else if (lowerText.includes('jardim botanico') || lowerText.includes('jardim botânico')) detectedUnit = 'Kihap - Jardim Botânico';
 
-                    // Logic:
-                    // Index -1: User hasn't started extra questions (just answered Confirmation)
-                    // Index 0: User just answered Question 0, send Question 1 (or finish)
+                    // Florianópolis Units
+                    else if (lowerText.includes('centro') && !lowerText.includes('dourados')) detectedUnit = 'Kihap - Centro (Floripa)';
+                    else if (lowerText.includes('coqueiros')) detectedUnit = 'Kihap - Coqueiros';
+                    else if (lowerText.includes('santa monica') || lowerText.includes('santa mônica')) detectedUnit = 'Kihap - Santa Mônica';
 
-                    if (!currentData.bot_handoff_sent) {
+                    // Dourados Direct
+                    else if (lowerText.includes('dourados')) {
+                        detectedUnit = 'Kihap - Dourados';
+                    }
 
-                        // If we haven't started extra questions yet
-                        if (currentQIndex === -1) {
-                            // User just answered "Pra quem é?". 
-                            // Check if there are extra questions
-                            if (extraQuestions.length > 0) {
-                                // Send First Question
-                                const nextQ = extraQuestions[0];
-                                routingLog = await sendMessageHelper(cleanPhone, nextQ);
-                                updates.current_question_index = 0;
-                            } else {
-                                // No extra questions, straight to handoff
-                                routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
-                                updates.bot_handoff_sent = true;
-                            }
+                    if (detectedUnit) {
+                        updates.unidade = detectedUnit;
+                        console.log(`[whapiWebhook] Detected Unit: ${detectedUnit}`);
+
+                        // Notify Manager NOW
+                        await notifyUnitManager(detectedUnit, prospectTitle, cleanPhone);
+
+                        // NEW FLOW: ASK NAME INSTEAD OF INTENT
+                        routingLog = await sendMessageHelper(cleanPhone, config.ask_name_message);
+                        updates.flow_state = 'waiting_for_name';
+                    }
+                    // If no Unit detected, check for CITY keywords (Level 1 routing)
+                    else if (!currentData.unidade) {
+
+                        if (lowerText.includes('brasília') || lowerText.includes('brasilia')) {
+                            // Sub-menu for Brasília
+                            routingLog = await sendMessageHelper(cleanPhone, config.menu_brasilia);
+
+                        } else if (lowerText.includes('florianópolis') || lowerText.includes('florianopolis') || lowerText.includes('floripa')) {
+                            // Sub-menu for Florianópolis
+                            routingLog = await sendMessageHelper(cleanPhone, config.menu_floripa);
+
                         }
-                        // We are IN the question flow
-                        else {
-                            // User just answered Question [currentQIndex]
-                            // Save the answer
-                            const questionAsked = extraQuestions[currentQIndex];
-                            let currentObs = currentData.observacoes || '';
+                    }
+                    // 3. Logic for Post-Answer Handoff (or Dynamic Questions)
+                    // If Unit IS set AND we are NOT in intent selection (i.e. we passed it or it's old flow)
+                    else if (currentData.unidade && currentData.flow_state !== 'intent_selection') {
 
-                            if (questionAsked) {
-                                // Store answer in a map 'answers' (create if needed) or just append to observacoes
-                                // Let's append to 'observacoes' for simplicity and visibility in the card
-                                currentObs = currentObs + `\n\n[Q: ${questionAsked}]\nR: ${messageText}`;
-                                updates.observacoes = currentObs;
-                            }
+                        // Treat as 'confirmation_question_sent' if flow_state is missing but current_question_index is undef
+                        // This handles legacy or just manually updated prospects
 
-                            // Determine Next Step
-                            const nextIndex = currentQIndex + 1;
+                        const extraQuestions = config.extra_questions || [];
+                        const currentQIndex = currentData.current_question_index !== undefined ? currentData.current_question_index : -1;
 
-                            if (nextIndex < extraQuestions.length) {
-                                // Send Next Question
-                                const nextQ = extraQuestions[nextIndex];
-                                routingLog = await sendMessageHelper(cleanPhone, nextQ);
-                                updates.current_question_index = nextIndex;
-                            } else {
-                                // Finished all questions
-                                routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
-                                updates.bot_handoff_sent = true;
+                        if (!currentData.bot_handoff_sent && currentData.flow_state !== 'support_done') {
+                            if (currentQIndex === -1 && (currentData.flow_state === 'confirmation_question_sent' || !currentData.flow_state)) {
+                                // Just answered Confirmation
+                                if (extraQuestions.length > 0) { // Send First Question
+                                    const nextQ = extraQuestions[0];
+                                    routingLog = await sendMessageHelper(cleanPhone, nextQ);
+                                    updates.current_question_index = 0;
+                                    updates.flow_state = 'extra_questions';
+                                } else { // No extra questions, straight to handoff
+                                    routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
+                                    updates.bot_handoff_sent = true;
+                                    updates.flow_state = 'handoff_sent';
+                                }
+                            } else if (currentQIndex >= 0) { // IN the question flow
+                                // Save Answer Logic
+                                let currentObs = currentData.observacoes || '';
+                                const questionAsked = extraQuestions[currentQIndex];
 
-                                // Notify Manager with Summary (Q&A)
-                                // FIX: Use 'currentObs' which contains the latest answer, instead of stale 'currentData.observacoes'
-                                await notifyUnitManager(currentData.unidade, currentData.responsavel, cleanPhone, currentObs || 'Sem respostas registradas.');
+                                if (questionAsked) {
+                                    currentObs = currentObs + `\n\n[Q: ${questionAsked}]\nR: ${messageText}`;
+                                    updates.observacoes = currentObs;
+                                }
+
+                                // Determine Next Step
+                                const nextIndex = currentQIndex + 1;
+
+                                if (nextIndex < extraQuestions.length) {
+                                    // Send Next Question
+                                    const nextQ = extraQuestions[nextIndex];
+                                    routingLog = await sendMessageHelper(cleanPhone, nextQ);
+                                    updates.current_question_index = nextIndex;
+                                } else {
+                                    // Finished all questions
+                                    routingLog = await sendMessageHelper(cleanPhone, config.handoff_message);
+                                    updates.bot_handoff_sent = true;
+                                    updates.flow_state = 'handoff_sent';
+
+                                    // Notify Manager with Summary (Q&A)
+                                    // FIX: Use 'currentObs' which contains the latest answer, instead of stale 'currentData.observacoes'
+                                    await notifyUnitManager(currentData.unidade, currentData.responsavel, cleanPhone, currentObs || 'Sem respostas registradas.');
+                                }
                             }
                         }
                     }

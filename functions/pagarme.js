@@ -22,6 +22,32 @@ const getPagarmeClient = () => {
     });
 };
 
+// Helper to send WhatsApp message via Whapi (Duplicated from index.js to avoid circular dependency)
+async function sendMessageHelper(to, body) {
+    try {
+        const token = process.env.WHAPI_TOKEN || (functions.config().whapi ? functions.config().whapi.token : null);
+        if (!token) {
+            console.error('[sendMessageHelper] No WHAPI_TOKEN configured');
+            return null;
+        }
+        await axios.post('https://gate.whapi.cloud/messages/text', {
+            to,
+            body
+        }, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        console.log(`[sendMessageHelper] Sent message to ${to}`);
+        return true;
+    } catch (error) {
+        console.error('[sendMessageHelper] Error:', error.message);
+        return null;
+    }
+}
+
 const createPagarmeOrder = async (product, formDataList, totalAmount, saleDocIds) => {
     console.log('[createPagarmeOrder] Iniciando a criação do pedido no Pagar.me.');
     const client = getPagarmeClient();
@@ -122,6 +148,23 @@ const syncPagarmeSalesStatus = async () => {
         const salesRef = db.collection('inscricoesFaixaPreta');
         const snapshot = await salesRef.where('paymentStatus', '==', 'pending').get();
 
+        // Fetch WhatsApp Config for Welcome Message
+        let whatsappConfig = {};
+        try {
+            const configDoc = await db.collection('config').doc('whatsapp_auto_reply').get();
+            if (configDoc.exists) {
+                whatsappConfig = configDoc.data();
+            }
+        } catch (e) {
+            console.warn('[syncPagarmeSalesStatus] Could not fetch whatsapp config:', e);
+        }
+
+        const enrollmentIds = [
+            whatsappConfig.enrollment_product_id_brasilia,
+            whatsappConfig.enrollment_product_id_floripa,
+            whatsappConfig.enrollment_product_id_dourados
+        ].filter(id => id); // Filter out empty strings
+
         if (snapshot.empty) {
             console.log('[syncPagarmeSalesStatus] Nenhuma venda pendente encontrada para sincronizar.');
             return { message: 'Nenhuma venda pendente para sincronizar.' };
@@ -146,6 +189,23 @@ const syncPagarmeSalesStatus = async () => {
                         await doc.ref.update({ paymentStatus: newStatus });
                         updatedCount++;
                         console.log(`[syncPagarmeSalesStatus] Venda ${doc.id} atualizada para '${newStatus}'.`);
+
+                        // CHECK IF ENROLLMENT AND SEND WELCOME MESSAGE
+                        if (newStatus === 'paid' && enrollmentIds.includes(sale.productId)) {
+                            console.log(`[syncPagarmeSalesStatus] Venda ${doc.id} identificada como MATRÍCULA. Enviando boas-vindas...`);
+                            if (sale.userPhone) {
+                                // Clean phone
+                                let targetPhone = sale.userPhone.replace(/\D/g, '');
+                                if (targetPhone.length >= 10 && targetPhone.length <= 11) {
+                                    targetPhone = '55' + targetPhone; // Assume BR if not present
+                                }
+
+                                const welcomeMsg = whatsappConfig.welcome_new_student_message || "Parabéns pela matrícula! Seja bem-vindo!";
+                                await sendMessageHelper(targetPhone, welcomeMsg);
+                            } else {
+                                console.warn(`[syncPagarmeSalesStatus] Venda ${doc.id} sem telefone para enviar mensagem.`);
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error(`[syncPagarmeSalesStatus] Erro ao verificar o pedido ${sale.pagarmeOrderId}:`, error);
