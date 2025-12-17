@@ -167,8 +167,11 @@ confirmSend.addEventListener('click', async () => {
     }
 });
 
+import { loadComponents } from "./common-ui.js";
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    loadComponents(); // Loads sidebar and header
     loadUnits();
     // Default to test mode
     testModeToggle.checked = true;

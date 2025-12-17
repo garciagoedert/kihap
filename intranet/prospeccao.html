@@ -1136,7 +1136,7 @@
         }
 
         async function openFormModal(prospect = null) {
-            currentProspectId = prospect.id;
+            currentProspectId = prospect ? prospect.id : null;
 
             // Declare UI elements first to avoid initialization errors
             const editBtn = document.getElementById('editBtn');
@@ -1154,7 +1154,8 @@
             const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
 
             // Mark as read if unread
-            if (prospect.unread) {
+            // Mark as read if unread
+            if (prospect && prospect.unread) {
                 try {
                     const prospectRef = doc(db, 'prospects', prospect.id);
                     await updateDoc(prospectRef, { unread: false });
