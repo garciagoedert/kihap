@@ -6,12 +6,12 @@ import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDo
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"; // Added storage imports
 
 // Import functions for badge management from gerenciar-emblemas.js
-import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js'; 
+import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js';
 
 // Debounce function to limit the rate of function execution
 function debounce(func, delay) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         const context = this;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
@@ -99,7 +99,7 @@ export function setupAlunosPage() {
                     }
                 }
             });
-            
+
             // Modal Controls (REMOVED)
             if (closeModalBtn) {
                 closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -141,14 +141,14 @@ export function setupAlunosPage() {
                     // We can check if the content is already loaded or if the setup function has been called
                     // For simplicity, we'll call it here, assuming it handles re-initialization gracefully or we add a flag.
                     // A more robust solution might involve checking if the content is visible and then calling setup.
-                    setupBadgeManagement(); 
+                    setupBadgeManagement();
                 } else if (activeTabName === 'ranking') {
                     loadRankingData();
                 } else if (activeTabName === 'access-ranking') {
                     loadAndRenderAccessRanking();
                 }
             }
-            
+
             tabManageStudents.addEventListener('click', () => switchMainTab('manage-students'));
             tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
             tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
@@ -199,7 +199,7 @@ async function loadStudents() {
         });
 
         const studentList = result.data || [];
-        
+
         // Atualiza o cache local para o modal e outras interações da página.
         allStudents = studentList;
         renderStudents(studentList);
@@ -264,7 +264,18 @@ async function highlightRegisteredStudents(evoIds) {
         rows.forEach(row => {
             const memberId = parseInt(row.dataset.id, 10);
             if (registeredEvoIds.has(memberId)) {
-                row.classList.add('bg-blue-900');
+                // Remove highlight visual antigo se existir
+                row.classList.remove('bg-blue-900');
+
+                // Adiciona ícone de check verde ANTES do nome
+                const nameCell = row.cells[0]; // Primeira célula é o nome
+                if (nameCell && !nameCell.querySelector('.fa-check-circle')) {
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-check-circle text-green-500 mr-2'; // mr-2 para margem à direita
+                    icon.title = 'Aluno com acesso à plataforma';
+                    // Adiciona classes para alinhamento vertical se necessário, mas prepend costuma funcionar bem
+                    nameCell.prepend(icon);
+                }
             }
         });
     } catch (error) {
@@ -304,7 +315,7 @@ async function handleCheckEntriesClick() {
     try {
         const result = await getDailyEntries({ unitId: selectedUnit, date: selectedDate });
         const { totalEntries, uniqueMembersCount } = result.data;
-        
+
         resultDiv.innerHTML = `
             <span class="font-semibold">Resultados para ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}:</span> 
             <span class="text-yellow-500">${uniqueMembersCount}</span> alunos únicos de um total de 
@@ -344,7 +355,7 @@ async function loadRankingData() {
 
 function renderRanking(students) {
     const rankingTableBody = document.getElementById('ranking-table-body');
-    
+
     if (students.length === 0) {
         rankingTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno com KihapCoins encontrado nos filtros atuais.</td></tr>';
         return;
@@ -376,7 +387,7 @@ async function loadAndRenderAccessRanking() {
         // 1. Get all students from all units
         const allStudentsResult = await listAllMembers({ unitId: 'all', name: '' });
         const allStudentsList = allStudentsResult.data.filter(s => s.firstName !== '***Dados Removidos***') || [];
-        
+
         if (allStudentsList.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Nenhum aluno encontrado.</td></tr>';
             return;
@@ -429,4 +440,21 @@ function renderAccessRanking(rankedUnits) {
     }).join('');
 
     tableBody.innerHTML = rowsHtml;
+}
+
+async function loadAllSelectableContent() {
+    try {
+        const queries = [
+            getDocs(query(collection(db, "courses"), orderBy("title"))),
+            getDocs(query(collection(db, "tatame_conteudos"), orderBy("title"))),
+            getDocs(query(collection(db, "badges"), orderBy("name")))
+        ];
+        const [coursesSnap, tatameSnap, badgesSnap] = await Promise.all(queries);
+
+        allCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allTatameContents = tatameSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allBadges = badgesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao carregar conteúdos selecionáveis:", error);
+    }
 }

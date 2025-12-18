@@ -1438,3 +1438,55 @@ async function getProspectsFromUnit(unitId) {
 }
 
 exports.getProspectsFromUnit = getProspectsFromUnit;
+
+/**
+ * Verifica quais desses IDs de membros EVO possuem cadastro no Firebase.
+ * Recebe uma lista de IDs e retorna os IDs que possuem cadastro.
+ */
+exports.getRegisteredUsersByEvoId = functions.https.onCall(async (data, context) => {
+    // Autenticação opcional para visualização, mas recomendada para evitar abuso.
+    // Vamos permitir que instrutores/admins vejam.
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+
+    const { evoIds } = data;
+    if (!evoIds || !Array.isArray(evoIds)) {
+        throw new functions.https.HttpsError("invalid-argument", "A lista 'evoIds' é obrigatória e deve ser um array.");
+    }
+
+    if (evoIds.length === 0) {
+        return { registeredEvoIds: [] };
+    }
+
+    const db = admin.firestore();
+    const registeredEvoIds = [];
+
+    // O Firestore suporta 'in' queries com no máximo 10 valores (antes era 10, agora 30).
+    // Para ser seguro e escalável, vamos fazer em batches de 30.
+    const BATCH_SIZE = 30;
+    const chunks = [];
+    for (let i = 0; i < evoIds.length; i += BATCH_SIZE) {
+        chunks.push(evoIds.slice(i, i + BATCH_SIZE));
+    }
+
+    try {
+        const promises = chunks.map(async (chunk) => {
+            const q = db.collection('users').where('evoMemberId', 'in', chunk);
+            const snapshot = await q.get();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.evoMemberId) {
+                    registeredEvoIds.push(data.evoMemberId);
+                }
+            });
+        });
+
+        await Promise.all(promises);
+        return { registeredEvoIds };
+
+    } catch (error) {
+        functions.logger.error("Erro ao verificar usuários registrados:", error);
+        throw new functions.https.HttpsError("internal", "Erro ao verificar status de registro dos alunos.");
+    }
+});
