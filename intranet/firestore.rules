@@ -273,7 +273,7 @@ service cloud.firestore {
     }
 
     // Regra para Cache de Alunos do EVO
-    match /evo_students_cache/{unitId} {
+    match /evo_students_cache/{document=**} {
       allow read: if request.auth != null; // Usuários autenticados podem ler o cache
       allow write: if false; // Apenas Cloud Functions podem escrever
     }

@@ -223,12 +223,16 @@ async function loadStudents() {
     tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
+        console.log("🚀 Chamando listAllMembers...", { selectedUnit, searchTerm });
+        const startTime = Date.now();
+
         // A lógica de filtro de status foi removida. O backend agora sempre busca todos.
         const result = await listAllMembers({
             unitId: selectedUnit,
             name: searchTerm
         });
 
+        console.log(`✅ listAllMembers concluído em ${Date.now() - startTime}ms`, result);
         const studentList = result.data || [];
 
         // Atualiza o cache local para o modal e outras interações da página.
