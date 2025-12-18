@@ -31,6 +31,7 @@ export const auth = getAuth(app);
 export const functions = getFunctions(app, 'us-central1'); // Especifica a região, se necessário
 
 // Conectar ao emulador se estiver rodando localmente
+// Conectar ao emulador se estiver rodando localmente
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
   // Porta padrão do emulador de functions é 5001
   connectFunctionsEmulator(functions, "localhost", 5001);

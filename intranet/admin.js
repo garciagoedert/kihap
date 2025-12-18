@@ -196,13 +196,10 @@ export function setupAdminPage() {
 }
 
 function setupTabs() {
-    console.log("Setting up tabs...");
     const tabUsers = document.getElementById('tab-users');
     const tabLogs = document.getElementById('tab-logs');
     const contentUsers = document.getElementById('users-content');
     const contentLogs = document.getElementById('logs-content');
-
-    console.log("Tab elements:", { tabUsers, tabLogs, contentUsers, contentLogs });
 
     if (!tabUsers || !tabLogs) {
         console.error("Tab elements not found!");
