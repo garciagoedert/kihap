@@ -34,8 +34,10 @@ export const functions = getFunctions(app, 'us-central1'); // Especifica a regi�
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
   // Porta padrão do emulador de functions é 5001
   connectFunctionsEmulator(functions, "localhost", 5001);
+  console.log("📍 Conectado ao Emulador de Functions em localhost:5001");
   // Porta padrão do emulador de Firestore é 8080
   connectFirestoreEmulator(db, "localhost", 8080);
+  console.log("📍 Conectado ao Emulador de Firestore em localhost:8080");
 }
 
 export const storage = getStorage(app);

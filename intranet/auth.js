@@ -50,12 +50,22 @@ export function onAuthReady(callback) {
             await forceTokenRefresh();
             console.log('Usuário logado e token atualizado:', user.uid);
             const userData = await getUserData(user.uid);
-            callback(userData);
+
+            // Se o documento do usuário não existir no Firestore, retornamos um objeto básico
+            // para permitir que a página inicialize e o usuário possa usar funções administrativas (se tiver claims)
+            const fallbackUserData = userData || {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                isAdmin: false // Por segurança, assume que não é admin se o doc não existe
+            };
+
+            callback(fallbackUserData);
         } else {
             // Usuário está deslogado.
             // Redireciona para a página de login se não estiver nela.
             if (window.location.pathname !== '/intranet/login.html' && window.location.pathname !== '/intranet/recuperacao.html') {
-                 window.location.href = 'login.html';
+                window.location.href = 'login.html';
             }
             callback(null);
         }
@@ -78,7 +88,7 @@ export function getCurrentUser() {
 }
 
 // Função de logout
-window.logout = function() {
+window.logout = function () {
     signOut(auth).then(() => {
         sessionStorage.clear();
         window.location.href = 'login.html';

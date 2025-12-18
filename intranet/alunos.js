@@ -34,6 +34,7 @@ let allBadges = []; // This will be populated by loadAllSelectableContent and us
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
         if (user) {
+            console.log("👤 Usuário autenticado na página de alunos:", user.email);
             // Oculta o botão de adicionar prospect no header
             const addProspectBtn = document.getElementById('addProspectBtnHeader');
             if (addProspectBtn) {

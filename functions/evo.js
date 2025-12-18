@@ -237,76 +237,79 @@ exports.syncEvoStudentsToCache = functions.runWith({ timeoutSeconds: 540, memory
                 functions.logger.info(`Sincronizando unidade: ${currentUnitId}`);
                 const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
                 let unitMembers = [];
+                let fetchSuccess = false;
 
-                // Função auxiliar para buscar todas as páginas
-                const fetchAllPagesForStatus = async (status) => {
+                // Função auxiliar para buscar todas as páginas de um determinado status
+                const fetchAllPages = async (status, showMemberships) => {
                     const PAGE_SIZE = 500;
-                    const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
+                    const apiParams = { page: 1, take: PAGE_SIZE, showMemberships, status };
                     let currentPage = 1;
                     let hasMorePages = true;
-                    let statusMembers = [];
+                    let members = [];
 
                     while (hasMorePages) {
-                        try {
-                            apiParams.page = currentPage;
-                            const response = await apiClientV2.get("/members", { params: apiParams });
-                            const members = response.data || [];
-
-                            if (members.length > 0) {
-                                statusMembers = statusMembers.concat(members);
-                            }
-
-                            if (members.length < PAGE_SIZE) {
-                                hasMorePages = false;
-                            }
-                            currentPage++;
-                        } catch (pageError) {
-                            functions.logger.error(`Erro ao buscar página ${currentPage} para unidade ${currentUnitId}:`, pageError.message);
-                            hasMorePages = false;
-                        }
+                        apiParams.page = currentPage;
+                        const response = await apiClientV2.get("/members", { params: apiParams });
+                        const pageMembers = response.data || [];
+                        if (pageMembers.length > 0) members = members.concat(pageMembers);
+                        if (pageMembers.length < PAGE_SIZE) hasMorePages = false;
+                        currentPage++;
                     }
-                    return statusMembers;
+                    return members;
                 };
 
-                // Busca alunos ativos e inativos
-                const activeMembers = await fetchAllPagesForStatus(1);
-                // Pequeno delay entre status para evitar 429
-                await new Promise(resolve => setTimeout(resolve, 500));
-                const inactiveMembers = await fetchAllPagesForStatus(2);
+                // Tenta primeiro COM memberships para pegar moedas extras (FitCoins)
+                try {
+                    functions.logger.info(`  -> Tentando com memberships para ${currentUnitId}...`);
+                    const active = await fetchAllPages(1, true);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const inactive = await fetchAllPages(2, true);
+                    unitMembers = active.concat(inactive);
+                    fetchSuccess = true;
+                    functions.logger.info(`  ✓ Sucesso com memberships para ${currentUnitId}`);
+                } catch (error) {
+                    // Se falhar (provavelmente 500 ou timeout), tenta SEM memberships
+                    functions.logger.warn(`  ⚠️ Falha com memberships em ${currentUnitId} (${error.message}). Tentando sem...`);
+                    const active = await fetchAllPages(1, false);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const inactive = await fetchAllPages(2, false);
+                    unitMembers = active.concat(inactive);
+                    fetchSuccess = true;
+                    functions.logger.info(`  ✓ Sucesso (fallback sem memberships) para ${currentUnitId}`);
+                }
 
-                unitMembers = (activeMembers || []).concat(inactiveMembers || []);
+                if (fetchSuccess) {
+                    // Normaliza dados
+                    unitMembers.forEach(member => {
+                        member.branchName = member.branchName || currentUnitId;
+                        member.unitId = currentUnitId;
+                        let totalCoins = 0;
+                        if (member.hasOwnProperty('totalFitCoins')) {
+                            totalCoins = member.totalFitCoins;
+                        } else if (member.hasOwnProperty('fitCoins')) {
+                            totalCoins = member.fitCoins;
+                        } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                            totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+                        }
+                        member.totalFitCoins = totalCoins;
+                    });
 
-                // Normaliza dados
-                unitMembers.forEach(member => {
-                    member.branchName = member.branchName || currentUnitId;
-                    member.unitId = currentUnitId;
-                    let totalCoins = 0;
-                    if (member.hasOwnProperty('totalFitCoins')) {
-                        totalCoins = member.totalFitCoins;
-                    } else if (member.hasOwnProperty('fitCoins')) {
-                        totalCoins = member.fitCoins;
-                    } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
-                        totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
-                    }
-                    member.totalFitCoins = totalCoins;
-                });
+                    // Salva no Firestore
+                    await db.collection('evo_students_cache').doc(currentUnitId).set({
+                        lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                        totalStudents: unitMembers.length,
+                        students: unitMembers
+                    });
 
-                // Salva no Firestore
-                await db.collection('evo_students_cache').doc(currentUnitId).set({
-                    lastSync: admin.firestore.FieldValue.serverTimestamp(),
-                    totalStudents: unitMembers.length,
-                    students: unitMembers
-                });
+                    results.success.push(currentUnitId);
+                    results.totalStudents += unitMembers.length;
 
-                functions.logger.info(`✓ Unidade ${currentUnitId} sincronizada: ${unitMembers.length} alunos`);
-                results.success.push(currentUnitId);
-                results.totalStudents += unitMembers.length;
-
-                // Delay de 1.5s entre unidades para respeitar rate limit (429)
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                    // Delay para respeitar rate limit
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
 
             } catch (unitError) {
-                functions.logger.error(`✗ Erro ao sincronizar unidade ${currentUnitId}:`, unitError);
+                functions.logger.error(`✗ Erro fatal na unidade ${currentUnitId}:`, unitError);
                 results.failed.push({ unitId: currentUnitId, error: unitError.message });
             }
         }
@@ -428,10 +431,11 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         return statusMembers;
                     };
 
-                    const [activeMembers, inactiveMembers] = await Promise.all([
-                        fetchAllPagesForStatus(1),
-                        fetchAllPagesForStatus(2)
-                    ]);
+                    const activeMembers = await fetchAllPagesForStatus(1);
+                    // Pequeno delay entre status para evitar 429
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const inactiveMembers = await fetchAllPagesForStatus(2);
+
                     unitMembers = (activeMembers || []).concat(inactiveMembers || []);
 
                     unitMembers.forEach(member => {
@@ -450,6 +454,9 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
                     functions.logger.info(`Unidade ${currentUnitId} concluída: ${unitMembers.length} alunos`);
                     results.push(unitMembers);
+
+                    // Delay para respeitar rate limit
+                    await new Promise(resolve => setTimeout(resolve, 1000));
 
                 } catch (unitError) {
                     functions.logger.error(`Erro ao processar unidade ${currentUnitId}:`, unitError);
@@ -1390,125 +1397,24 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
  * Agora busca todos os alunos (status 0) e seus detalhes de membresia para garantir a precisão dos FitCoins.
  */
 exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
-    const unitIds = Object.keys(EVO_CREDENTIALS);
-    let allMembers = [];
-    const PAGE_SIZE = 500; // Restaurado para o valor estável conhecido
-
     try {
-        const allUnitPromises = unitIds.map(async (unitId) => {
-            const apiClientV2 = getEvoApiClient(unitId, 'v2');
-            let unitMembers = [];
-
-            // Função auxiliar para buscar todas as páginas de um determinado status
-            const fetchAllPagesForStatus = async (status) => {
-                const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
-
-                let currentPage = 1;
-                let hasMorePages = true;
-                let statusMembers = [];
-
-                while (hasMorePages) {
-                    try {
-                        apiParams.page = currentPage;
-                        const response = await apiClientV2.get("/members", { params: apiParams });
-                        const members = response.data || [];
-
-                        if (members.length > 0) {
-                            statusMembers = statusMembers.concat(members);
-                        }
-
-                        if (members.length < PAGE_SIZE) {
-                            hasMorePages = false;
-                        }
-                        currentPage++;
-                    } catch (pageError) {
-                        functions.logger.error(`Erro ao buscar a página ${currentPage} para status ${status} na unidade ${unitId} no ranking público:`, pageError.message);
-                        hasMorePages = false; // Interrompe em caso de erro
-                    }
-                }
-                return statusMembers;
-            };
-
-            // Busca alunos ativos (1) e inativos (2) em paralelo
-            const [activeMembers, inactiveMembers] = await Promise.all([
-                fetchAllPagesForStatus(1),
-                fetchAllPagesForStatus(2)
-            ]);
-            unitMembers = (activeMembers || []).concat(inactiveMembers || []);
-
-            // Normaliza o campo de FitCoins para consistência
-            unitMembers.forEach(member => {
-                let totalCoins = 0;
-                if (member.hasOwnProperty('totalFitCoins')) {
-                    totalCoins = member.totalFitCoins;
-                } else if (member.hasOwnProperty('fitCoins')) {
-                    totalCoins = member.fitCoins;
-                } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
-                    totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
-                }
-                member.totalFitCoins = totalCoins;
-            });
-
-            return unitMembers;
-        });
-
-        const results = [];
-        for (const unitId of unitIds) {
-            try {
-                functions.logger.info(`Processando ranking para unidade: ${unitId}`);
-                const unitData = await (async (unitId) => {
-                    // Reutiliza a lógica de busca por unidade, mas de forma sequencial
-                    const apiClientV2 = getEvoApiClient(unitId, 'v2');
-                    let unitMembers = [];
-
-                    const fetchAllPagesForStatus = async (status) => {
-                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
-                        let currentPage = 1;
-                        let hasMorePages = true;
-                        let statusMembers = [];
-                        while (hasMorePages) {
-                            try {
-                                apiParams.page = currentPage;
-                                const response = await apiClientV2.get("/members", { params: apiParams });
-                                const members = response.data || [];
-                                if (members.length > 0) statusMembers = statusMembers.concat(members);
-                                if (members.length < PAGE_SIZE) hasMorePages = false;
-                                currentPage++;
-                            } catch (error) {
-                                functions.logger.error(`Erro no ranking para ${unitId}:`, error.message);
-                                hasMorePages = false;
-                            }
-                        }
-                        return statusMembers;
-                    };
-
-                    const active = await fetchAllPagesForStatus(1);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    const inactive = await fetchAllPagesForStatus(2);
-                    unitMembers = active.concat(inactive);
-
-                    unitMembers.forEach(member => {
-                        let totalCoins = 0;
-                        if (member.hasOwnProperty('totalFitCoins')) totalCoins = member.totalFitCoins;
-                        else if (member.hasOwnProperty('fitCoins')) totalCoins = member.fitCoins;
-                        member.totalFitCoins = totalCoins;
-                    });
-                    return unitMembers;
-                })(unitId);
-
-                results.push(unitData);
-                // Delay entre unidades
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (err) {
-                functions.logger.error(`Erro no ranking unidade ${unitId}:`, err);
-            }
+        functions.logger.info("Iniciando busca do Ranking Público (via Cache)");
+        const cacheQuery = await db.collection('evo_students_cache').get();
+        if (cacheQuery.empty) {
+            functions.logger.warn("Cache de alunos vazio. Ranking retornará lista vazia.");
+            return [];
         }
 
-        allMembers = results.flatMap(result => result || []);
+        let allMembers = [];
+        cacheQuery.forEach(doc => {
+            const data = doc.data();
+            if (data.students && Array.isArray(data.students)) {
+                allMembers = allMembers.concat(data.students);
+            }
+        });
 
         const uniqueStudentsMap = new Map();
         allMembers.forEach(student => {
-            // Garante que totalFitCoins é um número para comparações seguras
             const studentCoins = Number(student.totalFitCoins) || 0;
             student.totalFitCoins = studentCoins;
 
@@ -1518,32 +1424,16 @@ exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB
             }
         });
 
-        // Ordena os alunos pelo totalFitCoins no backend antes de retornar, garantindo a ordem correta.
-        let uniqueMembers = Array.from(uniqueStudentsMap.values())
+        const sortedRanking = Array.from(uniqueStudentsMap.values())
+            .filter(student => student.totalFitCoins > 0)
             .sort((a, b) => b.totalFitCoins - a.totalFitCoins);
 
-        uniqueMembers.forEach(member => {
-            let totalCoins = 0;
-            if (member.hasOwnProperty('totalFitCoins')) {
-                totalCoins = member.totalFitCoins;
-            } else if (member.hasOwnProperty('fitCoins')) {
-                totalCoins = member.fitCoins;
-            } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
-                totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
-            }
-            member.totalFitCoins = totalCoins;
-        });
-
-        functions.logger.info(`Total de ${uniqueMembers.length} membros únicos carregados para o ranking público.`);
-        return uniqueMembers;
+        functions.logger.info(`Ranking carregado do cache: ${sortedRanking.length} alunos com moedas.`);
+        return sortedRanking;
 
     } catch (error) {
-        functions.logger.error(`Erro detalhado ao gerar ranking público:`, {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message,
-        });
-        throw new functions.https.HttpsError("internal", "Não foi possível gerar o ranking.");
+        functions.logger.error("Erro ao carregar ranking do cache:", error);
+        throw new functions.https.HttpsError("internal", "Erro ao carregar ranking.");
     }
 });
 
