@@ -241,7 +241,7 @@ exports.syncEvoStudentsToCache = functions.runWith({ timeoutSeconds: 540, memory
                 // Função auxiliar para buscar todas as páginas
                 const fetchAllPagesForStatus = async (status) => {
                     const PAGE_SIZE = 500;
-                    const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: status };
+                    const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
                     let currentPage = 1;
                     let hasMorePages = true;
                     let statusMembers = [];
@@ -393,7 +393,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                     let unitMembers = [];
 
                     const fetchAllPagesForStatus = async (status) => {
-                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: true, status: status };
+                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
                         if (name && name.trim() !== '') {
                             apiParams.name = name.trim();
                         }
