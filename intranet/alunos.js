@@ -227,31 +227,34 @@ async function loadStudents() {
         console.log("🚀 Chamando listAllMembers...", { selectedUnit, searchTerm });
         const startTime = Date.now();
 
-        // A lógica de filtro de status foi removida. O backend agora sempre busca todos.
         const result = await listAllMembers({
             unitId: selectedUnit,
             name: searchTerm
         });
 
-        console.log(`✅ listAllMembers concluído em ${Date.now() - startTime}ms`, result);
-        const studentList = result.data || [];
+        console.log(`✅ listAllMembers concluído em ${Date.now() - startTime}ms`);
+        console.log("📦 Estrutura do resultado:", result);
 
-        // Atualiza o cache local para o modal e outras interações da página.
+        // Na v11 do Firebase SDK, result é um objeto com a propriedade data
+        const studentList = result.data || [];
+        console.log(`👥 Total de alunos recebidos: ${studentList.length}`);
+
+        if (!Array.isArray(studentList)) {
+            console.error("❌ ERRO: studentList não é um array!", studentList);
+        }
+
         allStudents = studentList;
         renderStudents(studentList);
-
-        // Atualiza o indicador de status do cache
         updateCacheStatus();
 
     } catch (error) {
         console.error("Erro ao carregar lista de alunos:", error);
         tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar alunos: ${error.message}</td></tr>`;
-        allStudents = []; // Limpa o cache em caso de erro
+        allStudents = [];
         updateCacheStatus(false);
     }
 }
 
-// Função para atualizar o indicador de status do cache
 async function updateCacheStatus(success = true) {
     const cacheStatusEl = document.getElementById('cache-status');
     if (!cacheStatusEl) return;
@@ -262,41 +265,41 @@ async function updateCacheStatus(success = true) {
     }
 
     try {
-        // Verifica o estado do cache no Firestore
-        const cacheQuery = await getDocs(collection(db, 'evo_students_cache'));
+        // Verifica o estado do cache na nova coleção de status
+        const syncStatusQuery = await getDocs(collection(db, 'evo_sync_status'));
 
-        if (cacheQuery.empty) {
-            cacheStatusEl.innerHTML = '<span class="text-yellow-500"><i class="fas fa-exclamation-triangle"></i> Cache vazio - clique em "Sincronizar Cache" para popular</span>';
+        if (syncStatusQuery.empty) {
+            cacheStatusEl.innerHTML = '<span class="text-yellow-500"><i class="fas fa-exclamation-triangle"></i> Cache vazio - clique em "Sincronizar Cache"</span>';
         } else {
-            // Calcula a idade do cache mais antigo
-            let oldestCache = null;
-            cacheQuery.forEach(doc => {
+            let oldestSync = null;
+            let hasErrors = false;
+
+            syncStatusQuery.forEach(doc => {
                 const data = doc.data();
+                if (data.status === 'error') hasErrors = true;
                 if (data.lastSync) {
                     const syncDate = data.lastSync.toDate();
-                    if (!oldestCache || syncDate < oldestCache) {
-                        oldestCache = syncDate;
-                    }
+                    if (!oldestSync || syncDate < oldestSync) oldestSync = syncDate;
                 }
             });
 
-            if (oldestCache) {
-                const hoursAgo = Math.round((new Date() - oldestCache) / (1000 * 60 * 60));
+            if (oldestSync) {
+                const hoursAgo = Math.round((new Date() - oldestSync) / (1000 * 60 * 60));
                 const isExpired = hoursAgo >= 24;
-                const icon = isExpired ? 'fa-exclamation-triangle' : 'fa-check-circle';
-                const color = isExpired ? 'text-yellow-500' : 'text-green-500';
-                const message = isExpired
-                    ? `Cache desatualizado (${hoursAgo}h atrás) - sincronize para atualizar`
-                    : `✓ Dados do cache (${hoursAgo}h atrás)`;
+                const icon = hasErrors ? 'fa-exclamation-circle' : (isExpired ? 'fa-exclamation-triangle' : 'fa-check-circle');
+                const color = hasErrors ? 'text-red-500' : (isExpired ? 'text-yellow-500' : 'text-green-500');
+                const message = hasErrors
+                    ? 'Algumas unidades falharam na sincronização'
+                    : (isExpired ? `Cache desatualizado (${hoursAgo}h atrás)` : `✓ Cache atualizado (${hoursAgo}h atrás)`);
 
                 cacheStatusEl.innerHTML = `<span class="${color}"><i class="fas ${icon}"></i> ${message}</span>`;
             } else {
-                cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Usando dados da API (cache não disponível)</span>';
+                cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Sincronização em andamento ou incompleta</span>';
             }
         }
     } catch (error) {
         console.error('Erro ao verificar status do cache:', error);
-        cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Dados carregados</span>';
+        cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Dados do Firestore prontos</span>';
     }
 }
 

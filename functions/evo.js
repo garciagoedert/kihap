@@ -395,19 +395,20 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             });
 
             if (validUnitIds.length === unitIdsToFetch.length) {
-                functions.logger.info(`Buscando todas as ${validUnitIds.length} unidades do Firestore`);
+                functions.logger.info(`Buscando todas as ${validUnitIds.length} unidades do Firestore: ${validUnitIds.join(', ')}`);
 
                 const memberQueries = validUnitIds.map(uid =>
                     db.collection('evo_students').where('unitId', '==', uid).get()
                 );
 
                 const memberSnaps = await Promise.all(memberQueries);
-                memberSnaps.forEach(snap => {
+                memberSnaps.forEach((snap, idx) => {
+                    functions.logger.info(`  -> Unidade ${validUnitIds[idx]}: ${snap.size} alunos`);
                     snap.forEach(doc => allMembers.push(doc.data()));
                 });
 
                 usedCache = true;
-                functions.logger.info(`✓ Carregados ${allMembers.length} alunos do Firestore`);
+                functions.logger.info(`✓ Total de ${allMembers.length} alunos carregados do Firestore`);
             }
         }
 
@@ -479,6 +480,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                     }
 
                     results.push(unitMembers);
+                    functions.logger.info(`  ✓ Unidade ${currentUnitId} concluída via API: ${unitMembers.length} alunos`);
                     await new Promise(resolve => setTimeout(resolve, 1000));
 
                 } catch (unitError) {
@@ -1401,7 +1403,6 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
 exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     try {
         functions.logger.info("Iniciando busca do Ranking Público no Firestore");
-        const db = admin.firestore();
 
         // Busca apenas quem tem moedas, ordenado de forma decrescente
         const rankingQuery = await db.collection('evo_students')
