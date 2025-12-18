@@ -436,11 +436,21 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
                         while (hasMorePages) {
                             apiParams.page = currentPage;
+                            functions.logger.info(`   - Chamando API: Unidade ${currentUnitId}, Status ${status}, Pagina ${currentPage}`);
                             const response = await apiClientV2.get("/members", { params: apiParams });
                             const members = response.data || [];
-                            if (members.length > 0) statusMembers = statusMembers.concat(members);
-                            if (members.length < PAGE_SIZE) hasMorePages = false;
-                            currentPage++;
+
+                            if (Array.isArray(members)) {
+                                if (members.length > 0) {
+                                    statusMembers = statusMembers.concat(members);
+                                    functions.logger.info(`   - Recebidos ${members.length} membros na página ${currentPage}`);
+                                }
+                                if (members.length < PAGE_SIZE) hasMorePages = false;
+                                currentPage++;
+                            } else {
+                                functions.logger.error(`   - ERRO: Resposta da API não é um array para unidade ${currentUnitId}:`, typeof members);
+                                hasMorePages = false;
+                            }
                         }
                         return statusMembers;
                     };
@@ -450,6 +460,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                     const inactiveMembers = await fetchAllPagesForStatus(2);
 
                     unitMembers = (activeMembers || []).concat(inactiveMembers || []);
+                    functions.logger.info(`   ✓ Unidade ${currentUnitId} finalizada: ${unitMembers.length} alunos (Ativos: ${activeMembers.length}, Inativos: ${inactiveMembers.length})`);
 
                     // Normaliza e Salva em Lote
                     const batch = db.batch();

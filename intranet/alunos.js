@@ -237,7 +237,8 @@ async function loadStudents() {
 
         // Na v11 do Firebase SDK, result é um objeto com a propriedade data
         const studentList = result.data || [];
-        console.log(`👥 Total de alunos recebidos: ${studentList.length}`);
+        console.log("👥 Conteúdo de result.data:", studentList);
+        console.log(`📏 Tamanho do Array: ${Array.isArray(studentList) ? studentList.length : 'NÃO É ARRAY'}`);
 
         if (!Array.isArray(studentList)) {
             console.error("❌ ERRO: studentList não é um array!", studentList);
