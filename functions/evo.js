@@ -512,7 +512,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
         const finalMembers = Array.from(uniqueStudentsMap.values());
         functions.logger.info(`Retornando ${finalMembers.length} alunos (fonte: ${usedCache ? 'CACHE' : 'API'})`);
-        return { data: finalMembers };
+        return finalMembers;
 
     } catch (error) {
         functions.logger.error("Erro fatal em listAllMembers:", error);
