@@ -24,6 +24,7 @@ const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissi
 const triggerEvoSync = httpsCallable(functions, 'triggerEvoSync');
 const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
+const syncEvoStudentsToCache = httpsCallable(functions, 'syncEvoStudentsToCache');
 
 export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
@@ -169,11 +170,41 @@ export function setupAlunosPage() {
             // Set the default active tab to "Gerenciamento de Alunos"
             switchMainTab('manage-students');
 
-            // --- Admin-only Features ---
+            // --- Sync Button Event Listener ---
             const syncEvoBtn = document.getElementById('sync-evo-btn');
             if (syncEvoBtn) {
-                syncEvoBtn.style.display = 'none';
+                syncEvoBtn.addEventListener('click', async () => {
+                    const icon = document.getElementById('sync-icon');
+                    const text = document.getElementById('sync-text');
+
+                    syncEvoBtn.disabled = true;
+                    icon.classList.add('fa-spin');
+                    text.textContent = 'Sincronizando...';
+
+                    try {
+                        const result = await syncEvoStudentsToCache({ unitId: 'all' });
+                        const data = result.data;
+
+                        alert(`✅ Sincronização concluída!\n\n` +
+                            `✓ Unidades sincronizadas: ${data.success.length}\n` +
+                            `✗ Unidades com erro: ${data.failed.length}\n` +
+                            `📊 Total de alunos: ${data.totalStudents}\n\n` +
+                            `Os dados estão agora no cache e serão carregados muito mais rápido!`);
+
+                        // Recarrega a lista para mostrar dados atualizados do cache
+                        await loadStudents();
+                    } catch (error) {
+                        console.error('Erro na sincronização:', error);
+                        alert(`❌ Erro na sincronização: ${error.message}\n\nVerifique os logs do console para mais detalhes.`);
+                    } finally {
+                        syncEvoBtn.disabled = false;
+                        icon.classList.remove('fa-spin');
+                        text.textContent = 'Sincronizar Cache';
+                    }
+                });
             }
+
+            // --- Admin-only Features (removed button hiding) ---
             const syncEvoRankingBtn = document.getElementById('sync-evo-ranking-btn');
             if (syncEvoRankingBtn) {
                 syncEvoRankingBtn.style.display = 'none';
@@ -204,10 +235,63 @@ async function loadStudents() {
         allStudents = studentList;
         renderStudents(studentList);
 
+        // Atualiza o indicador de status do cache
+        updateCacheStatus();
+
     } catch (error) {
         console.error("Erro ao carregar lista de alunos:", error);
         tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar alunos: ${error.message}</td></tr>`;
         allStudents = []; // Limpa o cache em caso de erro
+        updateCacheStatus(false);
+    }
+}
+
+// Função para atualizar o indicador de status do cache
+async function updateCacheStatus(success = true) {
+    const cacheStatusEl = document.getElementById('cache-status');
+    if (!cacheStatusEl) return;
+
+    if (!success) {
+        cacheStatusEl.innerHTML = '<span class="text-red-500"><i class="fas fa-exclamation-circle"></i> Erro ao carregar dados</span>';
+        return;
+    }
+
+    try {
+        // Verifica o estado do cache no Firestore
+        const cacheQuery = await getDocs(collection(db, 'evo_students_cache'));
+
+        if (cacheQuery.empty) {
+            cacheStatusEl.innerHTML = '<span class="text-yellow-500"><i class="fas fa-exclamation-triangle"></i> Cache vazio - clique em "Sincronizar Cache" para popular</span>';
+        } else {
+            // Calcula a idade do cache mais antigo
+            let oldestCache = null;
+            cacheQuery.forEach(doc => {
+                const data = doc.data();
+                if (data.lastSync) {
+                    const syncDate = data.lastSync.toDate();
+                    if (!oldestCache || syncDate < oldestCache) {
+                        oldestCache = syncDate;
+                    }
+                }
+            });
+
+            if (oldestCache) {
+                const hoursAgo = Math.round((new Date() - oldestCache) / (1000 * 60 * 60));
+                const isExpired = hoursAgo >= 24;
+                const icon = isExpired ? 'fa-exclamation-triangle' : 'fa-check-circle';
+                const color = isExpired ? 'text-yellow-500' : 'text-green-500';
+                const message = isExpired
+                    ? `Cache desatualizado (${hoursAgo}h atrás) - sincronize para atualizar`
+                    : `✓ Dados do cache (${hoursAgo}h atrás)`;
+
+                cacheStatusEl.innerHTML = `<span class="${color}"><i class="fas ${icon}"></i> ${message}</span>`;
+            } else {
+                cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Usando dados da API (cache não disponível)</span>';
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao verificar status do cache:', error);
+        cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Dados carregados</span>';
     }
 }
 

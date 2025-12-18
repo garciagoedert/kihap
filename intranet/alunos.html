@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,26 +14,33 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
         .tab-btn {
             transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
+
         .tab-content {
             transition: opacity 0.2s ease-in-out;
         }
+
         .tab-content.hidden {
             opacity: 0;
             pointer-events: none;
-            display: none; /* Ensure it's not taking up space */
+            display: none;
+            /* Ensure it's not taking up space */
         }
+
         .badge-card {
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+
         .badge-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.1), 0 4px 6px -2px rgba(251, 191, 36, 0.05);
         }
     </style>
 </head>
+
 <body class="bg-[#111111] text-gray-200 h-screen">
     <div id="sidebar-container"></div>
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
@@ -41,204 +49,229 @@
         <div id="header-container"></div>
 
         <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
-                <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
+            <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
 
-                <!-- Student Stats -->
-                <div id="student-stats" class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 text-center">
-                    <p class="text-lg">
-                        <span id="registered-students-count" class="font-bold text-2xl text-blue-400">--</span>
-                        <span class="text-gray-400">alunos com acesso à plataforma de um total de</span>
-                        <span id="total-students-count" class="font-bold text-2xl text-white">--</span>
-                        <span class="text-gray-400">alunos.</span>
-                    </p>
+            <!-- Student Stats -->
+            <div id="student-stats" class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 text-center">
+                <p class="text-lg">
+                    <span id="registered-students-count" class="font-bold text-2xl text-blue-400">--</span>
+                    <span class="text-gray-400">alunos com acesso à plataforma de um total de</span>
+                    <span id="total-students-count" class="font-bold text-2xl text-white">--</span>
+                    <span class="text-gray-400">alunos.</span>
+                </p>
+                <div id="cache-status" class="mt-2 text-sm">
+                    <span class="text-gray-500"><i class="fas fa-circle-notch fa-spin"></i> Verificando cache...</span>
                 </div>
+            </div>
 
-                <!-- Unit Filter (Moved to be always visible) -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+            <!-- Unit Filter (Moved to be always visible) -->
+            <div
+                class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+                <div class="w-full md:w-auto">
+                    <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
+                    <select id="unit-filter"
+                        class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">Todas as Unidades</option>
+                        <option value="centro">Unidade Centro</option>
+                        <option value="coqueiros">Unidade Coqueiros</option>
+                        <option value="asa-sul">Unidade Asa Sul</option>
+                        <option value="sudoeste">Unidade Sudoeste</option>
+                        <option value="lago-sul">Unidade Lago Sul</option>
+                        <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
+                        <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                        <option value="dourados">Unidade Dourados</option>
+                        <option value="santa-monica">Unidade Santa Mônica</option>
+                        <option value="noroeste">Unidade Noroeste</option>
+                        <option value="atadf">Unidade Store</option>
+                    </select>
+                </div>
+                <!-- Search and Status filters remain in the first tab -->
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="border-b border-gray-700 mb-6">
+                <nav class="flex space-x-4" aria-label="Tabs">
+                    <button id="tab-manage-students"
+                        class="tab-btn text-yellow-500 border-b-2 border-yellow-500 px-3 py-2 font-medium text-sm">
+                        Gerenciamento de Alunos
+                    </button>
+                    <button id="tab-check-entries"
+                        class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Verificar Entradas
+                    </button>
+                    <button id="tab-manage-badges"
+                        class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Gerenciar Emblemas
+                    </button>
+                    <button id="tab-ranking"
+                        class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Ranking
+                    </button>
+                    <button id="tab-access-ranking"
+                        class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Ranking de Acessos
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content: Gerenciamento de Alunos -->
+            <div id="tab-content-manage-students" class="tab-content">
+                <!-- Filters (Search and Status only) -->
+                <div
+                    class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
                     <div class="w-full md:w-auto">
-                        <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
-                        <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="all">Todas as Unidades</option>
-                            <option value="centro">Unidade Centro</option>
-                            <option value="coqueiros">Unidade Coqueiros</option>
-                            <option value="asa-sul">Unidade Asa Sul</option>
-                            <option value="sudoeste">Unidade Sudoeste</option>
-                            <option value="lago-sul">Unidade Lago Sul</option>
-                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
-                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
-                            <option value="dourados">Unidade Dourados</option>
-                            <option value="santa-monica">Unidade Santa Mônica</option>
-                            <option value="noroeste">Unidade Noroeste</option>
-                            <option value="atadf">Unidade Store</option>
-                        </select>
+                        <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
+                        <input type="text" id="search-input" placeholder="Digite o nome do aluno..."
+                            class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <!-- Search and Status filters remain in the first tab -->
+                    <div class="flex-grow flex justify-end">
+                        <button id="sync-evo-btn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed">
+                            <i class="fas fa-sync" id="sync-icon"></i>
+                            <span id="sync-text">Sincronizar Cache</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Tabs Navigation -->
-                <div class="border-b border-gray-700 mb-6">
-                    <nav class="flex space-x-4" aria-label="Tabs">
-                        <button id="tab-manage-students" class="tab-btn text-yellow-500 border-b-2 border-yellow-500 px-3 py-2 font-medium text-sm">
-                            Gerenciamento de Alunos
-                        </button>
-                        <button id="tab-check-entries" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                <!-- Students Table -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Nome</th>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Unidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body">
+                            <!-- Linhas serão inseridas dinamicamente aqui -->
+                            <tr>
+                                <td colspan="3" class="text-center p-8">Carregando alunos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Verificar Entradas -->
+            <div id="tab-content-check-entries" class="tab-content hidden">
+                <!-- Daily Entries Check -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-bold mb-4">Verificar Entradas Diárias</h2>
+                    <p class="text-gray-400 mb-4">Selecione uma data para ver o número de alunos únicos que fizeram
+                        check-in na unidade selecionada.</p>
+                    <div class="flex items-center space-x-4">
+                        <div>
+                            <label for="daily-entries-date" class="text-sm font-medium text-gray-400">Data:</label>
+                            <input type="date" id="daily-entries-date"
+                                class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button id="check-entries-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded self-end">
                             Verificar Entradas
                         </button>
-                        <button id="tab-manage-badges" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
-                            Gerenciar Emblemas
-                        </button>
-                        <button id="tab-ranking" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
-                            Ranking
-                        </button>
-                        <button id="tab-access-ranking" class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
-                            Ranking de Acessos
-                        </button>
-                    </nav>
-                </div>
-
-                <!-- Tab Content: Gerenciamento de Alunos -->
-                <div id="tab-content-manage-students" class="tab-content">
-                    <!-- Filters (Search and Status only) -->
-                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
-                        <div class="w-full md:w-auto">
-                            <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
-                            <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div class="flex-grow flex justify-end">
-                             <button id="sync-evo-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
-                                <i class="fas fa-sync"></i>
-                                <span>Sincronizar com EVO</span>
-                            </button>
-                        </div>
                     </div>
-                    
-                    <!-- Students Table -->
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="p-4">Nome</th>
-                                    <th class="p-4">Email</th>
-                                    <th class="p-4">Unidade</th>
-                                </tr>
-                            </thead>
-                            <tbody id="students-table-body">
-                                <!-- Linhas serão inseridas dinamicamente aqui -->
-                                <tr>
-                                    <td colspan="3" class="text-center p-8">Carregando alunos...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Verificar Entradas -->
-                <div id="tab-content-check-entries" class="tab-content hidden">
-                    <!-- Daily Entries Check -->
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold mb-4">Verificar Entradas Diárias</h2>
-                        <p class="text-gray-400 mb-4">Selecione uma data para ver o número de alunos únicos que fizeram check-in na unidade selecionada.</p>
-                        <div class="flex items-center space-x-4">
-                            <div>
-                                <label for="daily-entries-date" class="text-sm font-medium text-gray-400">Data:</label>
-                                <input type="date" id="daily-entries-date" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <button id="check-entries-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded self-end">
-                                Verificar Entradas
-                            </button>
-                        </div>
-                        <div id="entries-result" class="mt-4 p-4 bg-gray-800 rounded-md min-h-[50px]">
-                            <!-- Resultado será exibido aqui -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Gerenciar Emblemas -->
-                <div id="tab-content-manage-badges" class="tab-content hidden">
-                    <!-- Formulário para Adicionar Novo Emblema -->
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-8">
-                        <h2 class="text-xl font-bold mb-4">Adicionar Novo Emblema</h2>
-                        <form id="add-badge-form" class="space-y-4">
-                            <div>
-                                <label for="badge-name" class="block text-sm font-medium text-gray-400">Nome do Emblema</label>
-                                <input type="text" id="badge-name" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                            </div>
-                            <div>
-                                <label for="badge-description" class="block text-sm font-medium text-gray-400">Descrição</label>
-                                <textarea id="badge-description" rows="3" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
-                            </div>
-                            <div>
-                                <label for="badge-image" class="block text-sm font-medium text-gray-400">Imagem do Emblema</label>
-                                <input type="file" id="badge-image" accept="image/*" required class="w-full mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600">
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="submit" id="submit-badge-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
-                                    Salvar Emblema
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Lista de Emblemas Existentes -->
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg flex-grow overflow-y-auto">
-                        <h2 class="text-xl font-bold mb-4">Emblemas Existentes</h2>
-                        <div id="badges-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            <!-- Emblemas serão carregados aqui -->
-                            <p class="col-span-full text-center text-gray-500">Carregando emblemas...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Ranking -->
-                <div id="tab-content-ranking" class="tab-content hidden">
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">Ranking de KihapCoins</h2>
-                            <button id="sync-evo-ranking-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
-                                <i class="fas fa-sync"></i>
-                                <span>Sincronizar com EVO</span>
-                            </button>
-                        </div>
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="p-4">Posição</th>
-                                    <th class="p-4">Nome</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">KihapCoins</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ranking-table-body">
-                                <tr>
-                                    <td colspan="4" class="text-center p-8">Carregando ranking...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Ranking de Acessos -->
-                <div id="tab-content-access-ranking" class="tab-content hidden">
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
-                        <h2 class="text-xl font-bold mb-4">Ranking de Acessos à Plataforma por Unidade</h2>
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="p-4">Posição</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">Alunos com Acesso</th>
-                                </tr>
-                            </thead>
-                            <tbody id="access-ranking-table-body">
-                                <tr>
-                                    <td colspan="3" class="text-center p-8">Carregando ranking de acessos...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="entries-result" class="mt-4 p-4 bg-gray-800 rounded-md min-h-[50px]">
+                        <!-- Resultado será exibido aqui -->
                     </div>
                 </div>
             </div>
-        </main>
+
+            <!-- Tab Content: Gerenciar Emblemas -->
+            <div id="tab-content-manage-badges" class="tab-content hidden">
+                <!-- Formulário para Adicionar Novo Emblema -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-8">
+                    <h2 class="text-xl font-bold mb-4">Adicionar Novo Emblema</h2>
+                    <form id="add-badge-form" class="space-y-4">
+                        <div>
+                            <label for="badge-name" class="block text-sm font-medium text-gray-400">Nome do
+                                Emblema</label>
+                            <input type="text" id="badge-name" required
+                                class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label for="badge-description"
+                                class="block text-sm font-medium text-gray-400">Descrição</label>
+                            <textarea id="badge-description" rows="3" required
+                                class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="badge-image" class="block text-sm font-medium text-gray-400">Imagem do
+                                Emblema</label>
+                            <input type="file" id="badge-image" accept="image/*" required
+                                class="w-full mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" id="submit-badge-btn"
+                                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                                Salvar Emblema
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista de Emblemas Existentes -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg flex-grow overflow-y-auto">
+                    <h2 class="text-xl font-bold mb-4">Emblemas Existentes</h2>
+                    <div id="badges-list-container"
+                        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <!-- Emblemas serão carregados aqui -->
+                        <p class="col-span-full text-center text-gray-500">Carregando emblemas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Ranking -->
+            <div id="tab-content-ranking" class="tab-content hidden">
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Ranking de KihapCoins</h2>
+                        <button id="sync-evo-ranking-btn"
+                            class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
+                            <i class="fas fa-sync"></i>
+                            <span>Sincronizar com EVO</span>
+                        </button>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Posição</th>
+                                <th class="p-4">Nome</th>
+                                <th class="p-4">Unidade</th>
+                                <th class="p-4">KihapCoins</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-table-body">
+                            <tr>
+                                <td colspan="4" class="text-center p-8">Carregando ranking...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Ranking de Acessos -->
+            <div id="tab-content-access-ranking" class="tab-content hidden">
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <h2 class="text-xl font-bold mb-4">Ranking de Acessos à Plataforma por Unidade</h2>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Posição</th>
+                                <th class="p-4">Unidade</th>
+                                <th class="p-4">Alunos com Acesso</th>
+                            </tr>
+                        </thead>
+                        <tbody id="access-ranking-table-body">
+                            <tr>
+                                <td colspan="3" class="text-center p-8">Carregando ranking de acessos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
     </div>
 
     <!-- Student Details Modal has been removed and replaced by aluno.html -->
@@ -248,7 +281,7 @@
         import { loadComponents } from './common-ui.js';
         import { setupAlunosPage } from './alunos.js';
         // Import functions for badge management from gerenciar-emblemas.js
-        import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js'; 
+        import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
@@ -263,8 +296,10 @@
             <h2 id="confirmTitle" class="text-xl font-bold text-white mb-4">Confirmar Ação</h2>
             <p id="confirmMessage" class="text-gray-300 mb-6">Você tem certeza?</p>
             <div class="flex justify-end space-x-4">
-                <button id="cancelConfirmBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancelar</button>
-                <button id="confirmActionBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirmar</button>
+                <button id="cancelConfirmBtn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancelar</button>
+                <button id="confirmActionBtn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirmar</button>
             </div>
         </div>
     </div>
@@ -276,15 +311,21 @@
             <p class="text-gray-300 mb-4">Copie o link abaixo e envie para o aluno:</p>
             <div class="flex items-center space-x-2">
                 <label for="inviteLinkInput" class="sr-only">Link de Convite</label>
-                <input type="text" id="inviteLinkInput" readonly class="w-full px-3 py-2 text-gray-200 bg-gray-700 border border-gray-600 rounded-md focus:outline-none" aria-label="Link de Convite">
-                <button id="copyInviteLinkBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" aria-label="Copiar Link">
+                <input type="text" id="inviteLinkInput" readonly
+                    class="w-full px-3 py-2 text-gray-200 bg-gray-700 border border-gray-600 rounded-md focus:outline-none"
+                    aria-label="Link de Convite">
+                <button id="copyInviteLinkBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    aria-label="Copiar Link">
                     <i class="fas fa-copy"></i>
                 </button>
             </div>
             <div class="flex justify-end mt-6">
-                <button id="closeInviteLinkModalBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Fechar</button>
+                <button id="closeInviteLinkModalBtn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Fechar</button>
             </div>
         </div>
     </div>
 </body>
+
 </html>

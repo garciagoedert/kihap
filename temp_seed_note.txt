@@ -1,0 +1,25 @@
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json'); // You might need to adjust this path or usage depending on how you run scripts locally
+
+// If running in cloud functions environment or if you don't have a service key file locally, 
+// you might need a different approach. Assuming local run with admin SDK presence.
+// However, since I am an agent, I might not have the service key.
+// ALTERNATIVE: Use the existing 'functions' environment or a simple script that runs via 'firebase functions:shell'? 
+// Actually, I can just create a small temporary function to do the seed if I can't run local scripts.
+
+// BUT, I can try to use a simple node script if I have credentials. 
+// Given the environment, I probably don't have serviceAccountKey.json.
+// The user has 'firebase-tools' installed.
+// I can write a script that imports the app config.
+// OR, effectively, I can write the logic into `functions/index.js` as an HTTP trigger manually just once? 
+// No, that's messy.
+//
+// Let's rely on the frontend to create it if it doesn't exist?
+// If the frontend tries to load it and gets 404, it can default to the hardcoded values and then save them, creating the doc.
+// YES, that's much better. No seed script needed.
+
+// So, I will skip writing `seed_config.js` and handle the "does not exist" case in the frontend and backend.
+// Backend: Try fetch. If empty, use defaults.
+// Frontend: Try fetch. If empty, fill inputs with defaults. Saving creates it.
+
+// Proceeding to Update Rules.
