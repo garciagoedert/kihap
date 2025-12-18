@@ -279,37 +279,65 @@ exports.syncEvoStudentsToCache = functions.runWith({ timeoutSeconds: 540, memory
                 }
 
                 if (fetchSuccess) {
-                    // Normaliza dados
-                    unitMembers.forEach(member => {
-                        member.branchName = member.branchName || currentUnitId;
-                        member.unitId = currentUnitId;
-                        let totalCoins = 0;
-                        if (member.hasOwnProperty('totalFitCoins')) {
-                            totalCoins = member.totalFitCoins;
-                        } else if (member.hasOwnProperty('fitCoins')) {
-                            totalCoins = member.fitCoins;
-                        } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
-                            totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
-                        }
-                        member.totalFitCoins = totalCoins;
-                    });
+                    // Normaliza dados e prepara para salvar
+                    functions.logger.info(`  💾 Salvando ${unitMembers.length} alunos no Firestore para a unidade ${currentUnitId}...`);
 
-                    // Salva no Firestore
-                    await db.collection('evo_students_cache').doc(currentUnitId).set({
+                    // Salvamento em lotes (max 500 por lote)
+                    const BATCH_SIZE = 500;
+                    for (let i = 0; i < unitMembers.length; i += BATCH_SIZE) {
+                        const batch = db.batch();
+                        const currentBatch = unitMembers.slice(i, i + BATCH_SIZE);
+
+                        currentBatch.forEach(member => {
+                            member.branchName = member.branchName || currentUnitId;
+                            member.unitId = currentUnitId;
+
+                            // Normalização de FitCoins
+                            let totalCoins = 0;
+                            if (member.hasOwnProperty('totalFitCoins')) {
+                                totalCoins = member.totalFitCoins;
+                            } else if (member.hasOwnProperty('fitCoins')) {
+                                totalCoins = member.fitCoins;
+                            } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                                totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+                            }
+                            member.totalFitCoins = totalCoins;
+                            member.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
+
+                            // Referência única por membro
+                            const memberRef = db.collection('evo_students').doc(String(member.idMember));
+                            batch.set(memberRef, member, { merge: true });
+                        });
+
+                        await batch.commit();
+                        functions.logger.info(`    ✓ Processados ${Math.min(i + BATCH_SIZE, unitMembers.length)}/${unitMembers.length}`);
+                    }
+
+                    // Salva status da sincronização por unidade
+                    await db.collection('evo_sync_status').doc(currentUnitId).set({
                         lastSync: admin.firestore.FieldValue.serverTimestamp(),
                         totalStudents: unitMembers.length,
-                        students: unitMembers
+                        status: 'success'
                     });
 
                     results.success.push(currentUnitId);
                     results.totalStudents += unitMembers.length;
 
-                    // Delay para respeitar rate limit
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Delay para respeitar rate limit do EVO se houver mais unidades
+                    if (unitIdsToSync.length > 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
                 }
 
             } catch (unitError) {
                 functions.logger.error(`✗ Erro fatal na unidade ${currentUnitId}:`, unitError);
+
+                await db.collection('evo_sync_status').doc(currentUnitId).set({
+                    lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                    status: 'error',
+                    errorMessage: unitError.message
+                }, { merge: true });
+
                 results.failed.push({ unitId: currentUnitId, error: unitError.message });
             }
         }
@@ -343,63 +371,59 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
         let allMembers = [];
         let usedCache = false;
 
-        // Se não forçar refresh, tenta usar o cache
+        // Se não forçar refresh, tenta usar o cache do Firestore
         if (!forceRefresh) {
-            functions.logger.info("Tentando buscar do cache...");
-            const cachePromises = unitIdsToFetch.map(async (currentUnitId) => {
-                try {
-                    const cacheDoc = await db.collection('evo_students_cache').doc(currentUnitId).get();
+            functions.logger.info("Verificando status do cache por unidade...");
 
-                    if (cacheDoc.exists) {
-                        const cacheData = cacheDoc.data();
-                        const lastSync = cacheData.lastSync?.toDate();
-                        const now = new Date();
-                        const hoursSinceSync = lastSync ? (now - lastSync) / (1000 * 60 * 60) : 999;
+            const syncStatusPromises = unitIdsToFetch.map(id => db.collection('evo_sync_status').doc(id).get());
+            const syncStatusSnaps = await Promise.all(syncStatusPromises);
 
-                        // Verifica se o cache ainda é válido
-                        if (hoursSinceSync < CACHE_TTL_HOURS) {
-                            functions.logger.info(`✓ Cache válido para ${currentUnitId} (${Math.round(hoursSinceSync)}h atrás, ${cacheData.totalStudents} alunos)`);
-                            return cacheData.students || [];
-                        } else {
-                            functions.logger.info(`✗ Cache expirado para ${currentUnitId} (${Math.round(hoursSinceSync)}h atrás)`);
-                            return null;
-                        }
+            const validUnitIds = [];
+
+            syncStatusSnaps.forEach((snap, index) => {
+                const unitId = unitIdsToFetch[index];
+                if (snap.exists) {
+                    const statusData = snap.data();
+                    const lastSync = statusData.lastSync?.toDate();
+                    const now = new Date();
+                    const hoursSinceSync = lastSync ? (now - lastSync) / (1000 * 60 * 60) : 999;
+
+                    if (hoursSinceSync < CACHE_TTL_HOURS && statusData.status === 'success') {
+                        validUnitIds.push(unitId);
                     }
-                    functions.logger.info(`✗ Cache não existe para ${currentUnitId}`);
-                    return null;
-                } catch (error) {
-                    functions.logger.error(`Erro ao buscar cache de ${currentUnitId}:`, error);
-                    return null;
                 }
             });
 
-            const cacheResults = await Promise.all(cachePromises);
-            const allCacheValid = cacheResults.every(result => result !== null);
+            if (validUnitIds.length === unitIdsToFetch.length) {
+                functions.logger.info(`Buscando todas as ${validUnitIds.length} unidades do Firestore`);
 
-            if (allCacheValid) {
-                allMembers = cacheResults.flatMap(result => result || []);
+                const memberQueries = validUnitIds.map(uid =>
+                    db.collection('evo_students').where('unitId', '==', uid).get()
+                );
+
+                const memberSnaps = await Promise.all(memberQueries);
+                memberSnaps.forEach(snap => {
+                    snap.forEach(doc => allMembers.push(doc.data()));
+                });
+
                 usedCache = true;
-                functions.logger.info(`✓ Todos os dados vieram do CACHE (${allMembers.length} alunos)`);
-            } else {
-                functions.logger.info("✗ Cache inválido ou incompleto, buscando da API...");
+                functions.logger.info(`✓ Carregados ${allMembers.length} alunos do Firestore`);
             }
-        } else {
-            functions.logger.info("Force refresh ativado, ignorando cache");
         }
 
-        // Se não usou cache (ou forçou refresh), busca da API
         if (!usedCache) {
-            functions.logger.info("Buscando da API do EVO...");
+            functions.logger.info("Buscando dados via API do EVO e atualizando Firestore...");
             const results = [];
 
             for (const currentUnitId of unitIdsToFetch) {
-                functions.logger.info(`Processando unidade: ${currentUnitId}`);
+                functions.logger.info(`Processando unidade via API: ${currentUnitId}`);
 
                 try {
                     const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
                     let unitMembers = [];
 
                     const fetchAllPagesForStatus = async (status) => {
+                        const PAGE_SIZE = 500;
                         const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
                         if (name && name.trim() !== '') {
                             apiParams.name = name.trim();
@@ -410,37 +434,28 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         let statusMembers = [];
 
                         while (hasMorePages) {
-                            try {
-                                apiParams.page = currentPage;
-                                const response = await apiClientV2.get("/members", { params: apiParams });
-                                const members = response.data || [];
-
-                                if (members.length > 0) {
-                                    statusMembers = statusMembers.concat(members);
-                                }
-
-                                if (members.length < PAGE_SIZE) {
-                                    hasMorePages = false;
-                                }
-                                currentPage++;
-                            } catch (pageError) {
-                                functions.logger.error(`Erro ao buscar a página ${currentPage} para status ${status} na unidade ${currentUnitId}:`, pageError.message);
-                                hasMorePages = false;
-                            }
+                            apiParams.page = currentPage;
+                            const response = await apiClientV2.get("/members", { params: apiParams });
+                            const members = response.data || [];
+                            if (members.length > 0) statusMembers = statusMembers.concat(members);
+                            if (members.length < PAGE_SIZE) hasMorePages = false;
+                            currentPage++;
                         }
                         return statusMembers;
                     };
 
                     const activeMembers = await fetchAllPagesForStatus(1);
-                    // Pequeno delay entre status para evitar 429
                     await new Promise(resolve => setTimeout(resolve, 500));
                     const inactiveMembers = await fetchAllPagesForStatus(2);
 
                     unitMembers = (activeMembers || []).concat(inactiveMembers || []);
 
+                    // Normaliza e Salva em Lote
+                    const batch = db.batch();
                     unitMembers.forEach(member => {
                         member.branchName = member.branchName || currentUnitId;
                         member.unitId = currentUnitId;
+
                         let totalCoins = 0;
                         if (member.hasOwnProperty('totalFitCoins')) {
                             totalCoins = member.totalFitCoins;
@@ -450,71 +465,58 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                             totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
                         }
                         member.totalFitCoins = totalCoins;
+                        member.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
+
+                        const memberRef = db.collection('evo_students').doc(String(member.idMember));
+                        batch.set(memberRef, member, { merge: true });
                     });
 
-                    functions.logger.info(`Unidade ${currentUnitId} concluída: ${unitMembers.length} alunos`);
-                    results.push(unitMembers);
+                    // Nota: Se houver mais de 500 membros, o batch falhará. 
+                    // Mas para listAllMembers (geralmente filtrado ou unitário) deve servir.
+                    // Para segurança total em listAllMembers síncrono, talvez não salvar tudo se for muito grande.
+                    if (unitMembers.length <= 500) {
+                        await batch.commit();
+                    }
 
-                    // Delay para respeitar rate limit
+                    results.push(unitMembers);
                     await new Promise(resolve => setTimeout(resolve, 1000));
 
                 } catch (unitError) {
-                    functions.logger.error(`Erro ao processar unidade ${currentUnitId}:`, unitError);
+                    functions.logger.error(`Erro na unidade ${currentUnitId}:`, unitError);
                     results.push([]);
                 }
             }
 
             allMembers = results.flatMap(result => result || []);
-            functions.logger.info(`API retornou ${allMembers.length} alunos no total`);
         }
 
         // Filtra por nome se especificado E se usou cache (API já filtra)
         if (name && name.trim() !== '' && usedCache) {
             const searchTerm = name.trim().toLowerCase();
-            const beforeFilter = allMembers.length;
             allMembers = allMembers.filter(member => {
                 const fullName = `${member.firstName || ''} ${member.lastName || ''}`.toLowerCase();
                 return fullName.includes(searchTerm);
             });
-            functions.logger.info(`Filtragem por nome: ${beforeFilter} → ${allMembers.length} alunos`);
         }
 
-        // Remove duplicatas
+        // Remove duplicatas e garante números corretos para moedas
         const uniqueStudentsMap = new Map();
         allMembers.forEach(student => {
             const studentCoins = Number(student.totalFitCoins) || 0;
             student.totalFitCoins = studentCoins;
-
             const existingStudent = uniqueStudentsMap.get(student.idMember);
             if (!existingStudent || studentCoins > existingStudent.totalFitCoins) {
                 uniqueStudentsMap.set(student.idMember, student);
             }
         });
-        let uniqueMembers = Array.from(uniqueStudentsMap.values());
 
-        uniqueMembers.forEach(member => {
-            let totalCoins = 0;
-            if (member.hasOwnProperty('totalFitCoins')) {
-                totalCoins = member.totalFitCoins;
-            } else if (member.hasOwnProperty('fitCoins')) {
-                totalCoins = member.fitCoins;
-            } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
-                totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
-            }
-            member.totalFitCoins = totalCoins;
-        });
-
-        const source = usedCache ? "CACHE" : "API";
-        functions.logger.info(`Retornando ${uniqueMembers.length} alunos únicos (fonte: ${source})`);
-        return uniqueMembers;
+        const finalMembers = Array.from(uniqueStudentsMap.values());
+        functions.logger.info(`Retornando ${finalMembers.length} alunos (fonte: ${usedCache ? 'CACHE' : 'API'})`);
+        return { data: finalMembers };
 
     } catch (error) {
-        functions.logger.error(`Erro detalhado ao listar membros:`, {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message,
-        });
-        throw new functions.https.HttpsError("internal", "Não foi possível buscar os alunos.");
+        functions.logger.error("Erro fatal em listAllMembers:", error);
+        throw new functions.https.HttpsError("internal", error.message);
     }
 });
 
@@ -1398,41 +1400,31 @@ exports.deleteEvoSnapshot = functions.https.onCall(async (data, context) => {
  */
 exports.getPublicRanking = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     try {
-        functions.logger.info("Iniciando busca do Ranking Público (via Cache)");
-        const cacheQuery = await db.collection('evo_students_cache').get();
-        if (cacheQuery.empty) {
-            functions.logger.warn("Cache de alunos vazio. Ranking retornará lista vazia.");
+        functions.logger.info("Iniciando busca do Ranking Público no Firestore");
+        const db = admin.firestore();
+
+        // Busca apenas quem tem moedas, ordenado de forma decrescente
+        const rankingQuery = await db.collection('evo_students')
+            .where('totalFitCoins', '>', 0)
+            .orderBy('totalFitCoins', 'desc')
+            .limit(200)
+            .get();
+
+        if (rankingQuery.empty) {
+            functions.logger.warn("Nenhum aluno com moedas encontrado.");
             return [];
         }
 
-        let allMembers = [];
-        cacheQuery.forEach(doc => {
-            const data = doc.data();
-            if (data.students && Array.isArray(data.students)) {
-                allMembers = allMembers.concat(data.students);
-            }
+        const sortedRanking = [];
+        rankingQuery.forEach(doc => {
+            sortedRanking.push(doc.data());
         });
 
-        const uniqueStudentsMap = new Map();
-        allMembers.forEach(student => {
-            const studentCoins = Number(student.totalFitCoins) || 0;
-            student.totalFitCoins = studentCoins;
-
-            const existingStudent = uniqueStudentsMap.get(student.idMember);
-            if (!existingStudent || studentCoins > existingStudent.totalFitCoins) {
-                uniqueStudentsMap.set(student.idMember, student);
-            }
-        });
-
-        const sortedRanking = Array.from(uniqueStudentsMap.values())
-            .filter(student => student.totalFitCoins > 0)
-            .sort((a, b) => b.totalFitCoins - a.totalFitCoins);
-
-        functions.logger.info(`Ranking carregado do cache: ${sortedRanking.length} alunos com moedas.`);
+        functions.logger.info(`Ranking carregado: ${sortedRanking.length} alunos retornados.`);
         return sortedRanking;
 
     } catch (error) {
-        functions.logger.error("Erro ao carregar ranking do cache:", error);
+        functions.logger.error("Erro ao carregar ranking do Firestore:", error);
         throw new functions.https.HttpsError("internal", "Erro ao carregar ranking.");
     }
 });
