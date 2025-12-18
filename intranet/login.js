@@ -1,5 +1,5 @@
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
 
 async function handleLogin(e) {
@@ -23,6 +23,22 @@ async function handleLogin(e) {
             sessionStorage.setItem('userName', userData.name);
             sessionStorage.setItem('isAdmin', userData.isAdmin || false);
             errorEl.classList.add('hidden');
+
+            // --- LOGGING START ---
+            try {
+                const userType = userData.evoMemberId ? "Aluno" : "Funcionário";
+                await addDoc(collection(db, "login_logs"), {
+                    timestamp: new Date().toISOString(),
+                    uid: user.uid,
+                    email: user.email,
+                    name: userData.name || "Unknown",
+                    userType: userType
+                });
+            } catch (logError) {
+                console.error("Failed to log login event:", logError);
+                // Non-blocking log failure
+            }
+            // --- LOGGING END ---
 
             // Lógica de redirecionamento inteligente
             if (userData.evoMemberId) {

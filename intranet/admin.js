@@ -1,8 +1,8 @@
 import { getAllUsers, updateUserPassword, updateUser, addUser } from './auth.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { db, appId } from './firebase-config.js';
-import { 
-    doc, setDoc, getDoc, addDoc, collection, getDocs, deleteDoc, updateDoc 
+import {
+    doc, setDoc, getDoc, addDoc, collection, getDocs, deleteDoc, updateDoc, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 async function deleteProspect(prospectId) {
@@ -53,11 +53,11 @@ export function setupAdminPage() {
         userTableBody.innerHTML = '';
         const users = await getAllUsers();
         const adminUsers = users.filter(user => !user.evoMemberId);
-        
+
         const lowercasedFilter = filter.toLowerCase();
         const filteredUsers = adminUsers.filter(user => {
-            return user.name.toLowerCase().includes(lowercasedFilter) || 
-                   user.email.toLowerCase().includes(lowercasedFilter);
+            return user.name.toLowerCase().includes(lowercasedFilter) ||
+                user.email.toLowerCase().includes(lowercasedFilter);
         });
 
         filteredUsers.forEach(user => {
@@ -120,7 +120,7 @@ export function setupAdminPage() {
         userModal.classList.add('hidden');
     }
 
-    userTableBody.addEventListener('click', async function(e) {
+    userTableBody.addEventListener('click', async function (e) {
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
         const changePasswordBtn = e.target.closest('.change-password-btn');
@@ -190,7 +190,101 @@ export function setupAdminPage() {
         renderUsers(e.target.value);
     });
 
+    setupTabs();
     renderUsers();
+    renderLoginLogs();
+}
+
+function setupTabs() {
+    console.log("Setting up tabs...");
+    const tabUsers = document.getElementById('tab-users');
+    const tabLogs = document.getElementById('tab-logs');
+    const contentUsers = document.getElementById('users-content');
+    const contentLogs = document.getElementById('logs-content');
+
+    console.log("Tab elements:", { tabUsers, tabLogs, contentUsers, contentLogs });
+
+    if (!tabUsers || !tabLogs) {
+        console.error("Tab elements not found!");
+        return;
+    }
+
+    tabUsers.addEventListener('click', () => {
+        // Activate Users Tab
+        tabUsers.classList.add('text-primary', 'border-b-2', 'border-primary');
+        tabUsers.classList.remove('text-gray-400');
+
+        // Deactivate Logs Tab
+        tabLogs.classList.remove('text-primary', 'border-b-2', 'border-primary');
+        tabLogs.classList.add('text-gray-400');
+
+        // Show Users Content
+        contentUsers.classList.remove('hidden');
+        contentLogs.classList.add('hidden');
+    });
+
+    tabLogs.addEventListener('click', () => {
+        // Activate Logs Tab
+        tabLogs.classList.add('text-primary', 'border-b-2', 'border-primary');
+        tabLogs.classList.remove('text-gray-400');
+
+        // Deactivate Users Tab
+        tabUsers.classList.remove('text-primary', 'border-b-2', 'border-primary');
+        tabUsers.classList.add('text-gray-400');
+
+        // Show Logs Content
+        contentLogs.classList.remove('hidden');
+        contentUsers.classList.add('hidden');
+    });
+}
+
+// Imports already handled at the top of the file. 
+
+async function renderLoginLogs() {
+    const logsBody = document.getElementById('login-logs-body');
+    if (!logsBody) return;
+
+    logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center">Carregando...</td></tr>';
+
+    try {
+        const q = query(
+            collection(db, "login_logs"),
+            orderBy("timestamp", "desc"),
+            limit(50)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        logsBody.innerHTML = '';
+
+        if (querySnapshot.empty) {
+            logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Nenhum registro encontrado.</td></tr>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = new Date(data.timestamp);
+            const formattedDate = date.toLocaleString('pt-BR');
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b border-gray-700 text-sm">${formattedDate}</td>
+                <td class="py-2 px-4 border-b border-gray-700 text-sm">${data.name || 'N/A'}</td>
+                <td class="py-2 px-4 border-b border-gray-700 text-sm">${data.email || 'N/A'}</td>
+                <td class="py-2 px-4 border-b border-gray-700 text-sm">
+                    <span class="${data.userType === 'Aluno' ? 'text-green-400' : 'text-blue-400'}">
+                        ${data.userType || 'N/A'}
+                    </span>
+                </td>
+            `;
+            logsBody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar logs de login:", error);
+        logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+    }
 }
 
 // A inicialização agora é tratada no arquivo HTML principal.
