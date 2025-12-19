@@ -240,6 +240,16 @@ async function loadStudents() {
         console.log("👥 Conteúdo de result.data:", studentList);
         console.log(`📏 Tamanho do Array: ${Array.isArray(studentList) ? studentList.length : 'NÃO É ARRAY'}`);
 
+        if (Array.isArray(studentList)) {
+            // Debug: Check distribution by unit
+            const distribution = {};
+            studentList.forEach(s => {
+                const unit = s.branchName || 'Unknown';
+                distribution[unit] = (distribution[unit] || 0) + 1;
+            });
+            console.table(distribution);
+        }
+
         if (!Array.isArray(studentList)) {
             console.error("❌ ERRO: studentList não é um array!", studentList);
         }
