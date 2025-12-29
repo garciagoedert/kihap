@@ -943,7 +943,18 @@
                     contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
                 } else {
                     columnProspects
-                        .sort((a, b) => b.prioridade - a.prioridade)
+                        .sort((a, b) => {
+                            if (status === 'Novo') {
+                                const getTime = (p) => {
+                                    if (!p.createdAt) return 0;
+                                    if (typeof p.createdAt.toMillis === 'function') return p.createdAt.toMillis();
+                                    if (p.createdAt instanceof Date) return p.createdAt.getTime();
+                                    return new Date(p.createdAt).getTime();
+                                };
+                                return getTime(b) - getTime(a);
+                            }
+                            return b.prioridade - a.prioridade;
+                        })
                         .forEach(prospect => {
                             contentArea.appendChild(createProspectCard(prospect, isMobile));
                         });
