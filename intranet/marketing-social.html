@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Redes Sociais</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111111;
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="p-6 max-w-7xl mx-auto w-full space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2"><i class="fab fa-meta text-blue-500 mr-2"></i> Redes
+                        Sociais</h1>
+                    <p class="text-gray-400">Dashboard de performance de campanhas (Meta Ads).</p>
+                </div>
+                <div class="flex gap-3">
+                    <select id="periodSelect"
+                        class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="today">Hoje</option>
+                        <option value="yesterday">Ontem</option>
+                        <option value="last7">Últimos 7 dias</option>
+                        <option value="last30" selected>Últimos 30 dias</option>
+                        <option value="thisMonth">Este Mês</option>
+                    </select>
+                    <button id="refreshBtn"
+                        class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors border border-gray-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors shadow-lg shadow-blue-900/20">
+                        <i class="fas fa-plug mr-2"></i> Conectar Meta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Spend -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-green-500/10 rounded-lg">
+                            <i class="fas fa-dollar-sign text-green-500 text-xl"></i>
+                        </div>
+                        <span
+                            class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">+12%</span>
+                    </div>
+                    <h3 class="text-gray-400 text-sm font-medium">Investimento Total</h3>
+                    <p class="text-2xl font-bold text-white mt-1" id="totalSpend">R$ 0,00</p>
+                </div>
+
+                <!-- Impressions -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-500/10 rounded-lg">
+                            <i class="fas fa-eye text-blue-500 text-xl"></i>
+                        </div>
+                        <span
+                            class="text-xs font-semibold px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">+5%</span>
+                    </div>
+                    <h3 class="text-gray-400 text-sm font-medium">Impressões</h3>
+                    <p class="text-2xl font-bold text-white mt-1" id="totalImpressions">0</p>
+                </div>
+
+                <!-- Clicks -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-purple-500/10 rounded-lg">
+                            <i class="fas fa-mouse-pointer text-purple-500 text-xl"></i>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 bg-red-500/20 text-red-400 rounded-full">-2%</span>
+                    </div>
+                    <h3 class="text-gray-400 text-sm font-medium">Cliques (Link)</h3>
+                    <p class="text-2xl font-bold text-white mt-1" id="totalClicks">0</p>
+                </div>
+
+                <!-- Instagram Accounts -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-gray-400 text-sm font-medium">Contas Conectadas</h3>
+                    </div>
+                    <div id="igFollowers" class="text-white mt-1">
+                        <!-- List loaded via JS -->
+                    </div>
+                </div>
+
+                <!-- Cost Per Lead -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-yellow-500/10 rounded-lg">
+                            <i class="fas fa-user-plus text-yellow-500 text-xl"></i>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">-R$
+                            0.50</span>
+                    </div>
+                    <h3 class="text-gray-400 text-sm font-medium">Custo por Resultado</h3>
+                    <p class="text-2xl font-bold text-white mt-1" id="avgCpr">R$ 0,00</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Performance Over Time -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <h3 class="text-lg font-bold text-white mb-6">Desempenho (30 dias)</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Platform Split -->
+                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
+                    <h3 class="text-lg font-bold text-white mb-6">Distribuição por Plataforma</h3>
+                    <div class="relative h-64 w-full flex justify-center">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaigns Table -->
+            <div class="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-lg overflow-hidden">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white">Campanhas Ativas</h3>
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Buscar campanha..."
+                            class="bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-400">
+                        <thead class="bg-gray-800 text-gray-200 uppercase text-xs">
+                            <tr>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Campanha</th>
+                                <th class="px-4 py-3" title="Conversas por mensagem">Msgs</th>
+                                <th class="px-4 py-3">Cliques (Link)</th>
+                                <th class="px-4 py-3">CTR</th>
+                                <th class="px-4 py-3">CPC</th>
+                                <th class="px-4 py-3">Alcance</th>
+                                <th class="px-4 py-3" title="Visitas ao Perfil">Visitas</th>
+                                <th class="px-4 py-3">Valor Usado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800" id="campaignsTableBody">
+                            <!-- Rows loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js" type="module"></script>
+    <script src="common-ui.js" type="module"></script>
+    <script src="marketing-social.js" type="module"></script>
+</body>
+
+</html>
