@@ -21,11 +21,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    document.getElementById('periodSelect')?.addEventListener('change', (e) => {
-        console.log(`Período alterado para: ${e.target.value}`);
+    const periodSelect = document.getElementById('periodSelect');
+    const customControls = document.getElementById('customDateControls');
+
+    periodSelect?.addEventListener('change', (e) => {
+        if (e.target.value === 'custom') {
+            customControls.classList.remove('hidden');
+            customControls.style.display = 'flex'; // Force display
+        } else {
+            customControls.classList.add('hidden');
+            customControls.style.display = 'none';
+            initDashboard();
+        }
+    });
+
+    document.getElementById('applyCustomDate')?.addEventListener('click', () => {
         initDashboard();
     });
+
+    // AI Listener
+    document.getElementById('analyzeBtn')?.addEventListener('click', generateAIAnalysis);
 });
+
+// Global state to hold data for AI
+let currentDashboardData = null;
 
 async function initDashboard() {
     // Verificar se temos credenciais configuradas
@@ -49,6 +68,7 @@ async function initDashboard() {
 
     try {
         const data = await fetchMetaAdsData();
+        currentDashboardData = data; // Save for AI
         updateOverviewCards(data.overview);
         renderCharts(data.charts);
         renderCampaignsTable(data.campaigns);
@@ -58,7 +78,7 @@ async function initDashboard() {
 
     } catch (error) {
         console.error("Erro ao carregar dados do Meta:", error);
-        alert("Falha ao carregar dados do Facebook Ads. Verifique o console ou suas credenciais.");
+        alert("Falha ao carregar dados do Facebook Ads: " + error.message);
     }
 }
 
@@ -67,59 +87,67 @@ async function fetchMetaAdsData() {
     const { accessToken, adAccountId, apiVersion } = socialConfig;
     const baseUrl = `https://graph.facebook.com/${apiVersion}/act_${adAccountId}`;
 
-    // 1. Fetch Insights (Overview & Charts)
-    // Agrupado por dia para o gráfico, e somado para os cards
-    const datePreset = getDatePreset();
+    // Date Logic
+    const preset = getDatePreset();
+    let dateParams = '';
 
-    // URL para métricas gerais
-    const insightsFields = 'spend,impressions,clicks,cpc,cpm,cpp,ctr,actions,reach';
-    const insightsUrl = `${baseUrl}/insights?level=account&date_preset=${datePreset}&fields=${insightsFields}&access_token=${accessToken}`;
-
-    // URL para gráfico (breakdown por dia) - Se necessário, faremos uma segunda chamada ou processaremos os dados
-    // Para simplificar, vamos pegar o total primeiro:
-    const overviewResponse = await fetch(insightsUrl);
-    const overviewJson = await overviewResponse.json();
-
-    if (overviewJson.error) throw new Error(overviewJson.error.message);
-
-    const accountData = overviewJson.data[0] || {};
-
-    // 2. Fetch Chart Data (Daily Breakdown)
-    const chartFields = 'spend,actions,reach,date_start';
-    const chartUrl = `${baseUrl}/insights?level=account&date_preset=${datePreset}&time_increment=1&fields=${chartFields}&access_token=${accessToken}`;
-
-    // Arrays para o gráfico
-    let dailyLabels = [];
-    let dailySpend = [];
-    let dailyResults = [];
-
-    try {
-        const chartRes = await fetch(chartUrl);
-        const chartJson = await chartRes.json();
-        const dailyData = (chartJson.data || []).reverse(); // API retorna do mais recente pro antigo as vezes, ou o contrário. Insights costuma ser cronológico. Vamos garantir.
-
-        // Sort by date just in case
-        dailyData.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
-
-        dailyLabels = dailyData.map(d => formatDateLabel(d.date_start));
-        dailySpend = dailyData.map(d => parseFloat(d.spend || 0));
-        dailyResults = dailyData.map(d => countActions(d.actions)); // Total actions as proxy for results
-    } catch (err) {
-        console.error("Erro ao carregar gráfico:", err);
+    if (preset) {
+        dateParams = `date_preset=${preset}`;
+    } else {
+        const start = document.getElementById('dateStart').value;
+        const end = document.getElementById('dateEnd').value;
+        if (!start || !end) {
+            alert("Selecione data inicial e final.");
+            throw new Error("Datas inválidas");
+        }
+        // Meta API needs format YYYY-MM-DD
+        const timeRange = JSON.stringify({ since: start, until: end });
+        dateParams = `time_range=${timeRange}`;
     }
 
-    // Fetch Campanhas (Active & Paused)
-    // Fix: Re-adding insights with simple syntax first.
+    // 1. Fetch Insights (Overview) & Chart Data (Same call with time_increment=1)
+    // Agrupado por dia
+    const chartFields = 'spend,actions,reach,date_start,clicks,impressions';
+    const chartUrl = `${baseUrl}/insights?level=account&${dateParams}&time_increment=1&fields=${chartFields}&access_token=${accessToken}`;
+
+    // Fetch Campanhas
+    // Re-adding insights with simple syntax first.
     // Note: 'spend' is inside insights, not root.
     const campaignsFields = 'name,status,insights{spend,reach,actions,clicks,cpc,ctr,frequency,impressions,inline_link_clicks}';
-    const campaignsUrl = `${baseUrl}/campaigns?fields=${campaignsFields}&effective_status=["ACTIVE","PAUSED"]&limit=50&access_token=${accessToken}&date_preset=${datePreset}`;
+    const campaignsUrl = `${baseUrl}/campaigns?fields=${campaignsFields}&effective_status=["ACTIVE","PAUSED"]&limit=50&access_token=${accessToken}&${dateParams}`;
 
-    const campaignsResponse = await fetch(campaignsUrl);
-    const campaignsJson = await campaignsResponse.json();
+    // Parallel Fetch
+    const [chartRes, campaignsRes] = await Promise.all([
+        fetch(chartUrl),
+        fetch(campaignsUrl)
+    ]);
+
+    const chartJson = await chartRes.json();
+    const campaignsJsonData = await campaignsRes.json(); // Helper due to long existing implementation... actually let's just inline json()
+
+    if (chartJson.error) throw new Error(chartJson.error.message);
+
+    // --- Process Chart & Overview ---
+    const dailyData = (chartJson.data || []).reverse();
+    dailyData.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+
+    let dailyLabels = dailyData.map(d => formatDateLabel(d.date_start));
+    let dailySpend = dailyData.map(d => parseFloat(d.spend || 0));
+    let dailyResults = dailyData.map(d => countActions(d.actions));
+
+    // Calculate Overview Totals from Daily Data (More accurate matching chart)
+    const totalSpend = dailyData.reduce((acc, d) => acc + parseFloat(d.spend || 0), 0);
+    const totalClicks = dailyData.reduce((acc, d) => acc + parseInt(d.clicks || 0), 0);
+    const totalImpressions = dailyData.reduce((acc, d) => acc + parseInt(d.impressions || 0), 0);
+    const totalActions = dailyData.reduce((acc, d) => acc + countActions(d.actions), 0);
+    const avgCpr = totalActions > 0 ? (totalSpend / totalActions) : 0;
+
+    // --- Process Campaigns ---
+    // To match previous block logic properly:
 
     console.log("--- DEBUG META API ---");
-    console.log("Account Overview Full:", overviewJson);
-    console.log("Campaigns Raw:", campaignsJson);
+    console.log("Daily Chart Data:", dailyData);
+    console.log("Campaigns Raw:", campaignsJsonData);
 
     // Fetch Instagram Info (Followers)
     let igInfo = { count: '-', username: '@...' };
@@ -137,8 +165,7 @@ async function fetchMetaAdsData() {
         console.warn("Não foi possível carregar Instagram:", e);
     }
 
-    // Processar Campanhas
-    const campaigns = (campaignsJson.data || []).map(camp => {
+    const campaigns = (campaignsJsonData.data || []).map(camp => {
         const insight = camp.insights?.data?.[0] || {};
         const spend = parseFloat(insight.spend || 0);
         const reach = parseInt(insight.reach || 0);
@@ -178,20 +205,25 @@ async function fetchMetaAdsData() {
         };
     });
 
-    // Calcular Totais do Overview
-    const totalSpend = parseFloat(accountData.spend || 0);
-    const totalClicks = parseInt(accountData.clicks || 0);
-
-    // Sumarizing total messages from campaigns instead of account overview to be consistent
+    // Calcular Totais do Overview (Recalculando base nas campanhas para consistência de dados filtrados)
     const totalMsgs = campaigns.reduce((acc, curr) => acc + curr.msgs, 0);
-    const avgCpr = totalMsgs > 0 ? (totalSpend / totalMsgs) : 0;
+    // Para likes (Followers), vamos somar os dados diários já que não temos overviewJson
+    const totalLikes = dailyData.reduce((acc, day) => {
+        return acc + getActionValue(day.actions || [], ['like']);
+    }, 0);
+
+    // Custo por Like
+    const costPerLike = totalLikes > 0 ? (totalSpend / totalLikes) : 0;
 
     return {
         overview: {
             spend: totalSpend,
-            impressions: parseInt(accountData.impressions || 0),
+            impressions: totalImpressions,
             clicks: totalClicks,
             cpr: avgCpr,
+            msgs: totalMsgs,
+            likes: totalLikes,
+            costPerLike: costPerLike,
             // Hardcoded list for now since we can't easily discover them without IDs
             igAccounts: ['kihap.martialarts', 'kihap.florianopolis', 'kihap.dourados']
         },
@@ -262,6 +294,7 @@ function formatDateLabel(dateString) {
 
 function getDatePreset() {
     const select = document.getElementById('periodSelect');
+    if (select.value === 'custom') return null;
     // Map dropdown values to Meta API constants
     const map = {
         'today': 'today',
@@ -272,6 +305,85 @@ function getDatePreset() {
     };
     return map[select.value] || 'last_30d';
 }
+
+// --- GEMINI AI INTEGRATION ---
+async function generateAIAnalysis() {
+    if (!currentDashboardData) return;
+
+    const ui = {
+        loading: document.getElementById('aiLoading'),
+        content: document.getElementById('aiContent'),
+        placeholder: document.getElementById('aiPlaceholder'),
+        btn: document.getElementById('analyzeBtn')
+    };
+
+    ui.loading.classList.remove('hidden');
+    ui.content.classList.add('hidden');
+    ui.placeholder.classList.add('hidden');
+    ui.btn.disabled = true;
+
+    try {
+        const summary = {
+            spend: currentDashboardData.overview.spend,
+            cpr: currentDashboardData.overview.cpr,
+            clicks: currentDashboardData.overview.clicks,
+            topCampaigns: currentDashboardData.campaigns
+                .filter(c => c.status === 'active')
+                .sort((a, b) => b.spend - a.spend)
+                .slice(0, 3)
+                .map(c => `${c.name} (Spend: R$${c.spend}, CPR: R$${c.costPerResult.toFixed(2)})`)
+        };
+
+        const prompt = `
+            Atue como um especialista em tráfego pago (Meta Ads). Analise estes dados da conta de Artes Marciais (Kihap):
+            - Gasto Total (Período): R$ ${summary.spend.toFixed(2)}
+            - Custo por Resultado Médio: R$ ${summary.cpr.toFixed(2)}
+            - Total Cliques: ${summary.clicks}
+            - Top Campanhas Ativas: ${JSON.stringify(summary.topCampaigns)}
+            
+            Forneça 3 insights estratégicos curtos e 1 sugestão de otimização prática.
+            Use formatação HTML simples (<br>, <strong>). Seja direto.
+        `;
+
+        // Detected Models: gemini-2.5-flash, gemini-2.5-pro
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${socialConfig.geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const json = await response.json();
+        console.log("Gemini API Raw Response:", json); // Debug info
+
+        if (json.error) {
+            throw new Error("API Error: " + json.error.message);
+        }
+
+        if (!json.candidates || !json.candidates.length) {
+            // Pode ser filtro de segurança ou erro desconhecido
+            const safetyPrompt = json.promptFeedback ? `(Feedback: ${JSON.stringify(json.promptFeedback)})` : '';
+            throw new Error("A IA não retornou resposta válida. " + safetyPrompt);
+        }
+
+        const aiText = json.candidates[0].content.parts[0].text;
+
+        // Render markdown-like to HTML
+        ui.content.innerHTML = aiText
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+
+        ui.content.classList.remove('hidden');
+
+    } catch (e) {
+        console.error("AI Error:", e);
+        ui.content.innerHTML = `<span class="text-red-400">Erro ao analisar dados: ${e.message}</span>`;
+        ui.content.classList.remove('hidden');
+    } finally {
+        ui.loading.classList.add('hidden');
+        ui.btn.disabled = false;
+    }
+}
+
 
 function getMockData() {
     return {
@@ -297,6 +409,11 @@ function updateOverviewCards(overview) {
     document.getElementById('totalImpressions').textContent = formatNumber(overview.impressions);
     document.getElementById('totalClicks').textContent = formatNumber(overview.clicks);
     document.getElementById('avgCpr').textContent = formatCurrency(overview.cpr);
+
+    // New cards
+    document.getElementById('totalMsgs').textContent = formatNumber(overview.msgs);
+    document.getElementById('totalLikes').textContent = formatNumber(overview.likes);
+    document.getElementById('costPerLike').textContent = formatCurrency(overview.costPerLike);
 
     // Update Folowers (List)
     const igEl = document.getElementById('igFollowers');

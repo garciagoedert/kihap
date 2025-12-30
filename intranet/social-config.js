@@ -11,5 +11,8 @@ export const socialConfig = {
     adAccountId: "1252465245122204",
 
     // Versão da API do Graph (pode manter a atual ou atualizar)
-    apiVersion: "v19.0"
+    apiVersion: "v19.0",
+
+    // Google Gemini AI Key
+    geminiKey: "AIzaSyDexrXL6nU_yIg55nTLjJJRlfwUd--9xlk"
 };
