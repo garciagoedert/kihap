@@ -16,7 +16,7 @@ async function populateUnitsDropdown() {
     try {
         const result = await getPublicEvoUnits();
         const evoUnits = result.data.sort();
-        
+
         unidadeSelect.innerHTML = '<option value="" disabled selected>Selecione a unidade de interesse</option>';
 
         evoUnits.forEach(unitId => {
@@ -176,6 +176,47 @@ if (academyLeadForm) {
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'ENVIAR INTERESSE';
+            submitBtn.classList.remove('opacity-50');
+        }
+    });
+}
+
+// --- Lógica do Formulário de Newsletter ---
+const newsletterForm = document.getElementById('newsletter-form');
+const newsletterStatus = document.getElementById('newsletter-status');
+
+if (newsletterForm) {
+    newsletterForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = newsletterForm.querySelector('button[type="submit"]');
+        const emailInput = document.getElementById('newsletter-email');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+        submitBtn.classList.add('opacity-50');
+        newsletterStatus.textContent = '';
+        newsletterStatus.className = 'mt-4 text-sm'; // Reset classes
+
+        const email = emailInput.value;
+
+        try {
+            // Chama a função Cloud Function 'subscribeUser'
+            // Nota: subscribeUser foi exportada em functions/index.js
+            const subscribeFn = httpsCallable(functions, 'subscribeUser');
+            await subscribeFn({ email: email, source: 'landing_page_footer' });
+
+            newsletterStatus.textContent = 'Inscrição realizada com sucesso! Bem-vindo(a) à família Kihap.';
+            newsletterStatus.classList.add('text-green-500');
+            newsletterForm.reset();
+
+        } catch (error) {
+            console.error("Erro ao inscrever na newsletter:", error);
+            newsletterStatus.textContent = 'Erro ao processar inscrição. Tente novamente.';
+            newsletterStatus.classList.add('text-red-500');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'INSCREVER-SE';
             submitBtn.classList.remove('opacity-50');
         }
     });

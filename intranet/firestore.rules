@@ -289,5 +289,13 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false;
     }
+    // Regras para Newsletter
+    match /subscribers/{subscriberId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /campaigns/{campaignId} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

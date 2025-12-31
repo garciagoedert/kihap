@@ -797,7 +797,14 @@ exports.sendBulkTicketEmails = functions.https.onCall(async (data, context) => {
 
     } catch (error) {
         console.error('Erro ao enviar e-mails em massa:', error);
-        throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao tentar enviar os e-mails em massa.');
+
+        // --- NEWSLETTER SYSTEM FUNCTIONS ---
+        const { subscribeUser, unsubscribeUser, importSubscribers, sendCampaign } = require('./newsletter.js');
+        exports.subscribeUser = subscribeUser;
+        exports.unsubscribeUser = unsubscribeUser;
+        exports.importSubscribers = importSubscribers;
+        exports.sendCampaign = sendCampaign;
+
     }
 });
 

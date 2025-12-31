@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Newsletter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111111;
+            color: #e5e7eb;
+        }
+
+        /* Custom scrollbar for editor */
+        .editor-content {
+            min-height: 300px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="p-6 max-w-6xl mx-auto w-full space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2"><i
+                            class="fas fa-envelope-open-text text-yellow-500 mr-2"></i> Newsletter</h1>
+                    <p class="text-gray-400">Gerencie comunicados e base de e-mails.</p>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-700">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button id="tab-dashboard" onclick="window.switchTab('dashboard')"
+                        class="border-yellow-500 text-yellow-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i> Dashboard & Histórico
+                    </button>
+                    <button id="tab-subscribers" onclick="window.switchTab('subscribers')"
+                        class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-users mr-2"></i> Inscritos
+                    </button>
+                    <button id="tab-editor" onclick="window.switchTab('editor')"
+                        class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-pen-nib mr-2"></i> Criar Campanha
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Content: Dashboard -->
+            <div id="content-dashboard" class="space-y-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
+                        <h3 class="text-gray-400 text-sm font-medium">Total de Inscritos</h3>
+                        <p class="text-2xl font-bold text-white mt-2" id="stat-total-subscribers">...</p>
+                    </div>
+                    <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
+                        <h3 class="text-gray-400 text-sm font-medium">Envios Realizados</h3>
+                        <p class="text-2xl font-bold text-white mt-2" id="stat-total-sent">...</p>
+                    </div>
+                    <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
+                        <h3 class="text-gray-400 text-sm font-medium">Taxa de Abertura (Est.)</h3>
+                        <p class="text-2xl font-bold text-white mt-2">--%</p>
+                    </div>
+                </div>
+
+                <!-- Recent Campaigns Table -->
+                <div class="bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-800 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-white">Campanhas Recentes</h3>
+                        <button onclick="window.refreshCampaigns()" class="text-yellow-500 hover:text-yellow-400"><i
+                                class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-gray-800 text-gray-200 uppercase font-medium">
+                                <tr>
+                                    <th class="px-6 py-3">Assunto</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3">Enviado Em</th>
+                                    <th class="px-6 py-3 text-right">Stats</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaigns-table-body" class="divide-y divide-gray-700">
+                                <!-- JS Populated -->
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content: Subscribers -->
+            <div id="content-subscribers" class="space-y-6 hidden">
+                <div class="flex justify-between items-center bg-[#1a1a1a] p-4 rounded-xl border border-gray-800">
+                    <div class="flex items-center gap-4">
+                        <input type="file" id="csvInput" accept=".csv" class="hidden">
+                        <button onclick="document.getElementById('csvInput').click()"
+                            class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-file-upload mr-2"></i> Importar CSV
+                        </button>
+                        <span id="importStatus" class="text-sm text-gray-400"></span>
+                    </div>
+                    <div>
+                        <!-- Search could go here -->
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-800 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-700">
+                        <h3 class="text-lg font-semibold text-white">Lista de Inscritos</h3>
+                    </div>
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-gray-800 text-gray-200 uppercase font-medium sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3">Email</th>
+                                    <th class="px-6 py-3">Nome</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3">Origem</th>
+                                    <th class="px-6 py-3">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscribers-table-body" class="divide-y divide-gray-700">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content: Editor -->
+            <div id="content-editor" class="space-y-6 hidden">
+                <div class="bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-800 p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Assunto do Email</label>
+                        <input type="text" id="campaignSubject"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                            placeholder="Ex: Novidades da semana na Kihap!">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Conteúdo (HTML)</label>
+                        <p class="text-xs text-gray-500 mb-2">Use tags HTML ou cole seu template. O wrapper padrão
+                            (Header/Footer) será adicionado automaticamente.</p>
+                        <textarea id="campaignContent"
+                            class="w-full bg-gray-900 border border-gray-700 text-white font-mono text-sm rounded-lg p-3 focus:ring-2 focus:ring-yellow-500 focus:outline-none h-96"
+                            placeholder="<h1>Olá, [Nome]!</h1><p>Escreva seu conteúdo aqui...</p>"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-800">
+                        <div class="text-sm text-gray-500">
+                            Status: <span id="editorStatus" class="text-yellow-500 font-bold">Rascunho</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="window.sendTest()"
+                                class="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition">
+                                <i class="fas fa-flask mr-2"></i> Enviar Teste
+                            </button>
+                            <button onclick="window.confirmBroadcast()"
+                                class="px-6 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-500 font-bold transition shadow-lg hover:shadow-yellow-500/20">
+                                <i class="fas fa-paper-plane mr-2"></i> Enviar Oficial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">Confirmar Envio Oficial</h3>
+            <p class="text-gray-300 mb-6">
+                Você enviará esta campanha para <strong class="text-white" id="confirmCount">todos os inscritos
+                    ativos</strong>.
+                Esta ação não pode ser desfeita.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeModal()"
+                    class="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">Cancelar</button>
+                <button onclick="window.executeBroadcast()"
+                    class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-bold">Enviar Agora</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+        // Export to window so main script can use them if not using module imports consistently
+        window.firebaseModules = { getAuth, onAuthStateChanged, getFunctions, httpsCallable, getFirestore, collection, getDocs, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit, where, initializeApp };
+    </script>
+    <script src="firebase-config.js" type="module"></script>
+    <script src="common-ui.js" type="module"></script>
+    <script src="newsletter.js" type="module"></script>
+</body>
+
+</html>
