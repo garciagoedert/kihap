@@ -2,23 +2,22 @@ const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const db = admin.firestore();
+console.log('Loading newsletter.js module...');
 
 // --- Configuration ---
 // Using existing environment variables for consistency, but can be adapted for Zoho/AWS.
 // Lazy load transporter to prevent init errors
 const getTransporter = () => {
-    const GMAIL_EMAIL = process.env.GMAIL_EMAIL;
-    const GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
-
-    if (!GMAIL_EMAIL || !GMAIL_PASSWORD) {
+    console.log('[getTransporter] Initializing transporter...');
+    if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_PASSWORD) {
         throw new Error('Credenciais de e-mail não configuradas (GMAIL_EMAIL/GMAIL_PASSWORD).');
     }
 
     return nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: GMAIL_EMAIL,
-            pass: GMAIL_PASSWORD,
+            user: process.env.GMAIL_EMAIL,
+            pass: process.env.GMAIL_PASSWORD,
         },
     });
 };
@@ -31,45 +30,43 @@ const subscribeUser = functions.https.onCall(async (data, context) => {
 
     if (!email) {
         console.warn('[subscribeUser] E-mail não fornecido.');
+        throw new functions.https.HttpsError('invalid-argument', 'O email é obrigatório.');
+    }
 
-        if (!email) {
-            throw new functions.https.HttpsError('invalid-argument', 'O email é obrigatório.');
+    try {
+        const subscriberRef = db.collection('subscribers').doc(email);
+        const doc = await subscriberRef.get();
+
+        if (doc.exists) {
+            // If already exists, ensure status is active if it was bounced? 
+            // Or just update name/source?
+            // Negocio: "O sistema deve ignorar duplicatas automaticamente" (for import).
+            // For manual subscribe, maybe re-activate if unsubscribed?
+            // Let's just update for now.
+            await subscriberRef.update({
+                name: name || doc.data().name,
+                status: 'active', // Reactivate
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { message: 'Inscrição atualizada com sucesso.' };
+        } else {
+            await subscriberRef.set({
+                email: email,
+                name: name || '',
+                status: 'active',
+                source: source || 'site_form',
+                tags: ['lead-site'], // Default tag
+                created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { message: 'Inscrição realizada com sucesso.' };
         }
-
-        try {
-            const subscriberRef = db.collection('subscribers').doc(email);
-            const doc = await subscriberRef.get();
-
-            if (doc.exists) {
-                // If already exists, ensure status is active if it was bounced? 
-                // Or just update name/source?
-                // Negocio: "O sistema deve ignorar duplicatas automaticamente" (for import).
-                // For manual subscribe, maybe re-activate if unsubscribed?
-                // Let's just update for now.
-                await subscriberRef.update({
-                    name: name || doc.data().name,
-                    status: 'active', // Reactivate
-                    updated_at: admin.firestore.FieldValue.serverTimestamp()
-                });
-                return { message: 'Inscrição atualizada com sucesso.' };
-            } else {
-                await subscriberRef.set({
-                    email: email,
-                    name: name || '',
-                    status: 'active',
-                    source: source || 'site_form',
-                    tags: ['lead-site'], // Default tag
-                    created_at: admin.firestore.FieldValue.serverTimestamp()
-                });
-                return { message: 'Inscrição realizada com sucesso.' };
-            }
-        } catch (error) {
-            console.error("[subscribeUser] ERRO CRÍTICO:", error);
-            // Retornar o erro original se for HttpsError, senão genérico
-            if (error.code) { throw error; }
-            throw new functions.https.HttpsError('internal', `Erro interno: ${error.message}`);
-        }
-    });
+    } catch (error) {
+        console.error("[subscribeUser] ERRO CRÍTICO:", error);
+        // Retornar o erro original se for HttpsError, senão genérico
+        if (error.code) { throw error; }
+        throw new functions.https.HttpsError('internal', `Erro interno: ${error.message}`);
+    }
+});
 
 // --- Public Function: Unsubscribe User ---
 const unsubscribeUser = functions.https.onCall(async (data, context) => {
