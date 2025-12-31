@@ -5,57 +5,71 @@ const db = admin.firestore();
 
 // --- Configuration ---
 // Using existing environment variables for consistency, but can be adapted for Zoho/AWS.
-const GMAIL_EMAIL = process.env.GMAIL_EMAIL;
-const GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
+// Lazy load transporter to prevent init errors
+const getTransporter = () => {
+    const GMAIL_EMAIL = process.env.GMAIL_EMAIL;
+    const GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail', // Or 'Zoho', 'SES', etc.
-    auth: {
-        user: GMAIL_EMAIL,
-        pass: GMAIL_PASSWORD,
-    },
-});
+    if (!GMAIL_EMAIL || !GMAIL_PASSWORD) {
+        throw new Error('Credenciais de e-mail não configuradas (GMAIL_EMAIL/GMAIL_PASSWORD).');
+    }
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: GMAIL_EMAIL,
+            pass: GMAIL_PASSWORD,
+        },
+    });
+};
 
 // --- Public Function: Subscribe User ---
 const subscribeUser = functions.https.onCall(async (data, context) => {
     const { email, name, source } = data;
 
+    console.log(`[subscribeUser] Iniciando inscrição para: ${email}`);
+
     if (!email) {
-        throw new functions.https.HttpsError('invalid-argument', 'O email é obrigatório.');
-    }
+        console.warn('[subscribeUser] E-mail não fornecido.');
 
-    try {
-        const subscriberRef = db.collection('subscribers').doc(email);
-        const doc = await subscriberRef.get();
-
-        if (doc.exists) {
-            // If already exists, ensure status is active if it was bounced? 
-            // Or just update name/source?
-            // Negocio: "O sistema deve ignorar duplicatas automaticamente" (for import).
-            // For manual subscribe, maybe re-activate if unsubscribed?
-            // Let's just update for now.
-            await subscriberRef.update({
-                name: name || doc.data().name,
-                status: 'active', // Reactivate
-                updated_at: admin.firestore.FieldValue.serverTimestamp()
-            });
-            return { message: 'Inscrição atualizada com sucesso.' };
-        } else {
-            await subscriberRef.set({
-                email: email,
-                name: name || '',
-                status: 'active',
-                source: source || 'site_form',
-                tags: ['lead-site'], // Default tag
-                created_at: admin.firestore.FieldValue.serverTimestamp()
-            });
-            return { message: 'Inscrição realizada com sucesso.' };
+        if (!email) {
+            throw new functions.https.HttpsError('invalid-argument', 'O email é obrigatório.');
         }
-    } catch (error) {
-        console.error("Erro ao inscrever usuário:", error);
-        throw new functions.https.HttpsError('internal', 'Erro ao processar inscrição.');
-    }
-});
+
+        try {
+            const subscriberRef = db.collection('subscribers').doc(email);
+            const doc = await subscriberRef.get();
+
+            if (doc.exists) {
+                // If already exists, ensure status is active if it was bounced? 
+                // Or just update name/source?
+                // Negocio: "O sistema deve ignorar duplicatas automaticamente" (for import).
+                // For manual subscribe, maybe re-activate if unsubscribed?
+                // Let's just update for now.
+                await subscriberRef.update({
+                    name: name || doc.data().name,
+                    status: 'active', // Reactivate
+                    updated_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                return { message: 'Inscrição atualizada com sucesso.' };
+            } else {
+                await subscriberRef.set({
+                    email: email,
+                    name: name || '',
+                    status: 'active',
+                    source: source || 'site_form',
+                    tags: ['lead-site'], // Default tag
+                    created_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                return { message: 'Inscrição realizada com sucesso.' };
+            }
+        } catch (error) {
+            console.error("[subscribeUser] ERRO CRÍTICO:", error);
+            // Retornar o erro original se for HttpsError, senão genérico
+            if (error.code) { throw error; }
+            throw new functions.https.HttpsError('internal', `Erro interno: ${error.message}`);
+        }
+    });
 
 // --- Public Function: Unsubscribe User ---
 const unsubscribeUser = functions.https.onCall(async (data, context) => {
@@ -170,8 +184,8 @@ const sendCampaign = functions.https.onCall(async (data, context) => {
             // Mock unsub link for test
             const html = wrapContent(campaign.content_html, "#");
 
-            await transporter.sendMail({
-                from: `"Kihap Martial Arts" <${GMAIL_EMAIL}>`,
+            await getTransporter().sendMail({
+                from: `"Kihap Martial Arts" <${process.env.GMAIL_EMAIL}>`,
                 to: adminEmail,
                 subject: `[TESTE] ${campaign.subject}`,
                 html: html
@@ -210,8 +224,8 @@ const sendCampaign = functions.https.onCall(async (data, context) => {
                 const html = wrapContent(campaign.content_html, unsubLink); // Can replace [Nome] here
 
                 try {
-                    await transporter.sendMail({
-                        from: `"Kihap Martial Arts" <${GMAIL_EMAIL}>`,
+                    await getTransporter().sendMail({
+                        from: `"Kihap Martial Arts" <${process.env.GMAIL_EMAIL}>`,
                         to: sub.email,
                         subject: campaign.subject,
                         html: html

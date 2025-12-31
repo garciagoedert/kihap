@@ -2266,3 +2266,10 @@ exports.sendMassMessage = functions.runWith({ timeoutSeconds: 540, memory: '1GB'
         throw new functions.https.HttpsError('internal', `ERROR STACK: ${error.stack || error.message}`);
     }
 });
+
+// Newsletter Exports
+const newsletter = require('./newsletter');
+exports.subscribeUser = newsletter.subscribeUser;
+exports.unsubscribeUser = newsletter.unsubscribeUser;
+exports.importSubscribers = newsletter.importSubscribers;
+exports.sendCampaign = newsletter.sendCampaign;
