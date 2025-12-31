@@ -261,7 +261,14 @@ window.executeBroadcast = async () => {
     }
 };
 
+
+import { loadComponents } from "./common-ui.js";
+
 // Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    loadComponents();
+});
+
 onAuthStateChanged(auth, (user) => {
     if (user) {
         loadDashboard();
