@@ -142,12 +142,33 @@ async function fetchMetaAdsData() {
     const totalActions = dailyData.reduce((acc, d) => acc + countActions(d.actions), 0);
     const avgCpr = totalActions > 0 ? (totalSpend / totalActions) : 0;
 
+    // --- NEW: Calculate Messages & Likes from Daily Data for Consistency ---
+    // Previously we summed from campaigns, which caused date mismatch issues if campaigns endpoint didn't filter perfectly
+
+    const msgActionTypes = [
+        'onsite_conversion.messaging_conversation_started_7d',
+        'messaging_conversation_started_7d',
+        'onsite_conversion.messaging_conversation_started_28d',
+        'contact_total',
+        'leads'
+    ];
+
+    const totalMsgs = dailyData.reduce((acc, day) => {
+        return acc + getActionValue(day.actions || [], msgActionTypes);
+    }, 0);
+
+    const totalLikes = dailyData.reduce((acc, day) => {
+        return acc + getActionValue(day.actions || [], ['like', 'follow']); // Added follow just in case
+    }, 0);
+
+    const costPerLike = totalLikes > 0 ? (totalSpend / totalLikes) : 0;
+    const costPerMsg = totalMsgs > 0 ? (totalSpend / totalMsgs) : 0; // Useful internal metric
+
     // --- Process Campaigns ---
-    // To match previous block logic properly:
+    // Note: Campaigns are still fetched to populate the table
 
     console.log("--- DEBUG META API ---");
     console.log("Daily Chart Data:", dailyData);
-    console.log("Campaigns Raw:", campaignsJsonData);
 
     // Fetch Instagram Info (Followers)
     let igInfo = { count: '-', username: '@...' };
@@ -169,25 +190,15 @@ async function fetchMetaAdsData() {
         const insight = camp.insights?.data?.[0] || {};
         const spend = parseFloat(insight.spend || 0);
         const reach = parseInt(insight.reach || 0);
-        const clicks = parseInt(insight.inline_link_clicks || insight.clicks || 0); // Preferir cliques no link
+        const clicks = parseInt(insight.inline_link_clicks || insight.clicks || 0);
         const ctr = parseFloat(insight.ctr || 0);
         const cpc = parseFloat(insight.cpc || 0);
-        // const actions = countActions(insight.actions); // Generic logic replaced by specific columns
 
-        // Parse Specific Actions - Expanding search terms
-        // 'onsite_conversion.messaging_conversation_started_7d' is standard, but sometimes it's under other keys depending on attribution window
-        const msgs = getActionValue(insight.actions, [
-            'onsite_conversion.messaging_conversation_started_7d',
-            'messaging_conversation_started_7d',
-            'onsite_conversion.messaging_conversation_started_28d',
-            'contact_total',
-            'leads' // sometimes messaging campaigns track as leads
-        ]);
-
+        const msgs = getActionValue(insight.actions, msgActionTypes);
         const visits = getActionValue(insight.actions, ['instagram_profile_visits']);
 
-        // Custo por Resultado (Total Gasto / Mensagens) -- Priorizando Mensagens como "Resultado" principal conforme pedido
-        const finalResult = msgs > 0 ? msgs : (clicks > 0 ? clicks : 0); // Fallback to clicks if no msgs
+        // Custo por Resultado (Individual Campanha)
+        const finalResult = msgs > 0 ? msgs : (clicks > 0 ? clicks : 0);
         const cpr = finalResult > 0 ? (spend / finalResult) : 0;
 
         return {
@@ -205,16 +216,6 @@ async function fetchMetaAdsData() {
         };
     });
 
-    // Calcular Totais do Overview (Recalculando base nas campanhas para consistência de dados filtrados)
-    const totalMsgs = campaigns.reduce((acc, curr) => acc + curr.msgs, 0);
-    // Para likes (Followers), vamos somar os dados diários já que não temos overviewJson
-    const totalLikes = dailyData.reduce((acc, day) => {
-        return acc + getActionValue(day.actions || [], ['like']);
-    }, 0);
-
-    // Custo por Like
-    const costPerLike = totalLikes > 0 ? (totalSpend / totalLikes) : 0;
-
     return {
         overview: {
             spend: totalSpend,
@@ -224,7 +225,6 @@ async function fetchMetaAdsData() {
             msgs: totalMsgs,
             likes: totalLikes,
             costPerLike: costPerLike,
-            // Hardcoded list for now since we can't easily discover them without IDs
             igAccounts: ['kihap.martialarts', 'kihap.florianopolis', 'kihap.dourados']
         },
         charts: {
