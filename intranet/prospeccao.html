@@ -1083,7 +1083,14 @@
                 const searchableName = p.responsavel || p.empresa || '';
                 const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
                 const matchPriority = !priority || p.prioridade.toString() === priority;
-                const matchTag = !tag || (p.tags && p.tags.includes(tag));
+
+                let matchTag = true;
+                if (tag === 'Novo') {
+                    matchTag = p.unread === true;
+                } else if (tag) {
+                    matchTag = p.tags && p.tags.includes(tag);
+                }
+
                 const matchUnidade = !unidade || p.unidade === unidade;
                 return matchSearch && matchPriority && matchTag && matchUnidade;
             });
@@ -1884,6 +1891,13 @@
         // --- TAGS UTILITY ---
         function populateTags() {
             const tagFilter = document.getElementById('tagFilter');
+
+            // Add "Novo" (Unread) option manually
+            const novoOption = document.createElement('option');
+            novoOption.value = 'Novo';
+            novoOption.textContent = 'Novo (Não lido)';
+            tagFilter.appendChild(novoOption);
+
             TAGS.forEach(tag => {
                 const option = document.createElement('option');
                 option.value = tag;
