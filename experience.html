@@ -1,180 +1,158 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
-    <title>Kihap Experience - Kihap Martial Arts</title>
+    <title>Kihap - Experience</title>
 
-    <link rel="preload" href="https://images.unsplash.com/photo-1517433456452-f9633a875f6f?q=80&w=1470&auto=format&fit=crop" as="image">
-    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Swiper.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
 
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .highlight-animated {
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-animated::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            /* Adjust vertical position */
+            left: 0;
+            height: 0.4em;
+            /* Thickness of the highlight */
+            width: 100%;
+            background: rgba(252, 211, 77, 0.6);
+            /* Tailwind yellow-400 with opacity */
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .highlight-animated.is-visible::after {
+            transform: scaleX(1);
+        }
+    </style>
 </head>
-<body class="antialiased">
+
+<body class="antialiased bg-gray-900 text-gray-200">
 
     <!-- Header -->
     <div id="header-container"></div>
 
-    <!-- Hero Section -->
     <main>
-        <section class="relative h-screen flex items-center justify-start text-left text-white hero-section" style="background-image: url('https://kihap.com.br/wp-content/uploads/2022/06/kihap-familia-1.jpg');">
-            <div class="absolute inset-0 bg-black/70"></div>
-            <div class="relative z-10 px-4 md:px-24">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-wide font-title">
-                    Kihap Experience <br> 9ª Edição
+        <!-- Hero Section -->
+        <section
+            class="relative h-screen flex items-center justify-center text-center text-white hero-faixa-preta overflow-hidden">
+            <!-- Video Background -->
+            <div class="absolute inset-0 w-full h-full">
+                <iframe class="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] pointer-events-none"
+                    style="min-width: 100vw; min-height: 100vh; transform: translate(-50%, -50%);"
+                    src="https://www.youtube.com/embed/TB37bnQntOI?autoplay=1&mute=1&loop=1&playlist=TB37bnQntOI&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+                    frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
+                </iframe>
+            </div>
+            <div class="absolute inset-0 bg-black/60"></div>
+            <div class="relative z-10 px-4">
+                <h1 class="text-4xl md:text-6xl font-black uppercase font-title mb-8">
+                    Kihap Experience
                 </h1>
-                <p class="mt-6 text-lg md:text-xl max-w-2xl text-gray-300">
-                    Uma imersão completa no universo das Artes Marciais com competições, seminários, apresentações e muito mais. Aberto a alunos, familiares e ao público!
-                </p>
-                <a href="#cta" class="mt-10 inline-block btn-gradient text-black font-bold py-3 px-6 rounded-lg text-base uppercase tracking-wider">
-                    Garanta sua Vaga
+                <p class="mb-6 text-xl text-yellow-100">17 de Maio • Florianópolis</p>
+                <a href="https://www.kihap.com.br/produto.html?id=lSTsI4TF2mz84su6LHXt"
+                    class="inline-block bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition text-lg">
+                    Garanta sua inscrição
                 </a>
             </div>
         </section>
 
-        <!-- About the Event Section -->
-        <section id="sobre" class="py-20">
-            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="section-title uppercase font-title">O que é o <br><span class="text-yellow-500">Kihap Experience?</span></h2>
-                    <p class="mt-4 text-gray-400 text-lg">
-                        O KIHAP Experience é um tradicional evento das nossas escolas que já está na sua 9ª Edição! Nesse evento, os alunos de todas as idades (e familiares) terão uma imersão completa no universo das Artes Marciais! Competições, seminários (aulas especiais), além de apresentações e competições de faixas pretas aberto ao público!
-                    </p>
-                    <p class="mt-4 text-gray-400 text-lg">
-                        É uma oportunidade única para aprender, competir e se conectar com a comunidade Kihap em um ambiente de energia e respeito mútuo.
-                    </p>
-                </div>
-                <div class="aspect-video">
-                    <img src="https://kihap.com.br/wp-content/uploads/2021/12/kihap-adolescentes-e-adultos.jpg" alt="Alunos em evento de artes marciais" class="w-full h-full object-cover rounded-lg shadow-2xl">
-                </div>
-            </div>
-        </section>
 
-        <!-- Date and Location Section -->
-        <section id="local" class="py-20 bg-gray-900">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title">Data e <span class="text-yellow-500">Local</span></h2>
-                <p class="mt-4 text-2xl font-bold text-white">Sábado, 23 de Novembro de 2025</p>
-                <p class="mt-2 text-lg text-gray-400">Ginásio de Esportes Central, Florianópolis/SC</p>
-                <div class="mt-8">
-                    <a href="#" class="inline-block bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition">
-                        Ver no Google Maps
-                    </a>
+
+        <!-- About the Exam Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-10">O que é o Kihap Experience</h2>
+                <div class="max-w-3xl mx-auto">
+                    <p class="text-gray-300 text-lg mb-4">
+                        O Kihap Experience é um evento único que reúne toda a comunidade Kihap para um dia de
+                        aprendizado, superação e celebração. É uma experiência imersiva com workshops, treinos especiais
+                        e atividades exclusivas para todas as idades.
+                    </p>
+                    <p class="text-gray-300 text-lg">
+                        Prepare-se para um dia inesquecível, repleto de energia, desafios e a oportunidade de
+                        fortalecer os laços com a família Kihap. Venha viver essa experiência conosco!
+                    </p>
                 </div>
             </div>
         </section>
 
         <!-- Schedule Section -->
-        <section id="cronograma" class="py-20">
+        <section class="bg-gray-800 py-16">
             <div class="container mx-auto px-6">
-                <h2 class="section-title uppercase font-title text-center">Cronograma do <span class="text-yellow-500">Evento</span></h2>
-                <div class="timeline mt-12">
-                    <!-- Schedule Item -->
-                    <div class="timeline-container left">
-                        <div class="timeline-content">
-                            <h3 class="text-xl font-bold text-yellow-500">08:00 - 09:00</h3>
-                            <h4 class="text-2xl font-title mt-1">Credenciamento e Abertura</h4>
-                            <p class="text-gray-400 mt-2">Recepção dos atletas e início oficial do evento.</p>
-                        </div>
-                    </div>
-                    <!-- Schedule Item -->
-                    <div class="timeline-container right">
-                        <div class="timeline-content">
-                            <h3 class="text-xl font-bold text-yellow-500">09:00 - 12:00</h3>
-                            <h4 class="text-2xl font-title mt-1">Competições Infantis</h4>
-                            <p class="text-gray-400 mt-2">Categorias Baby Littles, Littles e Kids.</p>
-                        </div>
-                    </div>
-                    <!-- Schedule Item -->
-                    <div class="timeline-container left">
-                        <div class="timeline-content">
-                            <h3 class="text-xl font-bold text-yellow-500">12:00 - 13:30</h3>
-                            <h4 class="text-2xl font-title mt-1">Pausa e Apresentações</h4>
-                            <p class="text-gray-400 mt-2">Almoço e demonstrações da equipe de faixas pretas.</p>
-                        </div>
-                    </div>
-                    <!-- Schedule Item -->
-                    <div class="timeline-container right">
-                        <div class="timeline-content">
-                            <h3 class="text-xl font-bold text-yellow-500">13:30 - 16:00</h3>
-                            <h4 class="text-2xl font-title mt-1">Seminários Especiais</h4>
-                            <p class="text-gray-400 mt-2">Aulas com mestres convidados sobre defesa pessoal e técnicas avançadas.</p>
-                        </div>
-                    </div>
-                    <!-- Schedule Item -->
-                    <div class="timeline-container left">
-                        <div class="timeline-content">
-                            <h3 class="text-xl font-bold text-yellow-500">16:00 - 18:00</h3>
-                            <h4 class="text-2xl font-title mt-1">Competições Adulto e Premiação</h4>
-                            <p class="text-gray-400 mt-2">Finais das categorias e cerimônia de encerramento.</p>
-                        </div>
-                    </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Data e Local</h2>
+
+                <div class="max-w-3xl mx-auto text-center">
+                    <h3 class="text-4xl font-bold text-yellow-500 uppercase tracking-widest mb-6">17 de Maio</h3>
+                    <p class="text-gray-300 text-2xl mb-4"><strong>Local:</strong> Florianópolis</p>
+                    <p class="text-gray-400 text-lg">Mais informações serão divulgadas em breve.</p>
                 </div>
             </div>
         </section>
 
-        <!-- Videos Section -->
-        <section id="videos" class="py-20 bg-gray-900">
+        <!-- Video Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-10">Confira o último Experience</h2>
+                <div class="relative w-full max-w-6xl mx-auto" style="padding-bottom: 56.25%;">
+                    <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                        src="https://www.youtube.com/embed/D3DK_zv8lf8" title="YouTube video player" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="bg-yellow-500 py-16 text-center">
             <div class="container mx-auto px-6">
-                <h2 class="section-title uppercase font-title text-center">Edições <span class="text-yellow-500">Anteriores</span></h2>
-                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="aspect-video">
-                        <iframe src="https://www.youtube.com/embed/lN8CSjfbIiM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full rounded-lg shadow-2xl"></iframe>
-                    </div>
-                    <div class="aspect-video">
-                        <iframe src="https://www.youtube.com/embed/ttHQfiRZnQU" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full rounded-lg shadow-2xl"></iframe>
-                    </div>
-                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-black mb-6">Pronto para Viver essa Experiência?</h2>
+                <p class="text-gray-800 text-lg mb-8 max-w-2xl mx-auto">
+                    Garanta seu lugar neste evento especial. As vagas são limitadas.
+                </p>
+                <a href="https://www.kihap.com.br/produto.html?id=lSTsI4TF2mz84su6LHXt"
+                    class="inline-block bg-gray-900 text-white font-bold py-4 px-10 rounded-lg hover:bg-black transition text-xl">
+                    Inscreva-se agora
+                </a>
             </div>
         </section>
 
-        <!-- Sponsors Section -->
-        <section id="patrocinadores" class="py-20">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title">Nossos <span class="text-yellow-500">Patrocinadores</span></h2>
-                <p class="mt-4 max-w-2xl mx-auto text-gray-400">Agradecemos aos nossos parceiros por tornarem este evento possível.</p>
-                <div class="mt-12 flex flex-wrap justify-center items-center gap-8 md:gap-12">
-                    <img src="https://placehold.co/150x80/333333/FFF?text=Sponsor+1" alt="Logo Patrocinador 1" class="h-16 opacity-70 hover:opacity-100 transition">
-                    <img src="https://placehold.co/150x80/333333/FFF?text=Sponsor+2" alt="Logo Patrocinador 2" class="h-16 opacity-70 hover:opacity-100 transition">
-                    <img src="https://placehold.co/150x80/333333/FFF?text=Sponsor+3" alt="Logo Patrocinador 3" class="h-16 opacity-70 hover:opacity-100 transition">
-                    <img src="https://placehold.co/150x80/333333/FFF?text=Sponsor+4" alt="Logo Patrocinador 4" class="h-16 opacity-70 hover:opacity-100 transition">
-                    <img src="https://placehold.co/150x80/333333/FFF?text=Sponsor+5" alt="Logo Patrocinador 5" class="h-16 opacity-70 hover:opacity-100 transition">
-                </div>
-            </div>
-        </section>
-
-        <!-- Final CTA Section -->
-        <section id="cta" class="py-20 bg-yellow-500 text-black">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="text-4xl md:text-5xl font-black uppercase font-title">Não Fique de Fora!</h2>
-                <p class="mt-4 text-lg max-w-2xl mx-auto">As vagas são limitadas. Inscreva-se agora e faça parte do maior evento de artes marciais da Kihap.</p>
-                <form id="lead-form" class="mt-8 max-w-lg mx-auto grid grid-cols-1 gap-4">
-                    <input type="text" id="nome" placeholder="Nome Completo" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
-                    <input type="email" id="email" placeholder="Seu melhor e-mail" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
-                    <input type="tel" id="telefone" placeholder="Telefone (WhatsApp)" class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black" required>
-                    <button type="submit" class="bg-black text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-800 transition w-full">
-                        QUERO ME INSCREVER
-                    </button>
-                </form>
-                <p id="form-status" class="mt-4 text-lg"></p>
-            </div>
-        </section>
     </main>
 
     <!-- Footer -->
     <div id="footer-container"></div>
 
-    <!-- Swiper.js JS -->
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-
     <script src="js/script.js"></script>
-    <script type="module" src="js/form-handler.js"></script>
+    <script>
+        // Intersection Observer for highlight animation
+        const highlightObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    highlightObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
 
+        const highlightElement = document.querySelector('.highlight-animated');
+        if (highlightElement) {
+            highlightObserver.observe(highlightElement);
+        }
+    </script>
 </body>
+
 </html>
