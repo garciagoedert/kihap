@@ -54,8 +54,26 @@
                 <h1 class="text-4xl md:text-6xl font-black uppercase font-title mb-8">
                     Cerimônia tradicional de Graduação
                 </h1>
-                <button data-open-modal
-                    class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition text-lg">
+                <div id="countdown-hero" class="flex justify-center gap-4 mb-6">
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="days-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Dias</div>
+                    </div>
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="hours-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Horas</div>
+                    </div>
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="minutes-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Min</div>
+                    </div>
+                </div>
+                <p id="registration-info-hero" class="mb-4 text-lg text-yellow-100">Inscrições abrem dia 17 de maio</p>
+                <button id="hero-button" data-open-modal disabled
+                    class="bg-gray-500 text-gray-300 font-bold py-3 px-8 rounded-lg cursor-not-allowed text-lg">
                     Garanta sua inscrição
                 </button>
             </div>
@@ -112,7 +130,9 @@
                         <!-- Brasília Content -->
                         <div id="Brasilia" class="tab-content">
                             <div class="text-center py-12">
-                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest">Em Breve</h3>
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">14 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
                                 <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
                             </div>
                         </div>
@@ -120,7 +140,9 @@
                         <!-- Florianópolis Content -->
                         <div id="Florianopolis" class="tab-content" style="display:none">
                             <div class="text-center py-12">
-                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest">Em Breve</h3>
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">28 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
                                 <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
                             </div>
                         </div>
@@ -128,7 +150,9 @@
                         <!-- Dourados Content -->
                         <div id="Dourados" class="tab-content" style="display:none">
                             <div class="text-center py-12">
-                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest">Em Breve</h3>
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">28 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
                                 <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
                             </div>
                         </div>
@@ -155,11 +179,27 @@
         <section class="bg-yellow-500 py-16 text-center">
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl md:text-4xl font-bold text-black mb-6">Pronto para Celebrar Conosco?</h2>
-                <p class="text-gray-800 text-lg mb-8 max-w-2xl mx-auto">
+                <p class="text-gray-800 text-lg mb-4 max-w-2xl mx-auto">
                     Garanta seu lugar nesta noite especial. Os ingressos são limitados.
                 </p>
-                <button data-open-modal
-                    class="bg-gray-900 text-white font-bold py-4 px-10 rounded-lg hover:bg-black transition text-xl">
+                <div id="countdown-cta" class="flex justify-center gap-4 mb-6">
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="days-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Dias</div>
+                    </div>
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="hours-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Horas</div>
+                    </div>
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="minutes-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Min</div>
+                    </div>
+                </div>
+                <p id="registration-info-cta" class="mb-6 text-lg text-gray-800 font-semibold">Inscrições abrem dia 17
+                    de maio</p>
+                <button id="cta-button" data-open-modal disabled
+                    class="bg-gray-500 text-gray-300 font-bold py-4 px-10 rounded-lg cursor-not-allowed text-xl">
                     Inscreva-se agora
                 </button>
             </div>
@@ -249,6 +289,61 @@
         if (highlightElement) {
             highlightObserver.observe(highlightElement);
         }
+
+        // Registration countdown timer
+        const registrationDate = new Date('2026-05-17T00:00:00-03:00');
+        const heroButton = document.getElementById('hero-button');
+        const ctaButton = document.getElementById('cta-button');
+        const countdownHero = document.getElementById('countdown-hero');
+        const countdownCta = document.getElementById('countdown-cta');
+        const infoHero = document.getElementById('registration-info-hero');
+        const infoCta = document.getElementById('registration-info-cta');
+
+        // Individual countdown elements
+        const daysHero = document.getElementById('days-hero');
+        const hoursHero = document.getElementById('hours-hero');
+        const minutesHero = document.getElementById('minutes-hero');
+        const daysCta = document.getElementById('days-cta');
+        const hoursCta = document.getElementById('hours-cta');
+        const minutesCta = document.getElementById('minutes-cta');
+
+        function updateCountdown() {
+            const now = new Date();
+            const diff = registrationDate - now;
+
+            if (diff <= 0) {
+                // Enable buttons
+                heroButton.disabled = false;
+                heroButton.className = 'bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition text-lg';
+                ctaButton.disabled = false;
+                ctaButton.className = 'bg-gray-900 text-white font-bold py-4 px-10 rounded-lg hover:bg-black transition text-xl';
+
+                // Hide countdown and info
+                countdownHero.style.display = 'none';
+                countdownCta.style.display = 'none';
+                infoHero.style.display = 'none';
+                infoCta.style.display = 'none';
+
+                return;
+            }
+
+            // Calculate time remaining
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            // Update individual elements
+            daysHero.textContent = days;
+            hoursHero.textContent = hours;
+            minutesHero.textContent = minutes;
+            daysCta.textContent = days;
+            hoursCta.textContent = hours;
+            minutesCta.textContent = minutes;
+        }
+
+        // Update countdown immediately and then every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
     </script>
 </body>
 
