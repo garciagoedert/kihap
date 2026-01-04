@@ -28,7 +28,51 @@
     <!-- Hero Section -->
     <main>
         <section class="relative h-screen flex items-center justify-start text-left text-white hero-section">
+            <!-- Video Background -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div id="hero-video-wrapper"
+                    class="absolute inset-0 w-full h-full opacity-0 transition-opacity duration-1000">
+                    <iframe id="hero-video"
+                        class="absolute top-1/2 left-1/2 w-[300%] h-[300%] -translate-x-1/2 -translate-y-1/2"
+                        src="https://www.youtube.com/embed/TB37bnQntOI?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=TB37bnQntOI&controls=0&showinfo=0&rel=0"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
             <div class="absolute inset-0 bg-black/70"></div>
+
+            <!-- YouTube API for Background Video Handling -->
+            <script>
+                // Load YouTube IFrame API
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                var player;
+                function onYouTubeIframeAPIReady() {
+                    player = new YT.Player('hero-video', {
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                }
+
+                function onPlayerReady(event) {
+                    event.target.mute();
+                    event.target.playVideo();
+                }
+
+                function onPlayerStateChange(event) {
+                    // If playing (1), fade in the video wrapper
+                    if (event.data == YT.PlayerState.PLAYING) {
+                        document.getElementById('hero-video-wrapper').classList.remove('opacity-0');
+                    }
+                }
+            </script>
             <div class="relative z-10 px-4 md:px-24">
                 <h1
                     class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-wide font-title">
@@ -368,7 +412,8 @@
             <div class="container mx-auto px-6 text-center">
                 <h2 class="text-4xl md:text-5xl font-black uppercase font-title">Sua Jornada Começa Aqui.</h2>
                 <p class="mt-4 text-lg max-w-2xl mx-auto">Dê o primeiro passo e agende uma aula experimental grátis.
-                    <br>A transformação além do tatame espera por você.</p>
+                    <br>A transformação além do tatame espera por você.
+                </p>
                 <form id="lead-form" class="mt-8 max-w-lg mx-auto grid grid-cols-1 gap-4">
                     <input type="text" id="nome" placeholder="Nome Completo"
                         class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
