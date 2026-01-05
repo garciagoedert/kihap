@@ -15,6 +15,8 @@ const db = admin.firestore();
 
 exports.syncEvoToOlist = syncEvoToOlist;
 exports.syncEvoToOlistScheduled = syncEvoToOlistScheduled;
+const { getGoogleAdsData } = require('./google-ads.js');
+exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 
 exports.getStudentPurchases = functions.https.onCall(async (data, context) => {
     // Verifica autenticação
@@ -1588,10 +1590,26 @@ async function notifyManagerOfEnrollment(saleId, saleData) {
             return;
         }
 
-        const message = `🚀 Nova matrícula realizada via Bot!\n\n👤 Aluno: ${saleData.userName}\n📍 Unidade: ${unitId.toUpperCase()}\n📦 Produto: ${saleData.productName}\n💰 Valor: R$ ${(saleData.amountTotal / 100).toFixed(2)}`;
+        // Fetch WhatsApp Config to check for enrollment products
+        const config = await getWhatsAppConfig();
+        const enrollmentIds = [
+            config.enrollment_product_id_brasilia,
+            config.enrollment_product_id_floripa,
+            config.enrollment_product_id_dourados
+        ].filter(id => id);
+
+        let message;
+
+        if (enrollmentIds.includes(saleData.productId)) {
+            // É uma matrícula
+            message = `🚀 Nova matrícula realizada via Bot!\n\n👤 Aluno: ${saleData.userName}\n📍 Unidade: ${unitId.toUpperCase()}\n📦 Produto: ${saleData.productName}\n💰 Valor: R$ ${(saleData.amountTotal / 100).toFixed(2)}`;
+        } else {
+            // É uma compra de produto (não matrícula)
+            message = `🛒 Nova compra realizada via Bot!\n\n👤 Aluno: ${saleData.userName}\n📍 Unidade: ${unitId.toUpperCase()}\n📦 Produto: ${saleData.productName}\n💰 Valor: R$ ${(saleData.amountTotal / 100).toFixed(2)}`;
+        }
 
         await sendMessageHelper(managerPhone, message);
-        console.log(`[notifyManagerOfEnrollment] Notificação enviada para gerente da unidade ${unitId} (${managerPhone}).`);
+        console.log(`[notifyManagerOfEnrollment] Notificação enviada para gerente da unidade ${unitId} (${managerPhone}). Tipo: ${enrollmentIds.includes(saleData.productId) ? 'Matrícula' : 'Compra'}`);
 
     } catch (error) {
         console.error(`[notifyManagerOfEnrollment] Erro ao notificar gerente: ${error.message}`);

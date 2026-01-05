@@ -3,6 +3,18 @@ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/
 import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
+// Função helper para retornar classes CSS baseadas no status
+function getStatusClasses(status) {
+    const statusMap = {
+        'Pendente': 'bg-yellow-900 text-yellow-300',
+        'Em produção': 'bg-blue-900 text-blue-300',
+        'Enviado': 'bg-purple-900 text-purple-300',
+        'Entregue': 'bg-green-900 text-green-300',
+        'Cancelado': 'bg-red-900 text-red-300'
+    };
+    return statusMap[status] || 'bg-gray-900 text-gray-300';
+}
+
 const faixas = [
     "Branca Recomendada", "Branca Decidida", "Laranja Recomendada", "Laranja Decidida",
     "Amarela Recomendada", "Amarela Decidida", "Camuflada Recomendada", "Camuflada Decidida",
@@ -24,8 +36,8 @@ let currentEditingDobokPedidoId = null;
 // --- Funções do Modal de Novo Pedido ---
 
 function openModal() {
-    document.getElementById('pedido-modal-title').textContent = 'Novo Pedido de Faixas';
-    currentEditingPedidoId = null;
+    // NÃO resetar currentEditingPedidoId aqui - ele é definido pela função handleEditPedido
+    // Se for um novo pedido, será null por padrão ou resetado no botão "Novo Pedido"
     const modal = document.getElementById('pedido-modal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -39,9 +51,12 @@ function closeModal() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
+    // Resetar o estado ao fechar o modal
+    currentEditingPedidoId = null;
     itensPedido = [];
     renderItensPedido();
     document.getElementById('unidade-select').value = '';
+    document.getElementById('status-select').value = 'Pendente';
 }
 
 async function fetchEvoUnits() {
@@ -190,14 +205,18 @@ async function handleSubmitPedido() {
         return;
     }
 
+    const statusSelecionado = document.getElementById('status-select').value;
+    console.log('Status selecionado para salvar:', statusSelecionado);
+
     try {
         if (currentEditingPedidoId) {
             // Lógica de Edição
             const pedidoRef = doc(db, "pedidosFaixas", currentEditingPedidoId);
+            console.log('Atualizando pedido com status:', statusSelecionado);
             await updateDoc(pedidoRef, {
                 unidade: unidadeSelecionada,
                 itens: itensPedido,
-                status: document.getElementById('status-select').value, // Assume que o status pode ser editado
+                status: statusSelecionado,
                 lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                 lastUpdatedAt: serverTimestamp()
             });
@@ -288,7 +307,7 @@ async function loadPedidos() {
                     <td class="p-4">${pedido.unidade}</td>
                     <td class="p-4">${itensResumo}</td>
                     <td class="p-4">
-                        <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
+                        <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                     </td>
                 </tr>
             `;
@@ -382,9 +401,16 @@ async function handleEditPedido(event) {
 
         document.getElementById('pedido-modal-title').textContent = 'Editar Pedido';
         document.getElementById('unidade-select').value = pedido.unidade;
+
         // Adicionar campo de status no modal de edição
         const statusSelect = document.getElementById('status-select');
-        if (statusSelect) statusSelect.value = pedido.status;
+        console.log('Status atual do pedido:', pedido.status);
+        if (statusSelect) {
+            statusSelect.value = pedido.status;
+            console.log('Status select value após set:', statusSelect.value);
+        } else {
+            console.error('Elemento status-select não encontrado!');
+        }
 
         itensPedido = [...pedido.itens];
         renderItensPedido();
@@ -474,13 +500,24 @@ async function exportPedidosPendentes() {
 
 // --- Setup da Página ---
 
+function openNewPedidoModal() {
+    // Resetar para modo de criação
+    currentEditingPedidoId = null;
+    itensPedido = [];
+    document.getElementById('pedido-modal-title').textContent = 'Novo Pedido de Faixas';
+    document.getElementById('unidade-select').value = '';
+    document.getElementById('status-select').value = 'Pendente';
+    renderItensPedido();
+    openModal();
+}
+
 export function setupPedidosPage() {
     loadPedidos();
     populateSelects();
     loadUnidades();
 
     // Listeners do Modal de Novo/Edição de Pedido
-    document.getElementById('open-pedido-modal-btn')?.addEventListener('click', openModal);
+    document.getElementById('open-pedido-modal-btn')?.addEventListener('click', openNewPedidoModal);
     document.getElementById('close-modal-btn')?.addEventListener('click', closeModal);
     document.getElementById('add-item-form')?.addEventListener('submit', handleAddItem);
     document.getElementById('itens-pedido-container')?.addEventListener('click', handleRemoveItem);
@@ -621,7 +658,7 @@ export function setupPedidosPage() {
                         <td class="p-4">${pedido.aluno}</td>
                         <td class="p-4">${pedido.faixa}</td>
                         <td class="p-4">
-                            <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
+                            <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                         </td>
                     </tr>
                 `;
@@ -930,7 +967,7 @@ export function setupPedidosPage() {
                         <td class="p-4">${pedido.aluno || 'N/A'} ${faixaPretaIndicator}</td>
                         <td class="p-4">${pedido.tamanho}${colarinhoInfo}</td>
                         <td class="p-4">
-                            <span class="px-2 py-1 text-sm rounded-full bg-yellow-900 text-yellow-300">${pedido.status}</span>
+                            <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                         </td>
                     </tr>
                 `;

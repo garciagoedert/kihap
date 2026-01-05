@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "firebase-admin": "^11.5.0",
     "firebase-functions": "^5.0.0",
+    "google-ads-api": "^21.0.1",
     "nodemailer": "^6.9.14",
     "qrcode": "^1.5.3",
     "stripe": "^19.1.0"
