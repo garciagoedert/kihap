@@ -1694,6 +1694,63 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
             console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"`);
             console.log(`[whapiWebhook] Config loaded. Extra Questions: ${config.extra_questions?.length || 0}`);
 
+            // CHECK IF BOT IS ENABLED
+            if (config.bot_enabled === false) {
+                console.log(`[whapiWebhook] BOT DISABLED via config. Logging message but skipping auto-reply for ${cleanPhone}.`);
+
+                // Still log the incoming message to CRM
+                const logEntry = {
+                    author: cleanPhone,
+                    description: messageText,
+                    timestamp: new Date(),
+                    type: 'whatsapp-received', // Standard received type
+                    metadata: {
+                        whapi_message_id: message.id,
+                        received_at: timestamp.toISOString(),
+                        bot_disabled: true
+                    }
+                };
+
+                // Helper to update doc with log
+                const updateDocLog = async (collectionName, docId) => {
+                    await db.collection(collectionName).doc(docId).update({
+                        contactLog: admin.firestore.FieldValue.arrayUnion(logEntry),
+                        unread: true // Mark as unread so human sees it
+                    });
+                };
+
+                // Find and update or create
+                const prospectsSnapshot = await db.collection('prospects').where('telefone', '==', cleanPhone).limit(1).get();
+                const leadsSnapshot = await db.collection('leads').where('telefone', '==', cleanPhone).limit(1).get();
+
+                if (!prospectsSnapshot.empty) {
+                    await updateDocLog('prospects', prospectsSnapshot.docs[0].id);
+                } else if (!leadsSnapshot.empty) {
+                    await updateDocLog('leads', leadsSnapshot.docs[0].id);
+                } else {
+                    // Create new prospect even if bot disabled, so we don't lose the lead
+                    const newProspect = {
+                        responsavel: prospectTitle,
+                        telefone: cleanPhone,
+                        status: 'Novo',
+                        prioridade: 3,
+                        origemLead: 'WhatsApp Inbound (Bot Off)',
+                        observacoes: `Mensagem recebida com bot desligado: ${messageText}`,
+                        ticketEstimado: 0,
+                        unidade: '',
+                        tags: ['Bot Desligado'],
+                        contactLog: [logEntry],
+                        unread: true,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        createdBy: 'webhook_bot_off',
+                        type: 'prospect'
+                    };
+                    await db.collection('prospects').add(newProspect);
+                }
+
+                continue; // Skip the rest of the loop for this message
+            }
+
             // DEBUG / RESET COMMAND
             if (messageText.trim().toLowerCase() === '/reset') {
                 console.log(`[whapiWebhook] RESET command received from ${cleanPhone}`);

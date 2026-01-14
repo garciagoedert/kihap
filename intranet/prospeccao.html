@@ -180,6 +180,22 @@
             <form id="configForm" class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
                 <p class="text-sm text-gray-400 mb-4">Edite as mensagens automáticas enviadas pelo robô.</p>
 
+                <div
+                    class="form-group mb-4 flex items-center justify-between bg-gray-700/50 p-3 rounded-lg border border-gray-600">
+                    <div>
+                        <label class="block text-sm font-bold text-white mb-1">Status do Robô</label>
+                        <p class="text-xs text-gray-400">Quando desligado, o robô não responderá automaticamente, mas as
+                            mensagens continuarão sendo registradas.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="cfg_bot_enabled" class="sr-only peer" checked>
+                        <div
+                            class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-300 peer-checked:text-green-400">Ativo</span>
+                    </label>
+                </div>
+
                 <div class="form-group">
                     <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Solicitação de Nome</label>
                     <textarea id="cfg_ask_name" rows="2"
@@ -2104,6 +2120,7 @@
                     data = { ...defaults, ...docSnap.data() };
                 }
 
+                document.getElementById('cfg_bot_enabled').checked = (data.bot_enabled !== undefined) ? data.bot_enabled : true;
                 document.getElementById('cfg_welcome').value = data.welcome_message;
                 document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
                 document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
@@ -2137,6 +2154,7 @@
             const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
 
             const updates = {
+                bot_enabled: document.getElementById('cfg_bot_enabled').checked,
                 welcome_message: document.getElementById('cfg_welcome').value,
                 human_handoff_message: document.getElementById('cfg_human_handoff').value,
                 human_handoff_message: document.getElementById('cfg_human_handoff').value,
