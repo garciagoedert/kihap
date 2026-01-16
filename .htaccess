@@ -5,6 +5,9 @@ RewriteCond %{THE_REQUEST} /([^.]+)\.html [NC]
 RewriteRule ^ /%1 [NC,L,R]
 
 # 2. To treat the URL without .html as the file with .html
+# Special case: prioritize experience.html over the experience/ directory
+RewriteRule ^experience/?$ experience.html [NC,L]
+
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.html -f
 RewriteRule ^(.*)$ $1.html [NC,L]
