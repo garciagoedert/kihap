@@ -1,8 +1,8 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const isSubPage = window.location.pathname.includes('/programas/') || 
-                      window.location.pathname.includes('/unidades/') || 
-                      window.location.pathname.includes('/desenvolvimento/') ||
-                      window.location.pathname.includes('/members/');
+document.addEventListener("DOMContentLoaded", function () {
+    const isSubPage = window.location.pathname.includes('/programas/') ||
+        window.location.pathname.includes('/unidades/') ||
+        window.location.pathname.includes('/desenvolvimento/') ||
+        window.location.pathname.includes('/members/');
     const componentBasePath = isSubPage ? '../components/' : 'components/';
     const assetBasePath = isSubPage ? '../' : './';
 
@@ -22,9 +22,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     // Adjust paths inside the loaded HTML
                     const adjustedData = processedData.replace(/((href|src)=["'])(?!(https?:\/\/|\/))/g, `$1${assetBasePath}`);
-                    
+
                     container.innerHTML = adjustedData;
-                    
+
                     if (containerId === 'header-container') {
                         // Dispara um evento para notificar que o header foi carregado
                         document.dispatchEvent(new Event('headerLoaded'));

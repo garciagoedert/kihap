@@ -12,6 +12,7 @@
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="tailwind" href="/css/tailwind.css" /> <!-- CSS SE NECESSÁRIO -->
 
     <!-- Swiper.js CSS -->
@@ -366,7 +367,8 @@
                 <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- Testimonial 1 -->
                     <div class="bg-gray-900 p-8 rounded-lg">
-                        <p class="text-gray-400 break-words">"A Kihap mudou não só o meu corpo, mas minha mente. Ganhei
+                        <p class="text-gray-400 break-words">"A Kihap mudou não só o meu corpo, mas
+                            minha mente. Ganhei
                             confiança e disciplina que levo para todas as áreas da minha vida."</p>
                         <div class="mt-4 flex items-center">
                             <img src="https://placehold.co/50x50/333333/FFF?text=J" class="w-12 h-12 rounded-full"
@@ -379,7 +381,8 @@
                     </div>
                     <!-- Testimonial 2 -->
                     <div class="bg-gray-900 p-8 rounded-lg">
-                        <p class="text-gray-400 break-words">"Meu filho era tímido e hoje é muito mais sociável e focado
+                        <p class="text-gray-400 break-words">"Meu filho era tímido e hoje é muito
+                            mais sociável e focado
                             nos estudos. Sou muito grata a toda a equipe da Kihap."</p>
                         <div class="mt-4 flex items-center">
                             <img src="https://placehold.co/50x50/333333/FFF?text=M" class="w-12 h-12 rounded-full"
@@ -392,7 +395,8 @@
                     </div>
                     <!-- Testimonial 3 -->
                     <div class="bg-gray-900 p-8 rounded-lg">
-                        <p class="text-gray-400 break-words">"Ambiente incrível, professores excelentes e uma comunidade
+                        <p class="text-gray-400 break-words">"Ambiente incrível, professores
+                            excelentes e uma comunidade
                             que te acolhe. Recomendo para todos que buscam uma mudança."</p>
                         <div class="mt-4 flex items-center">
                             <img src="https://placehold.co/50x50/333333/FFF?text=P" class="w-12 h-12 rounded-full"
@@ -481,9 +485,7 @@
     </section>
 
     <!-- Student Area CTA Section -->
-    <section class="relative py-20 bg-cover bg-center text-center text-white"
-        style="background-image: url('imgs/fxpretas.JPG');">
-        <div class="absolute inset-0 bg-black/70"></div>
+    <section class="relative py-20 bg-gradient-to-br from-gray-900 to-black text-center text-white">
         <div class="relative z-10 container mx-auto px-6">
             <h2 class="section-title uppercase font-title">Área do <span class="text-yellow-500">Aluno</span></h2>
             <p class="mt-4 max-w-2xl mx-auto text-gray-300">
@@ -538,47 +540,6 @@
             <p id="academy-form-status" class="mt-4 text-lg text-center"></p>
         </div>
     </div>
-</body>
-
-</html>
-<div id="footer-container"></div>
-
-<!-- Swiper.js JS -->
-<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-
-<script src="js/script.js"></script>
-<script type="module" src="js/form-handler.js"></script>
-
-<!-- Academy Form Modal -->
-<div id="academy-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
-    <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg relative">
-        <button id="close-academy-modal" title="Fechar modal"
-            class="absolute top-4 right-4 text-gray-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-        <h2 class="text-2xl font-bold text-center text-white mb-6 uppercase font-title">Interesse na <span
-                class="text-yellow-500">Kihap Academy</span></h2>
-        <form id="academy-lead-form" class="grid grid-cols-1 gap-4">
-            <input type="text" id="academy-nome" placeholder="Nome Completo"
-                class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required>
-            <input type="email" id="academy-email" placeholder="Seu melhor e-mail"
-                class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required>
-            <input type="tel" id="academy-telefone" placeholder="Telefone (WhatsApp)"
-                class="w-full px-6 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required>
-            <button type="submit"
-                class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition w-full">
-                ENVIAR INTERESSE
-            </button>
-        </form>
-        <p id="academy-form-status" class="mt-4 text-lg text-center"></p>
-    </div>
-</div>
 </body>
 
 </html>
