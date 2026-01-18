@@ -226,92 +226,144 @@ exports.syncEvoStudentsToCache = functions.runWith({ timeoutSeconds: 540, memory
 
     for (const currentUnitId of unitIdsToSync) {
         try {
-            functions.logger.info(`[SYNC] Unit: ${currentUnitId}`);
-            const apiClient = getEvoApiClient(currentUnitId, 'v2');
-            let unitMembers = [];
-
-            const fetchPages = async (status, showMemberships) => {
-                const TAKE = 500;
-                let page = 1;
-                let hasMore = true;
-                let accumulated = [];
-
-                while (hasMore) {
-                    functions.logger.info(`[SYNC] Fetching: Unit=${currentUnitId}, Status=${status}, Page=${page}`);
-                    const response = await apiClient.get("/members", {
-                        params: { page, take: TAKE, status, showMemberships }
-                    });
-
-                    const rawData = response.data || [];
-                    const membersArray = Array.isArray(rawData) ? rawData : (rawData.members || rawData.results || rawData.data || []);
-
-                    if (membersArray.length > 0) {
-                        accumulated = accumulated.concat(membersArray);
-                        functions.logger.info(`[SYNC]   - Received ${membersArray.length} items. Total: ${accumulated.length}`);
-                    }
-
-                    if (membersArray.length < TAKE) hasMore = false;
-                    else page++;
-                }
-                return accumulated;
-            };
-
-            // TRY WITH MEMBERSHIPS
-            try {
-                functions.logger.info(`[SYNC] Attempting with memberships...`);
-                const active = await fetchPages(1, true);
-                const inactive = await fetchPages(2, true);
-                unitMembers = active.concat(inactive);
-                functions.logger.info(`[SYNC] Success with memberships: ${unitMembers.length}`);
-            } catch (err) {
-                functions.logger.warn(`[SYNC] Failed with memberships: ${err.message}. Retrying without...`);
-                const active = await fetchPages(1, false);
-                const inactive = await fetchPages(2, false);
-                unitMembers = active.concat(inactive);
-                functions.logger.info(`[SYNC] Success without memberships: ${unitMembers.length}`);
-            }
-
-            if (unitMembers.length > 0) {
-                functions.logger.info(`[SYNC] Saving ${unitMembers.length} to Firestore...`);
-                const BATCH = 500;
-                for (let i = 0; i < unitMembers.length; i += BATCH) {
-                    const batch = db.batch();
-                    const slice = unitMembers.slice(i, i + BATCH);
-                    slice.forEach(m => {
-                        m.unitId = currentUnitId;
-                        m.totalFitCoins = Number(m.totalFitCoins || m.fitCoins || 0);
-                        m.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
-                        const ref = db.collection('evo_students').doc(String(m.idMember));
-                        batch.set(ref, m, { merge: true });
-                    });
-                    await batch.commit();
-                    functions.logger.info(`[SYNC] Batch saved.`);
-                }
-            }
-
-            await db.collection('evo_sync_status').doc(currentUnitId).set({
-                lastSync: admin.firestore.FieldValue.serverTimestamp(),
-                status: 'success',
-                totalStudents: unitMembers.length
-            });
-
+            const count = await _syncUnitData(currentUnitId);
             results.success.push(currentUnitId);
-            results.totalStudents += unitMembers.length;
-
+            results.totalStudents += count;
         } catch (unitErr) {
             functions.logger.error(`[SYNC] Fatal Error in unit ${currentUnitId}:`, unitErr.message);
             results.failed.push({ unitId: currentUnitId, error: unitErr.message });
-            await db.collection('evo_sync_status').doc(currentUnitId).set({
-                lastSync: admin.firestore.FieldValue.serverTimestamp(),
-                status: 'error',
-                errorMessage: unitErr.message
-            });
         }
     }
 
     functions.logger.info(`[SYNC_COMPLETE] Success: ${results.success.length}, Failed: ${results.failed.length}`);
     return results;
 });
+
+/**
+ * Helper interno para sincronizar uma unidade específica.
+ * Usado tanto pelo trigger manual quanto pelo agendado.
+ */
+async function _syncUnitData(currentUnitId) { // Added internal helper
+    functions.logger.info(`[SYNC] Unit: ${currentUnitId}`);
+    const apiClient = getEvoApiClient(currentUnitId, 'v2');
+    let unitMembers = [];
+
+    const fetchPages = async (status, showMemberships) => {
+        const TAKE = 500;
+        let page = 1;
+        let hasMore = true;
+        let accumulated = [];
+
+        while (hasMore) {
+            functions.logger.info(`[SYNC] Fetching: Unit=${currentUnitId}, Status=${status}, Page=${page}`);
+            const response = await apiClient.get("/members", {
+                params: { page, take: TAKE, status, showMemberships }
+            });
+
+            const rawData = response.data || [];
+            const membersArray = Array.isArray(rawData) ? rawData : (rawData.members || rawData.results || rawData.data || []);
+
+            if (membersArray.length > 0) {
+                accumulated = accumulated.concat(membersArray);
+                functions.logger.info(`[SYNC]   - Received ${membersArray.length} items. Total: ${accumulated.length}`);
+            }
+
+            if (membersArray.length < TAKE) hasMore = false;
+            else page++;
+        }
+        return accumulated;
+    };
+
+    // TRY WITH MEMBERSHIPS
+    try {
+        functions.logger.info(`[SYNC] Attempting with memberships...`);
+        const active = await fetchPages(1, true);
+        const inactive = await fetchPages(2, true);
+        unitMembers = active.concat(inactive);
+        functions.logger.info(`[SYNC] Success with memberships: ${unitMembers.length}`);
+    } catch (err) {
+        functions.logger.warn(`[SYNC] Failed with memberships: ${err.message}. Retrying without...`);
+        const active = await fetchPages(1, false);
+        const inactive = await fetchPages(2, false);
+        unitMembers = active.concat(inactive);
+        functions.logger.info(`[SYNC] Success without memberships: ${unitMembers.length}`);
+    }
+
+    if (unitMembers.length > 0) {
+        functions.logger.info(`[SYNC] Saving ${unitMembers.length} to Firestore...`);
+        // Save in batches of 500 to avoid Firestore limits
+        const BATCH_SIZE = 500;
+        let savedCount = 0;
+
+        for (let i = 0; i < unitMembers.length; i += BATCH_SIZE) {
+            const batch = db.batch();
+            const chunk = unitMembers.slice(i, i + BATCH_SIZE);
+
+            chunk.forEach(member => {
+                member.branchName = member.branchName || currentUnitId;
+                member.unitId = currentUnitId;
+
+                let totalCoins = 0;
+                if (member.hasOwnProperty('totalFitCoins')) {
+                    totalCoins = member.totalFitCoins;
+                } else if (member.hasOwnProperty('fitCoins')) {
+                    totalCoins = member.fitCoins;
+                } else if (Array.isArray(member.memberships) && member.memberships.length > 0) {
+                    totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
+                }
+                member.totalFitCoins = totalCoins;
+                member.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
+
+                const memberRef = db.collection('evo_students').doc(String(member.idMember));
+                batch.set(memberRef, member, { merge: true });
+            });
+
+            await batch.commit();
+            savedCount += chunk.length;
+            functions.logger.info(`  ✓ Unidade ${currentUnitId}: Batch salvo (${savedCount}/${unitMembers.length})`);
+        }
+    }
+
+    await db.collection('evo_sync_status').doc(currentUnitId).set({
+        lastSync: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'success',
+        totalStudents: unitMembers.length
+    });
+
+    return unitMembers.length;
+}
+
+/**
+ * Função agendada para sincronizar todos os alunos diariamente às 03:00 AM (Horário de Brasília)
+ */
+exports.scheduledEvoSync = functions.pubsub.schedule('0 3 * * *')
+    .timeZone('America/Sao_Paulo')
+    .onRun(async (context) => {
+        functions.logger.info("[SCHEDULED_SYNC] Iniciando sincronização diária de alunos...");
+
+        const unitIdsToSync = Object.keys(EVO_CREDENTIALS);
+        const results = { success: [], failed: [], totalStudents: 0 };
+
+        for (const currentUnitId of unitIdsToSync) {
+            try {
+                const count = await _syncUnitData(currentUnitId);
+                results.success.push(currentUnitId);
+                results.totalStudents += count;
+            } catch (unitErr) {
+                functions.logger.error(`[SCHEDULED_SYNC] Falha na unidade ${currentUnitId}:`, unitErr.message);
+                results.failed.push(currentUnitId);
+                // Registra erro no status
+                await db.collection('evo_sync_status').doc(currentUnitId).set({
+                    lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                    status: 'error',
+                    errorMessage: unitErr.message
+                });
+            }
+        }
+
+        functions.logger.info(`[SCHEDULED_SYNC] Finalizado. Sucesso: ${results.success.length}, Falha: ${results.failed.length}, Total Alunos: ${results.totalStudents}`);
+        return null;
+    });
 
 
 /**
@@ -1047,7 +1099,7 @@ exports.getActiveContractsCount = functions.runWith({ timeoutSeconds: 120 }).htt
 /**
  * Busca o total de entries (check-ins) de hoje (versão callable).
  */
-exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+exports.getTodaysTotalEntries = functions.runWith({ timeoutSeconds: 300, memory: '1GB' }).https.onCall(async (data, context) => {
     const { unitId } = data || {};
 
     const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
@@ -1323,11 +1375,11 @@ const _snapshotDailyEvoData = async () => {
     }
 };
 
-exports.snapshotDailyEvoData = functions.pubsub.schedule('0 23 * * *').timeZone('America/Sao_Paulo').onRun(async (context) => {
+exports.snapshotDailyEvoData = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).pubsub.schedule('0 23 * * *').timeZone('America/Sao_Paulo').onRun(async (context) => {
     await _snapshotDailyEvoData();
 });
 
-exports.triggerSnapshot = functions.https.onCall(async (data, context) => {
+exports.triggerSnapshot = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
     // Verificação de autenticação e permissão para onCall
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
