@@ -1,0 +1,306 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regra para Leads do site
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Regra para o Planificador (NOVA)
+    match /plans/{planId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção prospects
+    match /prospects/{prospectId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Estoque
+    match /stock/{stockId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Pedidos de Faixas
+    match /pedidosFaixas/{pedidoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Pedidos de Faixas Pretas
+    match /pedidosFaixasPretas/{pedidoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Pedidos de Doboks
+    match /pedidosDoboks/{pedidoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Processos
+    match /processos_articles/{articleId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Conteúdos do Tatame
+    match /tatame_conteudos/{conteudoId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Emblemas (Badges)
+    match /badges/{badgeId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Testes Físicos (alunos sem conta)
+    match /physicalTests/{testId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Regra para Análise de Unidades
+    match /analise_unidades/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Regra para Snapshots Diários do EVO
+    match /evo_daily_snapshots/{snapshotId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Apenas o backend (Cloud Functions) pode escrever
+    }
+
+    // Regra para Unidades
+    match /units/{unitId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Regra para Aulas (Grade)
+    match /classes/{classId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Permite que usuários autenticados (professores) atualizem a presença
+    }
+
+    // Regra para Modelos de Aulas Recorrentes
+    match /classTemplates/{templateId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para Instâncias de Aulas (presença)
+    match /classInstances/{instanceId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra existente para prospects
+    match /artifacts/{appId}/public/data/prospects/{prospectId} {
+      // Permite que qualquer pessoa crie um novo lead (formulário público) e leia a lista de prospects
+      allow create, read: if true;
+      // Apenas usuários autenticados podem atualizar ou deletar
+      allow update, delete: if true;
+    }
+
+    // Nova regra para tarefas
+    match /artifacts/{appId}/public/data/tasks/{taskId} {
+      // Permite que qualquer pessoa crie uma nova tarefa (demanda)
+      allow create: if true;
+      // Apenas usuários autenticados podem ler, atualizar e apagar tarefas.
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Nova regra para reuniões
+    // Permite que qualquer usuário autenticado crie, leia, atualize e apague reuniões.
+    match /artifacts/{appId}/public/data/meetings/{meetingId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Nova regra para eventos
+    // Permite que qualquer usuário autenticado crie, leia, atualize e apague eventos.
+    match /artifacts/{appId}/public/data/events/{eventId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Regra para Mensagens Rápidas
+    match /artifacts/{appId}/public/data/mensagens_rapidas/{messageId} {
+      allow create, read: if true;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Regras para Mapas Mentais
+    match /artifacts/{appId}/public/data/mind-maps/{mapId} {
+      // Permite a um usuário autenticado criar um mapa mental.
+      allow create: if request.auth != null;
+      // Permite ler, atualizar e deletar apenas se o usuário for o dono do mapa.
+      allow read, update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
+
+      // Regras para os nós dentro de um mapa mental
+      match /nodes/{nodeId} {
+        // Permite criar, ler, atualizar e deletar nós se o usuário for o dono do mapa pai.
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/mind-maps/$(mapId)).data.owner == request.auth.uid;
+      }
+
+      // Regras para as conexões dentro de um mapa mental
+      match /connections/{connectionId} {
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/mind-maps/$(mapId)).data.owner == request.auth.uid;
+      }
+    }
+
+    // Regras para Projetos
+    match /artifacts/{appId}/public/data/projects/{projectId} {
+      // Permite que qualquer usuário autenticado crie e leia projetos.
+      allow create, read: if request.auth != null;
+      // Permite atualizar e deletar apenas se o usuário for o dono do projeto.
+      allow update, delete: if request.auth != null && resource.data.owner == request.auth.uid;
+
+      // Regras para os nós dentro de um projeto
+      match /nodes/{nodeId} {
+        // Permite que usuários autenticados leiam e escrevam nos nós.
+        allow read, write: if request.auth != null;
+      }
+
+      // Regras para as conexões (links) dentro de um projeto
+      match /links/{linkId} {
+        // Permite que usuários autenticados leiam e escrevam nos links.
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // Regra para a consulta collectionGroup em 'nodes'
+    match /{path=**}/nodes/{nodeId} {
+      allow read: if request.auth != null;
+    }
+
+    // Regras para o chat
+    match /chats/{chatId} {
+      // Permite criar um chat se o usuário autenticado estiver na lista de membros do novo chat.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.members;
+      // Permite ler ou atualizar um chat se o ID do usuário estiver no ID do chat (para DMs) OU se ele for membro (para grupos).
+      allow read, update: if request.auth != null && (request.auth.uid in chatId.split('_') || request.auth.uid in resource.data.members);
+      // Permite que um membro do chat o delete.
+      allow delete: if request.auth != null && request.auth.uid in resource.data.members;
+      
+      match /messages/{messageId} {
+        allow read, create, delete: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+      }
+    }
+
+    match /users/{userId} {
+      // Permite que qualquer usuário autenticado leia perfis e liste usuários.
+      allow read: if request.auth != null;
+
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+
+      // Regra para a subcoleção de testes físicos
+      match /physicalTests/{testId} {
+        // Permite que um usuário leia/escreva seus próprios testes.
+        // Permite que um admin leia/escreva os testes de qualquer usuário.
+        allow read, write: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      }
+    }
+
+    // Regras para o Feed de Conteúdo
+    match /feed/{postId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && (request.auth.token.isAdmin == true || request.auth.token.isInstructor == true);
+    }
+
+    // Regra para a coleção de Inscrições de Faixa Preta
+    match /inscricoesFaixaPreta/{inscriptionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null; // Qualquer usuário logado pode criar (venda manual)
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true; // Apenas admins podem modificar ou apagar
+    }
+
+    // Regra para a coleção de Produtos da Loja
+    match /products/{productId} {
+      allow read: if resource.data.acessoPublico == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Banners da Loja
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Regra para a coleção de Cupons da Loja
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // --- REGRAS PARA O SISTEMA DE CURSOS ---
+
+    // As regras abaixo são temporárias para permitir o desenvolvimento.
+    // TODO: Implementar autenticação do Firebase e restringir o acesso de escrita
+    //       apenas para administradores (ex: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true).
+
+    // Permite a leitura pública das configurações de whitelabel
+    match /settings/whitelabel {
+      allow read: if true;
+      allow write: if request.auth != null; // Apenas usuários logados podem escrever (temporário)
+    }
+
+    // Permite a leitura pública de cursos, módulos e aulas
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Apenas usuários logados podem escrever (temporário)
+
+      match /modules/{moduleId} {
+        allow read: if true;
+        allow write: if request.auth != null; // Apenas usuários logados podem escrever (temporário)
+
+        match /lessons/{lessonId} {
+          allow read: if true;
+          allow write: if request.auth != null; // Apenas usuários logados podem escrever (temporário)
+        }
+      }
+    }
+
+    // Regra para Certificados
+    match /certificates/{certificateId} {
+      allow read: if true; // Público para validação
+      allow write: if request.auth != null; // Apenas usuários logados podem gerar
+    }
+
+    // Regra para Configurações (ex: WhatsApp Auto-Reply)
+    match /config/{configId} {
+      allow read: if request.auth != null; // Frontend pode ler (ou webhook via admin SDK ignora regras)
+      allow write: if request.auth != null; // Admins/Staff podem editar
+    }
+
+    // Regra para Logs de Login
+    match /login_logs/{logId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null; // Restringir para admins em produção se necessário
+    }
+
+    // Regra para Cache de Alunos do EVO (Individual Docs)
+    match /evo_students/{studentId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Apenas Cloud Functions
+    }
+
+    // Regra para Status de Sincronização do EVO
+    match /evo_sync_status/{unitId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Apenas Cloud Functions
+    }
+
+    // Regra legada para Cache de Alunos do EVO (Bulk Docs)
+    match /evo_students_cache/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // Regras para Newsletter
+    match /subscribers/{subscriberId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /campaigns/{campaignId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

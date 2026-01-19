@@ -390,6 +390,15 @@ async function loadComponents(pageSpecificSetup) {
             adminLink.classList.remove('hidden');
         }
 
+        const currentUserStr = sessionStorage.getItem('currentUser');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
+        const isInstructor = currentUser.isInstructor === true;
+
+        const planificadorLink = document.getElementById('planificador-link');
+        if ((isAdmin || isInstructor) && planificadorLink) {
+            planificadorLink.classList.remove('hidden');
+        }
+
         // Controla a visibilidade do botão "Novo Prospect"
         const addProspectBtn = document.getElementById('addProspectBtnHeader');
         if (addProspectBtn) {
@@ -411,7 +420,8 @@ async function loadComponents(pageSpecificSetup) {
                 'checkin.html',
                 'suporte.html',
                 'grade.html',
-                'relatorios.html'
+                'relatorios.html',
+                'planificador.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');

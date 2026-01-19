@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador - Intranet Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="log.css">
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Planificador de Aulas</h1>
+                    <button id="add-plan-btn"
+                        class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Novo Plano
+                    </button>
+                </div>
+
+                <!-- Lista de Planos -->
+                <div id="plans-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Cards de planos serão inseridos aqui via JS -->
+                    <div class="col-span-full text-center text-gray-500 py-10">
+                        <i class="fas fa-spinner fa-spin text-2xl"></i> Carregando planos...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Edição/Criação -->
+    <div id="plan-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
+            <button id="close-plan-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-white">Novo Plano de Aula</h2>
+
+            <form id="plan-form" class="flex-1 overflow-y-auto pr-2 space-y-4">
+                <input type="hidden" id="plan-id">
+
+                <!-- Título -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Título do Plano</label>
+                    <input type="text" id="plan-title" required
+                        class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                        placeholder="Ex: Aula Adulto A - Terça-feira">
+                </div>
+
+                <!-- Conteúdo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Conteúdo da Aula</label>
+                    <textarea id="plan-content" required rows="12"
+                        class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none font-mono"
+                        placeholder="AQUECIMENTO E MOBILIDADE&#10;..."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Dica: Use quebras de linha para organizar os tópicos como no
+                        exemplo.</p>
+                </div>
+
+                <!-- Upload de Mídia -->
+                <div class="border-t border-gray-700 pt-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Mídia (Arquivos e Vídeos)</label>
+
+                    <!-- Youtube Link Input -->
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="youtube-link"
+                            class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Cole o link do YouTube aqui">
+                        <button type="button" id="add-youtube-btn"
+                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fab fa-youtube mr-2"></i> Adicionar
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-2 mb-4">
+                        <label
+                            class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors border border-gray-600">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i> Adicionar Arquivo
+                            <input type="file" id="media-upload" class="hidden" accept="image/*,video/*" multiple>
+                        </label>
+                        <span id="upload-status" class="text-sm text-gray-400"></span>
+                    </div>
+
+                    <!-- Lista de Itens de Mídia -->
+                    <div id="media-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <!-- Preview de arquivos serão adicionados aqui -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancel-plan-btn"
+                        class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="save-plan-btn"
+                        class="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors">
+                        Salvar Plano
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template para View de Cards (Script Module) -->
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './planificador.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
+</body>
+
+</html>
