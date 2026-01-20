@@ -53,23 +53,38 @@ async function displayDailyQuote() {
         if (!querySnapshot.empty) {
             const dbQuotes = [];
             querySnapshot.forEach(doc => {
-                dbQuotes.push(doc.data());
+                const data = doc.data();
+                if (data.text && data.author) {
+                    dbQuotes.push(data);
+                }
             });
-            // If we have DB quotes, use them (you can decide to mix or replace)
-            // Here replacing entirely if DB has quotes
-            activeQuotes = dbQuotes;
+            // Only switch to DB quotes if we found valid ones
+            if (dbQuotes.length > 0) {
+                activeQuotes = dbQuotes;
+            }
         }
     } catch (error) {
         console.error("Error fetching quotes:", error);
-        // Fallback to local 'quotes' array is already set
+    }
+
+    // Safety check
+    if (activeQuotes.length === 0) {
+        activeQuotes = quotes;
     }
 
     // Use the day of the month to pick a deterministic quote for the day
     const quoteIndex = today % activeQuotes.length;
     const quote = activeQuotes[quoteIndex];
 
-    quoteEl.textContent = `"${quote.text}"`;
-    authorEl.textContent = `- ${quote.author}`;
+    console.log("Displaying quote:", quote);
+
+    if (quote) {
+        quoteEl.textContent = `"${quote.text}"`;
+        authorEl.textContent = `- ${quote.author}`;
+    } else {
+        quoteEl.textContent = '"A disciplina é a mãe do êxito."';
+        authorEl.textContent = '- Ésquilo';
+    }
 }
 
 async function loadStats() {

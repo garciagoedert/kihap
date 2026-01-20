@@ -401,10 +401,7 @@ async function loadComponents(pageSpecificSetup) {
         const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
         const isInstructor = currentUser.isInstructor === true;
 
-        const planificadorLink = document.getElementById('planificador-link');
-        if ((isAdmin || isInstructor) && planificadorLink) {
-            planificadorLink.classList.remove('hidden');
-        }
+
 
         // Controla a visibilidade do botão "Novo Prospect"
         const addProspectBtn = document.getElementById('addProspectBtnHeader');
