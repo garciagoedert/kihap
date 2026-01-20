@@ -17,19 +17,47 @@ const cancelPlanBtn = document.getElementById('cancel-plan-btn');
 const planForm = document.getElementById('plan-form');
 const planIdInput = document.getElementById('plan-id');
 const planTitleInput = document.getElementById('plan-title');
-const planContentInput = document.getElementById('plan-content');
 const mediaUploadInput = document.getElementById('media-upload');
 const mediaListContainer = document.getElementById('media-list');
 const uploadStatus = document.getElementById('upload-status');
 const modalTitle = document.getElementById('modal-title');
 const youtubeLinkInput = document.getElementById('youtube-link');
 const addYoutubeBtn = document.getElementById('add-youtube-btn');
+const planCategoryInput = document.getElementById('plan-category');
+
+// View Modal Elements
+const viewModal = document.getElementById('view-modal');
+const closeViewModalBtn = document.getElementById('close-view-modal');
+const viewPlanTitle = document.getElementById('view-plan-title');
+const viewPlanCategory = document.getElementById('view-plan-category');
+const viewPlanMeta = document.getElementById('view-plan-meta');
+const viewPlanContent = document.getElementById('view-plan-content');
+const viewMediaList = document.getElementById('view-media-list');
+const editPlanBtnView = document.getElementById('edit-plan-btn-view');
 
 let currentMediaFiles = []; // Array to store { name, url, type, path }
 let currentUser = null;
+let quill; // Quill instance
 
 // Initialization
 onAuthReady(async (user) => {
+    if (!user) return; // Auth redirects handled in auth.js
+
+    // Initialize Quill
+    if (document.getElementById('editor-container')) {
+        quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    ['clean']
+                ]
+            }
+        });
+    }
     if (!user) return; // Auth redirects handled in auth.js
 
     // Check permissions
@@ -51,6 +79,16 @@ function setupEventListeners() {
     planForm.addEventListener('submit', handleFormSubmit);
     mediaUploadInput.addEventListener('change', handleFileUpload);
     addYoutubeBtn.addEventListener('click', handleYouTubeAdd);
+
+    // View Modal Listeners
+    closeViewModalBtn.addEventListener('click', closeViewModal);
+    editPlanBtnView.addEventListener('click', () => {
+        const id = editPlanBtnView.dataset.id;
+        if (id) {
+            closeViewModal();
+            openEditPlanModal(id);
+        }
+    });
 }
 
 function handleYouTubeAdd() {
@@ -111,15 +149,29 @@ async function loadPlans() {
 
 function createPlanCard(id, plan) {
     const div = document.createElement('div');
-    div.className = 'bg-gray-800 rounded-lg p-5 shadow-lg flex flex-col hover:bg-gray-750 transition-colors border border-gray-700';
+    div.className = 'bg-gray-800 rounded-lg p-5 shadow-lg flex flex-col hover:bg-gray-750 transition-colors border border-gray-700 cursor-pointer group relative';
+
+    // Category Badge Color
+    let badgeClass = 'bg-gray-600';
+    if (plan.category === 'A') badgeClass = 'bg-blue-600';
+    if (plan.category === 'B') badgeClass = 'bg-green-600';
+    if (plan.category === 'C') badgeClass = 'bg-purple-600';
 
     // Pre-formatting content snippet
-    const snippet = plan.content ? plan.content.substring(0, 100) + (plan.content.length > 100 ? '...' : '') : '';
+    // Pre-formatting content snippet (strip HTML tags)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = plan.content || '';
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    const snippet = textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
+
     const date = plan.createdAt ? new Date(plan.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
 
     div.innerHTML = `
         <div class="flex justify-between items-start mb-2">
-            <h3 class="text-xl font-bold text-white truncate w-full" title="${plan.title}">${plan.title}</h3>
+            <div class="flex flex-col">
+                <span class="${badgeClass} text-white text-[10px] font-bold px-2 py-0.5 rounded w-fit mb-3 mt-2">TIPO ${plan.category || 'A'}</span>
+                <h3 class="text-xl font-bold text-white truncate w-full" title="${plan.title}">${plan.title}</h3>
+            </div>
             ${plan.media && plan.media.length > 0 ? '<i class="fas fa-paperclip text-gray-400 ml-2" title="Possui anexos"></i>' : ''}
         </div>
         <div class="text-xs text-blue-400 mb-3 font-mono border-b border-gray-700 pb-2">
@@ -127,19 +179,21 @@ function createPlanCard(id, plan) {
         </div>
         <p class="text-gray-400 text-sm whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-24">${snippet}</p>
         
-        <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-700">
-            <button class="view-btn text-blue-400 hover:text-blue-300 p-2" title="Editar/Ver">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="delete-btn text-red-400 hover:text-red-300 p-2" title="Excluir">
+        <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button class="delete-btn text-red-400 hover:text-red-300 p-2 z-10 relative" title="Excluir">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
     `;
 
-    // Event Listeners for actions
-    div.querySelector('.view-btn').addEventListener('click', () => openEditPlanModal(id));
-    div.querySelector('.delete-btn').addEventListener('click', () => deletePlan(id));
+    // Click on card opens View Modal
+    div.addEventListener('click', () => openViewModal(id));
+
+    // Delete button (prevent bubbling to card click)
+    div.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deletePlan(id);
+    });
 
     return div;
 }
@@ -149,10 +203,12 @@ async function handleFormSubmit(e) {
 
     const id = planIdInput.value;
     const title = planTitleInput.value;
-    const content = planContentInput.value;
+    const category = planCategoryInput.value;
+    const content = quill.root.innerHTML; // Get HTML from Quill
 
     const planData = {
         title,
+        category,
         content,
         media: currentMediaFiles,
         updatedAt: serverTimestamp()
@@ -170,7 +226,7 @@ async function handleFormSubmit(e) {
         } else {
             // Create
             planData.createdAt = serverTimestamp();
-            planData.createdBy = currentUser.uid;
+            planData.createdBy = currentUser.id || currentUser.uid;
             planData.authorName = currentUser.name || currentUser.email;
             await addDoc(collection(db, "plans"), planData);
         }
@@ -221,7 +277,8 @@ async function openEditPlanModal(id) {
 
         planIdInput.value = id;
         planTitleInput.value = data.title;
-        planContentInput.value = data.content;
+        planCategoryInput.value = data.category || 'A';
+        quill.root.innerHTML = data.content || ''; // Set HTML to Quill
         currentMediaFiles = data.media || [];
 
         renderMediaList();
@@ -234,6 +291,70 @@ async function openEditPlanModal(id) {
     }
 }
 
+async function openViewModal(id) {
+    try {
+        const docSnap = await getDoc(doc(db, "plans", id));
+        if (!docSnap.exists()) return;
+
+        const data = docSnap.data();
+        const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desconhecida';
+
+        viewPlanTitle.textContent = data.title;
+        viewPlanContent.innerHTML = data.content; // Render HTML
+        viewPlanCategory.textContent = `TIPO ${data.category || 'A'}`;
+        viewPlanCategory.className = `text-white text-xs px-2 py-1 rounded ${data.category === 'B' ? 'bg-green-600' : data.category === 'C' ? 'bg-purple-600' : 'bg-blue-600'}`;
+        viewPlanMeta.textContent = `${data.authorName || 'Desconhecido'} • ${date}`;
+
+        // Store ID for edit button
+        editPlanBtnView.dataset.id = id;
+
+        // Render Media for View
+        viewMediaList.innerHTML = '';
+        if (data.media && data.media.length > 0) {
+            data.media.forEach(media => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-900 rounded-lg overflow-hidden border border-gray-700 h-40 flex items-center justify-center relative group';
+
+                let contentHTML = '';
+                if (media.type === 'image') {
+                    contentHTML = `<img src="${media.url}" class="w-full h-full object-cover">`;
+                } else if (media.type === 'youtube') {
+                    contentHTML = `
+                        <img src="${media.thumbnail || 'https://img.youtube.com/vi/default/0.jpg'}" class="w-full h-full object-cover opacity-70">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fab fa-youtube text-red-600 text-5xl bg-white rounded-full"></i>
+                        </div>
+                    `;
+                } else {
+                    contentHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-video text-4xl mb-2"></i>
+                            <p class="text-xs truncate max-w-[120px] px-2">${media.name}</p>
+                        </div>
+                    `;
+                }
+
+                item.innerHTML = `
+                    <a href="${media.url}" target="_blank" class="w-full h-full flex items-center justify-center">
+                        ${contentHTML}
+                    </a>
+                `;
+                viewMediaList.appendChild(item);
+            });
+        } else {
+            viewMediaList.innerHTML = '<p class="text-gray-500 text-sm italic col-span-full">Nenhum anexo.</p>';
+        }
+
+        viewModal.classList.remove('hidden');
+    } catch (error) {
+        console.error("Erro ao abrir visualização:", error);
+    }
+}
+
+function closeViewModal() {
+    viewModal.classList.add('hidden');
+}
+
 function closeModal() {
     planModal.classList.add('hidden');
     resetForm();
@@ -242,6 +363,7 @@ function closeModal() {
 function resetForm() {
     planForm.reset();
     planIdInput.value = '';
+    if (quill) quill.root.innerHTML = ''; // Reset Quill
     currentMediaFiles = [];
     mediaListContainer.innerHTML = '';
     uploadStatus.textContent = '';
