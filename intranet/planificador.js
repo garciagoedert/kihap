@@ -25,6 +25,7 @@ const youtubeLinkInput = document.getElementById('youtube-link');
 const addYoutubeBtn = document.getElementById('add-youtube-btn');
 const planCategoryInput = document.getElementById('plan-category');
 
+
 // View Modal Elements
 const viewModal = document.getElementById('view-modal');
 const closeViewModalBtn = document.getElementById('close-view-modal');
@@ -68,6 +69,7 @@ onAuthReady(async (user) => {
     }
 
     currentUser = user;
+
     loadPlans();
     setupEventListeners();
 });
@@ -126,7 +128,11 @@ async function loadPlans() {
     plansList.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10"><i class="fas fa-spinner fa-spin text-2xl"></i> Carregando planos...</div>';
 
     try {
-        const q = query(collection(db, "plans"), orderBy("createdAt", "desc"));
+        const q = query(
+            collection(db, "plans"),
+            orderBy("createdAt", "desc")
+        );
+
         const querySnapshot = await getDocs(q);
 
         plansList.innerHTML = '';
@@ -164,7 +170,8 @@ function createPlanCard(id, plan) {
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
     const snippet = textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
 
-    const date = plan.createdAt ? new Date(plan.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
+    const dateCreated = plan.createdAt ? new Date(plan.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
+    const scheduledDateFormatted = plan.scheduledDate ? new Date(plan.scheduledDate + 'T12:00:00').toLocaleDateString('pt-BR') : dateCreated;
 
     div.innerHTML = `
         <div class="flex justify-between items-start mb-2">
@@ -175,7 +182,7 @@ function createPlanCard(id, plan) {
             ${plan.media && plan.media.length > 0 ? '<i class="fas fa-paperclip text-gray-400 ml-2" title="Possui anexos"></i>' : ''}
         </div>
         <div class="text-xs text-blue-400 mb-3 font-mono border-b border-gray-700 pb-2">
-            ${plan.authorName || 'Autor desconhecido'} • ${date}
+            ${plan.authorName || 'Autor desconhecido'} • ${dateCreated}
         </div>
         <p class="text-gray-400 text-sm whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-24">${snippet}</p>
         
@@ -297,13 +304,13 @@ async function openViewModal(id) {
         if (!docSnap.exists()) return;
 
         const data = docSnap.data();
-        const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desconhecida';
+        const dateCreated = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
 
         viewPlanTitle.textContent = data.title;
         viewPlanContent.innerHTML = data.content; // Render HTML
         viewPlanCategory.textContent = `TIPO ${data.category || 'A'}`;
         viewPlanCategory.className = `text-white text-xs px-2 py-1 rounded ${data.category === 'B' ? 'bg-green-600' : data.category === 'C' ? 'bg-purple-600' : 'bg-blue-600'}`;
-        viewPlanMeta.textContent = `${data.authorName || 'Desconhecido'} • ${date}`;
+        viewPlanMeta.textContent = `${data.authorName || 'Desconhecido'} • ${dateCreated}`;
 
         // Store ID for edit button
         editPlanBtnView.dataset.id = id;
