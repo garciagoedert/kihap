@@ -14,6 +14,7 @@ const addPlanBtn = document.getElementById('add-plan-btn');
 const planModal = document.getElementById('plan-modal');
 const closePlanModalBtn = document.getElementById('close-plan-modal');
 const cancelPlanBtn = document.getElementById('cancel-plan-btn');
+const deletePlanBtn = document.getElementById('delete-plan-btn');
 const planForm = document.getElementById('plan-form');
 const planIdInput = document.getElementById('plan-id');
 const planTitleInput = document.getElementById('plan-title');
@@ -81,6 +82,12 @@ function setupEventListeners() {
     planForm.addEventListener('submit', handleFormSubmit);
     mediaUploadInput.addEventListener('change', handleFileUpload);
     addYoutubeBtn.addEventListener('click', handleYouTubeAdd);
+
+    // Modal Delete Button
+    deletePlanBtn.addEventListener('click', () => {
+        const id = planIdInput.value;
+        if (id) deletePlan(id);
+    });
 
     // View Modal Listeners
     closeViewModalBtn.addEventListener('click', closeViewModal);
@@ -187,9 +194,7 @@ function createPlanCard(id, plan) {
         <p class="text-gray-400 text-sm whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-24">${snippet}</p>
         
         <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button class="delete-btn text-red-400 hover:text-red-300 p-2 z-10 relative" title="Excluir">
-                <i class="fas fa-trash"></i>
-            </button>
+            <span class="text-xs text-gray-500">Clique para visualizar</span>
         </div>
     `;
 
@@ -197,10 +202,12 @@ function createPlanCard(id, plan) {
     div.addEventListener('click', () => openViewModal(id));
 
     // Delete button (prevent bubbling to card click)
+    /* 
     div.querySelector('.delete-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         deletePlan(id);
     });
+    */
 
     return div;
 }
@@ -257,6 +264,7 @@ async function deletePlan(id) {
         // Note: Ideally we should also delete files from Storage, but keeping it simple for now or could implement cloud function.
         // If we want client side deletion:
         // We would need to fetch the doc first to get file paths, then delete.
+        closeModal(); // Close modal if open
         loadPlans();
     } catch (error) {
         console.error("Erro ao excluir plano:", error);
@@ -269,6 +277,7 @@ async function deletePlan(id) {
 function openNewPlanModal() {
     resetForm();
     modalTitle.textContent = "Novo Plano de Aula";
+    deletePlanBtn.classList.add('hidden'); // Hide delete button for new plans
     planModal.classList.remove('hidden');
 }
 
@@ -291,6 +300,7 @@ async function openEditPlanModal(id) {
         renderMediaList();
 
         modalTitle.textContent = "Editar Plano de Aula";
+        deletePlanBtn.classList.remove('hidden'); // Show delete button for existing plans
         planModal.classList.remove('hidden');
     } catch (error) {
         console.error("Erro ao abrir plano:", error);

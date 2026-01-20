@@ -8,15 +8,16 @@
         </button>
     </div>
     <nav class="flex-grow p-4 min-h-0 overflow-y-auto space-y-2">
-        <a href="analysis.html"
+        <a href="index.html"
             class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-chart-line w-6"></i> Análise
+            <i class="fas fa-home w-6"></i> Início
         </a>
         <a href="alunos.html"
             class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
             <i class="fas fa-users w-6"></i> Alunos
         </a>
 
+        <!-- Marketing Dropdown -->
         <div>
             <button id="prospeccao-menu-btn"
                 class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
@@ -54,58 +55,98 @@
                 </a>
             </div>
         </div>
-        <a href="tarefas.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-check-circle w-6"></i> Tarefas
-        </a>
-        <a href="grade.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-th w-6"></i> Grade
-        </a>
-        <a href="relatorios.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-chart-pie w-6"></i> Relatórios
-        </a>
+
+        <!-- Administrativo Dropdown -->
+        <div>
+            <button id="administrativo-menu-btn"
+                class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                <span><i class="fas fa-briefcase w-6"></i> Administrativo</span>
+                <i class="fas fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="administrativo-submenu" class="hidden pl-4 mt-2 space-y-2">
+                <a href="analysis.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-chart-line w-6"></i> Análise
+                </a>
+                <a href="tarefas.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-check-circle w-6"></i> Tarefas
+                </a>
+                <a href="grade.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-th w-6"></i> Grade
+                </a>
+                <a href="relatorios.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-chart-pie w-6"></i> Relatórios
+                </a>
+                <a href="projetos.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-sitemap w-6"></i> Projetos
+                </a>
+                <a href="processos.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-book-open w-6"></i> Processos
+                </a>
+            </div>
+        </div>
+
         <a href="chat.html" id="chat-link"
             class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
             <i class="fas fa-comments w-6"></i> Chat
         </a>
-        <a href="projetos.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-sitemap w-6"></i> Projetos
-        </a>
+
         <a href="cursos.html"
             class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
             <i class="fas fa-graduation-cap w-6"></i> Cursos
         </a>
+
         <a href="feed.html"
             class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
             <i class="fas fa-newspaper w-6"></i> Feed
         </a>
-        <a href="processos.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-book-open w-6"></i> Processos
-        </a>
-        <a href="tatame.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-user-ninja w-6"></i> Tatame
-        </a>
-        <a href="planificador.html" id="planificador-link"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hidden">
-            <i class="fas fa-calendar-alt w-6"></i> Planificador
-        </a>
-        <a href="estoque.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-box-open w-6"></i> Estoque
-        </a>
-        <a href="pedidos.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-ribbon w-6"></i> Pedidos
-        </a>
-        <a href="store.html"
-            class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-store w-6"></i> Store
-        </a>
+
+        <!-- Tatame Dropdown -->
+        <div>
+            <button id="tatame-menu-btn"
+                class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                <span><i class="fas fa-user-ninja w-6"></i> Tatame</span>
+                <i class="fas fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="tatame-submenu" class="hidden pl-4 mt-2 space-y-2">
+                <a href="tatame.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-user-ninja w-6"></i> Tatame
+                </a>
+                <a href="planificador.html" id="planificador-link"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hidden">
+                    <i class="fas fa-calendar-alt w-6"></i> Planificador
+                </a>
+            </div>
+        </div>
+
+        <!-- Store Dropdown -->
+        <div>
+            <button id="store-menu-btn"
+                class="w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                <span><i class="fas fa-store w-6"></i> Store</span>
+                <i class="fas fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="store-submenu" class="hidden pl-4 mt-2 space-y-2">
+                <a href="store.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-store w-6"></i> Store
+                </a>
+                <a href="pedidos.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-ribbon w-6"></i> Pedidos
+                </a>
+                <a href="estoque.html"
+                    class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                    <i class="fas fa-box-open w-6"></i> Estoque
+                </a>
+            </div>
+        </div>
     </nav>
     <div class="p-4 border-t border-gray-700 space-y-2">
         <a href="suporte.html"

@@ -42,7 +42,7 @@ async function handleLogin(e) {
             if (userData.evoMemberId) {
                 window.location.href = '../members/index.html';
             } else {
-                window.location.href = 'analysis.html';
+                window.location.href = 'index.html';
             }
         } else {
             // Se o documento não existe (comum em ambiente local), permite o login como admin básico
@@ -52,7 +52,7 @@ async function handleLogin(e) {
             sessionStorage.setItem('userName', user.email.split('@')[0]);
             sessionStorage.setItem('isAdmin', 'true');
 
-            window.location.href = 'analysis.html';
+            window.location.href = 'index.html';
         }
     } catch (error) {
         console.error("Erro de login:", error);

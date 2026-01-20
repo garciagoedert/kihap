@@ -97,19 +97,26 @@ function setupUIListeners(handlers = {}) {
     // Add modal close listeners
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
 
-    // Prospecção submenu toggle
-    const prospeccaoMenuBtn = document.getElementById('prospeccao-menu-btn');
-    const prospeccaoSubmenu = document.getElementById('prospeccao-submenu');
-    if (prospeccaoMenuBtn && prospeccaoSubmenu && !prospeccaoMenuBtn.dataset.listenerAttached) {
-        prospeccaoMenuBtn.dataset.listenerAttached = 'true';
-        prospeccaoMenuBtn.addEventListener('click', () => {
-            prospeccaoSubmenu.classList.toggle('hidden');
-            const icon = prospeccaoMenuBtn.querySelector('i.fa-chevron-down');
-            if (icon) {
-                icon.classList.toggle('rotate-180');
-            }
-        });
-    }
+    // Generic Submenu toggles
+    const setupSubmenu = (btnId, menuId) => {
+        const btn = document.getElementById(btnId);
+        const menu = document.getElementById(menuId);
+        if (btn && menu && !btn.dataset.listenerAttached) {
+            btn.dataset.listenerAttached = 'true';
+            btn.addEventListener('click', () => {
+                menu.classList.toggle('hidden');
+                const icon = btn.querySelector('i.fa-chevron-down');
+                if (icon) {
+                    icon.classList.toggle('rotate-180');
+                }
+            });
+        }
+    };
+
+    setupSubmenu('prospeccao-menu-btn', 'prospeccao-submenu');
+    setupSubmenu('administrativo-menu-btn', 'administrativo-submenu');
+    setupSubmenu('tatame-menu-btn', 'tatame-submenu');
+    setupSubmenu('store-menu-btn', 'store-submenu');
 }
 
 function setupModalCloseListeners(handlers = {}) {

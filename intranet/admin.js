@@ -41,7 +41,17 @@ export function setupAdminPage() {
     const changePasswordForm = document.getElementById('change-password-form');
     const cancelChangePasswordBtn = document.getElementById('cancel-change-password');
     const changePasswordUserIdInput = document.getElementById('change-password-user-id');
+
     const newPasswordInput = document.getElementById('new-password');
+
+    // Quotes Elements
+    const quotesTableBody = document.getElementById('quotes-table-body');
+    const addQuoteBtn = document.getElementById('add-quote-btn');
+    const quoteModal = document.getElementById('quote-modal');
+    const quoteForm = document.getElementById('quote-form');
+    const quoteTextInput = document.getElementById('quote-text');
+    const quoteAuthorInput = document.getElementById('quote-author-input');
+    const cancelQuoteBtn = document.getElementById('cancel-quote-btn');
 
     addUserBtn.addEventListener('click', () => {
         resetForm();
@@ -193,13 +203,103 @@ export function setupAdminPage() {
     setupTabs();
     renderUsers();
     renderLoginLogs();
+    setupTabs();
+    renderUsers();
+    renderLoginLogs();
+    renderQuotes();
+
+    // Quotes Logic
+    addQuoteBtn.addEventListener('click', () => {
+        quoteForm.reset();
+        quoteModal.classList.remove('hidden');
+    });
+
+    cancelQuoteBtn.addEventListener('click', () => {
+        quoteModal.classList.add('hidden');
+    });
+
+    quoteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = quoteTextInput.value;
+        const author = quoteAuthorInput.value;
+
+        if (text && author) {
+            try {
+                await addDoc(collection(db, "daily_quotes"), {
+                    text,
+                    author,
+                    createdAt: new Date().toISOString()
+                });
+                alert('Frase adicionada com sucesso!');
+                quoteModal.classList.add('hidden');
+                renderQuotes();
+            } catch (error) {
+                console.error("Erro ao adicionar frase:", error);
+                alert('Erro ao adicionar frase.');
+            }
+        }
+    });
+
+    async function renderQuotes() {
+        if (!quotesTableBody) return;
+        quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center">Carregando...</td></tr>';
+
+        try {
+            const q = query(collection(db, "daily_quotes"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            quotesTableBody.innerHTML = '';
+
+            if (querySnapshot.empty) {
+                quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">Nenhuma frase cadastrada.</td></tr>';
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b border-gray-700 text-sm italic">"${data.text}"</td>
+                    <td class="py-2 px-4 border-b border-gray-700 text-sm font-semibold">${data.author}</td>
+                    <td class="py-2 px-4 border-b border-gray-700">
+                        <button class="text-red-400 hover:text-red-600 delete-quote-btn" data-id="${doc.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                quotesTableBody.appendChild(row);
+            });
+
+            // Add delete listeners
+            document.querySelectorAll('.delete-quote-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    if (confirm('Tem certeza que deseja excluir esta frase?')) {
+                        try {
+                            await deleteDoc(doc(db, "daily_quotes", id));
+                            renderQuotes();
+                        } catch (error) {
+                            console.error("Erro ao excluir frase:", error);
+                            alert('Erro ao excluir frase.');
+                        }
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar frases:", error);
+            quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+        }
+    }
 }
 
 function setupTabs() {
     const tabUsers = document.getElementById('tab-users');
     const tabLogs = document.getElementById('tab-logs');
+    const tabQuotes = document.getElementById('tab-quotes');
     const contentUsers = document.getElementById('users-content');
     const contentLogs = document.getElementById('logs-content');
+    const contentQuotes = document.getElementById('quotes-content');
 
     if (!tabUsers || !tabLogs) {
         console.error("Tab elements not found!");
@@ -218,6 +318,10 @@ function setupTabs() {
         // Show Users Content
         contentUsers.classList.remove('hidden');
         contentLogs.classList.add('hidden');
+        contentQuotes.classList.add('hidden');
+
+        tabQuotes.classList.remove('text-primary', 'border-b-2', 'border-primary');
+        tabQuotes.classList.add('text-gray-400');
     });
 
     tabLogs.addEventListener('click', () => {
@@ -232,7 +336,30 @@ function setupTabs() {
         // Show Logs Content
         contentLogs.classList.remove('hidden');
         contentUsers.classList.add('hidden');
+        contentQuotes.classList.add('hidden');
+
+        tabQuotes.classList.remove('text-primary', 'border-b-2', 'border-primary');
+        tabQuotes.classList.add('text-gray-400');
     });
+
+    if (tabQuotes) {
+        tabQuotes.addEventListener('click', () => {
+            // Activate Quotes Tab
+            tabQuotes.classList.add('text-primary', 'border-b-2', 'border-primary');
+            tabQuotes.classList.remove('text-gray-400');
+
+            // Deactivate other Tabs
+            tabUsers.classList.remove('text-primary', 'border-b-2', 'border-primary');
+            tabUsers.classList.add('text-gray-400');
+            tabLogs.classList.remove('text-primary', 'border-b-2', 'border-primary');
+            tabLogs.classList.add('text-gray-400');
+
+            // Show Quotes Content
+            contentQuotes.classList.remove('hidden');
+            contentUsers.classList.add('hidden');
+            contentLogs.classList.add('hidden');
+        });
+    }
 }
 
 // Imports already handled at the top of the file. 
