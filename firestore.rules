@@ -7,11 +7,6 @@ service cloud.firestore {
       allow read, update, delete: if true;
     }
 
-    // Regra para o Planificador (NOVA)
-    match /plans/{planId} {
-      allow read, write: if request.auth != null;
-    }
-
     // Regra para a coleção prospects
     match /prospects/{prospectId} {
       allow read, write: if request.auth != null;
@@ -302,9 +297,8 @@ service cloud.firestore {
     match /campaigns/{campaignId} {
       allow read, write: if request.auth != null;
     }
-
-    // Regra para Frases do Dia (Daily Quotes)
-    match /daily_quotes/{quoteId} {
+    // Regra para Scripts de Atendimento
+    match /scripts/{scriptId} {
       allow read, write: if request.auth != null;
     }
   }
