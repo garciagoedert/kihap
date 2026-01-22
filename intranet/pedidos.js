@@ -437,60 +437,132 @@ async function handleDeletePedido(event) {
 
 // --- Função de Exportação ---
 async function exportPedidosPendentes() {
+    const tabColoridas = document.getElementById('tab-coloridas');
+    const tabPretas = document.getElementById('tab-pretas');
+    const tabDoboks = document.getElementById('tab-doboks');
+
+    // Determinar qual aba está ativa
+    let tipoExportacao = 'coloridas';
+    if (tabPretas && tabPretas.classList.contains('text-yellow-400')) {
+        tipoExportacao = 'pretas';
+    } else if (tabDoboks && tabDoboks.classList.contains('text-yellow-400')) {
+        tipoExportacao = 'doboks';
+    }
+
     try {
-        const q = query(collection(db, "pedidosFaixas"), where("status", "==", "Pendente"));
-        const querySnapshot = await getDocs(q);
+        let dataParaPlanilha = [];
+        let nomeArquivo = '';
 
-        if (querySnapshot.empty) {
-            alert("Nenhum pedido pendente para exportar.");
-            return;
-        }
+        if (tipoExportacao === 'coloridas') {
+            const q = query(collection(db, "pedidosFaixas"), where("status", "==", "Pendente"));
+            const querySnapshot = await getDocs(q);
 
-        const faixasAgregadas = {};
-
-        querySnapshot.forEach(doc => {
-            const pedido = doc.data();
-            if (pedido.itens && Array.isArray(pedido.itens)) {
-                pedido.itens.forEach(item => {
-                    const chave = `${item.faixa} | ${item.tamanho}`;
-                    if (faixasAgregadas[chave]) {
-                        faixasAgregadas[chave] += item.quantidade;
-                    } else {
-                        faixasAgregadas[chave] = item.quantidade;
-                    }
-                });
+            if (querySnapshot.empty) {
+                alert("Nenhum pedido pendente de faixas coloridas para exportar.");
+                return;
             }
-        });
 
-        const dataParaPlanilha = [
-            ["Faixa", "Tamanho", "Quantidade Total"]
-        ];
+            const faixasAgregadas = {};
 
-        // Converte o objeto agregado em array e ordena
-        const sortedItems = Object.keys(faixasAgregadas).map(chave => {
-            const [faixa, tamanho] = chave.split(' | ');
-            return [faixa, tamanho, faixasAgregadas[chave]];
-        }).sort((a, b) => {
-            // Ordena por nome da faixa
-            if (a[0] < b[0]) return -1;
-            if (a[0] > b[0]) return 1;
-            // Se as faixas forem iguais, ordena por tamanho
-            if (a[1] < b[1]) return -1;
-            if (a[1] > b[1]) return 1;
-            return 0;
-        });
+            querySnapshot.forEach(doc => {
+                const pedido = doc.data();
+                if (pedido.itens && Array.isArray(pedido.itens)) {
+                    pedido.itens.forEach(item => {
+                        const chave = `${item.faixa} | ${item.tamanho}`;
+                        if (faixasAgregadas[chave]) {
+                            faixasAgregadas[chave] += item.quantidade;
+                        } else {
+                            faixasAgregadas[chave] = item.quantidade;
+                        }
+                    });
+                }
+            });
 
-        // Adiciona os itens ordenados à planilha
-        sortedItems.forEach(item => {
-            dataParaPlanilha.push(item);
-        });
+            dataParaPlanilha = [
+                ["Faixa", "Tamanho", "Quantidade Total"]
+            ];
+
+            const sortedItems = Object.keys(faixasAgregadas).map(chave => {
+                const [faixa, tamanho] = chave.split(' | ');
+                return [faixa, tamanho, faixasAgregadas[chave]];
+            }).sort((a, b) => {
+                if (a[0] < b[0]) return -1;
+                if (a[0] > b[0]) return 1;
+                if (a[1] < b[1]) return -1;
+                if (a[1] > b[1]) return 1;
+                return 0;
+            });
+
+            sortedItems.forEach(item => {
+                dataParaPlanilha.push(item);
+            });
+
+            nomeArquivo = `Pedidos_Faixas_Coloridas_Pendentes`;
+
+        } else if (tipoExportacao === 'pretas') {
+            const q = query(collection(db, "pedidosFaixasPretas"), where("status", "==", "Pendente"), orderBy("data", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                alert("Nenhum pedido pendente de faixas pretas para exportar.");
+                return;
+            }
+
+            dataParaPlanilha = [
+                ["Data", "Unidade", "Aluno", "Faixa", "Tamanho"]
+            ];
+
+            querySnapshot.forEach(doc => {
+                const pedido = doc.data();
+                const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
+                dataParaPlanilha.push([
+                    data,
+                    pedido.unidade || '',
+                    pedido.aluno || '',
+                    pedido.faixa || '',
+                    pedido.tamanho || ''
+                ]);
+            });
+
+            nomeArquivo = `Pedidos_Faixas_Pretas_Pendentes`;
+
+        } else if (tipoExportacao === 'doboks') {
+            const q = query(collection(db, "pedidosDoboks"), where("status", "==", "Pendente"), orderBy("data", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                alert("Nenhum pedido pendente de doboks para exportar.");
+                return;
+            }
+
+            dataParaPlanilha = [
+                ["Data", "Unidade", "Aluno", "Tipo", "Tamanho", "Colarinho"]
+            ];
+
+            querySnapshot.forEach(doc => {
+                const pedido = doc.data();
+                const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
+                const tipo = pedido.isFaixaPreta ? 'Faixa Preta' : 'Comum';
+
+                dataParaPlanilha.push([
+                    data,
+                    pedido.unidade || '',
+                    pedido.aluno || '',
+                    tipo,
+                    pedido.tamanho || '',
+                    pedido.colarinho || ''
+                ]);
+            });
+
+            nomeArquivo = `Pedidos_Doboks_Pendentes`;
+        }
 
         const ws = XLSX.utils.aoa_to_sheet(dataParaPlanilha);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Pedidos Pendentes");
 
         const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        XLSX.writeFile(wb, `Pedidos_Faixas_Pendentes_${today}.xlsx`);
+        XLSX.writeFile(wb, `${nomeArquivo}_${today}.xlsx`);
 
     } catch (error) {
         console.error("Erro ao exportar pedidos: ", error);
