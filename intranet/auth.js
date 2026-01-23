@@ -125,11 +125,8 @@ export async function addUser(userData) {
         const user = userCredential.user;
 
         // 2. Salvar os dados adicionais no Firestore
-        await setDoc(doc(db, "users", user.uid), {
-            name: userData.name,
-            email: userData.email,
-            isAdmin: userData.isAdmin
-        });
+        const { password, ...firestoreData } = userData;
+        await setDoc(doc(db, "users", user.uid), firestoreData);
         alert('Usuário adicionado com sucesso!');
         return { success: true, uid: user.uid };
     } catch (error) {

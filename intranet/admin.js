@@ -25,6 +25,7 @@ export function setupAdminPage() {
     }
 
     const userTableBody = document.getElementById('user-table-body');
+    const userMobileList = document.getElementById('user-mobile-list');
     const userForm = document.getElementById('user-form');
     const userModal = document.getElementById('user-modal');
     const formTitle = document.getElementById('form-title');
@@ -33,8 +34,15 @@ export function setupAdminPage() {
     const passwordInput = document.getElementById('password');
     const isAdminInput = document.getElementById('isAdmin');
     const isInstructorInput = document.getElementById('isInstructor');
+    const isRHInput = document.getElementById('isRH');
+    const isFinanceiroInput = document.getElementById('isFinanceiro');
+    const isAdministrativoInput = document.getElementById('isAdministrativo');
+    const isStoreInput = document.getElementById('isStore');
+    const isAcademyInput = document.getElementById('isAcademy');
+
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
+    const closeModalBtn = document.getElementById('close-modal-btn');
     const addUserBtn = document.getElementById('add-user-btn');
     const searchInput = document.getElementById('search-users');
     const changePasswordModal = document.getElementById('change-password-modal');
@@ -60,7 +68,9 @@ export function setupAdminPage() {
     });
 
     async function renderUsers(filter = '') {
-        userTableBody.innerHTML = '';
+        if (userTableBody) userTableBody.innerHTML = '';
+        if (userMobileList) userMobileList.innerHTML = '';
+
         const users = await getAllUsers();
         const adminUsers = users.filter(user => !user.evoMemberId);
 
@@ -71,11 +81,21 @@ export function setupAdminPage() {
         });
 
         filteredUsers.forEach(user => {
+            const roles = [];
+            if (user.isAdmin) roles.push('<span class="bg-red-900 text-red-200 text-xs px-2 py-1 rounded">Admin</span>');
+            if (user.isInstructor) roles.push('<span class="bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded">Instrutor</span>');
+            if (user.isRH) roles.push('<span class="bg-purple-900 text-purple-200 text-xs px-2 py-1 rounded">RH</span>');
+            if (user.isFinanceiro) roles.push('<span class="bg-green-900 text-green-200 text-xs px-2 py-1 rounded">Financeiro</span>');
+            if (user.isAdministrativo) roles.push('<span class="bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded">Admin.</span>');
+            if (user.isStore) roles.push('<span class="bg-yellow-900 text-yellow-200 text-xs px-2 py-1 rounded">Store</span>');
+            if (user.isAcademy) roles.push('<span class="bg-indigo-900 text-indigo-200 text-xs px-2 py-1 rounded">Academy</span>');
+
+            // Desktop Row
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="py-2 px-4 border-b border-gray-700">${user.name}</td>
                 <td class="py-2 px-4 border-b border-gray-700">${user.email}</td>
-                <td class="py-2 px-4 border-b border-gray-700">${user.isAdmin ? 'Sim' : 'Não'}</td>
+                <td class="py-2 px-4 border-b border-gray-700 flex flex-wrap gap-1">${roles.join(' ') || '<span class="text-gray-500 text-xs">Sem cargo</span>'}</td>
                 <td class="py-2 px-4 border-b border-gray-700">
                     <button class="text-primary hover:text-primary-dark mr-2 edit-btn" data-id="${user.id}">
                         <i class="fas fa-edit"></i>
@@ -88,7 +108,34 @@ export function setupAdminPage() {
                     </button>
                 </td>
             `;
-            userTableBody.appendChild(row);
+            if (userTableBody) userTableBody.appendChild(row);
+
+            // Mobile Card
+            const card = document.createElement('div');
+            card.className = 'mobile-user-card bg-[#1e1e1e] p-4 rounded-xl border border-gray-700 shadow-sm relative hover:border-gray-600 transition-colors';
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="min-w-0 flex-1 pr-4">
+                        <h3 class="font-bold text-white text-lg truncate">${user.name}</h3>
+                        <p class="text-gray-400 text-sm truncate">${user.email}</p>
+                    </div>
+                    <div class="flex space-x-3 shrink-0">
+                        <button class="text-primary hover:text-primary-dark edit-btn p-1" data-id="${user.id}">
+                            <i class="fas fa-edit text-lg"></i>
+                        </button>
+                        <button class="text-yellow-400 hover:text-yellow-600 change-password-btn p-1" data-id="${user.id}">
+                            <i class="fas fa-key text-lg"></i>
+                        </button>
+                        <button class="text-red-400 hover:text-red-600 delete-btn p-1" data-id="${user.id}">
+                            <i class="fas fa-trash text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-700/50 flex flex-wrap gap-2">
+                    ${roles.join(' ') || '<span class="text-gray-500 text-xs italic">Sem permissões registradas</span>'}
+                </div>
+            `;
+            if (userMobileList) userMobileList.appendChild(card);
         });
     }
 
@@ -99,20 +146,35 @@ export function setupAdminPage() {
         const password = passwordInput.value;
         const isAdmin = isAdminInput.checked;
         const isInstructor = isInstructorInput.checked;
+        const isRH = isRHInput.checked;
+        const isFinanceiro = isFinanceiroInput.checked;
+        const isAdministrativo = isAdministrativoInput.checked;
+        const isStore = isStoreInput.checked;
+        const isAcademy = isAcademyInput.checked;
+
         const userId = hiddenEmailInput.value;
+
+        const userData = {
+            name,
+            isAdmin,
+            isInstructor,
+            isRH,
+            isFinanceiro,
+            isAdministrativo,
+            isStore,
+            isAcademy
+        };
 
         if (userId) {
             // Editing user
-            const updatedData = { name, isAdmin, isInstructor };
-            // O email não pode ser alterado aqui. A senha requer reautenticação.
-            await updateUser(userId, updatedData);
+            await updateUser(userId, userData);
         } else {
             // Adding new user
             if (!password) {
                 alert('A senha é obrigatória para novos usuários.');
                 return;
             }
-            await addUser({ name, email, password, isAdmin });
+            await addUser({ ...userData, email, password });
         }
 
         resetForm();
@@ -126,11 +188,20 @@ export function setupAdminPage() {
         emailInput.disabled = false;
         passwordInput.disabled = false;
         passwordInput.placeholder = "";
+
+        isAdminInput.checked = false;
+        isInstructorInput.checked = false;
+        isRHInput.checked = false;
+        isFinanceiroInput.checked = false;
+        isAdministrativoInput.checked = false;
+        isStoreInput.checked = false;
+        isAcademyInput.checked = false;
+
         cancelEditBtn.classList.remove('hidden');
         userModal.classList.add('hidden');
     }
 
-    userTableBody.addEventListener('click', async function (e) {
+    async function handleUserActions(e) {
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
         const changePasswordBtn = e.target.closest('.change-password-btn');
@@ -151,8 +222,13 @@ export function setupAdminPage() {
                 nameInput.value = user.name;
                 emailInput.value = user.email;
                 emailInput.disabled = true; // Não permitir edição de email
-                isAdminInput.checked = user.isAdmin;
+                isAdminInput.checked = user.isAdmin || false;
                 isInstructorInput.checked = user.isInstructor || false;
+                isRHInput.checked = user.isRH || false;
+                isFinanceiroInput.checked = user.isFinanceiro || false;
+                isAdministrativoInput.checked = user.isAdministrativo || false;
+                isStoreInput.checked = user.isStore || false;
+                isAcademyInput.checked = user.isAcademy || false;
                 hiddenEmailInput.value = user.id; // Armazenar UID
                 passwordInput.placeholder = "Não é possível alterar a senha aqui";
                 passwordInput.disabled = true;
@@ -162,13 +238,27 @@ export function setupAdminPage() {
 
         if (deleteBtn) {
             const userId = deleteBtn.dataset.id;
-            const userEmail = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent;
+            // Try to find email in row or card
+            let userEmail = "Usuário";
+            const row = deleteBtn.closest('tr');
+            if (row) {
+                userEmail = row.querySelector('td:nth-child(2)').textContent;
+            } else {
+                const card = deleteBtn.closest('.mobile-user-card');
+                if (card) {
+                    userEmail = card.querySelector('p').textContent;
+                }
+            }
+
             if (confirm(`Tem certeza que deseja excluir o usuário ${userEmail}?`)) {
                 await deleteUser(userId);
                 renderUsers();
             }
         }
-    });
+    }
+
+    if (userTableBody) userTableBody.addEventListener('click', handleUserActions);
+    if (userMobileList) userMobileList.addEventListener('click', handleUserActions);
 
     cancelChangePasswordBtn.addEventListener('click', () => {
         changePasswordModal.classList.add('hidden');
@@ -194,6 +284,7 @@ export function setupAdminPage() {
     });
 
     cancelEditBtn.addEventListener('click', resetForm);
+    if (closeModalBtn) closeModalBtn.addEventListener('click', resetForm);
     userForm.addEventListener('submit', handleFormSubmit);
 
     searchInput.addEventListener('input', (e) => {
