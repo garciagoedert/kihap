@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <title>Trabalhe Conosco - Kihap Martial Arts</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-black text-white antialiased">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main class="bg-gray-900 min-h-screen pt-24 pb-12 px-4 flex flex-col items-center justify-center">
+
+        <div class="w-full max-w-3xl">
+            <!-- Form Container -->
+            <div id="form-container" class="bg-gray-800/50 rounded-xl p-6 md:p-10 border border-gray-700 shadow-2xl">
+                <header class="mb-8 text-center">
+                    <h1 class="text-3xl md:text-4xl font-black uppercase tracking-wide font-title mb-2 text-white">
+                        Trabalhe <span class="text-yellow-500">Conosco</span>
+                    </h1>
+                    <p class="text-gray-400">Preencha o formulário abaixo para se candidatar.</p>
+                </header>
+
+                <form id="rh-application-form" class="space-y-8">
+
+                    <!-- 1. Dados Pessoais -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white border-l-4 border-yellow-500 pl-3">1. Dados Pessoais
+                        </h4>
+
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="nome" class="block text-sm font-medium text-gray-300 mb-1">Nome completo
+                                    *</label>
+                                <input type="text" id="nome"
+                                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    placeholder="Seu nome completo" required>
+                            </div>
+
+                            <div>
+                                <label for="idade" class="block text-sm font-medium text-gray-300 mb-1">Data de
+                                    Nascimento *</label>
+                                <input type="date" id="idade"
+                                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    required>
+                            </div>
+
+                            <div>
+                                <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone /
+                                    WhatsApp *</label>
+                                <input type="tel" id="telefone"
+                                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    placeholder="(DDD) 99999-9999" required>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="email" class="block text-sm font-medium text-gray-300 mb-1">E-mail *</label>
+                                <input type="email" id="email"
+                                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    placeholder="seu@email.com" required>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="cidade" class="block text-sm font-medium text-gray-300 mb-1">Cidade e bairro
+                                    onde mora *</label>
+                                <input type="text" id="cidade"
+                                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    placeholder="Ex: Florianópolis, Centro" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Vaga e Experiência -->
+                    <div class="space-y-4 pt-4 border-t border-gray-700">
+                        <h4 class="text-lg font-semibold text-white border-l-4 border-yellow-500 pl-3">2. Vaga e
+                            Experiência</h4>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-3">Para qual vaga você está se
+                                candidatando?</label>
+                            <div class="space-y-3 bg-gray-900 p-4 rounded-lg border border-gray-700">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="radio" name="vaga" value="Professor(a) de artes marciais"
+                                        class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500 h-5 w-5">
+                                    <span class="text-gray-300">Professor(a) de artes marciais</span>
+                                </label>
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="radio" name="vaga" value="Auxiliar de tatame"
+                                        class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500 h-5 w-5">
+                                    <span class="text-gray-300">Auxiliar de tatame</span>
+                                </label>
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="radio" name="vaga" value="Administrativo Comercial"
+                                        class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500 h-5 w-5">
+                                    <span class="text-gray-300">Administrativo Comercial</span>
+                                </label>
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="radio" name="vaga" value="Estagiário"
+                                        class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500 h-5 w-5">
+                                    <span class="text-gray-300">Estagiário</span>
+                                </label>
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" name="vaga" value="Outro"
+                                        class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500 h-5 w-5">
+                                    <span class="text-gray-300 w-16">Outro:</span>
+                                    <input type="text" id="vaga_outro_text"
+                                        class="flex-1 bg-transparent border-b border-gray-600 focus:border-yellow-500 focus:outline-none text-white text-sm pb-1 transition-colors"
+                                        disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Experiências Grid -->
+                        <div class="space-y-6">
+                            <!-- Atendimento -->
+                            <div
+                                class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                                    <label class="block text-sm font-medium text-gray-300">Você já trabalhou com
+                                        atendimento ao público?</label>
+                                    <div class="flex space-x-6">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_atendimento" value="Sim"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Sim</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_atendimento" value="Não"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Não</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="opacity-50 transition-opacity duration-200">
+                                    <textarea id="exp_atendimento_desc" rows="2"
+                                        class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 text-sm"
+                                        placeholder="Descreva brevemente sua experiência..." disabled></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Administrativo -->
+                            <div
+                                class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                                    <label class="block text-sm font-medium text-gray-300">Possui experiência
+                                        administrativa?</label>
+                                    <div class="flex space-x-6">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_adm" value="Sim"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Sim</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_adm" value="Não"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Não</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="opacity-50 transition-opacity duration-200">
+                                    <textarea id="exp_adm_desc" rows="2"
+                                        class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 text-sm"
+                                        placeholder="Descreva brevemente..." disabled></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Criança -->
+                            <div
+                                class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                                    <label class="block text-sm font-medium text-gray-300">Possui experiência com
+                                        criança?</label>
+                                    <div class="flex space-x-6">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_crianca" value="Sim"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Sim</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="exp_crianca" value="Não"
+                                                class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                            <span class="text-gray-300">Não</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="opacity-50 transition-opacity duration-200">
+                                    <textarea id="exp_crianca_desc" rows="2"
+                                        class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 text-sm"
+                                        placeholder="Descreva brevemente..." disabled></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Disponibilidade -->
+                    <div class="space-y-4 pt-4 border-t border-gray-700">
+                        <h4 class="text-lg font-semibold text-white border-l-4 border-yellow-500 pl-3">3.
+                            Disponibilidade</h4>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Qual é sua disponibilidade
+                                    de horário?</label>
+                                <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 space-y-2">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="disponibilidade" value="Manhã"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Manhã</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="disponibilidade" value="Tarde"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Tarde</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="disponibilidade" value="Noite"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Noite</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="disponibilidade" value="Horário integral"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Horário integral</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Quando você pode
+                                    iniciar?</label>
+                                <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 space-y-2">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="inicio" value="Imediatamente"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Imediatamente</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="inicio" value="Em até 15 dias"
+                                            class="form-radio text-yellow-500 bg-gray-800 border-gray-600 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Em até 15 dias</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Perfil Profissional -->
+                    <div class="space-y-4 pt-4 border-t border-gray-700">
+                        <h4 class="text-lg font-semibold text-white border-l-4 border-yellow-500 pl-3">4. Perfil
+                            Profissional</h4>
+
+                        <div>
+                            <label for="motivo" class="block text-sm font-medium text-gray-300 mb-1">Por que deseja
+                                trabalhar conosco?</label>
+                            <textarea id="motivo" rows="3"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                placeholder="Conte-nos um pouco sobre sua motivação"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="pontos_fortes" class="block text-sm font-medium text-gray-300 mb-1">Quais são
+                                seus principais pontos fortes no ambiente de trabalho? *</label>
+                            <textarea id="pontos_fortes" rows="3"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                placeholder="Seus pontos fortes" required></textarea>
+                        </div>
+
+                        <!-- Artes Marciais -->
+                        <div
+                            class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                                <label class="block text-sm font-medium text-gray-300">Você pratica ou já praticou
+                                    alguma arte marcial?</label>
+                                <div class="flex space-x-6">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" name="arte_marcial" value="Sim"
+                                            class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Sim</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" name="arte_marcial" value="Não"
+                                            class="form-radio text-yellow-500 focus:ring-yellow-500">
+                                        <span class="text-gray-300">Não</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="opacity-50 transition-opacity duration-200">
+                                <textarea id="arte_marcial_desc" rows="2"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-500 text-sm"
+                                    placeholder="Qual(is) e por quanto tempo?" disabled></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-6">
+                        <button type="submit" id="submit-btn"
+                            class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold py-5 px-6 rounded-xl text-center uppercase tracking-widest shadow-lg transform hover:-translate-y-1 transition duration-300">
+                            Enviar Candidatura
+                        </button>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="success-message"
+                        class="hidden text-center bg-green-500/20 border border-green-500/50 rounded-lg p-4 animate-fade-in">
+                        <div class="flex flex-col items-center">
+                            <div class="bg-green-500 rounded-full p-2 mb-2">
+                                <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-green-400 font-bold text-lg">Sucesso!</h3>
+                            <p class="text-green-300 text-sm">Sua candidatura foi enviada. Entraremos em contato em
+                                breve.</p>
+                        </div>
+                    </div>
+                    <div id="error-message"
+                        class="hidden text-center bg-red-500/20 border border-red-500/50 rounded-lg p-4 animate-fade-in text-red-300">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/trabalheconosco.js"></script>
+
+</body>
+
+</html>

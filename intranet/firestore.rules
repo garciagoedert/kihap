@@ -7,6 +7,11 @@ service cloud.firestore {
       allow read, update, delete: if true;
     }
 
+    // Regra para o Planificador
+    match /plans/{planId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Regra para a coleção prospects
     match /prospects/{prospectId} {
       allow read, write: if request.auth != null;
@@ -301,5 +306,12 @@ service cloud.firestore {
     match /scripts/{scriptId} {
       allow read, write: if request.auth != null;
     }
+
+    // Regra para Candidatos RH (Trabalhe Conosco)
+    match /rh_prospects/{prospectId} {
+      allow create: if true; // Permite que o formulário público crie novos candidatos
+      allow read, update, delete: if request.auth != null; // Apenas usuários logados (RH) podem gerenciar
+    }
+
   }
 }

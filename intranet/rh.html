@@ -1,0 +1,2666 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - CRM RH</title>
+    <!-- Favicon -->
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.css">
+    <link rel="stylesheet" href="log.css">
+
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Dragging styles */
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        .drag-over {
+            @apply border-dashed border-2 border-gray-500 bg-gray-500/10;
+        }
+
+        /* Chat Styles */
+        .chat-bubble {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            position: relative;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.sent {
+            background-color: #005c4b;
+            /* WhatsApp Green */
+            color: #e9edef;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+
+        .chat-bubble.received {
+            background-color: #202c33;
+            /* Dark Gray */
+            color: #d1d7db;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        .chat-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: right;
+            margin-top: 4px;
+
+            .chat-time {
+                font-size: 0.65rem;
+                color: rgba(255, 255, 255, 0.6);
+                text-align: right;
+                margin-top: 4px;
+            }
+
+            /* Drawflow Customization */
+            #drawflow {
+                width: 100%;
+                height: 100%;
+                background: #1a1a1a;
+                background-size: 25px 25px;
+                background-image: linear-gradient(to right, #2a2a2a 1px, transparent 1px), linear-gradient(to bottom, #2a2a2a 1px, transparent 1px);
+            }
+
+            .drawflow .drawflow-node {
+                background: #2a2a2a;
+                border: 1px solid #4a4a4a;
+                color: white;
+                min-width: 250px;
+                padding: 0;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            }
+
+            .drawflow .drawflow-node .input,
+            .drawflow .drawflow-node .output {
+                background: #eab308;
+                /* Yellow-500 */
+            }
+
+            .drawflow .drawflow-node .title-box {
+                padding: 10px;
+                border-bottom: 1px solid #4a4a4a;
+                border-radius: 8px 8px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .drawflow .drawflow-node .box {
+                padding: 15px;
+            }
+
+            /* Modal Editor Fullscreen */
+            #visualEditorModal {
+                z-index: 1000;
+            }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+
+    <div id="kanban-container" class="flex h-screen">
+        <div id="sidebar-container"></div>
+
+        <!-- Backdrop for mobile sidebar -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <!-- Main Content -->
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+            <div id="header-container" class="flex-shrink-0"></div>
+
+            <!-- Board Content -->
+            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+                <!-- Stats -->
+                <!-- Stats Removed -->
+
+                <!-- Filters -->
+                <div class="flex flex-col sm:flex-row gap-2 mb-2 flex-shrink-0">
+                    <div class="relative flex-grow">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
+                            class="w-full bg-[#1a1a1a] text-gray-200 border border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-md">
+                    </div>
+                    <button id="openFiltersBtn"
+                        class="bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        <i class="fas fa-filter text-yellow-500"></i> <span class="hidden sm:inline">Filtros</span>
+                    </button>
+
+                    <button id="openFlowEditorBtn" onclick="openVisualEditor()" style="display: none !important;"
+                        class="hidden bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        <i class="fas fa-project-diagram text-blue-500"></i> <span class="hidden sm:inline">Editor de
+                            Fluxo</span>
+                    </button>
+
+                </div>
+
+                <!-- Kanban Board -->
+                <div id="kanban-board" class="flex flex-col md:grid md:grid-cols-4 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+                    <!-- Columns will be injected here by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
+        <div
+            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
+                <h2 class="text-xl font-bold">Configuração do Bot WhatsApp</h2>
+                <button id="closeConfigModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="configForm" class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                <p class="text-sm text-gray-400 mb-4">Edite as mensagens automáticas enviadas pelo robô.</p>
+
+                <div
+                    class="form-group mb-4 flex items-center justify-between bg-gray-700/50 p-3 rounded-lg border border-gray-600">
+                    <div>
+                        <label class="block text-sm font-bold text-white mb-1">Status do Robô</label>
+                        <p class="text-xs text-gray-400">Quando desligado, o robô não responderá automaticamente, mas as
+                            mensagens continuarão sendo registradas.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="cfg_bot_enabled" class="sr-only peer" checked>
+                        <div
+                            class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-300 peer-checked:text-green-400">Ativo</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Solicitação de Nome</label>
+                    <textarea id="cfg_ask_name" rows="2"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Boas Vindas
+                        (Matrícula)</label>
+                    <textarea id="cfg_welcome_new_student" rows="3"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Mensagem enviada após confirmação de pagamento da matrícula..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Brasília)</label>
+                        <input type="text" id="cfg_id_brasilia"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Floripa)</label>
+                        <input type="text" id="cfg_id_floripa"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
+                            (Dourados)</label>
+                        <input type="text" id="cfg_id_dourados"
+                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Atendimento Humano</label>
+                    <textarea id="cfg_human_handoff" rows="2"
+                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Mensagem enviada quando solicitam humano..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Menu Brasília</label>
+                        <textarea id="cfg_menu_bsb" rows="5"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Menu Florianópolis</label>
+                        <textarea id="cfg_menu_floripa" rows="5"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Boas-vindas</label>
+                    <textarea id="cfg_welcome" rows="6"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Menu de Intenção (Qualificação)</label>
+                    <textarea id="cfg_intent_menu" rows="4"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                        placeholder="Como posso te ajudar? \n1. Agendar...\n2. Já sou aluno..."></textarea>
+                </div>
+
+                <div class="form-group border-t border-gray-700 pt-4 mt-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Conteúdo "Saber Mais"</label>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">URL do Vídeo (YouTube)</label>
+                            <input type="text" id="cfg_know_more_video"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Mensagem de Texto</label>
+                            <textarea id="cfg_know_more_message" rows="4"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Pergunta de Qualificação</label>
+                    <input type="text" id="cfg_confirmation"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="form-group border-t border-gray-700 pt-4 mt-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Perguntas de Qualificação Extras</label>
+                    <p class="text-xs text-gray-500 mb-2">Adicione perguntas que serão feitas uma a uma após o filtro
+                        inicial.</p>
+
+                    <div id="extraQuestionsList" class="space-y-2 mb-2">
+                        <!-- Questions injected here -->
+                    </div>
+
+                    <button type="button" id="addQuestionBtn"
+                        class="text-xs text-yellow-500 hover:text-yellow-400 font-medium flex items-center gap-1">
+                        <i class="fas fa-plus"></i> Adicionar Pergunta
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem de Handoff (Transbordo)</label>
+                    <input type="text" id="cfg_handoff"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm">
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Mensagem para Alunos/Suporte</label>
+                    <textarea id="cfg_support_message" rows="3"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancelConfigBtn"
+                        class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium transition-colors">Cancelar</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold shadow-lg shadow-yellow-900/20 transition-colors">Salvar
+                        Configuração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Prospect Modal -->
+    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
+        <div
+            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
+                <div class="flex items-center gap-4">
+                    <h2 id="modalTitle" class="text-xl font-bold">Adicionar Novo Candidato</h2>
+                </div>
+                <button id="closeFormModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="flex border-b border-gray-700">
+                <button type="button" id="tabDetailsBtn"
+                    class="flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors">Detalhes</button>
+                <button type="button" id="tabWhatsAppBtn"
+                    class="flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors">WhatsApp</button>
+            </div>
+
+            <form id="prospectForm" class="p-4 sm:p-6 overflow-y-auto flex-1">
+                <div id="tabDetailsContent">
+                    <input type="hidden" id="prospectId">
+                    <input type="hidden" id="prospectType">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Identificação -->
+                        <div class="form-group md:col-span-2 border-b border-gray-700 pb-2 mb-2">
+                            <h3 class="text-sm font-bold text-yellow-500 uppercase">Dados Pessoais</h3>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome
+                                Completo</label>
+                            <input type="text" id="responsavel"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prioridade"
+                                class="block text-sm font-medium text-gray-300 mb-1">Prioridade</label>
+                            <select id="prioridade"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                <option value="3">3 - Média</option>
+                                <option value="5">5 - Máxima 🚀</option>
+                                <option value="4">4 - Alta 🔥</option>
+                                <option value="2">2 - Baixa ❄️</option>
+                                <option value="1">1 - Mínima 💤</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone /
+                                WhatsApp</label>
+                            <input type="text" id="telefone"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <a id="whatsappLink" href="#" target="_blank"
+                                class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
+                                <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
+                            </a>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                            <input type="email" id="email"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dataNascimento" class="block text-sm font-medium text-gray-300 mb-1">Data
+                                Nascimento</label>
+                            <input type="date" id="dataNascimento"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endereco"
+                                class="block text-sm font-medium text-gray-300 mb-1">Cidade/Bairro</label>
+                            <input type="text" id="endereco"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <!-- Vaga e Disponibilidade -->
+                        <div class="form-group md:col-span-2 border-b border-gray-700 pb-2 mb-2 mt-4">
+                            <h3 class="text-sm font-bold text-yellow-500 uppercase">Interesse e Disponibilidade</h3>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vaga" class="block text-sm font-medium text-gray-300 mb-1">Vaga
+                                Pretendida</label>
+                            <input type="text" id="vaga"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade
+                                (CRM)</label>
+                            <select id="unidade"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                <option value="">Selecione a Unidade</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="disponibilidade"
+                                class="block text-sm font-medium text-gray-300 mb-1">Disponibilidade</label>
+                            <input type="text" id="disponibilidade"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inicio" class="block text-sm font-medium text-gray-300 mb-1">Início</label>
+                            <input type="text" id="inicio"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <!-- Experiência -->
+                        <div class="form-group md:col-span-2 border-b border-gray-700 pb-2 mb-2 mt-4">
+                            <h3 class="text-sm font-bold text-yellow-500 uppercase">Experiência e Perfil</h3>
+                        </div>
+
+                        <div
+                            class="form-group md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/30 p-3 rounded-lg">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Atendimento</label>
+                                <input type="text" id="expAtendimento"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded p-1 text-sm mb-1"
+                                    placeholder="Sim/Não">
+                                <textarea id="obsAtendimento" rows="2"
+                                    class="w-full bg-gray-800 border-0 rounded p-1 text-xs text-gray-400"
+                                    placeholder="Detalhes..."></textarea>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-400 uppercase mb-1">Administrativo</label>
+                                <input type="text" id="expAdm"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded p-1 text-sm mb-1"
+                                    placeholder="Sim/Não">
+                                <textarea id="obsAdm" rows="2"
+                                    class="w-full bg-gray-800 border-0 rounded p-1 text-xs text-gray-400"
+                                    placeholder="Detalhes..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Criança</label>
+                                <input type="text" id="expCrianca"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded p-1 text-sm mb-1"
+                                    placeholder="Sim/Não">
+                                <textarea id="obsCrianca" rows="2"
+                                    class="w-full bg-gray-800 border-0 rounded p-1 text-xs text-gray-400"
+                                    placeholder="Detalhes..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group md:col-span-2 mt-2">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Artes Marciais</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="arteMarcial"
+                                    class="w-1/4 bg-gray-700 border border-gray-600 rounded p-2 text-sm"
+                                    placeholder="Sim/Não">
+                                <input type="text" id="obsArteMarcial"
+                                    class="w-3/4 bg-gray-700 border border-gray-600 rounded p-2 text-sm"
+                                    placeholder="Detalhes da experiência...">
+                            </div>
+                        </div>
+
+                        <div class="form-group md:col-span-2 mt-2">
+                            <label for="pontosFortes" class="block text-sm font-medium text-gray-300 mb-1">Pontos
+                                Fortes</label>
+                            <textarea id="pontosFortes" rows="2"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+                        <div class="form-group md:col-span-2">
+                            <label for="motivo" class="block text-sm font-medium text-gray-300 mb-1">Motivação</label>
+                            <textarea id="motivo" rows="2"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+
+                        <!-- Extras -->
+                        <div class="form-group md:col-span-2 border-t border-gray-700 pt-4 mt-2">
+                            <label for="observacoes" class="block text-sm font-medium text-gray-300 mb-1">Observações
+                                Internas</label>
+                            <textarea id="observacoes" rows="2"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                        </div>
+
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
+                            <div id="contactLogContainer"
+                                class="max-h-40 overflow-y-auto bg-gray-900/50 p-3 rounded-lg space-y-3 mb-3 border border-gray-700">
+                                <!-- Log entries -->
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                                <button type="button" id="addContactLogBtn"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar
+                                    Nota</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                            <div id="tagsContainer" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <div id="createdByContainer" class="form-group md:col-span-2 mt-4 hidden">
+                            <p class="text-sm text-gray-400">Criado por: <span id="createdByInfo"
+                                    class="font-semibold"></span></p>
+                        </div>
+                    </div>
+                    <div
+                        class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-700">
+                        <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="archiveBtn"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Arquivar</button>
+                            <button type="button" id="deleteBtn"
+                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Excluir</button>
+                        </div>
+                        <div id="formControls" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="editBtn"
+                                class="bg-primary hover:bg-primary-dark font-semibold py-2 px-4 rounded-lg w-full sm:w-auto">Editar</button>
+                            <button type="button" id="cancelFormBtn"
+                                class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Cancelar</button>
+                            <button type="submit" id="saveBtn"
+                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Details Tab Content -->
+
+                <div id="tabWhatsAppContent" class="hidden flex flex-col" style="min-height: 400px;">
+                    <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-700">
+                        <h3 class="text-sm font-semibold text-gray-400">Conversa WhatsApp</h3>
+                        <button type="button" id="refreshChatBtn"
+                            class="text-gray-400 hover:text-green-500 transition-colors" title="Atualizar histórico">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div id="whatsappChatArea"
+                        class="flex-1 bg-gray-900 rounded-lg p-4 mb-4 overflow-y-auto space-y-4 max-h-[400px]">
+                        <div class="text-center text-gray-500 text-sm mt-4">Selecione um prospect com telefone para
+                            carregar o
+                            histórico.</div>
+                    </div>
+                    <div class="flex gap-2 p-2 bg-[#1a1a1a] sticky bottom-0">
+                        <input type="text" id="whatsappInput" placeholder="Digite sua mensagem..."
+                            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            disabled>
+                        <button type="button" id="whatsappSendBtn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold">Importar Leads</h2>
+                <button id="closeImportModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <p class="text-gray-400 mb-4">Copie e cole os dados da sua planilha (formato CSV). A primeira linha deve
+                    ser o cabeçalho e as colunas devem estar na seguinte ordem:</p>
+                <code
+                    class="block bg-gray-900 text-gray-300 p-2 rounded-md text-xs mb-4">Empresa,Setor,Prioridade,Ticket Estimado,Telefone,Email,CPF,CNPJ,Endereço,Redes Sociais,Site,Observações</code>
+                <textarea id="csvData" rows="10"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    placeholder="Cole seus dados aqui..."></textarea>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-700">
+                <button type="button" id="cancelImportBtn"
+                    class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                <button type="button" id="processImportBtn"
+                    class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 class="text-lg font-bold mb-2">Confirmar Ação</h3>
+            <p id="confirmMessage" class="text-gray-300 mb-6">Você tem certeza?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelConfirmBtn"
+                    class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-6 rounded-lg">Cancelar</button>
+                <button id="confirmActionBtn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Modal -->
+    <div id="filtersModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
+        <div class="bg-[#1a1a1a] w-full max-w-lg rounded-xl shadow-2xl flex flex-col border border-gray-800">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-filter text-yellow-500"></i>
+                    Filtros</h2>
+                <button id="closeFiltersModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Prioridade</label>
+                        <select id="priorityFilter"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="">Todas</option>
+                            <option value="5">Máxima (5)</option>
+                            <option value="4">Alta (4)</option>
+                            <option value="3">Média (3)</option>
+                            <option value="2">Baixa (2)</option>
+                            <option value="1">Mínima (1)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
+                        <select id="unidadeFilter"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Tags</label>
+                    <select id="tagFilter"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 border-t border-gray-700 flex flex-col gap-3">
+                    <button id="resetFiltersBtn"
+                        class="w-full bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                        Limpar Filtros
+                    </button>
+                    Limpar Filtros
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-800 bg-[#111111]/50 rounded-b-xl flex justify-end">
+                <button id="applyFiltersBtn"
+                    class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg">Ver
+                    Resultados</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Flow Editor Modal -->
+    <!-- Visual Flow Editor Modal -->
+    <div id="visualEditorModal" class="fixed inset-0 bg-[#111111] hidden z-[9999]">
+        <!-- Toolbar -->
+        <div class="h-16 bg-[#1a1a1a] border-b border-gray-700 flex items-center justify-between px-6">
+            <h2 class="text-xl font-bold text-white"><i class="fas fa-project-diagram mr-2 text-yellow-500"></i> Editor
+                de Fluxo</h2>
+            <div class="flex gap-2">
+                <button onclick="saveFlow()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-save mr-2"></i> Salvar
+                </button>
+                <button onclick="generateDefaultMigrationFlow()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" title="Restaurar Fluxo Padrão">
+                    <i class="fas fa-magic mr-2"></i> Padrão
+                </button>
+                <button onclick="closeVisualEditor()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-times mr-2"></i> Fechar
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Content -->
+        <div class="flex-1 flex overflow-hidden h-full">
+            <!-- Sidebar / Nodes Palette -->
+            <div class="w-64 bg-[#111111] border-r border-gray-700 p-4 flex flex-col gap-3">
+                <h3 class="text-gray-400 text-sm font-semibold uppercase mb-2">Elementos</h3>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="message">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-comment text-blue-400"></i>
+                        <span>Mensagem</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="question">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-question-circle text-purple-400"></i>
+                        <span>Pergunta</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="condition">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-code-branch text-orange-400"></i>
+                        <span>Condição</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-800 rounded border border-gray-700 cursor-move hover:border-yellow-500 transition-colors"
+                    draggable="true" ondragstart="drag(event)" data-node="action">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-bolt text-red-400"></i>
+                        <span>Ação</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div id="drawflow" class="drawflow flex-1 relative h-full w-full" ondrop="drop(event)"
+                ondragover="allowDrop(event)">
+                <!-- Nodes will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Drawflow CSS -->
+    <link href="https://unpkg.com/drawflow/dist/drawflow.min.css" rel="stylesheet">
+    <style>
+        /* Custom Drawflow Node Styling */
+        .drawflow-node {
+            background-color: #1f2937 !important;
+            /* bg-gray-800 */
+            border: 1px solid #374151 !important;
+            /* border-gray-700 */
+            color: white !important;
+            border-radius: 0.5rem !important;
+            /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            /* shadow-md */
+            padding: 0 !important;
+            /* Remove internal padding, use inner boxes */
+            width: 350px !important;
+            min-width: 350px !important;
+            display: flex;
+            /* Ensure flex layout */
+            flex-direction: column;
+            overflow: visible !important;
+            /* Allow handles to hang out */
+            z-index: 10;
+        }
+
+        .drawflow-node .inputs,
+        .drawflow-node .outputs {
+            width: 0;
+            height: 0;
+            position: absolute;
+            display: flex;
+            align-items: center;
+        }
+
+        .drawflow-node .inputs {
+            left: -16px !important;
+        }
+
+        .drawflow-node .outputs {
+            right: -16px !important;
+        }
+
+        .drawflow-node .input,
+        .drawflow-node .output {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            border: 1px solid #000;
+            margin-bottom: 5px;
+        }
+
+        /* Inner Content Styling */
+        .drawflow-node>div {
+            width: 100%;
+        }
+
+        .drawflow-node .title-box {
+            background: #111827;
+            /* gray-900 */
+            border-bottom: 1px solid #374151;
+            padding: 10px;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .drawflow-node .box {
+            padding: 12px;
+        }
+
+        .drawflow-node textarea {
+            background-color: #374151;
+            /* gray-700 */
+            border: 1px solid #4b5563;
+            /* gray-600 */
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            font-size: 0.875rem;
+            line-height: 1.25;
+        }
+
+        .drawflow-node textarea:focus {
+            outline: none;
+            border-color: #facc15;
+            /* yellow-400 */
+        }
+
+        .drawflow-node input[type="text"],
+        .drawflow-node select {
+            background-color: #374151;
+            /* gray-700 */
+            border: 1px solid #4b5563;
+            /* gray-600 */
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .drawflow-node.selected {
+            border: 1px solid #f6e05e !important;
+            /* border-yellow-400 */
+            box-shadow: 0 0 0 3px rgba(246, 224, 94, 0.5) !important;
+            /* ring-yellow-400 */
+        }
+
+
+        .drawflow {
+            background: #1a1a1a !important;
+            /* bg-[#1a1a1a] */
+            background-image: radial-gradient(#4a5568 1px, transparent 1px) !important;
+            /* bg-gray-700 for grid */
+            background-size: 20px 20px !important;
+            overflow: hidden !important;
+            cursor: grab;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drawflow:active {
+            cursor: grabbing;
+        }
+
+        .drawflow-base-node {
+            background: #2d3748 !important;
+            border: 1px solid #4a5568 !important;
+            color: #e2e8f0 !important;
+        }
+
+        .drawflow-delete {
+            background: #e53e3e !important;
+            /* bg-red-600 */
+            color: white !important;
+        }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase Imports
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, doc, addDoc, getDoc, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { db, appId, app, functions } from './firebase-config.js';
+        import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { setupUIListeners, loadComponents } from './common-ui.js';
+
+        // --- INITIALIZATION ---
+        const auth = getAuth(app);
+        const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+        const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
+        const getWhatsAppHistory = httpsCallable(functions, 'getWhatsAppHistory');
+
+        // --- GLOBAL STATE ---
+        let evoUnits = [];
+        let prospects = [];
+        let leads = [];
+        let combinedData = [];
+        let filteredProspects = [];
+        let prospectsListener = null;
+        let leadsListener = null;
+        let currentProspectId = null;
+
+        const COLUMNS = {
+            'Novo': 'novo', 'Contactado': 'contactado', 'Entrevista': 'entrevista',
+            'Contratado': 'contratado'
+        };
+        const COLUMN_NAMES = Object.keys(COLUMNS);
+        const TAGS = ['Whatsapp', 'Ligação', 'Email', 'Follow-up', 'Urgente'];
+
+        // --- UI ELEMENTS ---
+        const kanbanBoard = document.getElementById('kanban-board');
+        // statsContainer removed
+        const formModal = document.getElementById('formModal');
+        const prospectForm = document.getElementById('prospectForm');
+        const confirmModal = document.getElementById('confirmModal');
+        const kanbanContainer = document.getElementById('kanban-container');
+        const importModal = document.getElementById('importModal');
+        const filtersModal = document.getElementById('filtersModal');
+        const openFiltersBtn = document.getElementById('openFiltersBtn');
+        const closeFiltersModalBtn = document.getElementById('closeFiltersModalBtn');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                    document.getElementById('kanban-container').classList.remove('hidden');
+                    setupListeners();
+                } else {
+                    window.location.href = 'login.html';
+                }
+            } else {
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Anonymous Authentication Error:", error);
+                    document.body.innerHTML = `<div class="flex items-center justify-center h-screen text-red-500">Erro de autenticação com o servidor. Tente novamente mais tarde.</div>`;
+                }
+            }
+        });
+
+        // --- DATA HANDLING (FIRESTORE) ---
+        function setupListeners() {
+            if (prospectsListener) prospectsListener();
+            if (leadsListener) leadsListener();
+
+            const prospectsCollection = collection(db, 'rh_prospects');
+            prospectsListener = onSnapshot(prospectsCollection, (snapshot) => {
+                prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'prospect' })).filter(p => !p.pagina || p.pagina === 'RH');
+                combineAndRender();
+            }, (error) => {
+                console.error("Error fetching prospects:", error);
+
+                // Show visual error if needed, or just ensure board renders empty
+                if (prospects.length === 0) renderBoard();
+            });
+
+            const leadsCollection = collection(db, 'rh_leads');
+            leadsListener = onSnapshot(leadsCollection, (snapshot) => {
+                leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lead' }));
+                combineAndRender();
+            }, (error) => {
+                console.error("Error fetching leads:", error);
+            });
+        }
+
+        function combineAndRender() {
+            const formattedLeads = leads.map(lead => ({
+                id: lead.id,
+                responsavel: lead.nome,
+                unidade: lead.unidade,
+                setor: '', // Leads from website don't have a program yet
+                prioridade: 3, // Default priority for leads
+                status: lead.status || 'Novo',
+                ticketEstimado: 0,
+                origemLead: lead['origem do lead'] || 'Site',
+                telefone: lead.telefone,
+                email: lead.email,
+                createdAt: lead.createdAt,
+                type: 'lead'
+            }));
+            combinedData = [...prospects, ...formattedLeads];
+            applyFilters();
+        }
+
+        // --- RENDERING ---
+        function renderBoard() {
+            kanbanBoard.innerHTML = '';
+            const isMobile = window.innerWidth < 768;
+
+            COLUMN_NAMES.forEach(status => {
+                const columnId = COLUMNS[status];
+                const columnProspects = filteredProspects.filter(p => p.status === status);
+
+                const columnEl = document.createElement('div');
+
+                let contentHTML;
+                if (isMobile) {
+                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
+                    contentHTML = `
+                        <div class="overflow-x-auto pb-3">
+                            <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-3 p-2 min-h-[120px] pr-2">
+                                <!-- Cards will be injected here -->
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col overflow-hidden';
+                    contentHTML = `
+                        <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-2 space-y-3 rounded-md overflow-y-auto">
+                           <!-- Cards will be injected here -->
+                        </div>
+                    `;
+                }
+
+                columnEl.innerHTML = `
+                    <div class="flex justify-between items-center p-3 flex-shrink-0">
+                        <h3 class="font-bold">${status}</h3>
+                        <span class="bg-gray-700 text-gray-300 text-xs font-semibold px-2 py-1 rounded-full">${columnProspects.length}</span>
+                    </div>
+                    ${contentHTML}
+                `;
+                kanbanBoard.appendChild(columnEl);
+
+                const contentArea = columnEl.querySelector('.column-content');
+                if (columnProspects.length === 0) {
+                    contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
+                } else {
+                    columnProspects
+                        .sort((a, b) => {
+                            if (status === 'Novo') {
+                                const getTime = (p) => {
+                                    if (!p.createdAt) return 0;
+                                    if (typeof p.createdAt.toMillis === 'function') return p.createdAt.toMillis();
+                                    if (p.createdAt instanceof Date) return p.createdAt.getTime();
+                                    return new Date(p.createdAt).getTime();
+                                };
+                                return getTime(b) - getTime(a);
+                            }
+                            return b.prioridade - a.prioridade;
+                        })
+                        .forEach(prospect => {
+                            contentArea.appendChild(createProspectCard(prospect, isMobile));
+                        });
+                }
+            });
+            addDragAndDropHandlers();
+        }
+
+        function createProspectCard(prospect, isMobile = false) {
+            const card = document.createElement('div');
+            const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
+            card.className = `prospect-card bg-[#111111] p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
+            card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
+            card.draggable = true;
+            card.dataset.id = prospect.id;
+
+            const sectorColor = getSectorColor(prospect.setor);
+
+            const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200">${tag}</span>`).join('');
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h4 class="font-bold mb-2 flex-grow pr-2">${prospect.responsavel || 'Prospect sem nome'}</h4>
+                </div>
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">P${prospect.prioridade}</span>
+                    ${prospect.unread ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/50 animate-pulse">Novo</span>' : ''}
+                </div>
+                <div class="flex items-center gap-1 mb-3 flex-wrap">
+                    ${tagsHTML}
+                </div>
+                ${prospect.unidade ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> ${prospect.unidade}</p>` : ''}
+                ${prospect.origemLead ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-sign-in-alt mr-1"></i> ${prospect.origemLead}</p>` : ''}
+                <p class="text-sm text-green-400 font-semibold mb-2">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
+                ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
+            `;
+
+            card.addEventListener('click', () => {
+                openFormModal(prospect);
+            });
+
+            return card;
+        }
+
+        // --- DRAG & DROP ---
+        function addDragAndDropHandlers() {
+            const cards = document.querySelectorAll('.prospect-card');
+            const columns = document.querySelectorAll('.column-content');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', () => card.classList.add('dragging'));
+                card.addEventListener('dragend', () => card.classList.remove('dragging'));
+            });
+
+            columns.forEach(column => {
+                column.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const dropTarget = e.currentTarget;
+                    dropTarget.classList.add('drag-over');
+                });
+                column.addEventListener('dragleave', e => {
+                    const dropTarget = e.currentTarget;
+                    dropTarget.classList.remove('drag-over');
+                });
+                column.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const dropTarget = e.currentTarget;
+                    dropTarget.classList.remove('drag-over');
+                    const draggingCard = document.querySelector('.dragging');
+                    if (draggingCard) {
+                        const prospectId = draggingCard.dataset.id;
+                        const newStatus = dropTarget.dataset.status;
+                        updateProspectStatus(prospectId, newStatus);
+                    }
+                });
+            });
+        }
+
+        async function updateProspectStatus(prospectId, newStatus) {
+            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+            const item = combinedData.find(p => p.id === prospectId);
+            const oldStatus = item ? item.status : 'N/A';
+
+            if (!item) {
+                console.error("Item not found:", prospectId);
+                return;
+            }
+
+            try {
+                let itemRef;
+                if (item.type === 'lead') {
+                    itemRef = doc(db, 'leads', prospectId);
+                } else {
+                    itemRef = doc(db, 'rh_prospects', prospectId);
+                }
+
+                await updateDoc(itemRef, {
+                    status: newStatus,
+                    updatedAt: serverTimestamp()
+                });
+
+                const itemName = item.responsavel || item.empresa || 'N/A';
+                generalLog.add(user, 'Move Card', `Card "${itemName}" moved from ${oldStatus} to ${newStatus}`);
+
+                if (newStatus === 'Fechado' && item.type === 'prospect') {
+                    await archiveProspect(prospectId);
+                }
+            } catch (error) {
+                console.error("Error updating status:", error);
+            }
+        }
+
+        // --- FILTERS ---
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const priority = document.getElementById('priorityFilter').value;
+            const tag = document.getElementById('tagFilter').value;
+            const unidade = document.getElementById('unidadeFilter').value;
+            const prospectingStatuses = Object.keys(COLUMNS);
+
+
+            filteredProspects = combinedData.filter(p => {
+                const isProspecting = prospectingStatuses.includes(p.status);
+                if (!isProspecting) return false;
+
+                const searchableName = p.responsavel || p.empresa || '';
+                const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
+                const matchPriority = !priority || p.prioridade.toString() === priority;
+
+                let matchTag = true;
+                if (tag === 'Novo') {
+                    matchTag = p.unread === true;
+                } else if (tag) {
+                    matchTag = p.tags && p.tags.includes(tag);
+                }
+
+                const matchUnidade = !unidade || p.unidade === unidade;
+                return matchSearch && matchPriority && matchTag && matchUnidade;
+            });
+            renderBoard();
+        }
+
+        // --- MODAL HANDLING ---
+        function renderContactLog(prospect) {
+            const logContainer = document.getElementById('contactLogContainer');
+            if (!logContainer) return;
+
+            const logs = prospect.contactLog || [];
+
+            if (logs.length === 0) {
+                logContainer.innerHTML = '<p class="text-gray-500 text-sm">Nenhum contato registrado.</p>';
+                return;
+            }
+
+            const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+
+            logContainer.innerHTML = logs
+                .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
+                .map((log, index) => {
+                    const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
+                    const author = log.author || 'Sistema';
+                    const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-red-500 hover:text-red-400 text-xs ml-2">&times;</button>` : '';
+                    return `
+                        <div class="bg-gray-700/50 p-2 rounded-md flex justify-between items-start ${log.type === 'whatsapp-sent' ? 'border-l-4 border-green-500 bg-green-900/20' : ''}">
+                            <div>
+                                <p class="text-sm text-gray-300 whitespace-pre-wrap">
+                                    ${log.type === 'whatsapp-sent' ? '<i class="fab fa-whatsapp text-green-500 mr-1"></i> ' : ''}
+                                    ${log.description}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">${author} - ${date}</p>
+                            </div>
+                            ${deleteButtonHTML}
+                        </div>
+                    `;
+                }).join('');
+
+            if (isAdmin) {
+                logContainer.querySelectorAll('.delete-log-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const logIndex = parseInt(e.target.dataset.logIndex, 10);
+                        const logToDelete = logs[logIndex];
+
+                        if (confirm('Tem certeza que deseja excluir este log?')) {
+                            try {
+                                const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
+                                await updateDoc(prospectRef, {
+                                    contactLog: arrayRemove(logToDelete)
+                                });
+                            } catch (error) {
+                                console.error("Error deleting contact log:", error);
+                                alert("Erro ao excluir o registro de contato.");
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        async function openFormModal(prospect = null) {
+            currentProspectId = prospect ? prospect.id : null;
+
+            // Declare UI elements first to avoid initialization errors
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelFormBtn = document.getElementById('cancelFormBtn');
+            const addContactLogBtn = document.getElementById('addContactLogBtn');
+            const newContactLogTextarea = document.getElementById('newContactLog');
+            const contactLogSection = newContactLogTextarea.parentElement.parentElement;
+            const whatsappChatArea = document.getElementById('whatsappChatArea');
+            const whatsappInput = document.getElementById('whatsappInput');
+            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
+            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
+            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
+            const tabDetailsContent = document.getElementById('tabDetailsContent');
+            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+
+            // Mark as read if unread
+            // Mark as read if unread
+            if (prospect && prospect.unread) {
+                try {
+                    const prospectRef = doc(db, 'rh_prospects', prospect.id);
+                    await updateDoc(prospectRef, { unread: false });
+                    // Optimistic update of the local object
+                    prospect.unread = false;
+
+                    // Simple re-render logic - update element if it exists in DOM without full redraw
+                    const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
+                    if (card) {
+                        const badge = card.querySelector('.animate-pulse');
+                        if (badge) badge.remove();
+                    }
+                } catch (error) {
+                    console.error("Error marking prospect as read:", error);
+                }
+            }
+
+            // Reset to default tab (Details)
+            switchTab('details');
+            prospectForm.reset();
+            populateTagsInModal();
+
+            const modalTitle = document.getElementById('modalTitle');
+            const prospectIdInput = document.getElementById('prospectId');
+            const whatsappLink = document.getElementById('whatsappLink');
+            const telefoneInput = document.getElementById('telefone');
+            const modalActionButtons = document.getElementById('modalActionButtons');
+            const archiveBtn = document.getElementById('archiveBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            const fields = prospectForm.querySelectorAll('input, select, textarea');
+            // Tab Switching Logic
+            // (Elements declared at top of function)
+
+            function switchTab(tab) {
+                const modalActionButtons = document.getElementById('modalActionButtons');
+                const formControls = document.getElementById('formControls');
+
+                if (tab === 'details') {
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
+                    if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
+                    if (modalActionButtons) modalActionButtons.classList.remove('hidden');
+                    if (formControls) formControls.classList.remove('hidden');
+                } else {
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
+                    if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
+                    if (modalActionButtons) modalActionButtons.classList.add('hidden');
+                    if (formControls) formControls.classList.add('hidden');
+
+                    loadWhatsAppHistory(prospect);
+                }
+            }
+
+            if (tabDetailsBtn) tabDetailsBtn.onclick = () => switchTab('details');
+            if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
+            switchTab('details'); // Reset to details on open
+
+            async function loadWhatsAppHistory(currentProspect, isBackground = false) {
+                if (!currentProspect || !currentProspect.telefone) {
+                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
+                    whatsappInput.disabled = true;
+                    whatsappSendBtn.disabled = true;
+                    return;
+                }
+
+                // Only show loading spinner if it's the first load (not background refresh)
+                // Also show if it contains the placeholder text
+                if (!isBackground && (whatsappChatArea.children.length === 0 || whatsappChatArea.innerText.includes('Selecione um prospect'))) {
+                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
+                }
+
+                if (!isBackground) {
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                }
+
+                try {
+                    const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
+                    const messages = result.data.messages;
+
+                    if (messages.length === 0) {
+                        if (!isBackground) {
+                            whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                        }
+                    } else {
+                        renderChatMessages(messages.reverse(), isBackground); // Show oldest first
+                    }
+                } catch (error) {
+                    console.error("Error loading history:", error);
+                    // Only show error if it's not a background refresh, to avoid annoyance
+                    if (!isBackground) {
+                        whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+                    }
+
+                    // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                }
+            }
+
+            function renderChatMessages(messages, isBackground = false) {
+                // Smart Rendering: Diffing and Scroll Management
+
+                // 1. Check if we need to scroll to bottom *before* updating
+                const isAtBottom = whatsappChatArea.scrollHeight - whatsappChatArea.scrollTop <= whatsappChatArea.clientHeight + 100; // 100px threshold
+
+                // 2. Simple comparison to avoid re-rendering if nothing changed (optional but good)
+                // For a robust check we would need message IDs. Assuming 'messages' contains objects.
+                // We'll proceed to re-build or append.
+
+                // If it's a full reload (not background) or empty, clear it.
+                // But for background, we want to be smarter. 
+                // However, without unique IDs on the DOM elements, appending only new messages is tricky if we don't know which are new.
+                // A simple strategy that works well for "refresh" is to rebuild the HTML string and replace `innerHTML` 
+                // BUT current browsers are fast. The flicker comes from `innerHTML = ''` happening *before* the new content is ready.
+                // So we will build the NEW content first, then swap.
+
+                const fragment = document.createDocumentFragment();
+
+                messages.forEach(msg => {
+                    const bubble = document.createElement('div');
+                    bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
+
+                    let content = '';
+
+                    // MEDIA RENDERING
+                    if (msg.media_url) {
+                        const mediaClass = "max-w-full rounded-lg mb-2";
+                        if (msg.type === 'image' || msg.type === 'sticker') {
+                            // For images/stickers, clickable to open full size
+                            content += `<img src="${msg.media_url}" class="${mediaClass} cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" alt="Image" loading="lazy">`;
+                        } else if (msg.type === 'video') {
+                            content += `<video src="${msg.media_url}" controls class="${mediaClass}"></video>`;
+                        } else if (msg.type === 'audio' || msg.type === 'voice') {
+                            content += `<audio src="${msg.media_url}" controls class="w-full mb-2"></audio>`;
+                        } else {
+                            // Documents and others
+                            const icon = msg.type === 'document' ? 'fa-file-alt' : 'fa-paperclip';
+                            content += `
+                                <a href="${msg.media_url}" target="_blank" class="flex items-center gap-3 bg-black/20 p-3 rounded-lg mb-2 hover:bg-black/30 transition-colors">
+                                    <div class="bg-gray-700/50 p-2 rounded-full w-10 h-10 flex items-center justify-center shrink-0">
+                                        <i class="fas ${icon} text-yellow-500"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-sm font-medium truncate text-white">Arquivo</p>
+                                        <p class="text-xs text-green-400">Clique para baixar</p>
+                                    </div>
+                                </a>
+                           `;
+                        }
+                    }
+
+                    // Decode text/caption safely
+                    let text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text || '');
+
+                    // Only show text if it exists (it might be empty if it's just media without caption)
+                    if (text && text !== '""') {
+                        // Simple URL linking for text
+                        text = text.replace(
+                            /(https?:\/\/[^\s]+)/g,
+                            '<a href="$1" target="_blank" class="text-blue-400 hover:underline break-all">$1</a>'
+                        );
+                        content += `<div class="whitespace-pre-wrap break-words">${text}</div>`;
+                    }
+
+                    const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    bubble.innerHTML = `
+                        ${content}
+                        <div class="chat-time select-none pt-1">${time}</div>
+                    `;
+
+                    // Container for alignment
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
+                    wrapper.appendChild(bubble);
+                    fragment.appendChild(wrapper);
+                });
+
+                // 3. Update DOM
+                whatsappChatArea.innerHTML = '';
+                whatsappChatArea.appendChild(fragment);
+
+                // 4. Handle Scrolling
+                if (!isBackground || isAtBottom) {
+                    whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
+                }
+                // Else: User is scrolling up, do not disturb their position
+            }
+
+            // WhatsApp Send Logic
+            const sendWhatsApp = async () => {
+                const text = whatsappInput.value.trim();
+                if (!text) return;
+
+                whatsappInput.disabled = true;
+                whatsappSendBtn.disabled = true;
+                const originalIcon = whatsappSendBtn.innerHTML;
+                whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    const phone = prospect.telefone;
+                    await sendWhatsAppMessage({
+                        prospectId: prospect.id,
+                        phone: phone,
+                        message: text
+                    });
+
+                    // Clear input immediately
+                    whatsappInput.value = '';
+
+                    // Reload history after a brief delay to show the sent message
+                    // Use background mode to prevent flashing
+                    setTimeout(() => loadWhatsAppHistory(prospect, true), 1000);
+
+                } catch (error) {
+                    alert('Erro ao enviar: ' + error.message);
+                } finally {
+                    // Ensure input is cleared even if there was an error
+                    whatsappInput.value = '';
+                    whatsappInput.disabled = false;
+                    whatsappSendBtn.disabled = false;
+                    whatsappSendBtn.innerHTML = originalIcon;
+                    whatsappInput.focus();
+                }
+            };
+
+            whatsappSendBtn.onclick = sendWhatsApp;
+            whatsappInput.onkeypress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendWhatsApp();
+                }
+            };
+
+            // Manual refresh button
+            const refreshChatBtn = document.getElementById('refreshChatBtn');
+            refreshChatBtn.onclick = () => {
+                const icon = refreshChatBtn.querySelector('i');
+                icon.classList.add('fa-spin');
+                // For manual refresh, we probably WANT to scroll to bottom, so treat as foreground?
+                // Or maybe just background so it's smooth. Let's use background=true for smoothness, 
+                // but since user asked for it, maybe force scroll?
+                // The logical "Refresh" usually implies "I want to see new stuff", so scrolling to bottom is expected.
+                // Our logic `if (!isBackground || isAtBottom)` handles it if we pass isBackground=false.
+                // But we want smoothness...
+                // Let's pass isBackground=true to avoid the "spinner" clear, but we might want to force scroll.
+                // Actually, the issue is `loadWhatsAppHistory` logic for spinner.
+                // If we pass `true`, no spinner, no clear. Smooth.
+                // Our render logic will scroll to bottom IF user was at bottom.
+                // If user clicks refresh, they likely expect to see latest.
+                loadWhatsAppHistory(prospect, true).finally(() => {
+                    icon.classList.remove('fa-spin');
+                });
+            };
+
+            // Auto-refresh polling for new messages (every 10 seconds)
+            let pollingInterval = null;
+
+            function startPolling() {
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(() => {
+                    // Only poll if WhatsApp tab is active
+                    if (!tabWhatsAppContent.classList.contains('hidden')) {
+                        loadWhatsAppHistory(prospect, true);
+                    }
+                }, 10000); // 10 seconds
+            }
+
+            function stopPolling() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+            }
+
+            // Start polling when WhatsApp tab is opened
+            const originalSwitchTab = switchTab;
+            switchTab = (tab) => {
+                originalSwitchTab(tab);
+                if (tab === 'whatsapp') {
+                    startPolling();
+                } else {
+                    stopPolling();
+                }
+            };
+
+            // Clean up on modal close
+            closeFormModalBtn.addEventListener('click', stopPolling);
+
+
+
+            const setFormEditable = (isEditable) => {
+                fields.forEach(field => {
+                    if (field.id !== 'prospectId') field.disabled = !isEditable;
+                });
+                contactLogSection.style.display = isEditable ? 'flex' : 'none';
+                editBtn.classList.toggle('hidden', isEditable);
+                saveBtn.classList.toggle('hidden', !isEditable);
+                cancelFormBtn.classList.toggle('hidden', !isEditable);
+            };
+
+            const updateWhatsAppLink = () => {
+                const phone = telefoneInput.value.replace(/\D/g, '');
+                if (phone) {
+                    whatsappLink.classList.remove('hidden');
+                    whatsappLink.classList.add('flex');
+                    // We don't need href anymore if we capture click, but let's keep it valid or void
+                    whatsappLink.href = '#';
+                } else {
+                    whatsappLink.classList.add('hidden');
+                    whatsappLink.classList.remove('flex');
+                }
+            };
+            telefoneInput.addEventListener('input', updateWhatsAppLink);
+
+            // Redirect "Chamar no WhatsApp" button to the new tab
+            whatsappLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab('whatsapp');
+            });
+
+            // Removed redundant mode switching logic since WhatsApp now has its own tab.
+            // The "newAddContactBtn" now only handles "Nota Interna".
+
+            const newAddContactBtn = addContactLogBtn.cloneNode(true);
+            addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
+            newAddContactBtn.addEventListener('click', async () => {
+                const description = newContactLogTextarea.value.trim();
+                if (!description) return alert('Por favor, digite o conteúdo da nota.');
+
+                if (!prospect || !prospect.id) {
+                    return alert('Salve o card antes de adicionar uma nota.');
+                }
+
+                newAddContactBtn.disabled = true;
+                const originalText = newAddContactBtn.textContent;
+                newAddContactBtn.textContent = 'Salvando...';
+
+                try {
+                    // Standard Internal Note
+                    const newLog = {
+                        author: sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
+                        description: description,
+                        timestamp: new Date(),
+                        type: 'note'
+                    };
+
+                    let collectionName = prospect.type === 'lead' ? 'rh_leads' : 'rh_prospects';
+                    const itemRef = doc(db, collectionName, prospect.id);
+
+                    await updateDoc(itemRef, {
+                        contactLog: arrayUnion(newLog)
+                    });
+
+                    if (!prospect.contactLog) prospect.contactLog = [];
+                    prospect.contactLog.push(newLog);
+                    renderContactLog(prospect);
+
+                    newContactLogTextarea.value = '';
+                } catch (error) {
+                    console.error("Error adding note:", error);
+                    alert("Erro: " + error.message);
+                } finally {
+                    newAddContactBtn.disabled = false;
+                    newAddContactBtn.textContent = originalText;
+                }
+            });
+
+            if (prospect) {
+                document.getElementById('prospectType').value = prospect.type || 'prospect';
+                modalActionButtons.classList.remove('hidden');
+                modalTitle.textContent = 'Detalhes do Prospect';
+                prospectIdInput.value = prospect.id;
+
+                const createdByContainer = document.getElementById('createdByContainer');
+                const createdByInfo = document.getElementById('createdByInfo');
+                if (prospect.createdBy) {
+                    createdByInfo.textContent = prospect.createdBy;
+                    createdByContainer.classList.remove('hidden');
+                } else {
+                    createdByContainer.classList.add('hidden');
+                }
+
+                document.getElementById('unidade').value = prospect.unidade || '';
+                document.getElementById('prioridade').value = prospect.prioridade || '3';
+                document.getElementById('responsavel').value = prospect.responsavel || '';
+                document.getElementById('telefone').value = prospect.telefone || '';
+                document.getElementById('email').value = prospect.email || '';
+
+                // New Fields
+                document.getElementById('dataNascimento').value = prospect.dataNascimento || '';
+                document.getElementById('endereco').value = prospect.endereco || '';
+                document.getElementById('vaga').value = prospect.vaga || '';
+                document.getElementById('disponibilidade').value = prospect.disponibilidade || '';
+                document.getElementById('inicio').value = prospect.inicio || '';
+                document.getElementById('motivo').value = prospect.motivo || '';
+                document.getElementById('pontosFortes').value = prospect.pontosFortes || '';
+
+                // Experiences
+                document.getElementById('expAtendimento').value = prospect.expAtendimento || '';
+                document.getElementById('obsAtendimento').value = prospect.obsAtendimento || '';
+                document.getElementById('expAdm').value = prospect.expAdm || '';
+                document.getElementById('obsAdm').value = prospect.obsAdm || '';
+                document.getElementById('expCrianca').value = prospect.expCrianca || '';
+                document.getElementById('obsCrianca').value = prospect.obsCrianca || '';
+
+                // Martial Arts
+                document.getElementById('arteMarcial').value = prospect.arteMarcial || '';
+                document.getElementById('obsArteMarcial').value = prospect.obsArteMarcial || '';
+
+                document.getElementById('observacoes').value = prospect.observacoes || '';
+
+                (prospect.tags || []).forEach(tag => {
+                    const checkbox = document.getElementById(`tag-${tag}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+
+                renderContactLog(prospect);
+
+                archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
+                deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
+
+                setFormEditable(false);
+                editBtn.onclick = () => setFormEditable(true);
+                cancelFormBtn.onclick = () => openFormModal(prospect);
+
+            } else {
+                document.getElementById('prospectType').value = 'prospect';
+                modalActionButtons.classList.add('hidden');
+                modalTitle.textContent = 'Adicionar Novo Prospect';
+                prospectIdInput.value = '';
+                renderContactLog({ contactLog: [] });
+                setFormEditable(true);
+            }
+
+            updateWhatsAppLink();
+            formModal.classList.remove('hidden');
+            formModal.classList.add('flex');
+        }
+
+        function closeFormModal() {
+            formModal.classList.add('hidden');
+            formModal.classList.remove('flex');
+        }
+
+        function openImportModal() {
+            importModal.classList.remove('hidden');
+            importModal.classList.add('flex');
+        }
+
+        function closeImportModal() {
+            importModal.classList.add('hidden');
+            importModal.classList.remove('flex');
+            document.getElementById('csvData').value = '';
+        }
+
+        function showConfirmModal(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            const cancelBtn = document.getElementById('cancelConfirmBtn');
+
+            const confirmHandler = () => {
+                onConfirm();
+                closeConfirmModal();
+                cleanup();
+            };
+
+            const cancelHandler = () => {
+                closeConfirmModal();
+                cleanup();
+            };
+
+            function cleanup() {
+                confirmBtn.removeEventListener('click', confirmHandler);
+                cancelBtn.removeEventListener('click', cancelHandler);
+            }
+
+            confirmBtn.addEventListener('click', confirmHandler);
+            cancelBtn.addEventListener('click', cancelHandler);
+        }
+
+        function closeConfirmModal() {
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+        }
+
+        // --- CRUD OPERATIONS ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const requiredFields = [
+                { id: 'responsavel', name: 'Nome do responsável' }
+            ];
+            for (const fieldInfo of requiredFields) {
+                const field = document.getElementById(fieldInfo.id);
+                if (!field.value) {
+                    alert(`Por favor, preencha o campo obrigatório: ${fieldInfo.name}`);
+                    field.focus();
+                    return;
+                }
+            }
+
+            const prospectId = document.getElementById('prospectId').value;
+            const prospectType = document.getElementById('prospectType').value;
+            const selectedTags = [];
+            document.querySelectorAll('#tagsContainer input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedTags.push(checkbox.value);
+            });
+
+            const data = {
+                responsavel: document.getElementById('responsavel').value,
+                unidade: document.getElementById('unidade').value,
+                prioridade: parseInt(document.getElementById('prioridade').value),
+                telefone: document.getElementById('telefone').value,
+                email: document.getElementById('email').value,
+
+                // New Fields
+                dataNascimento: document.getElementById('dataNascimento').value,
+                endereco: document.getElementById('endereco').value,
+                vaga: document.getElementById('vaga').value,
+                disponibilidade: document.getElementById('disponibilidade').value,
+                inicio: document.getElementById('inicio').value,
+                motivo: document.getElementById('motivo').value,
+                pontosFortes: document.getElementById('pontosFortes').value,
+
+                expAtendimento: document.getElementById('expAtendimento').value,
+                obsAtendimento: document.getElementById('obsAtendimento').value,
+                expAdm: document.getElementById('expAdm').value,
+                obsAdm: document.getElementById('obsAdm').value,
+                expCrianca: document.getElementById('expCrianca').value,
+                obsCrianca: document.getElementById('obsCrianca').value,
+
+                arteMarcial: document.getElementById('arteMarcial').value,
+                obsArteMarcial: document.getElementById('obsArteMarcial').value,
+
+                observacoes: document.getElementById('observacoes').value,
+                tags: selectedTags,
+                updatedAt: serverTimestamp()
+            };
+
+            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+            try {
+                const prospectsCollection = collection(db, 'prospects');
+
+                if (prospectId && prospectType === 'lead') {
+                    // Convert lead to prospect
+                    data.status = 'Novo';
+                    data.pagina = 'Prospecção';
+                    data.createdAt = serverTimestamp();
+                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+
+                    const batch = writeBatch(db);
+
+                    // 1. Create new prospect
+                    const newProspectRef = doc(prospectsCollection);
+                    batch.set(newProspectRef, data);
+
+                    // 2. Delete old lead
+                    const oldLeadRef = doc(db, 'leads', prospectId);
+                    batch.delete(oldLeadRef);
+
+                    await batch.commit();
+                    generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
+
+                } else if (prospectId) { // Update existing prospect
+                    if (data.pagina === 'Produção') {
+                        data.status = 'Produção // V1';
+                    }
+                    const prospectRef = doc(prospectsCollection, prospectId);
+                    await updateDoc(prospectRef, data);
+                    generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
+
+                } else { // Create new prospect
+                    data.status = 'Novo'; // FIX: Was 'Pendente'
+                    data.pagina = 'Prospecção';
+                    data.createdAt = serverTimestamp();
+                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                    await addDoc(prospectsCollection, data);
+                    generalLog.add(user, 'Create Card', `New card "${data.responsavel}" created`);
+                }
+                closeFormModal();
+            } catch (error) {
+                console.error("Error saving prospect:", error);
+                alert(`Erro ao salvar: ${error.message}`);
+            }
+        }
+
+        async function deleteItem(itemId) {
+            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+            const item = combinedData.find(p => p.id === itemId);
+            if (!item) {
+                console.error("Item not found for deletion:", itemId);
+                alert("Erro: Item não encontrado para exclusão.");
+                return;
+            }
+
+            try {
+                let itemRef;
+                if (item.type === 'lead') {
+                    itemRef = doc(db, 'rh_leads', itemId);
+                } else {
+                    itemRef = doc(db, 'rh_prospects', itemId);
+                }
+
+                await deleteDoc(itemRef);
+
+                const itemName = item.responsavel || item.nome || 'Item sem nome';
+                generalLog.add(user, 'Delete Card', `Card "${itemName}" (${item.type}) deleted`);
+
+                // Close modal if open (optional but good UX)
+                closeFormModal();
+
+            } catch (error) {
+                console.error("Error deleting item:", error);
+                alert(`Erro ao excluir o item: ${error.message}`);
+            }
+        }
+
+        async function archiveProspect(itemId) {
+            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+            const item = combinedData.find(p => p.id === itemId);
+
+            if (!item) {
+                console.error("Error archiving: item not found with id", itemId);
+                alert("Erro: Item não encontrado para arquivar.");
+                return;
+            }
+
+            try {
+                if (item.type === 'lead') {
+                    // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
+                    const prospectsCollection = collection(db, 'rh_prospects');
+
+                    // Create a new object for the archived prospect from the lead data
+                    const newArchivedProspect = {
+                        responsavel: item.responsavel || '',
+                        unidade: item.unidade || '',
+                        prioridade: item.prioridade || 3,
+                        telefone: item.telefone || '',
+                        email: item.email || '',
+                        pagina: 'Arquivo',
+                        status: 'Arquivado',
+                        updatedAt: serverTimestamp(),
+                        createdAt: item.createdAt || serverTimestamp(),
+                        createdBy: item.createdBy || 'System Conversion'
+                    };
+
+                    const batch = writeBatch(db);
+
+                    // 1. Create the new archived prospect
+                    const newProspectRef = doc(prospectsCollection);
+                    batch.set(newProspectRef, newArchivedProspect);
+
+                    // 2. Delete the old lead
+                    const oldLeadRef = doc(db, 'rh_leads', itemId);
+                    batch.delete(oldLeadRef);
+
+                    await batch.commit();
+
+                } else { // It's a prospect, just update it
+                    const prospectRef = doc(db, 'rh_prospects', itemId);
+                    await updateDoc(prospectRef, {
+                        pagina: 'Arquivo',
+                        updatedAt: serverTimestamp()
+                    });
+                }
+
+                const itemName = item.responsavel || item.nome || 'Item sem nome';
+                generalLog.add(user, 'Archive Card', `Card "${itemName}" archived`);
+
+                // Close modal if open
+                closeFormModal();
+
+            } catch (error) {
+                console.error("Error archiving item:", error);
+                alert("Erro ao arquivar o item.");
+            }
+        }
+
+        async function handleImport() {
+            const csvText = document.getElementById('csvData').value.trim();
+            if (!csvText) {
+                alert("Por favor, cole os dados CSV na área de texto.");
+                return;
+            }
+
+            const rows = csvText.split('\n').slice(1); // Skip header row
+            if (rows.length === 0) {
+                alert("Nenhum dado para importar foi encontrado (ignorando a primeira linha como cabeçalho).");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            const prospectsCollection = collection(db, 'prospects');
+            let importedCount = 0;
+
+            rows.forEach(row => {
+                const columns = row.split(',');
+                if (columns.length < 3) return; // Minimum required fields: Empresa, Setor, Prioridade
+
+                const newProspect = {
+                    empresa: columns[0] || '',
+                    setor: columns[1] || '',
+                    prioridade: parseInt(columns[2]) || 3,
+                    ticketEstimado: parseInt(columns[3]) || 0,
+                    telefone: columns[4] || '',
+                    email: columns[5] || '',
+                    cpf: columns[6] || '',
+                    cnpj: columns[7] || '',
+                    endereco: columns[8] || '',
+                    redesSociais: columns[9] || '',
+                    siteAtual: columns[10] || '',
+                    observacoes: columns[11] || '',
+                    status: 'Pendente',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+
+                const newDocRef = doc(prospectsCollection);
+                batch.set(newDocRef, newProspect);
+                importedCount++;
+            });
+
+            const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
+            try {
+                await batch.commit();
+                generalLog.add(user, 'Import Leads', `${importedCount} leads imported successfully`);
+                alert(`${importedCount} leads importados com sucesso!`);
+                closeImportModal();
+            } catch (error) {
+                console.error("Error importing leads:", error);
+                alert("Ocorreu um erro ao importar os leads. Verifique o console para mais detalhes.");
+            }
+        }
+
+        // --- TAGS UTILITY ---
+        function populateTags() {
+            const tagFilter = document.getElementById('tagFilter');
+
+            // Add "Novo" (Unread) option manually
+            const novoOption = document.createElement('option');
+            novoOption.value = 'Novo';
+            novoOption.textContent = 'Novo (Não lido)';
+            tagFilter.appendChild(novoOption);
+
+            TAGS.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                tagFilter.appendChild(option);
+            });
+        }
+
+        function populateTagsInModal() {
+            const tagsContainer = document.getElementById('tagsContainer');
+            tagsContainer.innerHTML = ''; // Limpa para evitar duplicação
+            TAGS.forEach(tag => {
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'flex items-center';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `tag-${tag}`;
+                checkbox.value = tag;
+                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
+
+                const label = document.createElement('label');
+                label.htmlFor = `tag-${tag}`;
+                label.textContent = tag;
+                label.className = 'ml-2 block text-sm text-gray-300';
+
+                checkboxContainer.appendChild(checkbox);
+                checkboxContainer.appendChild(label);
+                tagsContainer.appendChild(checkboxContainer);
+            });
+        }
+
+        // --- UTILITY ---
+        function getPriorityColor(priority) {
+            const colors = {
+                5: '#ef4444', 4: '#f97316', 3: '#eab308', 2: '#3b82f6', 1: '#8b5cf6',
+            };
+            return colors[priority] || '#6b7280';
+        }
+
+        function stringToColorIndex(str, colorArrayLength) {
+            if (!str) return 0;
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return Math.abs(hash % colorArrayLength);
+        }
+
+        function getSectorColor(sector) {
+            const colorPalette = [
+                { bg: 'bg-gray-900/50', text: 'text-gray-200' },
+                { bg: 'bg-purple-900/50', text: 'text-purple-200' },
+                { bg: 'bg-teal-900/50', text: 'text-teal-200' },
+                { bg: 'bg-red-900/50', text: 'text-red-200' },
+                { bg: 'bg-cyan-900/50', text: 'text-cyan-200' },
+                { bg: 'bg-green-900/50', text: 'text-green-200' },
+                { bg: 'bg-amber-900/50', text: 'text-amber-200' },
+                { bg: 'bg-pink-900/50', text: 'text-pink-200' },
+                { bg: 'bg-indigo-900/50', text: 'text-indigo-200' },
+                { bg: 'bg-lime-900/50', text: 'text-lime-200' }
+            ];
+
+            const index = stringToColorIndex(sector, colorPalette.length);
+            return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
+        }
+
+        async function populateEvoUnits() {
+            const unidadeFilter = document.getElementById('unidadeFilter');
+            const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
+
+            try {
+                const result = await getEvoUnits();
+                evoUnits = result.data.sort();
+
+                // Clear existing options except the first one
+                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
+                unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
+
+                evoUnits.forEach(unitId => {
+                    const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                    // Populate filter dropdown
+                    const filterOption = document.createElement('option');
+                    filterOption.value = displayName;
+                    filterOption.textContent = displayName;
+                    unidadeFilter.appendChild(filterOption);
+
+                    // Populate modal dropdown
+                    const modalOption = document.createElement('option');
+                    modalOption.value = displayName;
+                    modalOption.textContent = displayName;
+                    unidadeModalSelect.appendChild(modalOption);
+                });
+
+            } catch (error) {
+                console.error("Erro ao buscar unidades do EVO:", error);
+                unidadeFilter.innerHTML = '<option value="">Erro ao carregar</option>';
+                unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        function exportData() {
+            if (prospects.length === 0) {
+                alert("Não há dados para exportar.");
+                return;
+            }
+            const headers = ['ID', 'Empresa', 'Setor', 'Prioridade', 'Status', 'Ticket Estimado', 'Telefone', 'Email', 'CPF', 'CNPJ', 'Endereço', 'Redes Sociais', 'Site', 'Observações'];
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+
+            prospects.forEach(p => {
+                const row = [
+                    p.id, `"${p.empresa}"`, p.setor, p.prioridade, p.status, p.ticketEstimado,
+                    `"${p.telefone}"`, p.email, p.cpf, p.cnpj, `"${p.endereco}"`, `"${p.redesSociais}"`, p.siteAtual, `"${(p.observacoes || '').replace(/"/g, '""')}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `prospects_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- CONFIGURATION MODAL LOGIC ---
+        const configModal = document.getElementById('configModal');
+        const openConfigBtn = document.getElementById('configBtn');
+        const closeConfigModalBtn = document.getElementById('closeConfigModalBtn');
+        const cancelConfigBtn = document.getElementById('cancelConfigBtn');
+        const configForm = document.getElementById('configForm');
+        const extraQuestionsList = document.getElementById('extraQuestionsList');
+        const addQuestionBtn = document.getElementById('addQuestionBtn');
+
+        function openConfigModal() {
+            configModal.classList.remove('hidden');
+            configModal.classList.add('flex');
+            fetchConfig();
+        }
+
+        function closeConfigModal() {
+            configModal.classList.add('hidden');
+            configModal.classList.remove('flex');
+        }
+
+        function renderExtraQuestions(questions) {
+            extraQuestionsList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+                    <span class="text-xs text-gray-500 w-4">${index + 1}.</span>
+                    <input type="text" value="${q}" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
+                    <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                extraQuestionsList.appendChild(div);
+            });
+        }
+
+        if (addQuestionBtn) {
+            addQuestionBtn.addEventListener('click', () => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+                    <span class="text-xs text-gray-500 w-4">#</span>
+                    <input type="text" class="extra-question-input w-full bg-gray-700 border border-gray-600 rounded p-1.5 text-sm focus:ring-1 focus:ring-yellow-500" placeholder="Digite a pergunta...">
+                    <button type="button" class="text-red-400 hover:text-red-300" onclick="this.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                extraQuestionsList.appendChild(div);
+            });
+        }
+
+        async function fetchConfig() {
+            // Default Config (MUST Match Backend Defaults)
+            const defaults = {
+                welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+                menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
+                menu_floripa: "Em Florianópolis temos:\n\n- Centro\n- Coqueiros\n- Santa Mônica\n\nQual fica melhor para você?",
+                intent_menu_message: "Como posso te ajudar?\n1. Agendar aula experimental\n2. Já sou aluno\n3. Saber mais",
+                ask_name_message: "Antes de continuarmos, como posso te chamar?",
+                welcome_new_student_message: "Parabéns pela sua matrícula! Seja bem-vindo(a) à nossa família. Em breve entraremos em contato para te passar todos os detalhes.",
+                enrollment_product_id_brasilia: "",
+                enrollment_product_id_floripa: "",
+                enrollment_product_id_dourados: "",
+                know_more_message: "Embarque nessa jornada Conosco.\nNossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.",
+                know_more_video_url: "https://www.youtube.com/watch?v=tzFSjF5h-zA",
+                confirmation_question: "Você busca arte marcial pra você mesmo ou pra outra pessoa?",
+                handoff_message: "Em breve alguém de nosso time irá continuar o atendimento.",
+                support_message: "Que ótimo ter você por aqui! Para assuntos administrativos ou pedagógicos, por favor entre em contato com sua unidade diretamente ou aguarde que encaminharemos sua mensagem.",
+                extra_questions: []
+            };
+
+            try {
+                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                const docSnap = await getDoc(docRef);
+
+                let data = defaults;
+                if (docSnap.exists()) {
+                    data = { ...defaults, ...docSnap.data() };
+                }
+
+                document.getElementById('cfg_bot_enabled').checked = (data.bot_enabled !== undefined) ? data.bot_enabled : true;
+                document.getElementById('cfg_welcome').value = data.welcome_message;
+                document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
+                document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
+                document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
+                document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
+                document.getElementById('cfg_intent_menu').value = data.intent_menu_message;
+                document.getElementById('cfg_ask_name').value = data.ask_name_message;
+                document.getElementById('cfg_welcome_new_student').value = data.welcome_new_student_message;
+                document.getElementById('cfg_id_brasilia').value = data.enrollment_product_id_brasilia;
+                document.getElementById('cfg_id_floripa').value = data.enrollment_product_id_floripa;
+                document.getElementById('cfg_id_dourados').value = data.enrollment_product_id_dourados;
+                document.getElementById('cfg_know_more_message').value = data.know_more_message;
+                document.getElementById('cfg_know_more_video').value = data.know_more_video_url;
+                document.getElementById('cfg_confirmation').value = data.confirmation_question;
+                document.getElementById('cfg_handoff').value = data.handoff_message;
+                document.getElementById('cfg_support_message').value = data.support_message;
+
+                renderExtraQuestions(data.extra_questions || []);
+
+            } catch (error) {
+                console.error("Error fetching config:", error);
+                alert("Erro ao carregar configurações. Verifique permissões.");
+            }
+        }
+
+        async function saveConfig(e) {
+            e.preventDefault();
+
+            // Gather extra questions
+            const questionInputs = document.querySelectorAll('.extra-question-input');
+            const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
+
+            const updates = {
+                bot_enabled: document.getElementById('cfg_bot_enabled').checked,
+                welcome_message: document.getElementById('cfg_welcome').value,
+                human_handoff_message: document.getElementById('cfg_human_handoff').value,
+                human_handoff_message: document.getElementById('cfg_human_handoff').value,
+                menu_brasilia: document.getElementById('cfg_menu_bsb').value,
+                menu_floripa: document.getElementById('cfg_menu_floripa').value,
+                intent_menu_message: document.getElementById('cfg_intent_menu').value,
+                ask_name_message: document.getElementById('cfg_ask_name').value,
+                welcome_new_student_message: document.getElementById('cfg_welcome_new_student').value,
+                enrollment_product_id_brasilia: document.getElementById('cfg_id_brasilia').value,
+                enrollment_product_id_floripa: document.getElementById('cfg_id_floripa').value,
+                enrollment_product_id_dourados: document.getElementById('cfg_id_dourados').value,
+                know_more_message: document.getElementById('cfg_know_more_message').value,
+                know_more_video_url: document.getElementById('cfg_know_more_video').value,
+                confirmation_question: document.getElementById('cfg_confirmation').value,
+                handoff_message: document.getElementById('cfg_handoff').value,
+                support_message: document.getElementById('cfg_support_message').value,
+                extra_questions: extraQuestions
+            };
+
+            try {
+                const docRef = doc(db, 'config', 'whatsapp_auto_reply');
+                await setDoc(docRef, updates, { merge: true });
+                alert("Configurações salvas com sucesso!");
+                closeConfigModal();
+            } catch (error) {
+                console.error("Error saving config:", error);
+                alert("Erro ao salvar: " + error.message);
+            }
+        }
+
+        if (openConfigBtn) openConfigBtn.addEventListener('click', openConfigModal);
+        if (closeConfigModalBtn) closeConfigModalBtn.addEventListener('click', closeConfigModal);
+        if (cancelConfigBtn) cancelConfigBtn.addEventListener('click', closeConfigModal);
+        if (configForm) configForm.addEventListener('submit', saveConfig);
+
+        // Close on backdrop click
+        if (configModal) {
+            configModal.addEventListener('click', (e) => {
+                if (e.target === configModal) closeConfigModal();
+            });
+        }
+
+        // --- INITIALIZE APP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    renderBoard();
+                }, 250);
+            });
+
+            populateTags();
+            populateEvoUnits();
+
+            loadComponents(() => {
+                // This callback runs after header/sidebar are loaded
+                const urlParams = new URLSearchParams(window.location.search);
+                const cardIdToOpen = urlParams.get('cardId');
+                if (cardIdToOpen) {
+                    const unsubscribe = onSnapshot(collection(db, 'rh_prospects'), (snapshot) => {
+                        const prospect = prospects.find(p => p.id === cardIdToOpen);
+                        if (prospect) {
+                            openFormModal(prospect);
+                            unsubscribe();
+                        }
+                    });
+                }
+                // Pass handlers to setupUIListeners by calling it again
+                const unidadeFilter = document.getElementById('unidadeFilter');
+                if (unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
+
+                setupUIListeners({
+                    openFormModal,
+                    closeFormModal,
+                    handleFormSubmit,
+                    openImportModal,
+                    closeImportModal,
+                    handleImport,
+                    applyFilters,
+                    closeConfirmModal
+                });
+
+                // Override reset button to include unit filter
+                const resetBtn = document.getElementById('resetFiltersBtn');
+                if (resetBtn) {
+                    resetBtn.addEventListener('click', () => {
+                        document.getElementById('searchInput').value = '';
+                        document.getElementById('priorityFilter').value = '';
+                        document.getElementById('tagFilter').value = '';
+                        document.getElementById('unidadeFilter').value = '';
+                        applyFilters();
+                    });
+                }
+
+                // Force initial render of empty board
+                renderBoard();
+            });
+
+        });
+
+        // --- GLOBAL EVENT DELEGATION (Reliable UI Handling) ---
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+
+            // 1. Open Filters Modal
+            const openBtn = target.closest('#openFiltersBtn');
+            if (openBtn) {
+                e.preventDefault();
+                console.log("Click detected: Open Filters");
+                const modal = document.getElementById('filtersModal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                } else {
+                    console.error("Filters modal element not found!");
+                }
+            }
+
+            // 3. Apply Filters
+            const applyBtn = target.closest('#applyFiltersBtn');
+            if (applyBtn) {
+                e.preventDefault();
+                const modal = document.getElementById('filtersModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                if (typeof applyFilters === 'function') {
+                    applyFilters();
+                } else {
+                    console.error("applyFilters function is not defined or accessible.");
+                }
+            }
+
+            // 4. Close Filters on Backdrop Click
+            if (target.id === 'filtersModal') {
+                target.classList.add('hidden');
+                target.classList.remove('flex');
+            }
+
+            // 5. Open Config Modal
+            const configBtn = target.closest('#configBtn');
+            if (configBtn) {
+                e.preventDefault();
+                console.log("Click detected: Open Config");
+                const modal = document.getElementById('configModal');
+                if (modal) {
+                    // Using the openConfigModal function defined in module scope might be tricky if not attached to window
+                    // But we can just call it if it's in scope, similar to applyFilters
+                    if (typeof openConfigModal === 'function') {
+                        openConfigModal();
+                    } else {
+                        // Fallback manual open if function not found
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        if (typeof fetchConfig === 'function') fetchConfig();
+                    }
+                }
+            }
+
+            // 6. Close Config Modal
+            const closeConfigBtn = target.closest('#closeConfigModalBtn') || target.closest('#cancelConfigBtn');
+            if (closeConfigBtn) {
+                e.preventDefault();
+                const modal = document.getElementById('configModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            }
+
+            // 7. Close Config on Backdrop Click
+            if (target.id === 'configModal') {
+                target.classList.add('hidden');
+                target.classList.remove('flex');
+            }
+
+        });
+    </script>
+    <script src="geral_log.js"></script>
+
+    <script>
+        var id = document.getElementById("drawflow");
+        let editor;
+
+        function openVisualEditor() {
+            const modal = document.getElementById('visualEditorModal');
+            modal.classList.remove('hidden');
+            // Force reflow
+            void modal.offsetWidth;
+            modal.classList.add('flex', 'flex-col');
+
+            if (!editor) {
+                // Delay init to ensure dimensions are correct
+                setTimeout(() => {
+                    if (typeof Drawflow !== 'undefined') {
+                        editor = new Drawflow(id);
+                        editor.reroute = true;
+                        editor.editor_mode = 'edit';
+                        editor.start();
+                        console.log("Drawflow started (Lazy Init Delayed)");
+                    } else {
+                        console.error("Drawflow library not loaded!");
+                    }
+                }, 300);
+            }
+        }
+
+        function closeVisualEditor() {
+            const modal = document.getElementById('visualEditorModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex', 'flex-col');
+        }
+
+        // Drag & Drop Logic
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("node", ev.target.getAttribute('data-node'));
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            var nodeType = ev.dataTransfer.getData("node");
+            addNodeToBoard(nodeType, ev.clientX, ev.clientY);
+        }
+
+        function addNodeToBoard(type, pos_x, pos_y) {
+            if (editor.editor_mode === 'fixed') {
+                return false;
+            }
+
+
+            // Convert Page Coordinates to Canvas Coordinates
+            // simple approximation for now
+            pos_x = pos_x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
+            pos_y = pos_y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
+
+            // Basic HTML Templates for Nodes
+            let html = '';
+            let inputs = 1;
+            let outputs = 1;
+
+            if (type === 'message') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-comment"></i> Mensagem</div>
+                        <div class="box">
+                            <textarea rows="4" df-message placeholder="Digite a mensagem..." class="w-full"></textarea>
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'question') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-question-circle"></i> Pergunta</div>
+                        <div class="box">
+                             <textarea rows="4" df-question placeholder="Pergunta..." class="w-full"></textarea>
+                             <input type="text" df-variable placeholder="Nome da Variável" class="mt-2">
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'condition') {
+                inputs = 1;
+                outputs = 2;
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-code-branch"></i> Condição</div>
+                        <div class="box">
+                            <select df-condition>
+                                <option value="contains">Contém</option>
+                                <option value="equals">Igual a</option>
+                            </select>
+                            <input type="text" df-value placeholder="Valor" class="mt-2">
+                        </div>
+                    </div>
+                 `;
+            } else if (type === 'action') {
+                html = `
+                    <div>
+                        <div class="title-box"><i class="fas fa-bolt"></i> Ação</div>
+                        <div class="box">
+                            <select df-action>
+                                <option value="notify_manager">Notificar Gerente</option>
+                                <option value="reset_flow">Resetar Fluxo</option>
+                                <option value="hand_off">Atendimento Humano</option>
+                                <option value="enrollment_link">Link Matrícula</option>
+                            </select>
+                        </div>
+                    </div>
+                 `;
+            }
+
+            // Add Node
+            editor.addNode(type, inputs, outputs, pos_x, pos_y, type, {}, html);
+        }
+
+        async function saveFlow() {
+            const flowData = editor.export();
+            console.log("Saving Flow:", flowData);
+
+            try {
+                // Save to Firestore
+                await db.collection('config').doc('bot_flow_v2').set({
+                    flow_data: JSON.stringify(flowData),
+                    updated_at: serverTimestamp()
+                });
+                alert('Fluxo salvo com sucesso!');
+            } catch (error) {
+                console.error("Error saving flow:", error);
+                alert('Erro ao salvar fluxo.');
+            }
+        }
+
+        async function generateDefaultMigrationFlow() {
+            if (!confirm("Isso irá apagar o fluxo atual e restaurar o padrão do sistema. Continuar?")) return;
+
+            editor.clearModuleSelected(); // Clear canvas
+
+            const configDefaults = {
+                welcome: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
+                ask_name: "Antes de continuarmos, como posso te chamar?",
+                menu: "Como posso te ajudar?\n1. Agendar aula experimental\n2. Já sou aluno\n3. Saber mais\n4. Quero fazer minha matrícula",
+                support: "Que ótimo ter você por aqui! Para assuntos administrativos ou pedagógicos, por favor entre em contato com sua unidade diretamente ou aguarde que encaminharemos sua mensagem.",
+                know_more: "Embarque nessa jornada Conosco.\nNossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente, há um lugar para você em nossa comunidade.",
+                handoff: "Entendi. Em breve um de nossos atendentes irá falar com você. Aguarde um momento."
+            };
+
+            // Helper to get raw template HTML (duplicated from addNodeToBoard for simplicity in this script)
+            const getHtml = (type, val1, val2) => {
+                if (type === 'message') return `<div><div class="title-box"><i class="fas fa-comment"></i> Mensagem</div><div class="box"><textarea rows="6" df-message>${val1}</textarea></div></div>`;
+                // Check if it's the large menu text to give it more space
+                let rows = 6;
+                if (val1 && val1.length > 200) rows = 12; // Menu has ~200 chars
+                if (type === 'question') return `<div><div class="title-box"><i class="fas fa-question-circle"></i> Pergunta</div><div class="box"><textarea rows="${rows}" df-question>${val1}</textarea><input type="text" df-variable value="${val2 || ''}" class="mt-2" placeholder="Nome da Variável"></div></div>`;
+
+                if (type === 'condition') return `<div><div class="title-box"><i class="fas fa-code-branch"></i> Condição</div><div class="box"><select df-condition><option value="contains" ${val1 === 'contains' ? 'selected' : ''}>Contém</option><option value="equals" ${val1 === 'equals' ? 'selected' : ''}>Igual a</option></select><input type="text" df-value value="${val2}" class="mt-2"></div></div>`;
+                if (type === 'action') return `<div><div class="title-box"><i class="fas fa-bolt"></i> Ação</div><div class="box"><select df-action><option value="notify_manager" ${val1 === 'notify_manager' ? 'selected' : ''}>Notificar Gerente</option><option value="reset_flow" ${val1 === 'reset_flow' ? 'selected' : ''}>Resetar Fluxo</option><option value="human_handoff" ${val1 === 'human_handoff' ? 'selected' : ''}>Atendimento Humano</option></select></div></div>`;
+                return '';
+            };
+
+            // 1. Welcome Message
+            const id_welcome = editor.addNode('message', 1, 1, 50, 200, 'message', { message: configDefaults.welcome }, getHtml('message', configDefaults.welcome));
+
+            // 2. Ask Name
+            const id_ask_name = editor.addNode('question', 1, 1, 400, 200, 'question', { question: configDefaults.ask_name, variable: 'responsavel' }, getHtml('question', configDefaults.ask_name, 'responsavel'));
+
+            // 3. Intent Menu
+            const id_menu = editor.addNode('question', 1, 1, 800, 200, 'question', { question: configDefaults.menu, variable: 'menu_selection' }, getHtml('question', configDefaults.menu, 'menu_selection'));
+
+            // CONNECTIONS: Welcome -> Ask Name -> Menu
+            editor.addConnection(id_welcome, id_ask_name, 'output_1', 'input_1');
+            editor.addConnection(id_ask_name, id_menu, 'output_1', 'input_1');
+
+            // --- BRANCHES ---
+
+            // Branch 1: Agendar (1)
+            const id_cond_1 = editor.addNode('condition', 1, 2, 1200, 50, 'condition', { condition: 'contains', value: '1' }, getHtml('condition', 'contains', '1'));
+            editor.addConnection(id_menu, id_cond_1, 'output_1', 'input_1');
+
+            // Action: Notify Manager (Simplification for now, usually asks Unit)
+            const id_action_notify = editor.addNode('action', 1, 1, 1600, 50, 'action', { action: 'notify_manager' }, getHtml('action', 'notify_manager'));
+            const id_msg_handoff = editor.addNode('message', 1, 1, 2000, 50, 'message', { message: configDefaults.handoff }, getHtml('message', configDefaults.handoff));
+
+            editor.addConnection(id_cond_1, id_action_notify, 'output_1', 'input_1');
+            editor.addConnection(id_action_notify, id_msg_handoff, 'output_1', 'input_1');
+
+
+            // Branch 2: Já sou Aluno (2)
+            const id_cond_2 = editor.addNode('condition', 1, 2, 1200, 300, 'condition', { condition: 'contains', value: '2' }, getHtml('condition', 'contains', '2'));
+            editor.addConnection(id_cond_1, id_cond_2, 'output_2', 'input_1'); // Chain False
+
+            // Message: Support
+            const id_msg_support = editor.addNode('message', 1, 1, 1600, 300, 'message', { message: configDefaults.support }, getHtml('message', configDefaults.support));
+            editor.addConnection(id_cond_2, id_msg_support, 'output_1', 'input_1');
+
+            // Branch 3: Saber Mais (3)
+            const id_cond_3 = editor.addNode('condition', 1, 2, 1200, 550, 'condition', { condition: 'contains', value: '3' }, getHtml('condition', 'contains', '3'));
+            editor.addConnection(id_cond_2, id_cond_3, 'output_2', 'input_1'); // Chain False
+
+            // Message: Know More
+            const id_msg_knowmore = editor.addNode('message', 1, 1, 1600, 550, 'message', { message: configDefaults.know_more }, getHtml('message', configDefaults.know_more));
+            editor.addConnection(id_cond_3, id_msg_knowmore, 'output_1', 'input_1');
+
+            // Branch 4: Matrícula (4) - Simplified as Notify for now
+            const id_cond_4 = editor.addNode('condition', 1, 2, 1200, 800, 'condition', { condition: 'contains', value: '4' }, getHtml('condition', 'contains', '4'));
+            editor.addConnection(id_cond_3, id_cond_4, 'output_2', 'input_1');
+
+            const id_action_enroll = editor.addNode('action', 1, 1, 1600, 800, 'action', { action: 'human_handoff' }, getHtml('action', 'human_handoff'));
+            editor.addConnection(id_cond_4, id_action_enroll, 'output_1', 'input_1');
+
+            alert("Fluxo padrão gerado! Clique em Salvar para ativar.");
+        }
+    </script>
+    <script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
+</body>
+
+</html>

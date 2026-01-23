@@ -117,6 +117,7 @@ function setupUIListeners(handlers = {}) {
     setupSubmenu('administrativo-menu-btn', 'administrativo-submenu');
     setupSubmenu('tatame-menu-btn', 'tatame-submenu');
     setupSubmenu('store-menu-btn', 'store-submenu');
+    setupSubmenu('rh-menu-btn', 'rh-submenu');
 }
 
 function setupModalCloseListeners(handlers = {}) {
