@@ -97,27 +97,32 @@ function setupUIListeners(handlers = {}) {
     // Add modal close listeners
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
 
-    // Generic Submenu toggles
-    const setupSubmenu = (btnId, menuId) => {
-        const btn = document.getElementById(btnId);
-        const menu = document.getElementById(menuId);
-        if (btn && menu && !btn.dataset.listenerAttached) {
-            btn.dataset.listenerAttached = 'true';
-            btn.addEventListener('click', () => {
-                menu.classList.toggle('hidden');
-                const icon = btn.querySelector('i.fa-chevron-down');
-                if (icon) {
-                    icon.classList.toggle('rotate-180');
-                }
-            });
-        }
-    };
+    // Generic Submenu toggles (Event Delegation)
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && !sidebar.dataset.delegatedListenerAttached) {
+        sidebar.dataset.delegatedListenerAttached = 'true';
+        sidebar.addEventListener('click', (event) => {
+            const toggleBtn = event.target.closest('.sidebar-dropdown-toggle');
+            if (toggleBtn) {
+                // Determine the submenu ID based on the button ID pattern provided in HTML
+                // Pattern: {name}-menu-btn -> {name}-submenu
+                const btnId = toggleBtn.id;
+                if (btnId && btnId.endsWith('-menu-btn')) {
+                    const baseName = btnId.replace('-menu-btn', '');
+                    const submenuId = `${baseName}-submenu`;
+                    const submenu = document.getElementById(submenuId);
 
-    setupSubmenu('prospeccao-menu-btn', 'prospeccao-submenu');
-    setupSubmenu('administrativo-menu-btn', 'administrativo-submenu');
-    setupSubmenu('tatame-menu-btn', 'tatame-submenu');
-    setupSubmenu('store-menu-btn', 'store-submenu');
-    setupSubmenu('rh-menu-btn', 'rh-submenu');
+                    if (submenu) {
+                        submenu.classList.toggle('hidden');
+                        const icon = toggleBtn.querySelector('i.fa-chevron-down');
+                        if (icon) {
+                            icon.classList.toggle('rotate-180');
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 function setupModalCloseListeners(handlers = {}) {
