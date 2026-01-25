@@ -46,6 +46,26 @@ async function displayDailyQuote() {
 
     let activeQuotes = [...quotes]; // Start with fallback quotes
 
+    // Helper to render a quote based on current activeQuotes
+    const renderQuote = () => {
+        const quoteIndex = today % activeQuotes.length;
+        const quote = activeQuotes[quoteIndex];
+
+        console.log("Displaying quote:", quote);
+
+        if (quote) {
+            quoteEl.textContent = `"${quote.text}"`;
+            authorEl.textContent = `- ${quote.author}`;
+        } else {
+            // Fallback safety
+            quoteEl.textContent = '"A disciplina é a mãe do êxito."';
+            authorEl.textContent = '- Ésquilo';
+        }
+    };
+
+    // Render immediately with fallback quotes
+    renderQuote();
+
     try {
         const q = query(collection(db, "daily_quotes"));
         const querySnapshot = await getDocs(q);
@@ -61,29 +81,12 @@ async function displayDailyQuote() {
             // Only switch to DB quotes if we found valid ones
             if (dbQuotes.length > 0) {
                 activeQuotes = dbQuotes;
+                // Render again with new quotes
+                renderQuote();
             }
         }
     } catch (error) {
         console.error("Error fetching quotes:", error);
-    }
-
-    // Safety check
-    if (activeQuotes.length === 0) {
-        activeQuotes = quotes;
-    }
-
-    // Use the day of the month to pick a deterministic quote for the day
-    const quoteIndex = today % activeQuotes.length;
-    const quote = activeQuotes[quoteIndex];
-
-    console.log("Displaying quote:", quote);
-
-    if (quote) {
-        quoteEl.textContent = `"${quote.text}"`;
-        authorEl.textContent = `- ${quote.author}`;
-    } else {
-        quoteEl.textContent = '"A disciplina é a mãe do êxito."';
-        authorEl.textContent = '- Ésquilo';
     }
 }
 
