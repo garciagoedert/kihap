@@ -1,6 +1,7 @@
 /* Estilos para a cor primária - será sobrescrito pelo JS de whitelabel */
 :root {
-    --primary-color: #FFC107; /* Cor padrão */
+    --primary-color: #FFC107;
+    /* Cor padrão */
     --primary-color-dark: #d39e00;
     --primary-color-light: #ffd452;
     --primary-text-color: #111111;
@@ -27,4 +28,19 @@
 
 .border-primary {
     border-color: var(--primary-color) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
 }
