@@ -125,6 +125,25 @@
                     </div>
                 </div>
 
+                <!-- Imagens -->
+                <div class="space-y-4 pt-4 border-t border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-200">Personalização (Opcional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">URL do Logo</label>
+                            <input type="url" id="vendor-logo"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="https://...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">URL do Banner</label>
+                            <input type="url" id="vendor-banner"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="https://...">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Contato -->
                 <div class="space-y-4 pt-4 border-t border-gray-700">
                     <h3 class="text-lg font-semibold text-gray-200">Informações de Contato</h3>
@@ -188,127 +207,140 @@
     <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
         <div
             class="bg-gray-100 dark:bg-gray-800 rounded-lg max-w-4xl w-full relative flex flex-col max-h-[95vh] overflow-hidden">
-            <!-- Header da Modal (Estilo Banner) -->
-            <div class="h-32 bg-gray-300 dark:bg-gray-700 relative">
-                <button id="close-view-modal"
-                    class="absolute top-4 right-4 bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full p-2 text-white transition-all">
-                    <i class="fas fa-times fa-lg"></i>
-                </button>
-            </div>
+            <!-- Botão de Fechar (Fixo/Absoluto em relação ao modal) -->
+            <button id="close-view-modal"
+                class="absolute top-4 right-4 bg-black bg-opacity-40 hover:bg-opacity-60 rounded-full p-2 text-white transition-all z-50">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
 
-            <div class="px-8 pb-8 flex-1 overflow-y-auto bg-gray-50 dark:bg-[#1a1a1a]">
-                <!-- Ícone e Título -->
-                <div class="flex flex-col md:flex-row items-start md:items-end -mt-12 mb-6 gap-6">
-                    <div id="view-vendor-icon"
-                        class="w-24 h-24 rounded-xl bg-yellow-100 flex items-center justify-center text-4xl font-bold text-yellow-600 shadow-lg border-4 border-white dark:border-gray-800 shrink-0">
-                        <!-- Iniciais -->
-                        S
-                    </div>
-                    <div class="flex-1 mb-2">
-                        <h2 id="view-vendor-name" class="text-3xl font-bold text-gray-800 dark:text-gray-100">SolarTech
-                            Engenharia</h2>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mt-1">
-                            <span id="view-vendor-category">Engenharia</span>
-                            <span>•</span>
-                            <span id="view-vendor-tags" class="text-yellow-600 font-medium uppercase">SOLAR</span>
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <span id="view-vendor-status"
-                            class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Homologado</span>
-                    </div>
+            <div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#1a1a1a] relative">
+                <!-- Header da Modal (Estilo Banner) - Agora dentro do scroll -->
+                <div id="view-banner-container" class="h-40 bg-gray-300 dark:bg-gray-700 relative bg-cover bg-center">
+                    <div class="absolute inset-0 bg-black bg-opacity-30"></div> <!-- Overlay para contraste -->
                 </div>
 
-                <p id="view-vendor-summary" class="text-gray-600 dark:text-gray-300 mb-6 text-lg">
-                    Especialista em projetos de usinas solares de grande porte e minigeração distribuída.
-                </p>
-
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <!-- Coluna da Esquerda: Sobre -->
-                    <div class="flex-1 space-y-6">
-                        <div
-                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h3 class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                                <i class="fas fa-info-circle text-blue-500 mr-2"></i> Sobre a Empresa
-                            </h3>
-                            <div id="view-vendor-description"
-                                class="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                                <!-- Descrição completa aqui -->
+                <div class="px-8 pb-8 relative">
+                    <!-- Ícone e Título -->
+                    <div class="flex flex-col md:flex-row items-start md:items-end -mt-16 mb-6 gap-6 relative z-10">
+                        <div id="view-vendor-icon-container"
+                            class="w-32 h-32 rounded-xl bg-white dark:bg-gray-800 shadow-xl border-4 border-white dark:border-gray-700 shrink-0 overflow-hidden flex items-center justify-center relative">
+                            <!-- Iniciais (Padrão) -->
+                            <div id="view-vendor-initials"
+                                class="w-full h-full bg-yellow-100 flex items-center justify-center text-5xl font-bold text-yellow-600">
+                                S
+                            </div>
+                            <!-- Logo Img (Opcional) -->
+                            <img id="view-vendor-logo-img" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                        </div>
+                        <div class="flex-1 mb-2">
+                            <h2 id="view-vendor-name" class="text-3xl font-bold text-gray-800 dark:text-gray-100">
+                                SolarTech Engenharia</h2>
+                            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mt-1">
+                                <span id="view-vendor-category">Engenharia</span>
+                                <span>•</span>
+                                <span id="view-vendor-tags" class="text-yellow-600 font-medium uppercase">SOLAR</span>
                             </div>
                         </div>
-
-                        <div
-                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h3 class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                                <i class="fas fa-map-marker-alt text-red-500 mr-2"></i> Localização
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-400">
-                                <span class="font-medium text-gray-700 dark:text-gray-300">Cidade:</span> <span
-                                    id="view-vendor-city">São Paulo</span><br>
-                                <span class="font-medium text-gray-700 dark:text-gray-300">Endereço:</span> <span
-                                    id="view-vendor-address">Av. Paulista, 1000</span>
-                            </p>
+                        <div class="mb-2">
+                            <span id="view-vendor-status"
+                                class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Homologado</span>
                         </div>
                     </div>
 
-                    <!-- Coluna da Direita: Contato -->
-                    <div class="w-full lg:w-80 space-y-6">
-                        <div
-                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                                Informações de Contato
-                            </h3>
+                    <p id="view-vendor-summary" class="text-gray-600 dark:text-gray-300 mb-6 text-lg">
+                        Especialista em projetos de usinas solares de grande porte e minigeração distribuída.
+                    </p>
 
-                            <div class="space-y-4">
-                                <div>
-                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Email</div>
-                                    <a id="view-vendor-email-link" href="#"
-                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 transition-colors">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-500">
-                                            <i class="fas fa-envelope"></i>
-                                        </div>
-                                        <span id="view-vendor-email" class="truncate">contato@empresa.com</span>
-                                    </a>
-                                </div>
-
-                                <div>
-                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Telefone</div>
-                                    <a id="view-vendor-phone-link" href="#"
-                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-green-500 transition-colors">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-500">
-                                            <i class="fas fa-phone"></i>
-                                        </div>
-                                        <span id="view-vendor-phone">(11) 99999-0000</span>
-                                    </a>
-                                </div>
-
-                                <div>
-                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Website</div>
-                                    <a id="view-vendor-website-link" href="#" target="_blank"
-                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-purple-500 transition-colors">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mr-3 text-purple-500">
-                                            <i class="fas fa-globe"></i>
-                                        </div>
-                                        <span id="view-vendor-website" class="truncate">Visitar site</span>
-                                    </a>
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <!-- Coluna da Esquerda: Sobre -->
+                        <div class="flex-1 space-y-6">
+                            <div
+                                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <h3
+                                    class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    <i class="fas fa-info-circle text-blue-500 mr-2"></i> Sobre a Empresa
+                                </h3>
+                                <div id="view-vendor-description"
+                                    class="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                                    <!-- Descrição completa aqui -->
                                 </div>
                             </div>
 
-                            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                                <a id="contact-button-link" href="#"
-                                    class="block w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors shadow-md">
-                                    <i class="far fa-comments mr-2"></i> Solicitar Contato
-                                </a>
+                            <div
+                                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <h3
+                                    class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    <i class="fas fa-map-marker-alt text-red-500 mr-2"></i> Localização
+                                </h3>
+                                <p class="text-gray-600 dark:text-gray-400">
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">Cidade:</span> <span
+                                        id="view-vendor-city">São Paulo</span><br>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">Endereço:</span> <span
+                                        id="view-vendor-address">Av. Paulista, 1000</span>
+                                </p>
                             </div>
                         </div>
 
-                        <div class="text-center">
-                            <button id="edit-vendor-btn-view" class="text-sm text-gray-500 hover:text-white underline">
-                                Editar Informações
-                            </button>
+                        <!-- Coluna da Direita: Contato -->
+                        <div class="w-full lg:w-80 space-y-6">
+                            <div
+                                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    Informações de Contato
+                                </h3>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-400 uppercase mb-1">Email</div>
+                                        <a id="view-vendor-email-link" href="#"
+                                            class="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 transition-colors">
+                                            <div
+                                                class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-500">
+                                                <i class="fas fa-envelope"></i>
+                                            </div>
+                                            <span id="view-vendor-email" class="truncate">contato@empresa.com</span>
+                                        </a>
+                                    </div>
+
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-400 uppercase mb-1">Telefone</div>
+                                        <a id="view-vendor-phone-link" href="#"
+                                            class="flex items-center text-gray-700 dark:text-gray-300 hover:text-green-500 transition-colors">
+                                            <div
+                                                class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-500">
+                                                <i class="fas fa-phone"></i>
+                                            </div>
+                                            <span id="view-vendor-phone">(11) 99999-0000</span>
+                                        </a>
+                                    </div>
+
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-400 uppercase mb-1">Website</div>
+                                        <a id="view-vendor-website-link" href="#" target="_blank"
+                                            class="flex items-center text-gray-700 dark:text-gray-300 hover:text-purple-500 transition-colors">
+                                            <div
+                                                class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mr-3 text-purple-500">
+                                                <i class="fas fa-globe"></i>
+                                            </div>
+                                            <span id="view-vendor-website" class="truncate">Visitar site</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                    <a id="contact-button-link" href="#"
+                                        class="block w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors shadow-md">
+                                        <i class="far fa-comments mr-2"></i> Solicitar Contato
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button id="edit-vendor-btn-view"
+                                    class="text-sm text-gray-500 hover:text-white underline">
+                                    Editar Informações
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
