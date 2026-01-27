@@ -148,10 +148,10 @@ function createVendorCard(vendor) {
 
     div.innerHTML = `
         <div class="flex justify-between items-start mb-4">
-            <div class="w-12 h-12 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center text-xl font-bold">
-                ${initials}
+            <div class="w-12 h-12 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center text-xl font-bold overflow-hidden">
+                ${vendor.logoUrl ? `<img src="${vendor.logoUrl}" alt="${vendor.name}" class="w-full h-full object-cover">` : initials}
             </div>
-            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-semibold">Homologado</span>
+            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-semibold">Verificado</span>
         </div>
         
         <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1 line-clamp-1" title="${vendor.name}">${vendor.name}</h3>
