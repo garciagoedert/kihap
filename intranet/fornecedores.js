@@ -327,7 +327,7 @@ async function handleFormSubmit(e) {
             await updateDoc(doc(db, "fornecedores", id), vendorData);
         } else {
             vendorData.createdAt = serverTimestamp();
-            vendorData.createdBy = currentUser.uid;
+            vendorData.createdBy = currentUser.id || currentUser.uid;
             await addDoc(collection(db, "fornecedores"), vendorData);
         }
 
