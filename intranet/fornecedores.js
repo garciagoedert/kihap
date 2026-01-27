@@ -26,6 +26,8 @@ const vendorPhoneInput = document.getElementById('vendor-phone');
 const vendorWebsiteInput = document.getElementById('vendor-website');
 const vendorAddressInput = document.getElementById('vendor-address');
 const vendorDescriptionInput = document.getElementById('vendor-description');
+const vendorLogoInput = document.getElementById('vendor-logo');
+const vendorBannerInput = document.getElementById('vendor-banner');
 const modalTitle = document.getElementById('modal-title');
 
 // Search & Filter
@@ -41,7 +43,10 @@ const editVendorBtnView = document.getElementById('edit-vendor-btn-view');
 const viewVendorName = document.getElementById('view-vendor-name');
 const viewVendorCategory = document.getElementById('view-vendor-category');
 const viewVendorTags = document.getElementById('view-vendor-tags');
-const viewVendorIcon = document.getElementById('view-vendor-icon');
+const viewVendorIconContainer = document.getElementById('view-vendor-icon-container');
+const viewVendorInitials = document.getElementById('view-vendor-initials');
+const viewVendorLogoImg = document.getElementById('view-vendor-logo-img');
+const viewBannerContainer = document.getElementById('view-banner-container');
 const viewVendorStatus = document.getElementById('view-vendor-status');
 const viewVendorSummary = document.getElementById('view-vendor-summary');
 const viewVendorDescription = document.getElementById('view-vendor-description');
@@ -218,7 +223,27 @@ function openViewModal(vendor) {
     viewVendorCategory.textContent = vendor.category || 'Serviços';
     viewVendorTags.textContent = vendor.tags ? vendor.tags.toUpperCase() : '';
 
-    viewVendorIcon.textContent = getInitials(vendor.name);
+    viewVendorTags.textContent = vendor.tags ? vendor.tags.toUpperCase() : '';
+
+    // Icon / Logo Logic
+    if (vendor.logoUrl) {
+        viewVendorInitials.classList.add('hidden');
+        viewVendorLogoImg.src = vendor.logoUrl;
+        viewVendorLogoImg.classList.remove('hidden');
+        viewVendorIconContainer.classList.remove('bg-yellow-100'); // Remove default bg
+    } else {
+        viewVendorLogoImg.classList.add('hidden');
+        viewVendorInitials.classList.remove('hidden');
+        viewVendorInitials.textContent = getInitials(vendor.name);
+        viewVendorIconContainer.classList.add('bg-white', 'dark:bg-gray-800'); // Restore default bg
+    }
+
+    // Banner Logic
+    if (vendor.bannerUrl) {
+        viewBannerContainer.style.backgroundImage = `url('${vendor.bannerUrl}')`;
+    } else {
+        viewBannerContainer.style.backgroundImage = 'none';
+    }
 
     // Summary logic: Just use description cut off or full? 
     // Image in mockup showed a summary and then "About". I'll use description for both for now, or split if I had a summary field.
@@ -283,6 +308,8 @@ function openEditVendorModal(id) {
     vendorWebsiteInput.value = vendor.website || '';
     vendorAddressInput.value = vendor.address || '';
     vendorDescriptionInput.value = vendor.description || '';
+    vendorLogoInput.value = vendor.logoUrl || '';
+    vendorBannerInput.value = vendor.bannerUrl || '';
 
     modalTitle.textContent = "Editar Parceiro";
     deleteVendorBtn.classList.remove('hidden');
@@ -314,6 +341,8 @@ async function handleFormSubmit(e) {
         website: vendorWebsiteInput.value,
         address: vendorAddressInput.value,
         description: vendorDescriptionInput.value,
+        logoUrl: vendorLogoInput.value,
+        bannerUrl: vendorBannerInput.value,
         updatedAt: serverTimestamp()
     };
 
