@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fornecedores - Intranet Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold">Catálogo de Parceiros</h1>
+                        <p class="text-gray-400 mt-1">Empresas homologadas e indicadas.</p>
+                    </div>
+
+                    <div class="flex items-center gap-4 w-full md:w-auto flex-wrap">
+                        <!-- Filtro de Cidade -->
+                        <div class="relative w-full md:w-48">
+                            <select id="city-filter"
+                                class="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer">
+                                <option value="">Todas as Cidades</option>
+                                <!-- Cidades serão populadas via JS -->
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div class="relative w-full md:w-64">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </span>
+                            <input type="search" id="search-input"
+                                class="w-full bg-gray-800 text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+                                placeholder="Buscar parceiro ou serviço...">
+                        </div>
+                        <button id="add-vendor-btn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center whitespace-nowrap transition-colors">
+                            <i class="fas fa-plus mr-2"></i> Novo Parceiro
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de Fornecedores -->
+                <div id="vendors-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Cards serão inseridos aqui via JS -->
+                    <div class="col-span-full text-center text-gray-500 py-10">
+                        <i class="fas fa-spinner fa-spin text-2xl"></i> Carregando parceiros...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Edição/Criação -->
+    <div id="vendor-modal"
+        class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full p-6 relative flex flex-col max-h-[90vh]">
+            <button id="close-vendor-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-white">Novo Parceiro</h2>
+
+            <form id="vendor-form" class="flex-1 overflow-y-auto pr-2 space-y-4">
+                <input type="hidden" id="vendor-id">
+
+                <!-- Dados Básicos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Empresa</label>
+                        <input type="text" id="vendor-name" required
+                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Ex: SolarTech Engenharia">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Categoria/Setor</label>
+                        <input type="text" id="vendor-category" required
+                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Ex: Engenharia">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Tags (Separadas por vírgula)</label>
+                        <input type="text" id="vendor-tags"
+                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Ex: Solar, Manutenção">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Ano de Início (Desde)</label>
+                        <input type="number" id="vendor-since"
+                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Ex: 2018">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Cidade</label>
+                        <input type="text" id="vendor-city" required
+                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            placeholder="Ex: São Paulo">
+                    </div>
+                </div>
+
+                <!-- Contato -->
+                <div class="space-y-4 pt-4 border-t border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-200">Informações de Contato</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">E-mail</label>
+                            <input type="email" id="vendor-email"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="contato@empresa.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Telefone/Whatsapp</label>
+                            <input type="text" id="vendor-phone"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="(11) 99999-0000">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Site</label>
+                            <input type="url" id="vendor-website"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="https://...">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Endereço Completo</label>
+                            <input type="text" id="vendor-address"
+                                class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="Rua Exemplo, 123 - Bairro">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descrição -->
+                <div class="pt-4 border-t border-gray-700">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Descrição / Sobre a Empresa</label>
+                    <textarea id="vendor-description" rows="4"
+                        class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                        placeholder="Descreva os serviços e diferenciais..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-gray-700">
+                    <button type="button" id="delete-vendor-btn"
+                        class="px-4 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-700 transition-colors hidden">
+                        <i class="fas fa-trash mr-2"></i> Excluir
+                    </button>
+                    <div class="flex space-x-3 ml-auto">
+                        <button type="button" id="cancel-vendor-btn"
+                            class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="save-vendor-btn"
+                            class="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors">
+                            Salvar Parceiro
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Visualização (Detalhes) -->
+    <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-gray-100 dark:bg-gray-800 rounded-lg max-w-4xl w-full relative flex flex-col max-h-[95vh] overflow-hidden">
+            <!-- Header da Modal (Estilo Banner) -->
+            <div class="h-32 bg-gray-300 dark:bg-gray-700 relative">
+                <button id="close-view-modal"
+                    class="absolute top-4 right-4 bg-black bg-opacity-20 hover:bg-opacity-40 rounded-full p-2 text-white transition-all">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="px-8 pb-8 flex-1 overflow-y-auto bg-gray-50 dark:bg-[#1a1a1a]">
+                <!-- Ícone e Título -->
+                <div class="flex flex-col md:flex-row items-start md:items-end -mt-12 mb-6 gap-6">
+                    <div id="view-vendor-icon"
+                        class="w-24 h-24 rounded-xl bg-yellow-100 flex items-center justify-center text-4xl font-bold text-yellow-600 shadow-lg border-4 border-white dark:border-gray-800 shrink-0">
+                        <!-- Iniciais -->
+                        S
+                    </div>
+                    <div class="flex-1 mb-2">
+                        <h2 id="view-vendor-name" class="text-3xl font-bold text-gray-800 dark:text-gray-100">SolarTech
+                            Engenharia</h2>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mt-1">
+                            <span id="view-vendor-category">Engenharia</span>
+                            <span>•</span>
+                            <span id="view-vendor-tags" class="text-yellow-600 font-medium uppercase">SOLAR</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <span id="view-vendor-status"
+                            class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Homologado</span>
+                    </div>
+                </div>
+
+                <p id="view-vendor-summary" class="text-gray-600 dark:text-gray-300 mb-6 text-lg">
+                    Especialista em projetos de usinas solares de grande porte e minigeração distribuída.
+                </p>
+
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Coluna da Esquerda: Sobre -->
+                    <div class="flex-1 space-y-6">
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i> Sobre a Empresa
+                            </h3>
+                            <div id="view-vendor-description"
+                                class="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                                <!-- Descrição completa aqui -->
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                <i class="fas fa-map-marker-alt text-red-500 mr-2"></i> Localização
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Cidade:</span> <span
+                                    id="view-vendor-city">São Paulo</span><br>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Endereço:</span> <span
+                                    id="view-vendor-address">Av. Paulista, 1000</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Coluna da Direita: Contato -->
+                    <div class="w-full lg:w-80 space-y-6">
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                Informações de Contato
+                            </h3>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Email</div>
+                                    <a id="view-vendor-email-link" href="#"
+                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 transition-colors">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-500">
+                                            <i class="fas fa-envelope"></i>
+                                        </div>
+                                        <span id="view-vendor-email" class="truncate">contato@empresa.com</span>
+                                    </a>
+                                </div>
+
+                                <div>
+                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Telefone</div>
+                                    <a id="view-vendor-phone-link" href="#"
+                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-green-500 transition-colors">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-500">
+                                            <i class="fas fa-phone"></i>
+                                        </div>
+                                        <span id="view-vendor-phone">(11) 99999-0000</span>
+                                    </a>
+                                </div>
+
+                                <div>
+                                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Website</div>
+                                    <a id="view-vendor-website-link" href="#" target="_blank"
+                                        class="flex items-center text-gray-700 dark:text-gray-300 hover:text-purple-500 transition-colors">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mr-3 text-purple-500">
+                                            <i class="fas fa-globe"></i>
+                                        </div>
+                                        <span id="view-vendor-website" class="truncate">Visitar site</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                <a id="contact-button-link" href="#"
+                                    class="block w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors shadow-md">
+                                    <i class="far fa-comments mr-2"></i> Solicitar Contato
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button id="edit-vendor-btn-view" class="text-sm text-gray-500 hover:text-white underline">
+                                Editar Informações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import './fornecedores.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents();
+        });
+    </script>
+</body>
+
+</html>
