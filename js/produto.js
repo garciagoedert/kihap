@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const productsRef = collection(db, 'products');
             const q = query(productsRef, where('__name__', 'in', productIds));
             const querySnapshot = await getDocs(q);
-            
+
             if (!querySnapshot.empty) {
                 recommendedProductsList.innerHTML = '';
                 querySnapshot.forEach(doc => {
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= quantity; i++) {
             const formClone = formTemplate.content.cloneNode(true);
             const formInstance = formClone.querySelector('.form-instance');
-            
+
             formInstance.querySelector('.form-instance-number').textContent = i;
 
             const fields = ['nome', 'email', 'telefone', 'cpf', 'unidade', 'programa', 'graduacao', 'price-variant-selector'];
@@ -158,6 +158,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (label) label.setAttribute('for', `${field}-${i}`);
                 if (input) input.id = `${field}-${i}`;
             });
+
+            // Campo Professor condicional
+            if (productData.askProfessor) {
+                const professorContainer = document.createElement('div');
+                professorContainer.innerHTML = `
+                    <label for="professor-${i}" class="block text-sm font-medium text-gray-400 mb-1">Professor</label>
+                    <input type="text" name="professor" id="professor-${i}" placeholder="Nome do Professor" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                `;
+                // Inserir após o campo de unidade
+                const unidadeContainer = formInstance.querySelector('[name="unidade"]').closest('div');
+                unidadeContainer.after(professorContainer);
+            }
 
             const programaSelect = formInstance.querySelector('[name="programa"]');
             programaSelect.addEventListener('change', () => populateGraduacao(programaSelect.value, formInstance));
@@ -371,10 +383,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 userCpf: form.querySelector('[name="cpf"]').value,
                 userUnit: form.querySelector('[name="unidade"]').value,
                 userPrograma: form.querySelector('[name="programa"]').value,
+                userPrograma: form.querySelector('[name="programa"]').value,
                 userGraduacao: form.querySelector('.graduacao-container').classList.contains('hidden') ? null : form.querySelector('[name="graduacao"]').value,
+                userProfessor: form.querySelector('[name="professor"]') ? form.querySelector('[name="professor"]').value : null,
                 userId: currentUser ? currentUser.uid : null
             };
-            
+
             let priceData = {};
             if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
@@ -383,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     priceData.variantName = selectedVariant.name;
                     priceData.amount = selectedVariant.price;
                 } else {
-                    priceData.amount = productData.price; 
+                    priceData.amount = productData.price;
                 }
             } else {
                 priceData.amount = productData.price;
@@ -482,13 +496,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const populateAllUnitSelectors = async () => {
         const unitSelectors = formsContainer.querySelectorAll('[name="unidade"]');
+
+        let unitsToDisplay = unitsCache;
+        const useCustomUnits = productData.customUnits && productData.customUnits.length > 0;
+
+        // Lógica customizada baseada em configuração do produto
+        if (useCustomUnits) {
+            unitsToDisplay = productData.customUnits;
+        }
+
         unitSelectors.forEach(selector => {
             selector.innerHTML = '<option value="">Selecione sua unidade</option>';
-            unitsCache.forEach(unit => {
-                if (unit.toLowerCase() !== 'atadf') {
+            unitsToDisplay.forEach(unit => {
+                // Se for a lista padrão, aplica o filtro 'atadf'
+                if (!useCustomUnits) {
+                    if (unit.toLowerCase() !== 'atadf') {
+                        const option = document.createElement('option');
+                        option.value = unit;
+                        option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+                        selector.appendChild(option);
+                    }
+                } else {
+                    // Para a lista customizada, exibe exatamente como definido e apara espaços
                     const option = document.createElement('option');
-                    option.value = unit;
-                    option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+                    option.value = unit.trim();
+                    option.textContent = unit.trim();
                     selector.appendChild(option);
                 }
             });

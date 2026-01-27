@@ -76,6 +76,8 @@ export async function setupStorePage() {
     const productPublicInput = document.getElementById('product-public');
     const productIsTicketInput = document.getElementById('product-is-ticket');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
+    const productAskProfessorInput = document.getElementById('product-ask-professor');
+    const productCustomUnitsInput = document.getElementById('product-custom-units');
     const recommendedProductsSelect = document.getElementById('recommended-products');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
@@ -625,6 +627,8 @@ export async function setupStorePage() {
         productPublicInput.checked = false;
         productIsTicketInput.checked = false;
         productAvailabilityDateInput.value = '';
+        productAskProfessorInput.checked = false;
+        productCustomUnitsInput.value = '';
         priceVariantsList.innerHTML = '';
         recommendedProductsSelect.value = '';
         Array.from(recommendedProductsSelect.options).forEach(option => option.selected = false);
@@ -665,6 +669,8 @@ export async function setupStorePage() {
                 acessoPublico: productPublicInput.checked,
                 isTicket: productIsTicketInput.checked,
                 availabilityDate: productAvailabilityDateInput.value || null,
+                askProfessor: productAskProfessorInput.checked,
+                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value)
             };
 
@@ -770,6 +776,8 @@ export async function setupStorePage() {
                 productPublicInput.checked = product.acessoPublico || false;
                 productIsTicketInput.checked = product.isTicket || false;
                 productAvailabilityDateInput.value = product.availabilityDate || '';
+                productAskProfessorInput.checked = product.askProfessor || false;
+                productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
 
                 if (product.isTicket) {
                     sendBulkEmailsBtn.classList.remove('hidden');
