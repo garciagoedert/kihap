@@ -619,6 +619,7 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
                 userRecord = await admin.auth().createUser({
                     email: email,
                     emailVerified: false,
+                    password: 'kihap123', // Default password
                     displayName: `${firstName} ${lastName || ''}`,
                 });
                 functions.logger.info(`Novo usuário criado com email ${email}: ${userRecord.uid}`);
@@ -648,6 +649,151 @@ exports.inviteStudent = functions.https.onCall(async (data, context) => {
     } catch (error) {
         functions.logger.error("Erro ao criar convite de aluno:", error);
         throw new functions.https.HttpsError("internal", "Não foi possível criar o convite do aluno.");
+    }
+});
+
+/**
+ * Define a senha padrão 'kihap' para todos os alunos que ainda não possuem acesso.
+ * Processa em lotes para evitar timeout.
+ */
+exports.batchSetDefaultPasswords = functions.runWith({ timeoutSeconds: 540, memory: '1GB' }).https.onCall(async (data, context) => {
+    // Verificação de permissão de admin
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+    if (!userDoc.exists || (!userData.isAdmin && !userData.isInstructor)) {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem executar esta ação.");
+    }
+
+    const { unitId, dryRun } = data;
+    functions.logger.info(`[BATCH_PASSWORD] Iniciando processamento. Unit: ${unitId || 'Todas'}, DryRun: ${dryRun}`);
+
+    try {
+        // 1. Buscar todos os alunos da EVO (do cache Firestore para performance)
+        let studentsQuery = db.collection('evo_students');
+        if (unitId && unitId !== 'all') {
+            studentsQuery = studentsQuery.where('unitId', '==', unitId);
+        }
+
+        const studentsSnap = await studentsQuery.get();
+        if (studentsSnap.empty) {
+            return { message: "Nenhum aluno encontrado no cache." };
+        }
+
+        const allStudents = studentsSnap.docs.map(doc => doc.data());
+        console.log(`[BATCH_PASSWORD] Total de alunos no cache: ${allStudents.length}`);
+
+        // 2. Buscar todos os usuários já registrados no Firebase Auth/Users
+        // Nota: Podemos ter problemas de memória aqui se a base for muito grande.
+        // Otimização: Em produção real, faríamos em paginação ou map-reduce. 
+        // Para < 5000 users, isso ainda é viável em 1GB de RAM.
+
+        const usersSnap = await db.collection('users').where('evoMemberId', '!=', null).get();
+        const registeredEvoIds = new Set();
+        usersSnap.forEach(doc => {
+            const d = doc.data();
+            if (d.evoMemberId) {
+                registeredEvoIds.add(String(d.evoMemberId));
+                registeredEvoIds.add(Number(d.evoMemberId));
+            }
+        });
+
+        console.log(`[BATCH_PASSWORD] Total de usuários já registrados: ${registeredEvoIds.size}`);
+
+        // 3. Filtrar alunos sem acesso
+        const studentsWithoutAccess = allStudents.filter(s => !registeredEvoIds.has(s.idMember) && !registeredEvoIds.has(String(s.idMember)));
+        console.log(`[BATCH_PASSWORD] Alunos sem acesso (candidatos): ${studentsWithoutAccess.length}`);
+
+        if (dryRun) {
+            return {
+                success: true,
+                message: `[Simulação] Seriam criadas ${studentsWithoutAccess.length} contas com senha padrão.`,
+                count: studentsWithoutAccess.length
+            };
+        }
+
+        // 4. Processar criação de contas em lotes
+        let createdCount = 0;
+        let updatedCount = 0;
+        let skippedNoEmailCount = 0;
+        let errorsCount = 0;
+        const BATCH_SIZE = 10; // Reduzido para evitar rate limits do Auth
+
+        for (let i = 0; i < studentsWithoutAccess.length; i += BATCH_SIZE) {
+            const chunk = studentsWithoutAccess.slice(i, i + BATCH_SIZE);
+            const promises = chunk.map(async (student) => {
+                const email = student.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description;
+
+                if (!email) {
+                    skippedNoEmailCount++;
+                    return;
+                }
+
+                try {
+                    // Tenta criar usuário
+                    const firstName = student.firstName || '';
+                    const lastName = student.lastName || '';
+                    const displayName = `${firstName} ${lastName}`.trim();
+
+                    let uid;
+                    let userExisted = false;
+
+                    try {
+                        const userRecord = await admin.auth().createUser({
+                            email: email,
+                            emailVerified: false,
+                            password: 'kihap123', // Min 6 chars
+                            displayName: displayName,
+                        });
+                        uid = userRecord.uid;
+                        createdCount++;
+                    } catch (authErr) {
+                        if (authErr.code === 'auth/email-already-exists') {
+                            try {
+                                const user = await admin.auth().getUserByEmail(email);
+                                uid = user.uid;
+                                await admin.auth().updateUser(uid, { password: 'kihap123' });
+                                updatedCount++;
+                            } catch (updateErr) {
+                                throw updateErr;
+                            }
+                        } else {
+                            throw authErr;
+                        }
+                    }
+
+                    if (uid) {
+                        // Cria/Atualiza doc no Firestore
+                        await db.collection('users').doc(uid).set({
+                            name: displayName,
+                            email: email,
+                            isAdmin: false,
+                            evoMemberId: student.idMember,
+                            unitId: student.unitId || unitId
+                        }, { merge: true });
+                    }
+
+                } catch (err) {
+                    console.error(`Erro ao processar ${email}:`, err.message);
+                    errorsCount++;
+                }
+            });
+
+            await Promise.all(promises);
+            console.log(`[BATCH_PASSWORD] Processado lote ${i} a ${i + BATCH_SIZE}`);
+        }
+
+        return {
+            success: true,
+            message: `Processo finalizado.\n\nCandidatos: ${studentsWithoutAccess.length}\nCriados: ${createdCount}\nAtualizados (Senha Resetada): ${updatedCount}\nSem Email: ${skippedNoEmailCount}\nErros: ${errorsCount}`,
+            stats: { candidates: studentsWithoutAccess.length, created: createdCount, updated: updatedCount, skippedNoEmail: skippedNoEmailCount, errors: errorsCount }
+        };
+
+    } catch (error) {
+        functions.logger.error("Erro em batchSetDefaultPasswords:", error);
+        throw new functions.https.HttpsError("internal", error.message);
     }
 });
 

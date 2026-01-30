@@ -25,6 +25,7 @@ const triggerEvoSync = httpsCallable(functions, 'triggerEvoSync');
 const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
 const syncEvoStudentsToCache = httpsCallable(functions, 'syncEvoStudentsToCache');
+const batchSetDefaultPasswords = httpsCallable(functions, 'batchSetDefaultPasswords');
 
 export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let allCourses = [];
@@ -201,6 +202,35 @@ export function setupAlunosPage() {
                         syncEvoBtn.disabled = false;
                         icon.classList.remove('fa-spin');
                         text.textContent = 'Sincronizar Cache';
+                    }
+                });
+            }
+
+            // --- Batch Password Button Event Listener ---
+            const batchPasswordBtn = document.getElementById('batch-password-btn');
+            if (batchPasswordBtn) {
+                batchPasswordBtn.addEventListener('click', async () => {
+                    const unitFilter = document.getElementById('unit-filter');
+                    const selectedUnit = unitFilter.value;
+
+                    if (!confirm(`ATENÇÃO: Isso irá criar contas de acesso para TODOS os alunos da unidade selecionada (${selectedUnit}) que ainda não possuem acesso, definindo a senha padrão como "kihap".\n\nIsso pode levar alguns minutos.\n\nDeseja continuar?`)) {
+                        return;
+                    }
+
+                    batchPasswordBtn.disabled = true;
+                    batchPasswordBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Processando...</span>';
+
+                    try {
+                        const result = await batchSetDefaultPasswords({ unitId: selectedUnit, dryRun: false });
+                        alert(`✅ Sucesso!\n\n${result.data.message}`);
+                        // Recarrega para atualizar ícones
+                        await loadStudents();
+                    } catch (error) {
+                        console.error('Erro ao gerar senhas:', error);
+                        alert(`❌ Erro: ${error.message}`);
+                    } finally {
+                        batchPasswordBtn.disabled = false;
+                        batchPasswordBtn.innerHTML = '<i class="fas fa-key"></i> <span>Gerar Senhas Padrão</span>';
                     }
                 });
             }
