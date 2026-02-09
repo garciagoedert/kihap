@@ -57,6 +57,24 @@ function closeModal() {
     renderItensPedido();
     document.getElementById('unidade-select').value = '';
     document.getElementById('status-select').value = 'Pendente';
+    document.getElementById('justificativa-input').value = '';
+    document.getElementById('justificativa-container').classList.add('hidden');
+}
+
+function handleStatusChange(event) {
+    const status = event.target.value;
+    const containerId = event.target.id === 'status-select' ? 'justificativa-container' :
+        event.target.id === 'status-preta-select' ? 'justificativa-preta-container' :
+            'justificativa-dobok-container';
+
+    const container = document.getElementById(containerId);
+    if (container) {
+        if (status === 'Cancelado') {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+        }
+    }
 }
 
 async function fetchEvoUnits() {
@@ -206,6 +224,13 @@ async function handleSubmitPedido() {
     }
 
     const statusSelecionado = document.getElementById('status-select').value;
+    const justificativa = document.getElementById('justificativa-input').value.trim();
+
+    if (statusSelecionado === 'Cancelado' && !justificativa) {
+        alert("Para cancelar o pedido, é obrigatório informar a justificativa.");
+        return;
+    }
+
     console.log('Status selecionado para salvar:', statusSelecionado);
 
     try {
@@ -217,6 +242,7 @@ async function handleSubmitPedido() {
                 unidade: unidadeSelecionada,
                 itens: itensPedido,
                 status: statusSelecionado,
+                justificativa: statusSelecionado === 'Cancelado' ? justificativa : null,
                 lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                 lastUpdatedAt: serverTimestamp()
             });
@@ -228,6 +254,7 @@ async function handleSubmitPedido() {
                 itens: itensPedido,
                 data: serverTimestamp(),
                 status: "Pendente",
+                justificativa: null,
                 solicitante: { uid: user.id, nome: user.name || user.email }
             });
             alert("Pedido enviado com sucesso!");
@@ -348,6 +375,14 @@ async function openDetailsModal(pedidoId) {
         document.getElementById('details-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
         document.getElementById('details-itens').innerHTML = pedido.itens.map(item => `<li>${item.quantidade}x ${item.faixa} (${item.tamanho})</li>`).join('');
 
+        const justificativaContainer = document.getElementById('details-justificativa-container');
+        if (pedido.status === 'Cancelado' && pedido.justificativa) {
+            document.getElementById('details-justificativa').textContent = pedido.justificativa;
+            justificativaContainer.classList.remove('hidden');
+        } else {
+            justificativaContainer.classList.add('hidden');
+        }
+
         const user = await getCurrentUser();
         const adminActions = document.getElementById('details-admin-actions');
         const editBtn = document.getElementById('edit-pedido-btn');
@@ -410,6 +445,15 @@ async function handleEditPedido(event) {
             console.log('Status select value após set:', statusSelect.value);
         } else {
             console.error('Elemento status-select não encontrado!');
+        }
+
+        const justificativaContainer = document.getElementById('justificativa-container');
+        if (pedido.status === 'Cancelado') {
+            justificativaContainer.classList.remove('hidden');
+            document.getElementById('justificativa-input').value = pedido.justificativa || '';
+        } else {
+            justificativaContainer.classList.add('hidden');
+            document.getElementById('justificativa-input').value = '';
         }
 
         itensPedido = [...pedido.itens];
@@ -580,6 +624,8 @@ function openNewPedidoModal() {
     document.getElementById('unidade-select').value = '';
     document.getElementById('status-select').value = 'Pendente';
     renderItensPedido();
+    document.getElementById('justificativa-input').value = '';
+    document.getElementById('justificativa-container').classList.add('hidden');
     openModal();
 }
 
@@ -603,6 +649,10 @@ export function setupPedidosPage() {
     document.getElementById('delete-pedido-btn')?.addEventListener('click', handleDeletePedido);
     document.getElementById('export-pedidos-btn')?.addEventListener('click', exportPedidosPendentes);
 
+    document.getElementById('status-select')?.addEventListener('change', handleStatusChange);
+    document.getElementById('status-preta-select')?.addEventListener('change', handleStatusChange);
+    document.getElementById('status-dobok-select')?.addEventListener('change', handleStatusChange);
+
     // --- Funções e Listeners da Aba de Faixas Pretas ---
 
     function openFaixaPretaModal() {
@@ -622,6 +672,8 @@ export function setupPedidosPage() {
             document.getElementById('unidade-preta-select').value = '';
             document.getElementById('faixa-preta-select').value = '1º Dan';
             document.getElementById('tamanho-preta-input').value = '';
+            document.getElementById('justificativa-preta-input').value = '';
+            document.getElementById('justificativa-preta-container').classList.add('hidden');
         }
     }
 
@@ -637,6 +689,12 @@ export function setupPedidosPage() {
         const aluno = document.getElementById('aluno-preta-input').value.trim();
         const faixa = document.getElementById('faixa-preta-select').value;
         const tamanho = document.getElementById('tamanho-preta-input').value;
+        const justificativa = document.getElementById('justificativa-preta-input').value.trim();
+
+        if (status === 'Cancelado' && !justificativa) {
+            alert("Para cancelar o pedido, é obrigatório informar a justificativa.");
+            return;
+        }
 
         if (!unidade || !aluno || !tamanho) {
             alert("Por favor, preencha todos os campos, incluindo o tamanho da faixa.");
@@ -652,6 +710,7 @@ export function setupPedidosPage() {
                     faixa,
                     tamanho,
                     status,
+                    justificativa: status === 'Cancelado' ? justificativa : null,
                     lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
                     lastUpdatedAt: serverTimestamp()
                 });
@@ -664,6 +723,7 @@ export function setupPedidosPage() {
                     faixa,
                     tamanho,
                     status,
+                    justificativa: status === 'Cancelado' ? justificativa : null,
                     data: serverTimestamp(),
                     solicitante: { uid: user.id, nome: user.name || user.email }
                 });
@@ -830,6 +890,14 @@ export function setupPedidosPage() {
             document.getElementById('details-preta-faixa').textContent = pedido.faixa;
             document.getElementById('details-preta-tamanho').textContent = pedido.tamanho || 'N/A';
 
+            const justificativaContainer = document.getElementById('details-preta-justificativa-container');
+            if (pedido.status === 'Cancelado' && pedido.justificativa) {
+                document.getElementById('details-preta-justificativa').textContent = pedido.justificativa;
+                justificativaContainer.classList.remove('hidden');
+            } else {
+                justificativaContainer.classList.add('hidden');
+            }
+
             const user = await getCurrentUser();
             const adminActions = document.getElementById('details-preta-admin-actions');
             const editBtn = document.getElementById('edit-preta-pedido-btn');
@@ -887,6 +955,15 @@ export function setupPedidosPage() {
             document.getElementById('faixa-preta-select').value = pedido.faixa;
             document.getElementById('tamanho-preta-input').value = pedido.tamanho || '';
 
+            const justificativaContainer = document.getElementById('justificativa-preta-container');
+            if (pedido.status === 'Cancelado') {
+                justificativaContainer.classList.remove('hidden');
+                document.getElementById('justificativa-preta-input').value = pedido.justificativa || '';
+            } else {
+                justificativaContainer.classList.add('hidden');
+                document.getElementById('justificativa-preta-input').value = '';
+            }
+
             openFaixaPretaModal();
         }
     }
@@ -932,6 +1009,8 @@ export function setupPedidosPage() {
             document.getElementById('tamanho-dobok-select').value = '';
             document.getElementById('colarinho-dobok-select').value = '';
             document.getElementById('faixa-preta-dobok-checkbox').checked = false;
+            document.getElementById('justificativa-dobok-input').value = '';
+            document.getElementById('justificativa-dobok-container').classList.add('hidden');
         }
     }
 
@@ -948,6 +1027,12 @@ export function setupPedidosPage() {
         const tamanho = document.getElementById('tamanho-dobok-select').value;
         const isFaixaPreta = document.getElementById('faixa-preta-dobok-checkbox').checked;
         const colarinho = document.getElementById('colarinho-dobok-select').value;
+        const justificativa = document.getElementById('justificativa-dobok-input').value.trim();
+
+        if (status === 'Cancelado' && !justificativa) {
+            alert("Para cancelar o pedido, é obrigatório informar a justificativa.");
+            return;
+        }
 
         if (!unidade || !tamanho) {
             alert("Por favor, preencha a unidade e o tamanho.");
@@ -962,6 +1047,7 @@ export function setupPedidosPage() {
                     aluno: aluno || null,
                     tamanho,
                     status,
+                    justificativa: status === 'Cancelado' ? justificativa : null,
                     isFaixaPreta,
                     colarinho: colarinho || null,
                     lastUpdatedBy: { uid: user.id, nome: user.name || user.email },
@@ -975,6 +1061,7 @@ export function setupPedidosPage() {
                     aluno: aluno || null,
                     tamanho,
                     status,
+                    justificativa: status === 'Cancelado' ? justificativa : null,
                     isFaixaPreta,
                     colarinho: colarinho || null,
                     data: serverTimestamp(),
@@ -1111,6 +1198,14 @@ export function setupPedidosPage() {
             document.getElementById('details-dobok-colarinho').textContent = pedido.colarinho || 'Padrão';
             document.getElementById('details-dobok-tipo').textContent = pedido.isFaixaPreta ? 'Faixa Preta' : 'Comum';
 
+            const justificativaContainer = document.getElementById('details-dobok-justificativa-container');
+            if (pedido.status === 'Cancelado' && pedido.justificativa) {
+                document.getElementById('details-dobok-justificativa').textContent = pedido.justificativa;
+                justificativaContainer.classList.remove('hidden');
+            } else {
+                justificativaContainer.classList.add('hidden');
+            }
+
             const user = await getCurrentUser();
             const adminActions = document.getElementById('details-dobok-admin-actions');
             const editBtn = document.getElementById('edit-dobok-pedido-btn');
@@ -1169,6 +1264,15 @@ export function setupPedidosPage() {
             document.getElementById('tamanho-dobok-select').value = pedido.tamanho;
             document.getElementById('colarinho-dobok-select').value = pedido.colarinho || '';
             document.getElementById('faixa-preta-dobok-checkbox').checked = pedido.isFaixaPreta || false;
+
+            const justificativaContainer = document.getElementById('justificativa-dobok-container');
+            if (pedido.status === 'Cancelado') {
+                justificativaContainer.classList.remove('hidden');
+                document.getElementById('justificativa-dobok-input').value = pedido.justificativa || '';
+            } else {
+                justificativaContainer.classList.add('hidden');
+                document.getElementById('justificativa-dobok-input').value = '';
+            }
 
             openDobokModal(true);
         }

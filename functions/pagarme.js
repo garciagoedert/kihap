@@ -111,25 +111,84 @@ const createPagarmeOrder = async (product, formDataList, totalAmount, saleDocIds
         }
     };
 
-    console.log('[createPagarmeOrder] Payload do pedido a ser enviado:', JSON.stringify(orderPayload, null, 2));
-
+    // --- SPLIT PAYMENT LOGIC ---
     try {
-        const response = await client.post('/orders', orderPayload);
-        const order = response.data;
-        console.log('[createPagarmeOrder] Pedido criado com sucesso no Pagar.me. Resposta:', JSON.stringify(order, null, 2));
-        return order;
-    } catch (error) {
-        console.error('Erro detalhado ao criar pedido no Pagar.me:');
-        if (error.response) {
-            console.error('Dados do Erro:', JSON.stringify(error.response.data, null, 2));
-            console.error('Status do Erro:', error.response.status);
-            console.error('Headers do Erro:', JSON.stringify(error.response.headers, null, 2));
+        const primaryBuyer = formDataList[0];
+        const userUnit = primaryBuyer.userUnit;
+
+        console.log(`[createPagarmeOrder] Verificando regras de split para a unidade: ${userUnit}`);
+
+        const splitConfigDoc = await db.collection('config').doc('payment_splits').get();
+        if (splitConfigDoc.exists) {
+            const splitConfig = splitConfigDoc.data();
+
+            // Check if we have a recipient for this unit and for HQ
+            const unitRecipientId = splitConfig.units && splitConfig.units[userUnit];
+            const hqRecipientId = splitConfig.hq_recipient_id;
+            const hqPercentage = splitConfig.hq_percentage || 10; // Default 10% if not set
+
+            if (unitRecipientId && hqRecipientId) {
+                console.log(`[createPagarmeOrder] Aplicando split: Unit (${unitRecipientId}) / HQ (${hqRecipientId} - ${hqPercentage}%)`);
+
+                // Calculate split rules
+                // IMPORTANT: Pagar.me expects rules that sum up to 100% OR total amount.
+                // Using percentage is safer for consistency.
+
+                orderPayload.items[0].code = product.id; // Ensure code is set correctly
+
+                // Add split rules to the payment object
+                // Note: Split rules are added specifically to the payment method in V5
+                orderPayload.payments[0].split = [
+                    {
+                        recipient_id: hqRecipientId,
+                        percentage: hqPercentage,
+                        liable: true, // HQ is usually liable
+                        charge_processing_fee: true // HQ pays fees? Or split? Configurable.
+                    },
+                    {
+                        recipient_id: unitRecipientId,
+                        percentage: 100 - hqPercentage,
+                        liable: false, // Unit is not liable
+                        charge_processing_fee: false // Unit receives net value
+                    }
+                ];
+            } else {
+                console.log('[createPagarmeOrder] Configuração de split incompleta ou não encontrada para esta unidade. Processando sem split.');
+            }
         } else {
-            console.error('Mensagem de Erro:', error.message);
+            console.log('[createPagarmeOrder] Documento de configuração de split (config/payment_splits) não encontrado.');
         }
-        throw new functions.https.HttpsError('internal', 'Não foi possível criar a sessão de pagamento no Pagar.me.');
+    } catch (splitError) {
+        console.error('[createPagarmeOrder] Erro ao aplicar regras de split:', splitError);
+        // We continue without split to avoid blocking the sale, but log the error
     }
-};
+    // ---------------------------
+
+    const orderPayloadToLog = { ...orderPayload };
+    // Hide sensitive data if necessary
+    console.log('[createPagarmeOrder] Payload do pedido a ser enviado:', JSON.stringify(orderPayloadToLog, null, 2));
+
+    return axios.create({ // Re-create client inside here to ensure fresh config if needed or just use the helper
+        baseURL: 'https://api.pagar.me/core/v5',
+        headers: {
+            'Authorization': `Basic ${Buffer.from(process.env.PAGARME_API_KEY + ':').toString('base64')}`,
+            'Content-Type': 'application/json'
+        }
+    }).post('/orders', orderPayload)
+        .then(response => {
+            const order = response.data;
+            console.log('[createPagarmeOrder] Pedido criado com sucesso no Pagar.me. Resposta:', JSON.stringify(order, null, 2));
+            return order;
+        })
+        .catch(error => {
+            console.error('Erro detalhado ao criar pedido no Pagar.me:');
+            if (error.response) {
+                console.error('Dados do Erro:', JSON.stringify(error.response.data, null, 2));
+            }
+            throw error;
+        });
+}; // End of function replacement to encompass the return which was slightly different in original code usage structure vs my edit
+
 
 const getPagarmeOrder = async (orderId) => {
     const client = getPagarmeClient();
