@@ -25,7 +25,7 @@ const faixas = [
 ];
 
 const tamanhos = ["PP", "P", "M", "G", "GG"];
-const tamanhosDobok = ["1", "2", "PP", "P", "0", "00", "M0", "M1", "M2", "M3", "A0", "A1", "A2", "A3", "A4", "A5"];
+const tamanhosDobok = ["Baby", "2 ANOS", "4 ANOS", "6 ANOS", "8 ANOS", "10 ANOS", "12 ANOS", "14 ANOS", "P", "M", "G", "GG", "XGG"];
 
 
 let itensPedido = [];
