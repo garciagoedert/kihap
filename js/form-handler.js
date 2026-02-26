@@ -60,13 +60,33 @@ if (leadForm) {
             const leadsCollectionRef = collection(db, 'leads');
             await addDoc(leadsCollectionRef, data);
 
-            formStatus.textContent = 'Inscrição enviada com sucesso! Entraremos em contato em breve.';
+            formStatus.textContent = 'Inscrição enviada com sucesso! Redirecionando para o WhatsApp...';
             formStatus.className = 'text-green-800 text-center mt-4';
             leadForm.reset();
 
-            setTimeout(() => {
-                formStatus.textContent = '';
-            }, 5000);
+            const unidadeSelecionada = data.unidade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            let whatsappUrl = '';
+
+            if (unidadeSelecionada.includes('asa sul')) whatsappUrl = 'https://wa.me/556183007146';
+            else if (unidadeSelecionada.includes('sudoeste')) whatsappUrl = 'https://wa.me/556182107146';
+            else if (unidadeSelecionada.includes('lago sul')) whatsappUrl = 'https://wa.me/556192028980';
+            else if (unidadeSelecionada.includes('noroeste')) whatsappUrl = 'https://wa.me/556184170472';
+            else if (unidadeSelecionada.includes('jardim botanico')) whatsappUrl = 'https://wa.me/556184171059';
+            else if (unidadeSelecionada.includes('pontos de ensino')) whatsappUrl = 'https://wa.me/556182823380';
+            else if (unidadeSelecionada.includes('centro')) whatsappUrl = 'https://wa.me/554892182423';
+            else if (unidadeSelecionada.includes('coqueiros')) whatsappUrl = 'https://wa.me/554896296941';
+            else if (unidadeSelecionada.includes('santa monica')) whatsappUrl = 'https://wa.me/554892172423';
+            else if (unidadeSelecionada.includes('dourados')) whatsappUrl = 'https://wa.me/556799597001';
+
+            if (whatsappUrl) {
+                setTimeout(() => {
+                    window.location.href = whatsappUrl;
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    formStatus.textContent = '';
+                }, 5000);
+            }
 
         } catch (error) {
             console.error("Erro ao salvar o lead:", error);
