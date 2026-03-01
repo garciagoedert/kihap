@@ -13,22 +13,59 @@ async function populateUnitsDropdown() {
     const unidadeSelect = document.getElementById('unidade');
     if (!unidadeSelect) return;
 
+    // Mapeamento de unidades por cidade para organizar o dropdown
+    const cityGroups = {
+        'Brasília': ['asa-sul', 'lago-sul', 'sudoeste', 'noroeste', 'jardim-botanico', 'pontos-de-ensino'],
+        'Florianópolis': ['centro', 'coqueiros', 'santa-monica'],
+        'Mato Grosso do Sul': ['dourados'],
+    };
+
     try {
         const result = await getPublicEvoUnits();
-        const evoUnits = result.data.sort();
+        const evoUnits = new Set(result.data);
 
         unidadeSelect.innerHTML = '<option value="" disabled selected>Selecione a unidade de interesse</option>';
 
-        evoUnits.forEach(unitId => {
-            const option = document.createElement('option');
-            const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            option.value = displayName;
-            option.textContent = displayName;
-            unidadeSelect.appendChild(option);
-        });
+        for (const [city, units] of Object.entries(cityGroups)) {
+            const group = document.createElement('optgroup');
+            group.label = city;
+
+            units.forEach(unitId => {
+                if (evoUnits.has(unitId)) {
+                    const option = document.createElement('option');
+                    const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    option.value = displayName;
+                    option.textContent = displayName;
+                    group.appendChild(option);
+                }
+            });
+
+            if (group.children.length > 0) {
+                unidadeSelect.appendChild(group);
+            }
+        }
     } catch (error) {
         console.error("Erro ao buscar unidades do EVO:", error);
-        unidadeSelect.innerHTML = '<option value="" disabled selected>Não foi possível carregar as unidades</option>';
+        // Fallback estático caso a API falhe
+        unidadeSelect.innerHTML = `
+            <option value="" disabled selected>Selecione a unidade de interesse</option>
+            <optgroup label="Brasília">
+                <option value="Asa Sul">Asa Sul</option>
+                <option value="Lago Sul">Lago Sul</option>
+                <option value="Sudoeste">Sudoeste</option>
+                <option value="Noroeste">Noroeste</option>
+                <option value="Jardim Botânico">Jardim Botânico</option>
+                <option value="Pontos de Ensino">Pontos de Ensino</option>
+            </optgroup>
+            <optgroup label="Florianópolis">
+                <option value="Centro">Centro</option>
+                <option value="Coqueiros">Coqueiros</option>
+                <option value="Santa Mônica">Santa Mônica</option>
+            </optgroup>
+            <optgroup label="Mato Grosso do Sul">
+                <option value="Dourados">Dourados</option>
+            </optgroup>
+        `;
     }
 }
 
