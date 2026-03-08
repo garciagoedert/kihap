@@ -393,6 +393,12 @@
                                 class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div class="form-group">
+                            <label for="dataChegada" class="block text-sm font-medium text-gray-300 mb-1">Data de
+                                Chegada</label>
+                            <input type="text" id="dataChegada" placeholder="N/A" disabled
+                                class="w-full bg-gray-700/50 text-gray-400 border border-gray-600 rounded-lg p-2 focus:outline-none cursor-not-allowed">
+                        </div>
+                        <div class="form-group">
                             <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
                             <input type="text" id="telefone" placeholder="(48) 99999-9999"
                                 class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
@@ -991,6 +997,24 @@
 
             const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200">${tag}</span>`).join('');
 
+            let dateTimeHTML = '';
+            if (prospect.createdAt) {
+                let dateObj = null;
+                if (typeof prospect.createdAt.toDate === 'function') {
+                    dateObj = prospect.createdAt.toDate();
+                } else if (typeof prospect.createdAt.toMillis === 'function') {
+                    dateObj = new Date(prospect.createdAt.toMillis());
+                } else {
+                    dateObj = new Date(prospect.createdAt);
+                }
+
+                if (dateObj && !isNaN(dateObj)) {
+                    const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                    const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    dateTimeHTML = `<p class="text-xs text-gray-400 mb-2"><i class="far fa-clock mr-1"></i> ${formattedDate} às ${formattedTime}</p>`;
+                }
+            }
+
             card.innerHTML = `
                 <div class="flex justify-between items-start">
                     <h4 class="font-bold mb-2 flex-grow pr-2">${prospect.responsavel || 'Prospect sem nome'}</h4>
@@ -1004,6 +1028,7 @@
                 </div>
                 ${prospect.unidade ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> ${prospect.unidade}</p>` : ''}
                 ${prospect.origemLead ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-sign-in-alt mr-1"></i> ${prospect.origemLead}</p>` : ''}
+                ${dateTimeHTML}
                 <p class="text-sm text-green-400 font-semibold mb-2">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
                 ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
             `;
@@ -1583,6 +1608,28 @@
                 document.getElementById('prioridade').value = prospect.prioridade || '';
                 document.getElementById('ticketEstimado').value = prospect.ticketEstimado || '';
                 document.getElementById('origemLead').value = prospect.origemLead || '';
+
+                let dateTimeStr = '';
+                if (prospect.createdAt) {
+                    let dateObj = null;
+                    if (typeof prospect.createdAt.toDate === 'function') {
+                        dateObj = prospect.createdAt.toDate();
+                    } else if (typeof prospect.createdAt.toMillis === 'function') {
+                        dateObj = new Date(prospect.createdAt.toMillis());
+                    } else {
+                        dateObj = new Date(prospect.createdAt);
+                    }
+                    if (dateObj && !isNaN(dateObj)) {
+                        const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                        const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        dateTimeStr = `${formattedDate} às ${formattedTime}`;
+                    }
+                }
+                const dataChegadaInput = document.getElementById('dataChegada');
+                if (dataChegadaInput) {
+                    dataChegadaInput.value = dateTimeStr || 'N/A';
+                }
+
                 document.getElementById('responsavel').value = prospect.responsavel || '';
                 document.getElementById('telefone').value = prospect.telefone || '';
                 document.getElementById('email').value = prospect.email || '';
@@ -1609,6 +1656,10 @@
                 modalActionButtons.classList.add('hidden');
                 modalTitle.textContent = 'Adicionar Novo Prospect';
                 prospectIdInput.value = '';
+                const dataChegadaInput = document.getElementById('dataChegada');
+                if (dataChegadaInput) {
+                    dataChegadaInput.value = '';
+                }
                 renderContactLog({ contactLog: [] });
                 setFormEditable(true);
             }
