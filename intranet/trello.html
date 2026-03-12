@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Demandas Trello</title>
+    <!-- Favicon -->
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        .drag-over {
+            @apply border-dashed border-2 border-gray-500 bg-gray-500/10;
+        }
+
+        .column-body {
+            min-height: 200px;
+        }
+
+        /* Custom scrollbar for tags */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+
+    <div id="kanban-container" class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content"
+            class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+            <div id="header-container" class="flex-shrink-0"></div>
+
+            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+
+                <!-- Controls Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
+                    <div>
+                        <h1 class="text-2xl font-bold">Demandas</h1>
+                        <p class="text-gray-400 text-sm">Gerencie solicitações e tarefas internas por departamento.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button id="btnNovaDemanda"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center gap-2">
+                            <i class="fas fa-plus"></i> Solicitar Demanda
+                        </button>
+                        <button id="btnManageDept"
+                            class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center gap-2">
+                            <i class="fas fa-tags"></i> Departamentos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-col sm:flex-row gap-2 mb-6 shrink-0">
+                    <div class="relative flex-grow">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar demanda..."
+                            class="w-full bg-[#1a1a1a] text-gray-200 border border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md">
+                    </div>
+
+                    <div class="flex-shrink-0 relative" id="deptFilterContainer">
+                        <button id="deptFilterBtn"
+                            class="bg-[#1a1a1a] border border-gray-700 hover:bg-gray-800 text-gray-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 w-full sm:w-auto h-full shadow-md">
+                            <i class="fas fa-filter text-blue-500"></i>
+                            <span>Filtros Dep.</span>
+                        </button>
+                        <div id="deptFilterDropdown"
+                            class="hidden absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 p-2">
+                            <div class="text-xs text-gray-400 font-semibold mb-2 px-2 uppercase tracking-wider">
+                                Departamentos</div>
+                            <div id="deptCheckboxes"
+                                class="max-h-64 overflow-y-auto custom-scrollbar flex flex-col gap-1">
+                                <!-- Computed filters go here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kanban Board -->
+                <div id="kanban-board" class="flex flex-col md:grid md:grid-cols-4 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+
+                    <!-- Backlog -->
+                    <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column"
+                        data-column="backlog">
+                        <h2
+                            class="font-bold text-gray-400 mb-4 pb-2 border-b border-gray-700 flex justify-between items-center">
+                            <span>Backlog</span>
+                            <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count">0</span>
+                        </h2>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-backlog">
+                        </div>
+                    </div>
+
+                    <!-- To Do -->
+                    <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column"
+                        data-column="todo">
+                        <h2
+                            class="font-bold text-blue-400 mb-4 pb-2 border-b border-gray-700 flex justify-between items-center">
+                            <span>To do</span>
+                            <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count">0</span>
+                        </h2>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-todo"></div>
+                    </div>
+
+                    <!-- Pendente -->
+                    <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column"
+                        data-column="pendente">
+                        <h2
+                            class="font-bold text-yellow-500 mb-4 pb-2 border-b border-gray-700 flex justify-between items-center">
+                            <span>Pendente</span>
+                            <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count">0</span>
+                        </h2>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-pendente">
+                        </div>
+                    </div>
+
+                    <!-- Concluído -->
+                    <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column"
+                        data-column="concluido">
+                        <h2
+                            class="font-bold text-green-500 mb-4 pb-2 border-b border-gray-700 flex justify-between items-center">
+                            <span>Concluído</span>
+                            <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count">0</span>
+                        </h2>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-concluido">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Nova Demanda Modal -->
+    <div id="novaDemandaModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+        <div
+            class="bg-[#1a1a1a] w-full max-w-2xl rounded-xl shadow-2xl flex flex-col border border-gray-800 max-h-[90vh]">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700 shrink-0">
+                <h2 class="text-xl font-bold">Solicitação de Demanda</h2>
+                <button type="button"
+                    class="closeModalBtn text-gray-400 hover:text-white text-2xl transition-colors">&times;</button>
+            </div>
+
+            <form id="demandaForm" class="p-6 overflow-y-auto flex-1 space-y-5">
+
+                <div class="bg-gray-800/50 p-4 rounded-lg text-sm text-gray-300 border border-gray-700">
+                    Escreva sua solicitação o mais completa possível para que a equipe realize sua demanda. O status da
+                    sua solicitação irá automaticamente para "To do".
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">E-mail <span
+                                class="text-red-500">*</span></label>
+                        <input type="email" id="form_email"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Seu e-mail" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Nome do solicitante <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" id="form_nome"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Sua resposta" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Selecione a Unidade <span
+                                class="text-red-500">*</span></label>
+                        <select id="form_unidade"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required>
+                            <option value="">Escolher</option>
+                            <option value="Brasília">Brasília</option>
+                            <option value="Florianópolis">Florianópolis</option>
+                            <option value="Dourados">Dourados</option>
+                            <!-- More added in JS if needed -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Departamento Destino <span
+                                class="text-red-500">*</span></label>
+                        <select id="form_departamento"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required>
+                            <option value="">Escolher Departamento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Qual a sua demanda? <span
+                            class="text-red-500">*</span></label>
+                    <p class="text-xs text-gray-400 mb-2">Escreva neste campo todas as informações necessárias para a
+                        produção do material (conteúdo, copy, datas, tamanho, etc). <br><em
+                            class="text-yellow-500">Importante: em caso de urgência, relate isso logo no início da
+                            demanda.</em></p>
+                    <textarea id="form_demanda" rows="4"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Sua resposta" required></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Qual a finalidade dessa demanda? <span
+                            class="text-red-500">*</span></label>
+                    <p class="text-xs text-gray-400 mb-3">Escolha quantos itens precisar para esta demanda.</p>
+                    <div class="space-y-2" id="form_finalidade_container">
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Card whatsapp"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Card whatsapp</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Cartaz A4"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Cartaz A4</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Cartaz A3"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Cartaz A3</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Flyer"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Flyer</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Story"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Story</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox"
+                                name="finalidade" value="Post Instagram"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded"><span
+                                class="group-hover:text-blue-400">Post Instagram</span></label>
+                        <label class="flex items-start gap-2 mt-1">
+                            <input type="checkbox" id="check_outro" name="finalidade" value="Outro"
+                                class="w-5 h-5 accent-blue-500 bg-gray-700 border-gray-600 rounded mt-1">
+                            <span class="mt-0.5">Outro:</span>
+                            <input type="text" id="finalidade_outro"
+                                class="flex-1 bg-gray-700 border border-gray-600 border-b border-t-0 border-l-0 border-r-0 rounded-none bg-transparent focus:ring-0 focus:border-blue-500 outline-none pb-1 px-1 ms-2"
+                                disabled>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Selecione a data máxima que precisa
+                        deste material: <span class="text-red-500">*</span></label>
+                    <input type="date" id="form_data_maxima"
+                        class="bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white css-color-scheme-dark"
+                        required>
+                </div>
+
+            </form>
+            <div class="p-6 border-t border-gray-800 shrink-0 flex justify-end gap-3 bg-[#111111] rounded-b-xl">
+                <button type="button"
+                    class="closeModalBtn bg-gray-700 hover:bg-gray-600 font-semibold py-2 px-6 rounded-lg transition-colors">Cancelar</button>
+                <button type="button" id="submitDemandaBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg transition-colors">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Departamentos Modal -->
+    <div id="deptModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+        <div
+            class="bg-[#1a1a1a] w-full max-w-lg rounded-xl shadow-2xl flex flex-col border border-gray-800 max-h-[90vh]">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700 shrink-0">
+                <h2 class="text-xl font-bold">Gerenciar Departamentos</h2>
+                <button type="button"
+                    class="closeDeptModalBtn text-gray-400 hover:text-white text-2xl transition-colors">&times;</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <!-- Create Dept Form -->
+                <form id="createDeptForm" class="bg-gray-800 p-4 rounded-lg border border-gray-700 space-y-4">
+                    <h3 class="font-semibold text-gray-300">Criar Novo Departamento</h3>
+                    <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+                        <div class="space-y-1">
+                            <label class="text-xs text-gray-400">Nome do Setor</label>
+                            <input type="text" id="deptName" placeholder="Ex: Design"
+                                class="w-full bg-gray-700 border border-gray-600 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                required>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs text-gray-400">Cor</label>
+                            <input type="color" id="deptColor" value="#3b82f6"
+                                class="w-10 h-10 rounded cursor-pointer bg-gray-700 border border-gray-600 p-0.5"
+                                required>
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 rounded transition-colors uppercase tracking-wider">Adicionar</button>
+                </form>
+
+                <div>
+                    <h3 class="font-semibold text-gray-300 mb-3">Departamentos Existentes</h3>
+                    <ul id="deptList" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <script type="module" src="trello.js"></script>
+</body>
+
+</html>
