@@ -9,6 +9,7 @@ let departments = [];
 let demands = [];
 let activeFilters = new Set();
 let searchQuery = '';
+let currentDemandaId = null;
 
 // DOM Elements
 const kanbanBoard = document.getElementById('kanban-board');
@@ -16,6 +17,7 @@ const btnNovaDemanda = document.getElementById('btnNovaDemanda');
 const btnManageDept = document.getElementById('btnManageDept');
 const modalDemanda = document.getElementById('novaDemandaModal');
 const modalDept = document.getElementById('deptModal');
+const modalDetalhes = document.getElementById('demandaDetalhesModal');
 const formDemanda = document.getElementById('demandaForm');
 const formCreateDept = document.getElementById('createDeptForm');
 
@@ -149,10 +151,11 @@ function renderCards() {
 
         const cardHTML = `
             <div class="bg-gray-800 border-l-4 rounded shadow p-3 cursor-grab hover:bg-gray-750 transition-colors card" 
-                draggable="true" data-id="${d.id}" style="border-left-color: ${color};" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                draggable="true" data-id="${d.id}" style="border-left-color: ${color};" 
+                ondragstart="dragStart(event)" ondragend="dragEnd(event)" 
+                onclick="window.openDemandaDetalhes('${d.id}')">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] bg-gray-900 text-gray-300 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold" style="color: ${color}; border: 1px solid ${color}40">${deptName}</span>
-                    <button class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" onclick="deleteDemanda('${d.id}')" title="Apagar Cartão"><i class="fas fa-trash text-xs"></i></button>
                 </div>
                 <div class="text-sm font-semibold text-white mb-1 line-clamp-2" title="${d.demanda}">${d.demanda}</div>
                 <div class="text-xs text-gray-400 mb-2 truncate"><i class="fas fa-user mr-1"></i>${d.nome} - ${d.unidade}</div>
@@ -289,11 +292,52 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
 
 });
 
-window.deleteDemanda = async (id) => {
-    if (confirm('Tem certeza que deseja apagar este cartão?')) {
-        await deleteDoc(doc(demandsCol, id));
+window.openDemandaDetalhes = (id) => {
+    currentDemandaId = id;
+    const demand = demands.find(d => d.id === id);
+    if (!demand) return;
+
+    const dept = departments.find(dep => dep.id === demand.departamentoId);
+    const color = dept ? dept.color : '#6b7280';
+    const deptName = dept ? dept.name : 'Sem Depto';
+
+    const parsedDate = new Date(demand.dataMaxima);
+    const formattedDate = !isNaN(parsedDate) ? parsedDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
+
+    const tag = document.getElementById('detalhe_dept_tag');
+    tag.textContent = deptName;
+    tag.style.backgroundColor = color + '40';
+    tag.style.color = color;
+    tag.style.border = `1px solid ${color}`;
+
+    document.getElementById('detalhe_nome').textContent = demand.nome;
+    document.getElementById('detalhe_unidade').textContent = demand.unidade;
+    document.getElementById('detalhe_email').textContent = demand.email;
+    document.getElementById('detalhe_data').textContent = formattedDate;
+    document.getElementById('detalhe_texto').textContent = demand.demanda;
+
+    const finalidadesContainer = document.getElementById('detalhe_finalidades');
+    if (Array.isArray(demand.finalidade) && demand.finalidade.length > 0) {
+        finalidadesContainer.innerHTML = demand.finalidade.map(f => `<span class="bg-gray-700 text-gray-300 text-[10px] px-2 py-1 rounded tracking-wide uppercase">${f}</span>`).join('');
+    } else {
+        finalidadesContainer.innerHTML = '<span class="text-gray-500 italic text-sm">Nenhuma finalidade especificada.</span>';
     }
+
+    openModal(modalDetalhes);
 }
+
+document.getElementById('btnExcluirDemanda').addEventListener('click', async () => {
+    if (!currentDemandaId) return;
+    if (confirm('Tem certeza que deseja apagar permanentemente esta demanda?')) {
+        try {
+            await deleteDoc(doc(demandsCol, currentDemandaId));
+            closeModal(modalDetalhes);
+        } catch (err) {
+            alert('Erro ao excluir demanda.');
+            console.error(err);
+        }
+    }
+});
 
 
 // Create Dept
@@ -334,8 +378,9 @@ function setupListeners() {
 
     document.querySelectorAll('.closeModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDemanda)));
     document.querySelectorAll('.closeDeptModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDept)));
+    document.querySelectorAll('.closeDetalhesModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDetalhes)));
 
-    [modalDemanda, modalDept].forEach(m => {
+    [modalDemanda, modalDept, modalDetalhes].forEach(m => {
         m.addEventListener('click', (e) => {
             if (e.target === m) closeModal(m);
         });
