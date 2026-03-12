@@ -157,7 +157,7 @@ function renderCards() {
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] bg-gray-900 text-gray-300 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold" style="color: ${color}; border: 1px solid ${color}40">${deptName}</span>
                 </div>
-                <div class="text-sm font-semibold text-white mb-1 line-clamp-2" title="${d.demanda}">${d.demanda}</div>
+                <div class="text-sm font-semibold text-white mb-1 line-clamp-2" title="${d.titulo || d.demanda}">${d.titulo || d.demanda}</div>
                 <div class="text-xs text-gray-400 mb-2 truncate"><i class="fas fa-user mr-1"></i>${d.nome} - ${d.unidade}</div>
                 <div class="flex flex-wrap gap-1 mb-3">${finalidadesHtml}</div>
                 
@@ -244,6 +244,7 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
     const nome = document.getElementById('form_nome').value;
     const unidade = document.getElementById('form_unidade').value;
     const departamentoId = document.getElementById('form_departamento').value;
+    const titulo = document.getElementById('form_titulo').value;
     const demandaText = document.getElementById('form_demanda').value;
     const dataMaxima = document.getElementById('form_data_maxima').value;
 
@@ -262,6 +263,7 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
         nome,
         unidade,
         departamentoId,
+        titulo,
         demanda: demandaText,
         finalidade: finalidades,
         dataMaxima,
@@ -310,6 +312,7 @@ window.openDemandaDetalhes = (id) => {
     tag.style.color = color;
     tag.style.border = `1px solid ${color}`;
 
+    document.getElementById('detalhe_titulo_header').textContent = demand.titulo || "Demanda sem título";
     document.getElementById('detalhe_nome').textContent = demand.nome;
     document.getElementById('detalhe_unidade').textContent = demand.unidade;
     document.getElementById('detalhe_email').textContent = demand.email;
