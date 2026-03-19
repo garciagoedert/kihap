@@ -67,16 +67,41 @@
             class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container" class="flex-shrink-0"></div>
 
-            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+            <!-- Department Selection Screen -->
+            <div id="dept-selection-container" class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto items-center justify-center relative">
+                
+                <div class="absolute top-4 right-4 md:top-8 md:right-8">
+                    <button id="btnManageDeptInSelection" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-xl transition-all flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-blue-400"></i> Novo Departamento
+                    </button>
+                </div>
+
+                <div class="w-full max-w-5xl">
+                    <div class="text-center mb-10">
+                        <h1 class="text-4xl font-bold text-white mb-4">Departamentos</h1>
+                        <p class="text-gray-400 text-lg">Selecione um departamento para acessar seu Kanban.</p>
+                    </div>
+                    <div id="dept-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+                        <!-- Loaded via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kanban Wrapper -->
+            <div id="kanban-wrapper" class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto hidden">
 
                 <!-- Controls Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0">
                     <div>
-                        <h1 class="text-2xl font-bold">Demandas</h1>
+                        <h1 class="text-2xl font-bold" id="kanban-title">Demandas</h1>
                         <p class="text-gray-400 text-sm">Gerencie solicitações e tarefas internas por departamento.</p>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
+                        <button id="btnVoltarDepts"
+                            class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center gap-2">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
                         <button id="btnNovaDemanda"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center gap-2">
                             <i class="fas fa-plus"></i> Solicitar Demanda
@@ -96,7 +121,7 @@
                             class="w-full bg-[#1a1a1a] text-gray-200 border border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md">
                     </div>
 
-                    <div class="flex-shrink-0 relative" id="deptFilterContainer">
+                    <div class="flex-shrink-0 relative hidden" id="deptFilterContainer">
                         <button id="deptFilterBtn"
                             class="bg-[#1a1a1a] border border-gray-700 hover:bg-gray-800 text-gray-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 w-full sm:w-auto h-full shadow-md">
                             <i class="fas fa-filter text-blue-500"></i>

@@ -26,6 +26,12 @@ const modalDemanda = document.getElementById('novaDemandaModal');
 const modalDept = document.getElementById('deptModal');
 const modalDetalhes = document.getElementById('demandaDetalhesModal');
 const formDemanda = document.getElementById('demandaForm');
+const deptSelectionContainer = document.getElementById('dept-selection-container');
+const btnManageDeptInSelection = document.getElementById('btnManageDeptInSelection');
+const kanbanWrapper = document.getElementById('kanban-wrapper');
+const kanbanTitle = document.getElementById('kanban-title');
+const btnVoltarDepts = document.getElementById('btnVoltarDepts');
+const deptCardsContainer = document.getElementById('dept-cards-container');
 const formCreateDept = document.getElementById('createDeptForm');
 const deptSelect = document.getElementById('form_departamento');
 const deptList = document.getElementById('deptList');
@@ -74,11 +80,32 @@ function observeDemands() {
 function renderDepartments() {
     deptSelect.innerHTML = '<option value="">Escolher Departamento</option>';
     deptList.innerHTML = '';
+    deptCardsContainer.innerHTML = '';
+
     if (departments.length === 0) {
         deptList.innerHTML = '<li class="text-sm text-gray-500">Nenhum departamento cadastrado.</li>';
+        deptCardsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-12 text-lg">Nenhum departamento encontrado. Crie um novo para acessar o Kanban.</div>';
     }
 
     departments.forEach(dept => {
+        // Build Selection Card
+        const card = document.createElement('div');
+        card.className = "bg-gray-800 border-l-4 rounded-xl shadow-lg p-6 cursor-pointer hover:bg-gray-700 transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center text-center group h-48";
+        card.style.borderLeftColor = dept.color || '#3b82f6';
+        
+        card.innerHTML = `
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shrink-0" style="background-color: ${dept.color}20; color: ${dept.color}">
+                <i class="fas fa-folder-open text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2 line-clamp-2" title="${dept.name}">${dept.name}</h3>
+            <span class="text-[10px] text-gray-400 bg-gray-900 px-3 py-1.5 rounded-full uppercase tracking-wider font-semibold border mt-auto" style="border-color: ${dept.color}40">Acessar Kanban</span>
+        `;
+        
+        card.addEventListener('click', () => {
+            enterDepartment(dept);
+        });
+        
+        deptCardsContainer.appendChild(card);
         const opt = document.createElement('option');
         opt.value = dept.id;
         opt.textContent = dept.name;
@@ -516,6 +543,27 @@ formCreateDept.addEventListener('submit', async (e) => {
 
 // ─── UI Listeners ─────────────────────────────────────────────────────────────
 
+function enterDepartment(dept) {
+    deptSelectionContainer.classList.add('hidden');
+    kanbanWrapper.classList.remove('hidden');
+    kanbanTitle.textContent = `Demandas - ${dept.name}`;
+    
+    // Set the filter
+    activeFilters.clear();
+    activeFilters.add(dept.id);
+    
+    // Re-render cards
+    renderCards();
+}
+
+function leaveDepartment() {
+    kanbanWrapper.classList.add('hidden');
+    deptSelectionContainer.classList.remove('hidden');
+    
+    activeFilters.clear();
+    renderCards();
+}
+
 function setupListeners() {
     document.getElementById('check_outro').addEventListener('change', e => {
         const i = document.getElementById('finalidade_outro');
@@ -530,6 +578,8 @@ function setupListeners() {
 
     btnNovaDemanda.addEventListener('click', () => openModal(modalDemanda));
     btnManageDept.addEventListener('click', () => openModal(modalDept));
+    if (btnManageDeptInSelection) btnManageDeptInSelection.addEventListener('click', () => openModal(modalDept));
+    if (btnVoltarDepts) btnVoltarDepts.addEventListener('click', leaveDepartment);
 
     document.querySelectorAll('.closeModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDemanda)));
     document.querySelectorAll('.closeDeptModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDept)));
