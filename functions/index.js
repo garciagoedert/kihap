@@ -2348,3 +2348,35 @@ exports.subscribeUser = newsletter.subscribeUser;
 exports.unsubscribeUser = newsletter.unsubscribeUser;
 exports.importSubscribers = newsletter.importSubscribers;
 exports.sendCampaign = newsletter.sendCampaign;
+
+exports.updateUserPassword = functions.https.onCall(async (data, context) => {
+    // Verificar autenticação
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado. Você precisa estar logado.');
+    }
+
+    const { userId, password } = data;
+    if (!userId || !password) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID do usuário e a nova senha são obrigatórios.');
+    }
+
+    try {
+        // Verificar se usuário logado é admin no banco de dados
+        const callerRef = db.collection('users').doc(context.auth.uid);
+        const callerSnap = await callerRef.get();
+        if (!callerSnap.exists || !callerSnap.data().isAdmin) {
+            throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem alterar senhas.');
+        }
+
+        // Atualizar a senha do usuário
+        await admin.auth().updateUser(userId, {
+            password: password
+        });
+
+        console.log(`Senha do usuário ${userId} atualizada pelo admin ${context.auth.uid}`);
+        return { success: true, message: 'Senha atualizada com sucesso.' };
+    } catch (error) {
+        console.error("Erro ao atualizar senha:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});

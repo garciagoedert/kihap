@@ -149,7 +149,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const formClone = formTemplate.content.cloneNode(true);
             const formInstance = formClone.querySelector('.form-instance');
 
-            formInstance.querySelector('.form-instance-number').textContent = i;
+            const formInstanceTitle = formInstance.querySelector('.form-instance-title');
+            if (formInstanceTitle) {
+                if (productData.priceType === 'kit') {
+                    formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>`;
+                } else {
+                    formInstanceTitle.innerHTML = `Inscrição <span class="form-instance-number">${i}</span>`;
+                }
+            } else {
+                formInstance.querySelector('.form-instance-number').textContent = i;
+            }
 
             const fields = ['nome', 'email', 'telefone', 'cpf', 'unidade', 'programa', 'graduacao', 'price-variant-selector'];
             fields.forEach(field => {
@@ -193,6 +202,26 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 priceVariantSelectorContainer.classList.add('hidden');
                 priceVariantSelector.required = false;
+            }
+
+            const kitOptionsContainer = formInstance.querySelector('.kit-options-container');
+            if (productData.priceType === 'kit' && productData.kitItems && productData.kitItems.length > 0) {
+                kitOptionsContainer.classList.remove('hidden');
+                kitOptionsContainer.innerHTML = '';
+                
+                productData.kitItems.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.innerHTML = `
+                        <label for="kit-item-${i}-${index}" class="block text-sm font-semibold text-gray-300 mb-1">Selecione o tamanho/opção para: <span class="text-white">${item.name}</span></label>
+                        <select id="kit-item-${i}-${index}" name="kit-item-select" data-item-name="${item.name}" class="w-full px-4 py-3 opacity-90 rounded-lg bg-gray-800 border border-gray-600 text-white shadow-sm focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500" required>
+                            <option value="" disabled selected>Escolha uma opção...</option>
+                            ${item.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                        </select>
+                    `;
+                    kitOptionsContainer.appendChild(itemDiv);
+                });
+            } else {
+                if (kitOptionsContainer) kitOptionsContainer.classList.add('hidden');
             }
 
             formsContainer.appendChild(formClone);
@@ -262,6 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalAmount += productData.lotes[0].price;
                     activeLoteName = productData.lotes[0].name;
                 }
+            } else if (productData.priceType === 'kit') {
+                totalAmount += productData.kitBasePrice || productData.price || 0;
             } else {
                 totalAmount += productData.price;
             }
@@ -390,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             let priceData = {};
+            let kitSelections = null;
             if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = productData.priceVariants[selector.value];
@@ -399,10 +431,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     priceData.amount = productData.price;
                 }
+            } else if (productData.priceType === 'kit') {
+                priceData.amount = productData.kitBasePrice || productData.price || 0;
+                const kitSelects = form.querySelectorAll('select[name="kit-item-select"]');
+                if (kitSelects.length > 0) {
+                    kitSelections = {};
+                    kitSelects.forEach(select => {
+                        kitSelections[select.dataset.itemName] = select.value;
+                    });
+                }
             } else {
                 priceData.amount = productData.price;
             }
             formData.priceData = priceData;
+            if (kitSelections) {
+                formData.kitSelections = kitSelections;
+            }
             totalAmount += priceData.amount;
             formDataList.push(formData);
         });
