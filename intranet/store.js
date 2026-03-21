@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import {
     collection, getDocs, query, orderBy, where,
-    addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc
+    addDoc, doc, setDoc, updateDoc, deleteDoc, serverTimestamp, getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
     getStorage, ref, uploadBytes, getDownloadURL
@@ -83,6 +83,8 @@ export async function setupStorePage() {
     const productAskProfessorInput = document.getElementById('product-ask-professor');
     const productCustomUnitsInput = document.getElementById('product-custom-units');
     const recommendedProductsSelect = document.getElementById('recommended-products');
+    const productMpAccountSelect = document.getElementById('product-mp-account');
+    const productMpSplitInput = document.getElementById('product-mp-split');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
@@ -551,6 +553,21 @@ export async function setupStorePage() {
         XLSX.writeFile(workbook, 'RelatorioDeVendas.xlsx');
     };
 
+    const fetchMpAccounts = async () => {
+        if (!productMpAccountSelect) return;
+        try {
+            const snap = await getDocs(collection(db, 'mercadopagoAccounts'));
+            let options = '<option value="default">Store (Matriz)</option>';
+            snap.forEach(doc => {
+                const acc = doc.data();
+                options += `<option value="${doc.id}">${acc.label || 'Sem Nome'} (${acc.userId})</option>`;
+            });
+            productMpAccountSelect.innerHTML = options;
+        } catch (error) {
+            console.error('Erro ao buscar contas do Mercado Pago:', error);
+        }
+    };
+
     // --- Product Management Logic ---
     const fetchProducts = async () => {
         productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando produtos...</td></tr>';
@@ -641,6 +658,8 @@ export async function setupStorePage() {
         variablePricesContainer.classList.add('hidden');
         lotesContainer.classList.add('hidden');
         kitContainer.classList.add('hidden');
+        if (productMpAccountSelect) productMpAccountSelect.value = 'default';
+        if (productMpSplitInput) productMpSplitInput.value = '';
         productFormTitle.textContent = 'Adicionar Novo Produto';
         saveProductBtn.textContent = 'Salvar Produto';
         cancelEditBtn.classList.add('hidden');
@@ -677,7 +696,9 @@ export async function setupStorePage() {
                 availabilityDate: productAvailabilityDateInput.value || null,
                 askProfessor: productAskProfessorInput.checked,
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
-                recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value)
+                recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
+                mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
+                mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0
             };
 
             if (priceType === 'fixed') {
@@ -808,6 +829,9 @@ export async function setupStorePage() {
                 productAvailabilityDateInput.value = product.availabilityDate || '';
                 productAskProfessorInput.checked = product.askProfessor || false;
                 productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
+                
+                if (productMpAccountSelect) productMpAccountSelect.value = product.mpAccountId || 'default';
+                if (productMpSplitInput) productMpSplitInput.value = product.mpSplitPercentage || '';
 
                 if (product.isTicket) {
                     sendBulkEmailsBtn.classList.remove('hidden');
@@ -1227,6 +1251,7 @@ export async function setupStorePage() {
 
     // --- Initial Load ---
     const initialLoad = async () => {
+        await fetchMpAccounts(); // Fetch MP Accounts for product forms
         await fetchProducts(); // Fetch products first to populate filter
         await fetchSales();   // Fetch sales
         populateFilters();    // Then populate filters with data from both

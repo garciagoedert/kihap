@@ -1,10 +1,10 @@
 const axios = require('axios');
 const admin = require('firebase-admin');
 
-const getMPClient = () => {
-    const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const getMPClient = (customToken = null) => {
+    const MP_ACCESS_TOKEN = customToken || process.env.MERCADOPAGO_ACCESS_TOKEN;
     if (!MP_ACCESS_TOKEN) {
-        throw new Error("A variável de ambiente MERCADOPAGO_ACCESS_TOKEN não está definida.");
+        throw new Error("A variável de ambiente MERCADOPAGO_ACCESS_TOKEN não está definida e nenhum token foi providenciado.");
     }
     return axios.create({
         baseURL: 'https://api.mercadopago.com',
@@ -15,9 +15,55 @@ const getMPClient = () => {
     });
 };
 
+const exchangeOAuthCode = async (code, redirectUri) => {
+    const MP_APP_ID = process.env.MERCADOPAGO_APP_ID;
+    const MP_CLIENT_SECRET = process.env.MERCADOPAGO_CLIENT_SECRET;
+    
+    if (!MP_APP_ID || !MP_CLIENT_SECRET) {
+        throw new Error("MERCADOPAGO_APP_ID ou MERCADOPAGO_CLIENT_SECRET não definidos no .env.");
+    }
+    
+    const response = await axios.post('https://api.mercadopago.com/oauth/token', {
+        client_secret: MP_CLIENT_SECRET,
+        client_id: MP_APP_ID,
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri
+    }, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    return response.data;
+};
+
 const createMercadoPagoPreference = async (product, formDataList, totalAmount, saleDocIds) => {
     console.log('[createMercadoPagoPreference] Iniciando criação da preferência...');
-    const client = getMPClient();
+    
+    // Suporte a Split / Multi-Contas
+    let clientToken = null;
+    let marketplaceFee = 0;
+
+    if (product.mpAccountId && product.mpAccountId !== 'default') {
+        try {
+            const accountDoc = await admin.firestore().collection('mercadopagoAccounts').doc(product.mpAccountId).get();
+            if (accountDoc.exists) {
+                clientToken = accountDoc.data().accessToken;
+                console.log(`[createMercadoPagoPreference] Usando conta MP customizada: ${product.mpAccountId}`);
+                
+                // Se definiu split para a conta Matriz
+                if (product.mpSplitPercentage && product.mpSplitPercentage > 0) {
+                    marketplaceFee = (totalAmount / 100) * (product.mpSplitPercentage / 100);
+                    console.log(`[createMercadoPagoPreference] Split aplicado: ${product.mpSplitPercentage}% (${marketplaceFee} BRL) para a Matriz HQ.`);
+                }
+            } else {
+                console.warn(`[createMercadoPagoPreference] Conta MP customizada '${product.mpAccountId}' não encontrada. Usando Matriz.`);
+            }
+        } catch (e) {
+            console.error(`[createMercadoPagoPreference] Erro ao buscar conta customizada: ${e.message}`);
+        }
+    }
+
+    const client = getMPClient(clientToken);
 
     // Map items
     const items = formDataList.map(formData => {
@@ -51,6 +97,10 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
         auto_return: "approved"
         // notification_url is set via Webhook separately if needed
     };
+
+    if (marketplaceFee > 0) {
+        preferenceData.marketplace_fee = marketplaceFee;
+    }
 
     try {
         const response = await client.post('/checkout/preferences', preferenceData);
@@ -87,5 +137,6 @@ const getMercadoPagoPreference = async (preferenceId) => {
 module.exports = {
     createMercadoPagoPreference,
     getMercadoPagoPayment,
-    getMercadoPagoPreference
+    getMercadoPagoPreference,
+    exchangeOAuthCode
 };

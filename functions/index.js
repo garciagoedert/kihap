@@ -8,7 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment } = require('./mercadopago.js');
+const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -2388,5 +2388,51 @@ exports.updateUserPassword = functions.https.onCall(async (data, context) => {
     } catch (error) {
         console.error("Erro ao atualizar senha:", error);
         throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.mpOAuthRedirect = functions.https.onRequest(async (req, res) => {
+    const MP_APP_ID = process.env.MERCADOPAGO_APP_ID;
+    const state = req.query.state || 'default';
+    
+    if (!MP_APP_ID) {
+        return res.status(500).send("MERCADOPAGO_APP_ID não configurado no servidor.");
+    }
+    
+    const redirectUri = "https://us-central1-intranet-kihap.cloudfunctions.net/mpOAuthCallback";
+    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${MP_APP_ID}&response_type=code&platform_id=mp&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    res.redirect(authUrl);
+});
+
+exports.mpOAuthCallback = functions.https.onRequest(async (req, res) => {
+    const code = req.query.code;
+    const state = req.query.state; // ID ou Nome (Label) da conta que está sendo vinculada
+    if (!code) {
+        return res.status(400).send("Código de autorização não encontrado na solicitação.");
+    }
+
+    try {
+        const redirectUri = "https://us-central1-intranet-kihap.cloudfunctions.net/mpOAuthCallback";
+        const tokenData = await exchangeOAuthCode(code, redirectUri);
+        
+        const accountId = tokenData.user_id.toString();
+        const accountLabel = state ? decodeURIComponent(state) : `Conta MP ${accountId}`;
+        
+        await db.collection('mercadopagoAccounts').doc(accountId).set({
+            accessToken: tokenData.access_token,
+            publicKey: tokenData.public_key,
+            refreshToken: tokenData.refresh_token,
+            userId: tokenData.user_id,
+            expiresIn: tokenData.expires_in,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            label: accountLabel
+        }, { merge: true });
+
+        // Redireciona de volta para a intranet após sucesso
+        res.redirect(`https://www.kihap.com.br/intranet/contas-mp.html?success=true&accountId=${accountId}`);
+    } catch (error) {
+        console.error("Erro na callback OAuth MP:", error.response?.data || error.message);
+        res.redirect(`https://www.kihap.com.br/intranet/contas-mp.html?error=true`);
     }
 });

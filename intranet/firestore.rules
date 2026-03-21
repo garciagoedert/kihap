@@ -1,6 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Regra para as Contas do Mercado Pago Marketplace
+    match /mercadopagoAccounts/{accountId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
     // Regra para Leads do site
     match /leads/{leadId} {
       allow create: if true;
