@@ -96,6 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             productImageDisplay.src = product.imageUrl;
             productImageDisplay.classList.remove('hidden');
         }
+
+        if (product.isSubscription) {
+            payButton.innerHTML = '<i class="fas fa-lock mr-2"></i> Assinar Agora';
+        }
+
         await renderForms(1);
         productLoading.classList.add('hidden');
         productContent.classList.remove('hidden');
@@ -224,6 +229,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (kitOptionsContainer) kitOptionsContainer.classList.add('hidden');
             }
 
+            const addonsOptionsContainer = formInstance.querySelector('.addons-options-container');
+            if (productData.addons && productData.addons.length > 0) {
+                addonsOptionsContainer.classList.remove('hidden');
+                addonsOptionsContainer.innerHTML = '';
+                
+                productData.addons.forEach((addon, index) => {
+                    const priceFormatted = (addon.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const addonDiv = document.createElement('div');
+                    addonDiv.innerHTML = `
+                        <label class="flex items-start space-x-3 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-800 transition-colors cursor-pointer group">
+                            <div class="flex items-center h-5 mt-1">
+                                <input type="checkbox" name="addon-checkbox-${i}" value="${index}" data-addon-name="${addon.name}" data-addon-price="${addon.price}" class="addon-checkbox w-5 h-5 text-yellow-500 bg-gray-900 border-gray-600 rounded focus:ring-yellow-500 focus:ring-offset-gray-800">
+                            </div>
+                            <div class="flex-1">
+                                <span class="block text-base font-medium text-gray-200 group-hover:text-white">${addon.name}</span>
+                                <span class="block text-sm text-yellow-500 font-semibold mt-0.5">+ ${priceFormatted}</span>
+                            </div>
+                        </label>
+                    `;
+                    addonsOptionsContainer.appendChild(addonDiv);
+                });
+                
+                const checkboxes = addonsOptionsContainer.querySelectorAll('.addon-checkbox');
+                checkboxes.forEach(cb => cb.addEventListener('change', updateTotalPrice));
+            } else {
+                if (addonsOptionsContainer) addonsOptionsContainer.classList.add('hidden');
+            }
+
             formsContainer.appendChild(formClone);
         }
 
@@ -268,11 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let activeLoteName = null;
 
         formInstances.forEach(form => {
+            let instancePrice = 0;
             if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = productData.priceVariants[selector.value];
                 if (selectedVariant) {
-                    totalAmount += selectedVariant.price;
+                    instancePrice = selectedVariant.price;
                 }
             } else if (productData.priceType === 'lotes' && productData.lotes && productData.lotes.length > 0) {
                 const now = new Date();
@@ -284,18 +318,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (activeLote) {
-                    totalAmount += activeLote.price;
+                    instancePrice = activeLote.price;
                     activeLoteName = activeLote.name;
                 } else {
                     // Fallback to the first lote if none is active yet
-                    totalAmount += productData.lotes[0].price;
+                    instancePrice = productData.lotes[0].price;
                     activeLoteName = productData.lotes[0].name;
                 }
             } else if (productData.priceType === 'kit') {
-                totalAmount += productData.kitBasePrice || productData.price || 0;
+                instancePrice = productData.kitBasePrice || productData.price || 0;
             } else {
-                totalAmount += productData.price;
+                instancePrice = productData.price || 0;
             }
+
+            // Somar Addons
+            const checkedAddons = form.querySelectorAll('.addon-checkbox:checked');
+            checkedAddons.forEach(addon => {
+                instancePrice += parseInt(addon.dataset.addonPrice, 10);
+            });
+
+            totalAmount += instancePrice;
         });
 
         if (activeLoteName) {
@@ -321,7 +363,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        productPriceDisplay.textContent = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let priceText = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        if (productData.isSubscription) {
+            const periodMap = { 'months': 'Mês', 'years': 'Ano', 'days': 'Dia' };
+            const periodName = periodMap[productData.subscriptionPeriod] || 'Mês';
+            const freq = productData.subscriptionFrequency || 1;
+            if (freq > 1) {
+                priceText += ` / ${freq} ${periodName}s`;
+            } else {
+                priceText += ` / ${periodName}`;
+            }
+        }
+
+        productPriceDisplay.textContent = priceText;
     };
 
     const applyCoupon = async () => {
@@ -443,9 +498,26 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 priceData.amount = productData.price;
             }
+
+            let addonsSelected = null;
+            const checkedAddons = form.querySelectorAll('.addon-checkbox:checked');
+            if (checkedAddons.length > 0) {
+                addonsSelected = [];
+                checkedAddons.forEach(addon => {
+                    addonsSelected.push({
+                        name: addon.dataset.addonName,
+                        price: parseInt(addon.dataset.addonPrice, 10)
+                    });
+                    priceData.amount += parseInt(addon.dataset.addonPrice, 10); // Incorporar o valor do addon ao preço individual deste formulário
+                });
+            }
+
             formData.priceData = priceData;
             if (kitSelections) {
                 formData.kitSelections = kitSelections;
+            }
+            if (addonsSelected) {
+                formData.addonsSelected = addonsSelected;
             }
             totalAmount += priceData.amount;
             formDataList.push(formData);
@@ -487,7 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         productId: currentProductId,
                         recommendedItems,
                         totalAmount,
-                        couponCode: appliedCoupon ? appliedCoupon.code : null
+                        couponCode: appliedCoupon ? appliedCoupon.code : null,
+                        isSubscription: productData.isSubscription || false,
+                        subscriptionFrequency: productData.subscriptionFrequency || null,
+                        subscriptionPeriod: productData.subscriptionPeriod || null
                     }),
                 });
 

@@ -75,16 +75,24 @@ export async function setupStorePage() {
     const kitBasePriceInput = document.getElementById('kit-base-price');
     const addKitItemBtn = document.getElementById('add-kit-item-btn');
     const kitItemsList = document.getElementById('kit-items-list');
+
+    const addonsContainer = document.getElementById('addons-container');
+    const addAddonBtn = document.getElementById('add-addon-btn');
+    const addonsList = document.getElementById('addons-list');
+
     const productVisibleInput = document.getElementById('product-visible');
     const productAvailableInput = document.getElementById('product-available');
     const productPublicInput = document.getElementById('product-public');
     const productIsTicketInput = document.getElementById('product-is-ticket');
+    const productIsSubscriptionInput = document.getElementById('product-is-subscription');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const productAskProfessorInput = document.getElementById('product-ask-professor');
     const productCustomUnitsInput = document.getElementById('product-custom-units');
     const recommendedProductsSelect = document.getElementById('recommended-products');
     const productMpAccountSelect = document.getElementById('product-mp-account');
     const productMpSplitInput = document.getElementById('product-mp-split');
+    const subscriptionFrequencyContainer = document.getElementById('subscription-frequency-container');
+    const subscriptionFrequencyInput = document.getElementById('subscription-frequency');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
@@ -647,6 +655,7 @@ export async function setupStorePage() {
         productAvailableInput.checked = true; // Default to available
         productPublicInput.checked = false;
         productIsTicketInput.checked = false;
+        if (productIsSubscriptionInput) productIsSubscriptionInput.checked = false;
         productAvailabilityDateInput.value = '';
         productAskProfessorInput.checked = false;
         productCustomUnitsInput.value = '';
@@ -658,6 +667,7 @@ export async function setupStorePage() {
         variablePricesContainer.classList.add('hidden');
         lotesContainer.classList.add('hidden');
         kitContainer.classList.add('hidden');
+        if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
         if (productMpAccountSelect) productMpAccountSelect.value = 'default';
         if (productMpSplitInput) productMpSplitInput.value = '';
         productFormTitle.textContent = 'Adicionar Novo Produto';
@@ -701,8 +711,19 @@ export async function setupStorePage() {
                 mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0
             };
 
+            // Handle Subscription toggle regardless of priceType
+            if (productIsSubscriptionInput && productIsSubscriptionInput.checked) {
+                productData.isSubscription = true;
+                const parts = subscriptionFrequencyInput.value.split('_');
+                productData.subscriptionFrequency = parseInt(parts[0], 10);
+                productData.subscriptionPeriod = parts[1]; // months, years
+                productData.subscriptionFrequencyInput = subscriptionFrequencyInput.value;
+            } else {
+                productData.isSubscription = false;
+            }
+
             if (priceType === 'fixed') {
-                productData.price = parseInt(productPriceInput.value, 10);
+                productData.price = parseInt(productPriceInput.value, 10) || 0;
             } else if (priceType === 'variable') {
                 const variants = [];
                 const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
@@ -795,6 +816,7 @@ export async function setupStorePage() {
                     fixedPriceContainer.classList.add('hidden');
                     variablePricesContainer.classList.remove('hidden');
                     lotesContainer.classList.add('hidden');
+                    kitContainer.classList.add('hidden');
                     priceVariantsList.innerHTML = '';
                     product.priceVariants.forEach(variant => addPriceVariant(variant.name, variant.price));
                 } else if (product.priceType === 'lotes' && product.lotes) {
@@ -802,6 +824,7 @@ export async function setupStorePage() {
                     fixedPriceContainer.classList.add('hidden');
                     variablePricesContainer.classList.add('hidden');
                     lotesContainer.classList.remove('hidden');
+                    kitContainer.classList.add('hidden');
                     lotesList.innerHTML = '';
                     product.lotes.forEach(lote => addLote(lote.name, lote.price, lote.startDate));
                 } else if (product.priceType === 'kit' && product.kitItems) {
@@ -814,12 +837,27 @@ export async function setupStorePage() {
                     kitItemsList.innerHTML = '';
                     product.kitItems.forEach(item => addKitItemRow(item.name, item.options ? item.options.join(', ') : ''));
                 } else {
+                    // Legacy subscription may have had 'subscription' priceType
+                    // Fallback to 'fixed' if so.
                     document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
                     fixedPriceContainer.classList.remove('hidden');
                     variablePricesContainer.classList.add('hidden');
                     lotesContainer.classList.add('hidden');
                     kitContainer.classList.add('hidden');
                     productPriceInput.value = product.price;
+                }
+
+                // Handle Subscription toggle
+                if (product.isSubscription || product.priceType === 'subscription') {
+                    if (productIsSubscriptionInput) productIsSubscriptionInput.checked = true;
+                    if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.remove('hidden');
+                    if (product.subscriptionFrequencyInput && subscriptionFrequencyInput) {
+                        subscriptionFrequencyInput.value = product.subscriptionFrequencyInput;
+                    }
+                } else {
+                    if (productIsSubscriptionInput) productIsSubscriptionInput.checked = false;
+                    if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
+                    if (subscriptionFrequencyInput) subscriptionFrequencyInput.value = '1_months';
                 }
 
                 productVisibleInput.checked = product.visible || false;
@@ -927,8 +965,20 @@ export async function setupStorePage() {
                     addKitItemRow();
                 }
             }
+            // Addons estão sempre visíveis para Assinatura e Fixo pois são úteis
+            if (addonsContainer) addonsContainer.classList.remove('hidden');
         });
     });
+
+    if (productIsSubscriptionInput) {
+        productIsSubscriptionInput.addEventListener('change', () => {
+            if (productIsSubscriptionInput.checked) {
+                if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.remove('hidden');
+            } else {
+                if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
+            }
+        });
+    }
 
     const addPriceVariant = (name = '', price = '') => {
         const variantId = Date.now();

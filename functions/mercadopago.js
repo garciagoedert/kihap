@@ -65,50 +65,78 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
 
     const client = getMPClient(clientToken);
 
-    // Map items
-    const items = formDataList.map(formData => {
-        return {
-            id: product.id,
-            title: product.name,
-            unit_price: formData.priceData.amount / 100, // O valor no Firebase (amount) está em centavos, MP espera decimal (Ex: 50.00)
-            quantity: 1,
-            currency_id: 'BRL',
-            description: formData.variantName || 'Item da Loja'
+    if (product.isSubscription) {
+        console.log('[createMercadoPagoPreference] Produto é uma assinatura. Roteando para a API Preapproval.');
+        const primaryBuyerData = formDataList[0];
+        
+        const preapprovalData = {
+            reason: product.name,
+            external_reference: saleDocIds.join(','),
+            payer_email: primaryBuyerData.userEmail,
+            auto_recurring: {
+                frequency: product.subscriptionFrequency || 1,
+                frequency_type: product.subscriptionPeriod || 'months',
+                transaction_amount: totalAmount / 100, // Preço convertido de centavos
+                currency_id: 'BRL'
+            },
+            back_url: "https://www.kihap.com.br/compra-success.html",
+            status: "pending"
         };
-    });
 
-    const primaryBuyerData = formDataList[0];
+        try {
+            const response = await client.post('/preapproval', preapprovalData);
+            console.log('[createMercadoPagoPreference] Assinatura/Preapproval criada com sucesso:', response.data.id);
+            return response.data; // contém o init_point
+        } catch (error) {
+            console.error('[createMercadoPagoPreference] Erro na Assinatura:', error.response?.data || error.message);
+            throw error;
+        }
 
-    const preferenceData = {
-        items: items,
-        payer: {
-            name: primaryBuyerData.userName,
-            email: primaryBuyerData.userEmail,
-        },
-        external_reference: saleDocIds.join(','),
-        metadata: {
-            firestoreDocIds: saleDocIds.join(',')
-        },
-        back_urls: {
-            success: "https://www.kihap.com.br/compra-success.html",
-            failure: "https://www.kihap.com.br/compra-error.html",
-            pending: "https://www.kihap.com.br/compra-success.html"
-        },
-        auto_return: "approved"
-        // notification_url is set via Webhook separately if needed
-    };
+    } else {
+        // Fluxo normal de Compra Avulsa (Checkout Pro)
+        const items = formDataList.map(formData => {
+            return {
+                id: product.id,
+                title: product.name,
+                unit_price: formData.priceData.amount / 100,
+                quantity: 1,
+                currency_id: 'BRL',
+                description: formData.variantName || 'Item da Loja'
+            };
+        });
 
-    if (marketplaceFee > 0) {
-        preferenceData.marketplace_fee = marketplaceFee;
-    }
+        const primaryBuyerData = formDataList[0];
 
-    try {
-        const response = await client.post('/checkout/preferences', preferenceData);
-        console.log('[createMercadoPagoPreference] Preferência criada com sucesso:', response.data.id);
-        return response.data;
-    } catch (error) {
-        console.error('[createMercadoPagoPreference] Erro:', error.response?.data || error.message);
-        throw error;
+        const preferenceData = {
+            items: items,
+            payer: {
+                name: primaryBuyerData.userName,
+                email: primaryBuyerData.userEmail,
+            },
+            external_reference: saleDocIds.join(','),
+            metadata: {
+                firestoreDocIds: saleDocIds.join(',')
+            },
+            back_urls: {
+                success: "https://www.kihap.com.br/compra-success.html",
+                failure: "https://www.kihap.com.br/compra-error.html",
+                pending: "https://www.kihap.com.br/compra-success.html"
+            },
+            auto_return: "approved"
+        };
+
+        if (marketplaceFee > 0) {
+            preferenceData.marketplace_fee = marketplaceFee;
+        }
+
+        try {
+            const response = await client.post('/checkout/preferences', preferenceData);
+            console.log('[createMercadoPagoPreference] Preferência criada com sucesso:', response.data.id);
+            return response.data; // contém o init_point
+        } catch (error) {
+            console.error('[createMercadoPagoPreference] Erro:', error.response?.data || error.message);
+            throw error;
+        }
     }
 };
 
@@ -134,9 +162,33 @@ const getMercadoPagoPreference = async (preferenceId) => {
     }
 }
 
+const getPreapprovalStatus = async (preapprovalId, customToken = null) => {
+    const client = getMPClient(customToken);
+    try {
+        const response = await client.get(`/preapproval/${preapprovalId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`[getPreapprovalStatus] Erro ao buscar preapproval ${preapprovalId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
+
+const cancelPreapproval = async (preapprovalId, customToken = null) => {
+    const client = getMPClient(customToken);
+    try {
+        const response = await client.put(`/preapproval/${preapprovalId}`, { status: 'cancelled' });
+        return response.data;
+    } catch (error) {
+        console.error(`[cancelPreapproval] Erro ao cancelar preapproval ${preapprovalId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     createMercadoPagoPreference,
     getMercadoPagoPayment,
     getMercadoPagoPreference,
-    exchangeOAuthCode
+    exchangeOAuthCode,
+    getPreapprovalStatus,
+    cancelPreapproval
 };

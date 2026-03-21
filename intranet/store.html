@@ -385,12 +385,13 @@
 
                             <!-- Fixed Price Input -->
                             <div id="fixed-price-container" class="mb-4">
-                                <label for="product-price" class="block text-sm font-medium text-gray-400">Preço (em
-                                    centavos)</label>
+                                <label for="product-price" class="block text-sm font-medium text-gray-400">Preço Principal (em centavos)</label>
                                 <input type="number" id="product-price" name="product-price"
                                     placeholder="Ex: 1000 para R$10,00"
                                     class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
+
+
 
                             <!-- Variable Prices Input -->
                             <div id="variable-prices-container" class="mb-4 hidden">
@@ -434,6 +435,18 @@
                                 </button>
                             </div>
 
+                            <!-- Add-ons Input -->
+                            <div id="addons-container" class="mb-4 p-4 border border-gray-600 rounded-lg bg-gray-800/50">
+                                <label class="block text-sm font-bold text-yellow-500 mb-1"><i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)</label>
+                                <p class="text-xs text-gray-400 mb-3">Permite que o cliente marque caixas de seleção (+) para adicionar itens ou serviços extras à compra/assinatura dele.</p>
+                                <div id="addons-list" class="space-y-3 mt-1">
+                                    <!-- Dynamic addons will be added here -->
+                                </div>
+                                <button type="button" id="add-addon-btn" class="mt-3 px-3 py-1.5 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
+                                    <i class="fas fa-plus mr-1"></i> Adicionar Add-on
+                                </button>
+                            </div>
+
                             <!-- Mercado Pago Custom Account Input -->
                             <div class="mb-4 p-4 border border-gray-600 rounded-lg bg-gray-800">
                                 <h3 class="text-sm font-semibold text-yellow-500 mb-2"><i class="fas fa-money-check-alt mr-2"></i>Conta Recebedora (Mercado Pago)</h3>
@@ -460,6 +473,30 @@
                                 <input type="file" id="product-image"
                                     class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600" />
                             </div>
+
+                            <div class="mb-4 border border-green-600/50 p-4 rounded-lg bg-green-900/10">
+                                <label for="product-is-subscription"
+                                    class="flex items-center justify-between text-sm font-bold text-green-400">
+                                    <span><i class="fas fa-sync-alt mr-2"></i>Cobrança Recorrente (Assinatura)?</span>
+                                    <div
+                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="product-is-subscription" id="product-is-subscription"
+                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                        <label for="product-is-subscription"
+                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                                    </div>
+                                </label>
+                                <!-- Subscription Frequency Input -->
+                                <div id="subscription-frequency-container" class="mt-4 hidden p-3 rounded-md border border-green-500/30 bg-green-500/20">
+                                    <label for="subscription-frequency" class="block text-sm font-bold text-green-400 mb-1">Periodicidade da Assinatura</label>
+                                    <select id="subscription-frequency" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                        <option value="1_months">Mensal (Cobrado todo mês)</option>
+                                        <option value="6_months">Semestral (Cobrado a cada 6 meses)</option>
+                                        <option value="1_years">Anual (Cobrado 1 vez ao ano)</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="mb-4">
                                 <label for="product-visible"
                                     class="flex items-center justify-between text-sm font-medium text-gray-400">

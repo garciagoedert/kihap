@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Assinaturas</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .kpi-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: linear-gradient(145deg, #2a2a2a, #222);
+            border: 1px solid #333;
+        }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .table-row-hover:hover { background-color: #374151; }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-authorized { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-cancelled { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .status-paused { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .status-pending { background-color: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div id="alertModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50">
+        <div class="bg-gray-800 p-6 rounded-lg w-96">
+            <h2 id="alertTitle" class="text-xl font-bold mb-4">Aviso</h2>
+            <p id="alertMessage" class="mb-4">Mensagem</p>
+            <button id="closeAlertBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Fechar</button>
+        </div>
+    </div>
+    
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+            
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
+                
+                <div class="flex items-center mb-8 gap-3">
+                    <i class="fas fa-sync-alt text-2xl text-blue-500"></i>
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">Painel de Assinaturas</h1>
+                        <p class="text-gray-400 text-sm mt-1">Gerencie a recorrência integrada com Mercado Pago.</p>
+                    </div>
+                </div>
+
+                <!-- Dashboard Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-[#1a1a1a] p-5 rounded-xl shadow-lg border border-gray-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Total de Assinantes</p>
+                                <h3 class="text-2xl font-bold" id="kpi-total">0</h3>
+                            </div>
+                            <div class="p-2 bg-blue-500/10 rounded-lg"><i class="fas fa-users text-blue-400"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-5 rounded-xl shadow-lg border border-gray-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Receita MRR</p>
+                                <h3 class="text-2xl font-bold text-green-400" id="kpi-mrr">R$ 0,00</h3>
+                            </div>
+                            <div class="p-2 bg-green-500/10 rounded-lg"><i class="fas fa-dollar-sign text-green-400"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-5 rounded-xl shadow-lg border border-gray-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Assinaturas Ativas</p>
+                                <h3 class="text-2xl font-bold text-emerald-400" id="kpi-active">0</h3>
+                            </div>
+                            <div class="p-2 bg-emerald-500/10 rounded-lg"><i class="fas fa-check-circle text-emerald-400"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-5 rounded-xl shadow-lg border border-gray-800">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">Cancelamentos</p>
+                                <h3 class="text-2xl font-bold text-red-400" id="kpi-cancelled">0</h3>
+                            </div>
+                            <div class="p-2 bg-red-500/10 rounded-lg"><i class="fas fa-times-circle text-red-400"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela -->
+                <div class="bg-[#1a1a1a] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex-grow flex flex-col">
+                    <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-700">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-list text-yellow-500"></i> Listagem em Tempo Real
+                            <span id="loading-badge" class="ml-3 text-xs bg-yellow-500 text-black px-2 py-1 rounded animate-pulse">Sincronizando com Mercado Pago...</span>
+                        </h2>
+                    </div>
+                    
+                    <div class="overflow-x-auto flex-grow">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-900/50 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="p-4 font-medium">Aluno</th>
+                                    <th class="p-4 font-medium">Plano / Produto</th>
+                                    <th class="p-4 font-medium">Valor</th>
+                                    <th class="p-4 font-medium text-center">Status MP</th>
+                                    <th class="p-4 font-medium">Data de Associação</th>
+                                    <th class="p-4 font-medium text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptions-table-body" class="divide-y divide-gray-800 text-sm">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden py-16 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-700/50 mb-4">
+                            <i class="fas fa-box-open text-2xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-300 mb-1">Nenhuma assinatura encontrada</h3>
+                        <p class="text-gray-500">Quando clientes assinarem planos recorrentes, aparecerão aqui.</p>
+                    </div>
+                </div>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupAssinaturasPage } from './assinaturas.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupAssinaturasPage();
+            });
+        });
+    </script>
+</body>
+</html>

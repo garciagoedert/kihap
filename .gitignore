@@ -21,3 +21,7 @@ functions/node_modules/
 
 # Local Config
 # intranet/social-config.js (Commented out to allow deploy to Hostinger)
+
+# Firebase logs
+firebase-debug.log*
+ui-debug.log*

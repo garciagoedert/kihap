@@ -8,7 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode } = require('./mercadopago.js');
+const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -252,6 +252,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 currency: currency,
                 paymentStatus: 'pending',
                 couponCode: couponCode || null,
+                isSubscription: product.isSubscription || false,
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
@@ -283,6 +284,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                         currency: currency,
                         paymentStatus: 'pending',
                         couponCode: couponCode || null,
+                        isSubscription: false, // Items secundários do Kit não herdam assinatura do Master
                         created: admin.firestore.FieldValue.serverTimestamp(),
                     };
                     const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
@@ -2434,5 +2436,121 @@ exports.mpOAuthCallback = functions.https.onRequest(async (req, res) => {
     } catch (error) {
         console.error("Erro na callback OAuth MP:", error.response?.data || error.message);
         res.redirect(`https://www.kihap.com.br/intranet/contas-mp.html?error=true`);
+    }
+});
+
+// ==========================================
+// Assinaturas - Painel Administrativo
+// ==========================================
+
+exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context) => {
+    try {
+        const snapshot = await db.collection('inscricoesFaixaPreta')
+            .where('isSubscription', '==', true)
+            .orderBy('created', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        const subscriptions = [];
+
+        const promises = snapshot.docs.map(async (doc) => {
+            const dataDoc = doc.data();
+            let liveStatus = dataDoc.paymentStatus;
+            
+            let customToken = null;
+            if (dataDoc.productId) {
+                try {
+                    const prodSnap = await db.collection('products').doc(dataDoc.productId).get();
+                    if (prodSnap.exists) {
+                        const prodData = prodSnap.data();
+                        if (prodData.mpAccountId && prodData.mpAccountId !== 'default') {
+                            const accSnap = await db.collection('mercadopagoAccounts').doc(prodData.mpAccountId).get();
+                            if (accSnap.exists) customToken = accSnap.data().accessToken;
+                        }
+                    }
+                } catch (e) { console.error(`Erro ao buscar Token do seller para o produto ${dataDoc.productId}`, e); }
+            }
+
+            if (dataDoc.mercadoPagoPreferenceId) {
+                try {
+                    const mpData = await getPreapprovalStatus(dataDoc.mercadoPagoPreferenceId, customToken);
+                    liveStatus = mpData.status;
+                    
+                    if (liveStatus !== dataDoc.paymentStatus) {
+                        await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ paymentStatus: liveStatus });
+                    }
+                } catch (mpError) {
+                    // console.error(`Erro ao sincronizar preapproval ${dataDoc.mercadoPagoPreferenceId}:`, mpError);
+                }
+            }
+
+            subscriptions.push({
+                idx: doc.id,
+                userName: dataDoc.userName,
+                userEmail: dataDoc.userEmail,
+                userUnit: dataDoc.userUnit || 'Não informada',
+                productName: dataDoc.productName,
+                amountTotal: dataDoc.amountTotal,
+                paymentStatus: liveStatus,
+                created: dataDoc.created,
+                preapprovalId: dataDoc.mercadoPagoPreferenceId
+            });
+        });
+
+        await Promise.all(promises);
+
+        return subscriptions;
+    } catch (error) {
+        console.error('[adminGetLiveSubscriptions] Erro grave:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+
+exports.adminCancelSubscription = functions.https.onCall(async (data, context) => {
+    const saleId = data.saleId;
+    
+    if (!saleId) {
+        throw new functions.https.HttpsError('invalid-argument', 'saleId obrigatório.');
+    }
+
+    try {
+        const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+        const snapshot = await docRef.get();
+
+        if (!snapshot.exists) {
+            throw new functions.https.HttpsError('not-found', 'Assinatura (Venda) não encontrada no Firestore.');
+        }
+
+        const dataDoc = snapshot.data();
+        if (!dataDoc.mercadoPagoPreferenceId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Esta venda não possuí um Preapproval ID associoado (mercadoPagoPreferenceId).');
+        }
+
+        let customToken = null;
+        if (dataDoc.productId) {
+            try {
+                const prodSnap = await db.collection('products').doc(dataDoc.productId).get();
+                if (prodSnap.exists) {
+                    const prodData = prodSnap.data();
+                    if (prodData.mpAccountId && prodData.mpAccountId !== 'default') {
+                        const accSnap = await db.collection('mercadopagoAccounts').doc(prodData.mpAccountId).get();
+                        if (accSnap.exists) customToken = accSnap.data().accessToken;
+                    }
+                }
+            } catch (e) { console.error(`Erro ao buscar Token no cancelamento`, e); }
+        }
+
+        const mpCancelData = await cancelPreapproval(dataDoc.mercadoPagoPreferenceId, customToken);
+
+        await docRef.update({ paymentStatus: 'cancelled' });
+
+        return { success: true, message: 'Assinatura cancelada com sucesso.', mpResponse: mpCancelData };
+    } catch (error) {
+        console.error('[adminCancelSubscription] Erro grave:', error.response?.data || error);
+        throw new functions.https.HttpsError('internal', error.message);
     }
 });
