@@ -8,7 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval } = require('./mercadopago.js');
+const { createMercadoPagoPreference, createCartMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -184,6 +184,173 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
     }
 };
 
+
+exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) => {
+    console.log('[createCartCheckoutSession] Iniciando a execução.');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { return res.status(405).send('Method Not Allowed'); }
+
+    const { cartItems, totalAmount, couponCode } = req.body;
+    
+    if (!cartItems || cartItems.length === 0 || totalAmount === undefined) {
+        return res.status(400).json({ error: 'Missing required fields: cartItems, totalAmount.' });
+    }
+
+    try {
+        const saleDocIds = [];
+        
+        for (const cartItem of cartItems) {
+            const productRef = db.collection('products').doc(cartItem.productId);
+            const productDoc = await productRef.get();
+            if(!productDoc.exists) continue;
+            
+            for (const formData of cartItem.formDataList) {
+                const saleData = {
+                    ...formData,
+                    productId: cartItem.productId,
+                    productName: cartItem.productName,
+                    amountTotal: formData.priceData.amount,
+                    currency: 'brl',
+                    paymentStatus: 'pending',
+                    couponCode: couponCode || null,
+                    isSubscription: cartItem.isSubscription || false,
+                    created: admin.firestore.FieldValue.serverTimestamp(),
+                };
+                const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+                saleDocIds.push(docRef.id);
+            }
+            
+            if (cartItem.recommendedItems && cartItem.recommendedItems.length > 0) {
+                const primaryBuyerData = cartItem.formDataList[0];
+                for (const item of cartItem.recommendedItems) {
+                    for (let i = 0; i < item.quantity; i++) {
+                        const saleData = {
+                            userName: primaryBuyerData.userName,
+                            userEmail: primaryBuyerData.userEmail,
+                            userPhone: primaryBuyerData.userPhone,
+                            userCpf: primaryBuyerData.userCpf,
+                            userUnit: primaryBuyerData.userUnit,
+                            userId: primaryBuyerData.userId,
+                            userPrograma: null,
+                            userGraduacao: null,
+                            productId: item.productId,
+                            productName: item.productName,
+                            amountTotal: Math.floor(item.amount / item.quantity),
+                            currency: 'brl',
+                            paymentStatus: 'pending',
+                            couponCode: couponCode || null,
+                            isSubscription: false,
+                            created: admin.firestore.FieldValue.serverTimestamp(),
+                        };
+                        const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+                        saleDocIds.push(docRef.id);
+                    }
+                }
+            }
+        }
+
+        if(saleDocIds.length === 0) {
+             return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
+        }
+
+        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds);
+
+        for (const docId of saleDocIds) {
+            await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });
+        }
+        
+        const isSandbox = process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.MERCADOPAGO_ACCESS_TOKEN.startsWith('TEST-');
+        const checkoutUrl = isSandbox ? mpPreference.sandbox_init_point : mpPreference.init_point;
+
+        res.status(200).json({ checkoutUrl: checkoutUrl, provider: 'mercadopago', preferenceId: mpPreference.id });
+    } catch (error) {
+        console.error('Error creating cart checkout session:', error);
+        res.status(500).json({ error: 'Ocorreu um erro interno no servidor.' });
+    }
+});
+
+exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { return res.status(405).send('Method Not Allowed'); }
+
+    const { cartItems, couponCode } = req.body;
+
+    if (!cartItems || cartItems.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields: cartItems.' });
+    }
+
+    try {
+        for (const cartItem of cartItems) {
+            const productRef = db.collection('products').doc(cartItem.productId);
+            const productDoc = await productRef.get();
+            if (!productDoc.exists) continue;
+            const product = productDoc.data();
+
+            for (const formData of cartItem.formDataList) {
+                const saleData = {
+                    ...formData,
+                    productId: cartItem.productId,
+                    productName: cartItem.productName,
+                    amountTotal: 0,
+                    currency: 'brl',
+                    paymentStatus: 'paid',
+                    couponCode: couponCode || null,
+                    created: admin.firestore.FieldValue.serverTimestamp(),
+                };
+                const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+
+                if (product.isTicket) {
+                    await sendTicketEmail(docRef.id, saleData);
+                }
+            }
+            
+            if (cartItem.recommendedItems && cartItem.recommendedItems.length > 0) {
+                const primaryBuyerData = cartItem.formDataList[0];
+                for (const item of cartItem.recommendedItems) {
+                    for (let i = 0; i < item.quantity; i++) {
+                        const saleData = {
+                            userName: primaryBuyerData.userName,
+                            userEmail: primaryBuyerData.userEmail,
+                            userPhone: primaryBuyerData.userPhone,
+                            userCpf: primaryBuyerData.userCpf,
+                            userUnit: primaryBuyerData.userUnit,
+                            userId: primaryBuyerData.userId,
+                            userPrograma: null,
+                            userGraduacao: null,
+                            productId: item.productId,
+                            productName: item.productName,
+                            amountTotal: 0,
+                            currency: 'brl',
+                            paymentStatus: 'paid',
+                            couponCode: couponCode || null,
+                            isSubscription: false,
+                            created: admin.firestore.FieldValue.serverTimestamp(),
+                        };
+                        const recDocRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+                        
+                        const recRef = db.collection('products').doc(item.productId);
+                        const recSnap = await recRef.get();
+                        if(recSnap.exists && recSnap.data().isTicket) {
+                            await sendTicketEmail(recDocRef.id, saleData);
+                        }
+                    }
+                }
+            }
+        }
+        res.status(200).json({ status: 'success', message: 'Free purchase processed successfully.' });
+    } catch (error) {
+        console.error('Error processing free purchase:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Cloud Function para criar a sessão de checkout do Stripe
 exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {

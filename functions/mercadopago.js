@@ -140,6 +140,77 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
     }
 };
 
+const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds) => {
+    console.log('[createCartMercadoPagoPreference] Iniciando...');
+    
+    // Simplificamos sem o split para diferentes contas no carrinho
+    const client = getMPClient(); 
+    
+    const items = [];
+    
+    cartItems.forEach(cartItem => {
+        if(cartItem.formDataList) {
+            cartItem.formDataList.forEach(formData => {
+                items.push({
+                    id: cartItem.productId,
+                    title: cartItem.productName,
+                    unit_price: formData.priceData.amount / 100,
+                    quantity: 1,
+                    currency_id: 'BRL',
+                    description: (formData.priceData && formData.priceData.variantName) ? formData.priceData.variantName : 'Item da Loja'
+                });
+            });
+        }
+        
+        if (cartItem.recommendedItems) {
+            cartItem.recommendedItems.forEach(rec => {
+                items.push({
+                    id: rec.productId,
+                    title: rec.productName,
+                    unit_price: (rec.amount / rec.quantity) / 100,
+                    quantity: rec.quantity,
+                    currency_id: 'BRL',
+                    description: 'Comprado Junto'
+                });
+            });
+        }
+    });
+
+    let primaryBuyerName = "Cliente";
+    let primaryBuyerEmail = "contato@kihap.com.br";
+    if (cartItems.length > 0 && cartItems[0].formDataList && cartItems[0].formDataList.length > 0) {
+        primaryBuyerName = cartItems[0].formDataList[0].userName || "Cliente";
+        primaryBuyerEmail = cartItems[0].formDataList[0].userEmail || "contato@kihap.com.br";
+    }
+
+    const preferenceData = {
+        items: items,
+        payer: {
+            name: primaryBuyerName,
+            email: primaryBuyerEmail,
+        },
+        external_reference: saleDocIds.join(','),
+        metadata: {
+            firestoreDocIds: saleDocIds.join(',')
+        },
+        back_urls: {
+            success: "https://www.kihap.com.br/compra-success.html",
+            failure: "https://www.kihap.com.br/compra-error.html",
+            pending: "https://www.kihap.com.br/compra-success.html"
+        },
+        auto_return: "approved"
+    };
+
+    try {
+        const response = await client.post('/checkout/preferences', preferenceData);
+        console.log('[createCartMercadoPagoPreference] Preferência do carrinho criada:', response.data.id);
+        return response.data;
+    } catch (error) {
+        console.error('[createCartMercadoPagoPreference] Erro:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
 const getMercadoPagoPayment = async (paymentId) => {
     const client = getMPClient();
     try {
@@ -186,6 +257,7 @@ const cancelPreapproval = async (preapprovalId, customToken = null) => {
 
 module.exports = {
     createMercadoPagoPreference,
+    createCartMercadoPagoPreference,
     getMercadoPagoPayment,
     getMercadoPagoPreference,
     exchangeOAuthCode,

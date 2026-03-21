@@ -2,7 +2,7 @@ import { db } from '../intranet/firebase-config.js';
 import { doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { onAuthReady, getUserData } from '../members/js/auth.js';
-
+import { cart } from './cart.js';
 document.addEventListener('DOMContentLoaded', () => {
     const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8iVZ7c7tB8PEIoiczwTEAUoRhe4dXusoilvXxm4vkgmbrcnMdCrXnOiIpvc0nw6FBhxYbnryl00gTmK12WA');
 
@@ -532,56 +532,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            if (totalAmount <= 0) {
-                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/processFreePurchase', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        formDataList,
-                        productId: currentProductId,
-                        recommendedItems,
-                        couponCode: appliedCoupon ? appliedCoupon.code : null
-                    }),
-                });
+            cart.addItem({
+                productId: currentProductId,
+                productName: productData.name,
+                imageUrl: productData.imageUrl,
+                isSubscription: productData.isSubscription || false,
+                subscriptionFrequency: productData.subscriptionFrequency || null,
+                subscriptionPeriod: productData.subscriptionPeriod || null,
+                priceType: productData.priceType,
+                formDataList: formDataList,
+                totalAmount: totalAmount,
+                recommendedItems: recommendedItems,
+                coupon: appliedCoupon ? appliedCoupon.code : null,
+                addedAt: new Date().toISOString()
+            });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao processar a compra gratuita.');
-                }
-
-                window.location.href = '/compra-success.html';
-            } else {
-                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCheckoutSession', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        formDataList,
-                        productId: currentProductId,
-                        recommendedItems,
-                        totalAmount,
-                        couponCode: appliedCoupon ? appliedCoupon.code : null,
-                        isSubscription: productData.isSubscription || false,
-                        subscriptionFrequency: productData.subscriptionFrequency || null,
-                        subscriptionPeriod: productData.subscriptionPeriod || null
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao criar a sessão de checkout.');
-                }
-
-                const data = await response.json();
-
-                if (data.provider === 'mercadopago' && data.checkoutUrl) {
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    throw new Error('Resposta inválida do servidor de checkout. Esperava uma URL do Mercado Pago.');
-                }
-            }
+            formStatus.textContent = 'Produto adicionado ao carrinho com sucesso!';
+            formStatus.className = 'mt-6 text-center text-lg text-green-500';
+            
+            setTimeout(() => {
+                window.location.href = 'cart.html';
+            }, 1000);
+            
         } catch (error) {
-            console.error('Payment Error:', error);
-            formStatus.textContent = `Erro: ${error.message}`;
+            console.error('Cart Error:', error);
+            formStatus.textContent = `Erro ao adicionar ao carrinho: ${error.message}`;
+            formStatus.className = 'mt-6 text-center text-lg text-red-500';
             payButton.disabled = false;
         }
     };
