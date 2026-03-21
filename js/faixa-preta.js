@@ -44,7 +44,7 @@ form.addEventListener('submit', async (e) => {
 
         if (response.ok) {
             const data = await response.json();
-            if (data.provider === 'pagarme' && data.checkoutUrl) {
+            if (data.provider === 'mercadopago' && data.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
             } else if (data.provider === 'stripe' && data.sessionId) {
                 const stripe = Stripe('pk_live_51P6f2mRxzK85UT81651jodpLzQzU5k52zL8tq11xZgY2j231B350nCbdEa3z8j2b5nQJgI8e7f2p8d0000Q2Y8d0');

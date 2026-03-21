@@ -498,10 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
 
-                if (data.provider === 'pagarme' && data.checkoutUrl) {
+                if (data.provider === 'mercadopago' && data.checkoutUrl) {
                     window.location.href = data.checkoutUrl;
                 } else {
-                    throw new Error('Resposta inválida do servidor de checkout. Esperava uma URL da Pagar.me.');
+                    throw new Error('Resposta inválida do servidor de checkout. Esperava uma URL do Mercado Pago.');
                 }
             }
         } catch (error) {

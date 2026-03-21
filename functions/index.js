@@ -8,6 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
+const { createMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -237,9 +238,9 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         product.id = productDoc.id; // Adiciona o ID do documento ao objeto do produto
         const currency = 'brl';
 
-        // Força o uso do Pagar.me como gateway padrão.
-        const usePagarme = true;
-        console.log(`[createCheckoutSession] Gateway para o produto ${productId}: Pagar.me (forçado)`);
+        // Força o uso do Mercado Pago como gateway padrão.
+        const useMercadoPago = true;
+        console.log(`[createCheckoutSession] Gateway para o produto ${productId}: Mercado Pago (forçado)`);
 
         const saleDocIds = [];
         for (const formData of formDataList) {
@@ -290,21 +291,18 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
             }
         }
 
-        console.log('[createCheckoutSession] Criando pedido no Pagar.me...');
-        const pagarmeOrder = await createPagarmeOrder(product, formDataList, totalAmount, saleDocIds);
-        console.log('[createCheckoutSession] Pedido Pagar.me criado com sucesso:', JSON.stringify(pagarmeOrder, null, 2));
+        console.log('[createCheckoutSession] Criando preferência no Mercado Pago...');
+        const mpPreference = await createMercadoPagoPreference(product, formDataList, totalAmount, saleDocIds);
+        console.log('[createCheckoutSession] Preferência Mercado Pago criada com sucesso:', mpPreference.id);
 
-        // A URL de sucesso é definida no payload de criação do pedido no Pagar.me.
-        // A função `verifyPayment` na página de sucesso usará o `pagarme_order_id` da URL
-        // para verificar o status do pagamento.
-        const successUrl = `https://www.kihap.com.br/compra-success.html?pagarme_order_id=${pagarmeOrder.id}`;
-
-        // Update all sale documents with the Pagar.me order ID
         for (const docId of saleDocIds) {
-            await db.collection('inscricoesFaixaPreta').doc(docId).update({ pagarmeOrderId: pagarmeOrder.id });
+            await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });
         }
+        
+        const isSandbox = process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.MERCADOPAGO_ACCESS_TOKEN.startsWith('TEST-');
+        const checkoutUrl = isSandbox ? mpPreference.sandbox_init_point : mpPreference.init_point;
 
-        const responsePayload = { checkoutUrl: pagarmeOrder.checkouts[0].payment_url, provider: 'pagarme' };
+        const responsePayload = { checkoutUrl: checkoutUrl, provider: 'mercadopago', preferenceId: mpPreference.id };
         console.log('[createCheckoutSession] Enviando resposta para o cliente:', JSON.stringify(responsePayload, null, 2));
         res.status(200).json(responsePayload);
     } catch (error) {
@@ -330,10 +328,10 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
         return;
     }
 
-    const { sessionId, pagarme_order_id } = req.body;
+    const { sessionId, pagarme_order_id, preference_id, collection_status } = req.body;
 
-    if (!sessionId && !pagarme_order_id) {
-        return res.status(400).send('Session ID or Pagar.me Order ID is required.');
+    if (!sessionId && !pagarme_order_id && !preference_id) {
+        return res.status(400).send('Session ID, Pagar.me Order ID ou Preference ID é obrigatório.');
     }
 
     try {
@@ -361,12 +359,24 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                     firestoreDocIds = JSON.parse(firestoreDocIdsString);
                 }
             }
+        } else if (preference_id) {
+            paymentProviderId = preference_id;
+            isPaid = collection_status === 'approved';
+            
+            const preference = await getMercadoPagoPreference(preference_id);
+            if (preference && preference.external_reference) {
+                firestoreDocIds = preference.external_reference.split(',');
+            }
         }
 
         if (isPaid) {
             // Fallback to find docs if metadata was not available
             if (!firestoreDocIds || firestoreDocIds.length === 0) {
-                const fieldToQuery = sessionId ? 'checkoutSessionId' : 'pagarmeOrderId';
+                let fieldToQuery;
+                if (sessionId) fieldToQuery = 'checkoutSessionId';
+                else if (pagarme_order_id) fieldToQuery = 'pagarmeOrderId';
+                else if (preference_id) fieldToQuery = 'mercadoPagoPreferenceId';
+
                 const querySnapshot = await db.collection('inscricoesFaixaPreta').where(fieldToQuery, '==', paymentProviderId).get();
                 if (!querySnapshot.empty) {
                     firestoreDocIds = querySnapshot.docs.map(doc => doc.id);
