@@ -95,6 +95,10 @@
                         class="tab-btn text-yellow-500 border-b-2 border-yellow-500 px-3 py-2 font-medium text-sm">
                         Gerenciamento de Alunos
                     </button>
+                    <button id="tab-manage-tuitions"
+                        class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                        Mensalidades
+                    </button>
                     <button id="tab-check-entries"
                         class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
                         Verificar Entradas
@@ -130,6 +134,16 @@
                             <i class="fas fa-key"></i>
                             <span>Gerar Senhas Padrão</span>
                         </button>
+                        <button id="add-student-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition hidden">
+                            <i class="fas fa-plus"></i>
+                            <span>Novo Aluno</span>
+                        </button>
+                        <button id="cleanup-trash-btn"
+                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition hidden">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Limpar Lixo</span>
+                        </button>
                         <button id="sync-evo-btn"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed">
                             <i class="fas fa-sync" id="sync-icon"></i>
@@ -146,12 +160,51 @@
                                 <th class="p-4">Nome</th>
                                 <th class="p-4">Email</th>
                                 <th class="p-4">Unidade</th>
+                                <th class="p-4 text-right pr-6">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="students-table-body">
                             <!-- Linhas serão inseridas dinamicamente aqui -->
                             <tr>
-                                <td colspan="3" class="text-center p-8">Carregando alunos...</td>
+                                <td colspan="4" class="text-center p-8">Carregando alunos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Mensalidades -->
+            <div id="tab-content-manage-tuitions" class="tab-content hidden">
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="w-full md:w-auto flex-1 max-w-sm">
+                        <label for="tuition-search-input" class="text-sm font-medium text-gray-400 block mb-1">Buscar Aluno:</label>
+                        <input type="text" id="tuition-search-input" placeholder="Digite o nome..." class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label for="tuition-status-filter" class="text-sm font-medium text-gray-400 block mb-1">Filtrar Status:</label>
+                        <select id="tuition-status-filter" class="w-full md:w-48 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Todos os Status</option>
+                            <option value="adimplente">Adimplentes (Ativos)</option>
+                            <option value="inadimplente">Inadimplentes (Pendentes)</option>
+                            <option value="sem_plano">Sem Plano</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4">Aluno</th>
+                                <th class="p-4">Unidade</th>
+                                <th class="p-4">Plano Vigente</th>
+                                <th class="p-4 text-center">Status</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tuitions-table-body">
+                            <tr>
+                                <td colspan="5" class="text-center p-8">Carregando mensalidades...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -329,6 +382,104 @@
                 <button id="closeInviteLinkModalBtn"
                     class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Fechar</button>
             </div>
+        </div>
+    </div>
+    <!-- Registration Modal -->
+    <div id="register-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Cadastrar Novo Aluno</h3>
+                <button id="close-register-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="register-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Nome *</label>
+                        <input type="text" id="reg-first-name" required class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Sobrenome</label>
+                        <input type="text" id="reg-last-name" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">E-mail *</label>
+                        <input type="email" id="reg-email" required class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Telefone</label>
+                        <input type="text" id="reg-phone" placeholder="(00) 00000-0000" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">CPF</label>
+                        <input type="text" id="reg-cpf" placeholder="000.000.000-00" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Data de Nascimento</label>
+                        <input type="date" id="reg-birth-date" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Unidade *</label>
+                        <select id="reg-unit" required class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                            <option value="">Selecione</option>
+                            <option value="centro">Unidade Centro</option>
+                            <option value="coqueiros">Unidade Coqueiros</option>
+                            <option value="asa-sul">Unidade Asa Sul</option>
+                            <option value="sudoeste">Unidade Sudoeste</option>
+                            <option value="lago-sul">Unidade Lago Sul</option>
+                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
+                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                            <option value="dourados">Unidade Dourados</option>
+                            <option value="santa-monica">Unidade Santa Mônica</option>
+                            <option value="noroeste">Unidade Noroeste</option>
+                            <option value="atadf">Unidade Store</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Programa (Faixa)</label>
+                        <select id="reg-rank-type" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                            <option value="Tradicional">Tradicional</option>
+                            <option value="Littles">Littles</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Responsável</label>
+                        <input type="text" id="reg-responsible" placeholder="Nome do responsável" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Como nos conheceu?</label>
+                        <input type="text" id="reg-origin" placeholder="Ex: Instagram, Indicação..." class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Endereço Completo</label>
+                    <input type="text" id="reg-address" placeholder="Rua, número, complemento, bairro, cidade..." class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                </div>
+
+                <div class="mt-8 flex space-x-3">
+                    <button type="button" id="cancel-reg-btn" class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="save-reg-btn" class="flex-1 flex justify-center items-center px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-bold hover:from-green-400 hover:to-green-500 transition-all shadow-lg">
+                        <i class="fas fa-save mr-2"></i> Cadastrar Aluno
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </body>

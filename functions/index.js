@@ -2721,3 +2721,22 @@ exports.adminCancelSubscription = functions.https.onCall(async (data, context) =
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+
+// ==========================================
+// Assinaturas de Mensalidades (Alunos)
+// ==========================================
+const tuitions = require('./tuitions');
+exports.getTuitionPlans = tuitions.getTuitionPlans;
+exports.createTuitionPlan = tuitions.createTuitionPlan;
+exports.updateTuitionPlan = tuitions.updateTuitionPlan;
+exports.deleteTuitionPlan = tuitions.deleteTuitionPlan;
+exports.getUnitMPAccounts = tuitions.getUnitMPAccounts;
+exports.createTuitionSubscription = tuitions.createTuitionSubscription;
+exports.cancelTuitionSubscription = tuitions.cancelTuitionSubscription;
+exports.listAlunosLocais = tuitions.listAlunosLocais;
+exports.registerLocalStudent = tuitions.registerLocalStudent;
+exports.updateLocalStudent = tuitions.updateLocalStudent;
+exports.deleteLocalMember = tuitions.deleteLocalMember;
+exports.getStudentFinancialHub = tuitions.getStudentFinancialHub;
+exports.cleanupRemovedStudents = tuitions.cleanupRemovedStudents;
+exports.mpWebhook = tuitions.mpWebhook;

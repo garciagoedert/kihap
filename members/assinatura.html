@@ -18,25 +18,89 @@
     <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+        
         <main id="main-content" class="flex-1">
             <div id="header-container"></div>
-            <div class="p-4 md:p-6 lg:p-8">
-                <h1 class="text-2xl font-bold mb-6">Minha Assinatura</h1>
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <div id="status-container">
-                        <p>Carregando status da sua assinatura...</p>
+            
+            <div class="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
+                <h1 class="text-3xl font-bold mb-2 text-white">Minha Assinatura</h1>
+                <p class="text-gray-400 mb-8">Gerencie o pagamento da sua mensalidade Kihap.</p>
+
+                <!-- Loading State -->
+                <div id="loading-container" class="bg-[#1a1a1a] p-12 rounded-lg shadow-lg flex flex-col items-center justify-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
+                    <p class="text-gray-400">Carregando informações da sua assinatura...</p>
+                </div>
+
+                <!-- Active Subscription View -->
+                <div id="active-subscription-container" class="hidden bg-[#1a1a1a] p-6 md:p-8 rounded-xl shadow-lg border border-gray-800">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-6 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-1">Status: <span id="sub-status-badge" class="text-green-500">Ativa</span></h2>
+                            <p class="text-gray-400 text-sm">Cobrança automática recorrente configurada via Mercado Pago.</p>
+                        </div>
+                        <div class="mt-4 md:mt-0 px-4 py-2 bg-gray-800 rounded-lg shadow-inner">
+                            <span class="text-sm text-gray-400 block mb-1">Unidade</span>
+                            <span id="sub-unit" class="text-white font-semibold">Carregando...</span>
+                        </div>
                     </div>
-                    <div id="actions-container" class="mt-6">
-                        <!-- Botões de ação serão inseridos aqui pelo JavaScript -->
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-[#111] p-5 rounded-lg border border-gray-800">
+                            <h3 class="text-gray-500 text-sm font-medium mb-1">Plano Atual</h3>
+                            <p id="sub-plan-name" class="text-xl font-bold text-white mb-2">Plano Mensal</p>
+                            <p id="sub-plan-price" class="text-yellow-500 font-bold text-2xl">R$ 0,00 <span class="text-sm font-normal text-gray-500">/ mês</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-900/20 border border-red-900/50 p-4 rounded-lg flex items-start">
+                        <i class="fas fa-info-circle text-red-500 mt-1 mr-3"></i>
+                        <div>
+                            <h4 class="text-red-400 font-semibold mb-1">Cancelar Assinatura</h4>
+                            <p class="text-gray-400 text-sm mb-3">Ao cancelar, a cobrança automática será interrompida e seu acesso poderá ser suspenso no próximo ciclo de pagamento.</p>
+                            <button id="cancel-subscription-btn" class="text-red-500 hover:text-red-400 hover:underline font-medium text-sm transition-colors">
+                                Cancelar minha assinatura
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Available Plans View -->
+                <div id="available-plans-container" class="hidden">
+                    <div class="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-xl mb-8">
+                        <h2 class="text-xl font-bold text-yellow-500 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Atenção: Assinatura Pendente</h2>
+                        <p class="text-gray-300">Você não possui uma assinatura de mensalidade ativa na unidade <strong><span id="plans-unit-name"></span></strong>. Selecione um dos planos abaixo para regularizar seu acesso.</p>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-white mb-6">Planos Disponíveis</h3>
+                    
+                    <div id="plans-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Plans will be injected here -->
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
 
+    <!-- Generic Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-800 w-full max-w-md p-6 transform transition-all scale-100">
+            <h2 id="confirmTitle" class="text-xl font-bold text-white mb-4">Confirmar Cancelamento</h2>
+            <p id="confirmMessage" class="text-gray-300 mb-6">Tem certeza que deseja cancelar sua assinatura?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelConfirmBtn" class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white font-medium py-2 px-5 rounded-lg transition-colors">Não, voltar</button>
+                <button id="confirmActionBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg shadow-lg hover:shadow-red-900/50 transition-all">Sim, Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2"></div>
+
+    <script type="module" src="./js/assinatura.js"></script>
     <script type="module">
         import { loadComponents } from './js/common-ui.js';
-        import './js/assinatura.js'; // Carrega o script da assinatura
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents();
         });

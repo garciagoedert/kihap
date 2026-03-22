@@ -19,6 +19,7 @@ function debounce(func, delay) {
 }
 
 const listAllMembers = httpsCallable(functions, 'listAllMembers');
+const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
 const triggerEvoSync = httpsCallable(functions, 'triggerEvoSync');
@@ -26,15 +27,19 @@ const getDailyEntries = httpsCallable(functions, 'getDailyEntries');
 const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersByEvoId');
 const syncEvoStudentsToCache = httpsCallable(functions, 'syncEvoStudentsToCache');
 const batchSetDefaultPasswords = httpsCallable(functions, 'batchSetDefaultPasswords');
+const registerLocalStudent = httpsCallable(functions, 'registerLocalStudent');
+const deleteLocalMember = httpsCallable(functions, 'deleteLocalMember');
+const cleanupRemovedStudents = httpsCallable(functions, 'cleanupRemovedStudents');
 
 export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
-let allCourses = [];
+let currentAppUser = null; 
 let allTatameContents = [];
 let allBadges = []; // This will be populated by loadAllSelectableContent and used by the modal
 
 export function setupAlunosPage() {
     onAuthReady(async (user) => {
         if (user) {
+            currentAppUser = user;
             console.log("👤 Usuário autenticado na página de alunos:", user.email);
             // Oculta o botão de adicionar prospect no header
             const addProspectBtn = document.getElementById('addProspectBtnHeader');
@@ -55,11 +60,13 @@ export function setupAlunosPage() {
 
             // --- Tab Elements ---
             const tabManageStudents = document.getElementById('tab-manage-students');
+            const tabManageTuitions = document.getElementById('tab-manage-tuitions');
             const tabCheckEntries = document.getElementById('tab-check-entries');
             const tabManageBadges = document.getElementById('tab-manage-badges');
             const tabRanking = document.getElementById('tab-ranking');
             const tabAccessRanking = document.getElementById('tab-access-ranking');
             const contentManageStudents = document.getElementById('tab-content-manage-students');
+            const contentManageTuitions = document.getElementById('tab-content-manage-tuitions');
             const contentCheckEntries = document.getElementById('tab-content-check-entries');
             const contentManageBadges = document.getElementById('tab-content-manage-badges');
             const contentRanking = document.getElementById('tab-content-ranking');
@@ -69,41 +76,150 @@ export function setupAlunosPage() {
             const tabDetails = document.getElementById('tab-details');
             const tabPermissions = document.getElementById('tab-permissions');
             const tabPhysicalTest = document.getElementById('tab-physical-test');
-            const tabBadgesModal = document.getElementById('tab-badges'); // Renamed to avoid conflict
+            const tabBadgesModal = document.getElementById('tab-badges');
             const contentDetails = document.getElementById('tab-content-details');
             const contentPermissions = document.getElementById('tab-content-permissions');
             const contentPhysicalTest = document.getElementById('tab-content-physical-test');
-            const contentBadgesModal = document.getElementById('tab-content-badges'); // Renamed to avoid conflict
+            const contentBadgesModal = document.getElementById('tab-content-badges');
 
-            // Set default date to today, only if the element exists
+            // Set default date to today
             if (dailyEntriesDate) {
                 dailyEntriesDate.value = new Date().toISOString().split('T')[0];
             }
 
+            // --- Registration Modal Elements ---
+            const registerModal = document.getElementById('register-modal');
+            const addStudentBtn = document.getElementById('add-student-btn');
+            const closeRegisterBtn = document.getElementById('close-register-modal');
+            const cancelRegBtn = document.getElementById('cancel-reg-btn');
+            const registerForm = document.getElementById('register-form');
+            const cleanupTrashBtn = document.getElementById('cleanup-trash-btn');
+
             // --- Event Listeners ---
-            unitFilter.addEventListener('change', () => loadStudents());
-            if (checkEntriesBtn) {
-                checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
+            if (unitFilter) unitFilter.addEventListener('change', () => loadStudents());
+            if (checkEntriesBtn) checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
+            if (searchInput) searchInput.addEventListener('input', debounce(() => loadStudents(), 500));
+
+            // --- Registration Modal Listeners ---
+            if (addStudentBtn) {
+                addStudentBtn.addEventListener('click', () => {
+                    if (registerModal) registerModal.classList.remove('hidden');
+                });
             }
-            searchInput.addEventListener('input', debounce(() => loadStudents(), 500)); // Restaurado para chamar a função de busca
+            if (closeRegisterBtn) {
+                closeRegisterBtn.addEventListener('click', () => {
+                    if (registerModal) registerModal.classList.add('hidden');
+                });
+            }
+            if (cancelRegBtn) {
+                cancelRegBtn.addEventListener('click', () => {
+                    if (registerModal) registerModal.classList.add('hidden');
+                });
+            }
+            if (registerForm) {
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('save-reg-btn');
+                    if (!saveBtn) return;
+
+                    const originalHtml = saveBtn.innerHTML;
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Cadastrando...';
+
+                    const studentData = {
+                        firstName: document.getElementById('reg-first-name').value,
+                        lastName: document.getElementById('reg-last-name').value,
+                        email: document.getElementById('reg-email').value,
+                        unitId: document.getElementById('reg-unit').value,
+                        phone: document.getElementById('reg-phone').value,
+                        cpf: document.getElementById('reg-cpf').value,
+                        birthDate: document.getElementById('reg-birth-date').value,
+                        rankType: document.getElementById('reg-rank-type').value,
+                        responsible: document.getElementById('reg-responsible').value,
+                        origin: document.getElementById('reg-origin').value,
+                        address: document.getElementById('reg-address').value
+                    };
+
+                    try {
+                        await registerLocalStudent(studentData);
+                        alert('✅ Aluno cadastrado com sucesso!');
+                        if (registerModal) registerModal.classList.add('hidden');
+                        registerForm.reset();
+                        loadStudents();
+                    } catch (error) {
+                        console.error('Erro ao cadastrar aluno:', error);
+                        alert(`❌ Erro: ${error.message}`);
+                    } finally {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalHtml;
+                    }
+                });
+            }
+
+            // --- Cleanup Trash Listener ---
+            if (cleanupTrashBtn) {
+                cleanupTrashBtn.addEventListener('click', async () => {
+                    if (!confirm('Você tem certeza que deseja remover todos os registros marcados como "***Dados Removidos***"? Esta ação é irreversível.')) {
+                        return;
+                    }
+
+                    cleanupTrashBtn.disabled = true;
+                    cleanupTrashBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Limpando...';
+
+                    try {
+                        const result = await cleanupRemovedStudents();
+                        alert(`✅ Sucesso! ${result.data.count} registros removidos.`);
+                        loadStudents();
+                    } catch (error) {
+                        console.error('Erro ao limpar lixo:', error);
+                        alert(`❌ Erro: ${error.message}`);
+                    } finally {
+                        cleanupTrashBtn.disabled = false;
+                        cleanupTrashBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i> Limpar Lixo';
+                    }
+                });
+            }
 
             // Event listener delegated for the students table
             const tableBody = document.getElementById('students-table-body');
-            tableBody.addEventListener('click', (e) => {
-                const row = e.target.closest('.student-row');
-                if (row) {
-                    const memberId = parseInt(row.dataset.id, 10);
-                    const student = allStudents.find(s => s.idMember === memberId);
-                    if (student && student.unitId) {
-                        window.location.href = `aluno.html?id=${memberId}&unit=${student.unitId}`;
-                    } else {
-                        // Fallback para o caso de a unidade não ser encontrada (improvável)
-                        window.location.href = `aluno.html?id=${memberId}`;
-                    }
-                }
-            });
+            if (tableBody) {
+                tableBody.addEventListener('click', async (e) => {
+                    const deleteBtn = e.target.closest('.delete-student-btn');
+                    if (deleteBtn) {
+                        const memberId = deleteBtn.dataset.id;
+                        const studentName = deleteBtn.dataset.name;
 
-            // Modal Controls (REMOVED)
+                        if (confirm(`Tem certeza que deseja excluir o aluno ${studentName} e remover todo o seu acesso à plataforma?`)) {
+                            try {
+                                deleteBtn.disabled = true;
+                                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                                await deleteLocalMember({ idMember: memberId });
+                                alert('✅ Aluno removido com sucesso!');
+                                loadStudents();
+                            } catch (error) {
+                                console.error('Erro ao deletar aluno:', error);
+                                alert(`❌ Erro: ${error.message}`);
+                                deleteBtn.disabled = false;
+                                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                            }
+                        }
+                        return;
+                    }
+
+                    const row = e.target.closest('.student-row');
+                    if (row) {
+                        const memberId = parseInt(row.dataset.id, 10);
+                        const student = allStudents.find(s => s.idMember === memberId);
+                        if (student && student.unitId) {
+                            window.location.href = `aluno.html?id=${memberId}&unit=${student.unitId}`;
+                        } else {
+                            window.location.href = `aluno.html?id=${memberId}`;
+                        }
+                    }
+                });
+            }
+
+            // Modal Controls
             if (closeModalBtn) {
                 closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
             }
@@ -119,31 +235,29 @@ export function setupAlunosPage() {
             function switchMainTab(activeTabName) {
                 const tabConfigs = {
                     'manage-students': { content: contentManageStudents, button: tabManageStudents },
+                    'manage-tuitions': { content: contentManageTuitions, button: tabManageTuitions },
                     'check-entries': { content: contentCheckEntries, button: tabCheckEntries },
                     'manage-badges': { content: contentManageBadges, button: tabManageBadges },
                     'ranking': { content: contentRanking, button: tabRanking },
                     'access-ranking': { content: contentAccessRanking, button: tabAccessRanking }
                 };
 
-                // Hide all content and reset button styles
                 for (const name in tabConfigs) {
-                    tabConfigs[name].content.classList.add('hidden');
-                    tabConfigs[name].button.classList.remove('text-yellow-500', 'border-yellow-500');
-                    tabConfigs[name].button.classList.add('text-gray-400', 'hover:text-white');
+                    if (tabConfigs[name].content) tabConfigs[name].content.classList.add('hidden');
+                    if (tabConfigs[name].button) {
+                        tabConfigs[name].button.classList.remove('text-yellow-500', 'border-yellow-500');
+                        tabConfigs[name].button.classList.add('text-gray-400', 'hover:text-white');
+                    }
                 }
 
-                // Show the active tab's content and style its button
                 const activeConfig = tabConfigs[activeTabName];
-                activeConfig.content.classList.remove('hidden');
-                activeConfig.button.classList.add('text-yellow-500', 'border-yellow-500');
-                activeConfig.button.classList.remove('text-gray-400', 'hover:text-white');
+                if (activeConfig.content) activeConfig.content.classList.remove('hidden');
+                if (activeConfig.button) {
+                    activeConfig.button.classList.add('text-yellow-500', 'border-yellow-500');
+                    activeConfig.button.classList.remove('text-gray-400', 'hover:text-white');
+                }
 
-                // Special handling for badge management tab activation
                 if (activeTabName === 'manage-badges') {
-                    // Ensure badge management setup is called only once or when needed
-                    // We can check if the content is already loaded or if the setup function has been called
-                    // For simplicity, we'll call it here, assuming it handles re-initialization gracefully or we add a flag.
-                    // A more robust solution might involve checking if the content is visible and then calling setup.
                     setupBadgeManagement();
                 } else if (activeTabName === 'ranking') {
                     loadRankingData();
@@ -152,24 +266,37 @@ export function setupAlunosPage() {
                 }
             }
 
-            tabManageStudents.addEventListener('click', () => switchMainTab('manage-students'));
-            tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
-            tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
-            tabRanking.addEventListener('click', () => switchMainTab('ranking'));
-            tabAccessRanking.addEventListener('click', () => switchMainTab('access-ranking'));
+            if (tabManageStudents) tabManageStudents.addEventListener('click', () => switchMainTab('manage-students'));
+            if (tabManageTuitions) tabManageTuitions.addEventListener('click', () => {
+                switchMainTab('manage-tuitions');
+                renderTuitionsTable();
+            });
+            if (tabCheckEntries) tabCheckEntries.addEventListener('click', () => switchMainTab('check-entries'));
+            if (tabManageBadges) tabManageBadges.addEventListener('click', () => switchMainTab('manage-badges'));
+            if (tabRanking) tabRanking.addEventListener('click', () => switchMainTab('ranking'));
+            if (tabAccessRanking) tabAccessRanking.addEventListener('click', () => switchMainTab('access-ranking'));
 
-            // Modal Tab Switching Logic (REMOVED)
+            const tuitionSearch = document.getElementById('tuition-search-input');
+            const tuitionStatusFilter = document.getElementById('tuition-status-filter');
+            if (tuitionSearch) {
+                tuitionSearch.addEventListener('input', debounce(() => renderTuitionsTable(), 500));
+            }
+            if (tuitionStatusFilter) {
+                tuitionStatusFilter.addEventListener('change', () => renderTuitionsTable());
+            }
 
             // --- Initial Load ---
             const urlParams = new URLSearchParams(window.location.search);
             const searchName = urlParams.get('search');
-            if (searchName) {
+            if (searchName && searchInput) {
                 searchInput.value = searchName;
             }
 
-            // Load students and other necessary data for the page
-            Promise.all([loadStudents(), loadAllSelectableContent()]);
-            // Set the default active tab to "Gerenciamento de Alunos"
+            // Load students
+            loadStudents();
+            loadAllSelectableContent();
+
+            // Set the default active tab
             switchMainTab('manage-students');
 
             // --- Sync Button Event Listener ---
@@ -180,8 +307,8 @@ export function setupAlunosPage() {
                     const text = document.getElementById('sync-text');
 
                     syncEvoBtn.disabled = true;
-                    icon.classList.add('fa-spin');
-                    text.textContent = 'Sincronizando...';
+                    if (icon) icon.classList.add('fa-spin');
+                    if (text) text.textContent = 'Sincronizando...';
 
                     try {
                         const result = await syncEvoStudentsToCache({ unitId: 'all' });
@@ -193,15 +320,14 @@ export function setupAlunosPage() {
                             `📊 Total de alunos: ${data.totalStudents}\n\n` +
                             `Os dados estão agora no cache e serão carregados muito mais rápido!`);
 
-                        // Recarrega a lista para mostrar dados atualizados do cache
                         await loadStudents();
                     } catch (error) {
                         console.error('Erro na sincronização:', error);
-                        alert(`❌ Erro na sincronização: ${error.message}\n\nVerifique os logs do console para mais detalhes.`);
+                        alert(`❌ Erro na sincronização: ${error.message}`);
                     } finally {
                         syncEvoBtn.disabled = false;
-                        icon.classList.remove('fa-spin');
-                        text.textContent = 'Sincronizar Cache';
+                        if (icon) icon.classList.remove('fa-spin');
+                        if (text) text.textContent = 'Sincronizar Cache';
                     }
                 });
             }
@@ -210,10 +336,9 @@ export function setupAlunosPage() {
             const batchPasswordBtn = document.getElementById('batch-password-btn');
             if (batchPasswordBtn) {
                 batchPasswordBtn.addEventListener('click', async () => {
-                    const unitFilter = document.getElementById('unit-filter');
-                    const selectedUnit = unitFilter.value;
+                    const selectedUnit = unitFilter ? unitFilter.value : 'todas';
 
-                    if (!confirm(`ATENÇÃO: Isso irá criar contas de acesso para TODOS os alunos da unidade selecionada (${selectedUnit}) que ainda não possuem acesso, definindo a senha padrão como "kihap".\n\nIsso pode levar alguns minutos.\n\nDeseja continuar?`)) {
+                    if (!confirm(`ATENÇÃO: Isso irá criar contas de acesso para TODOS os alunos da unidade selecionada (${selectedUnit}) que ainda não possuem acesso, definindo a senha padrão como "kihap".\n\nDeseja continuar?`)) {
                         return;
                     }
 
@@ -223,7 +348,6 @@ export function setupAlunosPage() {
                     try {
                         const result = await batchSetDefaultPasswords({ unitId: selectedUnit, dryRun: false });
                         alert(`✅ Sucesso!\n\n${result.data.message}`);
-                        // Recarrega para atualizar ícones
                         await loadStudents();
                     } catch (error) {
                         console.error('Erro ao gerar senhas:', error);
@@ -235,10 +359,17 @@ export function setupAlunosPage() {
                 });
             }
 
-            // --- Admin-only Features (removed button hiding) ---
-            const syncEvoRankingBtn = document.getElementById('sync-evo-ranking-btn');
-            if (syncEvoRankingBtn) {
-                syncEvoRankingBtn.style.display = 'none';
+            // --- Feature visibility based on role ---
+            const isAdmin = await checkAdminStatus(user);
+            
+            // "Novo Aluno" is now visible to all intranet users
+            if (addStudentBtn) addStudentBtn.classList.remove('hidden');
+            
+            // "Limpar Lixo" and other features stay admin-only
+            if (isAdmin) {
+                if (cleanupTrashBtn) cleanupTrashBtn.classList.remove('hidden');
+            } else {
+                if (cleanupTrashBtn) cleanupTrashBtn.classList.add('hidden');
             }
         }
     });
@@ -254,38 +385,27 @@ async function loadStudents() {
     tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
 
     try {
-        console.log("🚀 Chamando listAllMembers...", { selectedUnit, searchTerm });
+        console.log("🚀 Buscando alunos nativamente através de Cloud Function (rápido)...", { selectedUnit, searchTerm });
         const startTime = Date.now();
 
-        const result = await listAllMembers({
-            unitId: selectedUnit,
-            name: searchTerm
-        });
+        const result = await listAlunosLocais({ unitId: selectedUnit });
+        let studentList = result.data || [];
 
-        console.log(`✅ listAllMembers concluído em ${Date.now() - startTime}ms`);
-        console.log("📦 Estrutura do resultado:", result);
-
-        // Na v11 do Firebase SDK, result é um objeto com a propriedade data
-        const studentList = result.data || [];
-        console.log("👥 Conteúdo de result.data:", studentList);
-        console.log(`📏 Tamanho do Array: ${Array.isArray(studentList) ? studentList.length : 'NÃO É ARRAY'}`);
-
-        if (Array.isArray(studentList)) {
-            // Debug: Check distribution by unit
-            const distribution = {};
-            studentList.forEach(s => {
-                const unit = s.branchName || 'Unknown';
-                distribution[unit] = (distribution[unit] || 0) + 1;
+        // Search logic local no frontend
+        if (searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            studentList = studentList.filter(s => {
+                const fullName = (s.firstName + " " + s.lastName).toLowerCase();
+                return fullName.includes(lowerSearchTerm);
             });
-            console.table(distribution);
         }
 
-        if (!Array.isArray(studentList)) {
-            console.error("❌ ERRO: studentList não é um array!", studentList);
-        }
+        console.log(`✅ Busca Cloud Function concluída em ${Date.now() - startTime}ms`);
+        console.log(`📏 Total de alunos retornados: ${studentList.length}`);
 
         allStudents = studentList;
-        renderStudents(studentList);
+        const isAdmin = await checkAdminStatus(currentAppUser);
+        renderStudents(studentList, isAdmin);
         updateCacheStatus();
 
     } catch (error) {
@@ -344,28 +464,43 @@ async function updateCacheStatus(success = true) {
     }
 }
 
-function renderStudents(students) {
+function renderStudents(students, isAdmin = false) {
     const tableBody = document.getElementById('students-table-body');
     const totalStudentsCountEl = document.getElementById('total-students-count');
 
-    // Filtra alunos com dados removidos
-    const validStudents = students.filter(student => student.firstName !== '***Dados Removidos***');
+    // Filtra alunos com dados removidos (flexível com maiúsculas/minúsculas e quantidade de asteriscos)
+    const validStudents = students.filter(student => 
+        !student.firstName || !student.firstName.startsWith('***Dados')
+    );
 
     // Atualiza o contador total de alunos
     totalStudentsCountEl.textContent = validStudents.length;
 
 
     if (validStudents.length > 0) {
+        // isAdmin is passed as parameter
+        
         const rowsHtml = validStudents.map(member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
 
+            let actionsHtml = '';
+            if (isAdmin) {
+                actionsHtml = `
+                    <button class="delete-student-btn text-red-500 hover:text-red-700 p-2 transition-colors ml-auto" 
+                            data-id="${member.idMember}" data-name="${fullName}" title="Excluir Aluno">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
+
             return `
-                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row">
-                    <td class="p-4">${fullName}</td>
-                    <td class="p-4">${email}</td>
-                    <td class="p-4">${member.branchName || 'Centro'}</td>
+                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row group">
+                    <td class="p-4 font-medium">${fullName}</td>
+                    <td class="p-4 text-gray-400">${email}</td>
+                    <td class="p-4 text-gray-400">${member.branchName || 'Centro'}</td>
+                    <td class="p-4 text-right flex justify-end">${actionsHtml}</td>
                 </tr>
             `;
         }).join('');
@@ -590,4 +725,102 @@ async function loadAllSelectableContent() {
     } catch (error) {
         console.error("Erro ao carregar conteúdos selecionáveis:", error);
     }
+}
+
+async function renderTuitionsTable() {
+    const tableBody = document.getElementById('tuitions-table-body');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando...</td></tr>';
+    
+    if (!window.tuitionPlansCache) {
+        try {
+            const getTuitionPlans = httpsCallable(functions, 'getTuitionPlans');
+            const res = await getTuitionPlans({ unitId: 'all' });
+            window.tuitionPlansCache = res.data || [];
+        } catch (e) {
+            console.error("Erro ao buscar planos:", e);
+            window.tuitionPlansCache = [];
+        }
+    }
+    
+    const searchInput = document.getElementById('tuition-search-input');
+    const statusFilter = document.getElementById('tuition-status-filter');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const unitFilter = document.getElementById('unit-filter').value;
+    const selectedStatus = statusFilter ? statusFilter.value : 'all';
+    
+    let filtered = allStudents.filter(s => {
+        // Unidade filter
+        if (unitFilter !== 'all' && s.unitId !== unitFilter && s.branchName !== unitFilter) return false;
+        
+        // Nome filter
+        if (searchTerm) {
+            const name = (s.firstName + ' ' + (s.lastName || '')).toLowerCase();
+            if (!name.includes(searchTerm)) return false;
+        }
+
+        // Status filter
+        if (selectedStatus !== 'all') {
+            const isAdimplente = s.tuitionStatus === 'active' || s.tuitionStatus === 'authorized';
+            const isPendente = s.tuitionStatus === 'pending' || s.tuitionStatus === 'past_due' || s.tuitionStatus === 'cancelled';
+            const withoutPlan = !s.tuitionPlanId;
+
+            if (selectedStatus === 'adimplente' && !isAdimplente) return false;
+            if (selectedStatus === 'inadimplente' && (!isPendente || withoutPlan)) return false;
+            if (selectedStatus === 'sem_plano' && !withoutPlan) return false;
+        }
+
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-400">Nenhum aluno encontrado para os filtros atuais.</td></tr>';
+        return;
+    }
+    
+    // Sort by status (active/pending first), then name
+    filtered.sort((a, b) => {
+        const hasA = a.tuitionPlanId ? 1 : 0;
+        const hasB = b.tuitionPlanId ? 1 : 0;
+        if (hasA !== hasB) return hasB - hasA;
+        return a.firstName.localeCompare(b.firstName);
+    });
+
+    // Pagination for performance (show top 200 max)
+    const displayList = filtered.slice(0, 200);
+
+    let html = '';
+    displayList.forEach(s => {
+        let planName = 'Nenhum plano associado';
+        if (s.tuitionPlanId) {
+            const plan = window.tuitionPlansCache.find(p => p.id === s.tuitionPlanId);
+            if (plan) planName = plan.name;
+        }
+        
+        let statusBadge = '<span class="text-gray-500 border border-gray-700 px-2 py-1 rounded text-xs">Sem Plano</span>';
+        if (s.tuitionStatus === 'pending') statusBadge = '<span class="text-yellow-500 bg-yellow-900/30 border border-yellow-800 px-2 py-1 rounded text-xs">Aguardando Pgto</span>';
+        if (s.tuitionStatus === 'active' || s.tuitionStatus === 'authorized') statusBadge = '<span class="text-green-500 bg-green-900/30 border border-green-800 px-2 py-1 rounded text-xs">Mensalidade Ativa</span>';
+        if (s.tuitionStatus === 'cancelled') statusBadge = '<span class="text-red-500 bg-red-900/30 border border-red-800 px-2 py-1 rounded text-xs">Cancelado</span>';
+        
+        html += `
+            <tr class="border-b border-gray-800 hover:bg-gray-700/50 transition-colors">
+                <td class="p-4 font-medium text-white">${s.firstName} ${s.lastName}</td>
+                <td class="p-4 text-gray-400 text-sm">${s.unitId || 'N/A'}</td>
+                <td class="p-4"><span class="${s.tuitionPlanId ? 'text-yellow-500 font-semibold' : 'text-gray-500'}">${planName}</span></td>
+                <td class="p-4 text-center">${statusBadge}</td>
+                <td class="p-4 text-right">
+                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" class="inline-flex items-center justify-center text-blue-400 hover:text-white bg-blue-900/30 hover:bg-blue-600 px-3 py-2 rounded transition-colors text-sm font-medium">
+                        <i class="fas fa-external-link-alt mr-2"></i> Abrir Ficha
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+    
+    if (filtered.length > 200) {
+        html += `<tr><td colspan="5" class="text-center p-4 text-gray-400 text-sm">Mostrando os 200 primeiros resultados. Refine sua busca.</td></tr>`;
+    }
+    
+    tableBody.innerHTML = html;
 }

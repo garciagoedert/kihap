@@ -255,12 +255,38 @@ const cancelPreapproval = async (preapprovalId, customToken = null) => {
     }
 };
 
+const createTuitionPreapproval = async (planName, amountCentavos, userEmail, customToken, frequency = 1, frequencyType = 'months') => {
+    const client = getMPClient(customToken);
+    
+    const preapprovalData = {
+        reason: planName,
+        payer_email: userEmail,
+        auto_recurring: {
+            frequency: frequency,
+            frequency_type: frequencyType,
+            transaction_amount: amountCentavos / 100, // Preço convertido de centavos
+            currency_id: 'BRL'
+        },
+        back_url: "https://www.kihap.com.br/members/assinatura.html",
+        status: "pending"
+    };
+
+    try {
+        const response = await client.post('/preapproval', preapprovalData);
+        console.log('[createTuitionPreapproval] Assinatura criada com sucesso:', response.data.id);
+        return response.data; // contém o init_point
+    } catch (error) {
+        console.error('[createTuitionPreapproval] Erro:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     createMercadoPagoPreference,
     createCartMercadoPagoPreference,
     getMercadoPagoPayment,
     getMercadoPagoPreference,
     exchangeOAuthCode,
-    getPreapprovalStatus,
-    cancelPreapproval
+    cancelPreapproval,
+    createTuitionPreapproval
 };

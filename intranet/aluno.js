@@ -8,6 +8,9 @@ import { collection, getDocs, query, orderBy, addDoc, Timestamp, where } from "h
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
 const updateStudentPermissions = httpsCallable(functions, 'updateStudentPermissions');
 const updateStudentBadges = httpsCallable(functions, 'updateStudentBadges');
+const updateLocalStudent = httpsCallable(functions, 'updateLocalStudent');
+const getStudentFinancialHub = httpsCallable(functions, 'getStudentFinancialHub');
+const cancelTuitionSubscription = httpsCallable(functions, 'cancelTuitionSubscription');
 
 // Cache
 let currentStudent = null;
@@ -35,6 +38,11 @@ export function setupAlunoPage() {
             await loadStudentData(studentId, currentUnitId); // Passar o ID da unidade
         }
     });
+
+    // Edit Modal Listeners (Static)
+    document.getElementById('closeEditModalBtn').onclick = closeEditModal;
+    document.getElementById('cancelEditBtn').onclick = closeEditModal;
+    document.getElementById('editStudentForm').onsubmit = handleEditSubmit;
 }
 
 async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
@@ -76,7 +84,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
     } catch (error) {
         console.error("Erro ao carregar dados do aluno:", error);
         const mainContent = document.getElementById('main-content');
-        mainContent.innerHTML = `<div class="text-red-500 text-center p-8">Erro ao carregar dados do aluno: ${error.message}</div>`;
+        if (mainContent) mainContent.innerHTML = `<div class="text-red-500 text-center p-8">Erro ao carregar dados do aluno: ${error.message}</div>`;
     }
 }
 
@@ -113,7 +121,7 @@ async function renderStudentProfile() {
 }
 
 function renderDetailsTab() {
-    const detailsContainer = document.getElementById('tab-content-details');
+    const detailsContainer = document.getElementById('details-grid-container');
 
     const translations = {
         idMember: "ID do Aluno",
@@ -125,11 +133,15 @@ function renderDetailsTab() {
         birthDate: "Data de Nascimento",
         updateDate: "Última Atualização",
         address: "Endereço",
-        nameEmployeeInstructor: "Professor"
+        nameEmployeeInstructor: "Professor",
+        responsible: "Responsável",
+        origin: "Origem / Como conheceu",
+        rankType: "Categoria",
+        belt: "Faixa"
     };
 
     const formatValue = (key, value) => {
-        if (value === null || value === '') return '<i class="text-gray-500">Não informado</i>';
+        if (value === null || value === '' || value === undefined) return '<i class="text-gray-500">Não informado</i>';
         switch (key) {
             case 'accessBlocked':
                 return value ? '<span class="text-red-500">Sim</span>' : '<span class="text-green-500">Não</span>';
@@ -144,7 +156,7 @@ function renderDetailsTab() {
 
     let html = '<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">';
     for (const key in translations) {
-        if (currentStudent.hasOwnProperty(key)) {
+        if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt'].includes(key)) {
             html += `
                 <div>
                     <dt class="font-semibold text-gray-400">${translations[key]}</dt>
@@ -155,13 +167,17 @@ function renderDetailsTab() {
     }
     html += '</dl>';
     detailsContainer.innerHTML = html;
+
+    // Attach edit button listener
+    document.getElementById('edit-details-btn').onclick = openEditModal;
 }
 
 function setupEventListeners() {
     // Tab switching
-    const tabs = ['details', 'permissions', 'physical-test', 'badges'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
     tabs.forEach(tabId => {
-        document.getElementById(`tab-${tabId}`).addEventListener('click', () => switchTab(tabId));
+        const el = document.getElementById(`tab-${tabId}`);
+        if (el) el.addEventListener('click', () => switchTab(tabId));
     });
 
     // Action buttons
@@ -169,14 +185,15 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
-
 }
 
 function switchTab(activeTabId) {
-    const tabs = ['details', 'permissions', 'physical-test', 'badges'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
     tabs.forEach(tabId => {
         const tabButton = document.getElementById(`tab-${tabId}`);
         const tabContent = document.getElementById(`tab-content-${tabId}`);
+
+        if (!tabButton || !tabContent) return;
 
         const isActive = tabId === activeTabId;
 
@@ -186,6 +203,161 @@ function switchTab(activeTabId) {
         tabButton.classList.toggle('text-gray-400', !isActive);
         tabButton.classList.toggle('hover:text-white', !isActive);
     });
+
+    if (activeTabId === 'financial') {
+        renderFinancialTab();
+    }
+}
+
+async function renderFinancialTab() {
+    const statusEl = document.getElementById('fin-status');
+    const countEl = document.getElementById('fin-count');
+    const startEl = document.getElementById('fin-start-date');
+    const mpContainer = document.getElementById('mp-details-container');
+    const cancelContainer = document.getElementById('cancel-subscription-container');
+
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    mpContainer.innerHTML = '<p class="text-gray-500 italic">Buscando dados no Mercado Pago...</p>';
+
+    try {
+        const result = await getStudentFinancialHub({
+            idMember: currentStudent.idMember,
+            unitId: currentUnitId || currentStudent.unitId
+        });
+        const data = result.data;
+
+        // Status Map
+        const statusMap = {
+            'active': '<span class="text-green-500">Ativo</span>',
+            'pending': '<span class="text-yellow-500">Pendente</span>',
+            'overdue': '<span class="text-red-500">Atrasado</span>',
+            'cancelled': '<span class="text-gray-500">Cancelado</span>',
+            'none': '<span class="text-gray-600">Sem Assinatura</span>'
+        };
+
+        statusEl.innerHTML = statusMap[data.tuitionStatus] || data.tuitionStatus;
+        startEl.textContent = data.registeredAt ? new Date(data.registeredAt).toLocaleDateString('pt-BR') : 'N/A';
+        
+        if (data.mpDetails) {
+            const mp = data.mpDetails;
+            countEl.textContent = `${mp.summarized?.charged_quantity || 0} parcelas`;
+            
+            let mpHtml = `
+                <div class="grid grid-cols-2 gap-2">
+                    <span class="text-gray-500">ID da Assinatura:</span>
+                    <span class="text-gray-300">${mp.id}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <span class="text-gray-500">Plano:</span>
+                    <span class="text-gray-300">${mp.reason}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <span class="text-gray-500">Status no MP:</span>
+                    <span class="text-gray-300 capitalize">${mp.status}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <span class="text-gray-500">Próxima Cobrança:</span>
+                    <span class="text-gray-300">${mp.next_payment_date ? new Date(mp.next_payment_date).toLocaleDateString('pt-BR') : 'Finalizada'}</span>
+                </div>
+            `;
+            mpContainer.innerHTML = mpHtml;
+
+            if (mp.status === 'authorized' || mp.status === 'pending') {
+                cancelContainer.classList.remove('hidden');
+                document.getElementById('cancel-sub-btn').onclick = () => handleCancelSubscription(mp.id);
+            } else {
+                cancelContainer.classList.add('hidden');
+            }
+        } else {
+            countEl.textContent = '0 parcelas';
+            mpContainer.innerHTML = '<p class="text-gray-500 italic">Nenhuma assinatura vinculada no Mercado Pago.</p>';
+            cancelContainer.classList.add('hidden');
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar hub financeiro:", error);
+        mpContainer.innerHTML = `<p class="text-red-500">Erro ao carregar dados: ${error.message}</p>`;
+    }
+}
+
+async function handleCancelSubscription(preapprovalId) {
+    showConfirm(
+        "Tem certeza que deseja cancelar esta assinatura? As cobranças futuras serão interrompidas.",
+        async () => {
+            const btn = document.getElementById('cancel-sub-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cancelando...';
+
+            try {
+                await cancelTuitionSubscription({
+                    studentId: currentStudent.idMember,
+                    preapprovalId: preapprovalId,
+                    unitId: currentUnitId || currentStudent.unitId
+                });
+                alert("Assinatura cancelada com sucesso.");
+                renderFinancialTab();
+            } catch (error) {
+                console.error("Erro ao cancelar:", error);
+                alert("Erro ao cancelar assinatura: " + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Cancelar Assinatura';
+            }
+        }
+    );
+}
+
+// Modal Logic
+function openEditModal() {
+    const modal = document.getElementById('editStudentModal');
+    const form = document.getElementById('editStudentForm');
+    
+    // Fill form
+    form.idMember.value = currentStudent.idMember;
+    form.firstName.value = currentStudent.firstName || '';
+    form.lastName.value = currentStudent.lastName || '';
+    form.email.value = currentStudent.contacts?.find(c => c.idContactType === 4)?.description || '';
+    form.phone.value = currentStudent.phone || currentStudent.contacts?.find(c => c.idContactType === 1)?.description || '';
+    form.cpf.value = currentStudent.cpf || currentStudent.document || '';
+    form.address.value = currentStudent.address || '';
+    form.responsible.value = currentStudent.responsible || '';
+    form.origin.value = currentStudent.origin || '';
+    form.rankType.value = currentStudent.rankType || 'Tradicional';
+    form.belt.value = currentStudent.belt || 'Branca Recomendada';
+    
+    if (currentStudent.birthDate) {
+        form.birthDate.value = new Date(currentStudent.birthDate).toISOString().split('T')[0];
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editStudentModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function handleEditSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitEditBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
+
+    const formData = new FormData(e.target);
+    const updates = Object.fromEntries(formData.entries());
+
+    try {
+        await updateLocalStudent(updates);
+        alert("Dados atualizados com sucesso!");
+        location.reload(); // Refresh to show new data
+    } catch (error) {
+        console.error("Erro ao salvar:", error);
+        alert("Erro ao salvar: " + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 }
 
 async function handleInviteClick() {
@@ -341,6 +513,7 @@ async function handleSaveBadges() {
 
 async function populatePhysicalTestTab() {
     const historyContainer = document.getElementById('physical-test-history');
+    if (!historyContainer) return;
     historyContainer.innerHTML = '<p class="text-gray-500">Carregando histórico...</p>';
 
     const testsQuery = query(
@@ -399,7 +572,7 @@ async function handleSavePhysicalTest() {
         button.textContent = 'Adicionar Log';
     }
 }
-// Certificate Modal Logic
+
 function setupCertificateHandlers() {
     const certModal = document.getElementById('certificate-modal');
     const closeCertModalBtn = document.getElementById('close-cert-modal');
@@ -409,17 +582,10 @@ function setupCertificateHandlers() {
     const certInstructorInput = document.getElementById('cert-instructor');
     const generateCertBtn = document.getElementById('generate-certificate-btn');
 
-    if (!certModal || !generateCertBtn) {
-        console.warn("Certificate modal elements not found. Skipping setup.");
-        return;
-    }
+    if (!certModal || !generateCertBtn) return;
 
     function openCertModal() {
-        if (!currentStudent) {
-            alert("Dados do aluno não carregados.");
-            return;
-        }
-        // Set default date to today
+        if (!currentStudent) return;
         certDateInput.valueAsDate = new Date();
         certModal.classList.remove('hidden');
         certModal.classList.add('flex');
@@ -430,7 +596,6 @@ function setupCertificateHandlers() {
         certModal.classList.remove('flex');
     }
 
-    // Event Listeners
     generateCertBtn.addEventListener('click', openCertModal);
     closeCertModalBtn.addEventListener('click', closeCertModal);
     cancelCertBtn.addEventListener('click', closeCertModal);
@@ -438,7 +603,7 @@ function setupCertificateHandlers() {
     confirmGenerateCertBtn.addEventListener('click', async () => {
         const belt = document.getElementById('cert-belt').value;
         const dateVal = certDateInput.value;
-        const instructor = certInstructorInput.value || "Mestre Kim"; // Default if empty
+        const instructor = certInstructorInput.value || "Mestre Kim";
 
         if (!dateVal) {
             alert("Por favor, selecione uma data.");
@@ -451,43 +616,30 @@ function setupCertificateHandlers() {
         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...';
 
         try {
-            // 1. Create Certificate Record in Firestore
             const certificateData = {
                 studentName: `${currentStudent.firstName} ${currentStudent.lastName}`,
                 studentId: currentStudent.idMember,
                 unitId: currentUnitId || 'unknown',
-                date: Timestamp.fromDate(new Date(dateVal + 'T12:00:00')), // Noon to avoid timezone issues
+                date: Timestamp.fromDate(new Date(dateVal + 'T12:00:00')),
                 type: `Faixa ${belt}`,
-                issuer: instructor, // Use instructor name as issuer for display
-                createdBy: auth.currentUser.email // Keep track of who generated it
+                issuer: instructor,
+                createdBy: auth.currentUser.email
             };
 
             const docRef = await addDoc(collection(db, "certificates"), certificateData);
             const certId = docRef.id;
 
-            // 2. Generate QR Code using QRious
             const validationUrl = `https://intranet-kihap.web.app/validar-certificado.html?id=${certId}`;
-
-            const qr = new QRious({
-                value: validationUrl,
-                size: 150
-            });
+            const qr = new QRious({ value: validationUrl, size: 150 });
             const qrCodeDataUrl = qr.toDataURL();
 
-            // 3. Generate PDF
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4'
-            });
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-            // Background (Optional - simple border for now)
             doc.setLineWidth(2);
-            doc.setDrawColor(212, 175, 55); // Gold color
+            doc.setDrawColor(212, 175, 55);
             doc.rect(10, 10, 277, 190);
 
-            // Header
             doc.setFont("helvetica", "bold");
             doc.setFontSize(40);
             doc.setTextColor(30, 30, 30);
@@ -497,7 +649,6 @@ function setupCertificateHandlers() {
             doc.setFont("helvetica", "normal");
             doc.text("DE GRADUAÇÃO", 148.5, 50, { align: "center" });
 
-            // Body
             doc.setFontSize(14);
             doc.text("Certificamos que", 148.5, 70, { align: "center" });
 
@@ -513,42 +664,34 @@ function setupCertificateHandlers() {
 
             doc.setFont("helvetica", "bold");
             doc.setFontSize(24);
-            doc.setTextColor(212, 175, 55); // Gold
+            doc.setTextColor(212, 175, 55);
             doc.text(`FAIXA ${belt.toUpperCase()}`, 148.5, 115, { align: "center" });
 
-            // Date and Instructor
             const dateObj = new Date(dateVal + 'T12:00:00');
             const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-
             doc.setFont("helvetica", "normal");
             doc.setFontSize(12);
             doc.setTextColor(60, 60, 60);
             doc.text(`Florianópolis, ${formattedDate}`, 148.5, 140, { align: "center" });
 
-            // Signatures line
             doc.setLineWidth(0.5);
             doc.setDrawColor(0, 0, 0);
-            doc.line(100, 170, 197, 170); // Center line
-
+            doc.line(100, 170, 197, 170);
             doc.setFontSize(12);
             doc.text(instructor, 148.5, 175, { align: "center" });
             doc.setFontSize(10);
             doc.text("Instrutor Responsável", 148.5, 180, { align: "center" });
 
-            // QR Code
             doc.addImage(qrCodeDataUrl, 'PNG', 240, 150, 30, 30);
             doc.setFontSize(8);
             doc.text("Validar Autenticidade", 255, 185, { align: "center" });
 
-            // Save PDF
             doc.save(`Certificado_${currentStudent.firstName}_${belt}.pdf`);
-
             closeCertModal();
             alert("Certificado gerado com sucesso!");
-
         } catch (error) {
-            console.error("Erro ao gerar certificado:", error);
-            alert("Erro ao gerar certificado. Tente novamente.");
+            console.error("Erro ao gerar:", error);
+            alert("Erro ao gerar certificado.");
         } finally {
             button.disabled = false;
             button.textContent = originalText;
@@ -556,7 +699,6 @@ function setupCertificateHandlers() {
     });
 }
 
-// Função auxiliar para encontrar usuário (deve ser otimizada no backend no futuro)
 async function findUserByEvoId(evoId) {
     try {
         const q = query(collection(db, "users"), where("evoMemberId", "==", evoId));
@@ -566,7 +708,7 @@ async function findUserByEvoId(evoId) {
             return { id: doc.id, ...doc.data() };
         }
     } catch (e) {
-        console.warn("Permissão negada para buscar usuário. Funcionalidades podem ser limitadas.");
+        console.warn("Permissão negada para buscar usuário.");
     }
     return null;
 }
