@@ -103,17 +103,26 @@ export function setupAlunosPage() {
             // --- Registration Modal Listeners ---
             if (addStudentBtn) {
                 addStudentBtn.addEventListener('click', () => {
-                    if (registerModal) registerModal.classList.remove('hidden');
+                    if (registerModal) {
+                        registerModal.classList.remove('hidden');
+                        registerModal.classList.add('flex');
+                    }
                 });
             }
             if (closeRegisterBtn) {
                 closeRegisterBtn.addEventListener('click', () => {
-                    if (registerModal) registerModal.classList.add('hidden');
+                    if (registerModal) {
+                        registerModal.classList.add('hidden');
+                        registerModal.classList.remove('flex');
+                    }
                 });
             }
             if (cancelRegBtn) {
                 cancelRegBtn.addEventListener('click', () => {
-                    if (registerModal) registerModal.classList.add('hidden');
+                    if (registerModal) {
+                        registerModal.classList.add('hidden');
+                        registerModal.classList.remove('flex');
+                    }
                 });
             }
             if (registerForm) {
@@ -143,7 +152,10 @@ export function setupAlunosPage() {
                     try {
                         await registerLocalStudent(studentData);
                         alert('✅ Aluno cadastrado com sucesso!');
-                        if (registerModal) registerModal.classList.add('hidden');
+                        if (registerModal) {
+                            registerModal.classList.add('hidden');
+                            registerModal.classList.remove('flex');
+                        }
                         registerForm.reset();
                         loadStudents();
                     } catch (error) {
@@ -365,11 +377,15 @@ export function setupAlunosPage() {
             // "Novo Aluno" is now visible to all intranet users
             if (addStudentBtn) addStudentBtn.classList.remove('hidden');
             
-            // "Limpar Lixo" and other features stay admin-only
+            // "Limpar Lixo", Sync and Batch Password features stay admin-only
             if (isAdmin) {
                 if (cleanupTrashBtn) cleanupTrashBtn.classList.remove('hidden');
+                if (batchPasswordBtn) batchPasswordBtn.classList.remove('hidden');
+                if (syncEvoBtn) syncEvoBtn.classList.remove('hidden');
             } else {
                 if (cleanupTrashBtn) cleanupTrashBtn.classList.add('hidden');
+                if (batchPasswordBtn) batchPasswordBtn.classList.add('hidden');
+                if (syncEvoBtn) syncEvoBtn.classList.add('hidden');
             }
         }
     });
