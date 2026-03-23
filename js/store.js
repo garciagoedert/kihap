@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(rotateBanners, 5000); // Rotate every 5 seconds
     };
 
+    let allProducts = [];
+
     const fetchPublicProducts = async () => {
         if (!productsGrid) return;
         productsGrid.innerHTML = '<p class="text-center col-span-full">Carregando produtos...</p>';
@@ -61,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 where('visible', '==', true)
             );
             const querySnapshot = await getDocs(q);
-            const products = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            displayProducts(products);
+            displayProducts(allProducts);
         } catch (error) {
             console.error('Error fetching public products:', error);
             productsGrid.innerHTML = '<p class="text-center col-span-full text-red-500">Erro ao carregar produtos.</p>';
@@ -73,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayProducts = (products) => {
         productsGrid.innerHTML = '';
         if (products.length === 0) {
-            productsGrid.innerHTML = '<p class="text-center col-span-full">Nenhum produto disponível no momento.</p>';
+            productsGrid.innerHTML = '<p class="text-center col-span-full py-12 text-gray-400">Nenhum produto encontrado.</p>';
             return;
         }
 
@@ -84,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <img src="${product.imageUrl || 'imgs/placeholder.jpg'}" alt="${product.name}" class="course-card-img">
                     <div class="course-card-content p-6">
                         <h3 class="text-xl font-bold mb-2">${product.name}</h3>
-                        <p class="text-gray-400 mb-4">${product.description || ''}</p>
+                        <p class="text-gray-400 mb-4 line-clamp-2">${product.description || ''}</p>
                         <div class="text-2xl font-black text-yellow-500">${price}</div>
                     </div>
                 </a>
@@ -92,6 +94,26 @@ document.addEventListener('DOMContentLoaded', () => {
             productsGrid.innerHTML += productCard;
         });
     };
+
+    // Search Logic
+    const searchInput = document.getElementById('store-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            if (!searchTerm) {
+                displayProducts(allProducts);
+                return;
+            }
+
+            const filtered = allProducts.filter(product => {
+                const name = (product.name || '').toLowerCase();
+                const description = (product.description || '').toLowerCase();
+                return name.includes(searchTerm) || description.includes(searchTerm);
+            });
+
+            displayProducts(filtered);
+        });
+    }
 
     fetchActiveBanners();
     fetchPublicProducts();
