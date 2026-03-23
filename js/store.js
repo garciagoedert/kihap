@@ -24,39 +24,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!banners || banners.length === 0) return;
         
         bannerContainer.innerHTML = `
-            <div class="swiper banner-swiper rounded-xl overflow-hidden shadow-2xl">
-                <div class="swiper-wrapper">
-                    ${banners.map((banner, index) => `
-                        <div class="swiper-slide">
-                            <a href="${banner.link || '#'}" target="_blank" class="block w-full h-full relative group">
-                                <img src="${banner.imageUrl}" alt="Banner ${index + 1}" class="w-full h-full object-cover aspect-[2/1] md:aspect-[4/1]">
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                            </a>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="swiper-pagination !bottom-4"></div>
+            <div class="banner-wrapper aspect-[2/1] md:aspect-[4/1]">
+                ${banners.map((banner, index) => `
+                    <div class="banner-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+                        <a href="${banner.link || '#'}" target="_blank" class="block h-full">
+                            <img src="${banner.imageUrl}" alt="Banner ${index + 1}" class="w-full h-full object-cover">
+                        </a>
+                    </div>
+                `).join('')}
             </div>
         `;
 
-        // Initialize Swiper
-        new Swiper('.banner-swiper', {
-            loop: true,
-            autoplay: {
-                delay: 5000,
-                disableOnInteraction: false,
-            },
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-                dynamicBullets: true,
-            },
-            effect: 'fade',
-            fadeEffect: {
-                crossFade: true
-            },
-            speed: 1000,
-        });
+        const slides = bannerContainer.querySelectorAll('.banner-slide');
+        if (slides.length <= 1) return;
+
+        let currentIndex = 0;
+        const rotateBanners = () => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+        };
+
+        setInterval(rotateBanners, 5000);
     };
 
     let allProducts = [];
