@@ -22,22 +22,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const displayBanners = (banners) => {
         if (!banners || banners.length === 0) return;
+        
+        // Create the wrapper with a fixed aspect ratio to prevent layout shift
+        // Using a wider aspect ratio (3/1 or 4/1) to make it shorter
+        bannerContainer.innerHTML = `
+            <div class="banner-wrapper aspect-[4/1] md:aspect-[4/1] aspect-[2/1]">
+                ${banners.map((banner, index) => `
+                    <div class="banner-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+                        <a href="${banner.link || '#'}" target="_blank" class="block h-full">
+                            <img src="${banner.imageUrl}" alt="Banner ${index + 1}" class="w-full h-full object-cover">
+                        </a>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        const slides = bannerContainer.querySelectorAll('.banner-slide');
+        if (slides.length <= 1) return;
+
         let currentIndex = 0;
+        const rotateBanners = () => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+        };
 
-        function showNextBanner() {
-            const banner = banners[currentIndex];
-            bannerContainer.innerHTML = `
-                <a href="${banner.link || '#'}" target="_blank" class="block">
-                    <img src="${banner.imageUrl}" alt="Banner" class="w-full h-auto rounded-lg shadow-lg">
-                </a>
-            `;
-            currentIndex = (currentIndex + 1) % banners.length;
-        }
-
-        if (banners.length > 1) {
-            setInterval(showNextBanner, 5000); // Troca a cada 5 segundos
-        }
-        showNextBanner(); // Mostra o primeiro banner imediatamente
+        setInterval(rotateBanners, 5000); // Rotate every 5 seconds
     };
 
     const fetchPublicProducts = async () => {
