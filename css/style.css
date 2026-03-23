@@ -471,31 +471,16 @@ body.no-scroll {
     }
 }
 
-/* Banner Slider Styles */
-.banner-wrapper {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    background-color: #1a1a1a; /* Placeholder color */
-}
-
-.banner-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.8s ease-in-out;
-    z-index: 0;
-}
-
-.banner-slide.active {
+/* Banner Swiper Customizations */
+.banner-swiper .swiper-pagination-bullet {
+    background: rgba(255, 255, 255, 0.5);
     opacity: 1;
-    z-index: 10;
 }
 
-.banner-slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.banner-swiper .swiper-pagination-bullet-active {
+    background: #FFC107 !important;
+}
+
+.banner-swiper {
+    --swiper-theme-color: #FFC107;
 }
