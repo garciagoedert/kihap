@@ -10,24 +10,55 @@
 </head>
 <body class="antialiased bg-gray-900 text-gray-200">
 
-    <!-- Header -->
-    <div id="header-container"></div>
+    <!-- Custom Store Header -->
+    <header class="bg-black/80 backdrop-blur-md border-b border-gray-800 z-50">
+        <div class="container mx-auto px-6">
+            <!-- Main Row: Logo, Search, Icons -->
+            <div class="flex items-center justify-between py-3 gap-3 md:gap-12">
+                <!-- Logo: Favicon on mobile, full Logo on desktop -->
+                <a href="/" class="shrink-0">
+                    <img src="imgs/logo.png" alt="KIHAP" class="h-8 md:h-10 hidden sm:block">
+                    <img src="imgs/favicon.png" alt="K" class="h-8 sm:hidden">
+                </a>
 
-    <main class="py-16">
-        <section class="container mx-auto px-6">
-            <div id="banner-container" class="mb-12"></div>
-            
-            <!-- Search Bar -->
-            <div class="max-w-2xl mx-auto mb-12">
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-500 group-focus-within:text-yellow-500 transition-colors"></i>
+                <!-- Integrated Search Bar -->
+                <div class="flex-1 max-w-2xl relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fas fa-search text-xs md:text-sm"></i>
                     </div>
                     <input type="text" id="store-search" 
-                        class="block w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 transition-all backdrop-blur-sm"
-                        placeholder="Buscar produtos...">
+                        class="block w-full pl-8 pr-4 py-2 bg-white rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 text-xs md:text-sm"
+                        placeholder="Buscar...">
+                </div>
+
+                <!-- Icons Row -->
+                <div class="flex items-center gap-4 shrink-0">
+                    <a href="intranet/login.html" class="text-gray-400 hover:text-white transition hidden md:block">
+                        <i class="far fa-user text-xl"></i>
+                    </a>
+                    <!-- Mobile Menu Trigger -->
+                    <button id="mobile-menu-button" class="md:hidden text-white" aria-label="Abrir menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
                 </div>
             </div>
+
+            <!-- Bottom Row: Navigation / Categories -->
+            <nav class="flex items-center justify-center gap-6 md:gap-12 py-1 overflow-x-auto no-scrollbar border-t border-gray-800/50" id="category-filters">
+                <!-- Categories will be injected here as text links -->
+                <button class="category-chip active py-3 px-1 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 whitespace-nowrap transition-all" data-category="all">
+                    Todos <i class="fas fa-chevron-down ml-1 text-[10px] opacity-50"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="py-12">
+        <section class="container mx-auto px-6">
+            <div id="banner-container" class="mb-12"></div>
 
             <h1 class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-12">Nossos Produtos</h1>
             <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -38,6 +69,33 @@
 
     <!-- Footer -->
     <div id="footer-container"></div>
+
+    <!-- Mobile Menu Components -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+    <div id="mobile-menu" class="mobile-menu">
+        <div class="p-6 flex flex-col justify-between h-full">
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <img src="imgs/favicon.png" alt="Kihap Logo" class="h-8">
+                    <button id="mobile-menu-close-button" class="text-white" aria-label="Fechar menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <nav class="flex flex-col space-y-6 text-xl">
+                    <a href="artes-marciais.html" class="text-gray-300 hover:text-yellow-500 transition">Artes Marciais</a>
+                    <a href="desenvolvimento-pessoal.html" class="text-gray-300 hover:text-yellow-500 transition">Desenvolvimento Pessoal</a>
+                    <a href="store.html" class="text-gray-300 hover:text-yellow-500 transition">Store</a>
+                </nav>
+            </div>
+            <div>
+                <a href="intranet/login.html" class="w-full block btn-gradient text-black text-center font-bold py-3 px-8 rounded-lg">
+                    Área do Aluno
+                </a>
+            </div>
+        </div>
+    </div>
 
     <script src="js/script.js"></script>
     <script type="module" src="js/cart.js"></script>

@@ -61,6 +61,7 @@ export async function setupStorePage() {
     const productIdInput = document.getElementById('product-id');
     const productNameInput = document.getElementById('product-name');
     const productPriceInput = document.getElementById('product-price');
+    const productCategoryInput = document.getElementById('product-category');
     const productDescriptionInput = document.getElementById('product-description');
     const productImageInput = document.getElementById('product-image');
     const priceTypeRadios = document.querySelectorAll('input[name="price-type"]');
@@ -87,6 +88,9 @@ export async function setupStorePage() {
     const productIsSubscriptionInput = document.getElementById('product-is-subscription');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const productAskProfessorInput = document.getElementById('product-ask-professor');
+    const productHasSizesInput = document.getElementById('product-has-sizes');
+    const productSizesContainer = document.getElementById('product-sizes-container');
+    const productSizesInput = document.getElementById('product-sizes');
     const productCustomUnitsInput = document.getElementById('product-custom-units');
     const recommendedProductsSelect = document.getElementById('recommended-products');
     const productMpAccountSelect = document.getElementById('product-mp-account');
@@ -650,6 +654,7 @@ export async function setupStorePage() {
     const resetProductForm = () => {
         productForm.reset();
         productIdInput.value = '';
+        if (productCategoryInput) productCategoryInput.value = '';
         productImageInput.dataset.existingImageUrl = '';
         productVisibleInput.checked = false;
         productAvailableInput.checked = true; // Default to available
@@ -657,9 +662,15 @@ export async function setupStorePage() {
         productIsTicketInput.checked = false;
         if (productIsSubscriptionInput) productIsSubscriptionInput.checked = false;
         productAvailabilityDateInput.value = '';
+        productHasSizesInput.checked = false;
+        productSizesContainer.classList.add('hidden');
+        productSizesInput.value = '';
         productAskProfessorInput.checked = false;
         productCustomUnitsInput.value = '';
         priceVariantsList.innerHTML = '';
+        lotesList.innerHTML = '';
+        kitItemsList.innerHTML = '';
+        if (addonsList) addonsList.innerHTML = '';
         recommendedProductsSelect.value = '';
         Array.from(recommendedProductsSelect.options).forEach(option => option.selected = false);
         document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
@@ -696,6 +707,7 @@ export async function setupStorePage() {
             const priceType = document.querySelector('input[name="price-type"]:checked').value;
             const productData = {
                 name: productNameInput.value,
+                category: productCategoryInput.value || '',
                 description: productDescriptionInput.value,
                 imageUrl: imageUrl,
                 priceType: priceType,
@@ -704,6 +716,8 @@ export async function setupStorePage() {
                 acessoPublico: productPublicInput.checked,
                 isTicket: productIsTicketInput.checked,
                 availabilityDate: productAvailabilityDateInput.value || null,
+                hasSizes: productHasSizesInput.checked,
+                sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
                 askProfessor: productAskProfessorInput.checked,
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
@@ -765,6 +779,20 @@ export async function setupStorePage() {
                 productData.kitItems = kitItems;
             }
 
+            // Handle Addons
+            const addons = [];
+            if (addonsList) {
+                const addonElements = addonsList.querySelectorAll('.addon-item');
+                addonElements.forEach(item => {
+                    const name = item.querySelector('input[name="addon-name"]').value;
+                    const price = parseInt(item.querySelector('input[name="addon-price"]').value, 10);
+                    if (name && !isNaN(price)) {
+                        addons.push({ name, price });
+                    }
+                });
+            }
+            productData.addons = addons;
+
             if (id) {
                 const productRef = doc(db, 'products', id);
                 await updateDoc(productRef, productData);
@@ -808,6 +836,7 @@ export async function setupStorePage() {
                 productIdInput.value = product.id;
                 populateRecommendedProductsSelect(); // Repopulate to exclude current product
                 productNameInput.value = product.name;
+                if (productCategoryInput) productCategoryInput.value = product.category || '';
                 productDescriptionInput.value = product.description;
                 productImageInput.dataset.existingImageUrl = product.imageUrl || '';
 
@@ -847,6 +876,14 @@ export async function setupStorePage() {
                     productPriceInput.value = product.price;
                 }
 
+                // Handle Addons load
+                if (addonsList) {
+                    addonsList.innerHTML = '';
+                    if (product.addons && product.addons.length > 0) {
+                        product.addons.forEach(addon => addAddon(addon.name, addon.price));
+                    }
+                }
+
                 // Handle Subscription toggle
                 if (product.isSubscription || product.priceType === 'subscription') {
                     if (productIsSubscriptionInput) productIsSubscriptionInput.checked = true;
@@ -865,6 +902,14 @@ export async function setupStorePage() {
                 productPublicInput.checked = product.acessoPublico || false;
                 productIsTicketInput.checked = product.isTicket || false;
                 productAvailabilityDateInput.value = product.availabilityDate || '';
+                productHasSizesInput.checked = product.hasSizes || false;
+                if (product.hasSizes) {
+                    productSizesContainer.classList.remove('hidden');
+                    productSizesInput.value = product.sizes ? product.sizes.join(', ') : '';
+                } else {
+                    productSizesContainer.classList.add('hidden');
+                    productSizesInput.value = '';
+                }
                 productAskProfessorInput.checked = product.askProfessor || false;
                 productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
                 
@@ -980,6 +1025,16 @@ export async function setupStorePage() {
         });
     }
 
+    if (productHasSizesInput) {
+        productHasSizesInput.addEventListener('change', () => {
+            if (productHasSizesInput.checked) {
+                productSizesContainer.classList.remove('hidden');
+            } else {
+                productSizesContainer.classList.add('hidden');
+            }
+        });
+    }
+
     const addPriceVariant = (name = '', price = '') => {
         const variantId = Date.now();
         const variantItem = document.createElement('div');
@@ -1043,6 +1098,26 @@ export async function setupStorePage() {
     if (kitItemsList) kitItemsList.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-kit-item-btn')) {
             e.target.closest('.kit-item-row').remove();
+        }
+    });
+
+    const addAddon = (name = '', price = '') => {
+        if (!addonsList) return;
+        const addonItem = document.createElement('div');
+        addonItem.className = 'addon-item flex items-center space-x-2 mb-2';
+        addonItem.innerHTML = `
+            <input type="text" name="addon-name" placeholder="Nome do Addon (ex: Camiseta Extra)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400">&times;</button>
+        `;
+        addonsList.appendChild(addonItem);
+    };
+
+    if (addAddonBtn) addAddonBtn.addEventListener('click', () => addAddon());
+
+    if (addonsList) addonsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-addon-btn')) {
+            e.target.closest('.addon-item').remove();
         }
     });
 
@@ -1154,6 +1229,7 @@ export async function setupStorePage() {
             <p><strong>Unidade:</strong> ${sale.userUnit || 'N/A'}</p>
             <p><strong>Programa:</strong> ${sale.userPrograma || 'N/A'}</p>
             <p><strong>Graduação:</strong> ${sale.userGraduacao || 'N/A'}</p>
+            ${sale.userSize ? `<p><strong class="text-yellow-500">Tamanho:</strong> ${sale.userSize}</p>` : ''}
             ${productDetailsHtml}
             <p><strong>Valor Total:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
             <p><strong>Status do Pagamento:</strong> ${renderStatusTag(sale.paymentStatus)}</p>

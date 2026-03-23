@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formInstance.querySelector('.form-instance-number').textContent = i;
             }
 
-            const fields = ['nome', 'email', 'telefone', 'cpf', 'unidade', 'programa', 'graduacao', 'price-variant-selector'];
+            const fields = ['nome', 'email', 'telefone', 'cpf', 'unidade', 'programa', 'graduacao', 'price-variant-selector', 'size-selector'];
             fields.forEach(field => {
                 const label = formInstance.querySelector(`label[for="${field}"]`);
                 const input = formInstance.querySelector(`[name="${field}"]`);
@@ -255,6 +255,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkboxes.forEach(cb => cb.addEventListener('change', updateTotalPrice));
             } else {
                 if (addonsOptionsContainer) addonsOptionsContainer.classList.add('hidden');
+            }
+
+            const sizeSelectorContainer = formInstance.querySelector('.size-selector-container');
+            const sizeSelector = formInstance.querySelector('[name="size-selector"]');
+            if (productData.hasSizes && productData.sizes && productData.sizes.length > 0) {
+                sizeSelectorContainer.classList.remove('hidden');
+                sizeSelector.required = true;
+                sizeSelector.innerHTML = '<option value="" disabled selected>Escolha o Tamanho</option>';
+                productData.sizes.forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelector.appendChild(option);
+                });
+            } else {
+                sizeSelectorContainer.classList.add('hidden');
+                sizeSelector.required = false;
             }
 
             formsContainer.appendChild(formClone);
@@ -472,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 userPrograma: form.querySelector('[name="programa"]').value,
                 userGraduacao: form.querySelector('.graduacao-container').classList.contains('hidden') ? null : form.querySelector('[name="graduacao"]').value,
                 userProfessor: form.querySelector('[name="professor"]') ? form.querySelector('[name="professor"]').value : null,
+                userSize: form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null,
                 userId: currentUser ? currentUser.uid : null
             };
 

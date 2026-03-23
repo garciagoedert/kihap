@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="font-semibold text-white">${form.userName}</span> (${form.userUnit})
                         <br>
                         Opção: ${form.priceData.variantName || 'Padrão'} ${addontsText}
+                        ${form.userSize ? `<br><span class="text-yellow-500 font-bold">Tamanho: ${form.userSize}</span>` : ''}
                     </div>
                 `;
             });

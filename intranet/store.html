@@ -358,6 +358,12 @@
                                     required>
                             </div>
                             <div class="mb-4">
+                                <label for="product-category" class="block text-sm font-medium text-gray-400">Categoria</label>
+                                <input type="text" id="product-category"
+                                    placeholder="Ex: Uniforme, Equipamento, Kit"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-400 mb-2">Tipo de Preço</label>
                                 <div class="flex items-center space-x-4">
                                     <label class="flex items-center">
@@ -535,6 +541,25 @@
                                             class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
                                     </div>
                                 </label>
+                            </div>
+                            <div class="mb-4 border border-blue-600/30 p-4 rounded-lg bg-blue-900/10">
+                                <label for="product-has-sizes"
+                                    class="flex items-center justify-between text-sm font-bold text-blue-400">
+                                    <span><i class="fas fa-ruler-combined mr-2"></i>Este produto possui tamanhos?</span>
+                                    <div
+                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="product-has-sizes" id="product-has-sizes"
+                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                        <label for="product-has-sizes"
+                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                                    </div>
+                                </label>
+                                <div id="product-sizes-container" class="mt-4 hidden animate-fadeIn">
+                                    <label for="product-sizes" class="block text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Opções de Tamanho (separadas por vírgula)</label>
+                                    <input type="text" id="product-sizes" placeholder="Ex: P, M, G, GG ou 38, 40, 42"
+                                        class="w-full px-4 py-2 text-white bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                                    <p class="text-[10px] text-gray-500 mt-1">Isso habilitará um seletor de tamanho na página do produto.</p>
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label for="product-is-ticket"
