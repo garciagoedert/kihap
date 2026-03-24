@@ -90,20 +90,26 @@ const sendTicketEmail = async (saleId, saleData) => {
             to: saleData.userEmail,
             subject: `Seu Ingresso para ${saleData.productName}`,
             html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
-                    <div style="background-color: #000; padding: 20px; text-align: center;">
-                        <img src="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" width="120" alt="Kihap">
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; border: 1px solid #333; border-radius: 12px; overflow: hidden;">
+                    <div style="background-color: #000; padding: 30px; text-align: center; border-bottom: 2px solid #FFC107;">
+                        <img src="https://kihap.com.br/imgs/logo.png" width="140" alt="Kihap">
                     </div>
-                    <div style="padding: 30px; text-align: center;">
-                        <h1 style="color: #333;">Compra Confirmada!</h1>
-                        <p style="color: #555;">Olá, ${saleData.userName}.</p>
-                        <p style="color: #555;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
-                        <p style="color: #555;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
-                        <div style="margin: 30px 0;">
+                    <div style="padding: 40px; text-align: center;">
+                        <h1 style="color: #FFC107; font-size: 28px; text-transform: uppercase; margin-bottom: 20px;">Compra Confirmada!</h1>
+                        <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName}</strong>.</p>
+                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
+                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
+                        
+                        <div style="margin: 40px 0; background-color: #fff; padding: 20px; display: inline-block; border-radius: 10px;">
                             <img src="${qrCodeDataURL}" alt="QR Code" style="width: 200px;">
                         </div>
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-                        <p style="font-size: 12px; color: #999;">ID da Compra: ${saleId}</p>
+
+                        <div style="margin-top: 30px; text-align: center;">
+                             <a href="https://www.kihap.com.br" style="background-color: #FFC107; color: #000; padding: 15px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; text-transform: uppercase;">Visitar Site</a>
+                        </div>
+                        
+                        <hr style="border: 0; border-top: 1px solid #222; margin: 40px 0;">
+                        <p style="font-size: 11px; color: #555;">ID da Compra: ${saleId}</p>
                     </div>
                 </div>
             `,
@@ -147,17 +153,17 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
 
         const totalFormatted = formatPrice(saleData.amountTotal);
         
-        let detailsHtml = '';
+        let addonsHtml = '';
         if (saleData.selectedAddons && saleData.selectedAddons.length > 0) {
-            detailsHtml += `<div style="margin-top: 10px; padding-left: 15px; border-left: 2px solid #333;">`;
-            saleData.selectedAddons.forEach(addon => {
-                detailsHtml += `
-                    <div style="font-size: 0.85rem; color: #888; margin-bottom: 3px;">
-                        + ${addon.name} <span style="color: #aaa;">(${formatPrice(addon.price)})</span>
-                    </div>
-                `;
-            });
-            detailsHtml += `</div>`;
+            addonsHtml = `
+                <div style="margin-top: 15px;">
+                    ${saleData.selectedAddons.map(addon => `
+                        <div style="font-size: 14px; color: #AAA; margin-top: 4px; border-left: 2px solid #FFC107; padding-left: 10px;">
+                            + ${addon.name} <span style="color: #666; font-size: 12px; margin-left: 5px;">(${formatPrice(addon.price)})</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         const mailOptions = {
@@ -170,24 +176,26 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
                 <head>
                     <style>
                         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background-color: #111; border-radius: 12px; overflow: hidden; border: 1px solid #222; }
-                        .header { background-color: #000; padding: 40px; text-align: center; border-bottom: 2px solid #FFC107; }
+                        .container { max-width: 600px; margin: 20px auto; background-color: #0a0a0a; border-radius: 12px; overflow: hidden; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+                        .header { background-color: #000; padding: 40px; text-align: center; border-bottom: 3px solid #FFC107; }
                         .content { padding: 40px; line-height: 1.6; }
-                        .footer { background-color: #000; padding: 30px; text-align: center; font-size: 11px; color: #555; }
-                        h1 { color: #FFC107; font-size: 24px; font-weight: 800; text-transform: uppercase; margin-top: 0; }
-                        .receipt-box { background-color: #181818; border-radius: 8px; padding: 25px; margin-top: 30px; border: 1px solid #282828; }
-                        .item-name { font-weight: bold; font-size: 18px; color: #fff; display: block; }
-                        .item-variant { font-size: 14px; color: #FFC107; margin-top: 5px; display: block; }
-                        .total-section { margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; text-align: right; }
-                        .total-label { font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-right: 10px; }
-                        .total-value { font-size: 24px; font-weight: 900; color: #FFC107; }
-                        .btn { background-color: #FFC107; color: #000; padding: 15px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 30px; text-transform: uppercase; }
+                        .footer { background-color: #000; padding: 30px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #222; }
+                        h1 { color: #FFC107; font-size: 28px; font-weight: 800; text-transform: uppercase; margin-top: 0; margin-bottom: 20px; }
+                        p { color: #CCCCCC; }
+                        strong { color: #FFFFFF; }
+                        .receipt-box { background-color: #111; border-radius: 10px; padding: 30px; margin-top: 30px; border: 1px solid #222; }
+                        .item-name { font-weight: bold; font-size: 20px; color: #FFF; display: block; margin-bottom: 5px; }
+                        .item-variant { font-size: 14px; color: #FFC107; margin-top: 5px; display: block; font-weight: 600; }
+                        .total-section { margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; text-align: right; }
+                        .total-label { font-size: 14px; font-weight: bold; color: #888; text-transform: uppercase; margin-right: 15px; }
+                        .total-value { font-size: 26px; font-weight: 900; color: #FFC107; }
+                        .btn { background-color: #FFC107; color: #000; padding: 18px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <div class="header">
-                            <img src="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" width="140" alt="Kihap">
+                            <img src="https://kihap.com.br/imgs/logo.png" width="150" alt="Kihap Store">
                         </div>
                         <div class="content">
                             <h1>Compra Confirmada!</h1>
@@ -196,9 +204,9 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
                             
                             <div class="receipt-box">
                                 <span class="item-name">${saleData.productName}</span>
-                                ${saleData.userSize ? `<span class="item-variant">Tamanho: ${saleData.userSize}</span>` : ''}
-                                ${saleData.variationName ? `<span class="item-variant">Variação: ${saleData.variationName}</span>` : ''}
-                                ${detailsHtml}
+                                ${saleData.userSize ? `<span class="item-variant">TAMANHO: ${saleData.userSize}</span>` : ''}
+                                ${saleData.variationName ? `<span class="item-variant">VARIAÇÃO: ${saleData.variationName}</span>` : ''}
+                                ${addonsHtml}
 
                                 <div class="total-section">
                                     <span class="total-label">Total Pago</span>
@@ -210,10 +218,10 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
                                 <a href="https://www.kihap.com.br/store" class="btn">Voltar para a Loja</a>
                             </div>
                             
-                            <p style="margin-top: 40px; font-size: 11px; color: #444; text-align: center;">ID do Pedido: ${saleId}</p>
+                            <p style="margin-top: 50px; font-size: 10px; color: #333; text-align: center; text-transform: uppercase; letter-spacing: 1px;">Identificador do Pedido: ${saleId}</p>
                         </div>
                         <div class="footer">
-                            <p>&copy; 2024 Kihap - Todos os direitos reservados. <br> <a href="https://www.kihap.com.br" style="color: #FFC107; text-decoration: none;">www.kihap.com.br</a></p>
+                            <p>&copy; ${new Date().getFullYear()} Kihap Martial Arts - A Força Para a Mudança. <br> <a href="https://www.kihap.com.br" style="color: #FFC107; text-decoration: none; font-weight: bold; margin-top: 10px; display: inline-block;">www.kihap.com.br</a></p>
                         </div>
                     </div>
                 </body>
