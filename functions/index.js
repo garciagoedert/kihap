@@ -47,68 +47,9 @@ exports.syncPagarmeSalesStatus = functions.https.onCall(async (data, context) =>
     return await syncPagarmeSalesStatus();
 });
 
-// Função para enviar o e-mail com o ingresso
-const sendTicketEmail = async (saleId, saleData) => {
-    console.log(`[sendTicketEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
+// --- FUNÇÕES DE E-MAIL ---
 
-    const gmailEmail = process.env.GMAIL_EMAIL;
-    const gmailPassword = process.env.GMAIL_PASSWORD;
-
-    if (!gmailEmail || !gmailPassword) {
-        console.error('[sendTicketEmail] Erro Crítico: As credenciais do Gmail (email/senha) não estão configuradas no Firebase. Verifique as variáveis de ambiente.');
-        return; // Interrompe a execução se as credenciais não estiverem definidas
-    }
-    console.log(`[sendTicketEmail] Usando o e-mail: ${gmailEmail} para autenticação.`);
-
-    try {
-        // Lazy initialization do transporter para evitar erro de config no deploy
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: gmailEmail,
-                pass: gmailPassword,
-            },
-        });
-        const qrCodeDataURL = await qrcode.toDataURL(saleId);
-
-        const mailOptions = {
-            from: `Kihap <${process.env.GMAIL_EMAIL}>`,
-            to: saleData.userEmail,
-            subject: `Seu Ingresso para ${saleData.productName}`,
-            html: `
-                <h1>Compra Confirmada!</h1>
-                <p>Olá, ${saleData.userName}.</p>
-                <p>Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
-                <p>Apresente este QR Code no dia do evento para fazer o check-in.</p>
-                <img src="${qrCodeDataURL}" alt="QR Code do Ingresso">
-                <hr>
-                <p>ID da Compra: ${saleId}</p>
-            `,
-            attachments: [
-                {
-                    filename: 'ingresso.png',
-                    path: qrCodeDataURL
-                }
-            ]
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`[sendTicketEmail] Sucesso! E-mail de ingresso enviado para ${saleData.userEmail}. ID da Mensagem: ${info.messageId}`);
-
-        // Marca a venda como tendo o e-mail enviado
-        await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
-        console.log(`[sendTicketEmail] Venda ${saleId} marcada como 'emailSent: true' no Firestore.`);
-
-        // Registra o envio do e-mail
-        await logEmailSend(saleId, 'ticket', saleData.userEmail, true);
-
-    } catch (error) {
-        console.error(`[sendTicketEmail] Falha ao enviar e-mail de ingresso para ${saleData.userEmail}. Erro:`, error);
-        await logEmailSend(saleId, 'ticket', saleData.userEmail, false, error.message);
-    }
-};
-
-// Função para registrar o envio de e-mail
+// Função para registrar o envio de e-mail no Firestore para auditoria
 const logEmailSend = async (saleId, type, recipient, success, error = null) => {
     try {
         await db.collection('inscricoesFaixaPreta').doc(saleId).collection('emailLogs').add({
@@ -124,15 +65,72 @@ const logEmailSend = async (saleId, type, recipient, success, error = null) => {
     }
 };
 
-// Função para enviar e-mail de recibo genérico (não-ingresso)
-const sendPurchaseReceiptEmail = async (saleId, saleData) => {
-    console.log(`[sendPurchaseReceiptEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
+// Função para enviar o e-mail com o ingresso (QR Code)
+const sendTicketEmail = async (saleId, saleData) => {
+    console.log(`[sendTicketEmail] Iniciando para venda ${saleId}. E-mail do destinatário: ${saleData.userEmail}`);
 
     const gmailEmail = process.env.GMAIL_EMAIL;
     const gmailPassword = process.env.GMAIL_PASSWORD;
 
     if (!gmailEmail || !gmailPassword) {
-        console.error('[sendPurchaseReceiptEmail] Erro Crítico: As credenciais do Gmail não estão configuradas.');
+        console.error('[sendTicketEmail] Erro Crítico: Credenciais Gmail não configuradas.');
+        await logEmailSend(saleId, 'ticket', saleData.userEmail, false, 'Credenciais Gmail não configuradas');
+        return;
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: gmailEmail, pass: gmailPassword },
+        });
+        const qrCodeDataURL = await qrcode.toDataURL(saleId);
+
+        const mailOptions = {
+            from: `Kihap <${gmailEmail}>`,
+            to: saleData.userEmail,
+            subject: `Seu Ingresso para ${saleData.productName}`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+                    <div style="background-color: #000; padding: 20px; text-align: center;">
+                        <img src="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" width="120" alt="Kihap">
+                    </div>
+                    <div style="padding: 30px; text-align: center;">
+                        <h1 style="color: #333;">Compra Confirmada!</h1>
+                        <p style="color: #555;">Olá, ${saleData.userName}.</p>
+                        <p style="color: #555;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
+                        <p style="color: #555;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
+                        <div style="margin: 30px 0;">
+                            <img src="${qrCodeDataURL}" alt="QR Code" style="width: 200px;">
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="font-size: 12px; color: #999;">ID da Compra: ${saleId}</p>
+                    </div>
+                </div>
+            `,
+            attachments: [{ filename: 'ingresso.png', path: qrCodeDataURL }]
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[sendTicketEmail] Sucesso! E-mail de ingresso enviado para ${saleData.userEmail}. ID: ${info.messageId}`);
+        
+        await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
+        await logEmailSend(saleId, 'ticket', saleData.userEmail, true);
+
+    } catch (error) {
+        console.error(`[sendTicketEmail] Falha ao enviar e-mail para ${saleData.userEmail}. Erro:`, error);
+        await logEmailSend(saleId, 'ticket', saleData.userEmail, false, error.message);
+    }
+};
+
+// Função para enviar o recibo elegante da loja (Geral)
+const sendPurchaseReceiptEmail = async (saleId, saleData) => {
+    console.log(`[sendPurchaseReceiptEmail] Iniciando para venda ${saleId}. E-mail: ${saleData.userEmail}`);
+
+    const gmailEmail = process.env.GMAIL_EMAIL;
+    const gmailPassword = process.env.GMAIL_PASSWORD;
+
+    if (!gmailEmail || !gmailPassword) {
+        console.error('[sendPurchaseReceiptEmail] Erro: Credenciais Gmail não configuradas.');
         await logEmailSend(saleId, 'receipt', saleData.userEmail, false, 'Credenciais Gmail não configuradas');
         return;
     }
@@ -140,46 +138,97 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
     try {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
-            auth: {
-                user: gmailEmail,
-                pass: gmailPassword,
-            },
-        });
-        const amountFormatted = (saleData.amountTotal / 100).toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: saleData.currency || 'BRL'
+            auth: { user: gmailEmail, pass: gmailPassword },
         });
 
+        const formatPrice = (centavos) => {
+            return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+
+        const totalFormatted = formatPrice(saleData.amountTotal);
+        
+        let detailsHtml = '';
+        if (saleData.selectedAddons && saleData.selectedAddons.length > 0) {
+            detailsHtml += `<div style="margin-top: 10px; padding-left: 15px; border-left: 2px solid #333;">`;
+            saleData.selectedAddons.forEach(addon => {
+                detailsHtml += `
+                    <div style="font-size: 0.85rem; color: #888; margin-bottom: 3px;">
+                        + ${addon.name} <span style="color: #aaa;">(${formatPrice(addon.price)})</span>
+                    </div>
+                `;
+            });
+            detailsHtml += `</div>`;
+        }
+
         const mailOptions = {
-            from: `Kihap <${gmailEmail}>`,
+            from: `Kihap Store <${gmailEmail}>`,
             to: saleData.userEmail,
-            subject: `Recibo de Compra - ${saleData.productName}`,
+            subject: `Compra Confirmada! Recibo: ${saleData.productName}`,
             html: `
-                <h1>Compra Confirmada!</h1>
-                <p>Olá, ${saleData.userName}.</p>
-                <p>Obrigado por sua compra. Aqui estão os detalhes do seu pedido:</p>
-                
-                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <h3>Detalhes da Compra</h3>
-                    <p><strong>Produto:</strong> ${saleData.productName}</p>
-                    <p><strong>Valor:</strong> ${amountFormatted}</p>
-                    <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-                    <p><strong>ID da Compra:</strong> ${saleId}</p>
-                </div>
-                
-                <p>Se você tiver qualquer dúvida, entre em contato conosco.</p>
-                <p>Atenciosamente,<br>Equipe Kihap</p>
-            `,
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
+                        .container { max-width: 600px; margin: 20px auto; background-color: #111; border-radius: 12px; overflow: hidden; border: 1px solid #222; }
+                        .header { background-color: #000; padding: 40px; text-align: center; border-bottom: 2px solid #FFC107; }
+                        .content { padding: 40px; line-height: 1.6; }
+                        .footer { background-color: #000; padding: 30px; text-align: center; font-size: 11px; color: #555; }
+                        h1 { color: #FFC107; font-size: 24px; font-weight: 800; text-transform: uppercase; margin-top: 0; }
+                        .receipt-box { background-color: #181818; border-radius: 8px; padding: 25px; margin-top: 30px; border: 1px solid #282828; }
+                        .item-name { font-weight: bold; font-size: 18px; color: #fff; display: block; }
+                        .item-variant { font-size: 14px; color: #FFC107; margin-top: 5px; display: block; }
+                        .total-section { margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; text-align: right; }
+                        .total-label { font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-right: 10px; }
+                        .total-value { font-size: 24px; font-weight: 900; color: #FFC107; }
+                        .btn { background-color: #FFC107; color: #000; padding: 15px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 30px; text-transform: uppercase; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <img src="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" width="140" alt="Kihap">
+                        </div>
+                        <div class="content">
+                            <h1>Compra Confirmada!</h1>
+                            <p>Olá, <strong>${saleData.userName}</strong>,</p>
+                            <p>Obrigado por comprar na <strong>Kihap Store</strong>. Seu pedido foi recebido e já estamos preparando tudo!</p>
+                            
+                            <div class="receipt-box">
+                                <span class="item-name">${saleData.productName}</span>
+                                ${saleData.userSize ? `<span class="item-variant">Tamanho: ${saleData.userSize}</span>` : ''}
+                                ${saleData.variationName ? `<span class="item-variant">Variação: ${saleData.variationName}</span>` : ''}
+                                ${detailsHtml}
+
+                                <div class="total-section">
+                                    <span class="total-label">Total Pago</span>
+                                    <span class="total-value">${totalFormatted}</span>
+                                </div>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 20px;">
+                                <a href="https://www.kihap.com.br/store" class="btn">Voltar para a Loja</a>
+                            </div>
+                            
+                            <p style="margin-top: 40px; font-size: 11px; color: #444; text-align: center;">ID do Pedido: ${saleId}</p>
+                        </div>
+                        <div class="footer">
+                            <p>&copy; 2024 Kihap - Todos os direitos reservados. <br> <a href="https://www.kihap.com.br" style="color: #FFC107; text-decoration: none;">www.kihap.com.br</a></p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`[sendPurchaseReceiptEmail] Sucesso! E-mail de recibo enviado para ${saleData.userEmail}. ID: ${info.messageId}`);
+        console.log(`[sendPurchaseReceiptEmail] Sucesso! E-mail enviado para ${saleData.userEmail}. ID: ${info.messageId}`);
 
         await db.collection('inscricoesFaixaPreta').doc(saleId).update({ emailSent: true });
         await logEmailSend(saleId, 'receipt', saleData.userEmail, true);
 
     } catch (error) {
-        console.error(`[sendPurchaseReceiptEmail] Falha ao enviar e-mail de recibo para ${saleData.userEmail}. Erro:`, error);
+        console.error(`[sendPurchaseReceiptEmail] Falha ao enviar para ${saleData.userEmail}. Erro:`, error);
         await logEmailSend(saleId, 'receipt', saleData.userEmail, false, error.message);
     }
 };
@@ -309,6 +358,8 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
 
                 if (product.isTicket) {
                     await sendTicketEmail(docRef.id, saleData);
+                } else {
+                    await sendPurchaseReceiptEmail(docRef.id, saleData);
                 }
             }
             
@@ -340,6 +391,8 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                         const recSnap = await recRef.get();
                         if(recSnap.exists && recSnap.data().isTicket) {
                             await sendTicketEmail(recDocRef.id, saleData);
+                        } else {
+                            await sendPurchaseReceiptEmail(recDocRef.id, saleData);
                         }
                     }
                 }
@@ -572,9 +625,15 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                         if (!saleData.emailSent) {
                             const productRef = db.collection('products').doc(saleData.productId);
                             const productSnap = await productRef.get();
-                            if (productSnap.exists && productSnap.data().isTicket) {
-                                console.log(`[verifyPayment] Sending missing ticket email for ${docId}`);
-                                await sendTicketEmail(docId, saleData);
+                            
+                            if (productSnap.exists) {
+                                if (productSnap.data().isTicket) {
+                                    console.log(`[verifyPayment] Sending missing ticket email for ${docId}`);
+                                    await sendTicketEmail(docId, saleData);
+                                } else {
+                                    console.log(`[verifyPayment] Sending store receipt email for ${docId}`);
+                                    await sendPurchaseReceiptEmail(docId, saleData);
+                                }
                             }
                         }
 
