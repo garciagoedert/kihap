@@ -169,6 +169,7 @@ function renderSalesLog(groupsToDisplay) {
         const namesList = group.map(sale => sale.userName || 'N/A').join('<br>');
         const emailsList = group.map(sale => sale.userEmail || 'N/A').join('<br>');
         const phonesList = group.map(sale => sale.userPhone || 'N/A').join('<br>');
+        const agesList = group.map(sale => sale.userAge || 'N/A').join('<br>');
 
         // Verifica se pelo menos um e-mail no grupo foi enviado
         const isAnyEmailSent = group.some(sale => sale.emailSent);
@@ -181,6 +182,7 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4">${namesList}</td>
                 <td class="p-4">${emailsList}</td>
                 <td class="p-4">${phonesList}</td>
+                <td class="p-4">${agesList}</td>
                 <td class="p-4">${productName}</td>
                 <td class="p-4">${mainSale.userPrograma || 'N/A'}</td>
                 <td class="p-4">${mainSale.userGraduacao || 'N/A'}</td>
@@ -188,6 +190,15 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4">${status}</td>
                 <td class="p-4">${emailSentStatusHtml}</td>
                 <td class="p-4">${date}</td>
+                <td class="p-4 text-center">
+                    <button class="update-status-btn bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs transition-colors" 
+                        data-ids="${group.map(s => s.id).join(',')}" 
+                        data-name="${mainSale.userName}" 
+                        data-product="${productName}"
+                        data-status="${mainSale.paymentStatus}">
+                        <i class="fas fa-edit mr-1"></i>Atualizar
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -270,3 +281,88 @@ const renderStatusTag = (status) => {
     const colorClasses = status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
     return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
 };
+
+// --- Modal de Atualização Manual ---
+let selectedSaleIds = [];
+
+function openManualUpdateModal(ids, name, product, currentStatus) {
+    selectedSaleIds = ids.split(',');
+    const modal = document.getElementById('manual-update-modal');
+    const infoContainer = document.getElementById('modal-sale-info');
+    const statusSelect = document.getElementById('new-status-select');
+    const reasonInput = document.getElementById('update-reason-input');
+
+    infoContainer.innerHTML = `
+        <p><strong>Cliente:</strong> ${name}</p>
+        <p><strong>Produto:</strong> ${product}</p>
+        <p><strong>Status Atual:</strong> ${currentStatus === 'paid' ? 'Pago' : 'Pendente'}</p>
+    `;
+
+    statusSelect.value = currentStatus === 'paid' ? 'paid' : 'paid'; // Default to paid
+    reasonInput.value = '';
+    
+    modal.classList.remove('hidden');
+}
+
+function closeManualUpdateModal() {
+    const modal = document.getElementById('manual-update-modal');
+    modal.classList.add('hidden');
+    selectedSaleIds = [];
+}
+
+// Event Listeners para o Modal
+document.addEventListener('DOMContentLoaded', () => {
+    // Listener para abrir o modal (usando delegação)
+    document.getElementById('sales-table-body')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.update-status-btn');
+        if (btn) {
+            const { ids, name, product, status } = btn.dataset;
+            openManualUpdateModal(ids, name, product, status);
+        }
+    });
+
+    document.getElementById('close-manual-modal-btn')?.addEventListener('click', closeManualUpdateModal);
+    document.getElementById('cancel-update-btn')?.addEventListener('click', closeManualUpdateModal);
+
+    const confirmBtn = document.getElementById('confirm-update-btn');
+    confirmBtn?.addEventListener('click', async () => {
+        const newStatus = document.getElementById('new-status-select').value;
+        const reason = document.getElementById('update-reason-input').value.trim();
+        const btnText = document.getElementById('update-btn-text');
+        const spinner = document.getElementById('update-btn-spinner');
+
+        if (!reason || reason.length < 5) {
+            alert('Por favor, insira uma justificativa válida (mínimo 5 caracteres).');
+            return;
+        }
+
+        confirmBtn.disabled = true;
+        btnText.textContent = 'Atualizando...';
+        spinner.classList.remove('hidden');
+
+        try {
+            const functions = getFunctions();
+            const manuallyUpdateSaleStatus = httpsCallable(functions, 'manuallyUpdateSaleStatus');
+            const result = await manuallyUpdateSaleStatus({
+                saleIds: selectedSaleIds,
+                newStatus: newStatus,
+                reason: reason
+            });
+
+            if (result.data.success) {
+                alert('Status atualizado com sucesso!');
+                closeManualUpdateModal();
+                fetchSales().then(() => applyFilters());
+            } else {
+                alert('Erro ao atualizar: ' + (result.data.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro na chamada da função:', error);
+            alert('Erro ao atualizar status: ' + error.message);
+        } finally {
+            confirmBtn.disabled = false;
+            btnText.textContent = 'Confirmar Alteração';
+            spinner.classList.add('hidden');
+        }
+    });
+});

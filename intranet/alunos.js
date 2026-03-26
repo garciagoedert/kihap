@@ -33,6 +33,7 @@ const cleanupRemovedStudents = httpsCallable(functions, 'cleanupRemovedStudents'
 
 export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let currentAppUser = null; 
+let allCourses = [];
 let allTatameContents = [];
 let allBadges = []; // This will be populated by loadAllSelectableContent and used by the modal
 

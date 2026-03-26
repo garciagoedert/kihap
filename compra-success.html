@@ -60,17 +60,24 @@
             const urlParams = new URLSearchParams(window.location.search);
             const sessionId = urlParams.get('session_id');
             const pagarmeOrderId = urlParams.get('pagarme_order_id');
+            const preferenceId = urlParams.get('preference_id');
+            const collectionStatus = urlParams.get('collection_status');
+
             const statusMessage = document.querySelector('.text-lg.text-gray-300.mb-6');
             const ticketContainer = document.getElementById('ticket-container');
             const qrcodeContainer = document.getElementById('qrcode');
             const downloadBtn = document.getElementById('download-ticket-btn');
 
-            const paymentId = sessionId || pagarmeOrderId;
+            const paymentId = sessionId || pagarmeOrderId || preferenceId;
             if (paymentId) {
                 statusMessage.textContent = 'Verificando seu pagamento...';
                 
                 const verifyUrl = 'https://us-central1-intranet-kihap.cloudfunctions.net/verifyPayment';
-                const payload = sessionId ? { sessionId: sessionId } : { pagarme_order_id: pagarmeOrderId };
+                let payload = {};
+                
+                if (sessionId) payload = { sessionId: sessionId };
+                else if (pagarmeOrderId) payload = { pagarme_order_id: pagarmeOrderId };
+                else if (preferenceId) payload = { preference_id: preferenceId, collection_status: collectionStatus };
 
                 try {
                     const response = await fetch(verifyUrl, {

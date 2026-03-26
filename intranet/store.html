@@ -344,312 +344,41 @@
 
             <!-- Manage Products Content -->
             <div id="content-manage-products" class="tab-content hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Add/Edit Product Form -->
-                    <div class="lg:col-span-1 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 id="product-form-title" class="text-xl font-bold mb-4">Adicionar Novo Produto</h2>
-                        <form id="product-form">
-                            <input type="hidden" id="product-id">
-                            <div class="mb-4">
-                                <label for="product-name" class="block text-sm font-medium text-gray-400">Nome do
-                                    Produto</label>
-                                <input type="text" id="product-name"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required>
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold">Produtos Cadastrados</h2>
+                        <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                            <div class="relative w-full md:w-64">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </span>
+                                <input type="text" id="product-search-input" placeholder="Buscar produto..."
+                                    class="w-full pl-10 pr-4 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                             </div>
-                            <div class="mb-4">
-                                <label for="product-category" class="block text-sm font-medium text-gray-400">Categoria</label>
-                                <input type="text" id="product-category"
-                                    placeholder="Ex: Uniforme, Equipamento, Kit"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Tipo de Preço</label>
-                                <div class="flex items-center space-x-4">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="price-type" value="fixed"
-                                            class="form-radio text-blue-500 bg-gray-700 border-gray-600" checked>
-                                        <span class="ml-2">Preço Fixo</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="price-type" value="variable"
-                                            class="form-radio text-blue-500 bg-gray-700 border-gray-600">
-                                        <span class="ml-2">Preço Variável</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="price-type" value="lotes"
-                                            class="form-radio text-blue-500 bg-gray-700 border-gray-600">
-                                        <span class="ml-2">Lotes</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="price-type" value="kit"
-                                            class="form-radio text-blue-500 bg-gray-700 border-gray-600">
-                                        <span class="ml-2">Kit</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Fixed Price Input -->
-                            <div id="fixed-price-container" class="mb-4">
-                                <label for="product-price" class="block text-sm font-medium text-gray-400">Preço Principal (em centavos)</label>
-                                <input type="number" id="product-price" name="product-price"
-                                    placeholder="Ex: 1000 para R$10,00"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-
-
-
-                            <!-- Variable Prices Input -->
-                            <div id="variable-prices-container" class="mb-4 hidden">
-                                <label class="block text-sm font-medium text-gray-400">Variações de Preço</label>
-                                <div id="price-variants-list" class="space-y-2 mt-1">
-                                    <!-- Dynamic price variants will be added here -->
-                                </div>
-                                <button type="button" id="add-price-variant-btn"
-                                    class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
-                                    <i class="fas fa-plus mr-1"></i> Adicionar Variação
-                                </button>
-                            </div>
-
-                            <!-- Lotes Input -->
-                            <div id="lotes-container" class="mb-4 hidden">
-                                <label class="block text-sm font-medium text-gray-400">Lotes</label>
-                                <div id="lotes-list" class="space-y-2 mt-1">
-                                    <!-- Dynamic lotes will be added here -->
-                                </div>
-                                <button type="button" id="add-lote-btn"
-                                    class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
-                                    <i class="fas fa-plus mr-1"></i> Adicionar Lote
-                                </button>
-                            </div>
-
-                            <!-- Kit Input -->
-                            <div id="kit-container" class="mb-4 hidden">
-                                <label class="block text-sm font-medium text-gray-400">Configuração do Kit</label>
-                                
-                                <div class="mb-3 mt-2">
-                                    <label for="kit-base-price" class="block text-xs font-medium text-gray-400 mb-1">Preço Base do Kit (em centavos)</label>
-                                    <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-
-                                <label class="block text-sm font-medium text-gray-400 mt-4">Itens do Kit (ex: Bota, Luva)</label>
-                                <div id="kit-items-list" class="space-y-4 mt-2">
-                                    <!-- Dynamic kit items will be added here -->
-                                </div>
-                                <button type="button" id="add-kit-item-btn" class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
-                                    <i class="fas fa-plus mr-1"></i> Adicionar Item ao Kit
-                                </button>
-                            </div>
-
-                            <!-- Add-ons Input -->
-                            <div id="addons-container" class="mb-4 p-4 border border-gray-600 rounded-lg bg-gray-800/50">
-                                <label class="block text-sm font-bold text-yellow-500 mb-1"><i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)</label>
-                                <p class="text-xs text-gray-400 mb-3">Permite que o cliente marque caixas de seleção (+) para adicionar itens ou serviços extras à compra/assinatura dele.</p>
-                                <div id="addons-list" class="space-y-3 mt-1">
-                                    <!-- Dynamic addons will be added here -->
-                                </div>
-                                <button type="button" id="add-addon-btn" class="mt-3 px-3 py-1.5 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
-                                    <i class="fas fa-plus mr-1"></i> Adicionar Add-on
-                                </button>
-                            </div>
-
-                            <!-- Mercado Pago Custom Account Input -->
-                            <div class="mb-4 p-4 border border-gray-600 rounded-lg bg-gray-800">
-                                <h3 class="text-sm font-semibold text-yellow-500 mb-2"><i class="fas fa-money-check-alt mr-2"></i>Conta Recebedora (Mercado Pago)</h3>
-                                <label for="product-mp-account" class="block text-xs text-gray-400 mb-1">Selecione para qual conta as vendas deste produto serão destinadas.</label>
-                                <select id="product-mp-account" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 mb-3">
-                                    <option value="default">Store (Matriz)</option>
-                                    <!-- Dynamic accounts will be added here -->
-                                </select>
-                                
-                                <label for="product-mp-split" class="block text-xs text-gray-400 mb-1">Taxa de Split para Matriz (em %)</label>
-                                <input type="number" id="product-mp-split" placeholder="Ex: 20 para enviar 20% à matriz" min="0" max="100" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                                <p class="text-xs text-gray-500 mt-1">Deixe 0 ou vazio se não houver divisão com a matriz padrão.</p>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="product-description"
-                                    class="block text-sm font-medium text-gray-400">Descrição</label>
-                                <textarea id="product-description" rows="3"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                            </div>
-                            <div class="mb-4">
-                                <label for="product-image" class="block text-sm font-medium text-gray-400">Imagem do
-                                    Produto</label>
-                                <input type="file" id="product-image"
-                                    class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600" />
-                            </div>
-
-                            <div class="mb-4 border border-green-600/50 p-4 rounded-lg bg-green-900/10">
-                                <label for="product-is-subscription"
-                                    class="flex items-center justify-between text-sm font-bold text-green-400">
-                                    <span><i class="fas fa-sync-alt mr-2"></i>Cobrança Recorrente (Assinatura)?</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-is-subscription" id="product-is-subscription"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-is-subscription"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                                <!-- Subscription Frequency Input -->
-                                <div id="subscription-frequency-container" class="mt-4 hidden p-3 rounded-md border border-green-500/30 bg-green-500/20">
-                                    <label for="subscription-frequency" class="block text-sm font-bold text-green-400 mb-1">Periodicidade da Assinatura</label>
-                                    <select id="subscription-frequency" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                                        <option value="1_months">Mensal (Cobrado todo mês)</option>
-                                        <option value="6_months">Semestral (Cobrado a cada 6 meses)</option>
-                                        <option value="1_years">Anual (Cobrado 1 vez ao ano)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="product-visible"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>Visível para Venda</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-visible" id="product-visible"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-visible"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="mb-4">
-                                <label for="product-available"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>Disponível (em estoque)</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-available" id="product-available"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-available"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="mb-4">
-                                <label for="product-public"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>Acesso Público</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-public" id="product-public"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-public"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="mb-4 border border-blue-600/30 p-4 rounded-lg bg-blue-900/10">
-                                <label for="product-has-sizes"
-                                    class="flex items-center justify-between text-sm font-bold text-blue-400">
-                                    <span><i class="fas fa-ruler-combined mr-2"></i>Este produto possui tamanhos?</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-has-sizes" id="product-has-sizes"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-has-sizes"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                                <div id="product-sizes-container" class="mt-4 hidden animate-fadeIn">
-                                    <label for="product-sizes" class="block text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Opções de Tamanho (separadas por vírgula)</label>
-                                    <input type="text" id="product-sizes" placeholder="Ex: P, M, G, GG ou 38, 40, 42"
-                                        class="w-full px-4 py-2 text-white bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
-                                    <p class="text-[10px] text-gray-500 mt-1">Isso habilitará um seletor de tamanho na página do produto.</p>
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="product-is-ticket"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>É um Ingresso?</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-is-ticket" id="product-is-ticket"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-is-ticket"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="mb-4">
-                                <label for="product-availability-date"
-                                    class="block text-sm font-medium text-gray-400">Disponível até</label>
-                                <input type="date" id="product-availability-date"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="product-ask-professor"
-                                    class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                    <span>Solicitar Professor</span>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" name="product-ask-professor" id="product-ask-professor"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label for="product-ask-professor"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                    </div>
-                                </label>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="product-custom-units"
-                                    class="block text-sm font-medium text-gray-400">Unidades Customizadas (separadas por
-                                    vírgula)</label>
-                                <textarea id="product-custom-units" rows="2"
-                                    placeholder="Ex: Unidade A, Unidade B, Unidade C"
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">Deixe em branco para usar as unidades padrão do
-                                    Evo.</p>
-                            </div>
-                            <div class="mb-4">
-                                <label for="recommended-products"
-                                    class="block text-sm font-medium text-gray-400">Produtos Recomendados (Compre
-                                    Junto)</label>
-                                <select id="recommended-products" multiple
-                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32">
-                                    <!-- Options will be populated by JS -->
-                                </select>
-                            </div>
-                            <div class="flex items-center justify-between w-full">
-                                <button type="button" id="send-bulk-emails-btn"
-                                    class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 hidden">
-                                    <i class="fas fa-envelope mr-2"></i>Enviar Ingressos em Massa
-                                </button>
-                                <div class="flex items-center space-x-2">
-                                    <button type="button" id="cancel-edit-btn"
-                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
-                                    <button type="submit" id="save-product-btn"
-                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
-                                        Produto</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <!-- Products List -->
-                    <div class="lg:col-span-2 bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold mb-4">Produtos Cadastrados</h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="border-b border-gray-700">
-                                        <th class="p-4">Nome</th>
-                                        <th class="p-4">Preço</th>
-                                        <th class="p-4">Status</th>
-                                        <th class="p-4">Link</th>
-                                        <th class="p-4">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="products-table-body">
-                                    <tr>
-                                        <td colspan="5" class="text-center p-8">Carregando produtos...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <button id="add-product-btn"
+                                class="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center justify-center transition-all">
+                                <i class="fas fa-plus mr-2"></i> Novo Produto
+                            </button>
                         </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Nome</th>
+                                    <th class="p-4">Preço</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Link</th>
+                                    <th class="p-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <tr>
+                                    <td colspan="5" class="text-center p-8 text-gray-400">Carregando produtos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1017,6 +746,307 @@
                         Venda</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden transition-all duration-300">
+        <div class="bg-[#1a1a1a] p-8 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-800">
+            <div class="flex justify-between items-center mb-6 sticky top-0 bg-[#1a1a1a] z-10 pb-4 border-b border-gray-800">
+                <h2 id="product-form-title" class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Adicionar Novo Produto</h2>
+                <button id="close-product-modal-btn" class="text-gray-400 hover:text-white text-3xl transition-colors">&times;</button>
+            </div>
+            
+            <form id="product-form" class="space-y-6">
+                <input type="hidden" id="product-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-name" class="block text-sm font-medium text-gray-400">Nome do Produto</label>
+                            <input type="text" id="product-name"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                                required>
+                        </div>
+                        
+                        <div>
+                            <label for="product-category" class="block text-sm font-medium text-gray-400">Categoria</label>
+                            <input type="text" id="product-category"
+                                placeholder="Ex: Uniforme, Equipamento, Kit"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Tipo de Preço</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="fixed" class="form-radio text-blue-500" checked>
+                                    <span class="ml-2 text-sm">Fixo</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="variable" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Variável</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="lotes" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Lotes</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="kit" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Kit</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Price Containers -->
+                        <div id="fixed-price-container">
+                            <label for="product-price" class="block text-sm font-medium text-gray-400">Preço Principal (em centavos)</label>
+                            <input type="number" id="product-price" name="product-price"
+                                placeholder="Ex: 1000 para R$10,00"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+
+                        <div id="variable-prices-container" class="hidden animate-fadeIn">
+                            <label class="block text-sm font-medium text-gray-400">Variações de Preço</label>
+                            <div id="price-variants-list" class="space-y-2 mt-2"></div>
+                            <button type="button" id="add-price-variant-btn"
+                                class="w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-2"></i> Adicionar Variação
+                            </button>
+                        </div>
+
+                        <div id="lotes-container" class="hidden animate-fadeIn">
+                            <label class="block text-sm font-medium text-gray-400">Lotes</label>
+                            <div id="lotes-list" class="space-y-2 mt-2"></div>
+                            <button type="button" id="add-lote-btn"
+                                class="w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-2"></i> Adicionar Lote
+                            </button>
+                        </div>
+
+                        <div id="kit-container" class="hidden animate-fadeIn">
+                            <div class="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <label for="kit-base-price" class="block text-sm font-medium text-gray-400 mb-1">Preço Base do Kit (em centavos)</label>
+                                <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" 
+                                    class="w-full px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                
+                                <label class="block text-sm font-medium text-gray-400 mt-4 mb-2">Itens do Kit</label>
+                                <div id="kit-items-list" class="space-y-3"></div>
+                                <button type="button" id="add-kit-item-btn" 
+                                    class="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                    <i class="fas fa-plus mr-2"></i> Adicionar Item ao Kit
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="addons-container" class="p-4 border border-yellow-600/30 rounded-xl bg-yellow-900/5">
+                            <label class="block text-sm font-bold text-yellow-500 mb-2">
+                                <i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)
+                            </label>
+                            <div id="addons-list" class="space-y-3 mt-1"></div>
+                            <button type="button" id="add-addon-btn" class="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-1"></i> Adicionar Add-on
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-description" class="block text-sm font-medium text-gray-400">Descrição</label>
+                            <textarea id="product-description" rows="4"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="product-image" class="block text-sm font-medium text-gray-400">Imagem do Produto</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-lg hover:border-blue-500 transition-all">
+                                <div class="space-y-1 text-center">
+                                    <i class="fas fa-image text-gray-400 text-3xl mb-2"></i>
+                                    <div class="flex text-sm text-gray-400">
+                                        <label for="product-image" class="relative cursor-pointer bg-gray-800 rounded-md font-medium text-blue-500 hover:text-blue-400 focus-within:outline-none">
+                                            <span>Upload de arquivo</span>
+                                            <input type="file" id="product-image" class="sr-only">
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF até 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Toggles Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Visível</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-visible" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Disponível</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-available" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Público</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-public" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Ingresso</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-ticket" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-green-900/10 border border-green-600/30 rounded-xl">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-bold text-green-400 flex items-center">
+                                    <i class="fas fa-sync-alt mr-2 text-xs"></i>Assinatura?
+                                </label>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-subscription" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
+                            </div>
+                            <div id="subscription-frequency-container" class="hidden animate-fadeIn">
+                                <select id="subscription-frequency" class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm">
+                                    <option value="1_months">Mensal</option>
+                                    <option value="6_months">Semestral</option>
+                                    <option value="1_years">Anual</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-blue-900/10 border border-blue-600/30 rounded-xl text-blue-400">
+                             <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-bold flex items-center">
+                                    <i class="fas fa-ruler-combined mr-2 text-xs"></i>Tamanhos?
+                                </label>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-has-sizes" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div id="product-sizes-container" class="hidden animate-fadeIn">
+                                <input type="text" id="product-sizes" placeholder="Ex: P, M, G, GG ou 38, 40, 42"
+                                    class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Solicitar Professor</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-ask-professor" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Solicitar Idade</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-ask-age" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-300">Controlar Estoque?</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-control-stock" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div id="stock-container" class="hidden animate-fadeIn mt-3">
+                                <input type="number" id="product-stock-quantity"
+                                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    placeholder="Qtd inicial" min="0" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                    <div>
+                        <label for="product-availability-date" class="block text-sm font-medium text-gray-400">Disponível até</label>
+                        <input type="date" id="product-availability-date"
+                            class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    </div>
+                    
+                    <div>
+                        <label for="product-mp-account" class="block text-sm font-medium text-gray-400">Conta no Mercado Pago</label>
+                        <select id="product-mp-account" class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                            <option value="default">Store (Matriz)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <div>
+                        <label for="product-custom-units" class="block text-sm font-medium text-gray-400">Unidades Específicas (opcional)</label>
+                        <textarea id="product-custom-units" rows="2" placeholder="Ex: Unidade A, Unidade B"
+                            class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="recommended-products" class="block text-sm font-medium text-gray-400">Produtos para Recomendação</label>
+                        <select id="recommended-products" multiple
+                            class="w-full px-4 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 text-sm">
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-800">
+                    <button type="button" id="delete-product-btn"
+                        class="w-full sm:w-auto px-6 py-3 text-sm font-bold text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hidden">
+                        <i class="fas fa-trash-alt mr-2"></i> Excluir
+                    </button>
+                    <button type="button" id="send-bulk-emails-btn"
+                        class="w-full sm:w-auto px-6 py-3 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-500 transition-all flex items-center justify-center hidden shadow-lg shadow-green-900/20">
+                        <i class="fas fa-envelope mr-2"></i> Enviar Ingressos em Massa
+                    </button>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <button type="button" id="cancel-product-modal-btn"
+                            class="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-white bg-gray-700 rounded-xl hover:bg-gray-600 transition-all shadow-lg shadow-black/20">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="save-product-btn"
+                            class="flex-1 sm:flex-none px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/40">
+                            Salvar Produto
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!-- Delete Confirmation Modal -->
+    <div id="delete-confirmation-modal" class="fixed inset-0 z-[70] flex items-center justify-center hidden">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-md p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl scale-95 transition-all">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Excluir Produto?</h3>
+                <p id="delete-confirmation-message" class="text-gray-400 text-sm">
+                    Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" id="cancel-delete-btn"
+                    class="flex-1 px-6 py-3 text-sm font-bold text-white bg-gray-800 rounded-xl hover:bg-gray-700 transition-all">
+                    Cancelar
+                </button>
+                <button type="button" id="confirm-delete-btn"
+                    class="flex-1 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-all shadow-lg shadow-red-900/40">
+                    Sim, Excluir
+                </button>
+            </div>
         </div>
     </div>
 </body>

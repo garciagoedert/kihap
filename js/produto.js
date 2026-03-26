@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productImageDisplay = document.getElementById('product-image-display');
     const productPriceDisplay = document.getElementById('product-price-display');
     const productLoteDisplay = document.getElementById('product-lote-display');
+    const productStockDisplay = document.getElementById('product-stock-display');
     const quantitySelector = document.getElementById('quantity-selector');
     const paymentForm = document.getElementById('payment-form');
     const formsContainer = document.getElementById('forms-container');
@@ -97,6 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
             productImageDisplay.classList.remove('hidden');
         }
 
+        if (product.controlStock && product.stockQuantity !== undefined) {
+            productStockDisplay.classList.remove('hidden');
+            if (product.stockQuantity <= 10 && product.stockQuantity > 0) {
+                productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Últimas ${product.stockQuantity} unidades em estoque!</span>`;
+            } else if (product.stockQuantity > 0) {
+                productStockDisplay.textContent = `${product.stockQuantity} unidades disponíveis`;
+            } else {
+                productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+            }
+        } else {
+            productStockDisplay.classList.add('hidden');
+        }
+
         if (product.isSubscription) {
             payButton.innerHTML = '<i class="fas fa-lock mr-2"></i> Assinar Agora';
         }
@@ -172,6 +186,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (label) label.setAttribute('for', `${field}-${i}`);
                 if (input) input.id = `${field}-${i}`;
             });
+
+            // Campo Idade condicional
+            if (productData.askAge) {
+                const ageContainer = formInstance.querySelector('.age-container');
+                if (ageContainer) {
+                    ageContainer.classList.remove('hidden');
+                    const ageInput = ageContainer.querySelector('input[name="idade"]');
+                    if (ageInput) {
+                        ageInput.id = `idade-${i}`;
+                        ageInput.required = true;
+                    }
+                }
+            }
 
             // Campo Professor condicional
             if (productData.askProfessor) {
@@ -489,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 userPrograma: form.querySelector('[name="programa"]').value,
                 userGraduacao: form.querySelector('.graduacao-container').classList.contains('hidden') ? null : form.querySelector('[name="graduacao"]').value,
                 userProfessor: form.querySelector('[name="professor"]') ? form.querySelector('[name="professor"]').value : null,
+                userAge: form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null,
                 userSize: form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null,
                 userId: currentUser ? currentUser.uid : null
             };

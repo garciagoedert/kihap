@@ -75,6 +75,7 @@
                                 <th class="p-4">Nome do Cliente</th>
                                 <th class="p-4">Email</th>
                                 <th class="p-4">Telefone</th>
+                                <th class="p-4">Idade</th>
                                 <th class="p-4">Produto</th>
                                 <th class="p-4">Programa</th>
                                 <th class="p-4">Graduação</th>
@@ -82,6 +83,7 @@
                                 <th class="p-4">Status do Pagamento</th>
                                 <th class="p-4">Email Enviado</th>
                                 <th class="p-4">Data da Compra</th>
+                                <th class="p-4 text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="sales-table-body">
@@ -97,7 +99,50 @@
             </div>
         </div>
     </main>
-
     <script type="module" src="sales-history.js"></script>
+
+    <!-- Modal de Atualização Manual de Status -->
+    <div id="manual-update-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] w-full max-w-md rounded-xl shadow-2xl border border-gray-800 overflow-hidden">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white">Atualização Manual</h2>
+                <button id="close-manual-modal-btn" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div id="modal-sale-info" class="text-sm text-gray-400 mb-4 font-mono bg-black/30 p-3 rounded border border-gray-800">
+                    <!-- Info da venda será injetada aqui -->
+                </div>
+
+                <div>
+                    <label for="new-status-select" class="block text-sm font-medium text-gray-400 mb-1">Novo Status:</label>
+                    <select id="new-status-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="paid">Pago (Confirmado)</option>
+                        <option value="pending">Pendente</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2 italic">⚠️ Ao marcar como "Pago", os e-mails de confirmação e ingresso serão enviados automaticamente se ainda não tiverem sido.</p>
+                </div>
+
+                <div>
+                    <label for="update-reason-input" class="block text-sm font-medium text-gray-400 mb-1">Justificativa (Obrigatório):</label>
+                    <textarea id="update-reason-input" rows="3" placeholder="Ex: Cliente pagou em dinheiro na unidade centro ou via PIX direto..." 
+                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 bg-[#212121] flex gap-3 justify-end">
+                <button id="cancel-update-btn" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirm-update-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2">
+                    <span id="update-btn-text">Confirmar Alteração</span>
+                    <i id="update-btn-spinner" class="fas fa-spinner fa-spin hidden"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

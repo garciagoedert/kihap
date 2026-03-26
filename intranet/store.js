@@ -56,6 +56,17 @@ export async function setupStorePage() {
     const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
 
     // Product Management elements
+    const productModal = document.getElementById('product-modal');
+    const addProductBtn = document.getElementById('add-product-btn');
+    const closeProductModalBtn = document.getElementById('close-product-modal-btn');
+    const cancelProductModalBtn = document.getElementById('cancel-product-modal-btn');
+    const deleteProductBtn = document.getElementById('delete-product-btn');
+    const deleteConfirmationModal = document.getElementById('delete-confirmation-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const deleteConfirmationMessage = document.getElementById('delete-confirmation-message');
+    const productSearchInput = document.getElementById('product-search-input');
+
     const productForm = document.getElementById('product-form');
     const productFormTitle = document.getElementById('product-form-title');
     const productIdInput = document.getElementById('product-id');
@@ -88,6 +99,10 @@ export async function setupStorePage() {
     const productIsSubscriptionInput = document.getElementById('product-is-subscription');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const productAskProfessorInput = document.getElementById('product-ask-professor');
+    const productAskAgeInput = document.getElementById('product-ask-age');
+    const productControlStockInput = document.getElementById('product-control-stock');
+    const stockContainer = document.getElementById('stock-container');
+    const productStockQuantityInput = document.getElementById('product-stock-quantity');
     const productHasSizesInput = document.getElementById('product-has-sizes');
     const productSizesContainer = document.getElementById('product-sizes-container');
     const productSizesInput = document.getElementById('product-sizes');
@@ -98,7 +113,6 @@ export async function setupStorePage() {
     const subscriptionFrequencyContainer = document.getElementById('subscription-frequency-container');
     const subscriptionFrequencyInput = document.getElementById('subscription-frequency');
     const saveProductBtn = document.getElementById('save-product-btn');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const productsTableBody = document.getElementById('products-table-body');
     const sendBulkEmailsBtn = document.getElementById('send-bulk-emails-btn');
 
@@ -594,6 +608,17 @@ export async function setupStorePage() {
         }
     };
 
+    if (productSearchInput) {
+        productSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = allProducts.filter(p => 
+                p.name.toLowerCase().includes(searchTerm) || 
+                (p.category && p.category.toLowerCase().includes(searchTerm))
+            );
+            displayProducts(filteredProducts);
+        });
+    }
+
     const displayProducts = (productsToDisplay) => {
         populateRecommendedProductsSelect();
         productsTableBody.innerHTML = '';
@@ -632,7 +657,6 @@ export async function setupStorePage() {
                 </td>
                 <td class="p-4" data-label="Ações">
                     <button class="edit-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${product.id}"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="delete-btn text-red-500 hover:text-red-400" data-id="${product.id}"><i class="fas fa-trash-alt"></i></button>
                 </td>
             `;
         });
@@ -651,6 +675,24 @@ export async function setupStorePage() {
         });
     };
 
+    const openProductModal = () => {
+        productModal.classList.remove('hidden', 'opacity-0');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeProductModal = () => {
+        productModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        resetProductForm();
+    };
+
+    if (addProductBtn) addProductBtn.addEventListener('click', () => {
+        resetProductForm();
+        openProductModal();
+    });
+    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductModal);
+    if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductModal);
+
     const resetProductForm = () => {
         productForm.reset();
         productIdInput.value = '';
@@ -666,6 +708,10 @@ export async function setupStorePage() {
         productSizesContainer.classList.add('hidden');
         productSizesInput.value = '';
         productAskProfessorInput.checked = false;
+        productAskAgeInput.checked = false;
+        productControlStockInput.checked = false;
+        stockContainer.classList.add('hidden');
+        productStockQuantityInput.value = '';
         productCustomUnitsInput.value = '';
         priceVariantsList.innerHTML = '';
         lotesList.innerHTML = '';
@@ -681,9 +727,9 @@ export async function setupStorePage() {
         if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
         if (productMpAccountSelect) productMpAccountSelect.value = 'default';
         if (productMpSplitInput) productMpSplitInput.value = '';
+        if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
         productFormTitle.textContent = 'Adicionar Novo Produto';
         saveProductBtn.textContent = 'Salvar Produto';
-        cancelEditBtn.classList.add('hidden');
         sendBulkEmailsBtn.classList.add('hidden');
     };
 
@@ -719,6 +765,9 @@ export async function setupStorePage() {
                 hasSizes: productHasSizesInput.checked,
                 sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
                 askProfessor: productAskProfessorInput.checked,
+                askAge: productAskAgeInput.checked,
+                controlStock: productControlStockInput.checked,
+                stockQuantity: productControlStockInput.checked ? (parseInt(productStockQuantityInput.value) || 0) : 0,
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
@@ -802,7 +851,7 @@ export async function setupStorePage() {
                 alert('Produto adicionado com sucesso!');
             }
 
-            resetProductForm();
+            closeProductModal();
             fetchProducts();
         } catch (error) {
             console.error('Error saving product:', error);
@@ -838,7 +887,9 @@ export async function setupStorePage() {
                 productNameInput.value = product.name;
                 if (productCategoryInput) productCategoryInput.value = product.category || '';
                 productDescriptionInput.value = product.description;
-                productImageInput.dataset.existingImageUrl = product.imageUrl || '';
+                if (productImageInput) productImageInput.dataset.existingImageUrl = product.imageUrl || '';
+                if (deleteProductBtn) deleteProductBtn.classList.remove('hidden');
+                openProductModal();
 
                 if (product.priceType === 'variable' && product.priceVariants) {
                     document.querySelector('input[name="price-type"][value="variable"]').checked = true;
@@ -911,6 +962,15 @@ export async function setupStorePage() {
                     productSizesInput.value = '';
                 }
                 productAskProfessorInput.checked = product.askProfessor || false;
+                productAskAgeInput.checked = product.askAge || false;
+                productControlStockInput.checked = product.controlStock || false;
+                if (product.controlStock) {
+                    stockContainer.classList.remove('hidden');
+                    productStockQuantityInput.value = product.stockQuantity || 0;
+                } else {
+                    stockContainer.classList.add('hidden');
+                    productStockQuantityInput.value = '';
+                }
                 productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
                 
                 if (productMpAccountSelect) productMpAccountSelect.value = product.mpAccountId || 'default';
@@ -931,7 +991,6 @@ export async function setupStorePage() {
                 }
 
                 saveProductBtn.textContent = 'Atualizar Produto';
-                cancelEditBtn.classList.remove('hidden');
             }
         }
 
@@ -975,6 +1034,7 @@ export async function setupStorePage() {
         try {
             await deleteDoc(doc(db, 'products', id));
             alert('Produto excluído com sucesso!');
+            closeProductModal();
             fetchProducts(); // Refresh the list
         } catch (error) {
             console.error('Error deleting product:', error);
@@ -982,7 +1042,36 @@ export async function setupStorePage() {
         }
     };
 
-    if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetProductForm);
+    if (deleteProductBtn) deleteProductBtn.addEventListener('click', () => {
+        const id = productIdInput.value;
+        const name = productNameInput.value;
+        if (id) {
+            if (deleteConfirmationMessage) {
+                deleteConfirmationMessage.textContent = `Tem certeza que deseja excluir o produto "${name}"? Esta ação não pode ser desfeita.`;
+            }
+            if (deleteConfirmationModal) {
+                deleteConfirmationModal.classList.remove('hidden');
+            }
+        }
+    });
+
+    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', () => {
+        if (deleteConfirmationModal) {
+            deleteConfirmationModal.classList.add('hidden');
+        }
+    });
+
+    if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', () => {
+        const id = productIdInput.value;
+        if (id) {
+            deleteProduct(id);
+            if (deleteConfirmationModal) {
+                deleteConfirmationModal.classList.add('hidden');
+            }
+        }
+    });
+
+
 
     // --- Price Type Switching Logic ---
     priceTypeRadios.forEach(radio => {
@@ -1025,15 +1114,13 @@ export async function setupStorePage() {
         });
     }
 
-    if (productHasSizesInput) {
-        productHasSizesInput.addEventListener('change', () => {
-            if (productHasSizesInput.checked) {
-                productSizesContainer.classList.remove('hidden');
-            } else {
-                productSizesContainer.classList.add('hidden');
-            }
-        });
-    }
+    if (productHasSizesInput) productHasSizesInput.addEventListener('change', () => {
+        productSizesContainer.classList.toggle('hidden', !productHasSizesInput.checked);
+    });
+
+    if (productControlStockInput) productControlStockInput.addEventListener('change', () => {
+        stockContainer.classList.toggle('hidden', !productControlStockInput.checked);
+    });
 
     const addPriceVariant = (name = '', price = '') => {
         const variantId = Date.now();
@@ -1226,6 +1313,7 @@ export async function setupStorePage() {
             <p><strong>Email:</strong> ${sale.userEmail || 'N/A'}</p>
             <p><strong>Telefone:</strong> ${sale.userPhone || 'N/A'}</p>
             <p><strong>CPF:</strong> ${sale.userCpf || 'N/A'}</p>
+            ${sale.userAge ? `<p><strong>Idade:</strong> ${sale.userAge}</p>` : ''}
             <p><strong>Unidade:</strong> ${sale.userUnit || 'N/A'}</p>
             <p><strong>Programa:</strong> ${sale.userPrograma || 'N/A'}</p>
             <p><strong>Graduação:</strong> ${sale.userGraduacao || 'N/A'}</p>

@@ -36,7 +36,7 @@ const exchangeOAuthCode = async (code, redirectUri) => {
     return response.data;
 };
 
-const createMercadoPagoPreference = async (product, formDataList, totalAmount, saleDocIds) => {
+const createMercadoPagoPreference = async (product, formDataList, totalAmount, saleDocIds, notificationUrl = null) => {
     console.log('[createMercadoPagoPreference] Iniciando criação da preferência...');
     
     // Suporte a Split / Multi-Contas
@@ -83,6 +83,8 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
             status: "pending"
         };
 
+        if (notificationUrl) preapprovalData.notification_url = notificationUrl;
+
         try {
             const response = await client.post('/preapproval', preapprovalData);
             console.log('[createMercadoPagoPreference] Assinatura/Preapproval criada com sucesso:', response.data.id);
@@ -118,12 +120,14 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
                 firestoreDocIds: saleDocIds.join(',')
             },
             back_urls: {
-                success: "https://www.kihap.com.br/compra-success.html",
-                failure: "https://www.kihap.com.br/compra-error.html",
-                pending: "https://www.kihap.com.br/compra-success.html"
+                success: "https://kihap.com.br/compra-success",
+                failure: "https://kihap.com.br/cart",
+                pending: "https://kihap.com.br/compra-success"
             },
             auto_return: "approved"
         };
+
+        if (notificationUrl) preferenceData.notification_url = notificationUrl;
 
         if (marketplaceFee > 0) {
             preferenceData.marketplace_fee = marketplaceFee;
@@ -140,7 +144,7 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
     }
 };
 
-const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds) => {
+const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null) => {
     console.log('[createCartMercadoPagoPreference] Iniciando...');
     
     // Simplificamos sem o split para diferentes contas no carrinho
@@ -194,12 +198,14 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
             firestoreDocIds: saleDocIds.join(',')
         },
         back_urls: {
-            success: "https://www.kihap.com.br/compra-success.html",
-            failure: "https://www.kihap.com.br/compra-error.html",
-            pending: "https://www.kihap.com.br/compra-success.html"
+            success: "https://kihap.com.br/compra-success",
+            failure: "https://kihap.com.br/cart",
+            pending: "https://kihap.com.br/compra-success"
         },
         auto_return: "approved"
     };
+
+    if (notificationUrl) preferenceData.notification_url = notificationUrl;
 
     try {
         const response = await client.post('/checkout/preferences', preferenceData);
@@ -218,6 +224,22 @@ const getMercadoPagoPayment = async (paymentId) => {
         return response.data;
     } catch (error) {
         console.error(`[getMercadoPagoPayment] Erro ao buscar pagamento ${paymentId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
+
+const searchMercadoPagoPayments = async (externalReference) => {
+    const client = getMPClient();
+    try {
+        // Busca pagamentos por external_reference
+        const response = await client.get(`/v1/payments/search`, {
+            params: {
+                external_reference: externalReference
+            }
+        });
+        return response.data.results; // array de pagamentos
+    } catch (error) {
+        console.error(`[searchMercadoPagoPayments] Erro ao buscar pagamentos para ${externalReference}:`, error.response?.data || error.message);
         throw error;
     }
 };
@@ -255,7 +277,7 @@ const cancelPreapproval = async (preapprovalId, customToken = null) => {
     }
 };
 
-const createTuitionPreapproval = async (planName, amountCentavos, userEmail, customToken, frequency = 1, frequencyType = 'months') => {
+const createTuitionPreapproval = async (planName, amountCentavos, userEmail, customToken, frequency = 1, frequencyType = 'months', notificationUrl = null) => {
     const client = getMPClient(customToken);
     
     const preapprovalData = {
@@ -271,6 +293,8 @@ const createTuitionPreapproval = async (planName, amountCentavos, userEmail, cus
         status: "pending"
     };
 
+    if (notificationUrl) preapprovalData.notification_url = notificationUrl;
+
     try {
         const response = await client.post('/preapproval', preapprovalData);
         console.log('[createTuitionPreapproval] Assinatura criada com sucesso:', response.data.id);
@@ -285,6 +309,7 @@ module.exports = {
     createMercadoPagoPreference,
     createCartMercadoPagoPreference,
     getMercadoPagoPayment,
+    searchMercadoPagoPayments,
     getMercadoPagoPreference,
     exchangeOAuthCode,
     cancelPreapproval,

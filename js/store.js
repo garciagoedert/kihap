@@ -143,21 +143,35 @@ document.addEventListener('DOMContentLoaded', () => {
         productsGrid.className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6";
 
         products.forEach(product => {
+            const isAvailable = product.available !== false;
             const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
             const productCard = `
-                <a href="produto.html?id=${product.id}" class="group block bg-[#0f172a]/40 border border-gray-800 rounded-xl overflow-hidden hover:border-yellow-500/50 transition-all duration-300">
+                <a href="produto.html?id=${product.id}" class="group block bg-[#0f172a]/40 border border-gray-800 rounded-xl overflow-hidden hover:border-yellow-500/50 transition-all duration-300 ${!isAvailable ? 'opacity-75' : ''}">
                     <div class="relative aspect-square overflow-hidden bg-gray-900">
-                        <img src="${product.imageUrl || 'imgs/placeholder.jpg'}" alt="${product.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                        <img src="${product.imageUrl || 'imgs/placeholder.jpg'}" alt="${product.name}" 
+                            class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 ${!isAvailable ? 'grayscale opacity-50' : ''}">
+                        
                         ${product.category ? `<span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-[9px] font-bold uppercase tracking-widest text-white px-2 py-0.5 rounded border border-white/10">${product.category}</span>` : ''}
+                        
+                        ${!isAvailable ? `
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="bg-red-600/90 text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-xl transform -rotate-12 border-2 border-white/20">
+                                    FORA DE ESTOQUE
+                                </span>
+                            </div>
+                        ` : ''}
                     </div>
                     <div class="p-3 md:p-4">
                         <h3 class="text-sm md:text-base font-bold text-white mb-0.5 group-hover:text-yellow-500 transition-colors line-clamp-1">${product.name}</h3>
                         <p class="text-gray-400 text-[10px] md:text-xs mb-2 line-clamp-2 h-6 md:h-8 leading-tight">${product.description || ''}</p>
                         <div class="flex items-center justify-between mt-auto">
-                            <span class="text-base md:text-lg font-black text-yellow-500">${price}</span>
-                            <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-yellow-500 flex items-center justify-center text-black text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i class="fas fa-plus"></i>
-                            </div>
+                            <span class="text-base md:text-lg font-black ${isAvailable ? 'text-yellow-500' : 'text-gray-500'}">${price}</span>
+                            ${isAvailable ? `
+                                <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-yellow-500 flex items-center justify-center text-black text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </a>

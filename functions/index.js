@@ -8,7 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createMercadoPagoPreference, createCartMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval } = require('./mercadopago.js');
+const { createMercadoPagoPreference, createCartMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, searchMercadoPagoPayments, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -241,6 +241,84 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
     }
 };
 
+// Helper para atualizar uma venda como paga, enviar e-mail e notificar gerente
+async function updateSaleToPaid(saleId, saleData, providerPaymentId = null) {
+    if (saleData.paymentStatus === 'paid') {
+        console.log(`[updateSaleToPaid] Venda ${saleId} já está marcada como paga.`);
+        return false;
+    }
+
+    const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+    
+    // Atualiza o status para 'paid'
+    const updateData = { 
+        paymentStatus: 'paid',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    if (providerPaymentId) updateData.mercadoPagoPaymentId = providerPaymentId;
+    
+    await docRef.update(updateData);
+    console.log(`[updateSaleToPaid] Status atualizado para 'paid' para a venda ${saleId}`);
+
+    // Controle de Estoque
+    try {
+        const productRef = db.collection('products').doc(saleData.productId);
+        await db.runTransaction(async (transaction) => {
+            const productSnap = await transaction.get(productRef);
+            if (productSnap.exists) {
+                const product = productSnap.data();
+                if (product.controlStock === true) {
+                    let newQuantity = (product.stockQuantity || 0) - 1;
+                    const updateProductData = {
+                        stockQuantity: Math.max(0, newQuantity),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (newQuantity <= 0) {
+                        updateProductData.available = false;
+                        console.log(`[updateSaleToPaid] Produto ${saleData.productId} ficou sem estoque. Marcado como indisponível.`);
+                    }
+
+                    transaction.update(productRef, updateProductData);
+                    console.log(`[updateSaleToPaid] Estoque atualizado para o produto ${saleData.productId}: ${updateProductData.stockQuantity}`);
+                }
+            }
+        });
+    } catch (stockError) {
+        console.error('[updateSaleToPaid] Erro ao atualizar estoque:', stockError);
+    }
+
+    // Envio de e-mail (ingresso ou recibo)
+    if (!saleData.emailSent) {
+        const productRef = db.collection('products').doc(saleData.productId);
+        const productSnap = await productRef.get();
+        
+        if (productSnap.exists) {
+            if (productSnap.data().isTicket) {
+                console.log(`[updateSaleToPaid] Enviando e-mail de ingresso para ${saleId}`);
+                await sendTicketEmail(saleId, saleData);
+            } else {
+                console.log(`[updateSaleToPaid] Enviando recibo da loja para ${saleId}`);
+                await sendPurchaseReceiptEmail(saleId, saleData);
+            }
+        }
+    }
+
+    // Notificação ao Gerente da Unidade
+    await notifyManagerOfEnrollment(saleId, saleData);
+    return true;
+}
+
+function getNotificationUrl(functionName) {
+    const projectId = process.env.GCLOUD_PROJECT || (admin.app().options && admin.app().options.projectId);
+    const region = 'us-central1'; // Região padrão do Firebase Functions
+    if (!projectId) {
+        console.warn('[getNotificationUrl] Project ID não encontrado.');
+        return null;
+    }
+    return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
+}
+
 
 exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) => {
     console.log('[createCartCheckoutSession] Iniciando a execução.');
@@ -314,7 +392,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
-        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds);
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
+        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl);
 
         for (const docId of saleDocIds) {
             await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });
@@ -522,7 +601,8 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         }
 
         console.log('[createCheckoutSession] Criando preferência no Mercado Pago...');
-        const mpPreference = await createMercadoPagoPreference(product, formDataList, totalAmount, saleDocIds);
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
+        const mpPreference = await createMercadoPagoPreference(product, formDataList, totalAmount, saleDocIds, notificationUrl);
         console.log('[createCheckoutSession] Preferência Mercado Pago criada com sucesso:', mpPreference.id);
 
         for (const docId of saleDocIds) {
@@ -1417,6 +1497,183 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
     res.status(200).send();
 });
 
+// Webhook para lidar com eventos do Mercado Pago em tempo real
+exports.mercadopagoWebhook = functions.https.onRequest(async (req, res) => {
+    const { action, type, data } = req.body;
+    let topic = req.query.topic || type || action;
+    let resourceId = req.query.id || (data && data.id);
+
+    console.log(`[Mercado Pago Webhook] Recebido evento: topic=${topic}, id=${resourceId}`, JSON.stringify(req.body));
+
+    // Log do evento no Firestore para debug e auditoria
+    try {
+        await db.collection('webhook_logs').add({
+            provider: 'mercadopago',
+            topic: topic || 'unknown',
+            resourceId: resourceId || 'unknown',
+            payload: req.body,
+            receivedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (logError) {
+        console.error('[Mercado Pago Webhook] Falha ao salvar log no Firestore:', logError);
+    }
+
+    if (!resourceId) {
+        console.warn('[Mercado Pago Webhook] ID de recurso não encontrado no payload.');
+        return res.status(200).send();
+    }
+
+    try {
+        // Mercado Pago envia notificações com diferentes formatos de 'topic' ou 'type'
+        // 'payment' é o tópico para pagamentos padrão (Checkout Pro)
+        if (topic === 'payment' || topic === 'payment.updated' || topic === 'payment.created') {
+            console.log(`[Mercado Pago Webhook] Buscando detalhes do pagamento ${resourceId}...`);
+            const payment = await getMercadoPagoPayment(resourceId);
+            
+            if (!payment) {
+                console.error(`[Mercado Pago Webhook] Pagamento ${resourceId} não encontrado na API do MP.`);
+                return res.status(200).send();
+            }
+
+            const status = payment.status;
+            const externalReference = payment.external_reference;
+
+            if (status === 'approved' && externalReference) {
+                const firestoreDocIds = externalReference.split(',');
+                console.log(`[Mercado Pago Webhook] Pagamento aprovado! Atualizando ${firestoreDocIds.length} documento(s) no Firestore.`);
+
+                for (const docId of firestoreDocIds) {
+                    const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                    const saleSnap = await docRef.get();
+
+                    if (!saleSnap.exists) {
+                        console.warn(`[Mercado Pago Webhook] Documento de venda ${docId} não encontrado.`);
+                        continue;
+                    }
+
+                    const saleData = saleSnap.data();
+
+                    // Atualiza a venda usando o helper
+                    await updateSaleToPaid(docId, saleData, resourceId);
+                }
+            } else {
+                console.log(`[Mercado Pago Webhook] Pagamento ${resourceId} status: ${status}. Nenhuma ação tomada.`);
+            }
+        } else {
+            console.log(`[Mercado Pago Webhook] Tópico ${topic} ignorado.`);
+        }
+    } catch (error) {
+        console.error('[Mercado Pago Webhook] Erro ao processar webhook:', error);
+    }
+
+    res.status(200).send();
+});
+
+// Função para sincronizar vendas pendentes do Mercado Pago (Manual ou Agendada)
+const syncMercadoPagoSales = async (limitHours = 24) => {
+    console.log(`[syncMercadoPagoSales] Iniciando sincronização das últimas ${limitHours} horas...`);
+    
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - limitHours);
+    
+    const pendingSalesSnapshot = await db.collection('inscricoesFaixaPreta')
+        .where('paymentStatus', '==', 'pending')
+        .where('created', '>=', startTime)
+        .get();
+
+    if (pendingSalesSnapshot.empty) {
+        console.log('[syncMercadoPagoSales] Nenhuma venda pendente encontrada no período.');
+        return { processed: 0, updated: 0 };
+    }
+
+    console.log(`[syncMercadoPagoSales] Encontradas ${pendingSalesSnapshot.size} vendas pendentes.`);
+    
+    let updatedCount = 0;
+    
+    // Agrupamos por external_reference (algumas vendas podem compartilhar a mesma preferência/pagamento se forem de carrinho)
+    // Mas aqui vamos simplificar processando uma por uma para garantir que pegamos tudo.
+    for (const doc of pendingSalesSnapshot.docs) {
+        const saleData = doc.data();
+        const saleId = doc.id;
+        
+        try {
+            // Buscamos pagamentos no MP usando o ID da venda como external_reference
+            // Lembrar que Checkout Pro usa os Doc IDs separados por vírgula no external_reference
+            // Então precisamos buscar pagamentos que contenham esse ID no external_reference
+            // OU, mais fácil, buscar pelo external_reference exato salvo na venda se existir.
+            
+            // Atualmente as vendas salvam o mercadoPagoPreferenceId.
+            // O caminho mais seguro é buscar todos os pagamentos aprovados que tenham esse saleId no external_reference.
+            const payments = await searchMercadoPagoPayments(saleId);
+            
+            if (payments && payments.length > 0) {
+                const approvedPayment = payments.find(p => p.status === 'approved');
+                if (approvedPayment) {
+                    console.log(`[syncMercadoPagoSales] Pagamento aprovado encontrado para a venda ${saleId}.`);
+                    const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id);
+                    if (wasUpdated) updatedCount++;
+                }
+            }
+        } catch (error) {
+            console.error(`[syncMercadoPagoSales] Erro ao processar venda ${saleId}:`, error.message);
+        }
+    }
+
+    return { processed: pendingSalesSnapshot.size, updated: updatedCount };
+};
+
+// Cloud Function acionável manualmente para sincronizar vendas
+exports.syncMercadoPagoSalesStatus = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+    }
+    const limitHours = data.limitHours || 24;
+    return await syncMercadoPagoSales(limitHours);
+});
+
+// Cloud Function para sincronizar uma única venda específica
+exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+    }
+    
+    const saleId = data.saleId;
+    if (!saleId) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID da venda (saleId) é obrigatório.');
+    }
+
+    const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+    const saleSnap = await docRef.get();
+
+    if (!saleSnap.exists) {
+        throw new functions.https.HttpsError('not-found', 'Venda não encontrada.');
+    }
+
+    const saleData = saleSnap.data();
+    
+    try {
+        const payments = await searchMercadoPagoPayments(saleId);
+        
+        if (payments && payments.length > 0) {
+            const approvedPayment = payments.find(p => p.status === 'approved');
+            if (approvedPayment) {
+                const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id);
+                return { success: true, updated: wasUpdated, status: approvedPayment.status };
+            }
+            return { success: true, updated: false, msg: 'Pagamento encontrado, mas não está aprovado.', status: payments[0].status };
+        }
+        return { success: true, updated: false, msg: 'Nenhum pagamento encontrado no Mercado Pago para esta venda.' };
+    } catch (error) {
+        console.error(`[syncSingleMercadoPagoSale] Erro ao processar venda ${saleId}:`, error.message);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+// Cloud Function agendada para sincronizar vendas a cada 10 minutos
+exports.scheduledMercadoPagoSync = functions.pubsub.schedule('every 10 minutes').timeZone('America/Sao_Paulo').onRun(async (context) => {
+    await syncMercadoPagoSales(24);
+    return null;
+});
 
 // Função agendada para verificar e reenviar e-mails de ingressos não enviados
 exports.scheduledEmailCheck = functions.pubsub.schedule('every 10 minutes').timeZone('America/Sao_Paulo').onRun(async (context) => {
@@ -2787,6 +3044,82 @@ exports.adminCancelSubscription = functions.https.onCall(async (data, context) =
         console.error('[adminCancelSubscription] Erro grave:', error.response?.data || error);
         throw new functions.https.HttpsError('internal', error.message);
     }
+});
+
+/**
+ * Permite que um administrador atualize manualmente o status de uma ou mais vendas (ex: pagamento em dinheiro).
+ * Requer obrigatoriamente uma justificativa.
+ */
+exports.manuallyUpdateSaleStatus = functions.https.onCall(async (data, context) => {
+    // 1. Verifica autenticação e permissão de admin
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'O usuário deve estar autenticado.');
+    }
+
+    const userRef = db.collection('users').doc(context.auth.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists || !userSnap.data().isAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem atualizar status manualmente.');
+    }
+
+    const { saleIds, newStatus, reason } = data;
+
+    if (!saleIds || !Array.isArray(saleIds) || saleIds.length === 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID da venda (ou lista de IDs) é obrigatório.');
+    }
+    if (!newStatus || !reason || reason.trim().length < 5) {
+        throw new functions.https.HttpsError('invalid-argument', 'Status e justificativa (mínimo 5 caracteres) são obrigatórios.');
+    }
+
+    console.log(`[manuallyUpdateSaleStatus] Iniciando atualização manual por ${context.auth.token.email}. Status: ${newStatus}, Motivo: ${reason}`);
+
+    const results = [];
+    const adminEmail = context.auth.token.email || 'Admin';
+
+    for (const saleId of saleIds) {
+        try {
+            const saleRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+            const saleSnap = await saleRef.get();
+
+            if (!saleSnap.exists) {
+                results.push({ saleId, success: false, error: 'Venda não encontrada' });
+                continue;
+            }
+
+            const saleData = saleSnap.data();
+            const previousStatus = saleData.paymentStatus || 'pending';
+
+            // Se o novo status for 'paid', usamos o helper principal que envia e-mails e notifica gerente
+            if (newStatus === 'paid' && previousStatus !== 'paid') {
+                await updateSaleToPaid(saleId, saleData);
+            }
+
+            // Registra o log da alteração manual
+            await saleRef.update({
+                paymentStatus: newStatus,
+                manualUpdateLog: admin.firestore.FieldValue.arrayUnion({
+                    previousStatus,
+                    newStatus,
+                    reason,
+                    updatedBy: adminEmail,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                }),
+                lastManualUpdate: {
+                    status: newStatus,
+                    reason,
+                    updatedBy: adminEmail,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                }
+            });
+
+            results.push({ saleId, success: true });
+        } catch (error) {
+            console.error(`[manuallyUpdateSaleStatus] Erro ao processar venda ${saleId}:`, error);
+            results.push({ saleId, success: false, error: error.message });
+        }
+    }
+
+    return { success: true, results };
 });
 
 // ==========================================

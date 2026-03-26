@@ -176,7 +176,7 @@ exports.cancelTuitionSubscription = functions.https.onCall(async (data, context)
 
 // --- BUSCA RÁPIDA DE ALUNOS --- //
 
-exports.listAlunosLocais = functions.https.onCall(async (data, context) => {
+exports.listAlunosLocais = functions.runWith({ timeoutSeconds: 300, memory: '1GB' }).https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
     
     // Busca do Firestore (Admin = Bypassa Regras)
