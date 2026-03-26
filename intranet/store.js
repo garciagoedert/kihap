@@ -642,21 +642,39 @@ export async function setupStorePage() {
             }
 
             const productUrl = `${window.location.origin.replace('/intranet', '')}/produto.html?id=${product.id}`;
-            const visibilityStatus = product.visible ? '<span class="text-green-400">Visível</span>' : '<span class="text-gray-400">Invisível</span>';
-            const availabilityStatus = product.available ? '<span class="text-blue-400">Disponível</span>' : '<span class="text-red-400">Indisponível</span>';
-            const publicStatus = product.acessoPublico ? '<span class="text-indigo-400">Público</span>' : '<span class="text-gray-500">Privado</span>';
+            const visibilityBadge = product.visible 
+                ? '<span class="status-badge status-badge-visible">Visível</span>' 
+                : '<span class="status-badge status-badge-invisible">Invisível</span>';
+            const availabilityBadge = product.available 
+                ? '<span class="status-badge status-badge-available">Disponível</span>' 
+                : '<span class="status-badge status-badge-unavailable">Indisponível</span>';
+            const publicBadge = product.acessoPublico 
+                ? '<span class="status-badge status-badge-public">Público</span>' 
+                : '<span class="status-badge status-badge-private">Privado</span>';
 
             row.innerHTML = `
                 <td class="p-4" data-label="Nome">${product.name}</td>
                 <td class="p-4" data-label="Preço">${price}</td>
-                <td class="p-4" data-label="Status">${visibilityStatus} / ${availabilityStatus} / ${publicStatus}</td>
-                <td class="p-4" data-label="Link">
-                    <button class="copy-link-btn text-green-400 hover:text-green-300" data-link="${productUrl}">
-                        <i class="fas fa-copy"></i> Copiar
-                    </button>
+                <td class="p-4" data-label="Status">
+                    <div class="flex items-center gap-2">
+                        ${visibilityBadge}
+                        ${availabilityBadge}
+                        ${publicBadge}
+                    </div>
                 </td>
-                <td class="p-4" data-label="Ações">
-                    <button class="edit-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${product.id}"><i class="fas fa-pencil-alt"></i></button>
+                <td data-label="Actions" class="p-4 md:table-cell">
+                    <div class="card-footer md:flex md:items-center md:gap-4 md:border-0 md:p-0 md:mt-0">
+                        <div data-label="Link" class="md:contents">
+                            <button class="copy-link-btn text-green-400 hover:text-green-300 transition-colors flex items-center" data-link="${productUrl}">
+                                <i class="fas fa-copy mr-1.5"></i> Copiar
+                            </button>
+                        </div>
+                        <div data-label="Ações" class="md:contents">
+                            <button class="edit-btn text-blue-400 hover:text-blue-300 transition-colors" data-id="${product.id}">
+                                <i class="fas fa-pencil-alt"></i> Editar
+                            </button>
+                        </div>
+                    </div>
                 </td>
             `;
         });
