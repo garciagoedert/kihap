@@ -662,19 +662,15 @@ export async function setupStorePage() {
                         ${publicBadge}
                     </div>
                 </td>
-                <td data-label="Actions" class="p-4 md:table-cell">
-                    <div class="card-footer md:flex md:items-center md:gap-4 md:border-0 md:p-0 md:mt-0">
-                        <div data-label="Link" class="md:contents">
-                            <button class="copy-link-btn text-green-400 hover:text-green-300 transition-colors flex items-center" data-link="${productUrl}">
-                                <i class="fas fa-copy mr-1.5"></i> Copiar
-                            </button>
-                        </div>
-                        <div data-label="Ações" class="md:contents">
-                            <button class="edit-btn text-blue-400 hover:text-blue-300 transition-colors" data-id="${product.id}">
-                                <i class="fas fa-pencil-alt"></i> Editar
-                            </button>
-                        </div>
-                    </div>
+                <td class="p-4" data-label="Link">
+                    <button class="store-action-btn btn-copy copy-link-btn" data-link="${productUrl}">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </td>
+                <td class="p-4" data-label="Ações">
+                    <button class="store-action-btn btn-edit edit-btn" data-id="${product.id}">
+                        <i class="fas fa-pencil-alt"></i> Editar
+                    </button>
                 </td>
             `;
         });
