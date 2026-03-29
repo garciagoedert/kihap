@@ -3140,3 +3140,214 @@ exports.deleteLocalMember = tuitions.deleteLocalMember;
 exports.getStudentFinancialHub = tuitions.getStudentFinancialHub;
 exports.cleanupRemovedStudents = tuitions.cleanupRemovedStudents;
 exports.mpWebhook = tuitions.mpWebhook;
+
+// ─── TRELLO NOTIFICATIONS ───────────────────────────────────────────────────
+
+/**
+ * Notifica por e-mail quando uma nova demanda é criada.
+ */
+exports.notifyTrelloDemand = functions.firestore
+    .document('trello_demands/{demandId}')
+    .onCreate(async (snap, context) => {
+        const demand = snap.data();
+        const demandId = context.params.demandId;
+
+        console.log(`[notifyTrelloDemand] Nova demanda criada: ${demandId}`);
+
+        const gmailEmail = process.env.GMAIL_EMAIL;
+        const gmailPassword = process.env.GMAIL_PASSWORD;
+
+        if (!gmailEmail || !gmailPassword) {
+            console.error('[notifyTrelloDemand] Credenciais Gmail não configuradas.');
+            return;
+        }
+
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: gmailEmail, pass: gmailPassword },
+            });
+
+            // Buscar nome do departamento
+            const deptSnap = await admin.firestore().collection('trello_departments').doc(demand.departamentoId).get();
+            const deptName = deptSnap.exists ? deptSnap.data().name : 'Geral';
+
+            // Notificar canal central
+            const mailOptions = {
+                from: `Kihap Trello <${gmailEmail}>`,
+                to: 'comunicacao@kihap.com.br',
+                subject: `[NOVA DEMANDA] ${demand.titulo || 'Sem título'} - ${deptName}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #3b82f6;">Nova Demanda no Trello</h2>
+                        <p><strong>Solicitante:</strong> ${demand.nome} (${demand.email})</p>
+                        <p><strong>Unidade:</strong> ${demand.unidade}</p>
+                        <p><strong>Departamento:</strong> ${deptName}</p>
+                        <p><strong>Título:</strong> ${demand.titulo || 'Sem título'}</p>
+                        <p><strong>Prioridade:</strong> ${demand.priority || 'Média'}</p>
+                        <p><strong>Responsável:</strong> ${demand.assigneeName || 'Não atribuído'}</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p><strong>Descrição:</strong></p>
+                        <div style="background: #f9fafb; padding: 15px; border-radius: 5px; color: #4b5563;">
+                            ${demand.demanda}
+                        </div>
+                        <p style="margin-top: 20px; text-align: center;">
+                            <a href="https://kihap.com.br/intranet/trello.html" style="background: #3b82f6; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver no Kanban</a>
+                        </p>
+                    </div>
+                `
+            };
+            await transporter.sendMail(mailOptions);
+
+            // Se houver responsável, notificar também
+            if (demand.assigneeId) {
+                const userSnap = await admin.firestore().collection('users').doc(demand.assigneeId).get();
+                const userEmail = userSnap.exists ? userSnap.data().email : null;
+                if (userEmail) {
+                    const assigneeMailOptions = {
+                        from: `Kihap Trello <${gmailEmail}>`,
+                        to: userEmail,
+                        subject: `[ATRIBUIÇÃO] Nova demanda atribuída a você: ${demand.titulo || 'Sem título'}`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                <h2 style="color: #3b82f6;">Você tem uma nova tarefa!</h2>
+                                <p>Olá <strong>${demand.assigneeName}</strong>, uma nova demanda foi criada e atribuída a você.</p>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                <p><strong>Título:</strong> ${demand.titulo || 'Sem título'}</p>
+                                <p><strong>Solicitante:</strong> ${demand.nome}</p>
+                                <p><strong>Prioridade:</strong> ${demand.priority || 'Média'}</p>
+                                <p style="margin-top: 20px; text-align: center;">
+                                    <a href="https://kihap.com.br/intranet/trello.html" style="background: #3b82f6; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Tarefa</a>
+                                </p>
+                            </div>
+                        `
+                    };
+                    await transporter.sendMail(assigneeMailOptions);
+                }
+            }
+            console.log(`[notifyTrelloDemand] E-mail enviado com sucesso para ${demandId}`);
+        } catch (error) {
+            console.error(`[notifyTrelloDemand] Erro ao enviar e-mail:`, error);
+        }
+    });
+
+/**
+ * Notifica quando a atribuição de uma demanda é alterada.
+ */
+exports.notifyTrelloAssignment = functions.firestore
+    .document('trello_demands/{demandId}')
+    .onUpdate(async (change, context) => {
+        const newData = change.after.data();
+        const prevData = change.before.data();
+
+        // Se o responsável mudou e existe um novo responsável
+        if (newData.assigneeId !== prevData.assigneeId && newData.assigneeId) {
+            console.log(`[notifyTrelloAssignment] Atribuição alterada para ${newData.assigneeId}`);
+
+            const gmailEmail = process.env.GMAIL_EMAIL;
+            const gmailPassword = process.env.GMAIL_PASSWORD;
+            if (!gmailEmail || !gmailPassword) return;
+
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: { user: gmailEmail, pass: gmailPassword },
+                });
+
+                const userSnap = await admin.firestore().collection('users').doc(newData.assigneeId).get();
+                const userEmail = userSnap.exists ? userSnap.data().email : null;
+
+                if (userEmail) {
+                    const mailOptions = {
+                        from: `Kihap Trello <${gmailEmail}>`,
+                        to: userEmail,
+                        subject: `[ATRIBUIÇÃO] Você foi designado para uma demanda: ${newData.titulo || 'Sem título'}`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                <h2 style="color: #3b82f6;">Nova Tarefa Atribuída</h2>
+                                <p>Olá <strong>${newData.assigneeName || 'Colaborador'}</strong>, a seguinte demanda foi atribuída a você:</p>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                <p><strong>Título:</strong> ${newData.titulo || 'Sem título'}</p>
+                                <p><strong>Solicitante:</strong> ${newData.nome}</p>
+                                <p><strong>Status:</strong> ${newData.status}</p>
+                                <p style="margin-top: 20px; text-align: center;">
+                                    <a href="https://kihap.com.br/intranet/trello.html" style="background: #3b82f6; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Tarefa</a>
+                                </p>
+                            </div>
+                        `
+                    };
+                    await transporter.sendMail(mailOptions);
+                }
+            } catch (error) {
+                console.error(`[notifyTrelloAssignment] Erro:`, error);
+            }
+        }
+    });
+
+/**
+ * Notifica por e-mail quando alguém é mencionado em um comentário.
+ */
+exports.notifyTrelloCommentMention = functions.firestore
+    .document('trello_demands/{demandId}/comments/{commentId}')
+    .onCreate(async (snap, context) => {
+        const comment = snap.data();
+        const { demandId } = context.params;
+
+        // Regex para encontrar @menções
+        const mentions = comment.text.match(/@(\S+)/g);
+        if (!mentions) return;
+
+        console.log(`[notifyTrelloCommentMention] Menções encontradas no comentário ${context.params.commentId}`);
+
+        const gmailEmail = process.env.GMAIL_EMAIL;
+        const gmailPassword = process.env.GMAIL_PASSWORD;
+
+        if (!gmailEmail || !gmailPassword) return;
+
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: gmailEmail, pass: gmailPassword },
+            });
+
+            const demandSnap = await admin.firestore().collection('trello_demands').doc(demandId).get();
+            const demandData = demandSnap.exists ? demandSnap.data() : {};
+
+            for (let mention of mentions) {
+                const username = mention.substring(1); // Remove @
+                
+                // Buscar usuário pelo nome ou email (simplificado)
+                const userQuery = await admin.firestore().collection('users')
+                    .where('displayName', '==', username).limit(1).get();
+                
+                if (!userQuery.empty) {
+                    const userData = userQuery.docs[0].data();
+                    const userEmail = userData.email;
+
+                    if (userEmail) {
+                        const mailOptions = {
+                            from: `Kihap Trello <${gmailEmail}>`,
+                            to: userEmail,
+                            subject: `[${demandData.titulo || 'Demanda'}] Você foi mencionado em um comentário`,
+                            html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                    <h3 style="color: #3b82f6;">Você foi mencionado por ${comment.authorName}</h3>
+                                    <p>No card: <strong>${demandData.titulo || 'Sem título'}</strong></p>
+                                    <div style="background: #f9fafb; padding: 15px; border-radius: 5px; color: #4b5563; border-left: 4px solid #3b82f6;">
+                                        ${comment.text}
+                                    </div>
+                                    <p style="margin-top: 20px; text-align: center;">
+                                        <a href="https://kihap.com.br/intranet/trello.html" style="background: #3b82f6; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver no Kanban</a>
+                                    </p>
+                                </div>
+                            `
+                        };
+                        await transporter.sendMail(mailOptions);
+                        console.log(`[notifyTrelloCommentMention] Notificação enviada para ${userEmail}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`[notifyTrelloCommentMention] Erro:`, error);
+        }
+    });

@@ -12,11 +12,15 @@ let departments = [];
 let demands = [];
 let activeFilters = new Set();
 let searchQuery = '';
-let currentDemandaId = null;
 let currentUser = null;
-let allUsers = []; // For @ mention autocomplete
-let commentsUnsubscribe = null; // Unsubscribe fn for comments listener
-let mentionQuery = null; // Current @ mention query string
+let currentUserId = null;
+let currentDeptId = null; // Currently viewed department ID
+let currentDemandaId = null; // Currently viewed/edited demand ID
+let currentEditId = null; // Currently edited demand ID in the form
+let allUsers = []; // For @ mention and assignee
+let commentsUnsubscribe = null;
+let mentionQuery = null;
+let selectedCommentFile = null;
 
 // DOM Elements
 const kanbanBoard = document.getElementById('kanban-board');
@@ -37,25 +41,82 @@ const deptSelect = document.getElementById('form_departamento');
 const deptList = document.getElementById('deptList');
 const deptCheckboxes = document.getElementById('deptCheckboxes');
 const searchInput = document.getElementById('searchInput');
+const formAssignee = document.getElementById('form_assignee');
+const assigneeSearchInput = document.getElementById('assigneeSearchInput');
+const assigneeDropdown = document.getElementById('assigneeDropdown');
+const btnAddLink = document.getElementById('btnAddLink');
+const linksContainer = document.getElementById('linksContainer');
+const btnEditDemanda = document.getElementById('btnEditDemanda');
+const checklistContainer = document.getElementById('detalhe_checklist');
+const checklistInput = document.getElementById('checklist_input');
+const btnAddChecklistItem = document.getElementById('btnAddChecklistItem');
+const commentAnexo = document.getElementById('commentAnexo');
+const commentAnexoPreview = document.getElementById('commentAnexoPreview');
+const btnRemoveCommentAnexo = document.getElementById('btnRemoveCommentAnexo');
 
 // Load Data
 function init() {
-    loadComponents(); // Sidebar & Header
+    loadComponents(); 
     onAuthStateChanged(auth, user => {
         currentUser = user;
+        if (user) {
+            currentUserId = user.uid;
+        }
     });
     loadUsers();
     setupListeners();
     observeDepartments();
-    observeDemands();
+    // Demandas are now observed per department or globally filtered in renderCards
+    observeDemands(); 
 }
 
 async function loadUsers() {
     try {
         const snap = await getDocs(collection(db, 'users'));
-        allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Filtra apenas usuários da intranet (que não possuem evoMemberId)
+        allUsers = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(u => !u.evoMemberId);
+        renderAssigneeOptions();
     } catch (e) {
-        console.warn('Could not load users for @mentions:', e.message);
+        console.warn('Could not load users:', e.message);
+    }
+}
+
+function renderAssigneeOptions(filter = '') {
+    assigneeDropdown.innerHTML = '';
+    const filteredUsers = allUsers.filter(u => {
+        const name = (u.displayName || u.name || u.email).toLowerCase();
+        return name.includes(filter.toLowerCase());
+    });
+
+    if (filteredUsers.length === 0) {
+        assigneeDropdown.innerHTML = '<div class="p-3 text-gray-500 text-xs italic">Nenhum usuário encontrado.</div>';
+    } else {
+        filteredUsers.forEach(u => {
+            const name = u.displayName || u.name || u.email;
+            const div = document.createElement('div');
+            div.className = 'p-2.5 flex items-center gap-3 cursor-pointer hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0';
+            
+            const initial = name[0].toUpperCase();
+            const photoHtml = u.photoUrl 
+                ? `<img src="${u.photoUrl}" class="w-6 h-6 rounded-full">`
+                : `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">${initial}</div>`;
+
+            div.innerHTML = `
+                ${photoHtml}
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-white">${name}</div>
+                    <div class="text-[10px] text-gray-400">${u.email}</div>
+                </div>
+            `;
+            div.onclick = () => {
+                formAssignee.value = u.id;
+                assigneeSearchInput.value = name;
+                assigneeDropdown.classList.add('hidden');
+            };
+            assigneeDropdown.appendChild(div);
+        });
     }
 }
 
@@ -88,7 +149,7 @@ function renderDepartments() {
     }
 
     departments.forEach(dept => {
-        // Build Selection Card
+        // ... build selection card code (omitted for brevity in replacement, but I must match it exactly)
         const card = document.createElement('div');
         card.className = "bg-gray-800 border-l-4 rounded-xl shadow-lg p-6 cursor-pointer hover:bg-gray-700 transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center text-center group h-48";
         card.style.borderLeftColor = dept.color || '#3b82f6';
@@ -112,15 +173,85 @@ function renderDepartments() {
         deptSelect.appendChild(opt);
 
         const li = document.createElement('li');
-        li.className = 'flex items-center justify-between bg-gray-700/50 p-2 rounded border border-gray-600';
-        li.innerHTML = `
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 rounded-full" style="background-color: ${dept.color}"></div>
-                <span class="text-sm text-gray-200 font-medium">${dept.name}</span>
+        li.className = 'bg-gray-700/50 p-4 rounded-lg border border-gray-600 space-y-3';
+        const cols = dept.columns || [
+            { id: 'backlog', title: 'Backlog', color: 'gray' },
+            { id: 'todo', title: 'To do', color: 'blue' },
+            { id: 'pendente', title: 'Pendente', color: 'yellow' },
+            { id: 'concluido', title: 'Concluído', color: 'green' }
+        ];
+
+        let colsHtml = cols.map((c, i) => `
+            <div class="flex gap-2 items-center">
+                <input type="text" value="${c.title}" data-index="${i}" data-deptid="${dept.id}" class="flex-1 bg-gray-800 border border-gray-700 rounded p-1 text-xs col-title-input">
+                <select data-index="${i}" data-deptid="${dept.id}" class="bg-gray-800 border border-gray-700 rounded p-1 text-xs col-color-select">
+                    <option value="gray" ${c.color === 'gray' ? 'selected' : ''}>Cinza</option>
+                    <option value="blue" ${c.color === 'blue' ? 'selected' : ''}>Azul</option>
+                    <option value="yellow" ${c.color === 'yellow' ? 'selected' : ''}>Amarelo</option>
+                    <option value="green" ${c.color === 'green' ? 'selected' : ''}>Verde</option>
+                    <option value="red" ${c.color === 'red' ? 'selected' : ''}>Vermelho</option>
+                </select>
+                <button class="remove-col-btn text-red-500 hover:text-red-400" data-index="${i}" data-deptid="${dept.id}"><i class="fas fa-times"></i></button>
             </div>
-            <button class="delete-dept text-red-400 hover:text-red-300 transition-colors" data-id="${dept.id}"><i class="fas fa-trash"></i></button>
+        `).join('');
+
+        li.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded-full" style="background-color: ${dept.color}"></div>
+                    <span class="text-sm text-gray-200 font-bold">${dept.name}</span>
+                </div>
+                <button class="delete-dept text-red-400 hover:text-red-300 transition-colors" data-id="${dept.id}"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="space-y-2 pt-2 border-t border-gray-600">
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Colunas do Kanban</p>
+                ${colsHtml}
+                <button class="add-col-btn text-blue-400 hover:text-blue-300 text-[10px] font-bold uppercase tracking-wider" data-id="${dept.id}">+ Adicionar Coluna</button>
+            </div>
         `;
         deptList.appendChild(li);
+    });
+
+    // Add Column Listeners
+    document.querySelectorAll('.add-col-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const deptId = e.currentTarget.dataset.id;
+            const dept = departments.find(d => d.id === deptId);
+            const newCols = [...(dept.columns || []), { id: `col_${Date.now()}`, title: 'Nova Coluna', color: 'gray' }];
+            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+        });
+    });
+
+    document.querySelectorAll('.col-title-input').forEach(input => {
+        input.addEventListener('change', async (e) => {
+            const deptId = e.target.dataset.deptid;
+            const index = parseInt(e.target.dataset.index);
+            const dept = departments.find(d => d.id === deptId);
+            const newCols = [...(dept.columns || [])];
+            newCols[index].title = e.target.value;
+            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+        });
+    });
+
+    document.querySelectorAll('.col-color-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const deptId = e.target.dataset.deptid;
+            const index = parseInt(e.target.dataset.index);
+            const dept = departments.find(d => d.id === deptId);
+            const newCols = [...(dept.columns || [])];
+            newCols[index].color = e.target.value;
+            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+        });
+    });
+
+    document.querySelectorAll('.remove-col-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const deptId = e.currentTarget.dataset.deptid;
+            const index = parseInt(e.currentTarget.dataset.index);
+            const dept = departments.find(d => d.id === deptId);
+            const newCols = dept.columns.filter((_, i) => i !== index);
+            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+        });
     });
 
     document.querySelectorAll('.delete-dept').forEach(btn => {
@@ -134,6 +265,9 @@ function renderDepartments() {
 }
 
 function renderDepartmentFilters() {
+    // This function can be kept or removed if filters are no longer used globally
+    // but the user wants to filter by department, so let's keep it but it might need adjustment
+    // for the new dynamic column structure.
     deptCheckboxes.innerHTML = '';
     departments.forEach(dept => {
         const div = document.createElement('label');
@@ -149,28 +283,57 @@ function renderDepartmentFilters() {
 
     document.querySelectorAll('.dept-filter-cb').forEach(cb => {
         cb.addEventListener('change', (e) => {
-            if (e.target.checked) activeFilters.add(e.target.value);
-            else activeFilters.delete(e.target.value);
-            const filterBtn = document.getElementById('deptFilterBtn');
-            if (activeFilters.size > 0) filterBtn.classList.add('bg-blue-900', 'border-blue-500');
-            else filterBtn.classList.remove('bg-blue-900', 'border-blue-500');
+            const val = e.target.value;
+            if (e.target.checked) activeFilters.add(String(val));
+            else activeFilters.delete(String(val));
             renderCards();
         });
     });
 }
 
 function renderCards() {
-    document.getElementById('col-backlog').innerHTML = '';
-    document.getElementById('col-todo').innerHTML = '';
-    document.getElementById('col-pendente').innerHTML = '';
-    document.getElementById('col-concluido').innerHTML = '';
+    kanbanBoard.innerHTML = '';
+    
+    // Get current department columns or use defaults
+    const currentDept = departments.find(d => d.id === currentDeptId);
+    let boardColumns = currentDept?.columns || [
+        { id: 'backlog', title: 'Backlog', color: 'gray' },
+        { id: 'todo', title: 'To do', color: 'blue' },
+        { id: 'pendente', title: 'Pendente', color: 'yellow' },
+        { id: 'concluido', title: 'Concluído', color: 'green' }
+    ];
 
-    let counts = { backlog: 0, todo: 0, pendente: 0, concluido: 0 };
+    // Create column structure
+    boardColumns.forEach(col => {
+        const colHtml = `
+            <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column shrink-0 w-80 md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0" data-column="${col.id}">
+                <h2 class="font-bold mb-4 pb-2 border-b border-gray-700 flex justify-between items-center" style="color: ${getColorHex(col.color)}">
+                    <span>${col.title}</span>
+                    <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count" id="count-${col.id}">0</span>
+                </h2>
+                <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-${col.id}"></div>
+            </div>
+        `;
+        kanbanBoard.insertAdjacentHTML('beforeend', colHtml);
+    });
+
+    // Re-setup drag & drop for dynamic columns
+    setupDragAndDrop();
+
+    let counts = {};
+    boardColumns.forEach(c => counts[c.id] = 0);
 
     demands.forEach(d => {
         const titleSearch = (d.titulo || d.demanda || '').toLowerCase();
         if (searchQuery && !titleSearch.includes(searchQuery.toLowerCase()) && !d.nome.toLowerCase().includes(searchQuery.toLowerCase())) return;
-        if (activeFilters.size > 0 && !activeFilters.has(d.departamentoId)) return;
+        
+        // Filter by current viewed department
+        if (currentDeptId && d.departamentoId !== currentDeptId) return;
+
+        // Fallback or additional filters (e.g. from the management dropdown)
+        if (activeFilters.size > 0) {
+            if (!d.departamentoId || !activeFilters.has(String(d.departamentoId))) return;
+        }
 
         const dept = departments.find(dep => dep.id === d.departamentoId);
         const color = dept ? dept.color : '#6b7280';
@@ -181,8 +344,24 @@ function renderCards() {
         const isOverdue = parsedDate < new Date() && d.status !== 'concluido';
 
         const finalidadesHtml = Array.isArray(d.finalidade) ? d.finalidade.map(f => `<span class="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded">${f}</span>`).join(' ') : '';
-        const hasAttachment = d.anexoUrl || d.linkRef;
+        const hasAttachment = d.anexoUrl || d.linkRefs?.length > 0;
         const attachBadge = hasAttachment ? `<span class="text-gray-500 text-[10px]"><i class="fas fa-paperclip"></i></span>` : '';
+        
+        // Priority Badge
+        const priorityColors = { 'Baixa': 'text-gray-400', 'Média': 'text-blue-400', 'Alta': 'text-orange-400', 'Urgente': 'text-red-500 font-bold animate-pulse' };
+        const priorityHtml = d.priority ? `<span class="text-[9px] ${priorityColors[d.priority] || 'text-gray-400'} uppercase tracking-tighter">${d.priority}</span>` : '';
+
+        // Assignee Photo/Initial
+        let assigneeHtml = '';
+        if (d.assigneeId) {
+            const user = allUsers.find(u => u.id === d.assigneeId);
+            const initial = (user?.displayName || user?.name || '?')[0].toUpperCase();
+            if (user?.photoUrl) {
+                assigneeHtml = `<img src="${user.photoUrl}" title="${user.displayName || user.name}" class="w-5 h-5 rounded-full border border-gray-600">`;
+            } else {
+                assigneeHtml = `<div title="${user?.displayName || user?.name}" class="w-5 h-5 rounded-full bg-blue-700 flex items-center justify-center text-[8px] font-bold text-white border border-gray-600">${initial}</div>`;
+            }
+        }
 
         const cardHTML = `
             <div class="bg-gray-800 border-l-4 rounded shadow p-3 cursor-pointer hover:bg-gray-750 transition-colors card"
@@ -191,7 +370,10 @@ function renderCards() {
                 onclick="window.openDemandaDetalhes('${d.id}')">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] bg-gray-900 text-gray-300 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold" style="color: ${color}; border: 1px solid ${color}40">${deptName}</span>
-                    ${attachBadge}
+                    <div class="flex items-center gap-1">
+                        ${priorityHtml}
+                        ${attachBadge}
+                    </div>
                 </div>
                 <div class="text-sm font-semibold text-white mb-1 line-clamp-2" title="${d.titulo || d.demanda}">${d.titulo || d.demanda}</div>
                 <div class="text-xs text-gray-400 mb-2 truncate"><i class="fas fa-user mr-1"></i>${d.nome} - ${d.unidade}</div>
@@ -200,19 +382,27 @@ function renderCards() {
                     <div class="flex items-center gap-1 ${isOverdue ? 'text-red-400 font-bold' : ''}">
                         <i class="far fa-calendar-alt"></i> ${formattedDate}
                     </div>
+                    ${assigneeHtml}
                 </div>
             </div>
         `;
 
-        const targetColumn = document.getElementById(`col-${d.status}`) || document.getElementById('col-todo');
-        targetColumn.insertAdjacentHTML('beforeend', cardHTML);
-        if (counts[d.status] !== undefined) counts[d.status]++;
+        const targetColumn = document.getElementById(`col-${d.status}`);
+        if (targetColumn) {
+            targetColumn.insertAdjacentHTML('beforeend', cardHTML);
+            if (counts[d.status] !== undefined) counts[d.status]++;
+        }
     });
 
-    document.querySelector('.kanban-column[data-column="backlog"] .count').textContent = counts.backlog;
-    document.querySelector('.kanban-column[data-column="todo"] .count').textContent = counts.todo;
-    document.querySelector('.kanban-column[data-column="pendente"] .count').textContent = counts.pendente;
-    document.querySelector('.kanban-column[data-column="concluido"] .count').textContent = counts.concluido;
+    boardColumns.forEach(col => {
+        const countSpan = document.getElementById(`count-${col.id}`);
+        if (countSpan) countSpan.textContent = counts[col.id];
+    });
+}
+
+function getColorHex(color) {
+    const colors = { gray: '#9ca3af', blue: '#3b82f6', yellow: '#eab308', green: '#22c55e', red: '#ef4444' };
+    return colors[color] || color;
 }
 
 // ─── Drag and Drop ────────────────────────────────────────────────────────────
@@ -229,28 +419,30 @@ window.dragEnd = (e) => {
     document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
 };
 
-const columns = document.querySelectorAll('.kanban-column');
-columns.forEach(col => {
-    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-    col.addEventListener('dragleave', e => { col.classList.remove('drag-over'); });
-    col.addEventListener('drop', async e => {
-        e.preventDefault();
-        col.classList.remove('drag-over');
-        const cardId = e.dataTransfer.getData('text/plain');
-        const newStatus = col.dataset.column;
-        const demand = demands.find(d => d.id === cardId);
-        if (demand && demand.status !== newStatus) {
-            demand.status = newStatus;
-            renderCards();
-            try {
-                await updateDoc(doc(demandsCol, cardId), { status: newStatus });
-            } catch (err) {
-                console.error("error updating status", err);
-                observeDemands();
+function setupDragAndDrop() {
+    const columns = document.querySelectorAll('.kanban-column');
+    columns.forEach(col => {
+        col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+        col.addEventListener('dragleave', e => { col.classList.remove('drag-over'); });
+        col.addEventListener('drop', async e => {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            const cardId = e.dataTransfer.getData('text/plain');
+            const newStatus = col.dataset.column;
+            const demand = demands.find(d => d.id === cardId);
+            if (demand && demand.status !== newStatus) {
+                demand.status = newStatus;
+                renderCards();
+                try {
+                    await updateDoc(doc(demandsCol, cardId), { status: newStatus });
+                } catch (err) {
+                    console.error("error updating status", err);
+                    observeDemands();
+                }
             }
-        }
+        });
     });
-});
+}
 
 // ─── Create Demand ────────────────────────────────────────────────────────────
 
@@ -267,7 +459,6 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
     const titulo = document.getElementById('form_titulo').value;
     const demandaText = document.getElementById('form_demanda').value;
     const dataMaxima = document.getElementById('form_data_maxima').value;
-    const linkRef = document.getElementById('form_link').value || null;
     const fileInput = document.getElementById('form_anexo');
     const file = fileInput.files[0] || null;
 
@@ -285,34 +476,57 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     btn.disabled = true;
 
+    const linkRefInputs = document.querySelectorAll('input[name="form_link"]');
+    const linkRefs = Array.from(linkRefInputs).map(i => i.value).filter(v => !!v);
+    const priority = document.getElementById('form_prioridade').value || 'Média';
+    const assigneeId = formAssignee.value || null;
+    const assigneeName = assigneeSearchInput.value || null;
+    const user = allUsers.find(u => u.id === assigneeId);
+    const assigneePhotoUrl = (user && user.photoUrl) ? user.photoUrl : null;
+
+    const data = {
+        titulo: titulo || "",
+        demanda: demandaText || "",
+        unidade: unidade || "",
+        departamentoId: departamentoId || "",
+
+        priority,
+        linkRefs,
+        assigneeId,
+        assigneeName,
+        assigneePhotoUrl,
+        updatedAt: serverTimestamp()
+    };
+
     try {
-        let anexoUrl = null;
-        let anexoNome = null;
-
-        if (file) {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando arquivo...';
-            const fileRef = storageRef(storage, `trello_demands/${Date.now()}_${file.name}`);
-            await uploadBytes(fileRef, file);
-            anexoUrl = await getDownloadURL(fileRef);
-            anexoNome = file.name;
+        if (currentEditId) {
+            await updateDoc(doc(demandsCol, currentEditId), data);
+            alert("Demanda atualizada!");
+        } else {
+            let anexoUrl = null;
+            let anexoNome = null;
+            if (file) {
+                const fileRef = storageRef(storage, `trello_demands/${Date.now()}_${file.name}`);
+                await uploadBytes(fileRef, file);
+                anexoUrl = await getDownloadURL(fileRef);
+                anexoNome = file.name;
+            }
+            data.nome = nome;
+            data.email = email;
+            data.status = 'todo';
+            data.createdAt = serverTimestamp();
+            data.createdBy = currentUserId;
+            data.anexoUrl = anexoUrl;
+            data.anexoNome = anexoNome;
+            data.finalidade = finalidades;
+            data.dataMaxima = dataMaxima;
+            await addDoc(demandsCol, data);
+            alert("Demanda enviada com sucesso!");
         }
-
-        const newDoc = {
-            email, nome, unidade, departamentoId, titulo,
-            demanda: demandaText, finalidade: finalidades,
-            dataMaxima, status: 'todo',
-            linkRef,
-            anexoUrl,
-            anexoNome,
-            createdAt: serverTimestamp()
-        };
-
-        await addDoc(demandsCol, newDoc);
-
-        formDemanda.reset();
-        document.getElementById('finalidade_outro').disabled = true;
+        
         closeModal(modalDemanda);
-
+        formDemanda.reset();
+        currentEditId = null;
     } catch (err) {
         console.error("Error creating demand", err);
         alert('Erro ao criar demanda: ' + err.message);
@@ -360,16 +574,21 @@ window.openDemandaDetalhes = (id) => {
     const linkContainer = document.getElementById('detalhe_link_container');
     const anexoContainer = document.getElementById('detalhe_anexo_container');
 
-    const hasLink = demand.linkRef;
+    const hasLinks = demand.linkRefs && demand.linkRefs.length > 0;
     const hasAnexo = demand.anexoUrl;
 
-    if (hasLink || hasAnexo) {
+    if (hasLinks || hasAnexo) {
         extrasSection.classList.remove('hidden');
-        if (hasLink) {
+        if (hasLinks) {
             linkContainer.classList.remove('hidden');
-            const linkEl = document.getElementById('detalhe_link');
-            linkEl.href = demand.linkRef;
-            document.getElementById('detalhe_link_text').textContent = demand.linkRef;
+            linkContainer.innerHTML = demand.linkRefs.map(link => `
+                <a href="${link}" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm bg-gray-800 p-3 rounded-lg border border-gray-700 transition-colors mb-2 last:mb-0">
+                    <i class="fas fa-link shrink-0"></i>
+                    <span class="truncate flex-1">${link}</span>
+                    <i class="fas fa-external-link-alt ml-auto shrink-0 opacity-60"></i>
+                </a>
+            `).join('');
         } else {
             linkContainer.classList.add('hidden');
         }
@@ -386,14 +605,56 @@ window.openDemandaDetalhes = (id) => {
         extrasSection.classList.add('hidden');
     }
 
-    // Reset comment input
+    // Render Checklist
+    renderChecklist(demand);
+
+    // Reset comment input & preview
     document.getElementById('commentInput').value = '';
+    commentAnexoPreview.classList.add('hidden');
+    selectedCommentFile = null;
 
     // Load comments in realtime
     loadComments(id);
 
     openModal(modalDetalhes);
 };
+
+function renderChecklist(demand) {
+    checklistContainer.innerHTML = '';
+    const items = demand.checklist || [];
+    if (items.length === 0) {
+        checklistContainer.innerHTML = '<p class="text-gray-500 text-xs italic">Nenhum item no checklist.</p>';
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 group';
+        div.innerHTML = `
+            <input type="checkbox" ${item.completed ? 'checked' : ''} class="w-4 h-4 accent-blue-500 rounded cursor-pointer checklist-toggle" data-index="${index}">
+            <span class="text-sm ${item.completed ? 'text-gray-500 line-through' : 'text-gray-300'} flex-1">${item.text}</span>
+            <button class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity checklist-remove" data-index="${index}"><i class="fas fa-times text-xs"></i></button>
+        `;
+        checklistContainer.appendChild(div);
+    });
+
+    document.querySelectorAll('.checklist-toggle').forEach(cb => {
+        cb.addEventListener('change', async (e) => {
+            const index = parseInt(e.target.dataset.index);
+            const newChecklist = [...items];
+            newChecklist[index].completed = e.target.checked;
+            await updateDoc(doc(demandsCol, demand.id), { checklist: newChecklist });
+        });
+    });
+
+    document.querySelectorAll('.checklist-remove').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const index = parseInt(e.currentTarget.dataset.index);
+            const newChecklist = items.filter((_, i) => i !== index);
+            await updateDoc(doc(demandsCol, demand.id), { checklist: newChecklist });
+        });
+    });
+}
 
 function loadComments(demandId) {
     if (commentsUnsubscribe) commentsUnsubscribe(); // Unsubscribe previous listener
@@ -410,20 +671,29 @@ function loadComments(demandId) {
             const c = docSnap.data();
             const time = c.createdAt ? new Date(c.createdAt.toDate()).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
             const initial = (c.authorName || '?')[0].toUpperCase();
-            // Highlight @mentions in blue
-            const formattedText = (c.text || '').replace(/(@\S+)/g, '<span class="text-blue-400 font-semibold">$1</span>');
+            // Auto-link URLs and highlight @mentions
+            let textContent = c.text || '';
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            textContent = textContent.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline break-all">$1</a>');
+            const formattedText = textContent.replace(/(@\S+)/g, '<span class="text-blue-500 font-semibold bg-blue-500/10 px-1 rounded">$1</span>');
+            
+            const anexoHtml = c.anexoUrl ? `<div class="mt-2"><img src="${c.anexoUrl}" class="max-w-full rounded-lg border border-gray-700 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${c.anexoUrl}', '_blank')"></div>` : '';
 
             const el = document.createElement('div');
             el.className = 'flex gap-2.5';
             el.innerHTML = `
-                <div class="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5">${initial}</div>
-                <div class="flex-1">
+                <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5 shadow-sm">${initial}</div>
+                <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-2">
                         <span class="text-sm font-semibold text-gray-200">${c.authorName || 'Usuário'}</span>
-                        <span class="text-[10px] text-gray-500">${time}</span>
+                        <span class="text-[10px] text-gray-500 shrink-0">${time}</span>
                     </div>
-                    <div class="text-sm text-gray-300 mt-0.5 bg-gray-800/60 p-2 rounded-lg">${formattedText}</div>
+                    <div class="text-sm text-gray-300 mt-0.5 bg-gray-800/80 p-2.5 rounded-r-lg rounded-bl-lg break-words whitespace-pre-wrap shadow-sm border border-gray-700/50">
+                        ${formattedText}
+                        ${anexoHtml}
+                    </div>
                 </div>
+
             `;
             commentsList.appendChild(el);
         });
@@ -435,23 +705,41 @@ function loadComments(demandId) {
 document.getElementById('btnEnviarComentario').addEventListener('click', async () => {
     const input = document.getElementById('commentInput');
     const text = (input.value || '').trim();
-    if (!text || !currentDemandaId) return;
+    if (!text && !selectedCommentFile) return;
+    if (!currentDemandaId) return;
 
     const authorName = currentUser?.displayName || currentUser?.email || 'Usuário';
+    const btn = document.getElementById('btnEnviarComentario');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
     try {
+        let anexoUrl = null;
+        if (selectedCommentFile) {
+            const fileRef = storageRef(storage, `trello_comments/${Date.now()}_${selectedCommentFile.name}`);
+            await uploadBytes(fileRef, selectedCommentFile);
+            anexoUrl = await getDownloadURL(fileRef);
+        }
+
         const commentsCol = collection(db, `trello_demands/${currentDemandaId}/comments`);
         await addDoc(commentsCol, {
             text,
+            anexoUrl,
             authorId: currentUser?.uid || null,
             authorName,
             createdAt: serverTimestamp()
         });
+        
         input.value = '';
+        selectedCommentFile = null;
+        commentAnexoPreview.classList.add('hidden');
         document.getElementById('mentionDropdown').classList.add('hidden');
     } catch (err) {
         alert('Erro ao enviar comentário: ' + err.message);
         console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Enviar';
     }
 });
 
@@ -544,14 +832,23 @@ formCreateDept.addEventListener('submit', async (e) => {
 // ─── UI Listeners ─────────────────────────────────────────────────────────────
 
 function enterDepartment(dept) {
+    currentDeptId = dept.id;
     deptSelectionContainer.classList.add('hidden');
     kanbanWrapper.classList.remove('hidden');
     kanbanTitle.textContent = `Demandas - ${dept.name}`;
     
     // Set the filter
     activeFilters.clear();
-    activeFilters.add(dept.id);
+    activeFilters.add(String(dept.id));
     
+    // Pre-fill "Nova Demanda" form for this dept
+    document.getElementById('form_departamento').value = dept.id;
+    if (currentUser) {
+        document.getElementById('form_email').value = currentUser.email || '';
+        document.getElementById('form_nome').value = currentUser.displayName || currentUser.name || currentUser.email?.split('@')[0] || '';
+    }
+    document.getElementById('form_unidade').value = 'Todas';
+
     // Re-render cards
     renderCards();
 }
@@ -576,12 +873,124 @@ function setupListeners() {
         renderCards();
     });
 
-    btnNovaDemanda.addEventListener('click', () => openModal(modalDemanda));
+    btnNovaDemanda.addEventListener('click', () => {
+        document.getElementById('modalDemandaTitle').textContent = 'Solicitação de Demanda';
+        document.getElementById('submitDemandaBtn').innerHTML = 'Enviar';
+        currentEditId = null;
+        formDemanda.reset();
+        
+        // Reset links
+        linksContainer.innerHTML = `
+            <div class="flex gap-2">
+                <input type="url" name="form_link"
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                    placeholder="Ex: https://drive.google.com/...">
+            </div>
+        `;
+        // Reset assignee
+        formAssignee.value = '';
+        assigneeSearchInput.value = '';
+        
+        // Pre-fill logic after reset
+        if (currentUser) {
+            document.getElementById('form_email').value = currentUser.email || '';
+            document.getElementById('form_nome').value = currentUser.displayName || currentUser.name || currentUser.email?.split('@')[0] || '';
+        }
+        document.getElementById('form_unidade').value = 'Todas';
+        if (currentDeptId) {
+            document.getElementById('form_departamento').value = currentDeptId;
+        }
+
+        openModal(modalDemanda);
+    });
     btnManageDept.addEventListener('click', () => openModal(modalDept));
     if (btnManageDeptInSelection) btnManageDeptInSelection.addEventListener('click', () => openModal(modalDept));
     if (btnVoltarDepts) btnVoltarDepts.addEventListener('click', leaveDepartment);
 
-    document.querySelectorAll('.closeModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDemanda)));
+    btnAddLink.addEventListener('click', () => {
+        const div = document.createElement('div');
+        div.className = 'flex gap-2';
+        div.innerHTML = `
+            <input type="url" name="form_link"
+                class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                placeholder="Ex: https://drive.google.com/...">
+            <button type="button" class="text-red-400 hover:text-red-300 remove-link-btn"><i class="fas fa-trash"></i></button>
+        `;
+        linksContainer.appendChild(div);
+        div.querySelector('.remove-link-btn').addEventListener('click', () => div.remove());
+    });
+
+    btnAddChecklistItem.addEventListener('click', async () => {
+        const text = checklistInput.value.trim();
+        if (!text || !currentDemandaId) return;
+        const demand = demands.find(d => d.id === currentDemandaId);
+        const newChecklist = [...(demand.checklist || []), { text, completed: false }];
+        await updateDoc(doc(demandsCol, currentDemandaId), { checklist: newChecklist });
+        checklistInput.value = '';
+    });
+
+    checklistInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btnAddChecklistItem.click();
+        }
+    });
+
+    commentAnexo.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            selectedCommentFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                commentAnexoPreview.querySelector('img').src = ev.target.result;
+                commentAnexoPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    btnRemoveCommentAnexo.addEventListener('click', () => {
+        selectedCommentFile = null;
+        commentAnexo.value = '';
+        commentAnexoPreview.classList.add('hidden');
+    });
+
+    btnEditDemanda.addEventListener('click', () => {
+        openEditModal(currentDemandaId);
+    });
+
+    assigneeSearchInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        renderAssigneeOptions(val);
+        assigneeDropdown.classList.remove('hidden');
+        if (!val) formAssignee.value = '';
+    });
+
+    assigneeSearchInput.addEventListener('focus', () => {
+        renderAssigneeOptions(assigneeSearchInput.value);
+        assigneeDropdown.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!assigneeSearchInput.contains(e.target) && !assigneeDropdown.contains(e.target)) {
+            assigneeDropdown.classList.add('hidden');
+        }
+    });
+
+    document.querySelectorAll('.closeModalBtn').forEach(b => b.addEventListener('click', () => {
+        closeModal(modalDemanda);
+        // Reset dynamic links
+        linksContainer.innerHTML = `
+            <div class="flex gap-2">
+                <input type="url" name="form_link"
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                    placeholder="Ex: https://drive.google.com/...">
+            </div>
+        `;
+        // Reset assignee search
+        assigneeSearchInput.value = '';
+        formAssignee.value = '';
+    }));
     document.querySelectorAll('.closeDeptModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDept)));
     document.querySelectorAll('.closeDetalhesModalBtn').forEach(b => b.addEventListener('click', () => {
         if (commentsUnsubscribe) commentsUnsubscribe();
@@ -613,6 +1022,54 @@ function closeModal(modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
+
+window.openEditModal = (id) => {
+    const demand = demands.find(d => d.id === id);
+    if (!demand) return;
+
+    currentEditId = id;
+    document.getElementById('modalDemandaTitle').textContent = 'Editar Demanda';
+    document.getElementById('submitDemandaBtn').innerHTML = '<i class="fas fa-save mr-1"></i> Salvar';
+
+    // Fill form
+    document.getElementById('form_titulo').value = demand.titulo || '';
+    document.getElementById('form_demanda').value = demand.demanda || '';
+    document.getElementById('form_unidade').value = demand.unidade || 'Todas';
+    document.getElementById('form_departamento').value = demand.departamentoId || '';
+    document.getElementById('form_prioridade').value = demand.priority || 'Média';
+    
+    // Fill links
+    linksContainer.innerHTML = '';
+    if (demand.linkRefs && demand.linkRefs.length > 0) {
+        demand.linkRefs.forEach(link => {
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input type="url" name="form_link" value="${link}"
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm">
+                <button type="button" class="bg-red-500/10 text-red-500 p-2.5 rounded-lg hover:bg-red-500/20 transition-colors btnRemoveLink">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            linksContainer.appendChild(div);
+        });
+    } else {
+        linksContainer.innerHTML = `
+            <div class="flex gap-2">
+                <input type="url" name="form_link"
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm"
+                    placeholder="Ex: https://drive.google.com/...">
+            </div>
+        `;
+    }
+
+    // Fill assignee
+    formAssignee.value = demand.assigneeId || '';
+    assigneeSearchInput.value = demand.assigneeName || '';
+
+    closeModal(modalDetalhes);
+    openModal(modalDemanda);
+};
 
 // Start App
 init();
