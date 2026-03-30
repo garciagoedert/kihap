@@ -493,7 +493,9 @@
                 });
 
                 const usersSnap = await getDocs(usersCol);
-                allUsers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allUsers = usersSnap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(u => !u.evoMemberId); // Exclude students
             } catch (e) {
                 console.warn('Could not load data:', e);
             }
