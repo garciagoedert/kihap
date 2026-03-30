@@ -211,10 +211,11 @@
                         <div>
                             <label class="form-label">Unidade <span class="text-red-500">*</span></label>
                             <select id="nd_unidade" class="form-input" required>
-                                <option value="">Escolher</option>
+                                <option value="Todas" selected>Todas</option>
                                 <option value="Brasília">Brasília</option>
                                 <option value="Florianópolis">Florianópolis</option>
                                 <option value="Dourados">Dourados</option>
+                                <option value="BC">BC</option>
                             </select>
                         </div>
                         <div>
@@ -272,9 +273,34 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="form-label">Data Máxima <span class="text-red-500">*</span></label>
-                        <input type="date" id="nd_data" class="form-input" required style="width: auto;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+                        <div class="md:col-span-2">
+                            <label class="form-label">Responsável (opcional)</label>
+                            <div class="relative">
+                                <input type="text" id="assigneeSearchInput" 
+                                    class="form-input" 
+                                    placeholder="Buscar responsável...">
+                                <div id="selectedAssigneesContainer" class="flex flex-wrap gap-2 mt-2"></div>
+                                <div id="assigneeDropdown" 
+                                    class="hidden absolute left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                    <!-- Users rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Data Máxima <span class="text-red-500">*</span></label>
+                            <input type="date" id="nd_data" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Prioridade <span class="text-red-500">*</span></label>
+                            <select id="nd_prioridade" class="form-input" required>
+                                <option value="Baixa">Baixa</option>
+                                <option value="Média" selected>Média</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Urgente">Urgente 🔥</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -283,9 +309,17 @@
                     <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider"><i
                             class="fas fa-paperclip mr-2"></i>Referências (opcionais)</h2>
                     <div>
-                        <label class="form-label">Link de Referência</label>
-                        <input type="url" id="nd_link" class="form-input"
-                            placeholder="Ex: https://drive.google.com/...">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="form-label mb-0">Links de Referência (opcional)</label>
+                            <button type="button" id="btnAddLink" class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Adicionar outro link
+                            </button>
+                        </div>
+                        <div id="linksContainer" class="space-y-2">
+                            <div class="flex gap-2">
+                                <input type="url" name="nd_link" class="form-input" placeholder="Ex: https://drive.google.com/...">
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="form-label">Anexar Arquivo</label>
@@ -318,11 +352,116 @@
 
         const demandsCol = collection(db, 'trello_demands');
         const deptsCol = collection(db, 'trello_departments');
+        const usersCol = collection(db, 'users');
+
+        let allUsers = [];
+        let selectedAssignees = [];
 
         const authOverlay = document.getElementById('authOverlay');
         const mainContent = document.getElementById('mainContent');
         const successScreen = document.getElementById('successScreen');
         const deptSelect = document.getElementById('nd_departamento');
+        const assigneeSearchInput = document.getElementById('assigneeSearchInput');
+        const assigneeDropdown = document.getElementById('assigneeDropdown');
+        const linksContainer = document.getElementById('linksContainer');
+
+        function renderSelectedAssignees() {
+            const container = document.getElementById('selectedAssigneesContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            selectedAssignees.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 bg-blue-900/50 border border-blue-700 text-blue-100 text-xs px-2 py-1 pl-1 rounded-full';
+                const initial = u.name[0].toUpperCase();
+                const photoHtml = u.photoUrl 
+                    ? `<img src="${u.photoUrl}" class="w-5 h-5 rounded-full object-cover shrink-0">`
+                    : `<div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">${initial}</div>`;
+                
+                div.innerHTML = `
+                    ${photoHtml}
+                    <span class="font-medium">${u.name}</span>
+                    <button type="button" class="text-blue-300 hover:text-red-400 ml-1 transition-colors outline-none" onclick="removeAssignee('${u.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.removeAssignee = (id) => {
+            selectedAssignees = selectedAssignees.filter(u => u.id !== id);
+            renderSelectedAssignees();
+        };
+
+        function renderAssigneeOptions(filter = '') {
+            assigneeDropdown.innerHTML = '';
+            const filteredUsers = allUsers.filter(u => {
+                const name = (u.displayName || u.name || u.email || '').toLowerCase();
+                return name.includes(filter.toLowerCase()) && !selectedAssignees.some(sa => sa.id === u.id);
+            });
+
+            if (filteredUsers.length === 0) {
+                assigneeDropdown.innerHTML = '<div class="p-3 text-gray-500 text-xs italic">Nenhum usuário encontrado.</div>';
+            } else {
+                filteredUsers.forEach(u => {
+                    const name = u.displayName || u.name || u.email;
+                    const div = document.createElement('div');
+                    div.className = 'p-2.5 flex items-center gap-3 cursor-pointer hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0';
+                    
+                    const initial = name[0].toUpperCase();
+                    const photoHtml = u.photoUrl 
+                        ? `<img src="${u.photoUrl}" class="w-6 h-6 rounded-full">`
+                        : `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">${initial}</div>`;
+
+                    div.innerHTML = `
+                        ${photoHtml}
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-white">${name}</div>
+                            <div class="text-[10px] text-gray-400">${u.email}</div>
+                        </div>
+                        <i class="fas fa-plus text-blue-500"></i>
+                    `;
+                    div.onclick = () => {
+                        selectedAssignees.push({ id: u.id, name, photoUrl: (u.photoUrl || null) });
+                        renderSelectedAssignees();
+                        assigneeSearchInput.value = '';
+                        assigneeDropdown.classList.add('hidden');
+                        assigneeSearchInput.focus();
+                    };
+                    assigneeDropdown.appendChild(div);
+                });
+            }
+        }
+
+        assigneeSearchInput.addEventListener('input', (e) => {
+            renderAssigneeOptions(e.target.value);
+            assigneeDropdown.classList.remove('hidden');
+        });
+
+        assigneeSearchInput.addEventListener('focus', () => {
+            renderAssigneeOptions(assigneeSearchInput.value);
+            assigneeDropdown.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!assigneeSearchInput.contains(e.target) && !assigneeDropdown.contains(e.target)) {
+                assigneeDropdown.classList.add('hidden');
+            }
+        });
+
+        // Dynamic Links
+        document.getElementById('btnAddLink')?.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input type="url" name="nd_link" class="form-input flex-1" placeholder="Ex: https://drive.google.com/...">
+                <button type="button" class="remove-link-btn text-red-500 hover:text-red-400 px-3 transition-colors bg-gray-800 border border-gray-700 rounded-lg shrink-0">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            div.querySelector('.remove-link-btn').addEventListener('click', () => div.remove());
+            linksContainer.appendChild(div);
+        });
 
         // Auth Guard
         onAuthStateChanged(auth, async (user) => {
@@ -334,14 +473,16 @@
             mainContent.classList.remove('hidden');
 
             // Show user info
-            const displayName = user.displayName || user.email;
+            const displayName = user.displayName || user.name || user.email;
             document.getElementById('userAvatar').textContent = (displayName || 'U')[0].toUpperCase();
             document.getElementById('userName').textContent = displayName;
 
-            // Pre-fill email
+            // Pre-fill email and name
             document.getElementById('nd_email').value = user.email || '';
+            document.getElementById('nd_nome').value = displayName || '';
+            document.getElementById('nd_unidade').value = 'Todas';
 
-            // Load departments
+            // Load departments and users
             try {
                 const snap = await getDocs(query(deptsCol, orderBy('name')));
                 snap.docs.forEach(d => {
@@ -350,8 +491,11 @@
                     opt.textContent = d.data().name;
                     deptSelect.appendChild(opt);
                 });
+
+                const usersSnap = await getDocs(usersCol);
+                allUsers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             } catch (e) {
-                console.warn('Could not load departments:', e);
+                console.warn('Could not load data:', e);
             }
         });
 
@@ -372,8 +516,9 @@
             const departamentoId = document.getElementById('nd_departamento').value;
             const titulo = document.getElementById('nd_titulo').value;
             const demanda = document.getElementById('nd_demanda').value;
-            const dataMaxima = document.getElementById('nd_data').value;
-            const linkRef = document.getElementById('nd_link').value || null;
+            const prioridade = document.getElementById('nd_prioridade').value || 'Média';
+            const linkRefInputs = document.querySelectorAll('input[name="nd_link"]');
+            const linkRefs = Array.from(linkRefInputs).map(i => i.value).filter(v => !!v);
             const fileInput = document.getElementById('nd_anexo');
             const file = fileInput.files[0] || null;
 
@@ -410,8 +555,11 @@
                     email, nome, unidade, departamentoId,
                     titulo, demanda, finalidade: finalidades,
                     dataMaxima, status: 'todo',
-                    linkRef, anexoUrl, anexoNome,
-                    createdAt: serverTimestamp()
+                    priority: prioridade,
+                    assignees: selectedAssignees,
+                    linkRefs, anexoUrl, anexoNome,
+                    createdAt: serverTimestamp(),
+                    createdBy: auth.currentUser?.uid || null
                 });
 
                 // Show success screen
@@ -434,6 +582,20 @@
             document.getElementById('novaDemandaForm').closest('main').style.display = '';
             document.getElementById('novaDemandaForm').reset();
             document.getElementById('nd_outro').disabled = true;
+            
+            // Clear specific states
+            selectedAssignees = [];
+            renderSelectedAssignees();
+            if (linksContainer) {
+                linksContainer.innerHTML = '<div class="flex gap-2"><input type="url" name="nd_link" class="form-input flex-1" placeholder="Ex: https://drive.google.com/..."></div>';
+            }
+            
+            // Re-apply pre-fills
+            if (auth.currentUser) {
+                document.getElementById('nd_email').value = auth.currentUser.email || '';
+                document.getElementById('nd_nome').value = auth.currentUser.displayName || auth.currentUser.name || '';
+            }
+            document.getElementById('nd_unidade').value = 'Todas';
         };
     </script>
 
