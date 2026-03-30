@@ -18,6 +18,8 @@ let currentDeptId = null; // Currently viewed department ID
 let currentDemandaId = null; // Currently viewed/edited demand ID
 let currentEditId = null; // Currently edited demand ID in the form
 let allUsers = []; // For @ mention and assignee
+let selectedAssignees = []; // Array of {id, name, photoUrl}
+
 let commentsUnsubscribe = null;
 let mentionQuery = null;
 let selectedCommentFile = null;
@@ -83,11 +85,38 @@ async function loadUsers() {
     }
 }
 
+function renderSelectedAssignees() {
+    const container = document.getElementById('selectedAssigneesContainer');
+    container.innerHTML = '';
+    selectedAssignees.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 bg-blue-900/50 border border-blue-700 text-blue-100 text-xs px-2 py-1 pl-1 rounded-full';
+        const initial = u.name[0].toUpperCase();
+        const photoHtml = u.photoUrl 
+            ? `<img src="${u.photoUrl}" class="w-5 h-5 rounded-full object-cover shrink-0">`
+            : `<div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">${initial}</div>`;
+        
+        div.innerHTML = `
+            ${photoHtml}
+            <span class="font-medium">${u.name}</span>
+            <button type="button" class="text-blue-300 hover:text-red-400 ml-1 transition-colors outline-none" onclick="removeAssignee('${u.id}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+window.removeAssignee = (id) => {
+    selectedAssignees = selectedAssignees.filter(u => u.id !== id);
+    renderSelectedAssignees();
+};
+
 function renderAssigneeOptions(filter = '') {
     assigneeDropdown.innerHTML = '';
     const filteredUsers = allUsers.filter(u => {
         const name = (u.displayName || u.name || u.email).toLowerCase();
-        return name.includes(filter.toLowerCase());
+        return name.includes(filter.toLowerCase()) && !selectedAssignees.some(sa => sa.id === u.id); // Exclude already selected
     });
 
     if (filteredUsers.length === 0) {
@@ -109,11 +138,14 @@ function renderAssigneeOptions(filter = '') {
                     <div class="text-sm font-medium text-white">${name}</div>
                     <div class="text-[10px] text-gray-400">${u.email}</div>
                 </div>
+                <i class="fas fa-plus text-blue-500"></i>
             `;
             div.onclick = () => {
-                formAssignee.value = u.id;
-                assigneeSearchInput.value = name;
+                selectedAssignees.push({ id: u.id, name, photoUrl: (u.photoUrl || null) });
+                renderSelectedAssignees();
+                assigneeSearchInput.value = '';
                 assigneeDropdown.classList.add('hidden');
+                assigneeSearchInput.focus();
             };
             assigneeDropdown.appendChild(div);
         });
@@ -353,13 +385,27 @@ function renderCards() {
 
         // Assignee Photo/Initial
         let assigneeHtml = '';
-        if (d.assigneeId) {
+        if (d.assignees && d.assignees.length > 0) {
+            assigneeHtml = `<div class="flex -space-x-2 mr-2">`;
+            d.assignees.slice(0, 3).forEach(a => {
+                const initial = (a.name || '?')[0].toUpperCase();
+                if (a.photoUrl) {
+                    assigneeHtml += `<img src="${a.photoUrl}" title="${a.name}" class="w-6 h-6 rounded-full border-2 border-gray-800 object-cover relative hover:z-10 bg-gray-700 shadow-sm">`;
+                } else {
+                    assigneeHtml += `<div title="${a.name}" class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white border-2 border-gray-800 relative hover:z-10 shadow-sm">${initial}</div>`;
+                }
+            });
+            if (d.assignees.length > 3) {
+                assigneeHtml += `<div class="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[9px] font-bold text-white border-2 border-gray-800 relative z-10 shadow-sm">+${d.assignees.length - 3}</div>`;
+            }
+            assigneeHtml += `</div>`;
+        } else if (d.assigneeId) {
             const user = allUsers.find(u => u.id === d.assigneeId);
             const initial = (user?.displayName || user?.name || '?')[0].toUpperCase();
             if (user?.photoUrl) {
-                assigneeHtml = `<img src="${user.photoUrl}" title="${user.displayName || user.name}" class="w-5 h-5 rounded-full border border-gray-600">`;
+                assigneeHtml = `<img src="${user.photoUrl}" title="${user.displayName || user.name}" class="w-6 h-6 rounded-full border border-gray-800 object-cover shadow-sm mr-2">`;
             } else {
-                assigneeHtml = `<div title="${user?.displayName || user?.name}" class="w-5 h-5 rounded-full bg-blue-700 flex items-center justify-center text-[8px] font-bold text-white border border-gray-600">${initial}</div>`;
+                assigneeHtml = `<div title="${user?.displayName || user?.name}" class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white border border-gray-800 shadow-sm mr-2">${initial}</div>`;
             }
         }
 
@@ -479,10 +525,6 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
     const linkRefInputs = document.querySelectorAll('input[name="form_link"]');
     const linkRefs = Array.from(linkRefInputs).map(i => i.value).filter(v => !!v);
     const priority = document.getElementById('form_prioridade').value || 'Média';
-    const assigneeId = formAssignee.value || null;
-    const assigneeName = assigneeSearchInput.value || null;
-    const user = allUsers.find(u => u.id === assigneeId);
-    const assigneePhotoUrl = (user && user.photoUrl) ? user.photoUrl : null;
 
     const data = {
         titulo: titulo || "",
@@ -492,11 +534,10 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
 
         priority,
         linkRefs,
-        assigneeId,
-        assigneeName,
-        assigneePhotoUrl,
+        assignees: selectedAssignees,
         updatedAt: serverTimestamp()
     };
+
 
     try {
         if (currentEditId) {
@@ -561,6 +602,28 @@ window.openDemandaDetalhes = (id) => {
     document.getElementById('detalhe_email').textContent = demand.email;
     document.getElementById('detalhe_data').textContent = formattedDate;
     document.getElementById('detalhe_texto').textContent = demand.demanda;
+
+    // Render Assignees in Modal
+    const assigneesContainer = document.getElementById('detalhe_assignees_container');
+    if (assigneesContainer) {
+        let items = demand.assignees || [];
+        if (items.length === 0 && demand.assigneeId) {
+            items = [{ id: demand.assigneeId, name: demand.assigneeName || 'Usuário', photoUrl: demand.assigneePhotoUrl || null }];
+        }
+        
+        if (items.length > 0) {
+            assigneesContainer.innerHTML = items.map(a => {
+                const initial = (a.name || '?')[0].toUpperCase();
+                const photo = a.photoUrl 
+                    ? `<img src="${a.photoUrl}" class="w-6 h-6 rounded-full object-cover">`
+                    : `<div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white">${initial}</div>`;
+                return `<div class="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-1.5 pr-3 w-fit"><span class="shrink-0">${photo}</span><span class="text-sm font-medium text-gray-200">${a.name}</span></div>`;
+            }).join('');
+            assigneesContainer.parentElement.classList.remove('hidden');
+        } else {
+            assigneesContainer.parentElement.classList.add('hidden');
+        }
+    }
 
     const finalidadesContainer = document.getElementById('detalhe_finalidades');
     if (Array.isArray(demand.finalidade) && demand.finalidade.length > 0) {
@@ -888,7 +951,8 @@ function setupListeners() {
             </div>
         `;
         // Reset assignee
-        formAssignee.value = '';
+        selectedAssignees = [];
+        renderSelectedAssignees();
         assigneeSearchInput.value = '';
         
         // Pre-fill logic after reset
@@ -989,7 +1053,8 @@ function setupListeners() {
         `;
         // Reset assignee search
         assigneeSearchInput.value = '';
-        formAssignee.value = '';
+        selectedAssignees = [];
+        renderSelectedAssignees();
     }));
     document.querySelectorAll('.closeDeptModalBtn').forEach(b => b.addEventListener('click', () => closeModal(modalDept)));
     document.querySelectorAll('.closeDetalhesModalBtn').forEach(b => b.addEventListener('click', () => {
@@ -1064,8 +1129,16 @@ window.openEditModal = (id) => {
     }
 
     // Fill assignee
-    formAssignee.value = demand.assigneeId || '';
-    assigneeSearchInput.value = demand.assigneeName || '';
+    selectedAssignees = demand.assignees || [];
+    if (demand.assigneeId && selectedAssignees.length === 0) {
+        selectedAssignees.push({
+            id: demand.assigneeId,
+            name: demand.assigneeName || 'Usuário',
+            photoUrl: demand.assigneePhotoUrl || null
+        });
+    }
+    renderSelectedAssignees();
+    assigneeSearchInput.value = '';
 
     closeModal(modalDetalhes);
     openModal(modalDemanda);
