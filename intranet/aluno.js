@@ -11,6 +11,8 @@ const updateStudentBadges = httpsCallable(functions, 'updateStudentBadges');
 const updateLocalStudent = httpsCallable(functions, 'updateLocalStudent');
 const getStudentFinancialHub = httpsCallable(functions, 'getStudentFinancialHub');
 const cancelTuitionSubscription = httpsCallable(functions, 'cancelTuitionSubscription');
+const getTuitionPlans = httpsCallable(functions, 'getTuitionPlans');
+const createTuitionSubscription = httpsCallable(functions, 'createTuitionSubscription');
 
 // Cache
 let currentStudent = null;
@@ -22,6 +24,7 @@ let allBadges = [];
 export function setupAlunoPage() {
     // Initialize certificate handlers
     setupCertificateHandlers();
+    setupGeneratePaymentLinkHandlers();
 
     onAuthReady(async (user) => {
         if (user) {
@@ -304,6 +307,107 @@ async function handleCancelSubscription(preapprovalId) {
             }
         }
     );
+}
+
+function setupGeneratePaymentLinkHandlers() {
+    const openBtn = document.getElementById('open-generate-link-modal-btn');
+    const modal = document.getElementById('generate-payment-link-modal');
+    const closeBtn = document.getElementById('close-generate-link-modal');
+    const cancelBtn = document.getElementById('cancel-generate-link-btn');
+    const confirmBtn = document.getElementById('confirm-generate-link-btn');
+    const selectPlan = document.getElementById('payment-plan-select');
+    const linkContainer = document.getElementById('generated-link-container');
+    const inputLink = document.getElementById('generated-payment-link');
+    const copyBtn = document.getElementById('copy-payment-link-btn');
+    const actionsContainer = document.getElementById('generate-link-actions');
+
+    if (!openBtn || !modal) return;
+
+    async function openModal() {
+        if (!currentStudent) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Reset state
+        linkContainer.classList.add('hidden');
+        actionsContainer.classList.remove('hidden');
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Gerar Link';
+        selectPlan.innerHTML = '<option value="">Carregando planos...</option>';
+        
+        try {
+            const targetUnitId = currentUnitId || currentStudent.unitId;
+            const result = await getTuitionPlans({ unitId: targetUnitId });
+            const plans = result.data;
+            
+            if (plans && plans.length > 0) {
+                selectPlan.innerHTML = plans.map(p => `<option value="${p.id}">${p.name} - R$ ${(p.amountCentavos / 100).toFixed(2)}</option>`).join('');
+            } else {
+                selectPlan.innerHTML = '<option value="">Nenhum plano encontrado.</option>';
+                confirmBtn.disabled = true;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar planos:", error);
+            selectPlan.innerHTML = '<option value="">Erro ao carregar planos.</option>';
+            confirmBtn.disabled = true;
+        }
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    confirmBtn.addEventListener('click', async () => {
+        const planId = selectPlan.value;
+        if (!planId) {
+            alert("Selecione um plano.");
+            return;
+        }
+
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...';
+
+        try {
+            const result = await createTuitionSubscription({
+                planId: planId,
+                studentId: currentStudent.idMember
+            });
+
+            if (result.data && result.data.initPoint) {
+                inputLink.value = result.data.initPoint;
+                linkContainer.classList.remove('hidden');
+                actionsContainer.classList.add('hidden'); // Hide buttons after success
+                
+                // Refresh financial tab in background
+                renderFinancialTab();
+            } else {
+                throw new Error("Link não retornado pela API.");
+            }
+        } catch (error) {
+            console.error("Erro ao gerar link:", error);
+            alert("Erro ao gerar link de pagamento: " + error.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'Gerar Link';
+        }
+    });
+
+    copyBtn.addEventListener('click', () => {
+        inputLink.select();
+        document.execCommand('copy');
+        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+        copyBtn.classList.replace('bg-blue-600', 'bg-green-600');
+        copyBtn.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+        setTimeout(() => {
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.classList.replace('bg-green-600', 'bg-blue-600');
+            copyBtn.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+        }, 2000);
+    });
 }
 
 // Modal Logic
