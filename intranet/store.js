@@ -55,6 +55,19 @@ export async function setupStorePage() {
     const deleteSaleBtnModal = document.getElementById('delete-sale-btn-modal');
     const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
 
+    // Export Modal elements
+    const exportModal = document.getElementById('export-modal');
+    const closeExportModalBtn = document.getElementById('close-export-modal-btn');
+    const cancelExportBtn = document.getElementById('cancel-export-btn');
+    const exportForm = document.getElementById('export-form');
+    const exportFilterStartDate = document.getElementById('export-filter-start-date');
+    const exportFilterEndDate = document.getElementById('export-filter-end-date');
+    const exportFilterUnit = document.getElementById('export-filter-unit');
+    const exportFilterProduct = document.getElementById('export-filter-product');
+    const exportFilterStatus = document.getElementById('export-filter-status');
+    const exportSelectAllBtn = document.getElementById('export-select-all-btn');
+    const exportSelectNoneBtn = document.getElementById('export-select-none-btn');
+
     // Product Management elements
     const productModal = document.getElementById('product-modal');
     const addProductBtn = document.getElementById('add-product-btn');
@@ -533,9 +546,154 @@ export async function setupStorePage() {
         }
     });
 
-    if (exportBtn) exportBtn.addEventListener('click', () => {
-        const filteredSales = getFilteredSales();
-        exportToExcel(filteredSales);
+    const openExportModal = () => {
+        if (!allSales || allSales.length === 0) {
+            alert("Não há dados de vendas carregados.");
+            return;
+        }
+        
+        // Copy options from main filters if available
+        if (unitFilter && exportFilterUnit) exportFilterUnit.innerHTML = unitFilter.innerHTML;
+        if (productFilter && exportFilterProduct) exportFilterProduct.innerHTML = productFilter.innerHTML;
+
+        // Auto-fill modal filters with current page filters
+        if (exportFilterUnit) exportFilterUnit.value = unitFilter.value;
+        if (exportFilterProduct) exportFilterProduct.value = productFilter.value;
+        if (exportFilterStartDate) exportFilterStartDate.value = dateFilter.value;
+        if (exportFilterEndDate) exportFilterEndDate.value = dateFilter.value;
+        if (exportFilterStatus) exportFilterStatus.value = statusFilter.value;
+
+        exportModal.classList.remove('hidden');
+    };
+
+    const closeExportModal = () => {
+        exportModal.classList.add('hidden');
+    };
+
+    if (exportBtn) exportBtn.addEventListener('click', openExportModal);
+    if (closeExportModalBtn) closeExportModalBtn.addEventListener('click', closeExportModal);
+    if (cancelExportBtn) cancelExportBtn.addEventListener('click', closeExportModal);
+
+    if (exportSelectAllBtn) exportSelectAllBtn.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = true);
+    });
+
+    if (exportSelectNoneBtn) exportSelectNoneBtn.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+    });
+
+    if (exportForm) exportForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // 1. Get Filters from modal
+        const selectedStartDate = exportFilterStartDate.value;
+        const selectedEndDate = exportFilterEndDate.value;
+        const selectedUnit = exportFilterUnit.value;
+        const selectedProduct = exportFilterProduct.value;
+        const selectedStatus = exportFilterStatus.value;
+        
+        // Use the same search term just in case
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        // 2. Filter logic
+        let filtered = allSales.filter(sale => {
+            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+            const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
+            const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
+            const mainProductMatch = sale.productId === selectedProduct;
+            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
+            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
+            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
+
+            let dateMatch = true;
+            if (sale.created) {
+                const saleDateObj = sale.created.toDate();
+                saleDateObj.setHours(0, 0, 0, 0); // normalize time for comparison
+                const saleTime = saleDateObj.getTime();
+
+                if (selectedStartDate) {
+                    // Normalize chosen start date to local time comparison
+                    const startStr = selectedStartDate.split('-');
+                    const startDateObj = new Date(startStr[0], startStr[1] - 1, startStr[2]);
+                    startDateObj.setHours(0, 0, 0, 0);
+                    if (saleTime < startDateObj.getTime()) dateMatch = false;
+                }
+                if (selectedEndDate) {
+                    const endStr = selectedEndDate.split('-');
+                    const endDateObj = new Date(endStr[0], endStr[1] - 1, endStr[2]);
+                    endDateObj.setHours(23, 59, 59, 999);
+                    if (saleTime > endDateObj.getTime()) dateMatch = false;
+                }
+            } else if (selectedStartDate || selectedEndDate) {
+                dateMatch = false; // No date in DB, shouldn't match if filtered by date
+            }
+
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
+        });
+
+        // 3. Get Selected Columns
+        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]:checked');
+        const selectedColumns = Array.from(checkboxes).map(cb => cb.dataset.column);
+
+        if (selectedColumns.length === 0) {
+            alert('Por favor, selecione pelo menos uma coluna para exportar.');
+            return;
+        }
+
+        if (filtered.length === 0) {
+            alert('Nenhuma venda encontrada com os filtros selecionados.');
+            return;
+        }
+
+        // 4. Generate Export Data
+        const worksheetData = filtered.map(sale => {
+            let optionsText = 'N/A';
+            if (sale.kitSelections && Object.keys(sale.kitSelections).length > 0) {
+                optionsText = Object.entries(sale.kitSelections)
+                    .map(([itemName, option]) => `${itemName}: ${option}`)
+                    .join(', ');
+            }
+
+            let productText = sale.productName || 'N/A';
+            if (sale.recommendedItems && sale.recommendedItems.length > 0) {
+                const recommendedText = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
+                productText += ` + ${recommendedText}`;
+            }
+
+            // Map all possible columns mapped by dataset keys
+            const allPossibleColumns = {
+                id: { header: 'ID da Venda', value: sale.id || 'N/A' },
+                userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
+                userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
+                userPhone: { header: 'Telefone', value: sale.userPhone || 'N/A' },
+                userCpf: { header: 'CPF', value: sale.userCpf || 'N/A' },
+                userUnit: { header: 'Unidade', value: sale.userUnit || 'N/A' },
+                userPrograma: { header: 'Programa', value: sale.userPrograma || 'N/A' },
+                userGraduacao: { header: 'Graduação', value: sale.userGraduacao || 'N/A' },
+                productName: { header: 'Produto', value: productText },
+                kitSelections: { header: 'Opções do Kit', value: optionsText },
+                amountTotal: { header: 'Valor Total', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
+                paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
+                created: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' }
+            };
+
+            const rowData = {};
+            selectedColumns.forEach(colKey => {
+                if (allPossibleColumns[colKey]) {
+                    rowData[allPossibleColumns[colKey].header] = allPossibleColumns[colKey].value;
+                }
+            });
+            return rowData;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendas');
+        XLSX.writeFile(workbook, 'RelatorioDeVendas.xlsx');
+
+        closeExportModal();
     });
 
     const getFilteredSales = () => {
@@ -543,12 +701,16 @@ export async function setupStorePage() {
         const selectedUnit = unitFilter.value;
         const selectedProduct = productFilter.value;
         const selectedDate = dateFilter.value;
+        const selectedStatus = statusFilter.value;
 
-        return allSales.filter(sale => {
+        let filtered = allSales.filter(sale => {
             const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-            const productMatch = !selectedProduct || sale.productId === selectedProduct;
+            const mainProductMatch = sale.productId === selectedProduct;
+            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
+            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
+            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
 
             let dateMatch = true;
             if (selectedDate && sale.created) {
@@ -556,27 +718,21 @@ export async function setupStorePage() {
                 dateMatch = saleDate === selectedDate;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
         });
-    };
 
-    const exportToExcel = (sales) => {
-        const worksheetData = sales.map(sale => ({
-            'Nome do Cliente': sale.userName || 'N/A',
-            'Email': sale.userEmail || 'N/A',
-            'Telefone': sale.userPhone || 'N/A',
-            'Produto': sale.productName || 'N/A',
-            'Programa': sale.userPrograma || 'N/A',
-            'Graduação': sale.userGraduacao || 'N/A',
-            'Valor': (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            'Status do Pagamento': sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente',
-            'Data da Compra': sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'
-        }));
+        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate && !selectedStatus;
+        if (noFiltersApplied) {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            sevenDaysAgo.setHours(0, 0, 0, 0);
 
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendas');
-        XLSX.writeFile(workbook, 'RelatorioDeVendas.xlsx');
+            filtered = filtered.filter(sale => {
+                if (!sale.created) return false;
+                return sale.created.toDate() >= sevenDaysAgo;
+            });
+        }
+        return filtered;
     };
 
     const fetchMpAccounts = async () => {

@@ -641,6 +641,137 @@
         });
     </script>
 
+    <!-- Export Modal -->
+    <div id="export-modal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-[#1a1a1a] p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-800">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                <h2 class="text-2xl font-bold">Exportar Relatório de Vendas</h2>
+                <button type="button" id="close-export-modal-btn"
+                    class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <form id="export-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Esquerda: Filtros -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-filter mr-2 text-blue-500"></i>Filtros de Exportação</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-1">Data Inicial</label>
+                                    <input type="date" id="export-filter-start-date"
+                                        class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-1">Data Final</label>
+                                    <input type="date" id="export-filter-end-date"
+                                        class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
+                                <select id="export-filter-unit"
+                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todas as Unidades</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Produto</label>
+                                <select id="export-filter-product"
+                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todos os Produtos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                <select id="export-filter-status"
+                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todos os Status</option>
+                                    <option value="paid">Pago</option>
+                                    <option value="pending">Pendente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direita: Colunas -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-columns mr-2 text-green-500"></i>Colunas para Exportar</h3>
+                        <div class="grid grid-cols-2 gap-3" id="export-columns-container">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="id" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">ID da Venda</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userName" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Nome do Cliente</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userEmail" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Email</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userPhone" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
+                                <span class="text-sm text-gray-300">Telefone</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userCpf" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">CPF</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userUnit" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Unidade</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userPrograma" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
+                                <span class="text-sm text-gray-300">Programa</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="userGraduacao" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
+                                <span class="text-sm text-gray-300">Graduação</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="productName" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Produto</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="kitSelections" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Opções do Kit</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="amountTotal" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Valor Total</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="paymentStatus" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Status do Pagamento</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="created" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Data da Compra</span>
+                            </label>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button type="button" id="export-select-all-btn" class="text-xs text-blue-400 hover:text-blue-300 underline">Marcar Todas</button>
+                            <span class="text-xs text-gray-500">|</span>
+                            <button type="button" id="export-select-none-btn" class="text-xs text-blue-400 hover:text-blue-300 underline">Desmarcar Todas</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-700 flex justify-end space-x-4">
+                    <button type="button" id="cancel-export-btn"
+                        class="px-5 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">Cancelar</button>
+                    <button type="submit" id="confirm-export-btn"
+                        class="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 flex items-center shadow-lg shadow-green-600/20 transition-all">
+                        <i class="fas fa-file-excel mr-2"></i>Gerar Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Sale Details Modal -->
     <div id="sale-details-modal"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
