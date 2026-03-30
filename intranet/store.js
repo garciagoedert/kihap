@@ -46,7 +46,10 @@ export async function setupStorePage() {
     const searchInput = document.getElementById('search-input');
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
-    const dateFilter = document.getElementById('filter-date');
+    const periodFilter = document.getElementById('filter-period');
+    const customDateContainer = document.getElementById('filter-custom-date');
+    const filterStartDate = document.getElementById('filter-start-date');
+    const filterEndDate = document.getElementById('filter-end-date');
     const statusFilter = document.getElementById('filter-status');
     const exportBtn = document.getElementById('export-btn');
     const modal = document.getElementById('sale-details-modal');
@@ -54,6 +57,7 @@ export async function setupStorePage() {
     const modalContent = document.getElementById('modal-content');
     const deleteSaleBtnModal = document.getElementById('delete-sale-btn-modal');
     const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
+    const recoverCartBtnModal = document.getElementById('recover-cart-btn-modal');
 
     // Export Modal elements
     const exportModal = document.getElementById('export-modal');
@@ -477,7 +481,9 @@ export async function setupStorePage() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedUnit = unitFilter.value;
         const selectedProduct = productFilter.value;
-        const selectedDate = dateFilter.value;
+        const selectedPeriod = periodFilter ? periodFilter.value : 'all';
+        const customStart = filterStartDate ? filterStartDate.value : '';
+        const customEnd = filterEndDate ? filterEndDate.value : '';
         const selectedStatus = statusFilter.value;
 
         let filteredSales = allSales.filter(sale => {
@@ -490,15 +496,57 @@ export async function setupStorePage() {
             const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
 
             let dateMatch = true;
-            if (selectedDate && sale.created) {
-                const saleDate = sale.created.toDate().toISOString().split('T')[0];
-                dateMatch = saleDate === selectedDate;
+            if (sale.created && selectedPeriod) {
+                const saleDateObj = sale.created.toDate();
+                const saleTime = saleDateObj.getTime();
+                
+                if (selectedPeriod === 'all') {
+                    dateMatch = true;
+                } else if (selectedPeriod === 'custom') {
+                    if (customStart) {
+                        // compare using local time strings
+                        const startStr = customStart.split('-');
+                        const startObj = new Date(startStr[0], startStr[1]-1, startStr[2]);
+                        startObj.setHours(0,0,0,0);
+                        if (saleTime < startObj.getTime()) dateMatch = false;
+                    }
+                    if (customEnd) {
+                        const endStr = customEnd.split('-');
+                        const endObj = new Date(endStr[0], endStr[1]-1, endStr[2]);
+                        endObj.setHours(23,59,59,999);
+                        if (saleTime > endObj.getTime()) dateMatch = false;
+                    }
+                } else {
+                    const now = new Date();
+                    now.setHours(23, 59, 59, 999);
+                    let startObj = new Date();
+                    startObj.setHours(0, 0, 0, 0);
+                    
+                    if (selectedPeriod === '7') {
+                        startObj.setDate(startObj.getDate() - 7);
+                    } else if (selectedPeriod === '15') {
+                        startObj.setDate(startObj.getDate() - 15);
+                    } else if (selectedPeriod === '30') {
+                        startObj.setDate(startObj.getDate() - 30);
+                    } else if (selectedPeriod === 'month') {
+                        startObj.setDate(1);
+                    }
+
+                    if (saleTime < startObj.getTime() || saleTime > now.getTime()) {
+                        dateMatch = false;
+                    }
+                }
+            } else if (!sale.created && selectedPeriod !== 'all') {
+                dateMatch = false;
             }
 
             return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
         });
 
-        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate && !selectedStatus;
+        // The default view when no filters are applied is usually handled by the UI default selection
+        // meaning we don't need the hardcoded 7-days fallback anymore if the UI defaults to "Últimos 7 dias"
+        // But let's keep the fallback for safety if everything is ostensibly empty
+        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && selectedPeriod === 'all' && !selectedStatus;
         if (noFiltersApplied) {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -514,7 +562,18 @@ export async function setupStorePage() {
         displayStoreKpis(filteredSales);
     };
 
-    [searchInput, unitFilter, productFilter, dateFilter, statusFilter].forEach(el => {
+    if (periodFilter) {
+        periodFilter.addEventListener('change', () => {
+            if (periodFilter.value === 'custom') {
+                customDateContainer.classList.remove('hidden');
+            } else {
+                customDateContainer.classList.add('hidden');
+            }
+            applyFilters();
+        });
+    }
+
+    [searchInput, unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter].forEach(el => {
         if (el) {
             el.addEventListener('change', applyFilters);
             el.addEventListener('keyup', applyFilters);
@@ -559,8 +618,41 @@ export async function setupStorePage() {
         // Auto-fill modal filters with current page filters
         if (exportFilterUnit) exportFilterUnit.value = unitFilter.value;
         if (exportFilterProduct) exportFilterProduct.value = productFilter.value;
-        if (exportFilterStartDate) exportFilterStartDate.value = dateFilter.value;
-        if (exportFilterEndDate) exportFilterEndDate.value = dateFilter.value;
+        if (exportFilterStatus) exportFilterStatus.value = statusFilter.value;
+
+        const selectedPeriod = periodFilter.value;
+        const now = new Date();
+        let startObj;
+        
+        if (selectedPeriod === 'custom') {
+            if (exportFilterStartDate) exportFilterStartDate.value = filterStartDate.value;
+            if (exportFilterEndDate) exportFilterEndDate.value = filterEndDate.value;
+        } else if (selectedPeriod === 'all') {
+            if (exportFilterStartDate) exportFilterStartDate.value = '';
+            if (exportFilterEndDate) exportFilterEndDate.value = '';
+        } else {
+            startObj = new Date();
+            startObj.setHours(0, 0, 0, 0);
+            if (selectedPeriod === '7') {
+                startObj.setDate(startObj.getDate() - 7);
+            } else if (selectedPeriod === '15') {
+                startObj.setDate(startObj.getDate() - 15);
+            } else if (selectedPeriod === '30') {
+                startObj.setDate(startObj.getDate() - 30);
+            } else if (selectedPeriod === 'month') {
+                startObj.setDate(1);
+            }
+            
+            // Format dates as YYYY-MM-DD
+            // Using local time instead of ISO to avoid timezone mismatch
+            const formatLocal = (d) => {
+                const tzOffset = d.getTimezoneOffset() * 60000;
+                return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+            };
+            
+            if (exportFilterStartDate) exportFilterStartDate.value = formatLocal(startObj);
+            if (exportFilterEndDate) exportFilterEndDate.value = formatLocal(now);
+        }
         if (exportFilterStatus) exportFilterStatus.value = statusFilter.value;
 
         exportModal.classList.remove('hidden');
@@ -1499,6 +1591,27 @@ export async function setupStorePage() {
         await loadEmailLogs(saleId);
 
         modal.classList.remove('hidden');
+
+        // Recover Cart button logic
+        if (sale.paymentStatus === 'pending') {
+            recoverCartBtnModal.classList.remove('hidden');
+            recoverCartBtnModal.onclick = () => {
+                if (!sale.mercadoPagoPreferenceId) {
+                    alert('Não foi possível encontrar o ID do Mercado Pago (Preferência) salvo para esta venda.\n\nVendas criadas antes desta atualização podem não possuir este dado salvo.');
+                    return;
+                }
+                const link = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('Link de pagamento copiado para a área de transferência com sucesso!\n\nVocê já pode colar (Ctrl+V) no WhatsApp para o cliente.\n\nLink: ' + link);
+                }).catch(() => {
+                    prompt('Não foi possível copiar automaticamente. Selecione e copie o link abaixo:', link);
+                });
+            };
+        } else {
+            recoverCartBtnModal.classList.add('hidden');
+            recoverCartBtnModal.onclick = null;
+        }
 
         const currentUser = await getCurrentUser();
         if (currentUser && currentUser.isAdmin) {
