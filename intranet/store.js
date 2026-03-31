@@ -470,20 +470,20 @@ export async function setupStorePage() {
 
     // --- Sales Log Logic ---
     const fetchSales = async () => {
-        salesTableBody.innerHTML = '<tr><td colspan="10" class="text-center p-8">Carregando vendas...</td></tr>';
+        salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Carregando vendas...</td></tr>';
         try {
             const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
             const querySnapshot = await getDocs(q);
             allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
             console.error('Error fetching sales:', error);
-            salesTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-8 text-red-500">Erro ao carregar vendas.</td></tr>';
+            salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-red-500">Erro ao carregar vendas.</td></tr>';
         }
     };
 
     const displaySales = (salesToDisplay) => {
         if (salesToDisplay.length === 0) {
-            salesTableBody.innerHTML = '<tr><td colspan="10" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
+            salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
             return;
         }
 
@@ -509,10 +509,7 @@ export async function setupStorePage() {
             row.innerHTML = `
                 <td class="p-4" data-label="Nome do Cliente">${nameDisplay}</td>
                 <td class="p-4" data-label="Email">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4" data-label="Telefone">${sale.userPhone || 'N/A'}</td>
                 <td class="p-4" data-label="Produto">${productDisplay}</td>
-                <td class="p-4" data-label="Programa">${sale.userPrograma || 'N/A'}</td>
-                <td class="p-4" data-label="Graduação">${sale.userGraduacao || 'N/A'}</td>
                 <td class="p-4" data-label="Valor">${amount}</td>
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>

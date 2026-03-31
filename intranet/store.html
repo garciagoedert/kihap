@@ -410,10 +410,7 @@
                             <tr class="border-b border-gray-700">
                                 <th class="p-4">Nome do Cliente</th>
                                 <th class="p-4">Email</th>
-                                <th class="p-4">Telefone</th>
                                 <th class="p-4">Produto</th>
-                                <th class="p-4">Programa</th>
-                                <th class="p-4">Graduação</th>
                                 <th class="p-4">Valor</th>
                                 <th class="p-4">Status do Pagamento</th>
                                 <th class="p-4">Entrega</th>
@@ -422,7 +419,7 @@
                         </thead>
                         <tbody id="sales-table-body">
                             <tr>
-                                <td colspan="10" class="text-center p-8">Carregando vendas...</td>
+                                <td colspan="7" class="text-center p-8">Carregando vendas...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -812,9 +809,9 @@
             </div>
 
             <!-- Fulfillment Status Section -->
-            <div id="fulfillment-status-section" class="mt-6 pt-6 border-t border-gray-700">
+            <div id="fulfillment-status-section" class="mt-6 pt-6 pb-4 border-t border-gray-700">
                 <h3 class="text-lg font-bold mb-3">📦 Status de Entrega</h3>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 mb-4">
                     <label for="sale-fulfillment-status" class="text-sm text-gray-400">Situação do Pedido:</label>
                     <select id="sale-fulfillment-status" class="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="pending">Pendente</option>
@@ -828,7 +825,7 @@
             </div>
 
             <!-- Email Logs Section -->
-            <div id="email-logs-section" class="mt-6 pt-6 border-t border-gray-700 hidden">
+            <div id="email-logs-section" class="mt-4 pt-6 border-t border-gray-700 hidden">
                 <h3 class="text-lg font-bold mb-3">📧 Histórico de Emails</h3>
                 <div id="email-logs-list" class="space-y-2">
                     <!-- Email logs will be loaded here -->
