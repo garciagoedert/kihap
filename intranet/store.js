@@ -482,6 +482,7 @@ export async function setupStorePage() {
     };
 
     const displaySales = (salesToDisplay) => {
+        salesTableBody.innerHTML = '';
         if (salesToDisplay.length === 0) {
             salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
             return;
@@ -1690,22 +1691,74 @@ export async function setupStorePage() {
         }
 
         modalContent.innerHTML = `
-            <p><strong>ID da Venda:</strong> ${sale.id}</p>
-            ${studentInfoHtml}
-            <p><strong>Nome do Cliente:</strong> ${sale.userName || 'N/A'}</p>
-            <p><strong>Email:</strong> ${sale.userEmail || 'N/A'}</p>
-            <p><strong>Telefone:</strong> ${sale.userPhone || 'N/A'}</p>
-            <p><strong>CPF:</strong> ${sale.userCpf || 'N/A'}</p>
-            ${sale.userAge ? `<p><strong>Idade:</strong> ${sale.userAge}</p>` : ''}
-            <p><strong>Unidade:</strong> ${sale.userUnit || 'N/A'}</p>
-            <p><strong>Programa:</strong> ${sale.userPrograma || 'N/A'}</p>
-            <p><strong>Graduação:</strong> ${sale.userGraduacao || 'N/A'}</p>
-            ${sale.userSize ? `<p><strong class="text-yellow-500">Tamanho:</strong> ${sale.userSize}</p>` : ''}
-            ${productDetailsHtml}
-            <p><strong>Valor Total:</strong> ${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-            <p><strong>Status do Pagamento:</strong> ${renderStatusTag(sale.paymentStatus)}</p>
-            <p><strong>Data da Compra:</strong> ${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
-            ${paymentDetailsHtml}
+            <div class="space-y-6">
+                <!-- ID e Info Básica -->
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID da Venda</p>
+                    <p class="text-sm font-mono text-blue-400 break-all">${sale.id}</p>
+                    ${sale.studentId ? `
+                        <div class="mt-2 pt-2 border-t border-gray-700/50">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID do Aluno</p>
+                            <p class="text-sm font-mono text-gray-300 break-all">${sale.studentId}</p>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Coluna 1: Cliente -->
+                    <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
+                        <h4 class="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                            <span>👤</span> Dados do Cliente
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="text-gray-400">Nome:</span> <span class="text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                            <p><span class="text-gray-400">Email:</span> <span class="text-white break-all">${sale.userEmail || 'N/A'}</span></p>
+                            <p><span class="text-gray-400">Telefone:</span> <span class="text-white">${sale.userPhone || 'N/A'}</span></p>
+                            <p><span class="text-gray-400">CPF:</span> <span class="text-white">${sale.userCpf || 'N/A'}</span></p>
+                            ${sale.userAge ? `<p><span class="text-gray-400">Idade:</span> <span class="text-white">${sale.userAge}</span></p>` : ''}
+                            <div class="pt-2 border-t border-gray-700/50 mt-2">
+                                <p><span class="text-gray-400">Unidade:</span> <span class="text-white">${sale.userUnit || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Programa:</span> <span class="text-white">${sale.userPrograma || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Graduação:</span> <span class="text-white">${sale.userGraduacao || 'N/A'}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Produto e Pagamento -->
+                    <div class="space-y-4">
+                        <!-- Card Produto -->
+                        <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50 h-full">
+                            <h4 class="text-purple-400 font-bold mb-3 flex items-center gap-2">
+                                <span>🛍️</span> Produto
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <p><span class="text-gray-400">Item:</span> <span class="text-white font-medium">${sale.productName || 'N/A'}</span></p>
+                                ${sale.userSize ? `<p><span class="text-gray-400">Tamanho:</span> <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded font-bold">${sale.userSize}</span></p>` : ''}
+                                <div class="mt-2 text-gray-300">
+                                    ${productDetailsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Pagamento -->
+                <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
+                    <h4 class="text-green-400 font-bold mb-3 flex items-center gap-2">
+                        <span>💳</span> Detalhes Financeiros
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <p><span class="text-gray-400">Valor Total:</span> <span class="text-green-400 font-bold text-lg">${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                            <p><span class="text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
+                            <p><span class="text-gray-400">Data:</span> <span class="text-white">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
+                        </div>
+                        <div class="border-l border-gray-700/50 pl-4">
+                            ${paymentDetailsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
 
         // Load email logs
