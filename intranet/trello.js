@@ -165,6 +165,14 @@ function observeDemands() {
     onSnapshot(query(demandsCol, orderBy('createdAt', 'desc')), (snapshot) => {
         demands = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderCards();
+
+        // Se houver uma demanda aberta, atualiza o checklist para refletir as mudanças
+        if (currentDemandaId && !modalDetalhes.classList.contains('hidden')) {
+            const openDemand = demands.find(d => d.id === currentDemandaId);
+            if (openDemand) {
+                renderChecklist(openDemand);
+            }
+        }
     });
 }
 
