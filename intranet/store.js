@@ -58,6 +58,7 @@ export async function setupStorePage() {
     const deleteSaleBtnModal = document.getElementById('delete-sale-btn-modal');
     const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
     const recoverCartBtnModal = document.getElementById('recover-cart-btn-modal');
+    const fulfillmentStatusSelect = document.getElementById('sale-fulfillment-status');
 
     // Export Modal elements
     const exportModal = document.getElementById('export-modal');
@@ -413,6 +414,49 @@ export async function setupStorePage() {
 
 
     // --- Helper Functions ---
+    const getFulfillmentStatusLabel = (status) => {
+        switch (status) {
+            case 'processing': return 'Em Preparação';
+            case 'shipped': return 'Enviado';
+            case 'delivered': return 'Entregue';
+            case 'returned': return 'Devolvido';
+            case 'canceled': return 'Cancelado';
+            default: return 'Pendente';
+        }
+    };
+
+    const renderFulfillmentStatusTag = (status) => {
+        let colorClass = 'bg-gray-800 text-gray-400';
+        let text = 'Pendente';
+
+        switch (status) {
+            case 'processing':
+                colorClass = 'bg-blue-900/50 text-blue-300';
+                text = 'Em Preparação';
+                break;
+            case 'shipped':
+                colorClass = 'bg-indigo-900/50 text-indigo-300';
+                text = 'Enviado';
+                break;
+            case 'delivered':
+                colorClass = 'bg-green-900/50 text-green-300';
+                text = 'Entregue';
+                break;
+            case 'returned':
+                colorClass = 'bg-yellow-900/50 text-yellow-300';
+                text = 'Devolvido';
+                break;
+            case 'canceled':
+                colorClass = 'bg-red-900/50 text-red-300';
+                text = 'Cancelado';
+                break;
+            default:
+                break;
+        }
+
+        return `<span class="px-3 py-1 text-xs font-bold rounded-full ${colorClass}">${text}</span>`;
+    };
+
     const renderStatusTag = (status) => {
         if (!status) return 'N/A';
 
@@ -438,7 +482,6 @@ export async function setupStorePage() {
     };
 
     const displaySales = (salesToDisplay) => {
-        salesTableBody.innerHTML = '';
         if (salesToDisplay.length === 0) {
             salesTableBody.innerHTML = '<tr><td colspan="10" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
             return;
@@ -472,6 +515,7 @@ export async function setupStorePage() {
                 <td class="p-4" data-label="Graduação">${sale.userGraduacao || 'N/A'}</td>
                 <td class="p-4" data-label="Valor">${amount}</td>
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
+                <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
                 <td class="p-4" data-label="Data da Compra">${date}</td>
             `;
         });
@@ -768,6 +812,7 @@ export async function setupStorePage() {
                 kitSelections: { header: 'Opções do Kit', value: optionsText },
                 amountTotal: { header: 'Valor Total', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
                 paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
+                fulfillmentStatus: { header: 'Status de Entrega', value: getFulfillmentStatusLabel(sale.fulfillmentStatus) },
                 created: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' }
             };
 
@@ -1692,11 +1737,35 @@ export async function setupStorePage() {
             recoverCartBtnModal.onclick = null;
         }
 
-        const currentUser = await getCurrentUser();
         if (currentUser && currentUser.isAdmin) {
             deleteSaleBtnModal.style.display = 'inline-block';
         } else {
             deleteSaleBtnModal.style.display = 'none';
+        }
+
+        // Fulfillment status logic
+        if (fulfillmentStatusSelect) {
+            fulfillmentStatusSelect.value = sale.fulfillmentStatus || 'pending';
+            fulfillmentStatusSelect.onchange = async () => {
+                const newStatus = fulfillmentStatusSelect.value;
+                try {
+                    const saleRef = doc(db, 'inscricoesFaixaPreta', saleId);
+                    await updateDoc(saleRef, {
+                        fulfillmentStatus: newStatus,
+                        lastModifiedAt: serverTimestamp()
+                    });
+                    
+                    // Update local state
+                    sale.fulfillmentStatus = newStatus;
+                    
+                    alert('Status de entrega atualizado com sucesso!');
+                } catch (error) {
+                    console.error("Erro ao atualizar status de entrega:", error);
+                    alert('Erro ao atualizar status de entrega. Verifique o console.');
+                    // Revert UI if it failed
+                    fulfillmentStatusSelect.value = sale.fulfillmentStatus || 'pending';
+                }
+            };
         }
     };
 

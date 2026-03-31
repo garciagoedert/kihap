@@ -416,12 +416,13 @@
                                 <th class="p-4">Graduação</th>
                                 <th class="p-4">Valor</th>
                                 <th class="p-4">Status do Pagamento</th>
+                                <th class="p-4">Entrega</th>
                                 <th class="p-4">Data da Compra</th>
                             </tr>
                         </thead>
                         <tbody id="sales-table-body">
                             <tr>
-                                <td colspan="9" class="text-center p-8">Carregando vendas...</td>
+                                <td colspan="10" class="text-center p-8">Carregando vendas...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -770,6 +771,10 @@
                                 <span class="text-sm text-gray-300">Status do Pagamento</span>
                             </label>
                             <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-column="fulfillmentStatus" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
+                                <span class="text-sm text-gray-300">Status de Entrega</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
                                 <input type="checkbox" data-column="created" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
                                 <span class="text-sm text-gray-300">Data da Compra</span>
                             </label>
@@ -804,6 +809,22 @@
             </div>
             <div id="modal-content" class="space-y-4">
                 <!-- Content will be populated by JS -->
+            </div>
+
+            <!-- Fulfillment Status Section -->
+            <div id="fulfillment-status-section" class="mt-6 pt-6 border-t border-gray-700">
+                <h3 class="text-lg font-bold mb-3">📦 Status de Entrega</h3>
+                <div class="flex items-center gap-4">
+                    <label for="sale-fulfillment-status" class="text-sm text-gray-400">Situação do Pedido:</label>
+                    <select id="sale-fulfillment-status" class="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="pending">Pendente</option>
+                        <option value="processing">Em Preparação</option>
+                        <option value="shipped">Enviado</option>
+                        <option value="delivered">Entregue</option>
+                        <option value="returned">Devolvido</option>
+                        <option value="canceled">Cancelado</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Email Logs Section -->
