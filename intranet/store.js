@@ -1029,12 +1029,39 @@ export async function setupStorePage() {
                 askProfessor: productAskProfessorInput.checked,
                 askAge: productAskAgeInput.checked,
                 controlStock: productControlStockInput.checked,
-                stockQuantity: productControlStockInput.checked ? (parseInt(productStockQuantityInput.value) || 0) : 0,
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
                 mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0
             };
+
+            // Handle stock fields
+            if (productControlStockInput.checked) {
+                const hasSizes = productHasSizesInput.checked;
+                if (hasSizes && stockPerSizeInputs) {
+                    const sizeInputEls = stockPerSizeInputs.querySelectorAll('[data-stock-size-input]');
+                    const sizeStock = {};
+                    let allZero = true;
+                    sizeInputEls.forEach(el => {
+                        const qty = parseInt(el.value) || 0;
+                        sizeStock[el.dataset.size] = qty;
+                        if (qty > 0) allZero = false;
+                    });
+                    productData.sizeStock = sizeStock;
+                    productData.stockQuantity = Object.values(sizeStock).reduce((a, b) => a + b, 0);
+                    if (allZero && sizeInputEls.length > 0) {
+                        productData.available = false;
+                    }
+                } else {
+                    productData.stockQuantity = parseInt(productStockQuantityInput.value) || 0;
+                    if (productData.stockQuantity <= 0) {
+                        productData.available = false;
+                    }
+                }
+            } else {
+                productData.stockQuantity = 0;
+                productData.sizeStock = {};
+            }
 
             // Handle Subscription toggle regardless of priceType
             if (productIsSubscriptionInput && productIsSubscriptionInput.checked) {
@@ -1228,7 +1255,14 @@ export async function setupStorePage() {
                 productControlStockInput.checked = product.controlStock || false;
                 if (product.controlStock) {
                     stockContainer.classList.remove('hidden');
-                    productStockQuantityInput.value = product.stockQuantity || 0;
+                    if (product.hasSizes && product.sizeStock) {
+                        // Use the existing sizeStock map
+                        renderSizeStockInputs(product.sizeStock || {});
+                    } else {
+                        // Simple qty
+                        renderSizeStockInputs({});
+                        productStockQuantityInput.value = product.stockQuantity || 0;
+                    }
                 } else {
                     stockContainer.classList.add('hidden');
                     productStockQuantityInput.value = '';
@@ -1376,12 +1410,57 @@ export async function setupStorePage() {
         });
     }
 
+    // --- Stock per-size helper ---
+    const stockSimpleDiv = document.getElementById('stock-simple');
+    const stockPerSizeDiv = document.getElementById('stock-per-size');
+    const stockPerSizeInputs = document.getElementById('stock-per-size-inputs');
+
+    const renderSizeStockInputs = (existingSizeStock = {}) => {
+        if (!stockPerSizeInputs) return;
+        const hasSizes = productHasSizesInput && productHasSizesInput.checked;
+        const controlStock = productControlStockInput && productControlStockInput.checked;
+
+        if (controlStock && hasSizes) {
+            // Show per-size inputs, hide simple input
+            if (stockSimpleDiv) stockSimpleDiv.classList.add('hidden');
+            if (stockPerSizeDiv) stockPerSizeDiv.classList.remove('hidden');
+
+            const sizes = productSizesInput.value.split(',').map(s => s.trim()).filter(s => s);
+            stockPerSizeInputs.innerHTML = '';
+            sizes.forEach(size => {
+                const qty = existingSizeStock[size] !== undefined ? existingSizeStock[size] : '';
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3';
+                row.innerHTML = `
+                    <span class="text-sm font-medium text-gray-200 w-16 flex-shrink-0">${size}</span>
+                    <input type="number" data-size="${size}" data-stock-size-input 
+                        class="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Qtd" min="0" value="${qty}" />
+                `;
+                stockPerSizeInputs.appendChild(row);
+            });
+        } else if (controlStock && !hasSizes) {
+            // Show simple input, hide per-size
+            if (stockSimpleDiv) stockSimpleDiv.classList.remove('hidden');
+            if (stockPerSizeDiv) stockPerSizeDiv.classList.add('hidden');
+        }
+    };
+
     if (productHasSizesInput) productHasSizesInput.addEventListener('change', () => {
         productSizesContainer.classList.toggle('hidden', !productHasSizesInput.checked);
+        renderSizeStockInputs();
+    });
+
+    // Re-render size stock inputs when sizes text changes
+    if (productSizesInput) productSizesInput.addEventListener('input', () => {
+        if (productControlStockInput && productControlStockInput.checked && productHasSizesInput && productHasSizesInput.checked) {
+            renderSizeStockInputs();
+        }
     });
 
     if (productControlStockInput) productControlStockInput.addEventListener('change', () => {
         stockContainer.classList.toggle('hidden', !productControlStockInput.checked);
+        renderSizeStockInputs();
     });
 
     const addPriceVariant = (name = '', price = '') => {

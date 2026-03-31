@@ -98,14 +98,27 @@ document.addEventListener('DOMContentLoaded', () => {
             productImageDisplay.classList.remove('hidden');
         }
 
-        if (product.controlStock && product.stockQuantity !== undefined) {
+        if (product.controlStock) {
             productStockDisplay.classList.remove('hidden');
-            if (product.stockQuantity <= 10 && product.stockQuantity > 0) {
-                productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Últimas ${product.stockQuantity} unidades em estoque!</span>`;
-            } else if (product.stockQuantity > 0) {
-                productStockDisplay.textContent = `${product.stockQuantity} unidades disponíveis`;
-            } else {
-                productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+            if (product.hasSizes && product.sizeStock) {
+                // Per-size: show total but defer detail to size selection event
+                const totalQty = Object.values(product.sizeStock).reduce((a, b) => a + b, 0);
+                if (totalQty <= 0) {
+                    productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+                } else if (totalQty <= 10) {
+                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Poucas unidades em estoque!</span>`;
+                } else {
+                    productStockDisplay.textContent = `Estoque disponível`;
+                }
+            } else if (product.stockQuantity !== undefined) {
+                // Simple stock display
+                if (product.stockQuantity <= 10 && product.stockQuantity > 0) {
+                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Últimas ${product.stockQuantity} unidades em estoque!</span>`;
+                } else if (product.stockQuantity > 0) {
+                    productStockDisplay.textContent = `${product.stockQuantity} unidades disponíveis`;
+                } else {
+                    productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+                }
             }
         } else {
             productStockDisplay.classList.add('hidden');
@@ -293,9 +306,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 productData.sizes.forEach(size => {
                     const option = document.createElement('option');
                     option.value = size;
-                    option.textContent = size;
+                    
+                    // If this product controls stock per size, mark out-of-stock sizes
+                    if (productData.controlStock && productData.hasSizes && productData.sizeStock) {
+                        const qty = productData.sizeStock[size] !== undefined ? productData.sizeStock[size] : 0;
+                        if (qty <= 0) {
+                            option.disabled = true;
+                            option.textContent = `${size} — Esgotado`;
+                        } else if (qty <= 5) {
+                            option.textContent = `${size} 🔥 (${qty} restante${qty === 1 ? '' : 's'})`;
+                        } else {
+                            option.textContent = size;
+                        }
+                    } else {
+                        option.textContent = size;
+                    }
                     sizeSelector.appendChild(option);
                 });
+
+                // Show per-size stock when user selects a size
+                if (productData.controlStock && productData.sizeStock) {
+                    sizeSelector.addEventListener('change', () => {
+                        const selected = sizeSelector.value;
+                        if (!selected) return;
+                        const qty = productData.sizeStock[selected] !== undefined ? productData.sizeStock[selected] : null;
+                        if (productStockDisplay && qty !== null) {
+                            productStockDisplay.classList.remove('hidden');
+                            if (qty <= 0) {
+                                productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">🚫 Tamanho ${selected} esgotado</span>`;
+                            } else if (qty <= 5) {
+                                productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Últimas ${qty} unidade${qty === 1 ? '' : 's'} do tamanho ${selected}!</span>`;
+                            } else {
+                                productStockDisplay.textContent = `${qty} unidades disponíveis no tamanho ${selected}`;
+                            }
+                        }
+                    });
+                }
             } else {
                 sizeSelectorContainer.classList.add('hidden');
                 sizeSelector.required = false;

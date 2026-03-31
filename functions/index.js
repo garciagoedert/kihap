@@ -268,19 +268,57 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null) {
             if (productSnap.exists) {
                 const product = productSnap.data();
                 if (product.controlStock === true) {
-                    let newQuantity = (product.stockQuantity || 0) - 1;
                     const updateProductData = {
-                        stockQuantity: Math.max(0, newQuantity),
                         updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     };
 
-                    if (newQuantity <= 0) {
-                        updateProductData.available = false;
-                        console.log(`[updateSaleToPaid] Produto ${saleData.productId} ficou sem estoque. Marcado como indisponível.`);
+                    if (product.hasSizes && product.sizeStock && saleData.userSize) {
+                        // Per-size stock decrement
+                        const currentStock = product.sizeStock;
+                        const selectedSize = saleData.userSize;
+                        const currentQty = currentStock[selectedSize] || 0;
+                        const newQty = Math.max(0, currentQty - 1);
+                        
+                        // Use dot notation to update only the specific size field
+                        updateProductData[`sizeStock.${selectedSize}`] = newQty;
+                        
+                        // Check if ALL sizes are now 0
+                        let allZero = newQty <= 0; // Start with the updated size
+                        if (allZero) {
+                            for (const size in currentStock) {
+                                if (size !== selectedSize && (currentStock[size] || 0) > 0) {
+                                    allZero = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Recalculate total stockQuantity
+                        let total = 0;
+                        for (const size in currentStock) {
+                            total += (size === selectedSize ? newQty : (currentStock[size] || 0));
+                        }
+                        updateProductData.stockQuantity = total;
+
+                        if (allZero) {
+                            updateProductData.available = false;
+                            console.log(`[updateSaleToPaid] Todos os tamanhos do produto ${saleData.productId} zeraram. Marcado como indisponível.`);
+                        }
+                        console.log(`[updateSaleToPaid] Estoque do tamanho "${selectedSize}" do produto ${saleData.productId} atualizado para: ${newQty}`);
+                    } else {
+                        // Simple (non-sized) stock decrement
+                        let newQuantity = (product.stockQuantity || 0) - 1;
+                        updateProductData.stockQuantity = Math.max(0, newQuantity);
+
+                        if (newQuantity <= 0) {
+                            updateProductData.available = false;
+                            console.log(`[updateSaleToPaid] Produto ${saleData.productId} ficou sem estoque. Marcado como indisponível.`);
+                        }
+
+                        console.log(`[updateSaleToPaid] Estoque atualizado para o produto ${saleData.productId}: ${updateProductData.stockQuantity}`);
                     }
 
                     transaction.update(productRef, updateProductData);
-                    console.log(`[updateSaleToPaid] Estoque atualizado para o produto ${saleData.productId}: ${updateProductData.stockQuantity}`);
                 }
             }
         });
