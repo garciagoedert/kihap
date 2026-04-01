@@ -51,6 +51,9 @@ export async function setupStorePage() {
     const filterStartDate = document.getElementById('filter-start-date');
     const filterEndDate = document.getElementById('filter-end-date');
     const statusFilter = document.getElementById('filter-status');
+    const fulfillmentFilter = document.getElementById('filter-fulfillment');
+    const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
+    const filterGridContainer = document.getElementById('filter-grid-container');
     const exportBtn = document.getElementById('export-btn');
     const modal = document.getElementById('sale-details-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -60,18 +63,7 @@ export async function setupStorePage() {
     const recoverCartBtnModal = document.getElementById('recover-cart-btn-modal');
     const fulfillmentStatusSelect = document.getElementById('sale-fulfillment-status');
 
-    // Export Modal elements
-    const exportModal = document.getElementById('export-modal');
-    const closeExportModalBtn = document.getElementById('close-export-modal-btn');
-    const cancelExportBtn = document.getElementById('cancel-export-btn');
-    const exportForm = document.getElementById('export-form');
-    const exportFilterStartDate = document.getElementById('export-filter-start-date');
-    const exportFilterEndDate = document.getElementById('export-filter-end-date');
-    const exportFilterUnit = document.getElementById('export-filter-unit');
-    const exportFilterProduct = document.getElementById('export-filter-product');
-    const exportFilterStatus = document.getElementById('export-filter-status');
-    const exportSelectAllBtn = document.getElementById('export-select-all-btn');
-    const exportSelectNoneBtn = document.getElementById('export-select-none-btn');
+    const exportModal = document.getElementById('export-modal'); // Still needed if we want to avoid breaking script, but let's see if we can just remove all of them.
 
     // Product Management elements
     const productModal = document.getElementById('product-modal');
@@ -238,6 +230,15 @@ export async function setupStorePage() {
 
     if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
     if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
+    
+    // --- Filter Toggle Logic ---
+    if (toggleFiltersBtn && filterGridContainer) {
+        toggleFiltersBtn.addEventListener('click', () => {
+            filterGridContainer.classList.toggle('hidden');
+            toggleFiltersBtn.classList.toggle('bg-blue-600');
+            toggleFiltersBtn.classList.toggle('text-white');
+        });
+    }
 
     // --- Manual Sale Modal Logic ---
     const updateManualSaleTotal = () => {
@@ -527,6 +528,7 @@ export async function setupStorePage() {
         const customStart = filterStartDate ? filterStartDate.value : '';
         const customEnd = filterEndDate ? filterEndDate.value : '';
         const selectedStatus = statusFilter.value;
+        const selectedFulfillment = fulfillmentFilter ? fulfillmentFilter.value : '';
 
         let filteredSales = allSales.filter(sale => {
             const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
@@ -536,6 +538,7 @@ export async function setupStorePage() {
             const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
             const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
             const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
+            const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
 
             let dateMatch = true;
             if (sale.created && selectedPeriod) {
@@ -582,7 +585,7 @@ export async function setupStorePage() {
                 dateMatch = false;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch && fulfillmentMatch;
         });
 
         // The default view when no filters are applied is usually handled by the UI default selection
@@ -615,221 +618,13 @@ export async function setupStorePage() {
         });
     }
 
-    [searchInput, unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter].forEach(el => {
+    [searchInput, unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter, fulfillmentFilter].forEach(el => {
         if (el) {
             el.addEventListener('change', applyFilters);
             el.addEventListener('keyup', applyFilters);
         }
     });
 
-    const resendMissingTicketsBtn = document.getElementById('resend-missing-tickets-btn');
-    if (resendMissingTicketsBtn) resendMissingTicketsBtn.addEventListener('click', async () => {
-        if (!confirm('Tem certeza que deseja verificar e reenviar TODOS os ingressos pendentes? Isso pode levar alguns instantes.')) {
-            return;
-        }
-
-        resendMissingTicketsBtn.disabled = true;
-        const originalContent = resendMissingTicketsBtn.innerHTML;
-        resendMissingTicketsBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Processando...';
-
-        try {
-            const functions = getFunctions();
-            const resendAllMissingTickets = httpsCallable(functions, 'resendAllMissingTickets');
-            const result = await resendAllMissingTickets();
-            const { message, sentCount, errorCount } = result.data;
-            alert(`${message}\n\nEnviados: ${sentCount}\nErros: ${errorCount}`);
-        } catch (error) {
-            console.error('Erro ao processar reenvio em massa:', error);
-            alert(`Erro: ${error.message}`);
-        } finally {
-            resendMissingTicketsBtn.disabled = false;
-            resendMissingTicketsBtn.innerHTML = originalContent;
-        }
-    });
-
-    const openExportModal = () => {
-        if (!allSales || allSales.length === 0) {
-            alert("Não há dados de vendas carregados.");
-            return;
-        }
-        
-        // Copy options from main filters if available
-        if (unitFilter && exportFilterUnit) exportFilterUnit.innerHTML = unitFilter.innerHTML;
-        if (productFilter && exportFilterProduct) exportFilterProduct.innerHTML = productFilter.innerHTML;
-
-        // Auto-fill modal filters with current page filters
-        if (exportFilterUnit) exportFilterUnit.value = unitFilter.value;
-        if (exportFilterProduct) exportFilterProduct.value = productFilter.value;
-        if (exportFilterStatus) exportFilterStatus.value = statusFilter.value;
-
-        const selectedPeriod = periodFilter.value;
-        const now = new Date();
-        let startObj;
-        
-        if (selectedPeriod === 'custom') {
-            if (exportFilterStartDate) exportFilterStartDate.value = filterStartDate.value;
-            if (exportFilterEndDate) exportFilterEndDate.value = filterEndDate.value;
-        } else if (selectedPeriod === 'all') {
-            if (exportFilterStartDate) exportFilterStartDate.value = '';
-            if (exportFilterEndDate) exportFilterEndDate.value = '';
-        } else {
-            startObj = new Date();
-            startObj.setHours(0, 0, 0, 0);
-            if (selectedPeriod === '7') {
-                startObj.setDate(startObj.getDate() - 7);
-            } else if (selectedPeriod === '15') {
-                startObj.setDate(startObj.getDate() - 15);
-            } else if (selectedPeriod === '30') {
-                startObj.setDate(startObj.getDate() - 30);
-            } else if (selectedPeriod === 'month') {
-                startObj.setDate(1);
-            }
-            
-            // Format dates as YYYY-MM-DD
-            // Using local time instead of ISO to avoid timezone mismatch
-            const formatLocal = (d) => {
-                const tzOffset = d.getTimezoneOffset() * 60000;
-                return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
-            };
-            
-            if (exportFilterStartDate) exportFilterStartDate.value = formatLocal(startObj);
-            if (exportFilterEndDate) exportFilterEndDate.value = formatLocal(now);
-        }
-        if (exportFilterStatus) exportFilterStatus.value = statusFilter.value;
-
-        exportModal.classList.remove('hidden');
-    };
-
-    const closeExportModal = () => {
-        exportModal.classList.add('hidden');
-    };
-
-    if (exportBtn) exportBtn.addEventListener('click', openExportModal);
-    if (closeExportModalBtn) closeExportModalBtn.addEventListener('click', closeExportModal);
-    if (cancelExportBtn) cancelExportBtn.addEventListener('click', closeExportModal);
-
-    if (exportSelectAllBtn) exportSelectAllBtn.addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]');
-        checkboxes.forEach(cb => cb.checked = true);
-    });
-
-    if (exportSelectNoneBtn) exportSelectNoneBtn.addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]');
-        checkboxes.forEach(cb => cb.checked = false);
-    });
-
-    if (exportForm) exportForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        // 1. Get Filters from modal
-        const selectedStartDate = exportFilterStartDate.value;
-        const selectedEndDate = exportFilterEndDate.value;
-        const selectedUnit = exportFilterUnit.value;
-        const selectedProduct = exportFilterProduct.value;
-        const selectedStatus = exportFilterStatus.value;
-        
-        // Use the same search term just in case
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-
-        // 2. Filter logic
-        let filtered = allSales.filter(sale => {
-            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
-            const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
-            const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-            const mainProductMatch = sale.productId === selectedProduct;
-            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
-            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
-            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
-
-            let dateMatch = true;
-            if (sale.created) {
-                const saleDateObj = sale.created.toDate();
-                saleDateObj.setHours(0, 0, 0, 0); // normalize time for comparison
-                const saleTime = saleDateObj.getTime();
-
-                if (selectedStartDate) {
-                    // Normalize chosen start date to local time comparison
-                    const startStr = selectedStartDate.split('-');
-                    const startDateObj = new Date(startStr[0], startStr[1] - 1, startStr[2]);
-                    startDateObj.setHours(0, 0, 0, 0);
-                    if (saleTime < startDateObj.getTime()) dateMatch = false;
-                }
-                if (selectedEndDate) {
-                    const endStr = selectedEndDate.split('-');
-                    const endDateObj = new Date(endStr[0], endStr[1] - 1, endStr[2]);
-                    endDateObj.setHours(23, 59, 59, 999);
-                    if (saleTime > endDateObj.getTime()) dateMatch = false;
-                }
-            } else if (selectedStartDate || selectedEndDate) {
-                dateMatch = false; // No date in DB, shouldn't match if filtered by date
-            }
-
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
-        });
-
-        // 3. Get Selected Columns
-        const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]:checked');
-        const selectedColumns = Array.from(checkboxes).map(cb => cb.dataset.column);
-
-        if (selectedColumns.length === 0) {
-            alert('Por favor, selecione pelo menos uma coluna para exportar.');
-            return;
-        }
-
-        if (filtered.length === 0) {
-            alert('Nenhuma venda encontrada com os filtros selecionados.');
-            return;
-        }
-
-        // 4. Generate Export Data
-        const worksheetData = filtered.map(sale => {
-            let optionsText = 'N/A';
-            if (sale.kitSelections && Object.keys(sale.kitSelections).length > 0) {
-                optionsText = Object.entries(sale.kitSelections)
-                    .map(([itemName, option]) => `${itemName}: ${option}`)
-                    .join(', ');
-            }
-
-            let productText = sale.productName || 'N/A';
-            if (sale.recommendedItems && sale.recommendedItems.length > 0) {
-                const recommendedText = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
-                productText += ` + ${recommendedText}`;
-            }
-
-            // Map all possible columns mapped by dataset keys
-            const allPossibleColumns = {
-                id: { header: 'ID da Venda', value: sale.id || 'N/A' },
-                userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
-                userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
-                userPhone: { header: 'Telefone', value: sale.userPhone || 'N/A' },
-                userCpf: { header: 'CPF', value: sale.userCpf || 'N/A' },
-                userUnit: { header: 'Unidade', value: sale.userUnit || 'N/A' },
-                userPrograma: { header: 'Programa', value: sale.userPrograma || 'N/A' },
-                userGraduacao: { header: 'Graduação', value: sale.userGraduacao || 'N/A' },
-                productName: { header: 'Produto', value: productText },
-                kitSelections: { header: 'Opções do Kit', value: optionsText },
-                amountTotal: { header: 'Valor Total', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
-                paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
-                fulfillmentStatus: { header: 'Status de Entrega', value: getFulfillmentStatusLabel(sale.fulfillmentStatus) },
-                created: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' }
-            };
-
-            const rowData = {};
-            selectedColumns.forEach(colKey => {
-                if (allPossibleColumns[colKey]) {
-                    rowData[allPossibleColumns[colKey].header] = allPossibleColumns[colKey].value;
-                }
-            });
-            return rowData;
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendas');
-        XLSX.writeFile(workbook, 'RelatorioDeVendas.xlsx');
-
-        closeExportModal();
-    });
 
     const getFilteredSales = () => {
         const searchTerm = searchInput.value.toLowerCase();

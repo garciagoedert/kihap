@@ -299,18 +299,42 @@
                 </div>
                 <!-- Filters -->
                 <div class="bg-[#1a1a1a] p-6 rounded-xl shadow-lg mb-8 border border-[#333]">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="lg:col-span-2">
-                            <label for="search-input"
-                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Buscar</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-gray-500"></i>
+                    <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+                        <!-- Search and Filter Toggle -->
+                        <div class="flex-grow flex items-end gap-3">
+                            <div class="flex-grow">
+                                <label for="search-input"
+                                    class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Buscar</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-500"></i>
+                                    </div>
+                                    <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..."
+                                        class="w-full pl-10 pr-3 py-2.5 text-white bg-[#2a2a2a] border border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-500">
                                 </div>
-                                <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..."
-                                    class="w-full pl-10 pr-3 py-2.5 text-white bg-[#2a2a2a] border border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-500">
                             </div>
+                            <button id="toggle-filters-btn" class="p-3 bg-[#2a2a2a] border border-[#444] rounded-lg text-gray-400 hover:text-white hover:border-blue-500 transition-all duration-200 h-[46px]" title="Filtros Avançados">
+                                <i class="fas fa-filter"></i>
+                            </button>
                         </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="add-manual-sale-btn"
+                                class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-lg shadow-blue-600/20 whitespace-nowrap">
+                                <i class="fas fa-plus mr-2"></i>Venda Manual
+                            </button>
+                            
+                            <a href="sales-history.html" id="view-all-sales-btn"
+                                class="px-4 py-2.5 text-sm font-medium text-gray-300 bg-[#2a2a2a] border border-[#444] rounded-lg hover:bg-[#333] hover:text-white transition-all duration-200 whitespace-nowrap" title="Ver Histórico Completo">
+                                <i class="fas fa-history mr-2"></i>Histórico
+                            </a>
+
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Filter Grid -->
+                    <div id="filter-grid-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-gray-800 mt-6 animate-fadeIn">
                         <div>
                             <label for="filter-unit"
                                 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Unidade</label>
@@ -369,7 +393,7 @@
                         </div>
                         <div>
                             <label for="filter-status"
-                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Status</label>
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Pagamento</label>
                             <div class="relative">
                                 <select id="filter-status"
                                     class="w-full pl-3 pr-10 py-2.5 text-white bg-[#2a2a2a] border border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
@@ -382,24 +406,28 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="lg:col-span-2 flex items-end justify-end gap-3">
-                            <button id="add-manual-sale-btn"
-                                class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] transition-all duration-200 shadow-lg shadow-blue-600/20">
-                                <i class="fas fa-plus mr-2"></i>Venda Manual
-                            </button>
-                            <a href="sales-history.html" id="view-all-sales-btn"
-                                class="px-5 py-2.5 text-sm font-medium text-gray-300 bg-[#2a2a2a] border border-[#444] rounded-lg hover:bg-[#333] hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] transition-all duration-200">
-                                <i class="fas fa-history mr-2"></i>Histórico
-                            </a>
-                            <button id="resend-missing-tickets-btn"
-                                class="px-5 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] transition-all duration-200 shadow-lg shadow-purple-600/20">
-                                <i class="fas fa-sync-alt mr-2"></i>Reenviar Ingressos Pendentes
-                            </button>
-                            <button id="export-btn"
-                                class="px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] transition-all duration-200 shadow-lg shadow-green-600/20">
-                                <i class="fas fa-file-excel mr-2"></i>Exportar
-                            </button>
+                        <div>
+                            <label for="filter-fulfillment"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Status Entrega</label>
+                            <div class="relative">
+                                <select id="filter-fulfillment"
+                                    class="w-full pl-3 pr-10 py-2.5 text-white bg-[#2a2a2a] border border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="">Todos os Status</option>
+                                    <option value="pending">Pendente</option>
+                                    <option value="processing">Em Preparação</option>
+                                    <option value="shipped">Enviado</option>
+                                    <option value="delivered">Entregue</option>
+                                    <option value="returned">Devolvido</option>
+                                    <option value="canceled">Cancelado</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+
                     </div>
                 </div>
 
@@ -661,140 +689,7 @@
         });
     </script>
 
-    <!-- Export Modal -->
-    <div id="export-modal"
-        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
-        <div class="bg-[#1a1a1a] p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-800">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
-                <h2 class="text-2xl font-bold">Exportar Relatório de Vendas</h2>
-                <button type="button" id="close-export-modal-btn"
-                    class="text-gray-400 hover:text-white text-2xl">&times;</button>
-            </div>
 
-            <form id="export-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Esquerda: Filtros -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-filter mr-2 text-blue-500"></i>Filtros de Exportação</h3>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-1">Data Inicial</label>
-                                    <input type="date" id="export-filter-start-date"
-                                        class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-1">Data Final</label>
-                                    <input type="date" id="export-filter-end-date"
-                                        class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">Unidade</label>
-                                <select id="export-filter-unit"
-                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todas as Unidades</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">Produto</label>
-                                <select id="export-filter-product"
-                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todos os Produtos</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                <select id="export-filter-status"
-                                    class="w-full px-3 py-2 text-sm text-white bg-[#2a2a2a] border border-[#444] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todos os Status</option>
-                                    <option value="paid">Pago</option>
-                                    <option value="pending">Pendente</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Direita: Colunas -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-columns mr-2 text-green-500"></i>Colunas para Exportar</h3>
-                        <div class="grid grid-cols-2 gap-3" id="export-columns-container">
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="id" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">ID da Venda</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userName" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Nome do Cliente</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userEmail" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Email</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userPhone" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
-                                <span class="text-sm text-gray-300">Telefone</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userCpf" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">CPF</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userUnit" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Unidade</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userPrograma" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
-                                <span class="text-sm text-gray-300">Programa</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="userGraduacao" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600">
-                                <span class="text-sm text-gray-300">Graduação</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="productName" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Produto</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="kitSelections" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Opções do Kit</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="amountTotal" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Valor Total</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="paymentStatus" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Status do Pagamento</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="fulfillmentStatus" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Status de Entrega</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" data-column="created" class="form-checkbox text-blue-500 rounded bg-gray-800 border-gray-600" checked>
-                                <span class="text-sm text-gray-300">Data da Compra</span>
-                            </label>
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <button type="button" id="export-select-all-btn" class="text-xs text-blue-400 hover:text-blue-300 underline">Marcar Todas</button>
-                            <span class="text-xs text-gray-500">|</span>
-                            <button type="button" id="export-select-none-btn" class="text-xs text-blue-400 hover:text-blue-300 underline">Desmarcar Todas</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 pt-6 border-t border-gray-700 flex justify-end space-x-4">
-                    <button type="button" id="cancel-export-btn"
-                        class="px-5 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">Cancelar</button>
-                    <button type="submit" id="confirm-export-btn"
-                        class="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 flex items-center shadow-lg shadow-green-600/20 transition-all">
-                        <i class="fas fa-file-excel mr-2"></i>Gerar Excel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Sale Details Modal -->
     <div id="sale-details-modal"
@@ -832,7 +727,7 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-between items-center flex-wrap gap-2">
+            <div class="mt-10 pt-6 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4">
                 <div class="flex gap-2">
                     <button id="resend-email-btn-modal"
                         class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">

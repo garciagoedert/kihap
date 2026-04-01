@@ -383,8 +383,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             
             for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
-                    ...globalUserData, // Dados globais de cadastro (Nome, Email, CPF, Unidade, etc)
                     ...itemFormData,   // Dados específicos deste item (Tamanho, Idade, etc)
+                    ...globalUserData, // Dados globais de cadastro (Nome, Email, CPF, Unidade, etc) - SOBRESCREVE itemFormData se houver conflito
                     productId: cartItem.productId,
                     productName: cartItem.productName,
                     amountTotal: itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length),
@@ -425,8 +425,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
-        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
-        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl);
+        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData);
 
         for (const docId of saleDocIds) {
             await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });
@@ -465,8 +464,8 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
 
             for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
-                    ...globalUserData,
                     ...itemFormData,
+                    ...globalUserData,
                     productId: cartItem.productId,
                     productName: cartItem.productName,
                     amountTotal: 0,

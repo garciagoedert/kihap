@@ -144,7 +144,7 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
     }
 };
 
-const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null) => {
+const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null, globalUserData = null) => {
     console.log('[createCartMercadoPagoPreference] Iniciando...');
     
     // Simplificamos sem o split para diferentes contas no carrinho
@@ -182,7 +182,11 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
 
     let primaryBuyerName = "Cliente";
     let primaryBuyerEmail = "contato@kihap.com.br";
-    if (cartItems.length > 0 && cartItems[0].formDataList && cartItems[0].formDataList.length > 0) {
+
+    if (globalUserData) {
+        primaryBuyerName = globalUserData.userName || "Cliente";
+        primaryBuyerEmail = globalUserData.userEmail || "contato@kihap.com.br";
+    } else if (cartItems.length > 0 && cartItems[0].formDataList && cartItems[0].formDataList.length > 0) {
         primaryBuyerName = cartItems[0].formDataList[0].userName || "Cliente";
         primaryBuyerEmail = cartItems[0].formDataList[0].userEmail || "contato@kihap.com.br";
     }

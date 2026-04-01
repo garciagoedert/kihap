@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, getDoc, doc, query, orderBy, where, updateDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady } from './auth.js';
@@ -25,64 +25,441 @@ async function initializeHistory() {
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
-    const syncBtn = document.getElementById('sync-status-btn');
-    const syncPagarmeBtn = document.getElementById('sync-pagarme-btn');
+    const fulfillmentFilter = document.getElementById('filter-fulfillment');
+    const resendMissingTicketsBtn = document.getElementById('resend-missing-tickets-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const exportModal = document.getElementById('export-modal');
+    const closeExportModalBtn = document.getElementById('close-export-modal-btn');
+    const cancelExportBtn = document.getElementById('cancel-export-btn');
+    const exportForm = document.getElementById('export-form');
 
-    [searchInput, unitFilter, productFilter, dateFilter].forEach(el => {
+    // Filter Listeners
+    [searchInput, unitFilter, productFilter, dateFilter, fulfillmentFilter].forEach(el => {
+        if (!el) return;
         el.addEventListener('change', () => {
             currentPage = 1;
             applyFilters();
         });
-        if (el.tagName === 'INPUT') {
-            el.addEventListener('keyup', () => {
+        if (el === searchInput) {
+            el.addEventListener('input', () => {
                 currentPage = 1;
                 applyFilters();
             });
         }
     });
 
-    syncBtn.addEventListener('click', async () => {
-        syncBtn.disabled = true;
-        syncBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Sincronizando...';
-        
-        try {
-            const functions = getFunctions();
-            const fixOldSalesStatus = httpsCallable(functions, 'fixOldSalesStatus');
-            const result = await fixOldSalesStatus();
-            alert(result.data.message);
-            // Recarregar os dados para refletir as atualizações
-            await fetchSales();
-            applyFilters();
-        } catch (error) {
-            console.error('Erro ao sincronizar status:', error);
-            alert(`Erro: ${error.message}`);
-        } finally {
-            syncBtn.disabled = false;
-            syncBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Stripe';
-        }
+    // Reenviar todos logic
+    if (resendMissingTicketsBtn) {
+        resendMissingTicketsBtn.onclick = async () => {
+            if (!confirm('Deseja reenviar TODOS os ingressos de vendas aprovadas que ainda não foram enviados?')) return;
+            resendMissingTicketsBtn.disabled = true;
+            const originalText = resendMissingTicketsBtn.innerHTML;
+            resendMissingTicketsBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
+            try {
+                const functions = getFunctions();
+                const resendAllMissingTickets = httpsCallable(functions, 'resendAllMissingTickets');
+                const result = await resendAllMissingTickets();
+                alert(`Sucesso! ${result.data.sentCount} ingressos foram colocados na fila de envio.`);
+                fetchSales().then(() => applyFilters());
+            } catch (error) {
+                console.error('Erro ao reenviar ingressos:', error);
+                alert('Erro ao processar reenvio: ' + error.message);
+            } finally {
+                resendMissingTicketsBtn.disabled = false;
+                resendMissingTicketsBtn.innerHTML = originalText;
+            }
+        };
+    }
+
+    // Modal Details elements and close logic
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeDetailsModal);
+    
+    window.addEventListener('click', (e) => {
+        const saleDetailsModal = document.getElementById('sale-details-modal');
+        if (e.target === saleDetailsModal) closeDetailsModal();
     });
 
-    syncPagarmeBtn.addEventListener('click', async () => {
-        syncPagarmeBtn.disabled = true;
-        syncPagarmeBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Sincronizando...';
-        
-        try {
-            const functions = getFunctions();
-            const syncPagarmeSalesStatus = httpsCallable(functions, 'syncPagarmeSalesStatus');
-            const result = await syncPagarmeSalesStatus();
-            alert(result.data.message);
-            // Recarregar os dados para refletir as atualizações
-            await fetchSales();
-            applyFilters();
-        } catch (error) {
-            console.error('Erro ao sincronizar status do Pagar.me:', error);
-            alert(`Erro: ${error.message}`);
-        } finally {
-            syncPagarmeBtn.disabled = false;
-            syncPagarmeBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Sincronizar Pagar.me';
-        }
-    });
+    // Export Logic
+    if (exportBtn) exportBtn.addEventListener('click', openExportModal);
+    if (closeExportModalBtn) closeExportModalBtn.addEventListener('click', closeExportModal);
+    if (cancelExportBtn) cancelExportBtn.addEventListener('click', closeExportModal);
+    if (exportForm) exportForm.addEventListener('submit', handleExport);
 }
+
+const openExportModal = () => {
+    const exportModal = document.getElementById('export-modal');
+    const unitFilter = document.getElementById('filter-unit');
+    const fulfillmentFilter = document.getElementById('filter-fulfillment');
+    const exportFilterUnit = document.getElementById('export-filter-unit');
+    const exportFilterStatus = document.getElementById('export-filter-status');
+    const exportFilterFulfillment = document.getElementById('export-filter-fulfillment');
+    const exportFilterStartDate = document.getElementById('export-start-date');
+    const exportFilterEndDate = document.getElementById('export-end-date');
+
+    if (!allSales || allSales.length === 0) {
+        alert("Não há dados de vendas carregados.");
+        return;
+    }
+    
+    if (unitFilter && exportFilterUnit) exportFilterUnit.innerHTML = unitFilter.innerHTML;
+    if (exportFilterUnit) exportFilterUnit.value = unitFilter.value;
+    if (exportFilterStatus) exportFilterStatus.value = '';
+    if (exportFilterFulfillment) exportFilterFulfillment.value = fulfillmentFilter.value;
+    if (exportFilterStartDate) exportFilterStartDate.value = '';
+    if (exportFilterEndDate) exportFilterEndDate.value = '';
+
+    exportModal.classList.remove('hidden');
+};
+
+const closeExportModal = () => {
+    const exportModal = document.getElementById('export-modal');
+    if (exportModal) exportModal.classList.add('hidden');
+};
+
+const handleExport = (e) => {
+    e.preventDefault();
+    const searchInput = document.getElementById('search-input');
+    const exportFilterStartDate = document.getElementById('export-start-date');
+    const exportFilterEndDate = document.getElementById('export-end-date');
+    const exportFilterUnit = document.getElementById('export-filter-unit');
+    const exportFilterStatus = document.getElementById('export-filter-status');
+    const exportFilterFulfillment = document.getElementById('export-filter-fulfillment');
+    
+    const selectedStartDate = exportFilterStartDate.value;
+    const selectedEndDate = exportFilterEndDate.value;
+    const selectedUnit = exportFilterUnit.value;
+    const selectedStatus = exportFilterStatus.value;
+    const selectedFulfillment = exportFilterFulfillment.value;
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    const flatSales = allSales.flat();
+
+    let filtered = flatSales.filter(sale => {
+        const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+        const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
+        const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
+        const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
+        const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
+
+        let dateMatch = true;
+        if (sale.created) {
+            const saleDateObj = sale.created.toDate();
+            saleDateObj.setHours(0, 0, 0, 0);
+            const saleTime = saleDateObj.getTime();
+
+            if (selectedStartDate) {
+                const startStr = selectedStartDate.split('-');
+                const startDateObj = new Date(startStr[0], startStr[1] - 1, startStr[2]);
+                startDateObj.setHours(0, 0, 0, 0);
+                if (saleTime < startDateObj.getTime()) dateMatch = false;
+            }
+            if (selectedEndDate) {
+                const endStr = selectedEndDate.split('-');
+                const endDateObj = new Date(endStr[0], endStr[1] - 1, endStr[2]);
+                endDateObj.setHours(23, 59, 59, 999);
+                if (saleTime > endDateObj.getTime()) dateMatch = false;
+            }
+        } else if (selectedStartDate || selectedEndDate) {
+            dateMatch = false;
+        }
+
+        return (nameMatch || emailMatch) && unitMatch && dateMatch && statusMatch && fulfillmentMatch;
+    });
+
+    const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]:checked');
+    const selectedColumns = Array.from(checkboxes).map(cb => cb.dataset.column);
+
+    if (selectedColumns.length === 0) {
+        alert('Por favor, selecione pelo menos uma coluna para exportar.');
+        return;
+    }
+
+    if (filtered.length === 0) {
+        alert('Nenhuma venda encontrada com os filtros selecionados.');
+        return;
+    }
+
+    const worksheetData = filtered.map(sale => {
+        const allPossibleColumns = {
+            date: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' },
+            productName: { header: 'Produto', value: sale.productName || 'N/A' },
+            userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
+            userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
+            userPhone: { header: 'Telefone', value: sale.userPhone || 'N/A' },
+            userUnit: { header: 'Unidade', value: sale.userUnit || 'N/A' },
+            userPrograma: { header: 'Programa', value: sale.userPrograma || 'N/A' },
+            userGraduacao: { header: 'Graduação', value: sale.userGraduacao || 'N/A' },
+            amountTotal: { header: 'Valor Unitário', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
+            paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
+            fulfillmentStatus: { header: 'Status de Entrega', value: getFulfillmentStatusLabel(sale.fulfillmentStatus) }
+        };
+
+        const rowData = {};
+        selectedColumns.forEach(colKey => {
+            if (allPossibleColumns[colKey]) {
+                rowData[allPossibleColumns[colKey].header] = allPossibleColumns[colKey].value;
+            }
+        });
+        return rowData;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendas');
+    XLSX.writeFile(workbook, 'RelatorioDeVendas.xlsx');
+
+    closeExportModal();
+};
+
+const closeDetailsModal = () => {
+    const saleDetailsModal = document.getElementById('sale-details-modal');
+    if (saleDetailsModal) saleDetailsModal.classList.add('hidden');
+};
+
+const openSaleDetailsModal = async (saleIds) => {
+    const saleDetailsModal = document.getElementById('sale-details-modal');
+    const modalContent = document.getElementById('modal-content');
+    const fulfillmentStatusSelect = document.getElementById('sale-fulfillment-status');
+    const resendEmailBtnModal = document.getElementById('resend-email-btn-modal');
+    const resendEmailText = document.getElementById('resend-email-text');
+    const recoverCartBtnModal = document.getElementById('recover-cart-btn-modal');
+
+    const idList = saleIds.split(',');
+    const primarySaleId = idList[0];
+    const saleDoc = await getDoc(doc(db, 'inscricoesFaixaPreta', primarySaleId));
+    
+    if (!saleDoc.exists()) {
+        alert('Venda não encontrada.');
+        return;
+    }
+
+    const sale = { id: saleDoc.id, ...saleDoc.data() };
+    
+    let allGroupSales = [sale];
+    if (sale.checkoutSessionId) {
+        const q = query(collection(db, 'inscricoesFaixaPreta'), where('checkoutSessionId', '==', sale.checkoutSessionId));
+        const querySnapshot = await getDocs(q);
+        allGroupSales = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    let productDetailsHtml = allGroupSales.map(s => `
+        <div class="p-3 bg-gray-700/30 rounded-lg border border-gray-600/30 mb-2">
+            <p class="font-bold text-blue-400">${s.productName || 'Produto N/A'}</p>
+            ${s.userSize ? `<p class="text-xs text-gray-400">Tamanho: <span class="text-white">${s.userSize}</span></p>` : ''}
+            ${s.kitSelections ? Object.entries(s.kitSelections).map(([key, val]) => `<p class="text-xs text-gray-400">${key}: <span class="text-white">${val}</span></p>`).join('') : ''}
+            <p class="text-xs text-gray-400 mt-1">Valor: <span class="text-green-400 font-medium">${(s.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: s.currency || 'BRL' })}</span></p>
+        </div>
+    `).join('');
+
+    modalContent.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                    <h4 class="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-circle"></i> Dados do Cliente
+                    </h4>
+                    <div class="space-y-2 text-sm">
+                        <p><span class="text-gray-400">Nome:</span> <span class="text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                        <p><span class="text-gray-400">Email:</span> <span class="text-white font-medium">${sale.userEmail || 'N/A'}</span></p>
+                        <p><span class="text-gray-400">Telefone:</span> <span class="text-white font-medium">${sale.userPhone || 'N/A'}</span></p>
+                        <p><span class="text-gray-400">CPF:</span> <span class="text-white font-medium">${sale.userCpf || 'N/A'}</span></p>
+                        <p><span class="text-gray-400">Unidade:</span> <span class="text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                    <h4 class="text-purple-400 font-bold mb-3 flex items-center gap-2">
+                        <i class="fas fa-shopping-bag"></i> Itens do Pedido
+                    </h4>
+                    <div class="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        ${productDetailsHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+            <h4 class="text-green-400 font-bold mb-3 flex items-center gap-2">
+                <i class="fas fa-credit-card"></i> Pagamento
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="space-y-2">
+                    <p><span class="text-gray-400">Status Financeiro:</span> ${renderStatusTag(sale.paymentStatus)}</p>
+                    <p><span class="text-gray-400">Total Pago:</span> <span class="text-green-400 font-bold text-lg">${(allGroupSales.reduce((acc, curr) => acc + curr.amountTotal, 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                    <p><span class="text-gray-400">Data e Hora:</span> <span class="text-white">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
+                </div>
+                <div class="border-l border-gray-700/50 pl-4 space-y-2">
+                    <p><span class="text-gray-400">Método:</span> <span class="text-white uppercase font-bold">${sale.paymentMethod || 'N/A'}</span></p>
+                    ${sale.stripeSessionId ? `<p class="text-xs text-blue-400 mt-2 truncate" title="${sale.stripeSessionId}">Stripe ID: ${sale.stripeSessionId}</p>` : ''}
+                    ${sale.mercadoPagoPreferenceId ? `<p class="text-xs text-blue-400 mt-1 truncate" title="${sale.mercadoPagoPreferenceId}">MP ID: ${sale.mercadoPagoPreferenceId}</p>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+
+    await loadEmailLogs(primarySaleId);
+    saleDetailsModal.classList.remove('hidden');
+
+    if (fulfillmentStatusSelect) {
+        fulfillmentStatusSelect.value = sale.fulfillmentStatus || 'pending';
+        fulfillmentStatusSelect.onchange = async () => {
+            const newStatus = fulfillmentStatusSelect.value;
+            if (!confirm(`Deseja atualizar o status de entrega para "${getFulfillmentStatusLabel(newStatus)}" em todos os itens deste pedido?`)) {
+                fulfillmentStatusSelect.value = sale.fulfillmentStatus || 'pending';
+                return;
+            }
+            try {
+                const batch = writeBatch(db);
+                idList.forEach(id => {
+                    const ref = doc(db, 'inscricoesFaixaPreta', id);
+                    batch.update(ref, { fulfillmentStatus: newStatus, lastModifiedAt: serverTimestamp() });
+                });
+                await batch.commit();
+                sale.fulfillmentStatus = newStatus;
+                alert('Status atualizado com sucesso!');
+                await fetchSales();
+                applyFilters();
+            } catch (error) {
+                console.error("Erro ao atualizar status:", error);
+                alert('Erro ao atualizar status.');
+                fulfillmentStatusSelect.value = sale.fulfillmentStatus || 'pending';
+            }
+        };
+    }
+
+    if (resendEmailBtnModal) {
+        resendEmailBtnModal.onclick = async () => {
+            if (!confirm('Deseja reenviar o e-mail deste pedido para o cliente?')) return;
+            resendEmailBtnModal.disabled = true;
+            resendEmailText.innerText = 'Enviando...';
+            try {
+                const functions = getFunctions();
+                const sendManualTicket = httpsCallable(functions, 'sendPurchaseReceiptManual');
+                await sendManualTicket({ saleId: primarySaleId });
+                alert('E-mail colocado na fila de envio com sucesso!');
+                await loadEmailLogs(primarySaleId);
+            } catch (error) {
+                console.error('Erro ao reenviar email:', error);
+                alert('Erro ao enviar e-mail: ' + error.message);
+            } finally {
+                resendEmailBtnModal.disabled = false;
+                resendEmailText.innerText = 'Reenviar Email';
+            }
+        };
+    }
+
+    if (sale.paymentStatus === 'pending' && sale.mercadoPagoPreferenceId) {
+        recoverCartBtnModal.classList.remove('hidden');
+        recoverCartBtnModal.onclick = () => {
+            const link = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+            navigator.clipboard.writeText(link).then(() => alert('Link copiado!'));
+        };
+    } else {
+        recoverCartBtnModal.classList.add('hidden');
+    }
+
+    // Manual Payment Update Logic
+    const paymentStatusModal = document.getElementById('sale-payment-status-modal');
+    const paymentReasonModal = document.getElementById('sale-payment-reason');
+    const updatePaymentBtnModal = document.getElementById('update-payment-btn-modal');
+
+    if (paymentStatusModal) paymentStatusModal.value = sale.paymentStatus || 'pending';
+    if (paymentReasonModal) paymentReasonModal.value = '';
+
+    if (updatePaymentBtnModal) {
+        updatePaymentBtnModal.onclick = async () => {
+            const newStatus = paymentStatusModal.value;
+            const reason = paymentReasonModal.value.trim();
+
+            if (!reason) {
+                alert('Por favor, insira uma justificativa para a alteração manual.');
+                return;
+            }
+
+            if (!confirm(`Deseja alterar o status de pagamento de "${sale.paymentStatus}" para "${newStatus}"?`)) return;
+
+            updatePaymentBtnModal.disabled = true;
+            const originalText = updatePaymentBtnModal.innerHTML;
+            updatePaymentBtnModal.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Atualizando...';
+
+            try {
+                const functions = getFunctions();
+                const manuallyUpdateSaleStatus = httpsCallable(functions, 'manuallyUpdateSaleStatus');
+                
+                // We send all IDs in the group to ensure the whole checkout is updated
+                await manuallyUpdateSaleStatus({
+                    saleIds: idList,
+                    newStatus: newStatus,
+                    reason: reason
+                });
+
+                alert('Status de pagamento atualizado com sucesso!');
+                
+                // Refresh data
+                await fetchSales();
+                applyFilters();
+                
+                // Close modal or update UI?
+                // For better UX, let's just close it or refresh the current view
+                closeDetailsModal();
+            } catch (error) {
+                console.error('Erro ao atualizar status de pagamento:', error);
+                alert('Erro ao atualizar: ' + error.message);
+            } finally {
+                updatePaymentBtnModal.disabled = false;
+                updatePaymentBtnModal.innerHTML = originalText;
+            }
+        };
+    }
+};
+
+const loadEmailLogs = async (saleId) => {
+    const emailLogsSection = document.getElementById('email-logs-section');
+    const emailLogsList = document.getElementById('email-logs-list');
+    try {
+        const emailLogsRef = collection(db, 'inscricoesFaixaPreta', saleId, 'emailLogs');
+        const q = query(emailLogsRef, orderBy('sentAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            emailLogsSection.classList.add('hidden');
+            return;
+        }
+        emailLogsSection.classList.remove('hidden');
+        emailLogsList.innerHTML = '';
+        querySnapshot.forEach((doc) => {
+            const log = doc.data();
+            const typeIcon = log.type === 'ticket' ? '🎫' : '📧';
+            const statusIcon = log.success ? '✅' : '❌';
+            const dateStr = log.sentAt ? new Date(log.sentAt.toDate()).toLocaleString('pt-BR') : 'N/A';
+            const logItem = document.createElement('div');
+            logItem.className = 'bg-[#2a2a2a] p-3 rounded-lg text-sm border border-gray-700/50';
+            logItem.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="font-medium">${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
+                    <span class="text-xs text-gray-500">${dateStr}</span>
+                </div>
+                ${log.error ? `<p class="text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
+            `;
+            emailLogsList.appendChild(logItem);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar logs de email:', error);
+    }
+};
+
+
+const getFulfillmentStatusLabel = (status) => {
+    const labels = {
+        'pending': 'Pendente',
+        'processing': 'Em Preparação',
+        'shipped': 'Enviado',
+        'delivered': 'Entregue',
+        'returned': 'Devolvido',
+        'canceled': 'Cancelado'
+    };
+    return labels[status] || 'Pendente';
+};
 
 async function fetchProducts() {
     try {
@@ -120,11 +497,13 @@ function applyFilters() {
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
+    const fulfillmentFilter = document.getElementById('filter-fulfillment');
 
     const searchTerm = searchInput.value.toLowerCase();
     const selectedUnit = unitFilter.value;
     const selectedProduct = productFilter.value;
     const selectedDate = dateFilter.value;
+    const selectedFulfillment = fulfillmentFilter.value;
 
     let filteredGroups = allSales.filter(group => {
         return group.some(sale => {
@@ -132,6 +511,7 @@ function applyFilters() {
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const productMatch = !selectedProduct || sale.productId === selectedProduct;
+            const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
 
             let dateMatch = true;
             if (selectedDate && sale.created) {
@@ -139,7 +519,7 @@ function applyFilters() {
                 dateMatch = saleDate === selectedDate;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch;
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && fulfillmentMatch;
         });
     });
 
@@ -204,6 +584,15 @@ function renderSalesLog(groupsToDisplay) {
     }).join('');
 
     renderPagination(groupsToDisplay.length);
+    
+    // Add event delegation for update buttons
+    logBody.onclick = (e) => {
+        const btn = e.target.closest('.update-status-btn');
+        if (btn) {
+            const ids = btn.dataset.ids;
+            openSaleDetailsModal(ids);
+        }
+    };
 }
 
 function renderPagination(totalItems) {
@@ -282,87 +671,3 @@ const renderStatusTag = (status) => {
     return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
 };
 
-// --- Modal de Atualização Manual ---
-let selectedSaleIds = [];
-
-function openManualUpdateModal(ids, name, product, currentStatus) {
-    selectedSaleIds = ids.split(',');
-    const modal = document.getElementById('manual-update-modal');
-    const infoContainer = document.getElementById('modal-sale-info');
-    const statusSelect = document.getElementById('new-status-select');
-    const reasonInput = document.getElementById('update-reason-input');
-
-    infoContainer.innerHTML = `
-        <p><strong>Cliente:</strong> ${name}</p>
-        <p><strong>Produto:</strong> ${product}</p>
-        <p><strong>Status Atual:</strong> ${currentStatus === 'paid' ? 'Pago' : 'Pendente'}</p>
-    `;
-
-    statusSelect.value = currentStatus === 'paid' ? 'paid' : 'paid'; // Default to paid
-    reasonInput.value = '';
-    
-    modal.classList.remove('hidden');
-}
-
-function closeManualUpdateModal() {
-    const modal = document.getElementById('manual-update-modal');
-    modal.classList.add('hidden');
-    selectedSaleIds = [];
-}
-
-// Event Listeners para o Modal
-document.addEventListener('DOMContentLoaded', () => {
-    // Listener para abrir o modal (usando delegação)
-    document.getElementById('sales-table-body')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.update-status-btn');
-        if (btn) {
-            const { ids, name, product, status } = btn.dataset;
-            openManualUpdateModal(ids, name, product, status);
-        }
-    });
-
-    document.getElementById('close-manual-modal-btn')?.addEventListener('click', closeManualUpdateModal);
-    document.getElementById('cancel-update-btn')?.addEventListener('click', closeManualUpdateModal);
-
-    const confirmBtn = document.getElementById('confirm-update-btn');
-    confirmBtn?.addEventListener('click', async () => {
-        const newStatus = document.getElementById('new-status-select').value;
-        const reason = document.getElementById('update-reason-input').value.trim();
-        const btnText = document.getElementById('update-btn-text');
-        const spinner = document.getElementById('update-btn-spinner');
-
-        if (!reason || reason.length < 5) {
-            alert('Por favor, insira uma justificativa válida (mínimo 5 caracteres).');
-            return;
-        }
-
-        confirmBtn.disabled = true;
-        btnText.textContent = 'Atualizando...';
-        spinner.classList.remove('hidden');
-
-        try {
-            const functions = getFunctions();
-            const manuallyUpdateSaleStatus = httpsCallable(functions, 'manuallyUpdateSaleStatus');
-            const result = await manuallyUpdateSaleStatus({
-                saleIds: selectedSaleIds,
-                newStatus: newStatus,
-                reason: reason
-            });
-
-            if (result.data.success) {
-                alert('Status atualizado com sucesso!');
-                closeManualUpdateModal();
-                fetchSales().then(() => applyFilters());
-            } else {
-                alert('Erro ao atualizar: ' + (result.data.error || 'Erro desconhecido'));
-            }
-        } catch (error) {
-            console.error('Erro na chamada da função:', error);
-            alert('Erro ao atualizar status: ' + error.message);
-        } finally {
-            confirmBtn.disabled = false;
-            btnText.textContent = 'Confirmar Alteração';
-            spinner.classList.add('hidden');
-        }
-    });
-});

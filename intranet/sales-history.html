@@ -27,11 +27,13 @@
                         <h1 class="text-2xl font-bold">Histórico de Vendas</h1>
                         <p class="text-gray-400 text-sm">Todos os registros da loja</p>
                     </div>
-                    <button id="sync-status-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-                        <i class="fas fa-sync-alt mr-2"></i>Sincronizar Stripe
+                    <button id="resend-missing-tickets-btn"
+                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-500 transition-all duration-200 shadow-lg shadow-purple-600/20" title="Reenviar Ingressos não recebidos">
+                        <i class="fas fa-sync-alt mr-2"></i>Reenviar Pendentes
                     </button>
-                    <button id="sync-pagarme-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
-                        <i class="fas fa-sync-alt mr-2"></i>Sincronizar Pagar.me
+                    <button id="export-btn"
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-500 transition-all duration-200 shadow-lg shadow-green-600/20">
+                        <i class="fas fa-file-export mr-2"></i>Exportar
                     </button>
                 </div>
                 <a href="store.html" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
@@ -63,6 +65,18 @@
                         <div>
                             <label for="filter-date" class="text-sm font-medium text-gray-400">Filtrar por Data:</label>
                             <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="filter-fulfillment" class="text-sm font-medium text-gray-400">Status Entrega:</label>
+                            <select id="filter-fulfillment" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Status</option>
+                                <option value="pending">Pendente</option>
+                                <option value="processing">Em Preparação</option>
+                                <option value="shipped">Enviado</option>
+                                <option value="delivered">Entregue</option>
+                                <option value="returned">Devolvido</option>
+                                <option value="canceled">Cancelado</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -101,46 +115,203 @@
     </main>
     <script type="module" src="sales-history.js"></script>
 
-    <!-- Modal de Atualização Manual de Status -->
-    <div id="manual-update-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#1a1a1a] w-full max-w-md rounded-xl shadow-2xl border border-gray-800 overflow-hidden">
+    <!-- Export Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-black/70 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] w-full max-w-2xl rounded-xl shadow-2xl border border-gray-800 overflow-hidden">
             <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white">Atualização Manual</h2>
-                <button id="close-manual-modal-btn" class="text-gray-400 hover:text-white transition-colors">
+                <h2 class="text-xl font-bold text-white">Exportar Vendas para Excel</h2>
+                <button id="close-export-modal-btn" class="text-gray-400 hover:text-white transition-colors">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
-            
-            <div class="p-6 space-y-4">
-                <div id="modal-sale-info" class="text-sm text-gray-400 mb-4 font-mono bg-black/30 p-3 rounded border border-gray-800">
-                    <!-- Info da venda será injetada aqui -->
+
+            <form id="export-form" class="p-6 space-y-6">
+                <!-- Data Range Group -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Data de Início (Opcional)</label>
+                        <input type="date" id="export-start-date"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Data de Fim (Opcional)</label>
+                        <input type="date" id="export-end-date"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Collection Filters Group -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Filtro de Unidade</label>
+                        <select id="export-filter-unit"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                            <option value="">Todas as Unidades</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Filtro de Status Pagamento</label>
+                        <select id="export-filter-status"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="paid">Pago</option>
+                            <option value="pending">Pendente</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Filtro Status Entrega</label>
+                        <select id="export-filter-fulfillment"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="pending">Pendente</option>
+                            <option value="processing">Em Preparação</option>
+                            <option value="shipped">Enviado</option>
+                            <option value="delivered">Entregue</option>
+                            <option value="returned">Devolvido</option>
+                            <option value="canceled">Cancelado</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div>
-                    <label for="new-status-select" class="block text-sm font-medium text-gray-400 mb-1">Novo Status:</label>
-                    <select id="new-status-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="paid">Pago (Confirmado)</option>
-                        <option value="pending">Pendente</option>
-                        <option value="cancelled">Cancelado</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-2 italic">⚠️ Ao marcar como "Pago", os e-mails de confirmação e ingresso serão enviados automaticamente se ainda não tiverem sido.</p>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">Colunas para Exportar</label>
+                    <div id="export-columns-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-black/20 p-4 rounded-lg border border-gray-800">
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="date" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Data
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="productName" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Produto
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userName" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Cliente
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userEmail" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            E-mail
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userPhone" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Telefone
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userUnit" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Unidade
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userPrograma" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Programa
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userGraduacao" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Graduação
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="amountTotal" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Valor
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="paymentStatus" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Pagamento
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="fulfillmentStatus" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Entrega
+                        </label>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="update-reason-input" class="block text-sm font-medium text-gray-400 mb-1">Justificativa (Obrigatório):</label>
-                    <textarea id="update-reason-input" rows="3" placeholder="Ex: Cliente pagou em dinheiro na unidade centro ou via PIX direto..." 
-                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" id="cancel-export-btn" class="flex-1 px-4 py-3 text-gray-400 hover:text-white transition-colors bg-gray-800/50 hover:bg-gray-800 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-[2] bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-600/20">
+                        <i class="fas fa-file-excel text-lg"></i>
+                        <span>Gerar Arquivo Excel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts de Terceiros -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Sale Details Modal -->
+    <div id="sale-details-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-[#1a1a1a] p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-800">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Detalhes da Venda</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-3xl transition-colors">&times;</button>
+            </div>
+            <div id="modal-content" class="space-y-4">
+                <!-- Content will be populated by JS -->
+            </div>
+
+            <!-- Payment Status Section (Manual Update) -->
+            <div id="payment-status-section" class="mt-6 pt-6 border-t border-gray-700">
+                <h3 class="text-lg font-bold mb-3 flex items-center gap-2 text-green-400">
+                    <i class="fas fa-credit-card"></i> Atualização Manual de Pagamento
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4">
+                        <label for="sale-payment-status-modal" class="text-sm text-gray-400">Novo Status:</label>
+                        <select id="sale-payment-status-modal" class="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
+                            <option value="paid">Pago</option>
+                            <option value="pending">Pendente</option>
+                            <option value="canceled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sale-payment-reason" class="block text-sm text-gray-400 mb-2">Justificativa / Motivo:</label>
+                        <textarea id="sale-payment-reason" rows="2" class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" placeholder="Ex: Pagamento recebido via PIX manual..."></textarea>
+                    </div>
+                    <button id="update-payment-btn-modal" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2">
+                        <i class="fas fa-check-circle"></i> Confirmar Atualização de Pagamento
+                    </button>
                 </div>
             </div>
 
-            <div class="p-6 bg-[#212121] flex gap-3 justify-end">
-                <button id="cancel-update-btn" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
-                    Cancelar
-                </button>
-                <button id="confirm-update-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2">
-                    <span id="update-btn-text">Confirmar Alteração</span>
-                    <i id="update-btn-spinner" class="fas fa-spinner fa-spin hidden"></i>
-                </button>
+            <!-- Fulfillment Status Section -->
+            <div id="fulfillment-status-section" class="mt-6 pt-6 pb-4 border-t border-gray-700">
+                <h3 class="text-lg font-bold mb-3">📦 Status de Entrega</h3>
+                <div class="flex items-center gap-4 mb-4">
+                    <label for="sale-fulfillment-status" class="text-sm text-gray-400">Situação do Pedido:</label>
+                    <select id="sale-fulfillment-status" class="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <option value="pending">Pendente</option>
+                        <option value="processing">Em Preparação</option>
+                        <option value="shipped">Enviado</option>
+                        <option value="delivered">Entregue</option>
+                        <option value="returned">Devolvido</option>
+                        <option value="canceled">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Email Logs Section -->
+            <div id="email-logs-section" class="mt-4 pt-6 border-t border-gray-700 hidden">
+                <h3 class="text-lg font-bold mb-3">📧 Histórico de Emails</h3>
+                <div id="email-logs-list" class="space-y-2">
+                    <!-- Email logs will be loaded here -->
+                </div>
+            </div>
+
+            <div class="mt-10 pt-6 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4">
+                <div class="flex gap-2">
+                    <button id="resend-email-btn-modal"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 transition-all">
+                        <i class="fas fa-paper-plane mr-2"></i><span id="resend-email-text">Reenviar Email</span>
+                    </button>
+                    <button id="recover-cart-btn-modal"
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 hidden transition-all">
+                        <i class="fas fa-link mr-2"></i>Link de Pagamento
+                    </button>
+                </div>
+                <!-- Delete Sale Hidden for safety in history unless really needed -->
+                <button id="delete-sale-btn-modal"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600/20 text-red-500 border border-red-500/20 rounded-md hover:bg-red-600 hover:text-white transition-all hidden">Apagar Log</button>
             </div>
         </div>
     </div>
