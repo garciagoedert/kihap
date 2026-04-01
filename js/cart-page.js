@@ -49,11 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 detailsHtml += `
-                    <div class="mt-2 text-sm bg-gray-700 p-3 rounded text-gray-300">
-                        <span class="font-semibold text-white">${form.userName}</span> (${form.userUnit})
-                        <br>
-                        Opção: ${form.priceData.variantName || 'Padrão'} ${addontsText}
-                        ${form.userSize ? `<br><span class="text-yellow-500 font-bold">Tamanho: ${form.userSize}</span>` : ''}
+                    <div class="mt-2 text-sm bg-gray-700/50 p-2 rounded text-gray-300 border border-gray-600/50">
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Item ${idx + 1}</span>
+                        ${form.userSize ? `<br>Tamanho: <span class="text-yellow-500 font-bold">${form.userSize}</span>` : ''}
+                        ${form.userAge ? `<br>Idade: <span class="text-white">${form.userAge} anos</span>` : ''}
+                        ${form.variantName ? `<br>Opção: <span class="text-white">${form.variantName}</span>` : ''}
+                        ${addontsText ? `<br>Extras: <span class="text-white">${addontsText}</span>` : ''}
                     </div>
                 `;
             });
@@ -149,79 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyCouponBtn.addEventListener('click', applyCoupon);
 
-    checkoutBtn.addEventListener('click', async () => {
+    checkoutBtn.addEventListener('click', () => {
         const items = cart.getCart();
         if (items.length === 0) return;
-
-        checkoutBtn.disabled = true;
-        checkoutStatus.textContent = 'Processando pedido... aguarde.';
-        checkoutStatus.className = 'mt-4 text-center text-sm font-semibold text-yellow-500';
-
-        let subtotal = cart.getTotalAmount();
-        let total = subtotal;
-
-        if (appliedCoupon) {
-            if (appliedCoupon.type === 'percentage') {
-                total -= total * (appliedCoupon.value / 100);
-            } else if (appliedCoupon.type === 'fixed') {
-                total -= appliedCoupon.value;
-            }
-        }
-        total = Math.max(0, total);
-
-        try {
-            if (total <= 0) {
-                // Free purchase flow (will require a new function or update to processFreePurchase for cart)
-                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/processCartFreePurchase', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cartItems: items,
-                        couponCode: appliedCoupon ? appliedCoupon.code : null
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao processar a compra gratuita.');
-                }
-                
-                cart.clearCart();
-                window.location.href = '/compra-success.html';
-                
-            } else {
-                // Normal flow
-                const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCartCheckoutSession', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cartItems: items,
-                        totalAmount: total,
-                        couponCode: appliedCoupon ? appliedCoupon.code : null
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao criar o checkout do carrinho.');
-                }
-
-                const data = await response.json();
-
-                if (data.provider === 'mercadopago' && data.checkoutUrl) {
-                    // Limpar carrinho se preferir (ou limpar depois no sucesso via return URL)
-                    cart.clearCart();
-                    window.location.href = data.checkoutUrl;
-                } else {
-                    throw new Error('Resposta inválida do servidor de checkout.');
-                }
-            }
-        } catch (error) {
-            console.error('Checkout Error:', error);
-            checkoutStatus.textContent = `Erro: ${error.message}`;
-            checkoutStatus.className = 'mt-4 text-center text-sm font-semibold text-red-500';
-            checkoutBtn.disabled = false;
-        }
+        
+        // Redireciona para o checkout unificado
+        window.location.href = 'checkout.html';
     });
 
     renderCart();

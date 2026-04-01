@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let productId = null;
     let productData = null;
     let currentUser = null;
-    let unitsCache = [];
     let appliedCoupon = null;
 
     const getProductId = () => {
@@ -192,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formInstance.querySelector('.form-instance-number').textContent = i;
             }
 
-            const fields = ['nome', 'email', 'telefone', 'cpf', 'unidade', 'programa', 'graduacao', 'price-variant-selector', 'size-selector'];
+            const fields = ['price-variant-selector', 'size-selector'];
             fields.forEach(field => {
                 const label = formInstance.querySelector(`label[for="${field}"]`);
                 const input = formInstance.querySelector(`[name="${field}"]`);
@@ -212,21 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-
-            // Campo Professor condicional
-            if (productData.askProfessor) {
-                const professorContainer = document.createElement('div');
-                professorContainer.innerHTML = `
-                    <label for="professor-${i}" class="block text-sm font-medium text-gray-400 mb-1">Professor</label>
-                    <input type="text" name="professor" id="professor-${i}" placeholder="Nome do Professor" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                `;
-                // Inserir após o campo de unidade
-                const unidadeContainer = formInstance.querySelector('[name="unidade"]').closest('div');
-                unidadeContainer.after(professorContainer);
-            }
-
-            const programaSelect = formInstance.querySelector('[name="programa"]');
-            programaSelect.addEventListener('change', () => populateGraduacao(programaSelect.value, formInstance));
 
             const priceVariantSelectorContainer = formInstance.querySelector('.price-variant-selector-container');
             const priceVariantSelector = formInstance.querySelector('[name="price-variant-selector"]');
@@ -349,41 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             formsContainer.appendChild(formClone);
         }
-
-        if (quantity === 1 && currentUser) {
-            const firstForm = formsContainer.querySelector('.form-instance');
-            if (firstForm) {
-                firstForm.querySelector('[name="nome"]').value = currentUser.name || '';
-                firstForm.querySelector('[name="email"]').value = currentUser.email || '';
-                firstForm.querySelector('[name="telefone"]').value = currentUser.phoneNumber || '';
-            }
-        }
-
-        await populateAllUnitSelectors();
+        
         updateTotalPrice();
     };
 
-    const populateGraduacao = (program, formInstance) => {
-        const graduacaoContainer = formInstance.querySelector('.graduacao-container');
-        const graduacaoSelect = formInstance.querySelector('[name="graduacao"]');
-        const graduacoes = {
-            tradicional: ['Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida', 'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida', 'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida', 'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida', 'Vermelha e preta', 'Preta'],
-            littles: ['Littles Branca', 'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta', 'Littles Jacaré', 'Littles Coruja', 'Littles Arara', 'Littles Macaco', 'Littles Fênix']
-        };
-        const options = graduacoes[program];
-        if (options) {
-            graduacaoContainer.classList.remove('hidden');
-            graduacaoSelect.innerHTML = '<option value="">Selecione sua graduação</option>';
-            options.forEach(grad => {
-                const option = document.createElement('option');
-                option.value = grad;
-                option.textContent = grad;
-                graduacaoSelect.appendChild(option);
-            });
-        } else {
-            graduacaoContainer.classList.add('hidden');
-        }
-    };
+
 
     const updateTotalPrice = () => {
         let totalAmount = 0;
@@ -553,18 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         formInstances.forEach(form => {
             const formData = {
-                userName: form.querySelector('[name="nome"]').value,
-                userEmail: form.querySelector('[name="email"]').value,
-                userPhone: form.querySelector('[name="telefone"]').value,
-                userCpf: form.querySelector('[name="cpf"]').value,
-                userUnit: form.querySelector('[name="unidade"]').value,
-                userPrograma: form.querySelector('[name="programa"]').value,
-                userPrograma: form.querySelector('[name="programa"]').value,
-                userGraduacao: form.querySelector('.graduacao-container').classList.contains('hidden') ? null : form.querySelector('[name="graduacao"]').value,
-                userProfessor: form.querySelector('[name="professor"]') ? form.querySelector('[name="professor"]').value : null,
                 userAge: form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null,
                 userSize: form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null,
-                userId: currentUser ? currentUser.uid : null
             };
 
             let priceData = {};
@@ -659,64 +603,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const userData = await getUserData(user.uid);
             if (userData) {
                 currentUser = { uid: user.uid, ...userData };
-                const firstForm = formsContainer.querySelector('.form-instance');
-                if (firstForm) {
-                    firstForm.querySelector('[name="nome"]').value = currentUser.name || '';
-                    firstForm.querySelector('[name="email"]').value = currentUser.email || '';
-                    firstForm.querySelector('[name="telefone"]').value = currentUser.phoneNumber || '';
-                }
             }
         }
     });
 
-    const fetchUnits = async () => {
-        try {
-            const functions = getFunctions();
-            const getPublicEvoUnits = httpsCallable(functions, 'getPublicEvoUnits');
-            const result = await getPublicEvoUnits();
-            unitsCache = result.data;
-            await populateAllUnitSelectors();
-        } catch (error) {
-            console.error("Error fetching units:", error);
-        }
-    };
-
-    const populateAllUnitSelectors = async () => {
-        const unitSelectors = formsContainer.querySelectorAll('[name="unidade"]');
-
-        let unitsToDisplay = unitsCache;
-        const useCustomUnits = productData.customUnits && productData.customUnits.length > 0;
-
-        // Lógica customizada baseada em configuração do produto
-        if (useCustomUnits) {
-            unitsToDisplay = productData.customUnits;
-        }
-
-        unitSelectors.forEach(selector => {
-            selector.innerHTML = '<option value="">Selecione sua unidade</option>';
-            unitsToDisplay.forEach(unit => {
-                // Se for a lista padrão, aplica o filtro 'atadf'
-                if (!useCustomUnits) {
-                    if (unit.toLowerCase() !== 'atadf') {
-                        const option = document.createElement('option');
-                        option.value = unit;
-                        option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
-                        selector.appendChild(option);
-                    }
-                } else {
-                    // Para a lista customizada, exibe exatamente como definido e apara espaços
-                    const option = document.createElement('option');
-                    option.value = unit.trim();
-                    option.textContent = unit.trim();
-                    selector.appendChild(option);
-                }
-            });
-        });
-    };
-
     const init = async () => {
         productId = getProductId();
-        await fetchUnits();
         await fetchProduct(productId);
         paymentForm.addEventListener('submit', handleFormSubmit);
     };

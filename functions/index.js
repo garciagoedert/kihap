@@ -367,10 +367,10 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { return res.status(405).send('Method Not Allowed'); }
 
-    const { cartItems, totalAmount, couponCode } = req.body;
+    const { cartItems, globalUserData, totalAmount, couponCode } = req.body;
     
-    if (!cartItems || cartItems.length === 0 || totalAmount === undefined) {
-        return res.status(400).json({ error: 'Missing required fields: cartItems, totalAmount.' });
+    if (!cartItems || cartItems.length === 0 || totalAmount === undefined || !globalUserData) {
+        return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData, totalAmount.' });
     }
 
     try {
@@ -381,12 +381,13 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             const productDoc = await productRef.get();
             if(!productDoc.exists) continue;
             
-            for (const formData of cartItem.formDataList) {
+            for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
-                    ...formData,
+                    ...globalUserData, // Dados globais de cadastro (Nome, Email, CPF, Unidade, etc)
+                    ...itemFormData,   // Dados específicos deste item (Tamanho, Idade, etc)
                     productId: cartItem.productId,
                     productName: cartItem.productName,
-                    amountTotal: formData.priceData.amount,
+                    amountTotal: itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length),
                     currency: 'brl',
                     paymentStatus: 'pending',
                     couponCode: couponCode || null,
@@ -398,18 +399,12 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             }
             
             if (cartItem.recommendedItems && cartItem.recommendedItems.length > 0) {
-                const primaryBuyerData = cartItem.formDataList[0];
                 for (const item of cartItem.recommendedItems) {
                     for (let i = 0; i < item.quantity; i++) {
                         const saleData = {
-                            userName: primaryBuyerData.userName,
-                            userEmail: primaryBuyerData.userEmail,
-                            userPhone: primaryBuyerData.userPhone,
-                            userCpf: primaryBuyerData.userCpf,
-                            userUnit: primaryBuyerData.userUnit,
-                            userId: primaryBuyerData.userId,
-                            userPrograma: null,
-                            userGraduacao: null,
+                            ...globalUserData,
+                            userPrograma: globalUserData.userPrograma || null,
+                            userGraduacao: globalUserData.userGraduacao || null,
                             productId: item.productId,
                             productName: item.productName,
                             amountTotal: Math.floor(item.amount / item.quantity),
@@ -455,10 +450,10 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { return res.status(405).send('Method Not Allowed'); }
 
-    const { cartItems, couponCode } = req.body;
+    const { cartItems, globalUserData, couponCode } = req.body;
 
-    if (!cartItems || cartItems.length === 0) {
-        return res.status(400).json({ error: 'Missing required fields: cartItems.' });
+    if (!cartItems || cartItems.length === 0 || !globalUserData) {
+        return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData.' });
     }
 
     try {
@@ -468,9 +463,10 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
             if (!productDoc.exists) continue;
             const product = productDoc.data();
 
-            for (const formData of cartItem.formDataList) {
+            for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
-                    ...formData,
+                    ...globalUserData,
+                    ...itemFormData,
                     productId: cartItem.productId,
                     productName: cartItem.productName,
                     amountTotal: 0,
@@ -489,18 +485,12 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
             }
             
             if (cartItem.recommendedItems && cartItem.recommendedItems.length > 0) {
-                const primaryBuyerData = cartItem.formDataList[0];
                 for (const item of cartItem.recommendedItems) {
                     for (let i = 0; i < item.quantity; i++) {
                         const saleData = {
-                            userName: primaryBuyerData.userName,
-                            userEmail: primaryBuyerData.userEmail,
-                            userPhone: primaryBuyerData.userPhone,
-                            userCpf: primaryBuyerData.userCpf,
-                            userUnit: primaryBuyerData.userUnit,
-                            userId: primaryBuyerData.userId,
-                            userPrograma: null,
-                            userGraduacao: null,
+                            ...globalUserData,
+                            userPrograma: globalUserData.userPrograma || null,
+                            userGraduacao: globalUserData.userGraduacao || null,
                             productId: item.productId,
                             productName: item.productName,
                             amountTotal: 0,
