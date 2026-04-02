@@ -241,8 +241,21 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
     }
 };
 
+// Helper para extrair detalhes do pagamento do Mercado Pago
+function extractPaymentDetails(payment) {
+    if (!payment) return null;
+    return {
+        method: payment.payment_type_id,
+        paymentMethodId: payment.payment_method_id,
+        installments: payment.installments,
+        cardLast4: payment.card ? payment.card.last_four_digits : null,
+        cardHolder: payment.card && payment.card.cardholder ? payment.card.cardholder.name : null,
+        dateApproved: payment.date_approved
+    };
+}
+
 // Helper para atualizar uma venda como paga, enviar e-mail e notificar gerente
-async function updateSaleToPaid(saleId, saleData, providerPaymentId = null) {
+async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paymentDetails = null) {
     if (saleData.paymentStatus === 'paid') {
         console.log(`[updateSaleToPaid] Venda ${saleId} já está marcada como paga.`);
         return false;
@@ -256,6 +269,7 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null) {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
     if (providerPaymentId) updateData.mercadoPagoPaymentId = providerPaymentId;
+    if (paymentDetails) updateData.paymentDetails = paymentDetails;
     
     await docRef.update(updateData);
     console.log(`[updateSaleToPaid] Status atualizado para 'paid' para a venda ${saleId}`);
@@ -1582,7 +1596,8 @@ exports.mercadopagoWebhook = functions.https.onRequest(async (req, res) => {
                     const saleData = saleSnap.data();
 
                     // Atualiza a venda usando o helper
-                    await updateSaleToPaid(docId, saleData, resourceId);
+                    const paymentDetails = extractPaymentDetails(payment);
+                    await updateSaleToPaid(docId, saleData, resourceId, paymentDetails);
                 }
             } else {
                 console.log(`[Mercado Pago Webhook] Pagamento ${resourceId} status: ${status}. Nenhuma ação tomada.`);
@@ -1638,7 +1653,7 @@ const syncMercadoPagoSales = async (limitHours = 24) => {
                 const approvedPayment = payments.find(p => p.status === 'approved');
                 if (approvedPayment) {
                     console.log(`[syncMercadoPagoSales] Pagamento aprovado encontrado para a venda ${saleId}.`);
-                    const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id);
+                    const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id, extractPaymentDetails(approvedPayment));
                     if (wasUpdated) updatedCount++;
                 }
             }
@@ -1685,7 +1700,7 @@ exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context)
         if (payments && payments.length > 0) {
             const approvedPayment = payments.find(p => p.status === 'approved');
             if (approvedPayment) {
-                const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id);
+                const wasUpdated = await updateSaleToPaid(saleId, saleData, approvedPayment.id, extractPaymentDetails(approvedPayment));
                 return { success: true, updated: wasUpdated, status: approvedPayment.status };
             }
             return { success: true, updated: false, msg: 'Pagamento encontrado, mas não está aprovado.', status: payments[0].status };

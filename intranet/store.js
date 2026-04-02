@@ -1464,23 +1464,42 @@ export async function setupStorePage() {
         }
 
         let paymentDetailsHtml = '';
-        if (sale.saleType === 'manual' && sale.paymentDetails) {
+        if (sale.paymentDetails) {
             const details = sale.paymentDetails;
-            let method = 'N/A';
-            if (details.method === 'card') method = 'Cartão';
-            if (details.method === 'pix') method = 'PIX';
-            if (details.method === 'cash') method = 'Dinheiro';
+            let method = details.method || 'N/A';
+            
+            // Map common Mercado Pago and manual payment methods to Portuguese
+            const methodMap = {
+                'credit_card': 'Cartão de Crédito',
+                'debit_card': 'Cartão de Débito',
+                'ticket': 'Boleto',
+                'bank_transfer': 'Pix/Transferência',
+                'account_money': 'Saldo Mercado Pago',
+                'pix': 'PIX',
+                'card': 'Cartão',
+                'cash': 'Dinheiro',
+                'manual_update': 'Manual (Admin)'
+            };
+            method = methodMap[method] || method;
 
-            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700">
-                <h3 class="text-lg font-bold mb-2">Detalhes do Pagamento Manual</h3>
-                <p><strong>Método:</strong> ${method}</p>`;
+            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700/50">
+                <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Origem do Pagamento</h4>
+                <p><span class="text-gray-400">Método:</span> <span class="text-white font-medium">${method}</span></p>`;
 
-            if (details.method === 'card') {
-                paymentDetailsHtml += `
-                    <p><strong>Final do Cartão:</strong> ${details.cardLast4 || 'N/A'}</p>
-                    <p><strong>Bandeira:</strong> ${details.cardBrand || 'N/A'}</p>
-                    <p><strong>Autorização:</strong> ${details.authCode || 'N/A'}</p>
-                `;
+            if (details.cardLast4) {
+                paymentDetailsHtml += `<p><span class="text-gray-400">Cartão:</span> <span class="text-white">**** **** **** ${details.cardLast4}</span></p>`;
+            }
+            if (details.cardBrand || details.paymentMethodId) {
+                paymentDetailsHtml += `<p><span class="text-gray-400">Bandeira/Rede:</span> <span class="text-white uppercase">${details.cardBrand || details.paymentMethodId}</span></p>`;
+            }
+            if (details.installments && details.installments > 1) {
+                paymentDetailsHtml += `<p><span class="text-gray-400">Parcelas:</span> <span class="text-white">${details.installments}x</span></p>`;
+            }
+            if (details.authCode) {
+                paymentDetailsHtml += `<p><span class="text-gray-400">Cód. Autorização:</span> <span class="text-white">${details.authCode}</span></p>`;
+            }
+            if (details.updatedBy) {
+                paymentDetailsHtml += `<p><span class="text-gray-400">Atualizado por:</span> <span class="text-white">${details.updatedBy}</span></p>`;
             }
             paymentDetailsHtml += `</div>`;
         }
