@@ -425,6 +425,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
         const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData);
 
         for (const docId of saleDocIds) {

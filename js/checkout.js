@@ -143,14 +143,19 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            // NOTE: We need to update the Cloud Function to accept this globalUserData payload structure
-            const response = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/createCartCheckoutSession', {
+            const totalAmount = cart.getTotalAmount();
+            const isFree = totalAmount === 0;
+            const endpoint = isFree 
+                ? 'https://us-central1-intranet-kihap.cloudfunctions.net/processCartFreePurchase'
+                : 'https://us-central1-intranet-kihap.cloudfunctions.net/createCartCheckoutSession';
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     cartItems: items,
                     globalUserData: globalUserData,
-                    totalAmount: cart.getTotalAmount()
+                    totalAmount: totalAmount
                 }),
             });
 
@@ -160,7 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const data = await response.json();
-            if (data.checkoutUrl) {
+            
+            if (isFree && data.status === 'success') {
+                cart.clearCart();
+                window.location.href = 'compra-success.html';
+            } else if (data.checkoutUrl) {
                 cart.clearCart();
                 window.location.href = data.checkoutUrl;
             } else {
