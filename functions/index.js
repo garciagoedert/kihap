@@ -389,11 +389,18 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
 
     try {
         const saleDocIds = [];
+        let mpAccountId = 'default';
         
         for (const cartItem of cartItems) {
             const productRef = db.collection('products').doc(cartItem.productId);
             const productDoc = await productRef.get();
             if(!productDoc.exists) continue;
+
+            const productData = productDoc.data();
+            // Pega o mpAccountId do primeiro produto que tiver um conta customizada
+            if (mpAccountId === 'default' && productData.mpAccountId && productData.mpAccountId !== 'default') {
+                mpAccountId = productData.mpAccountId;
+            }
             
             for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
@@ -440,7 +447,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
         }
 
         const notificationUrl = getNotificationUrl('mercadopagoWebhook');
-        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData);
+        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId);
 
         for (const docId of saleDocIds) {
             await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });

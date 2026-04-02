@@ -144,11 +144,25 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
     }
 };
 
-const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null, globalUserData = null) => {
-    console.log('[createCartMercadoPagoPreference] Iniciando...');
+const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null, globalUserData = null, mpAccountId = 'default') => {
+    console.log(`[createCartMercadoPagoPreference] Iniciando para conta: ${mpAccountId}`);
     
-    // Simplificamos sem o split para diferentes contas no carrinho
-    const client = getMPClient(); 
+    let clientToken = null;
+    if (mpAccountId && mpAccountId !== 'default') {
+        try {
+            const accountDoc = await admin.firestore().collection('mercadopagoAccounts').doc(mpAccountId).get();
+            if (accountDoc.exists) {
+                clientToken = accountDoc.data().accessToken;
+                console.log(`[createCartMercadoPagoPreference] Usando conta customizada: ${mpAccountId}`);
+            } else {
+                console.warn(`[createCartMercadoPagoPreference] Conta ${mpAccountId} não encontrada. Usando padrão.`);
+            }
+        } catch (e) {
+            console.error(`[createCartMercadoPagoPreference] Erro ao buscar conta: ${e.message}`);
+        }
+    }
+
+    const client = getMPClient(clientToken); 
     
     const items = [];
     
