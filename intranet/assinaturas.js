@@ -9,6 +9,7 @@ export async function setupAssinaturasPage() {
 
     // State
     let allSubscriptions = [];
+    let currentOpenSub = null;
     
     // UI Elements
     const tableBody = document.getElementById('subscriptions-table-body');
@@ -20,6 +21,13 @@ export async function setupAssinaturasPage() {
     const productFilter = document.getElementById('filter-product');
     const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
     const filterGridContainer = document.getElementById('filter-grid-container');
+
+    // Modal Elements
+    const subModal = document.getElementById('subscription-details-modal');
+    const subModalContent = document.getElementById('sub-modal-content');
+    const closeSubModalBtn = document.getElementById('close-sub-modal-btn');
+    const closeSubModalFooterBtn = document.getElementById('close-sub-modal-footer-btn');
+    const cancelSubBtnModal = document.getElementById('cancel-sub-btn-modal');
 
     const renderSubscriptions = (subscriptions) => {
         tableBody.innerHTML = '';
@@ -33,7 +41,8 @@ export async function setupAssinaturasPage() {
         emptyState.classList.add('hidden');
         subscriptions.forEach(sub => {
             const tr = document.createElement('tr');
-            tr.className = 'table-row-hover transition-colors';
+            tr.className = 'table-row-hover transition-colors cursor-pointer group';
+            tr.setAttribute('data-id', sub.idx);
             
             // Status Badge Logic
             let statusClass = 'status-pending';
@@ -59,7 +68,7 @@ export async function setupAssinaturasPage() {
 
             tr.innerHTML = `
                 <td class="p-4">
-                    <div class="font-medium text-white">${sub.userName}</div>
+                    <div class="font-medium text-white group-hover:text-blue-400 transition-colors">${sub.userName}</div>
                     <div class="text-xs text-gray-500">${sub.userEmail} &bull; ${sub.userUnit || 'Não informada'}</div>
                 </td>
                 <td class="p-4">
@@ -73,23 +82,101 @@ export async function setupAssinaturasPage() {
                 </td>
                 <td class="p-4 text-gray-400">${dateStr}</td>
                 <td class="p-4 text-right">
-                    ${(sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid')
-                        ? `<button class="btn-cancel text-red-400 hover:text-red-300 hover:underline text-xs font-semibold px-3 py-2 rounded-lg bg-red-400/10 transition-colors" data-id="${sub.idx}">
-                            <i class="fas fa-ban mr-1"></i> Cancelar Faturamento
-                           </button>`
-                        : `<span class="text-xs text-gray-600 cursor-not-allowed">Encerrado</span>`
-                    }
+                    <button class="p-2 text-gray-400 group-hover:text-white transition-colors">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </td>
             `;
+
+            tr.addEventListener('click', () => openSubscriptionModal(sub));
             tableBody.appendChild(tr);
         });
 
         updateKPIs(subscriptions);
+    };
 
-        // Attach Cancel Listeners
-        document.querySelectorAll('.btn-cancel').forEach(btn => {
-            btn.addEventListener('click', handleCancelSubscription);
-        });
+    const openSubscriptionModal = (sub) => {
+        currentOpenSub = sub;
+        
+        // Status Badge Logic for Modal
+        let statusClass = 'status-pending';
+        let statusLabel = 'Pendente';
+        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+            statusClass = 'status-authorized';
+            statusLabel = 'Ativo';
+        } else if (sub.paymentStatus === 'cancelled') {
+            statusClass = 'status-cancelled';
+            statusLabel = 'Cancelado';
+        } else if (sub.paymentStatus === 'paused') {
+            statusClass = 'status-paused';
+            statusLabel = 'Pausado';
+        }
+
+        const dateObj = new Date(sub.created._seconds * 1000);
+        const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        subModalContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Info Section -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Informações do Aluno</h3>
+                        <p class="text-lg font-bold text-white">${sub.userName}</p>
+                        <p class="text-sm text-gray-400">${sub.userEmail}</p>
+                        <p class="text-sm text-gray-400">Unidade: ${sub.userUnit || 'Não informada'}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Plano / Produto</h3>
+                        <p class="text-lg font-bold text-blue-400">${sub.productName}</p>
+                        <p class="text-xs text-gray-500">ID da Venda: #sub_${sub.idx}</p>
+                    </div>
+                </div>
+
+                <!-- Status Section -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status da Assinatura</h3>
+                        <span class="status-badge ${statusClass} text-sm">${statusLabel}</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Valor Recorrente</h3>
+                        <p class="text-2xl font-bold text-yellow-400">${priceFmt}</p>
+                        <p class="text-xs text-gray-500">Cobrança mensal automatizada</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-[#333]">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4 text-sm text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-blue-500"></i>
+                        <span>Início em: <strong>${dateStr}</strong></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-credit-card text-emerald-500"></i>
+                        <span>Gateway: <strong>Mercado Pago</strong></span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Show/Hide Cancel Button
+        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+            cancelSubBtnModal.classList.remove('hidden');
+            cancelSubBtnModal.setAttribute('data-id', sub.idx);
+        } else {
+            cancelSubBtnModal.classList.add('hidden');
+        }
+
+        subModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeSubscriptionModal = () => {
+        subModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        currentOpenSub = null;
     };
 
     const updateKPIs = (subscriptions) => {
@@ -207,7 +294,7 @@ export async function setupAssinaturasPage() {
                     'success'
                 );
 
-                // Reload UI
+                closeSubscriptionModal();
                 loadSubscriptions();
                 
             } catch (err) {
@@ -223,7 +310,8 @@ export async function setupAssinaturasPage() {
 
     // Event Listeners
     if (toggleFiltersBtn) {
-        toggleFiltersBtn.addEventListener('click', () => {
+        toggleFiltersBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             filterGridContainer.classList.toggle('hidden');
         });
     }
@@ -235,6 +323,16 @@ export async function setupAssinaturasPage() {
     [unitFilter, statusFilter, productFilter].forEach(el => {
         if (el) el.addEventListener('change', applyFilters);
     });
+
+    if (closeSubModalBtn) closeSubModalBtn.addEventListener('click', closeSubscriptionModal);
+    if (closeSubModalFooterBtn) closeSubModalFooterBtn.addEventListener('click', closeSubscriptionModal);
+    if (cancelSubBtnModal) cancelSubBtnModal.addEventListener('click', handleCancelSubscription);
+
+    if (subModal) {
+        subModal.addEventListener('click', (e) => {
+            if (e.target === subModal) closeSubscriptionModal();
+        });
+    }
 
     // Auto-init
     loadSubscriptions();
