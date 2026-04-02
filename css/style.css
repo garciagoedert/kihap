@@ -289,6 +289,18 @@ body {
     color: white;
     background-size: cover;
     background-position: center;
+    background-color: #00132a; /* Matching the dark navy in littlesheader.png */
+    height: 70vh; /* Moved from inline HTML */
+}
+
+@media (max-width: 768px) {
+    .program-hero {
+        background-size: cover;
+        background-position: center;
+        height: auto;
+        aspect-ratio: 4267 / 1600;
+        background-color: transparent;
+    }
 }
 
 .program-hero::after {
@@ -298,13 +310,41 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.2); /* Reduced opacity to let the image show clearly */
     z-index: 1;
 }
 
 .program-hero-content {
     position: relative;
     z-index: 2;
+}
+
+.video-container-vertical {
+    position: relative;
+    width: 100%;
+    padding-bottom: 177.78%; /* 16:9 vertical aspect ratio (16/9 * 100) = 177.78% */
+    height: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: #000;
+}
+
+.video-container-vertical iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
 }
 
 .hero-adolescentes {
@@ -316,7 +356,7 @@ body {
 }
 
 .hero-baby-littles {
-    background-image: url('../imgs/baby.png');
+    background-image: url('../imgs/littlesheader.png');
 }
 
 .hero-familia {
@@ -328,7 +368,7 @@ body {
 }
 
 .hero-littles {
-    background-image: url('../imgs/littles.png');
+    background-image: url('../imgs/littlesheader.png');
 }
 
 .hero-brasilia {

@@ -23,26 +23,44 @@
     <main>
         <!-- Hero Section -->
         <section class="program-hero hero-baby-littles">
-            <div class="program-hero-content">
-                <h1 class="text-4xl md:text-6xl uppercase font-title">Baby Littles</h1>
-                <p class="text-yellow-500 text-2xl mt-2">1.5 a 3 anos</p>
+            <div class="program-hero-content px-6">
+                <!-- Image already contains the title -->
             </div>
         </section>
 
-        <section class="py-16">
-            <div class="container mx-auto px-6">
-                <div class="max-w-3xl mx-auto text-left text-gray-300">
-                    <p class="mb-4">Nosso programa Baby Littles é projetado para introduzir os conceitos mais básicos das artes marciais de uma forma lúdica e segura para os nossos menores alunos. O foco está no desenvolvimento da coordenação motora, equilíbrio e habilidades sociais essenciais.</p>
-                    <p>As aulas são repletas de atividades divertidas que ajudam as crianças a desenvolverem confiança e a interagirem com outros pequenos, tudo sob a supervisão de nossos instrutores especializados no desenvolvimento infantil.</p>
+        <section class="py-20 relative overflow-hidden">
+            <div class="container mx-auto px-6 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div class="glass-panel">
+                        <h2 class="text-3xl font-title uppercase mb-6 text-yellow-500">Desenvolvimento com Diversão</h2>
+                        <p class="text-xl text-gray-300 leading-relaxed mb-6">
+                            Nosso programa Baby Littles é projetado para introduzir os conceitos mais básicos das artes marciais de uma forma lúdica e segura para os nossos menores alunos.
+                        </p>
+                        <p class="text-xl text-gray-300 leading-relaxed">
+                            O foco está no desenvolvimento da coordenação motora, equilíbrio e habilidades sociais essenciais, tudo sob a supervisão de instrutores especializados.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="video-container-vertical">
+                            <iframe src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="video-container-vertical">
+                            <iframe src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Decorative background element -->
+            <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-yellow-500/10 to-transparent -z-0"></div>
         </section>
 
         <!-- Testimonials -->
         <div id="testimonials-container"></div>
 
-        <!-- Video Section -->
-        <div id="video-container"></div>
+        <!-- Video Section (Hidden or merged above) -->
+        <div id="video-container" class="hidden"></div>
 
         <!-- CTA Section -->
         <div id="cta-container"></div>
