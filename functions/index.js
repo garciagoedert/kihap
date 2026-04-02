@@ -3014,10 +3014,11 @@ exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context)
                     liveStatus = mpData.status;
                     
                     if (liveStatus !== dataDoc.paymentStatus) {
+                        console.log(`[adminGetLiveSubscriptions] Sincronizando status da assinatura ${doc.id}: ${dataDoc.paymentStatus} -> ${liveStatus}`);
                         await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ paymentStatus: liveStatus });
                     }
                 } catch (mpError) {
-                    // console.error(`Erro ao sincronizar preapproval ${dataDoc.mercadoPagoPreferenceId}:`, mpError);
+                    console.error(`[adminGetLiveSubscriptions] Erro ao sincronizar preapproval ${dataDoc.mercadoPagoPreferenceId}:`, mpError.message);
                 }
             }
 

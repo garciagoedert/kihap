@@ -42,7 +42,7 @@ export async function setupAssinaturasPage() {
                 let statusClass = 'status-pending';
                 let statusLabel = 'Pendente';
                 
-                if (sub.paymentStatus === 'authorized') {
+                if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
                     statusClass = 'status-authorized';
                     statusLabel = 'Ativo';
                     totalMrr += sub.amountTotal;

@@ -317,5 +317,6 @@ module.exports = {
     getMercadoPagoPreference,
     exchangeOAuthCode,
     cancelPreapproval,
+    getPreapprovalStatus,
     createTuitionPreapproval
 };
