@@ -28,40 +28,79 @@
             </div>
         </section>
 
-        <section class="py-20 relative overflow-hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div class="glass-panel">
-                        <h2 class="text-3xl font-title uppercase mb-6 text-yellow-500">Energia e Disciplina</h2>
-                        <p class="text-xl text-gray-300 leading-relaxed mb-6">
-                            O programa Littles foca em canalizar a energia das crianças de forma produtiva e divertida. Através de jogos e atividades, ensinamos os fundamentos das artes marciais.
+        <section class="py-24 relative overflow-hidden bg-transparent">
+            <div class="container mx-auto px-6 lg:px-8 relative z-10 max-w-7xl">
+                <!-- Main Header / Glass Panel & Video -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <div class="glass-panel group hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] transition-all duration-500 border border-white/10 rounded-3xl p-8 lg:p-12 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-orange-500"></div>
+                        <h2 class="text-3xl md:text-4xl lg:text-5xl font-title uppercase mb-8 text-yellow-400" style="line-height: 1.3;">
+                            Energia <br>e Disciplina
+                        </h2>
+                        <p class="text-lg lg:text-xl text-gray-300 leading-relaxed mb-6 font-light">
+                            O programa <strong class="text-white font-bold">Littles</strong> foca em canalizar a energia das crianças de forma produtiva e divertida. Através de jogos e atividades, ensinamos os fundamentos das artes marciais.
                         </p>
-                        <p class="text-xl text-gray-300 leading-relaxed">
+                        <p class="text-lg lg:text-xl text-gray-300 leading-relaxed font-light">
                             Trabalhamos disciplina, respeito e foco, enquanto aprimoramos a coordenação e a consciência corporal. É a fase ideal para construir uma base sólida de valores.
                         </p>
                     </div>
 
-                    <div class="video-container-horizontal">
+                    <div class="video-container-horizontal group rounded-3xl overflow-hidden hover:scale-[1.02] transition-transform duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(234,179,8,0.3)] ring-1 ring-white/10">
                         <iframe src="https://www.youtube.com/embed/fX_ERRYVUBA?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                 </div>
 
-                <div class="mt-20 text-center">
-                    <h2 class="text-3xl font-title uppercase mb-10 text-yellow-500">Momentos Kihap</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="hidden md:block"></div>
-                        <div class="video-container-vertical">
+                <!-- Benefícios / Features -->
+                <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
+                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <!-- Lightning icon for Energy -->
+                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-title text-white mb-3">Energia Canalizada</h3>
+                        <p class="text-gray-400">Atividades com alta queima de energia direcionadas de forma produtiva para o pequeno.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
+                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <!-- Shield icon for Discipline -->
+                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-title text-white mb-3">Disciplina Total</h3>
+                        <p class="text-gray-400">Ambiente de respeito mútuo, ensinando habilidades de obediência e atenção às regras.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
+                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <!-- Target icon for Focus -->
+                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-title text-white mb-3">Atenção e Foco</h3>
+                        <p class="text-gray-400">Atividades contínuas que trabalham a concentração e reduzem as distrações.</p>
+                    </div>
+                </div>
+
+                <!-- Vídeos Momentos -->
+                <div class="mt-32 text-center">
+                    <h2 class="text-4xl font-title uppercase mb-16 inline-block relative text-yellow-400">
+                        Momentos Kihap
+                        <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-yellow-500 rounded-full"></div>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
+                        <div class="hidden lg:block"></div>
+                        <div class="video-container-vertical w-full max-w-[280px] rounded-3xl overflow-hidden shadow-xl hover:scale-[1.03] transition-transform duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.4)] ring-1 ring-white/10 group">
                             <iframe src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                         </div>
-                        <div class="video-container-vertical">
+                        <div class="video-container-vertical w-full max-w-[280px] rounded-3xl overflow-hidden shadow-xl hover:scale-[1.03] transition-transform duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.4)] ring-1 ring-white/10 group">
                             <iframe src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                         </div>
-                        <div class="hidden md:block"></div>
+                        <div class="hidden lg:block"></div>
                     </div>
                 </div>
             </div>
             
-            <!-- Decorative background element -->
-            <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-yellow-500/10 to-transparent -z-0"></div>
+            <!-- Decorative background elements -->
+            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-yellow-500/5 to-transparent z-0 pointer-events-none"></div>
+            <div class="absolute -top-[20%] -left-[10%] w-[40%] h-[40%] rounded-full bg-yellow-500/10 blur-[120px] pointer-events-none"></div>
         </section>
 
         <!-- Testimonials -->
