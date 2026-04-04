@@ -50,6 +50,9 @@ function setupUIListeners(handlers = {}) {
         }
     }
 
+    // Profile Menu toggle
+    setupProfileMenu();
+
     // Modal Buttons (only if they exist on the page)
     const addProspectBtnHeader = document.getElementById('addProspectBtnHeader');
     if (addProspectBtnHeader) {
@@ -122,6 +125,87 @@ function setupUIListeners(handlers = {}) {
                 }
             }
         });
+    }
+}
+
+function setupProfileMenu() {
+    const profileToggle = document.getElementById('profile-menu-toggle');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const profileChevron = document.getElementById('profile-chevron');
+
+    if (profileToggle && profileDropdown) {
+        profileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = profileDropdown.classList.contains('hidden');
+            
+            if (isHidden) {
+                profileDropdown.classList.remove('hidden', 'opacity-0', 'scale-95');
+                profileDropdown.classList.add('opacity-100', 'scale-100');
+                if (profileChevron) profileChevron.classList.add('rotate-180');
+            } else {
+                profileDropdown.classList.add('hidden');
+                if (profileChevron) profileChevron.classList.remove('rotate-180');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+                if (profileChevron) profileChevron.classList.remove('rotate-180');
+            }
+        });
+    }
+}
+
+async function updateUserProfileUI() {
+    const userNameEl = document.getElementById('header-user-name');
+    const userUnitEl = document.getElementById('header-user-unit');
+    const userAvatarEl = document.getElementById('header-user-avatar');
+    const userEmailEl = document.getElementById('dropdown-user-email');
+
+    if (!userNameEl) return;
+
+    try {
+        let currentUser = null;
+        const currentUserStr = sessionStorage.getItem('currentUser');
+        
+        if (currentUserStr) {
+            currentUser = JSON.parse(currentUserStr);
+        } else {
+            currentUser = await getCurrentUser();
+            if (currentUser) {
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
+
+        if (currentUser) {
+            userNameEl.textContent = currentUser.name || currentUser.displayName || 'Usuário';
+            
+            if (userUnitEl) {
+                userUnitEl.textContent = currentUser.unit || currentUser.unidade || 'Kihap';
+            }
+            
+            if (userAvatarEl && currentUser.profilePicture) {
+                userAvatarEl.src = currentUser.profilePicture;
+            }
+
+            if (userEmailEl) {
+                userEmailEl.textContent = currentUser.email || '';
+            }
+            
+            // Handle admin-only elements in dropdown
+            const isAdmin = currentUser.isAdmin === true || sessionStorage.getItem('isAdmin') === 'true';
+            document.querySelectorAll('#profile-dropdown .admin-only').forEach(el => {
+                if (isAdmin) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error updating profile UI:", error);
     }
 }
 
@@ -450,6 +534,9 @@ async function loadComponents(pageSpecificSetup) {
 
         // Inicia o listener de notificações de chat
         listenForChatNotifications();
+
+        // Atualiza as informações do perfil no header
+        updateUserProfileUI();
 
     } catch (error) {
         console.error('Error loading components:', error);
