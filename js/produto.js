@@ -227,6 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     priceVariantSelector.appendChild(option);
                 });
 
+                if (productData.variantsLabel) {
+                    const variantsLabel = formInstance.querySelector('.variants-label');
+                    if (variantsLabel) variantsLabel.textContent = productData.variantsLabel;
+                }
+
                 priceVariantSelector.addEventListener('change', updateTotalPrice);
             } else {
                 priceVariantSelectorContainer.classList.add('hidden');
@@ -286,7 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (productData.hasSizes && productData.sizes && productData.sizes.length > 0) {
                 sizeSelectorContainer.classList.remove('hidden');
                 sizeSelector.required = true;
-                sizeSelector.innerHTML = '<option value="" disabled selected>Escolha o Tamanho</option>';
+                
+                const sizesLabelText = productData.sizesLabel || 'Escolha o Tamanho';
+                const sizesLabel = formInstance.querySelector('.sizes-label');
+                if (sizesLabel) sizesLabel.textContent = sizesLabelText;
+                
+                sizeSelector.innerHTML = `<option value="" disabled selected>${sizesLabelText}</option>`;
                 productData.sizes.forEach(size => {
                     const option = document.createElement('option');
                     option.value = size;

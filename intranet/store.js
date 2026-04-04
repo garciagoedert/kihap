@@ -117,6 +117,8 @@ export async function setupStorePage() {
     const productSizesContainer = document.getElementById('product-sizes-container');
     const productSizesInput = document.getElementById('product-sizes');
     const productCustomUnitsInput = document.getElementById('product-custom-units');
+    const productSizesLabelInput = document.getElementById('product-sizes-label');
+    const productVariantsLabelInput = document.getElementById('product-variants-label');
     const recommendedProductsSelect = document.getElementById('recommended-products');
     const productMpAccountSelect = document.getElementById('product-mp-account');
     const productMpSplitInput = document.getElementById('product-mp-split');
@@ -807,6 +809,8 @@ export async function setupStorePage() {
         productHasSizesInput.checked = false;
         productSizesContainer.classList.add('hidden');
         productSizesInput.value = '';
+        if (productSizesLabelInput) productSizesLabelInput.value = '';
+        if (productVariantsLabelInput) productVariantsLabelInput.value = '';
         productAskProfessorInput.checked = false;
         productAskAgeInput.checked = false;
         productControlStockInput.checked = false;
@@ -870,7 +874,9 @@ export async function setupStorePage() {
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
-                mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0
+                mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
+                sizesLabel: productSizesLabelInput ? productSizesLabelInput.value : '',
+                variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : ''
             };
 
             // Handle stock fields
@@ -1025,6 +1031,7 @@ export async function setupStorePage() {
                     lotesContainer.classList.add('hidden');
                     kitContainer.classList.add('hidden');
                     priceVariantsList.innerHTML = '';
+                    if (productVariantsLabelInput) productVariantsLabelInput.value = product.variantsLabel || '';
                     product.priceVariants.forEach(variant => addPriceVariant(variant.name, variant.price));
                 } else if (product.priceType === 'lotes' && product.lotes) {
                     document.querySelector('input[name="price-type"][value="lotes"]').checked = true;
@@ -1084,6 +1091,7 @@ export async function setupStorePage() {
                 if (product.hasSizes) {
                     productSizesContainer.classList.remove('hidden');
                     productSizesInput.value = product.sizes ? product.sizes.join(', ') : '';
+                    if (productSizesLabelInput) productSizesLabelInput.value = product.sizesLabel || '';
                 } else {
                     productSizesContainer.classList.add('hidden');
                     productSizesInput.value = '';
