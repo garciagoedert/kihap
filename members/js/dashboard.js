@@ -29,69 +29,71 @@ async function getMemberData(data) {
 }
 
 export function loadMemberDashboard() {
-    onAuthReady(async (user) => {
-        if (user) {
-            const userData = await getUserData(user.uid);
-            if (userData) {
-                document.getElementById('user-name-display').textContent = userData.name;
-                document.getElementById('user-email-display').textContent = userData.email;
+    onAuthReady(async (userData) => {
+        if (userData) {
+            console.log("DASHBOARD_LOG: Loading with user data:", JSON.stringify(userData));
+            
+            // Preenche info básica direto do userData (Firestore)
+            if (document.getElementById('user-name-display')) {
+                document.getElementById('user-name-display').textContent = userData.name || 'Usuário';
+            }
+            if (document.getElementById('user-email-display')) {
+                document.getElementById('user-email-display').textContent = userData.email || '';
+            }
 
-                // Assumindo que o ID do membro da EVO está armazenado no documento do usuário no Firestore
-                if (userData.evoMemberId) {
-                    try {
-                        const result = await getMemberData({
-                            memberId: userData.evoMemberId,
-                            unitId: userData.unitId // Passa a unidade do aluno para a função
-                        });
-                        const member = result.data;
+            // Assumindo que o ID do membro da EVO está armazenado no documento do usuário no Firestore
+            if (userData.evoMemberId) {
+                try {
+                    const result = await getMemberData({
+                        memberId: userData.evoMemberId,
+                        unitId: userData.unitId // Passa a unidade do aluno para a função
+                    });
+                    const member = result.data;
 
+                    if (member) {
                         // Preenche os campos com os dados da API
                         const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
                         const graduation = member.memberships?.[0]?.name || 'Não informada';
 
                         // Atualiza a foto do perfil
                         const avatar = document.getElementById('user-avatar');
-
-                        // Prioritize Firestore photoURL if available
-                        if (userData.photoURL) {
-                            avatar.src = userData.photoURL;
-                        } else if (member.photoUrl) {
-                            avatar.src = member.photoUrl;
-                        } else {
-                            // No photo found, using default.
+                        if (avatar) {
+                            if (userData.photoURL || userData.profilePicture) {
+                                avatar.src = userData.photoURL || userData.profilePicture;
+                            } else if (member.photoUrl) {
+                                avatar.src = member.photoUrl;
+                            }
                         }
 
-                        document.getElementById('member-name').textContent = fullName;
-                        document.getElementById('member-age').textContent = calculateAge(member.birthDate);
-                        document.getElementById('member-belt').textContent = graduation;
-                        document.getElementById('member-unit').textContent = member.branchName || 'Unidade Centro';
-                        document.getElementById('member-status').textContent = member.membershipStatus || 'Não informado';
-                        document.getElementById('member-register-date').textContent = member.registerDate ? new Date(member.registerDate).toLocaleDateString('pt-BR') : 'Não informada';
-                        document.getElementById('member-instructor').textContent = member.nameEmployeeInstructor || 'Não informado';
+                        if (document.getElementById('member-name')) document.getElementById('member-name').textContent = fullName;
+                        if (document.getElementById('member-age')) document.getElementById('member-age').textContent = calculateAge(member.birthDate);
+                        if (document.getElementById('member-belt')) document.getElementById('member-belt').textContent = graduation;
+                        if (document.getElementById('member-unit')) document.getElementById('member-unit').textContent = member.branchName || 'Unidade Centro';
+                        if (document.getElementById('member-status')) document.getElementById('member-status').textContent = member.membershipStatus || 'Não informado';
+                        if (document.getElementById('member-register-date')) document.getElementById('member-register-date').textContent = member.registerDate ? new Date(member.registerDate).toLocaleDateString('pt-BR') : 'Não informada';
+                        if (document.getElementById('member-instructor')) document.getElementById('member-instructor').textContent = member.nameEmployeeInstructor || 'Não informado';
 
                         const kihapCoins = member.totalFitCoins || 0;
-                        document.getElementById('member-kihapcoins').textContent = kihapCoins;
-                        document.getElementById('member-kihapcoins-highlight').textContent = kihapCoins;
+                        if (document.getElementById('member-kihapcoins')) document.getElementById('member-kihapcoins').textContent = kihapCoins;
+                        if (document.getElementById('member-kihapcoins-highlight')) document.getElementById('member-kihapcoins-highlight').textContent = kihapCoins;
 
-                    } catch (error) {
-                        console.error("Erro ao buscar dados do membro:", error);
-                        alert("Não foi possível carregar seus dados de aluno.");
+                        // Carrega histórico de compras (se tiver CPF no objeto member retornado do EVO)
+                        if (member.document) {
+                            loadMemberPurchases(member.document);
+                        }
                     }
-                } else {
-                    console.warn("ID de membro da EVO não encontrado para este usuário.");
-                    // Opcional: Esconder a seção de informações do aluno
+                } catch (error) {
+                    console.error("Erro ao buscar dados do membro:", error);
+                    // Não alertamos para não interromper a UI, apenas logamos
                 }
-
-                // Carrega o histórico de testes físicos
-                loadMemberPhysicalTestHistory(user.uid);
-                // Carrega os emblemas do aluno
-                loadMemberBadges(userData);
-
-                // Carrega histórico de compras (se tiver CPF no objeto member retornado do EVO)
-                if (member && member.document) {
-                    loadMemberPurchases(member.document);
-                }
+            } else {
+                console.warn("ID de membro da EVO não encontrado para este usuário.");
             }
+
+            // Carrega o histórico de testes físicos
+            loadMemberPhysicalTestHistory(userData.id || userData.uid || userData.id);
+            // Carrega os emblemas do aluno
+            loadMemberBadges(userData);
         }
     });
 }
