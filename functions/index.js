@@ -361,14 +361,31 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     return true;
 }
 
-function getNotificationUrl(functionName) {
+async function getAccessTokenForAccountId(accountId) {
+    if (!accountId || accountId === 'default') return null;
+    try {
+        const accountDoc = await db.collection('mercadopagoAccounts').doc(accountId).get();
+        if (accountDoc.exists) {
+            return accountDoc.data().accessToken;
+        }
+    } catch (e) {
+        console.error(`[getAccessTokenForAccountId] Erro ao buscar conta ${accountId}:`, e.message);
+    }
+    return null;
+}
+
+function getNotificationUrl(functionName, accountId = null) {
     const projectId = process.env.GCLOUD_PROJECT || (admin.app().options && admin.app().options.projectId);
     const region = 'us-central1'; // Região padrão do Firebase Functions
     if (!projectId) {
         console.warn('[getNotificationUrl] Project ID não encontrado.');
         return null;
     }
-    return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
+    let url = `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
+    if (accountId && accountId !== 'default') {
+        url += `?accountId=${accountId}`;
+    }
+    return url;
 }
 
 
@@ -446,7 +463,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
-        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
         const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId);
 
         for (const docId of saleDocIds) {
@@ -650,7 +667,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         }
 
         console.log('[createCheckoutSession] Criando preferência no Mercado Pago...');
-        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook', product.mpAccountId);
         const mpPreference = await createMercadoPagoPreference(product, formDataList, totalAmount, saleDocIds, notificationUrl);
         console.log('[createCheckoutSession] Preferência Mercado Pago criada com sucesso:', mpPreference.id);
 
@@ -1577,7 +1594,11 @@ exports.mercadopagoWebhook = functions.https.onRequest(async (req, res) => {
         // 'payment' é o tópico para pagamentos padrão (Checkout Pro)
         if (topic === 'payment' || topic === 'payment.updated' || topic === 'payment.created') {
             console.log(`[Mercado Pago Webhook] Buscando detalhes do pagamento ${resourceId}...`);
-            const payment = await getMercadoPagoPayment(resourceId);
+            
+            // Resolve Token
+            let customToken = await getAccessTokenForAccountId(req.query.accountId);
+            
+            const payment = await getMercadoPagoPayment(resourceId, customToken);
             
             if (!payment) {
                 console.error(`[Mercado Pago Webhook] Pagamento ${resourceId} não encontrado na API do MP.`);
@@ -1647,14 +1668,18 @@ const syncMercadoPagoSales = async (limitHours = 24) => {
         const saleId = doc.id;
         
         try {
+            // Resolve Token for this sale
+            let customToken = null;
+            if (saleData.productId) {
+                const productDoc = await db.collection('products').doc(saleData.productId).get();
+                if (productDoc.exists) {
+                    const productData = productDoc.data();
+                    customToken = await getAccessTokenForAccountId(productData.mpAccountId);
+                }
+            }
+
             // Buscamos pagamentos no MP usando o ID da venda como external_reference
-            // Lembrar que Checkout Pro usa os Doc IDs separados por vírgula no external_reference
-            // Então precisamos buscar pagamentos que contenham esse ID no external_reference
-            // OU, mais fácil, buscar pelo external_reference exato salvo na venda se existir.
-            
-            // Atualmente as vendas salvam o mercadoPagoPreferenceId.
-            // O caminho mais seguro é buscar todos os pagamentos aprovados que tenham esse saleId no external_reference.
-            const payments = await searchMercadoPagoPayments(saleId);
+            const payments = await searchMercadoPagoPayments(saleId, customToken);
             
             if (payments && payments.length > 0) {
                 const approvedPayment = payments.find(p => p.status === 'approved');
@@ -1702,7 +1727,39 @@ exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context)
     const saleData = saleSnap.data();
     
     try {
-        const payments = await searchMercadoPagoPayments(saleId);
+        // Resolve Token for this sale
+        let customToken = null;
+        if (saleData.productId) {
+            const productDoc = await db.collection('products').doc(saleData.productId).get();
+            if (productDoc.exists) {
+                const productData = productDoc.data();
+                customToken = await getAccessTokenForAccountId(productData.mpAccountId);
+            }
+        }
+
+        let updated = false;
+        let currentStatus = saleData.paymentStatus;
+
+        // 1. If it's a subscription, we should check the Preapproval status first
+        if (saleData.isSubscription && saleData.mercadoPagoPreferenceId) {
+            console.log(`[syncSingleMercadoPagoSale] Sincronizando ASSINATURA ${saleId} (Preapproval: ${saleData.mercadoPagoPreferenceId})`);
+            try {
+                const mpData = await getPreapprovalStatus(saleData.mercadoPagoPreferenceId, customToken);
+                if (mpData && mpData.status) {
+                    currentStatus = mpData.status === 'authorized' ? 'active' : mpData.status;
+                    if (currentStatus !== saleData.paymentStatus) {
+                        await docRef.update({ paymentStatus: currentStatus });
+                        updated = true;
+                    }
+                    return { success: true, updated, status: currentStatus };
+                }
+            } catch (mpError) {
+                console.warn(`[syncSingleMercadoPagoSale] Não foi possível encontrar como assinatura ou erro de ID (400). Seguindo para busca de pagamento normal...`);
+            }
+        }
+
+        // 2. Regular Payment Sync (or fallback for subscriptions)
+        const payments = await searchMercadoPagoPayments(saleId, customToken);
         
         if (payments && payments.length > 0) {
             const approvedPayment = payments.find(p => p.status === 'approved');
@@ -1712,7 +1769,8 @@ exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context)
             }
             return { success: true, updated: false, msg: 'Pagamento encontrado, mas não está aprovado.', status: payments[0].status };
         }
-        return { success: true, updated: false, msg: 'Nenhum pagamento encontrado no Mercado Pago para esta venda.' };
+        
+        return { success: true, updated: false, msg: 'Nenhum registro (pagamento ou assinatura) encontrado no Mercado Pago para esta venda.' };
     } catch (error) {
         console.error(`[syncSingleMercadoPagoSale] Erro ao processar venda ${saleId}:`, error.message);
         throw new functions.https.HttpsError('internal', error.message);
@@ -3018,14 +3076,17 @@ exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context)
             if (dataDoc.mercadoPagoPreferenceId) {
                 try {
                     const mpData = await getPreapprovalStatus(dataDoc.mercadoPagoPreferenceId, customToken);
-                    liveStatus = mpData.status;
-                    
-                    if (liveStatus !== dataDoc.paymentStatus) {
-                        console.log(`[adminGetLiveSubscriptions] Sincronizando status da assinatura ${doc.id}: ${dataDoc.paymentStatus} -> ${liveStatus}`);
-                        await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ paymentStatus: liveStatus });
+                    if (mpData && mpData.status) {
+                        liveStatus = mpData.status === 'authorized' ? 'active' : mpData.status;
+                        
+                        if (liveStatus !== dataDoc.paymentStatus) {
+                            console.log(`[adminGetLiveSubscriptions] Sincronizando status da assinatura ${doc.id}: ${dataDoc.paymentStatus} -> ${liveStatus}`);
+                            await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ paymentStatus: liveStatus });
+                        }
                     }
                 } catch (mpError) {
                     console.error(`[adminGetLiveSubscriptions] Erro ao sincronizar preapproval ${dataDoc.mercadoPagoPreferenceId}:`, mpError.message);
+                    // Fallback para o status local se a consulta falhar
                 }
             }
 

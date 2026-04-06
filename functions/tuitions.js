@@ -428,22 +428,35 @@ exports.mpWebhook = functions.https.onRequest(async (req, res) => {
                 const memberDoc = membersSnap.docs[0];
                 const studentData = memberDoc.data();
                 
-                // Em um fluxo mais complexo, buscaríamos o status atual real na API do MP usando o token da unidade.
-                // Mas de forma simples: se a action é 'created' ou 'updated' e recebemos o webhook, significa que está ativa ou houve pagamento.
-                // Idealmente seria buscar: const mpData = await getPreapprovalStatus(preapprovalId, customToken);
-                // Vamos apenas atualizar o status localmente para 'active' se não for cancelamento expresso da UI.
-                
-                let newStatus = 'active';
-                if (action === 'deleted') newStatus = 'cancelled';
-                
-                if (studentData.tuitionStatus !== newStatus) {
-                    await memberDoc.ref.update({
-                        tuitionStatus: newStatus,
-                        tuitionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log(`[mpWebhook] Status do aluno ${studentData.idMember} atualizado para ${newStatus}.`);
-                } else {
-                    console.log(`[mpWebhook] Aluno já estava com status ${newStatus}. Nenhuma alteração.`);
+                // Resolve Token for the unit
+                let customToken = null;
+                if (studentData.unitId) {
+                    const mpAccSnap = await db.collection('mercadopagoAccounts').doc(studentData.unitId).get();
+                    if (mpAccSnap.exists) customToken = mpAccSnap.data().accessToken;
+                }
+
+                // Verify Actual Status on MP
+                try {
+                    const mpData = await getPreapprovalStatus(preapprovalId, customToken);
+                    if (!mpData) {
+                        console.error(`[mpWebhook] Não foi possível encontrar os dados da assinatura ${preapprovalId} no MP.`);
+                        return res.status(200).send();
+                    }
+
+                    let newStatus = mpData.status === 'authorized' ? 'active' : mpData.status; // authorized no preapproval = 'active' no nosso sistema
+                    if (action === 'deleted') newStatus = 'cancelled';
+                    
+                    if (studentData.tuitionStatus !== newStatus) {
+                        await memberDoc.ref.update({
+                            tuitionStatus: newStatus,
+                            tuitionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log(`[mpWebhook] Status do aluno ${studentData.idMember} atualizado para ${newStatus}.`);
+                    } else {
+                        console.log(`[mpWebhook] Aluno já estava com status ${newStatus}. Nenhuma alteração.`);
+                    }
+                } catch (mpError) {
+                    console.error(`[mpWebhook] Erro ao validar assinatura no MP:`, mpError.message);
                 }
             } else {
                 console.warn(`[mpWebhook] Nenhum aluno encontrado com preapprovalId: ${preapprovalId}`);

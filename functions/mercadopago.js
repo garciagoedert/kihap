@@ -235,8 +235,8 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
     }
 };
 
-const getMercadoPagoPayment = async (paymentId) => {
-    const client = getMPClient();
+const getMercadoPagoPayment = async (paymentId, customToken = null) => {
+    const client = getMPClient(customToken);
     try {
         const response = await client.get(`/v1/payments/${paymentId}`);
         return response.data;
@@ -246,8 +246,8 @@ const getMercadoPagoPayment = async (paymentId) => {
     }
 };
 
-const searchMercadoPagoPayments = async (externalReference) => {
-    const client = getMPClient();
+const searchMercadoPagoPayments = async (externalReference, customToken = null) => {
+    const client = getMPClient(customToken);
     try {
         // Busca pagamentos por external_reference
         const response = await client.get(`/v1/payments/search`, {
@@ -262,8 +262,8 @@ const searchMercadoPagoPayments = async (externalReference) => {
     }
 };
 
-const getMercadoPagoPreference = async (preferenceId) => {
-    const client = getMPClient();
+const getMercadoPagoPreference = async (preferenceId, customToken = null) => {
+    const client = getMPClient(customToken);
     try {
         const response = await client.get(`/checkout/preferences/${preferenceId}`);
         return response.data;

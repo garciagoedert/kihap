@@ -81,14 +81,29 @@ export async function setupAssinaturasPage() {
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
                 </td>
                 <td class="p-4 text-gray-400">${dateStr}</td>
-                <td class="p-4 text-right">
-                    <button class="p-2 text-gray-400 group-hover:text-white transition-colors">
-                        <i class="fas fa-eye"></i>
-                    </button>
+                <td class="p-4 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <button class="sync-sub-btn p-2 text-gray-400 hover:text-blue-400 transition-colors" data-id="${sub.idx}" title="Sincronizar Status">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="view-sub-btn p-2 text-gray-400 hover:text-white transition-colors" data-id="${sub.idx}" title="Ver Detalhes">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </td>
             `;
 
-            tr.addEventListener('click', () => openSubscriptionModal(sub));
+            // Event Decorators instead of global click if we want specific buttons
+            tr.querySelector('.view-sub-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openSubscriptionModal(sub);
+            });
+            
+            tr.querySelector('.sync-sub-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                syncSingleSubscription(sub.idx);
+            });
+
             tableBody.appendChild(tr);
         });
 
@@ -305,6 +320,37 @@ export async function setupAssinaturasPage() {
                     'error'
                 );
             }
+        }
+    };
+
+    const syncSingleSubscription = async (saleId) => {
+        try {
+            Swal.fire({
+                title: 'Sincronizando...',
+                text: 'Consultando o Mercado Pago',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            const functions = getFunctions();
+            // We use the same syncSingleMercadoPagoSale that I've updated in the backend
+            const syncSingle = httpsCallable(functions, 'syncSingleMercadoPagoSale');
+            const result = await syncSingle({ saleId });
+
+            if (result.data.success) {
+                Swal.fire({
+                    title: 'Sincronizado!',
+                    text: `O status atual é: ${result.data.status}`,
+                    icon: 'success',
+                    timer: 2000
+                });
+                loadSubscriptions(); // Reload table
+            } else {
+                Swal.fire('Aviso', result.data.msg || 'Não foi possível atualizar o status.', 'info');
+            }
+        } catch (err) {
+            console.error('Erro ao sincronizar:', err);
+            Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
         }
     };
 
