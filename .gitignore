@@ -1,17 +1,3 @@
-# Firebase service account key
-intranet-kihap-firebase-adminsdk-fbsvc-43327c2f72.json
-
-# Environment variables
-.env
-functions/.env
-
-# Firebase service account key
-intranet-kihap-firebase-adminsdk-fbsvc-43327c2f72.json
-
-# Environment variables
-.env
-functions/.env
-
 # Node modules
 node_modules/
 functions/node_modules/
@@ -22,6 +8,32 @@ functions/node_modules/
 # Local Config
 # intranet/social-config.js (Commented out to allow deploy to Hostinger)
 
-# Firebase logs
+# Firebase logs and other logs
+*.log
 firebase-debug.log*
 ui-debug.log*
+meta_debug_output.txt
+newsletter_error.txt
+temp_seed_note.txt
+
+# Generated/Redundant Artifacts
+www/
+
+# Capacitor/Native Firebase Configs (containing API Keys)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+
+# Firebase service account keys
+*-adminsdk-*.json
+
+# Environment variables
+.env
+functions/.env
+
+# Test scripts
+test_webhook*.sh
+test_meta_api.js
+set_admin.js
+debug_users.js
+check_prospects.js
+updateProduct.js
