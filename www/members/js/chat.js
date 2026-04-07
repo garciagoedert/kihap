@@ -1,0 +1,518 @@
+import { db } from '../../intranet/firebase-config.js';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { loadComponents } from './common-ui.js';
+import { getCurrentUser, getAllUsers, checkAdminStatus, getUserData } from './auth.js';
+
+// Elementos do DOM (serão inicializados em initializeChat)
+let groupList, directMessageList, chatTitle, chatMessages, messageInput, sendButton,
+    scrollToBottomBtn, newGroupBtn, newGroupModal, closeGroupModalBtn, cancelGroupBtn,
+    createGroupBtn, groupNameInput, groupMembersContainer, userSearchInput,
+    searchResultsContainer, emojiButton, emojiPickerContainer,
+    reactionEmojiPickerContainer;
+
+// Variáveis de estado
+let currentChatId = null;
+let currentReactionMessageId = null;
+let allUsers = [];
+const userCache = new Map();
+let currentUser = null;
+let unsubscribeMessages = null;
+
+function assignDomElements() {
+    groupList = document.getElementById('group-list');
+    directMessageList = document.getElementById('direct-message-list');
+    chatTitle = document.getElementById('chat-title');
+    chatMessages = document.getElementById('chat-messages');
+    messageInput = document.getElementById('message-input');
+    sendButton = document.getElementById('send-button');
+    scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+    newGroupBtn = document.getElementById('newGroupBtn');
+    newGroupModal = document.getElementById('newGroupModal');
+    closeGroupModalBtn = document.getElementById('closeGroupModalBtn');
+    cancelGroupBtn = document.getElementById('cancelGroupBtn');
+    createGroupBtn = document.getElementById('createGroupBtn');
+    groupNameInput = document.getElementById('groupName');
+    groupMembersContainer = document.getElementById('group-members');
+    userSearchInput = document.getElementById('user-search-input');
+    searchResultsContainer = document.getElementById('search-results');
+    emojiButton = document.getElementById('emoji-button');
+    emojiPickerContainer = document.getElementById('emoji-picker-container');
+    reactionEmojiPickerContainer = document.getElementById('reaction-emoji-picker-container');
+}
+
+function setupEventListeners() {
+    if (userSearchInput) userSearchInput.addEventListener('input', searchUser);
+    if (sendButton) sendButton.addEventListener('click', sendMessage);
+    if (messageInput) messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    if (newGroupBtn) newGroupBtn.addEventListener('click', () => newGroupModal.classList.remove('hidden'));
+    if (closeGroupModalBtn) closeGroupModalBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
+    if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
+    if (createGroupBtn) createGroupBtn.addEventListener('click', createGroup);
+
+    document.addEventListener('click', (event) => {
+        if (searchResultsContainer && !event.target.closest('#search-results') && event.target !== userSearchInput) {
+            searchResultsContainer.classList.add('hidden');
+        }
+    });
+
+    if (chatMessages) {
+        chatMessages.addEventListener('scroll', () => {
+            if (chatMessages.scrollHeight - chatMessages.clientHeight - chatMessages.scrollTop > 200) {
+                scrollToBottomBtn.classList.remove('opacity-0');
+            } else {
+                scrollToBottomBtn.classList.add('opacity-0');
+            }
+        });
+    }
+
+    if (scrollToBottomBtn) {
+        scrollToBottomBtn.addEventListener('click', () => {
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        });
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (currentChatId) {
+            sessionStorage.setItem('activeChatId', currentChatId);
+        } else {
+            sessionStorage.removeItem('activeChatId');
+        }
+    });
+}
+
+async function initializeChat() {
+    assignDomElements();
+    setupEventListeners();
+    
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
+        console.log("Nenhum usuário autenticado, redirecionando...");
+        return;
+    }
+    console.log("CHAT_LOG: Usuário inicializado:", JSON.stringify(currentUser));
+
+    const isAdmin = await checkAdminStatus(currentUser);
+    if (isAdmin && newGroupBtn) {
+        newGroupBtn.classList.remove('hidden');
+    }
+
+    await fetchAllUsersForModal();
+    populateConversationsList(currentUser.id);
+
+    // Recupera o chat ativo da sessão
+    const activeChatId = sessionStorage.getItem('activeChatId');
+    if (activeChatId) {
+        loadChatFromId(activeChatId);
+    }
+}
+
+async function fetchAllUsersForModal() {
+    allUsers = await getAllUsers();
+    allUsers.forEach(user => {
+        if (!userCache.has(user.id)) {
+            userCache.set(user.id, user);
+        }
+    });
+    populateGroupMembers();
+}
+
+function populateConversationsList(userId) {
+    const chatsCollection = collection(db, 'chats');
+    const q = query(chatsCollection, where('members', 'array-contains', userId));
+
+    onSnapshot(q, (snapshot) => {
+        const groups = [];
+        const directMessages = [];
+        snapshot.forEach(doc => {
+            const chatData = { id: doc.id, ...doc.data() };
+            if (chatData.isGroup) {
+                groups.push(chatData);
+            } else {
+                directMessages.push(chatData);
+            }
+        });
+
+        // Ordena as listas pela última mensagem
+        const sortChats = (a, b) => (b.lastMessage?.timestamp?.toMillis() || 0) - (a.lastMessage?.timestamp?.toMillis() || 0);
+        groups.sort(sortChats);
+        directMessages.sort(sortChats);
+
+        renderChatLists(groups, directMessages, userId);
+    });
+}
+
+async function renderChatLists(groups, directMessages, currentUserId) {
+    if (groupList) groupList.innerHTML = '';
+    groups.forEach(group => renderGroupItem(group, group.id, currentUserId));
+
+    if (directMessageList) directMessageList.innerHTML = '';
+    for (const dm of directMessages) {
+        await renderUserItem(dm, dm.id, currentUserId);
+    }
+}
+
+function renderGroupItem(chat, chatId, currentUserId) {
+    const groupElement = document.createElement('div');
+    groupElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+    groupElement.setAttribute('data-chat-id', chatId);
+    
+    const safeUserKey = currentUserId.replace(/\./g, '_');
+    const unreadCount = chat.unreadCount?.[safeUserKey] || 0;
+    if (unreadCount > 0) {
+        groupElement.classList.add('bg-gray-700', 'font-bold');
+    }
+    if (chatId === currentChatId) {
+        groupElement.classList.add('bg-primary-dark');
+    }
+
+    groupElement.innerHTML = `
+        <div class="truncate font-bold flex-1">${chat.name}</div>
+        ${unreadCount > 0 ? `<div class="bg-primary text-black text-xs rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 ml-2">${unreadCount}</div>` : ''}
+        <button class="delete-chat-btn text-gray-500 hover:text-red-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    `;
+
+    groupElement.querySelector('.truncate').onclick = () => selectChat(chat, true);
+    groupElement.querySelector('.delete-chat-btn').onclick = (e) => {
+        e.stopPropagation(); // Prevent chat selection
+        deleteChat(chat.id, chat.name);
+    };
+    if (groupList) groupList.appendChild(groupElement);
+}
+
+async function renderUserItem(chat, chatId, currentUserId) {
+    const otherUserId = chat.members.find(id => id !== currentUserId);
+    if (!otherUserId) return;
+
+    let otherUserData = userCache.get(otherUserId);
+    if (!otherUserData) {
+        otherUserData = await getUserData(otherUserId);
+        if (otherUserData) userCache.set(otherUserId, otherUserData);
+    }
+
+    if (otherUserData) {
+        const userElement = document.createElement('div');
+        userElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+        userElement.setAttribute('data-chat-id', chatId);
+
+        const safeUserKey = currentUserId.replace(/\./g, '_');
+        const unreadCount = chat.unreadCount?.[safeUserKey] || 0;
+        if (unreadCount > 0) {
+            userElement.classList.add('bg-gray-700', 'font-bold');
+        }
+        if (chatId === currentChatId) {
+            userElement.classList.add('bg-primary-dark');
+        }
+
+        const photoUrl = otherUserData.profilePicture || otherUserData.photoURL;
+        const avatarHtml = photoUrl
+            ? `<img src="${photoUrl}" alt="Foto de perfil" class="w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover">`
+            : `<div class="w-10 h-10 rounded-full mr-3 flex-shrink-0 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-gray-400 text-2xl"></i></div>`;
+
+        userElement.innerHTML = `
+            <div class="flex items-center overflow-hidden flex-1">
+                ${avatarHtml}
+                <div class="overflow-hidden">
+                    <div class="truncate">${otherUserData.name || 'Usuário'}</div>
+                    <div class="text-sm text-gray-400 truncate">${otherUserData.email}</div>
+                </div>
+            </div>
+            ${unreadCount > 0 ? `<div class="bg-primary text-black text-xs rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 ml-2">${unreadCount}</div>` : ''}
+            <button class="delete-chat-btn text-gray-500 hover:text-red-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        userElement.querySelector('.flex-1').onclick = () => selectChat({ ...chat, otherUser: otherUserData }, false);
+        userElement.querySelector('.delete-chat-btn').onclick = (e) => {
+            e.stopPropagation(); // Prevent chat selection
+            deleteChat(chat.id, otherUserData.name || otherUserData.email);
+        };
+        if (directMessageList) directMessageList.appendChild(userElement);
+    }
+}
+
+function selectChat(chatData, isGroup) {
+    const headerAvatar = document.getElementById('chat-header-avatar');
+    currentChatId = chatData.id;
+    sessionStorage.setItem('activeChatId', currentChatId);
+    
+    if (isGroup) {
+        if (chatTitle) chatTitle.textContent = chatData.name;
+        if (headerAvatar) headerAvatar.classList.add('hidden');
+    } else {
+        const otherUser = chatData.otherUser;
+        if (chatTitle) chatTitle.textContent = otherUser.name || otherUser.email;
+        const photoUrl = otherUser.profilePicture || otherUser.photoURL;
+        if (headerAvatar) {
+            if (photoUrl) {
+                headerAvatar.src = photoUrl;
+                headerAvatar.alt = otherUser.name;
+                headerAvatar.classList.remove('hidden');
+            } else {
+                headerAvatar.classList.add('hidden');
+            }
+        }
+    }
+
+    loadMessages(chatData.id, isGroup);
+    enableChatInput();
+}
+
+async function loadChatFromId(chatId) {
+    const chatRef = doc(db, 'chats', chatId);
+    const chatSnap = await getDoc(chatRef);
+    if (chatSnap.exists()) {
+        const chatData = { id: chatSnap.id, ...chatSnap.data() };
+        if (chatData.isGroup) {
+            selectChat(chatData, true);
+        } else {
+            const otherUserId = chatData.members.find(id => id !== currentUser.id);
+            const otherUserData = userCache.get(otherUserId) || await getUserData(otherUserId);
+            if (otherUserData) {
+                selectChat({ ...chatData, otherUser: otherUserData }, false);
+            }
+        }
+    } else {
+        console.error("Chat não encontrado:", chatId);
+        sessionStorage.removeItem('activeChatId');
+    }
+}
+
+async function searchUser() {
+    const searchTerm = userSearchInput.value.trim().toLowerCase();
+    if (!searchTerm) {
+        if (searchResultsContainer) {
+            searchResultsContainer.innerHTML = '';
+            searchResultsContainer.classList.add('hidden');
+        }
+        return;
+    }
+
+    const foundUsers = allUsers.filter(u =>
+        u.id !== currentUser.id &&
+        (u.name?.toLowerCase().includes(searchTerm) || u.email?.toLowerCase().includes(searchTerm))
+    );
+
+    if (searchResultsContainer) {
+        searchResultsContainer.innerHTML = '';
+        if (foundUsers.length === 0) {
+            searchResultsContainer.innerHTML = '<div class="p-2 text-gray-500">Nenhum usuário encontrado.</div>';
+        } else {
+            foundUsers.forEach(foundUser => {
+                const userElement = document.createElement('div');
+                userElement.className = 'flex items-center p-2 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer rounded-lg';
+                const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3">` : `<div class="w-10 h-10 rounded-full mr-3 bg-gray-300 flex items-center justify-center"><i class="fas fa-user-circle text-2xl"></i></div>`;
+                userElement.innerHTML = `${avatarHtml}<div><div class="font-bold">${foundUser.name || 'Usuário'}</div><div class="text-sm">${foundUser.email}</div></div>`;
+                userElement.onclick = () => {
+                    startChat(foundUser.id, foundUser.name || foundUser.email);
+                    userSearchInput.value = '';
+                    searchResultsContainer.classList.add('hidden');
+                };
+                searchResultsContainer.appendChild(userElement);
+            });
+        }
+        searchResultsContainer.classList.remove('hidden');
+    }
+}
+
+function populateGroupMembers() {
+    if (!currentUser || !groupMembersContainer) return;
+    groupMembersContainer.innerHTML = '';
+    allUsers.forEach(u => {
+        if (u.id !== currentUser.id) {
+            const memberElement = document.createElement('div');
+            memberElement.className = 'flex items-center';
+            memberElement.innerHTML = `
+                <input type="checkbox" id="user-${u.id}" value="${u.id}" class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary bg-gray-700">
+                <label for="user-${u.id}" class="ml-2 block text-sm">${u.name || u.email}</label>
+            `;
+            groupMembersContainer.appendChild(memberElement);
+        }
+    });
+}
+
+async function startChat(otherUserId, otherUserName) {
+    if (!currentUser) return;
+    const chatId = [currentUser.id, otherUserId].sort().join('_');
+    const chatRef = doc(db, 'chats', chatId);
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+        const unreadCount = {};
+        unreadCount[currentUser.id.replace(/\./g, '_')] = 0;
+        unreadCount[otherUserId.replace(/\./g, '_')] = 0;
+        await setDoc(chatRef, {
+            members: [currentUser.id, otherUserId],
+            isGroup: false,
+            createdAt: serverTimestamp(),
+            unreadCount: unreadCount
+        });
+    }
+    const newChatData = { id: chatId, members: [currentUser.id, otherUserId], otherUser: { id: otherUserId, name: otherUserName } };
+    selectChat(newChatData, false);
+}
+
+async function loadMessages(chatId, isGroup) {
+    if (unsubscribeMessages) {
+        unsubscribeMessages();
+    }
+
+    const messagesCollection = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesCollection, orderBy('timestamp'));
+
+    let isInitialLoad = true;
+    unsubscribeMessages = onSnapshot(q, async (snapshot) => {
+        if (!chatMessages) return;
+        
+        const placeholder = chatMessages.querySelector('.flex.flex-col.items-center.justify-center');
+        if (snapshot.empty && placeholder) {
+            placeholder.classList.remove('hidden');
+        } else if (!snapshot.empty) {
+            chatMessages.innerHTML = ''; // Clear placeholder if messages exist
+        }
+
+        for (const messageDoc of snapshot.docs) {
+            const message = messageDoc.data();
+            const messageId = messageDoc.id;
+            const isSender = message.senderId === currentUser.id;
+
+            let senderInfoHtml = '';
+            if (isGroup && !isSender) {
+                const senderData = userCache.get(message.senderId) || await getUserData(message.senderId);
+                if (senderData) {
+                    const avatarHtml = senderData.profilePicture ? `<img src="${senderData.profilePicture}" class="w-6 h-6 rounded-full mr-2 object-cover">` : `<div class="w-6 h-6 rounded-full mr-2 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-sm"></i></div>`;
+                    senderInfoHtml = `<div class="flex items-center mb-1">${avatarHtml}<span class="text-sm font-bold text-gray-400">${senderData.name || 'Usuário'}</span></div>`;
+                }
+            }
+
+            const messageTime = message.timestamp ? message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const messageElement = document.createElement('div');
+            messageElement.className = `message-container group relative flex flex-col mb-2 max-w-md ${isSender ? 'items-end self-end' : 'items-start self-start'}`;
+            messageElement.setAttribute('data-message-id', messageId);
+
+            const bubbleClass = isSender ? 'bg-primary text-black' : 'bg-gray-700 text-gray-200';
+            messageElement.innerHTML = `
+                ${senderInfoHtml}
+                <div class="message-bubble relative p-3 rounded-lg ${bubbleClass}">
+                    ${message.text}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">${messageTime}</div>
+            `;
+            chatMessages.appendChild(messageElement);
+        }
+
+        if (isInitialLoad) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            isInitialLoad = false;
+        }
+
+        // Marcar mensagens como lidas
+        const chatRef = doc(db, 'chats', chatId);
+        const safeUserKey = currentUser.id.replace(/\./g, '_');
+        await updateDoc(chatRef, { [`unreadCount.${safeUserKey}`]: 0 });
+    });
+}
+
+async function sendMessage() {
+    const user = await getCurrentUser();
+    if (!user) return;
+
+    const text = messageInput.value.trim();
+    if (text && currentChatId) {
+        const messagesCollection = collection(db, 'chats', currentChatId, 'messages');
+        await addDoc(messagesCollection, {
+            text: text,
+            senderId: user.id,
+            timestamp: serverTimestamp(),
+            status: 'enviado'
+        });
+
+        const chatRef = doc(db, 'chats', currentChatId);
+        const chatSnap = await getDoc(chatRef);
+        if (chatSnap.exists()) {
+            const chatData = chatSnap.data();
+            const unreadCountUpdate = {};
+            chatData.members.forEach(memberId => {
+                if (memberId !== user.id) {
+                    const safeMemberKey = memberId.replace(/\./g, '_');
+                    unreadCountUpdate[`unreadCount.${safeMemberKey}`] = (chatData.unreadCount?.[safeMemberKey] || 0) + 1;
+                }
+            });
+
+            await updateDoc(chatRef, {
+                lastMessage: { text, senderId: user.id, timestamp: serverTimestamp() },
+                ...unreadCountUpdate
+            });
+        }
+        messageInput.value = '';
+    }
+}
+
+async function createGroup() {
+    if (!currentUser) return;
+    const groupName = groupNameInput.value.trim();
+    const selectedMembers = Array.from(groupMembersContainer.querySelectorAll('input:checked')).map(input => input.value);
+    if (groupName && selectedMembers.length > 0) {
+        selectedMembers.push(currentUser.id);
+        const chatsCollection = collection(db, 'chats');
+        const unreadCount = {};
+        selectedMembers.forEach(id => { unreadCount[id.replace(/\./g, '_')] = 0; });
+
+        const newGroupRef = await addDoc(chatsCollection, {
+            name: groupName,
+            members: selectedMembers,
+            isGroup: true,
+            createdAt: serverTimestamp(),
+            unreadCount: unreadCount
+        });
+        const newGroupData = { id: newGroupRef.id, name: groupName };
+        selectChat(newGroupData, true);
+        newGroupModal.classList.add('hidden');
+        groupNameInput.value = '';
+        groupMembersContainer.querySelectorAll('input:checked').forEach(input => input.checked = false);
+    }
+}
+
+function enableChatInput() {
+    if (messageInput) messageInput.disabled = false;
+    if (sendButton) sendButton.disabled = false;
+    if (messageInput) messageInput.placeholder = "Digite sua mensagem...";
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadComponents(initializeChat);
+});
+
+async function deleteChat(chatId, chatName) {
+    const confirmation = confirm(`Tem certeza que deseja apagar o chat "${chatName}"? Esta ação não pode ser desfeita e apagará todas as mensagens.`);
+    if (confirmation) {
+        try {
+            const chatRef = doc(db, 'chats', chatId);
+            const messagesRef = collection(db, 'chats', chatId, 'messages');
+            const messagesSnap = await getDocs(messagesRef);
+            const batch = writeBatch(db);
+            messagesSnap.forEach(messageDoc => {
+                batch.delete(messageDoc.ref);
+            });
+            await batch.commit();
+            await deleteDoc(chatRef);
+            
+            if (currentChatId === chatId) {
+                currentChatId = null;
+                sessionStorage.removeItem('activeChatId');
+                if (chatTitle) chatTitle.textContent = 'Selecione uma conversa';
+                if (chatMessages) {
+                    chatMessages.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-500">
+                                                <i class="fas fa-comments text-5xl mb-4"></i>
+                                                <p>Suas mensagens aparecerão aqui</p>
+                                              </div>`;
+                }
+                enableChatInput();
+            }
+        } catch (error) {
+            console.error("Erro ao deletar chat:", error);
+            alert("Erro ao deletar chat. Verifique as permissões do Firestore.");
+        }
+    }
+}

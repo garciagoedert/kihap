@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kihap</string>
+    <string name="title_activity_main">Kihap</string>
+    <string name="package_name">com.kihap.app</string>
+    <string name="custom_url_scheme">com.kihap.app</string>
+</resources>

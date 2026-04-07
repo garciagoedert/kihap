@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Kihap - Graduação</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .highlight-animated {
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-animated::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            /* Adjust vertical position */
+            left: 0;
+            height: 0.4em;
+            /* Thickness of the highlight */
+            width: 100%;
+            background: rgba(252, 211, 77, 0.6);
+            /* Tailwind yellow-400 with opacity */
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .highlight-animated.is-visible::after {
+            transform: scaleX(1);
+        }
+    </style>
+</head>
+
+<body class="antialiased bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative h-screen flex items-center justify-center text-center text-white hero-faixa-preta"
+            style="background-image: url('imgs/fundograd.JPG');">
+            <div class="absolute inset-0 bg-black/70"></div>
+            <div class="relative z-10 px-4">
+                <h1 class="text-4xl md:text-6xl font-black uppercase font-title mb-8">
+                    Cerimônia tradicional de Graduação
+                </h1>
+                <div id="countdown-hero" class="flex justify-center gap-4 mb-6">
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="days-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Dias</div>
+                    </div>
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="hours-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Horas</div>
+                    </div>
+                    <div
+                        class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 min-w-[80px] border border-yellow-500/30">
+                        <div class="text-3xl font-bold text-yellow-400" id="minutes-hero">0</div>
+                        <div class="text-sm text-yellow-200 uppercase tracking-wide">Min</div>
+                    </div>
+                </div>
+                <p id="registration-info-hero" class="mb-4 text-lg text-yellow-100">Inscrições abrem dia 17 de maio</p>
+                <button id="hero-button" data-open-modal disabled
+                    class="bg-gray-500 text-gray-300 font-bold py-3 px-8 rounded-lg cursor-not-allowed text-lg">
+                    Garanta sua inscrição
+                </button>
+            </div>
+        </section>
+
+
+
+        <!-- About the Exam Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-10">Para quem é a graduação</h2>
+                <div class="max-w-3xl mx-auto">
+                    <p class="text-gray-300 text-lg mb-4">
+                        A Cerimônia tradicional de Graduação Kihap é o grande momento de celebração da jornada dos
+                        nossos alunos. É
+                        um evento para toda a família, onde cada aluno, do baby ao adulto, demonstra sua evolução e
+                        celebra suas conquistas.
+                    </p>
+                    <p class="text-gray-300 text-lg">
+                        Será um dia inesquecível, repleto de apresentações marciais, superação e a energia
+                        contagiante da comunidade Kihap. Venha prestigiar nossos alunos!
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Schedule Section -->
+        <section class="bg-gray-800 py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Data e Local</h2>
+
+                <div class="max-w-4xl mx-auto">
+                    <!-- Tab buttons -->
+                    <div class="flex border-b border-gray-700">
+                        <button
+                            class="tab-button flex-1 py-4 px-1 text-center text-lg font-semibold border-b-2 border-yellow-500 text-white"
+                            onclick="openCity(event, 'Brasilia')">
+                            Brasília
+                        </button>
+                        <button
+                            class="tab-button flex-1 py-4 px-1 text-center text-lg font-semibold border-b-2 border-transparent text-gray-400 hover:border-yellow-500 hover:text-white"
+                            onclick="openCity(event, 'Florianopolis')">
+                            Florianópolis
+                        </button>
+                        <button
+                            class="tab-button flex-1 py-4 px-1 text-center text-lg font-semibold border-b-2 border-transparent text-gray-400 hover:border-yellow-500 hover:text-white"
+                            onclick="openCity(event, 'Dourados')">
+                            Dourados
+                        </button>
+                    </div>
+
+                    <!-- Tab content -->
+                    <div class="py-8">
+                        <!-- Brasília Content -->
+                        <div id="Brasilia" class="tab-content">
+                            <div class="text-center py-12">
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">14 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
+                                <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
+                            </div>
+                        </div>
+
+                        <!-- Florianópolis Content -->
+                        <div id="Florianopolis" class="tab-content" style="display:none">
+                            <div class="text-center py-12">
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">28 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
+                                <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
+                            </div>
+                        </div>
+
+                        <!-- Dourados Content -->
+                        <div id="Dourados" class="tab-content" style="display:none">
+                            <div class="text-center py-12">
+                                <h3 class="text-3xl font-bold text-yellow-500 uppercase tracking-widest mb-4">28 de
+                                    Junho</h3>
+                                <h4 class="text-xl font-semibold text-gray-300 mb-2">Em Breve</h4>
+                                <p class="text-gray-400 mt-2">Mais informações serão divulgadas em breve.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Video Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-10">Confira a última graduação</h2>
+                <div class="relative w-full max-w-6xl mx-auto" style="padding-bottom: 56.25%;">
+                    <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                        src="https://www.youtube.com/embed/D3DK_zv8lf8" title="YouTube video player" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="bg-yellow-500 py-16 text-center">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-black mb-6">Pronto para Celebrar Conosco?</h2>
+                <p class="text-gray-800 text-lg mb-4 max-w-2xl mx-auto">
+                    Garanta seu lugar nesta noite especial. Os ingressos são limitados.
+                </p>
+                <div id="countdown-cta" class="flex justify-center gap-4 mb-6">
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="days-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Dias</div>
+                    </div>
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="hours-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Horas</div>
+                    </div>
+                    <div class="bg-gray-900/10 rounded-lg p-4 min-w-[80px] border-2 border-gray-900/20">
+                        <div class="text-3xl font-bold text-gray-900" id="minutes-cta">0</div>
+                        <div class="text-sm text-gray-700 uppercase tracking-wide">Min</div>
+                    </div>
+                </div>
+                <p id="registration-info-cta" class="mb-6 text-lg text-gray-800 font-semibold">Inscrições abrem dia 17
+                    de maio</p>
+                <button id="cta-button" data-open-modal disabled
+                    class="bg-gray-500 text-gray-300 font-bold py-4 px-10 rounded-lg cursor-not-allowed text-xl">
+                    Inscreva-se agora
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+
+
+    <!-- City Selection Modal -->
+    <div id="city-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-sm w-full text-center relative">
+            <button data-close-modal
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h3 class="text-2xl font-bold text-white mb-6">Selecione sua Cidade</h3>
+            <div class="space-y-4">
+                <a href="https://www.kihap.com.br/produto.html?id=bMYSWFpufXyPBzdL5QP8"
+                    class="block w-full bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">
+                    Brasília
+                </a>
+                <a href="https://www.kihap.com.br/produto.html?id=ItWMoKj89BEMSX7iLneI"
+                    class="block w-full bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">
+                    Florianópolis
+                </a>
+                <a href="https://www.kihap.com.br/produto.html?id=VLJYzUptz23iG5qC5yjB"
+                    class="block w-full bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">
+                    Dourados
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script>
+        function openCity(evt, cityName) {
+            var i, tabcontent, tabbuttons;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tabbuttons = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].className = tabbuttons[i].className.replace(" border-yellow-500 text-white", " border-transparent text-gray-400 hover:border-yellow-500 hover:text-white");
+            }
+            document.getElementById(cityName).style.display = "block";
+            evt.currentTarget.className = evt.currentTarget.className.replace(" border-transparent text-gray-400 hover:border-yellow-500 hover:text-white", " border-yellow-500 text-white");
+        }
+
+
+
+        // Modal script
+        const modal = document.getElementById('city-modal');
+        const openModalButtons = document.querySelectorAll('[data-open-modal]');
+        const closeModalButton = document.querySelector('[data-close-modal]');
+
+        openModalButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        // Close modal if clicking outside of it
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Intersection Observer for highlight animation
+        const highlightObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    highlightObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const highlightElement = document.querySelector('.highlight-animated');
+        if (highlightElement) {
+            highlightObserver.observe(highlightElement);
+        }
+
+        // Registration countdown timer
+        const registrationDate = new Date('2026-05-17T00:00:00-03:00');
+        const heroButton = document.getElementById('hero-button');
+        const ctaButton = document.getElementById('cta-button');
+        const countdownHero = document.getElementById('countdown-hero');
+        const countdownCta = document.getElementById('countdown-cta');
+        const infoHero = document.getElementById('registration-info-hero');
+        const infoCta = document.getElementById('registration-info-cta');
+
+        // Individual countdown elements
+        const daysHero = document.getElementById('days-hero');
+        const hoursHero = document.getElementById('hours-hero');
+        const minutesHero = document.getElementById('minutes-hero');
+        const daysCta = document.getElementById('days-cta');
+        const hoursCta = document.getElementById('hours-cta');
+        const minutesCta = document.getElementById('minutes-cta');
+
+        function updateCountdown() {
+            const now = new Date();
+            const diff = registrationDate - now;
+
+            if (diff <= 0) {
+                // Enable buttons
+                heroButton.disabled = false;
+                heroButton.className = 'bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition text-lg';
+                ctaButton.disabled = false;
+                ctaButton.className = 'bg-gray-900 text-white font-bold py-4 px-10 rounded-lg hover:bg-black transition text-xl';
+
+                // Hide countdown and info
+                countdownHero.style.display = 'none';
+                countdownCta.style.display = 'none';
+                infoHero.style.display = 'none';
+                infoCta.style.display = 'none';
+
+                return;
+            }
+
+            // Calculate time remaining
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            // Update individual elements
+            daysHero.textContent = days;
+            hoursHero.textContent = hours;
+            minutesHero.textContent = minutes;
+            daysCta.textContent = days;
+            hoursCta.textContent = hours;
+            minutesCta.textContent = minutes;
+        }
+
+        // Update countdown immediately and then every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+
+</html>

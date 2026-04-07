@@ -1,0 +1,33 @@
+{
+  "name": "novokihap",
+  "version": "1.0.0",
+  "description": "Este repositório contém o código-fonte da plataforma web da Kihap Martial Arts. O projeto é composto por um site público, um portal para membros e uma intranet administrativa para gerenciamento interno.",
+  "main": "check_prospects.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rsync -av --exclude='node_modules' --exclude='functions' --exclude='ios' --exclude='android' --exclude='www' --exclude='package*.json' --exclude='capacitor.config.ts' --exclude='firebase.json' --exclude='.git' --exclude='.vscode' --exclude='.firebase' ./ www/",
+    "sync": "npm run build && npx cap sync",
+    "ios": "npm run sync && npx cap open ios",
+    "android": "npm run sync && npx cap open android"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/garciagoedert/kihap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/garciagoedert/kihap/issues"
+  },
+  "homepage": "https://github.com/garciagoedert/kihap#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}

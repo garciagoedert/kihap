@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kihap - Painel do Aluno</title>
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../intranet/theme.css">
+    <link rel="stylesheet" href="../intranet/log.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+    <div class="relative min-h-screen md:flex">
+        <div id="sidebar-container"></div>
+
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+        <main id="main-content" class="flex-1">
+            <div id="header-container"></div>
+
+            <div class="p-4 md:p-6 lg:p-8">
+                <h1 class="text-2xl font-bold mb-6">Painel do Aluno</h1>
+
+                <!-- Profile Info -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
+                    <div class="flex items-center space-x-6">
+                        <img id="user-avatar" src="../intranet/default-profile.svg" alt="User Avatar"
+                            class="w-24 h-24 rounded-full">
+                        <div>
+                            <h2 id="user-name-display" class="text-2xl font-bold">Carregando...</h2>
+                            <p id="user-email-display" class="text-gray-400">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KihapCoins Card -->
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 p-6 rounded-lg shadow-lg mb-6 text-center">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Minhas KihapCoins</h3>
+                    <div class="flex items-center justify-center space-x-4">
+                        <i class="fas fa-coins text-4xl text-gray-900"></i>
+                        <p id="member-kihapcoins-highlight" class="text-5xl font-bold text-gray-900">Carregando...</p>
+                    </div>
+                </div>
+
+                <!-- Member Details -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">Minhas Informações</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Nome Completo</label>
+                            <p id="member-name" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Idade</label>
+                            <p id="member-age" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Graduação (Faixa)</label>
+                            <p id="member-belt" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Unidade de Aula</label>
+                            <p id="member-unit" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Status da Matrícula</label>
+                            <p id="member-status" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Data de Cadastro</label>
+                            <p id="member-register-date" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Professor</label>
+                            <p id="member-instructor" class="mt-1 text-lg">Carregando...</p>
+                        </div>
+                        <div class="md:col-span-2" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-400">KihapCoins</label>
+                            <p id="member-kihapcoins" class="mt-1 text-2xl font-bold text-yellow-400">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <a href="perfil.html"
+                        class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Editar
+                        Perfil</a>
+                </div>
+
+                <!-- Badges Section -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Meus Emblemas</h2>
+                    <div id="badges-container" class="flex flex-wrap gap-4">
+                        <p class="text-gray-500">Carregando emblemas...</p>
+                    </div>
+                </div>
+
+                <!-- Physical Test History -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Meu Histórico de Testes Físicos</h2>
+                    <div id="member-physical-test-history">
+                        <p>Carregando histórico...</p>
+                    </div>
+                </div>
+
+                <!-- Purchase History -->
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mt-6">
+                    <h2 class="text-xl font-semibold mb-4">Meu Histórico de Compras</h2>
+                    <div id="member-purchase-history">
+                        <p class="text-gray-500">Carregando histórico de compras...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './js/common-ui.js';
+        import { loadMemberDashboard } from './js/dashboard.js?v=3';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                loadMemberDashboard();
+            });
+        });
+    </script>
+</body>
+
+</html>

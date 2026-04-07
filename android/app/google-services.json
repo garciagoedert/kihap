@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1055939458006",
+    "project_id": "intranet-kihap",
+    "storage_bucket": "intranet-kihap.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055939458006:android:6d43f3fe142d1706cf2a77",
+        "android_client_info": {
+          "package_name": "com.kihap.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUKbTEY3uD-dxEpp0RZNMnGhrkYPYSCq8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

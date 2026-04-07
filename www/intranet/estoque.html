@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque - Intranet KIHAP</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <link rel="stylesheet" href="log.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-2xl font-bold">Controle de Estoque</h1>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="search-input" placeholder="Buscar por produto..." class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filtrar por Unidade">
+                                <option value="geral">Visão Geral</option>
+                                <!-- As unidades serão carregadas aqui -->
+                            </select>
+                            <button id="refresh-stock" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded" aria-label="Atualizar Estoque">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button id="add-product" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                                Adicionar Produto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="table w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Produto</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4">Preço</th>
+                                    <th class="p-4">Quantidade</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-table-body">
+                                <!-- Linhas serão inseridas dinamicamente aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupEstoquePage } from './estoque.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(setupEstoquePage);
+        });
+    </script>
+
+    <!-- Add/Edit Stock Modal -->
+    <div id="stock-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-md flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h2 id="modal-title" class="text-xl font-bold text-white">Adicionar Produto</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="stock-form" class="space-y-4">
+                    <input type="hidden" id="stock-id">
+                    <div>
+                        <label for="product-name" class="block text-sm font-medium text-gray-300">Nome do Produto</label>
+                        <input type="text" id="product-name" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label for="product-unit" class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <select id="product-unit" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="product-quantity" class="block text-sm font-medium text-gray-300">Quantidade</label>
+                        <input type="number" id="product-quantity" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label for="product-price" class="block text-sm font-medium text-gray-300">Preço (R$)</label>
+                        <input type="number" id="product-price" step="0.01" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label for="product-status" class="block text-sm font-medium text-gray-300">Status</label>
+                        <select id="product-status" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="Em estoque">Em estoque</option>
+                            <option value="Estoque baixo">Estoque baixo</option>
+                            <option value="Fora de estoque">Fora de estoque</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center pt-4">
+                        <button type="button" id="delete-stock-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded hidden">Excluir</button>
+                        <button type="submit" id="save-stock-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

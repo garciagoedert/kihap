@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBmL_oF72IYGF7yPuLwy5P4DyS-JD7sRh4</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1055939458006</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.kihap.app</string>
+	<key>PROJECT_ID</key>
+	<string>intranet-kihap</string>
+	<key>STORAGE_BUCKET</key>
+	<string>intranet-kihap.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1055939458006:ios:9fb9e3e9bbef996fcf2a77</string>
+</dict>
+</plist>

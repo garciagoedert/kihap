@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organograma - Kihap Intranet</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="theme.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .node circle {
+            cursor: pointer;
+            stroke-width: 2px;
+            transition: all 0.3s;
+        }
+
+        .node circle:hover {
+            stroke-width: 4px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+            fill: #ccc;
+            text-shadow: 0 1px 0 #000, 1px 0 0 #000, 0 -1px 0 #000, -1px 0 0 #000;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke: #444;
+            stroke-width: 2px;
+            stroke-opacity: 0.6;
+            transition: all 0.3s;
+        }
+
+        #organogram-container {
+            width: 100%;
+            height: calc(100vh - 64px);
+            background-color: #111;
+            cursor: grab;
+            overflow: auto;
+        }
+
+        #organogram-container:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #374151;
+            /* gray-700 */
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #2a2a2a;
+        }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200">
+
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow overflow-hidden relative">
+                <div id="organogram-container"></div>
+
+                <div class="controls">
+                    <button id="zoom-in" class="control-btn" title="Aumentar Zoom">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="zoom-out" class="control-btn" title="Diminuir Zoom">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button id="reset-zoom" class="control-btn" title="Resetar Visualização">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+
+                <!-- Info Panel (Optional) -->
+                <div id="node-info"
+                    class="hidden absolute top-4 right-4 bg-[#1a1a1a] p-4 rounded-xl shadow-lg border border-gray-700 max-w-xs transition-opacity duration-300 pointer-events-none">
+                    <h3 id="node-name" class="text-white font-bold text-lg mb-1"></h3>
+                    <p id="node-desc" class="text-gray-400 text-sm"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="organograma.js"></script>
+</body>
+
+</html>

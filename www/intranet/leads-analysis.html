@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Leads - Novo Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#Eab308',
+                        'primary-dark': '#ca8a04',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+
+<body class="bg-[#111111] text-gray-200 flex h-screen overflow-hidden">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main id="main-content"
+        class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
+        <div id="header-container" class="flex-shrink-0"></div>
+
+        <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+                <i class="fas fa-chart-bar text-yellow-500"></i> Análise de Leads
+            </h1>
+
+            <!-- Main Stats Grid -->
+            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Cards injected by JS -->
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
+            </div>
+
+            <!-- Detail Analysis Sections -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Priority Breakdown -->
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
+                    <h2 class="text-lg font-semibold mb-4 text-white">Por Prioridade</h2>
+                    <div id="priority-stats" class="space-y-4">
+                        <!-- Bars injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Pipeline Breakdown -->
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
+                    <h2 class="text-lg font-semibold mb-4 text-white">Funil de Vendas (Pipeline)</h2>
+                    <div id="pipeline-stats" class="space-y-4">
+                        <!-- Bars injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDK & Logic -->
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { db, app } from './firebase-config.js';
+        import { setupUIListeners, loadComponents } from './common-ui.js';
+
+        const auth = getAuth(app);
+        const statsGrid = document.getElementById('stats-grid');
+        const priorityStats = document.getElementById('priority-stats');
+        const pipelineStats = document.getElementById('pipeline-stats');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await loadComponents();
+                setupUIListeners({});
+
+                // Fetch Prospects
+                // Correct data path based on prospeccao.html verification
+                const prospectsRef = collection(db, 'prospects');
+
+                onSnapshot(prospectsRef, (snapshot) => {
+                    const prospects = [];
+                    snapshot.forEach((doc) => {
+                        prospects.push({ id: doc.id, ...doc.data() });
+                    });
+                    updateDashboard(prospects);
+                });
+
+            } else {
+                window.location.href = '../index.html';
+            }
+        });
+
+        function updateDashboard(prospects) {
+            // Calculate Stats
+            const total = prospects.length;
+            const highPriority = prospects.filter(p => p.prioridade >= 4).length;
+            const totalPotential = prospects.reduce((sum, p) => sum + (Number(p.ticketEstimado) || 0), 0);
+            const avgTicket = total > 0 ? totalPotential / total : 0;
+            // Assuming 'matricula' is a status value in the 'status' field, based on previous context
+            const matriculas = prospects.filter(p => p.status === 'matricula').length;
+
+            // Render Main Cards
+            document.getElementById('stats-grid').innerHTML = `
+                ${createBigStatCard('Total Leads', total, 'fa-users', 'text-blue-500', 'bg-blue-500/10')}
+                ${createBigStatCard('Alta Prioridade', highPriority, 'fa-fire', 'text-red-500', 'bg-red-500/10')}
+                ${createBigStatCard('Potencial Total', formatCurrency(totalPotential), 'fa-wallet', 'text-green-500', 'bg-green-500/10')}
+                ${createBigStatCard('Ticket Médio', formatCurrency(avgTicket), 'fa-chart-pie', 'text-yellow-500', 'bg-yellow-500/10')}
+            `;
+
+            // Render Priority Breakdown
+            renderPriorityStats(prospects);
+
+            // Render Pipeline
+            renderPipelineStats(prospects);
+        }
+
+        function createBigStatCard(label, value, icon, colorClass, bgClass) {
+            return `
+                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg hover:border-gray-700 transition-all">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-3 rounded-lg ${bgClass}">
+                            <i class="fas ${icon} text-xl ${colorClass}"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-500 bg-gray-800 px-2 py-1 rounded">Hoje</span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white mb-1">${value}</h3>
+                        <p class="text-sm text-gray-400">${label}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPriorityStats(prospects) {
+            const container = document.getElementById('priority-stats');
+            const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+            prospects.forEach(p => {
+                if (counts[p.prioridade] !== undefined) counts[p.prioridade]++;
+            });
+
+            const total = prospects.length || 1;
+
+            container.innerHTML = Object.entries(counts).reverse().map(([priority, count]) => {
+                const percent = (count / total) * 100;
+                const labels = { 5: 'Máxima', 4: 'Alta', 3: 'Média', 2: 'Baixa', 1: 'Mínima' };
+                const colors = { 5: 'bg-red-500', 4: 'bg-orange-500', 3: 'bg-yellow-500', 2: 'bg-blue-500', 1: 'bg-gray-500' };
+
+                return `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-300 font-medium">${labels[priority]} <span class="text-xs text-gray-500">(${priority})</span></span>
+                            <span class="text-gray-400">${count}</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-2">
+                            <div class="${colors[priority]} h-2 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPipelineStats(prospects) {
+            const container = document.getElementById('pipeline-stats');
+            const statuses = { 'novo': 'Novo', 'contactado': 'Contactado', 'aula_experimental': 'Aula Exp.', 'matricula': 'Matrícula' };
+            const counts = { 'novo': 0, 'contactado': 0, 'aula_experimental': 0, 'matricula': 0 };
+
+            prospects.forEach(p => {
+                // Convert column ID to key if necessary, but assuming p.status matches keys
+                if (counts[p.status] !== undefined) counts[p.status]++;
+            });
+
+            const total = prospects.length || 1;
+
+            container.innerHTML = Object.entries(counts).map(([status, count]) => {
+                const percent = (count / total) * 100;
+                return `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-300 font-medium">${statuses[status]}</span>
+                            <span class="text-gray-400">${count} (${Math.round(percent)}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-2">
+                            <div class="bg-indigo-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+        }
+    </script>
+</body>
+
+</html>

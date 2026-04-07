@@ -3214,7 +3214,7 @@ exports.manuallyUpdateSaleStatus = functions.https.onCall(async (data, context) 
                     newStatus,
                     reason,
                     updatedBy: adminEmail,
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    updatedAt: admin.firestore.Timestamp.now()
                 }),
                 lastManualUpdate: {
                     status: newStatus,

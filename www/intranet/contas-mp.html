@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas Mercado Pago - Intranet</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+</head>
+<body class="bg-gray-900 text-gray-100 flex h-screen overflow-hidden font-poppins selection:bg-yellow-500 selection:text-gray-900">
+    <div id="sidebar-container" class="transition-all duration-300 ease-in-out md:w-64"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 w-full relative">
+        <div id="header-container" class="w-full"></div>
+        
+        <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 custom-scrollbar p-4 md:p-8">
+            <h1 class="text-3xl font-bold mb-8 text-yellow-500"><i class="fas fa-money-check-alt mr-2"></i> Contas Mercado Pago</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Painel de Vinculação -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg col-span-1 border-l-4 border-yellow-500">
+                    <h2 class="text-xl font-semibold mb-4 text-white">Vincular Nova Conta</h2>
+                    <p class="text-gray-400 text-sm mb-4">Adicione uma nova conta Mercado Pago para ser utilizada como recebedora ou Split no Store.</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Apelido / Nome da Unidade</label>
+                        <input type="text" id="account-label" placeholder="Ex: Kihap Florianópolis" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    
+                    <!-- Este APP_ID deveria estar configurado no Firebase ou digitado aqui. Vamos usar o env var. O JS fará a geração do link. -->
+                    <button id="btn-vincular" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-link mr-2"></i> Conectar com Mercado Pago
+                    </button>
+                    <div id="oauth-status" class="mt-4 text-sm hidden"></div>
+                </div>
+
+                <!-- Lista de Contas Vinculadas -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg col-span-2">
+                    <h2 class="text-xl font-semibold mb-4 text-white">Contas Integradas (Marketplace)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-gray-800 text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-3 px-4 text-gray-400 font-medium">Nome (Label)</th>
+                                    <th class="py-3 px-4 text-gray-400 font-medium">MP User ID</th>
+                                    <th class="py-3 px-4 text-gray-400 font-medium">Vinculada Em</th>
+                                    <th class="py-3 px-4 text-gray-400 font-medium text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounts-table-body">
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-gray-400">Carregando contas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script type="module" src="common-ui.js"></script>
+    <script src="contas-mp.js"></script>
+</body>
+</html>

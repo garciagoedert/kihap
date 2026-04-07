@@ -1,0 +1,561 @@
+@font-face {
+    font-family: 'Neue Machina';
+    src: url('../fonte/NeueMachina-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Neue Machina';
+    src: url('../fonte/NEUEMACHINA-ULTRABOLD.OTF') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+body {
+    font-family: 'Neue Machina', sans-serif;
+    font-weight: 400;
+    background-color: #111111;
+    color: #f5f5f5;
+    overflow-x: hidden;
+}
+
+.font-title {
+    font-weight: 900;
+}
+
+.btn-gradient {
+    background: linear-gradient(90deg, #FFC107, #FF9800);
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 179, 0, 0.4);
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+    .section-title {
+        font-size: 3.75rem;
+    }
+}
+
+.hero-section {
+    background-image: url('../imgs/fundogero.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        background-position: 65% center;
+    }
+}
+
+.hero-faixa-preta {
+    background-image: url('../imgs/fxpretas.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Swiper Styles */
+.program-swiper {
+    width: 100%;
+    padding-top: 20px;
+    padding-bottom: 50px;
+    position: relative;
+}
+
+.swiper-slide {
+    width: 80%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 3/4;
+}
+
+.program-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    color: white;
+}
+
+.program-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    z-index: 1;
+}
+
+.program-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.program-card:hover .program-card-img {
+    transform: scale(1.1);
+}
+
+.program-card-content {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+
+.program-card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 3;
+}
+
+.program-card:hover .program-card-overlay {
+    opacity: 1;
+}
+
+.program-card:hover .program-card-content {
+    opacity: 0;
+}
+
+/* Course Card Styles */
+.course-card {
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    color: white;
+    aspect-ratio: 16/9;
+}
+
+.course-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.1));
+    z-index: 1;
+}
+
+.course-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.course-card:hover .course-card-img {
+    transform: scale(1.1);
+}
+
+.course-card-content {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+@media (max-width: 768px) {
+    .program-card-overlay {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.6);
+    }
+
+    .program-card-content {
+        opacity: 0;
+    }
+
+    .program-card:hover .program-card-img {
+        transform: none;
+    }
+}
+
+.program-swiper .swiper-button-next,
+.program-swiper .swiper-button-prev {
+    color: #FFC107;
+}
+
+@media (max-width: 768px) {
+
+    .program-swiper .swiper-button-next,
+    .program-swiper .swiper-button-prev {
+        display: none;
+    }
+}
+
+.swiper-pagination .swiper-pagination-bullet {
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+}
+
+.swiper-pagination .swiper-pagination-bullet-active {
+    background: #FFC107;
+}
+
+/* Unit Card Styles */
+.unit-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 220px;
+    /* Adjust as needed */
+}
+
+.unit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.2;
+    z-index: -2;
+    border-radius: 0.5rem;
+    /* Tailwind's rounded-lg */
+}
+
+.unit-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    border-radius: 0.5rem;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2c2c2c;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Program Hero Styles */
+.program-hero {
+    position: relative;
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    background-size: cover;
+    background-position: center;
+    background-color: #00132a; /* Matching the dark navy in littlesheader.png */
+    height: 70vh; /* Moved from inline HTML */
+}
+
+@media (max-width: 768px) {
+    .program-hero {
+        background-size: cover;
+        background-position: center;
+        height: auto;
+        aspect-ratio: 4267 / 1600;
+        background-color: transparent;
+    }
+}
+
+.program-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2); /* Reduced opacity to let the image show clearly */
+    z-index: 1;
+}
+
+.program-hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.video-container-vertical {
+    position: relative;
+    width: 100%;
+    padding-bottom: 177.78%; /* 16:9 vertical aspect ratio (16/9 * 100) = 177.78% */
+    height: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: #000;
+}
+
+.video-container-vertical iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.video-container-horizontal {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: #000;
+}
+
+.video-container-horizontal iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+}
+
+.hero-adolescentes {
+    background-image: url('../imgs/adolescentes.png');
+}
+
+.hero-adultos {
+    background-image: url('../imgs/adultos.png');
+}
+
+.hero-baby-littles {
+    background-image: url('../imgs/littlesheader.png');
+}
+
+.hero-familia {
+    background-image: url('../imgs/familia.png');
+}
+
+.hero-kids {
+    background-image: url('../imgs/kids.png');
+}
+
+.hero-littles {
+    background-image: url('../imgs/littlesheader.png');
+}
+
+.hero-brasilia {
+    background-position: center 25%;
+}
+
+@media (min-width: 768px) {
+    .hero-brasilia {
+        background-position: center;
+    }
+}
+
+.hero-florianopolis {
+    background-position: center 35%;
+}
+
+@media (min-width: 768px) {
+    .hero-florianopolis {
+        background-position: center;
+    }
+}
+
+/* Mobile Menu Styles */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 85%;
+    max-width: 320px;
+    height: 100%;
+    background-color: #181818;
+    z-index: 999;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-menu.is-open {
+    transform: translateX(0);
+}
+
+.mobile-menu-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Experience Page - Schedule Timeline */
+.timeline {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.timeline::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    background-color: #2c2c2c;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    margin-left: -3px;
+}
+
+.timeline-container {
+    padding: 10px 40px;
+    position: relative;
+    background-color: inherit;
+    width: 50%;
+}
+
+.timeline-container.left {
+    left: 0;
+}
+
+.timeline-container.right {
+    left: 50%;
+}
+
+.timeline-container::after {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    right: -17px;
+    background-color: #FFC107;
+    border: 4px solid #111111;
+    top: 15px;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.right::after {
+    left: -16px;
+}
+
+.timeline-content {
+    padding: 20px 30px;
+    background-color: #1a1a1a;
+    position: relative;
+    border-radius: 6px;
+}
+
+@media screen and (max-width: 768px) {
+    .timeline::after {
+        left: 31px;
+    }
+
+    .timeline-container {
+        width: 100%;
+        padding-left: 70px;
+        padding-right: 25px;
+    }
+
+    .timeline-container.left,
+    .timeline-container.right {
+        left: 0;
+    }
+
+    .timeline-container.right::after,
+    .timeline-container.left::after {
+        left: 15px;
+    }
+}
+
+/* Banner Slider Styles */
+.banner-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    background-color: #0f172a;
+}
+
+.banner-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    visibility: hidden;
+    z-index: 0;
+}
+
+.banner-slide.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+    position: relative;
+}
