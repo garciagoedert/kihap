@@ -3,6 +3,7 @@ import { doc, getDoc, addDoc, collection } from "https://www.gstatic.com/firebas
 import { auth, db } from './firebase-config.js';
 
 async function handleLogin(e) {
+    console.log("Iniciando tentativa de login no app...");
     e.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
