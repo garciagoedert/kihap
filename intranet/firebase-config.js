@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, connectFirestoreEmulator } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 // Importa connectFunctionsEmulator
 import { getFunctions, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
@@ -28,10 +28,21 @@ isSupported().then((supported) => {
   }
 }).catch((err) => console.log("Analytics block omitido:", err));
 
+// Inicializa Autenticação definindo explicitamente a Persistência para não travar no iOS Capacitor (Bug de IndexedDB)
+let authInstance;
+try {
+  authInstance = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+  });
+} catch (e) {
+  // Fallback pra contornar caso o erro seja de recriação
+  authInstance = getAuth(app);
+}
+
 // Exporta a instância do Firestore, o app e o appId para serem usados em outras partes do aplicativo
 export { app };
 export const db = getFirestore(app);
-export const auth = getAuth(app);
+export const auth = authInstance;
 
 // Configurar Functions e Emulador
 export const functions = getFunctions(app, 'us-central1'); // Especifica a região, se necessário

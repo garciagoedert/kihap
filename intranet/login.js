@@ -10,12 +10,16 @@ async function handleLogin(e) {
     const errorEl = document.getElementById('login-error');
 
     try {
+        console.log("Chamando signInWithEmailAndPassword para: ", email);
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("signIn funcionou! UID:", userCredential.user.uid);
         const user = userCredential.user;
 
         // Buscar dados do usuário no Firestore
+        console.log("Chamando getDoc no Firestore...");
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
+        console.log("getDoc finalizado!");
 
         if (userDoc.exists()) {
             const userData = userDoc.data();
