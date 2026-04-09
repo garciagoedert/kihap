@@ -667,8 +667,15 @@ window.openDemandaDetalhes = (id) => {
             anexoContainer.classList.remove('hidden');
             document.getElementById('detalhe_anexo').href = demand.anexoUrl;
             document.getElementById('detalhe_anexo_nome').textContent = demand.anexoNome || 'Ver Anexo';
-            const isPdf = demand.anexoNome && demand.anexoNome.toLowerCase().endsWith('.pdf');
-            document.getElementById('detalhe_anexo_icon').className = `fas ${isPdf ? 'fa-file-pdf text-red-400' : 'fa-image text-green-400'} shrink-0`;
+            const nameLower = (demand.anexoNome || '').toLowerCase();
+            let iconClass = 'fa-file text-gray-400';
+            if (nameLower.endsWith('.pdf')) iconClass = 'fa-file-pdf text-red-400';
+            else if (nameLower.match(/\.(jpg|jpeg|png|gif|svg|webp)$/)) iconClass = 'fa-image text-green-400';
+            else if (nameLower.match(/\.(zip|rar|7z)$/)) iconClass = 'fa-file-archive text-yellow-400';
+            else if (nameLower.match(/\.(doc|docx)$/)) iconClass = 'fa-file-word text-blue-400';
+            else if (nameLower.match(/\.(xls|xlsx|csv)$/)) iconClass = 'fa-file-excel text-green-500';
+            else if (nameLower.match(/\.(ppt|pptx)$/)) iconClass = 'fa-file-powerpoint text-orange-500';
+            document.getElementById('detalhe_anexo_icon').className = `fas ${iconClass} shrink-0`;
         } else {
             anexoContainer.classList.add('hidden');
         }
@@ -748,7 +755,30 @@ function loadComments(demandId) {
             textContent = textContent.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline break-all">$1</a>');
             const formattedText = textContent.replace(/(@\S+)/g, '<span class="text-blue-500 font-semibold bg-blue-500/10 px-1 rounded">$1</span>');
             
-            const anexoHtml = c.anexoUrl ? `<div class="mt-2"><img src="${c.anexoUrl}" class="max-w-full rounded-lg border border-gray-700 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${c.anexoUrl}', '_blank')"></div>` : '';
+            let anexoHtml = '';
+            if (c.anexoUrl) {
+                const nameLower = (c.anexoNome || '').toLowerCase();
+                const isImage = nameLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) || !c.anexoNome;
+                if (isImage) {
+                    anexoHtml = `<div class="mt-2"><img src="${c.anexoUrl}" class="max-w-full rounded-lg border border-gray-700 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${c.anexoUrl}', '_blank')"></div>`;
+                } else {
+                    let iconClass = 'fa-file text-gray-400';
+                    if (nameLower.endsWith('.pdf')) iconClass = 'fa-file-pdf text-red-400';
+                    else if (nameLower.match(/\.(zip|rar|7z)$/)) iconClass = 'fa-file-archive text-yellow-400';
+                    else if (nameLower.match(/\.(doc|docx)$/)) iconClass = 'fa-file-word text-blue-400';
+                    else if (nameLower.match(/\.(xls|xlsx|csv)$/)) iconClass = 'fa-file-excel text-green-500';
+                    else if (nameLower.match(/\.(ppt|pptx)$/)) iconClass = 'fa-file-powerpoint text-orange-500';
+                    
+                    anexoHtml = `
+                        <div class="mt-2">
+                            <a href="${c.anexoUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 bg-gray-900 border border-gray-700 p-2 rounded hover:bg-gray-800 transition-colors w-fit">
+                                <i class="fas ${iconClass}"></i>
+                                <span class="text-xs text-blue-400 underline truncate max-w-[200px] block">${c.anexoNome}</span>
+                            </a>
+                        </div>
+                    `;
+                }
+            }
 
             const el = document.createElement('div');
             el.className = 'flex gap-2.5';
@@ -786,16 +816,19 @@ document.getElementById('btnEnviarComentario').addEventListener('click', async (
 
     try {
         let anexoUrl = null;
+        let anexoNome = null;
         if (selectedCommentFile) {
             const fileRef = storageRef(storage, `trello_comments/${Date.now()}_${selectedCommentFile.name}`);
             await uploadBytes(fileRef, selectedCommentFile);
             anexoUrl = await getDownloadURL(fileRef);
+            anexoNome = selectedCommentFile.name;
         }
 
         const commentsCol = collection(db, `trello_demands/${currentDemandaId}/comments`);
         await addDoc(commentsCol, {
             text,
             anexoUrl,
+            anexoNome,
             authorId: currentUser?.uid || null,
             authorName,
             createdAt: serverTimestamp()
@@ -1010,14 +1043,39 @@ function setupListeners() {
 
     commentAnexo.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
+        if (file) {
             selectedCommentFile = file;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                commentAnexoPreview.querySelector('img').src = ev.target.result;
+            const imgPreview = document.getElementById('commentAnexoImg');
+            const filePreview = document.getElementById('commentAnexoFile');
+            const namePreview = document.getElementById('commentAnexoName');
+            
+            namePreview.textContent = file.name;
+            
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    imgPreview.src = ev.target.result;
+                    imgPreview.classList.remove('hidden');
+                    filePreview.classList.add('hidden');
+                    commentAnexoPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imgPreview.classList.add('hidden');
+                imgPreview.src = '';
+                
+                const nameLower = file.name.toLowerCase();
+                let iconClass = 'fa-file text-gray-400';
+                if (nameLower.endsWith('.pdf')) iconClass = 'fa-file-pdf text-red-400';
+                else if (nameLower.match(/\.(zip|rar|7z)$/)) iconClass = 'fa-file-archive text-yellow-400';
+                else if (nameLower.match(/\.(doc|docx)$/)) iconClass = 'fa-file-word text-blue-400';
+                else if (nameLower.match(/\.(xls|xlsx|csv)$/)) iconClass = 'fa-file-excel text-green-500';
+                else if (nameLower.match(/\.(ppt|pptx)$/)) iconClass = 'fa-file-powerpoint text-orange-500';
+                
+                filePreview.innerHTML = `<i class="fas ${iconClass}"></i>`;
+                filePreview.classList.remove('hidden');
                 commentAnexoPreview.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+            }
         }
     });
 

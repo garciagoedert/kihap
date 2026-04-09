@@ -308,8 +308,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Anexar Arquivo (opcional)</label>
                     <input type="file" id="form_anexo"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-300 file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500 cursor-pointer"
-                        accept="image/*,application/pdf">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-300 file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500 cursor-pointer">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -516,18 +515,22 @@
                             class="hidden absolute bottom-full left-0 z-20 w-56 bg-gray-800 border border-gray-600 rounded-lg shadow-xl mb-1 max-h-40 overflow-y-auto custom-scrollbar">
                         </div>
                         <div class="flex gap-2">
-                            <label class="flex-shrink-0 w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center cursor-pointer transition-colors" title="Anexar imagem">
-                                <i class="fas fa-camera text-gray-300"></i>
-                                <input type="file" id="commentAnexo" class="hidden" accept="image/*">
+                            <label class="flex-shrink-0 w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center cursor-pointer transition-colors" title="Anexar arquivo">
+                                <i class="fas fa-paperclip text-gray-300"></i>
+                                <input type="file" id="commentAnexo" class="hidden">
                             </label>
                             <button id="btnEnviarComentario"
                                 class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-3 rounded-lg transition-colors">
                                 <i class="fas fa-paper-plane mr-1"></i> Enviar
                             </button>
                         </div>
-                        <div id="commentAnexoPreview" class="hidden mt-2 p-1 bg-gray-800 rounded relative">
-                            <img src="" class="h-16 w-16 object-cover rounded">
-                            <button id="btnRemoveCommentAnexo" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]">&times;</button>
+                        <div id="commentAnexoPreview" class="hidden mt-2 p-2 bg-gray-800 border border-gray-700 rounded relative flex items-center gap-2">
+                            <img src="" id="commentAnexoImg" class="h-10 w-10 object-cover rounded hidden">
+                            <div id="commentAnexoFile" class="hidden h-10 w-10 bg-gray-700 rounded flex items-center justify-center text-gray-400">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <span id="commentAnexoName" class="text-xs text-gray-300 truncate max-w-[250px]"></span>
+                            <button id="btnRemoveCommentAnexo" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] hover:bg-red-500 transition-colors shadow-sm">&times;</button>
                         </div>
                     </div>
                 </div>
