@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Livrinhos - Kihap Martial Arts</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/style.css">
+
+    <style>
+        /* Desabilitar seleção de texto p/ não azular as setas segurando o clique no celular */
+        .no-select {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0.3; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="antialiased bg-gray-900 flex flex-col min-h-screen no-select">
+
+    <!-- Header -->
+    <div id="header-container" class="shrink-0"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center px-4 py-8 relative w-full overflow-hidden">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-yellow-500/5 to-transparent z-0 pointer-events-none"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-full rounded-full bg-yellow-500/10 blur-[150px] pointer-events-none z-0"></div>
+
+        <!-- Library View -->
+        <div id="library-view" class="w-full max-w-6xl z-10 transition-all duration-500">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-title uppercase text-yellow-400 mb-4 drop-shadow-lg">Biblioteca Kihap</h1>
+                <p class="text-gray-300 font-light text-lg">Escolha uma história incrível para ler com seu pequeno guerreiro.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-4" id="library-grid">
+                <!-- Javascript will inject cards here -->
+            </div>
+
+            <div class="mt-16 text-center">
+                <a href="javascript:history.back()" class="inline-flex items-center text-gray-400 hover:text-white transition-colors bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 border border-white/10">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Voltar aos Programas
+                </a>
+            </div>
+        </div>
+
+        <!-- Simple Gallery Viewer View -->
+        <div id="reader-view" class="hidden w-full z-10 flex-col items-center justify-center min-h-[70vh] opacity-0 transition-opacity duration-500">
+            
+            <!-- Controle do Topo -->
+            <div class="w-full max-w-[1200px] flex justify-between items-center mb-6 px-2">
+                <button onclick="closeStory()" class="inline-flex items-center text-gray-300 hover:text-white transition-colors px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 border border-white/10 font-medium text-sm md:text-base">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Fechar
+                </button>
+                <div id="page-counter" class="bg-black/50 text-yellow-400 border border-yellow-500/20 px-4 py-2 rounded-lg font-bold text-sm md:text-base shadow-lg tracking-widest">
+                    1 / 8
+                </div>
+            </div>
+
+            <!-- Imagem Gigante Central (Galeria) -->
+            <div class="w-full flex-grow flex items-center justify-center px-0 sm:px-4">
+                
+                <!-- Wrapper que "abraça" exatamente o tamanho da imagem -->
+                <div class="relative inline-block group cursor-pointer">
+                    
+                    <!-- Área de clique esquerda (Presa à borda da imagem) -->
+                    <div onclick="prevPage(event)" class="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button class="bg-black/60 text-white rounded-full p-4 hover:bg-yellow-500 hover:text-black transition-colors shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                            <svg class="w-8 h-8 pl-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Imagem exibida -->
+                    <img id="gallery-image" src="" onclick="nextPage(event)" class="max-w-full max-h-[70vh] md:max-h-[85vh] w-auto object-contain rounded-md shadow-[0_20px_50px_rgba(0,0,0,0.7)]" alt="Livrinho">
+
+                    <!-- Área de clique direita (Presa à borda da imagem) -->
+                    <div onclick="nextPage(event)" class="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button class="bg-black/60 text-white rounded-full p-4 hover:bg-yellow-500 hover:text-black transition-colors shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                            <svg class="w-8 h-8 pr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation Buttons (Embaixo) -->
+            <div class="flex items-center justify-center w-full max-w-[1200px] mt-8 px-4 gap-4">
+                <button onclick="prevPage(event)" id="btn-prev" class="flex-1 md:hidden bg-white/10 text-gray-300 font-bold py-4 rounded-full flex justify-center items-center hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Voltar
+                </button>
+                <button onclick="nextPage(event)" id="btn-next" class="flex-1 md:hidden bg-yellow-500 text-black font-bold py-4 rounded-full flex justify-center items-center hover:bg-yellow-400 transition-colors shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                    Próxima
+                    <svg class="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Global Scripts (for header, footer, etc) -->
+    <script src="../js/script.js"></script>
+
+    <script>
+        // Database of available stories
+        const storyLibrary = [
+            {
+                id: 'story001',
+                title: 'A Força Que Existe Em Mim',
+                tag: 'Novo',
+                path: '../imgs/littles/story001',
+                pages: 8,
+            }
+        ];
+
+        let currentPage = 1;
+        let totalPages = 0;
+        let currentPath = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLibrary();
+        });
+
+        // Constrói a tela inicial (Biblioteca)
+        function renderLibrary() {
+            const grid = document.getElementById('library-grid');
+            grid.innerHTML = '';
+
+            storyLibrary.forEach((story) => {
+                const coverUrl = `${story.path}/001.jpg`;
+
+                const cardHTML = `
+                    <div onclick="openStory('${story.id}')" class="group cursor-pointer relative rounded-2xl overflow-hidden hover:-translate-y-2 transition-all duration-500 shadow-2xl h-[400px] w-full flex flex-col justify-end border border-white/5 hover:border-yellow-500/30">
+                        
+                        <!-- Imagem de Fundo Completa -->
+                        <img src="${coverUrl}" class="absolute inset-0 w-full h-full object-cover object-left transition-transform duration-700 group-hover:scale-105" style="z-index: 0;" alt="Capa ${story.title}">
+                        
+                        <!-- Degradê Escuro por Cima -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" style="z-index: 1;"></div>
+                        
+                        <!-- Conteúdo Base -->
+                        <div class="relative z-10 p-6 w-full text-left">
+                            ${story.tag ? `<span class="px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded uppercase tracking-wider mb-3 inline-block shadow-md">${story.tag}</span>` : ''}
+                            <h3 class="text-yellow-500 font-title font-bold text-2xl uppercase mb-1 drop-shadow-lg group-hover:text-yellow-400 transition-colors">${story.title}</h3>
+                            <p class="text-white text-sm font-light flex items-center drop-shadow-md">
+                                <svg class="w-4 h-4 mr-1.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                ${story.pages} Páginas
+                            </p>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += cardHTML;
+            });
+        }
+
+        // Abre a galeria de uma história específica
+        function openStory(storyId) {
+            const story = storyLibrary.find(s => s.id === storyId);
+            if (!story) return;
+
+            currentPath = story.path;
+            totalPages = story.pages;
+            currentPage = 1;
+
+            // Trocar Views
+            document.getElementById('library-view').classList.add('hidden');
+            const readerView = document.getElementById('reader-view');
+            readerView.classList.remove('hidden');
+            
+            setTimeout(() => {
+                readerView.classList.remove('opacity-0');
+            }, 50);
+
+            applyImage();
+        }
+
+        function applyImage() {
+            const imgEl = document.getElementById('gallery-image');
+            
+            // Força reflowzinho na classe para engatilhar animação de novo
+            imgEl.classList.remove('fade-in');
+            void imgEl.offsetWidth; 
+            imgEl.classList.add('fade-in');
+
+            const pageNum = currentPage.toString().padStart(3, '0');
+            imgEl.src = `${currentPath}/${pageNum}.jpg`;
+            
+            // Atualiza contador numérico
+            document.getElementById('page-counter').textContent = `${currentPage} / ${totalPages}`;
+
+            // Oculta/Exibe botão Anterior caso esteja na pág 1
+            const btnPrev = document.getElementById('btn-prev');
+            btnPrev.style.visibility = (currentPage === 1) ? 'hidden' : 'visible';
+            
+            // Opcional: Se for última página, mudar texto do botão "Próximo" para "Terminar"
+            const btnNext = document.getElementById('btn-next');
+            if (currentPage === totalPages) {
+                btnNext.innerHTML = `Concluir <svg class="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            } else {
+                btnNext.innerHTML = `Próxima <svg class="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextPage(e) {
+            if(e) e.stopPropagation();
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyImage();
+            } else if (currentPage === totalPages) {
+                // Se apertar concluir na ultima tela
+                closeStory();
+            }
+        }
+
+        function prevPage(e) {
+            if(e) e.stopPropagation();
+            if (currentPage > 1) {
+                currentPage--;
+                applyImage();
+            }
+        }
+
+        function closeStory() {
+            const readerView = document.getElementById('reader-view');
+            readerView.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                readerView.classList.add('hidden');
+                document.getElementById('library-view').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 500);
+        }
+    </script>
+</body>
+</html>
