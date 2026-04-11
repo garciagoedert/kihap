@@ -62,41 +62,69 @@
         <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
             <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
 
-            <!-- Student Stats -->
-            <div id="student-stats" class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 text-center">
-                <p class="text-lg">
-                    <span id="registered-students-count" class="font-bold text-2xl text-blue-400">--</span>
-                    <span class="text-gray-400">alunos com acesso à plataforma de um total de</span>
-                    <span id="total-students-count" class="font-bold text-2xl text-white">--</span>
-                    <span class="text-gray-400">alunos.</span>
-                </p>
-                <div id="cache-status" class="mt-2 text-sm">
-                    <span class="text-gray-500"><i class="fas fa-circle-notch fa-spin"></i> Verificando cache...</span>
+            <!-- Unified Command Bar -->
+            <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 shadow-xl mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
+                <!-- Search Section -->
+                <div class="relative flex-grow max-w-md">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="search-input" placeholder="Buscar aluno por nome..."
+                        class="w-full pl-10 pr-4 py-2.5 bg-[#111] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all">
                 </div>
-            </div>
 
-            <!-- Unit Filter (Moved to be always visible) -->
-            <div
-                class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
-                <div class="w-full md:w-auto">
-                    <label for="unit-filter" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
-                    <select id="unit-filter"
-                        class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all">Todas as Unidades</option>
-                        <option value="centro">Unidade Centro</option>
-                        <option value="coqueiros">Unidade Coqueiros</option>
-                        <option value="asa-sul">Unidade Asa Sul</option>
-                        <option value="sudoeste">Unidade Sudoeste</option>
-                        <option value="lago-sul">Unidade Lago Sul</option>
-                        <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
-                        <option value="jardim-botanico">Unidade Jardim Botânico</option>
-                        <option value="dourados">Unidade Dourados</option>
-                        <option value="santa-monica">Unidade Santa Mônica</option>
-                        <option value="noroeste">Unidade Noroeste</option>
-                        <option value="atadf">Unidade Store</option>
-                    </select>
+                <!-- Filters Section -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label for="unit-filter" class="text-sm font-medium text-gray-400 whitespace-nowrap">Unidade:</label>
+                        <select id="unit-filter"
+                            class="bg-[#111] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 min-w-[200px] transition-all">
+                            <option value="all">Todas as Unidades</option>
+                            <option value="centro">Unidade Centro</option>
+                            <option value="coqueiros">Unidade Coqueiros</option>
+                            <option value="asa-sul">Unidade Asa Sul</option>
+                            <option value="sudoeste">Unidade Sudoeste</option>
+                            <option value="lago-sul">Unidade Lago Sul</option>
+                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
+                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                            <option value="dourados">Unidade Dourados</option>
+                            <option value="santa-monica">Unidade Santa Mônica</option>
+                            <option value="noroeste">Unidade Noroeste</option>
+                            <option value="atadf">Unidade Store</option>
+                        </select>
+                    </div>
                 </div>
-                <!-- Search and Status filters remain in the first tab -->
+
+                <!-- Actions Section -->
+                <div class="flex items-center gap-2 lg:ml-auto">
+                    <button id="add-student-btn"
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-5 rounded-lg flex items-center gap-2 transition-all shadow-lg active:scale-95">
+                        <i class="fas fa-plus"></i>
+                        <span>Novo Aluno</span>
+                    </button>
+
+                    <!-- More Actions Dropdown -->
+                    <div class="relative inline-block text-left" id="actions-dropdown-container">
+                        <button type="button" id="actions-dropdown-btn"
+                            class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-lg flex items-center gap-2 transition-all border border-gray-700 active:scale-95">
+                            <i class="fas fa-ellipsis-v"></i>
+                            <span class="hidden md:inline">Ações</span>
+                        </button>
+                        <div id="actions-dropdown-menu"
+                            class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-[#1a1a1a] border border-gray-700 rounded-xl shadow-2xl z-50 py-1.5 focus:outline-none transform scale-95 opacity-0 transition-all duration-200">
+                            <button id="batch-password-btn" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fas fa-key w-5 text-yellow-500"></i> Gerar Senhas Padrão
+                            </button>
+                            <button id="cleanup-trash-btn" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-3 transition-colors hidden">
+                                <i class="fas fa-trash-alt w-5 text-red-500"></i> Limpar Lixo
+                            </button>
+                            <div class="border-t border-gray-700 my-1.5"></div>
+                            <button id="sync-evo-btn" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fas fa-sync w-5 text-blue-500" id="sync-icon"></i> <span id="sync-text">Sincronizar Cache</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Tabs Navigation -->
@@ -131,37 +159,7 @@
 
             <!-- Tab Content: Gerenciamento de Alunos -->
             <div id="tab-content-manage-students" class="tab-content">
-                <!-- Filters (Search and Status only) -->
-                <div
-                    class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
-                    <div class="w-full md:w-auto">
-                        <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome:</label>
-                        <input type="text" id="search-input" placeholder="Digite o nome do aluno..."
-                            class="w-full md:w-64 px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="flex-grow flex justify-end space-x-2">
-                        <button id="batch-password-btn"
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed">
-                            <i class="fas fa-key"></i>
-                            <span>Gerar Senhas Padrão</span>
-                        </button>
-                        <button id="add-student-btn"
-                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition hidden">
-                            <i class="fas fa-plus"></i>
-                            <span>Novo Aluno</span>
-                        </button>
-                        <button id="cleanup-trash-btn"
-                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition hidden">
-                            <i class="fas fa-trash-alt"></i>
-                            <span>Limpar Lixo</span>
-                        </button>
-                        <button id="sync-evo-btn"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed">
-                            <i class="fas fa-sync" id="sync-icon"></i>
-                            <span id="sync-text">Sincronizar Cache</span>
-                        </button>
-                    </div>
-                </div>
+                <!-- Students Table Wrapper -->
 
                 <!-- Students Table -->
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
@@ -458,10 +456,16 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Programa (Faixa)</label>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Programa</label>
                         <select id="reg-rank-type" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
                             <option value="Tradicional">Tradicional</option>
                             <option value="Littles">Littles</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Faixa</label>
+                        <select id="reg-belt" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                            <!-- Options populated via JS -->
                         </select>
                     </div>
                 </div>

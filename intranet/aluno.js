@@ -1,4 +1,4 @@
-import { onAuthReady } from './auth.js';
+import { onAuthReady, checkAdminStatus } from './auth.js';
 import { showConfirm, showInviteLinkModal } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, auth } from './firebase-config.js'; // Import auth
@@ -13,6 +13,7 @@ const getStudentFinancialHub = httpsCallable(functions, 'getStudentFinancialHub'
 const cancelTuitionSubscription = httpsCallable(functions, 'cancelTuitionSubscription');
 const getTuitionPlans = httpsCallable(functions, 'getTuitionPlans');
 const createTuitionSubscription = httpsCallable(functions, 'createTuitionSubscription');
+const deleteLocalMember = httpsCallable(functions, 'deleteLocalMember');
 
 // Cache
 let currentStudent = null;
@@ -39,6 +40,17 @@ export function setupAlunoPage() {
 
             await loadAllSelectableContent();
             await loadStudentData(studentId, currentUnitId); // Passar o ID da unidade
+
+            // Admin features
+            const isAdmin = await checkAdminStatus(user);
+            const deleteBtn = document.getElementById('delete-student-btn');
+            if (deleteBtn) {
+                if (isAdmin) {
+                    deleteBtn.classList.remove('hidden');
+                } else {
+                    deleteBtn.classList.add('hidden');
+                }
+            }
         }
     });
 
@@ -188,6 +200,9 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
+    
+    const deleteBtn = document.getElementById('delete-student-btn');
+    if (deleteBtn) deleteBtn.addEventListener('click', handleDeleteStudent);
 }
 
 function switchTab(activeTabId) {
@@ -462,6 +477,33 @@ async function handleEditSubmit(e) {
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
+}
+
+async function handleDeleteStudent() {
+    if (!currentStudent) return;
+
+    const fullName = `${currentStudent.firstName || ''} ${currentStudent.lastName || ''}`;
+    
+    showConfirm(
+        `⚠️ ATENÇÃO: Tem certeza que deseja excluir permanentemente o aluno ${fullName}? Esta ação removerá todo o acesso do aluno à plataforma e não pode ser desfeita.`,
+        async () => {
+            const btn = document.getElementById('delete-student-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Excluindo...';
+
+            try {
+                await deleteLocalMember({ idMember: currentStudent.idMember });
+                alert("Aluno excluído com sucesso.");
+                window.location.href = 'alunos.html';
+            } catch (error) {
+                console.error("Erro ao excluir aluno:", error);
+                alert("Erro ao excluir aluno: " + error.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+    );
 }
 
 async function handleInviteClick() {

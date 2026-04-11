@@ -31,6 +31,25 @@ const registerLocalStudent = httpsCallable(functions, 'registerLocalStudent');
 const deleteLocalMember = httpsCallable(functions, 'deleteLocalMember');
 const cleanupRemovedStudents = httpsCallable(functions, 'cleanupRemovedStudents');
 
+// --- Belt Options Data ---
+const BELT_OPTIONS = {
+    'Tradicional': [
+        'Branca Recomendada', 'Branca Decidida',
+        'Laranja Recomendada', 'Laranja Decidida',
+        'Amarela Recomendada', 'Amarela Decidida',
+        'Camuflada Recomendada', 'Camuflada Decidida',
+        'Verde Recomendada', 'Verde Decidida',
+        'Roxa Recomendada', 'Roxa Decidida',
+        'Azul Recomendada', 'Azul Decidida',
+        'Marrom Recomendada', 'Marrom Decidida',
+        'Vermelha Recomendada', 'Vermelha Decidida',
+        'Vermelha e Preta', 'Preta'
+    ],
+    'Littles': [
+        'Panda', 'Leão', 'Girafa', 'Borboleta', 'Jacaré', 'Coruja', 'Arara', 'Macaco', 'Fênix'
+    ]
+};
+
 export let allStudents = []; // Cache para guardar a lista de alunos e facilitar a busca
 let currentAppUser = null; 
 let allCourses = [];
@@ -97,9 +116,49 @@ export function setupAlunosPage() {
             const cleanupTrashBtn = document.getElementById('cleanup-trash-btn');
 
             // --- Event Listeners ---
-            if (unitFilter) unitFilter.addEventListener('change', () => loadStudents());
+            if (unitFilter) unitFilter.addEventListener('change', () => {
+                loadStudents();
+                // Também atualiza mensalidades se estiver na aba
+                if (!contentManageTuitions.classList.contains('hidden')) renderTuitionsTable();
+            });
             if (checkEntriesBtn) checkEntriesBtn.addEventListener('click', handleCheckEntriesClick);
-            if (searchInput) searchInput.addEventListener('input', debounce(() => loadStudents(), 500));
+            if (searchInput) searchInput.addEventListener('input', debounce(() => {
+                loadStudents();
+                // Também atualiza mensalidades se estiver na aba
+                if (!contentManageTuitions.classList.contains('hidden')) renderTuitionsTable();
+            }, 500));
+
+            // --- Dropdown Logic ---
+            const dropdownBtn = document.getElementById('actions-dropdown-btn');
+            const dropdownMenu = document.getElementById('actions-dropdown-menu');
+
+            if (dropdownBtn && dropdownMenu) {
+                dropdownBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = dropdownMenu.classList.contains('hidden');
+                    if (isHidden) {
+                        dropdownMenu.classList.remove('hidden');
+                        // Pequeno delay para permitir a animação do Tailwind
+                        requestAnimationFrame(() => {
+                            dropdownMenu.classList.remove('scale-95', 'opacity-0');
+                            dropdownMenu.classList.add('scale-100', 'opacity-100');
+                        });
+                    } else {
+                        dropdownMenu.classList.add('scale-95', 'opacity-0');
+                        dropdownMenu.classList.remove('scale-100', 'opacity-100');
+                        // Espera a animação terminar antes de esconder
+                        setTimeout(() => dropdownMenu.classList.add('hidden'), 200);
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!dropdownMenu.classList.contains('hidden') && !e.target.closest('#actions-dropdown-container')) {
+                        dropdownMenu.classList.add('scale-95', 'opacity-0');
+                        dropdownMenu.classList.remove('scale-100', 'opacity-100');
+                        setTimeout(() => dropdownMenu.classList.add('hidden'), 200);
+                    }
+                });
+            }
 
             // --- Registration Modal Listeners ---
             if (addStudentBtn) {
@@ -107,8 +166,25 @@ export function setupAlunosPage() {
                     if (registerModal) {
                         registerModal.classList.remove('hidden');
                         registerModal.classList.add('flex');
+                        updateBeltOptions(); // Initialize belts when opening
                     }
                 });
+            }
+
+            // --- Dynamic Belt Selection Logic ---
+            const regRankType = document.getElementById('reg-rank-type');
+            const regBelt = document.getElementById('reg-belt');
+
+            function updateBeltOptions() {
+                if (!regRankType || !regBelt) return;
+                const program = regRankType.value;
+                const belts = BELT_OPTIONS[program] || [];
+                
+                regBelt.innerHTML = belts.map(belt => `<option value="${belt}">${belt}</option>`).join('');
+            }
+
+            if (regRankType) {
+                regRankType.addEventListener('change', updateBeltOptions);
             }
             if (closeRegisterBtn) {
                 closeRegisterBtn.addEventListener('click', () => {
@@ -145,6 +221,7 @@ export function setupAlunosPage() {
                         cpf: document.getElementById('reg-cpf').value,
                         birthDate: document.getElementById('reg-birth-date').value,
                         rankType: document.getElementById('reg-rank-type').value,
+                        belt: document.getElementById('reg-belt').value,
                         responsible: document.getElementById('reg-responsible').value,
                         origin: document.getElementById('reg-origin').value,
                         address: document.getElementById('reg-address').value
@@ -197,29 +274,17 @@ export function setupAlunosPage() {
             const tableBody = document.getElementById('students-table-body');
             if (tableBody) {
                 tableBody.addEventListener('click', async (e) => {
-                    const deleteBtn = e.target.closest('.delete-student-btn');
-                    if (deleteBtn) {
-                        const memberId = deleteBtn.dataset.id;
-                        const studentName = deleteBtn.dataset.name;
-
-                        if (confirm(`Tem certeza que deseja excluir o aluno ${studentName} e remover todo o seu acesso à plataforma?`)) {
-                            try {
-                                deleteBtn.disabled = true;
-                                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                                await deleteLocalMember({ idMember: memberId });
-                                alert('✅ Aluno removido com sucesso!');
-                                loadStudents();
-                            } catch (error) {
-                                console.error('Erro ao deletar aluno:', error);
-                                alert(`❌ Erro: ${error.message}`);
-                                deleteBtn.disabled = false;
-                                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                            }
-                        }
-                        return;
-                    }
-
+                    // Row Click Listener
                     const row = e.target.closest('.student-row');
+                    if (row) {
+                        const memberId = parseInt(row.dataset.id, 10);
+                        const student = allStudents.find(s => s.idMember === memberId);
+                        if (student && student.unitId) {
+                            window.location.href = `aluno.html?id=${memberId}&unit=${student.unitId}`;
+                        } else {
+                            window.location.href = `aluno.html?id=${memberId}`;
+                        }
+                    }
                     if (row) {
                         const memberId = parseInt(row.dataset.id, 10);
                         const student = allStudents.find(s => s.idMember === memberId);
@@ -434,90 +499,34 @@ async function loadStudents() {
 }
 
 async function updateCacheStatus(success = true) {
-    const cacheStatusEl = document.getElementById('cache-status');
-    if (!cacheStatusEl) return;
-
-    if (!success) {
-        cacheStatusEl.innerHTML = '<span class="text-red-500"><i class="fas fa-exclamation-circle"></i> Erro ao carregar dados</span>';
-        return;
-    }
-
-    try {
-        // Verifica o estado do cache na nova coleção de status
-        const syncStatusQuery = await getDocs(collection(db, 'evo_sync_status'));
-
-        if (syncStatusQuery.empty) {
-            cacheStatusEl.innerHTML = '<span class="text-yellow-500"><i class="fas fa-exclamation-triangle"></i> Cache vazio - clique em "Sincronizar Cache"</span>';
-        } else {
-            let oldestSync = null;
-            let hasErrors = false;
-
-            syncStatusQuery.forEach(doc => {
-                const data = doc.data();
-                if (data.status === 'error') hasErrors = true;
-                if (data.lastSync) {
-                    const syncDate = data.lastSync.toDate();
-                    if (!oldestSync || syncDate < oldestSync) oldestSync = syncDate;
-                }
-            });
-
-            if (oldestSync) {
-                const hoursAgo = Math.round((new Date() - oldestSync) / (1000 * 60 * 60));
-                const isExpired = hoursAgo >= 24;
-                const icon = hasErrors ? 'fa-exclamation-circle' : (isExpired ? 'fa-exclamation-triangle' : 'fa-check-circle');
-                const color = hasErrors ? 'text-red-500' : (isExpired ? 'text-yellow-500' : 'text-green-500');
-                const message = hasErrors
-                    ? 'Algumas unidades falharam na sincronização'
-                    : (isExpired ? `Cache desatualizado (${hoursAgo}h atrás)` : `✓ Cache atualizado (${hoursAgo}h atrás)`);
-
-                cacheStatusEl.innerHTML = `<span class="${color}"><i class="fas ${icon}"></i> ${message}</span>`;
-            } else {
-                cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Sincronização em andamento ou incompleta</span>';
-            }
-        }
-    } catch (error) {
-        console.error('Erro ao verificar status do cache:', error);
-        cacheStatusEl.innerHTML = '<span class="text-blue-500"><i class="fas fa-database"></i> Dados do Firestore prontos</span>';
-    }
+    // A seção de status do cache foi removida para uma UI mais clean.
+    // Mantemos a função para evitar erros de referência, mas sem atualizar elementos inexistentes.
+    console.log("Cache status check (silent):", success);
 }
 
 function renderStudents(students, isAdmin = false) {
     const tableBody = document.getElementById('students-table-body');
-    const totalStudentsCountEl = document.getElementById('total-students-count');
+    if (!tableBody) return;
 
-    // Filtra alunos com dados removidos (flexível com maiúsculas/minúsculas e quantidade de asteriscos)
+    // Filtra alunos com dados removidos
     const validStudents = students.filter(student => 
         !student.firstName || !student.firstName.startsWith('***Dados')
     );
 
-    // Atualiza o contador total de alunos
-    totalStudentsCountEl.textContent = validStudents.length;
-
-
     if (validStudents.length > 0) {
-        // isAdmin is passed as parameter
-        
         const rowsHtml = validStudents.map(member => {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
 
-            let actionsHtml = '';
-            if (isAdmin) {
-                actionsHtml = `
-                    <button class="delete-student-btn text-red-500 hover:text-red-700 p-2 transition-colors ml-auto" 
-                            data-id="${member.idMember}" data-name="${fullName}" title="Excluir Aluno">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-            }
-
             return `
                 <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row group">
-                    <td class="p-4 font-medium">${fullName}</td>
+                    <td class="p-4 font-medium text-white flex items-center">${fullName}</td>
                     <td class="p-4 text-gray-400">${email}</td>
                     <td class="p-4 text-gray-400">${member.branchName || 'Centro'}</td>
-                    <td class="p-4 text-right flex justify-end">${actionsHtml}</td>
+                    <td class="p-4 text-right flex justify-end">
+                        <i class="fas fa-chevron-right text-gray-600 group-hover:text-blue-500 transition-colors"></i>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -527,23 +536,16 @@ function renderStudents(students, isAdmin = false) {
         highlightRegisteredStudents(validStudents.map(s => s.idMember));
 
     } else {
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-400">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
     }
 }
 
 async function highlightRegisteredStudents(evoIds) {
-    const registeredStudentsCountEl = document.getElementById('registered-students-count');
-    if (evoIds.length === 0) {
-        registeredStudentsCountEl.textContent = '0';
-        return;
-    }
+    if (evoIds.length === 0) return;
 
     try {
         const result = await getRegisteredUsersByEvoId({ evoIds });
         const registeredEvoIds = new Set(result.data.registeredEvoIds);
-
-        // Atualiza o contador de alunos registrados
-        registeredStudentsCountEl.textContent = registeredEvoIds.size;
 
         const rows = document.querySelectorAll('.student-row');
         rows.forEach(row => {
@@ -556,9 +558,8 @@ async function highlightRegisteredStudents(evoIds) {
                 const nameCell = row.cells[0]; // Primeira célula é o nome
                 if (nameCell && !nameCell.querySelector('.fa-check-circle')) {
                     const icon = document.createElement('i');
-                    icon.className = 'fas fa-check-circle text-green-500 mr-2'; // mr-2 para margem à direita
+                    icon.className = 'fas fa-check-circle text-green-500 mr-2';
                     icon.title = 'Aluno com acesso à plataforma';
-                    // Adiciona classes para alinhamento vertical se necessário, mas prepend costuma funcionar bem
                     nameCell.prepend(icon);
                 }
             }
@@ -569,7 +570,6 @@ async function highlightRegisteredStudents(evoIds) {
         } else {
             console.error("Erro ao destacar alunos registrados:", error);
         }
-        // A funcionalidade de destaque é opcional, então a página continua funcionando.
     }
 }
 
