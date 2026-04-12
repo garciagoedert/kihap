@@ -3350,6 +3350,17 @@ exports.notifyTrelloDemand = functions.firestore
                     };
                     await transporter.sendMail(assigneeMailOptions);
                 }
+
+                // Create Intranet Notification
+                await admin.firestore().collection('notifications').add({
+                    userId: assignee.id,
+                    title: 'Nova demanda atribuída',
+                    message: `Tarefa: ${demand.titulo || 'Sem título'}`,
+                    type: 'trello',
+                    link: 'trello.html',
+                    read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp()
+                });
             }
             console.log(`[notifyTrelloDemand] E-mail enviado com sucesso para ${demandId}`);
         } catch (error) {
@@ -3414,6 +3425,17 @@ exports.notifyTrelloAssignment = functions.firestore
                         };
                         await transporter.sendMail(mailOptions);
                     }
+
+                    // Create Intranet Notification
+                    await admin.firestore().collection('notifications').add({
+                        userId: assignee.id,
+                        title: 'Nova atribuição',
+                        message: `Você agora é responsável pela demanda: ${newData.titulo || 'Sem título'}`,
+                        type: 'trello',
+                        link: 'trello.html',
+                        read: false,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
                 }
             } catch (error) {
                 console.error(`[notifyTrelloAssignment] Erro:`, error);
@@ -3482,9 +3504,184 @@ exports.notifyTrelloCommentMention = functions.firestore
                         await transporter.sendMail(mailOptions);
                         console.log(`[notifyTrelloCommentMention] Notificação enviada para ${userEmail}`);
                     }
+
+                    // Create Intranet Notification
+                    await admin.firestore().collection('notifications').add({
+                        userId: userQuery.docs[0].id,
+                        title: 'Você foi mencionado',
+                        message: `${comment.authorName} mencionou você em: ${demandData.titulo || 'Demanda'}`,
+                        type: 'trello',
+                        link: 'trello.html',
+                        read: false,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
                 }
             }
         } catch (error) {
             console.error(`[notifyTrelloCommentMention] Erro:`, error);
+        }
+    });
+
+/**
+ * Trigger para notificações de chat.
+ */
+exports.notifyChatMessage = functions.firestore
+    .document('chats/{chatId}/messages/{messageId}')
+    .onCreate(async (snap, context) => {
+        const message = snap.data();
+        const { chatId } = context.params;
+
+        try {
+            const chatSnap = await admin.firestore().collection('chats').doc(chatId).get();
+            if (!chatSnap.exists) return;
+            const chatData = chatSnap.data();
+
+            // Notifica todos os membros exceto o remetente
+            const recipients = chatData.members.filter(m => m !== message.senderId);
+
+            for (const userId of recipients) {
+                await admin.firestore().collection('notifications').add({
+                    userId: userId,
+                    title: `Nova mensagem (${chatData.name || 'Chat'})`,
+                    message: message.text || 'Imagem/Arquivo',
+                    type: 'chat',
+                    link: `chat.html?chatId=${chatId}`,
+                    read: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        } catch (error) {
+            console.error(`[notifyChatMessage] Erro:`, error);
+        }
+    });
+
+/**
+ * Limpeza automática de notificações antigas (15 dias).
+ */
+exports.cleanupNotifications = functions.pubsub.schedule('every 24 hours').onRun(async (context) => {
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    
+    const snapshot = await admin.firestore().collection('notifications')
+        .where('createdAt', '<', fifteenDaysAgo)
+        .get();
+    
+    if (snapshot.empty) return null;
+    
+    const batch = admin.firestore().batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    console.log(`[cleanupNotifications] ${snapshot.size} notificações removidas.`);
+});
+/**
+ * Envia notificações via Dashboard Admin (Comunicados).
+ */
+exports.sendNotification = functions.https.onCall(async (data, context) => {
+    // Verificação de Admin
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login necessário');
+    
+    const userSnap = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    const userData = userSnap.data();
+    if (!userData || userData.isAdmin !== true) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem enviar comunicados');
+    }
+
+    const { target, targetValue, title, message, type, link } = data;
+    if (!title || !message) throw new functions.https.HttpsError('invalid-argument', 'Título e mensagem são obrigatórios');
+
+    try {
+        let recipientIds = [];
+
+        if (target === 'individual') {
+            // targetValue deve ser o UID ou Email
+            if (targetValue.includes('@')) {
+                const q = await admin.firestore().collection('users').where('email', '==', targetValue).limit(1).get();
+                if (q.empty) throw new functions.https.HttpsError('not-found', 'Aluno não encontrado');
+                recipientIds.push(q.docs[0].id);
+            } else {
+                recipientIds.push(targetValue);
+            }
+        } else if (target === 'unit') {
+            const q = await admin.firestore().collection('users').where('unidade', '==', targetValue).get();
+            recipientIds = q.docs.map(d => d.id);
+        } else if (target === 'all') {
+            const q = await admin.firestore().collection('users').get();
+            recipientIds = q.docs.map(d => d.id);
+        }
+
+        const batch = admin.firestore().batch();
+        const notificationsRef = admin.firestore().collection('notifications');
+
+        recipientIds.forEach(uid => {
+            const newNotifRef = notificationsRef.doc();
+            batch.set(newNotifRef, {
+                userId: uid,
+                title: title,
+                message: message,
+                type: type || 'admin',
+                link: link || null,
+                read: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+
+        await batch.commit();
+        return { success: true, recipientsCount: recipientIds.length };
+
+    } catch (error) {
+        console.error('[sendNotification] Erro:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+/**
+ * Dispatcher para Notificações Push (FCM).
+ * Disparado sempre que um novo documento é criado na coleção 'notifications'.
+ */
+exports.onNotificationCreated = functions.firestore
+    .document('notifications/{notificationId}')
+    .onCreate(async (snap, context) => {
+        const notif = snap.data();
+        const { userId } = notif;
+
+        try {
+            const userSnap = await admin.firestore().collection('users').doc(userId).get();
+            if (!userSnap.exists) return;
+            
+            const userData = userSnap.data();
+            const tokens = userData.fcmTokens || [];
+            
+            if (tokens.length === 0) {
+                console.log(`[onNotificationCreated] Usuário ${userId} não possui tokens FCM registrados.`);
+                return;
+            }
+
+            const message = {
+                notification: {
+                    title: notif.title,
+                    body: notif.message,
+                },
+                data: {
+                    link: notif.link || '/intranet/index.html',
+                    notificationId: context.params.notificationId
+                },
+                tokens: tokens
+            };
+
+            const response = await admin.messaging().sendMulticast(message);
+            console.log(`[onNotificationCreated] Notificação enviada. Sucesso: ${response.successCount}, Falhas: ${response.failureCount}`);
+            
+            // Limpa tokens inválidos se houver falhas detectadas pelo FCM
+            if (response.failureCount > 0) {
+                const validTokens = tokens.filter((_, index) => response.responses[index].success);
+                if (validTokens.length !== tokens.length) {
+                    await admin.firestore().collection('users').doc(userId).update({
+                        fcmTokens: validTokens
+                    });
+                    console.log(`[onNotificationCreated] ${tokens.length - validTokens.length} tokens inválidos removidos para o usuário ${userId}.`);
+                }
+            }
+        } catch (error) {
+            console.error(`[onNotificationCreated] Erro crítico ao processar tokens para o usuário ${userId}:`, error);
         }
     });

@@ -357,5 +357,20 @@ service cloud.firestore {
       }
     }
 
+    // Regras para Notificações
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+
+    // Regras para Quotes
+    match /daily_quotes/{quoteId} {
+      allow read: if request.auth != null;
+    }
+
   }
 }

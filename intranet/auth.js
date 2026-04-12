@@ -1,6 +1,7 @@
 import { createUserWithEmailAndPassword, onAuthStateChanged, signOut, getIdTokenResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 import { auth, db } from './firebase-config.js';
 
 // Função para obter dados do usuário do Firestore
@@ -10,7 +11,7 @@ export async function getUserData(uid) {
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            return { id: uid, ...userSnap.data() };
+            return { id: uid, uid: uid, ...userSnap.data() };
         } else {
             console.log("No such user document!");
             return null;
@@ -59,6 +60,9 @@ export function onAuthReady(callback) {
                 name: user.displayName || user.email.split('@')[0],
                 isAdmin: false // Por segurança, assume que não é admin se o doc não existe
             };
+
+            // Inicializa mensagens push (FCM)
+            setupMessaging(user.uid);
 
             callback(fallbackUserData);
         } else {
@@ -174,5 +178,53 @@ export async function updateUserPassword(userId, newPassword) {
     } catch (error) {
         console.error("Erro ao chamar a função para atualizar a senha:", error);
         throw error;
+    }
+}
+
+async function setupMessaging(userId) {
+    if (!('Notification' in window)) {
+        console.log("Este navegador não suporta notificações desktop");
+        return;
+    }
+
+    try {
+        const messaging = getMessaging();
+        
+        // Verifica se já temos permissão
+        if (Notification.permission === 'default') {
+            // Não pedimos permissão imediatamente em todas as páginas para não ser irritante, 
+            // mas para o Kihap faz sentido garantir que o usuário receba avisos.
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+        } else if (Notification.permission !== 'granted') {
+            return;
+        }
+
+        // Obtém o token FCM
+        // Nota: A VAPID KEY deve ser configurada aqui quando disponível
+        const vapidKey = window.KIHAP_VAPID_KEY || ''; 
+        if (!vapidKey) {
+            console.warn("VAPID Key não configurada. Push notifications desativadas.");
+            return;
+        }
+
+        const token = await getToken(messaging, { vapidKey });
+        
+        if (token) {
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+                const tokens = data.fcmTokens || [];
+                if (!tokens.includes(token)) {
+                    await updateDoc(userRef, {
+                        fcmTokens: [...tokens, token]
+                    });
+                    console.log("Token FCM registrado com sucesso.");
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao configurar mensagens push:", error);
     }
 }

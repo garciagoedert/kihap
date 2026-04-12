@@ -270,6 +270,7 @@ import { db } from './firebase-config.js';
 import { doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
 import { getCurrentUser } from './auth.js';
+import { notificationsManager } from './notifications-manager.js';
 
 
 // Atualiza ou remove o indicador de notificação (ponto ou contador)
@@ -537,6 +538,9 @@ async function loadComponents(pageSpecificSetup) {
 
         // Atualiza as informações do perfil no header
         updateUserProfileUI();
+
+        // Inicializa o sistema de notificações
+        notificationsManager.init();
 
     } catch (error) {
         console.error('Error loading components:', error);

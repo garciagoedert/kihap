@@ -15,8 +15,12 @@ const firebaseConfig = {
   storageBucket: "intranet-kihap.firebasestorage.app",
   messagingSenderId: "1055939458006",
   appId: "1:1055939458006:web:1d67459a0bc0da60cf2a77",
-  measurementId: "G-5LP0W3QSVZ"
+  measurementId: "G-5LP0W3QSVZ",
+  vapidKey: "BJzo9uVW8PDIFWv9aYn-fFF6ELnbp8CopuQVs8BO95G0cecYAG6NRr3KZOIZ8SM-ZL5hgy3M9j01mvlBq6tfuuM"
 };
+
+// Disponibiliza a VAPID Key globalmente para o sistema de notificações
+window.KIHAP_VAPID_KEY = firebaseConfig.vapidKey;
 
 // Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
