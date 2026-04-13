@@ -53,12 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const unitSelector = document.getElementById('unidade');
-    const programaSelector = document.getElementById('programa');
-    const graduacaoSelector = document.getElementById('graduacao');
-    const graduacaoContainer = document.getElementById('graduacao-container');
     const summaryItemsContainer = document.getElementById('checkout-summary-items');
     const summarySubtotal = document.getElementById('summary-subtotal');
     const summaryTotal = document.getElementById('summary-total');
+    const participantsContainer = document.getElementById('participants-container');
     const checkoutError = document.getElementById('checkout-error');
     const payBtn = document.getElementById('final-pay-btn');
 
@@ -98,6 +96,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         summarySubtotal.textContent = formatCurrency(cart.getTotalAmount());
         summaryTotal.textContent = formatCurrency(cart.getTotalAmount());
+        
+        renderParticipantFields();
+    };
+
+    const renderParticipantFields = () => {
+        const items = cart.getCart();
+        participantsContainer.innerHTML = '';
+        
+        let participantIndex = 1;
+        
+        items.forEach((item, itemIdx) => {
+            item.formDataList.forEach((form, formIdx) => {
+                const isComplexEvent = true; // For now, we collect for all, but could filter by product typa
+                
+                const block = document.createElement('div');
+                block.className = 'bg-gray-700/30 p-6 rounded-xl border border-gray-600 space-y-4';
+                block.innerHTML = `
+                    <h3 class="text-lg font-bold text-yellow-500 uppercase flex justify-between">
+                        Participante ${participantIndex}
+                        <span class="text-xs text-gray-500 font-normal normal-case pt-1">${item.productName}</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo</label>
+                            <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do participante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Programa</label>
+                            <select name="participant-program" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                                <option value="">Selecione</option>
+                                <option value="tradicional">Tradicional</option>
+                                <option value="littles">Littles</option>
+                                <option value="não aluno">Ainda não sou aluno</option>
+                            </select>
+                        </div>
+                        <div class="grad-container hidden">
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Graduação</label>
+                            <select name="participant-grad" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500">
+                                <option value="">Selecione</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                
+                const programSelect = block.querySelector('[name="participant-program"]');
+                const gradContainer = block.querySelector('.grad-container');
+                const gradSelect = block.querySelector('[name="participant-grad"]');
+                
+                programSelect.addEventListener('change', () => {
+                    populateGraduacao(programSelect.value, gradContainer, gradSelect);
+                });
+                
+                participantsContainer.appendChild(block);
+                participantIndex++;
+            });
+        });
     };
 
     const fetchUnits = async () => {
@@ -125,25 +179,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const populateGraduacao = (program) => {
+    const populateGraduacao = (program, container, selector) => {
         const graduacoes = {
             tradicional: ['Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida', 'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida', 'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida', 'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida', 'Vermelha e preta', 'Preta'],
             littles: ['Littles Branca', 'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta', 'Littles Jacaré', 'Littles Coruja', 'Littles Arara', 'Littles Macaco', 'Littles Fênix']
         };
         const options = graduacoes[program];
         if (options) {
-            graduacaoContainer.classList.remove('hidden');
-            graduacaoSelector.innerHTML = '<option value="">Selecione sua graduação</option>';
-            graduacaoSelector.required = true;
+            container.classList.remove('hidden');
+            selector.innerHTML = '<option value="">Selecione sua graduação</option>';
+            selector.required = true;
             options.forEach(grad => {
                 const option = document.createElement('option');
                 option.value = grad;
                 option.textContent = grad;
-                graduacaoSelector.appendChild(option);
+                selector.appendChild(option);
             });
         } else {
-            graduacaoContainer.classList.add('hidden');
-            graduacaoSelector.required = false;
+            container.classList.add('hidden');
+            selector.required = false;
+            selector.innerHTML = '<option value="">Selecione sua graduação</option>';
         }
     };
 
@@ -154,7 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const userData = await getUserData(user.uid);
             if (userData) {
                 currentUser = { uid: user.uid, ...userData };
-                document.getElementById('nome').value = currentUser.name || '';
+                const nameResp = document.getElementById('nome-responsavel');
+                if (nameResp) nameResp.value = currentUser.name || '';
                 document.getElementById('email').value = currentUser.email || '';
                 document.getElementById('telefone').value = currentUser.phoneNumber || '';
                 document.getElementById('cpf').value = currentUser.cpf || '';
@@ -178,14 +234,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         checkoutError.classList.add('hidden');
 
         const items = cart.getCart();
+        
+        // Coletar dados dos participantes e injetar nos itens
+        const names = document.querySelectorAll('[name="participant-name"]');
+        const programs = document.querySelectorAll('[name="participant-program"]');
+        const grads = document.querySelectorAll('[name="participant-grad"]');
+        
+        names.forEach((input, index) => {
+            const itemIdx = input.dataset.item;
+            const formIdx = input.dataset.form;
+            
+            items[itemIdx].formDataList[formIdx].userName = input.value;
+            items[itemIdx].formDataList[formIdx].userPrograma = programs[index].value;
+            items[itemIdx].formDataList[formIdx].userGraduacao = grads[index].required ? grads[index].value : null;
+        });
+
         const globalUserData = {
-            userName: document.getElementById('nome').value,
+            userName: document.getElementById('nome-responsavel').value,
             userEmail: document.getElementById('email').value,
             userPhone: document.getElementById('telefone').value,
             userCpf: document.getElementById('cpf').value,
             userUnit: document.getElementById('unidade').value,
-            userPrograma: document.getElementById('programa').value,
-            userGraduacao: graduacaoSelector.required ? graduacaoSelector.value : null,
             userId: currentUser ? currentUser.uid : null
         };
 
