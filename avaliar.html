@@ -130,40 +130,90 @@
                         <!-- Categoria: Estrutura -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Estrutura da Unidade</label>
-                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
-                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="estrutura" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
+                                <button type="button" data-cat="estrutura" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
+                                <button type="button" data-cat="estrutura" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
+                                <button type="button" data-cat="estrutura" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
+                                <button type="button" data-cat="estrutura" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
+                                <button type="button" data-cat="estrutura" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
+                                <button type="button" data-cat="estrutura" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
+                                <button type="button" data-cat="estrutura" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
+                                <button type="button" data-cat="estrutura" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
+                                <button type="button" data-cat="estrutura" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
+                                <button type="button" data-cat="estrutura" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
+                                <button type="button" data-cat="estrutura" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
                             </div>
                             <input type="hidden" id="score-estrutura" required>
                         </div>
                         <!-- Categoria: Limpeza -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Limpeza e Higiene</label>
-                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
-                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="limpeza" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
+                                <button type="button" data-cat="limpeza" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
+                                <button type="button" data-cat="limpeza" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
+                                <button type="button" data-cat="limpeza" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
+                                <button type="button" data-cat="limpeza" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
+                                <button type="button" data-cat="limpeza" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
+                                <button type="button" data-cat="limpeza" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
+                                <button type="button" data-cat="limpeza" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
+                                <button type="button" data-cat="limpeza" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
+                                <button type="button" data-cat="limpeza" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
+                                <button type="button" data-cat="limpeza" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
+                                <button type="button" data-cat="limpeza" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
                             </div>
                             <input type="hidden" id="score-limpeza" required>
                         </div>
                         <!-- Categoria: Materiais -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Qualidade dos Materiais</label>
-                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
-                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="materiais" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
+                                <button type="button" data-cat="materiais" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
+                                <button type="button" data-cat="materiais" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
+                                <button type="button" data-cat="materiais" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
+                                <button type="button" data-cat="materiais" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
+                                <button type="button" data-cat="materiais" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
+                                <button type="button" data-cat="materiais" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
+                                <button type="button" data-cat="materiais" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
+                                <button type="button" data-cat="materiais" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
+                                <button type="button" data-cat="materiais" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
+                                <button type="button" data-cat="materiais" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
+                                <button type="button" data-cat="materiais" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
                             </div>
                             <input type="hidden" id="score-materiais" required>
                         </div>
                         <!-- Categoria: Atendimento -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Atendimento na Recepção</label>
-                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
-                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="atendimento" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
+                                <button type="button" data-cat="atendimento" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
+                                <button type="button" data-cat="atendimento" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
+                                <button type="button" data-cat="atendimento" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
+                                <button type="button" data-cat="atendimento" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
+                                <button type="button" data-cat="atendimento" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
+                                <button type="button" data-cat="atendimento" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
+                                <button type="button" data-cat="atendimento" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
+                                <button type="button" data-cat="atendimento" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
+                                <button type="button" data-cat="atendimento" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
+                                <button type="button" data-cat="atendimento" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
+                                <button type="button" data-cat="atendimento" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
                             </div>
                             <input type="hidden" id="score-atendimento" required>
                         </div>
                         <!-- Categoria: Professor -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Performance do Instrutor / Aula</label>
-                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
-                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="instructor" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
+                                <button type="button" data-cat="instructor" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
+                                <button type="button" data-cat="instructor" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
+                                <button type="button" data-cat="instructor" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
+                                <button type="button" data-cat="instructor" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
+                                <button type="button" data-cat="instructor" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
+                                <button type="button" data-cat="instructor" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
+                                <button type="button" data-cat="instructor" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
+                                <button type="button" data-cat="instructor" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
+                                <button type="button" data-cat="instructor" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
+                                <button type="button" data-cat="instructor" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
+                                <button type="button" data-cat="instructor" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
                             </div>
                             <input type="hidden" id="score-instructor" required>
                         </div>
