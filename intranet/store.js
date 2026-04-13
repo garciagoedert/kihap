@@ -138,12 +138,6 @@ export async function setupStorePage() {
     const eventSlotsList = document.getElementById('event-slots-list');
     const addEventSlotBtn = document.getElementById('add-event-slot-btn');
 
-    // Events Dashboard Elements
-    const totalEventSubscribersElem = document.getElementById('total-event-subscribers');
-    const totalEventCheckinsElem = document.getElementById('total-event-checkins');
-    const ringStatsList = document.getElementById('ring-stats-list');
-    const exportEventCsvBtn = document.getElementById('export-event-csv-btn');
-
     // Banner Management elements
     const bannerForm = document.getElementById('banner-form');
     const bannerFormTitle = document.getElementById('banner-form-title');
