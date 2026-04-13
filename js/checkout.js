@@ -144,7 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const totalAmount = cart.getTotalAmount();
-            const isFree = totalAmount === 0;
+            // Robust check for free purchases (handles potential float precision issues)
+            const isFree = totalAmount <= 0;
+            console.log(`[Checkout] Processing ${isFree ? 'FREE' : 'PAID'} purchase. Total: ${totalAmount/100}`);
+            
             const endpoint = isFree 
                 ? 'https://us-central1-intranet-kihap.cloudfunctions.net/processCartFreePurchase'
                 : 'https://us-central1-intranet-kihap.cloudfunctions.net/createCartCheckoutSession';

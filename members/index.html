@@ -138,10 +138,12 @@
     <script type="module">
         import { loadComponents } from './js/common-ui.js';
         import { loadMemberDashboard } from './js/dashboard.js?v=3';
+        import { initNPSCollector } from './js/nps-collector.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
                 loadMemberDashboard();
+                initNPSCollector();
             });
         });
     </script>

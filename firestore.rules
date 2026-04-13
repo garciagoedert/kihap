@@ -346,6 +346,15 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read, write: if request.auth != null;
       }
+    // Regras para NPS (Net Promoter Score)
+    match /nps_responses/{responseId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        request.auth.uid == resource.data.studentId
+      );
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
   }
 }

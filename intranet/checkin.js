@@ -54,10 +54,37 @@ export async function setupCheckinPage() {
             const saleData = saleSnap.data();
 
             let resultHtml = `
-                <p><strong>Cliente:</strong> ${saleData.userName || 'N/A'}</p>
-                <p><strong>Produto:</strong> ${saleData.productName || 'N/A'}</p>
-                <p><strong>Data da Compra:</strong> ${saleData.created ? new Date(saleData.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
+                <div class="space-y-1 mb-4">
+                    <p><strong>Cliente:</strong> ${saleData.userName || 'N/A'}</p>
+                    <p><strong>Produto:</strong> ${saleData.productName || 'N/A'}</p>
+                    ${saleData.userSize ? `<p><strong>Tamanho:</strong> ${saleData.userSize}</p>` : ''}
+                    <p class="text-sm text-gray-400"><strong>Compra em:</strong> ${saleData.created ? new Date(saleData.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</p>
+                </div>
             `;
+
+            // Mostrar detalhes do evento se existirem (inclusive para tickets comuns que tenham sido associados a um slot)
+            if (saleData.isEvent || saleData.attendeeNumber || saleData.eventRing || saleData.eventDay) {
+                resultHtml += `
+                    <div class="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg grid grid-cols-2 gap-4 text-left">
+                        <div>
+                            <span class="text-gray-400 block uppercase text-[10px] font-bold tracking-widest">Número</span>
+                            <span class="text-yellow-400 font-black text-2xl">#${saleData.attendeeNumber || '---'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block uppercase text-[10px] font-bold tracking-widest">Ringue</span>
+                            <span class="text-white font-black text-2xl">${saleData.eventRing || 'TBD'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block uppercase text-[10px] font-bold tracking-widest">Dia</span>
+                            <span class="text-white font-bold">${saleData.eventDay || 'TBD'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block uppercase text-[10px] font-bold tracking-widest">Horário</span>
+                            <span class="text-white font-bold">${saleData.eventTime || 'TBD'}</span>
+                        </div>
+                    </div>
+                `;
+            }
 
             if (saleData.checkinStatus === 'realizado') {
                 resultHtml += `

@@ -37,8 +37,14 @@ export async function setupStorePage() {
 
     // Events Tab elements
     const eventProductFilter = document.getElementById('event-product-filter');
+    const eventRingFilter = document.getElementById('event-ring-filter');
+    const eventUnitFilter = document.getElementById('event-unit-filter');
     const eventSearchInput = document.getElementById('event-search-input');
     const eventsTableBody = document.getElementById('events-table-body');
+    const totalEventSubscribersElem = document.getElementById('total-event-subscribers');
+    const totalEventCheckinsElem = document.getElementById('total-event-checkins');
+    const ringStatsList = document.getElementById('ring-stats-list');
+    const exportEventCsvBtn = document.getElementById('export-event-csv-btn');
     let allCheckins = [];
 
     // Sales Log elements
@@ -127,6 +133,16 @@ export async function setupStorePage() {
     const saveProductBtn = document.getElementById('save-product-btn');
     const productsTableBody = document.getElementById('products-table-body');
     const sendBulkEmailsBtn = document.getElementById('send-bulk-emails-btn');
+    const productIsEventInput = document.getElementById('product-is-event');
+    const eventConfigContainer = document.getElementById('event-config-container');
+    const eventSlotsList = document.getElementById('event-slots-list');
+    const addEventSlotBtn = document.getElementById('add-event-slot-btn');
+
+    // Events Dashboard Elements
+    const totalEventSubscribersElem = document.getElementById('total-event-subscribers');
+    const totalEventCheckinsElem = document.getElementById('total-event-checkins');
+    const ringStatsList = document.getElementById('ring-stats-list');
+    const exportEventCsvBtn = document.getElementById('export-event-csv-btn');
 
     // Banner Management elements
     const bannerForm = document.getElementById('banner-form');
@@ -175,13 +191,11 @@ export async function setupStorePage() {
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
-        // Remove active from all main tabs
         [tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
             tab.classList.remove('text-white', 'border-blue-500');
             tab.classList.add('text-gray-400', 'hover:border-gray-500');
         });
 
-        // Hide all main content
         [contentSalesLog, contentManageProducts, contentMarketing, contentEvents].forEach(content => {
             content.classList.add('hidden');
         });
@@ -199,7 +213,8 @@ export async function setupStorePage() {
             tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
             contentMarketing.classList.remove('hidden');
         } else if (activeTab === 'events') {
-            fetchCheckins();
+            populateEventFilter();
+            fetchEventSubscribers();
             tabEvents.classList.add('text-white', 'border-blue-500');
             tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
             contentEvents.classList.remove('hidden');
@@ -233,6 +248,10 @@ export async function setupStorePage() {
     if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
     if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
     
+
+
+
+
     // --- Filter Toggle Logic ---
     if (toggleFiltersBtn && filterGridContainer) {
         toggleFiltersBtn.addEventListener('click', () => {
@@ -306,7 +325,6 @@ export async function setupStorePage() {
         addManualSaleProductRow();
         updateManualSaleTotal();
 
-        // Populate units
         const units = [...new Set(allSales.map(sale => sale.userUnit).filter(Boolean))];
         manualSaleUnitSelect.innerHTML = '<option value="">Selecione uma unidade</option>';
         units.sort().forEach(unit => {
@@ -377,9 +395,11 @@ export async function setupStorePage() {
                 userCpf: document.getElementById('manual-sale-user-cpf').value,
                 userGraduacao: document.getElementById('manual-sale-user-graduacao').value,
                 userUnit: document.getElementById('manual-sale-user-unit').value,
+                userAge: document.getElementById('manual-sale-user-age').value || null,
+                chosenVariant: document.getElementById('manual-sale-user-variant').value || null,
                 items: items,
-                productName: items.map(i => i.productName).join(', '), // For compatibility with table display
-                productId: items[0].productId, // For compatibility with filters
+                productName: items.map(i => i.productName).join(', '),
+                productId: items[0].productId,
                 amountTotal: parseInt(manualSaleAmountInput.value, 10),
                 paymentStatus: 'paid',
                 created: serverTimestamp(),
@@ -494,7 +514,7 @@ export async function setupStorePage() {
         salesToDisplay.forEach(sale => {
             const row = salesTableBody.insertRow();
             row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer');
-            row.dataset.saleId = sale.id; // Add sale id to row for modal click
+            row.dataset.saleId = sale.id;
 
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
             const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
@@ -551,7 +571,6 @@ export async function setupStorePage() {
                     dateMatch = true;
                 } else if (selectedPeriod === 'custom') {
                     if (customStart) {
-                        // compare using local time strings
                         const startStr = customStart.split('-');
                         const startObj = new Date(startStr[0], startStr[1]-1, startStr[2]);
                         startObj.setHours(0,0,0,0);
@@ -590,9 +609,6 @@ export async function setupStorePage() {
             return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch && fulfillmentMatch;
         });
 
-        // The default view when no filters are applied is usually handled by the UI default selection
-        // meaning we don't need the hardcoded 7-days fallback anymore if the UI defaults to "Últimos 7 dias"
-        // But let's keep the fallback for safety if everything is ostensibly empty
         const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && selectedPeriod === 'all' && !selectedStatus;
         if (noFiltersApplied) {
             const sevenDaysAgo = new Date();
@@ -606,7 +622,6 @@ export async function setupStorePage() {
         }
 
         displaySales(filteredSales);
-        displayStoreKpis(filteredSales);
     };
 
     if (periodFilter) {
@@ -628,57 +643,24 @@ export async function setupStorePage() {
     });
 
 
-    const getFilteredSales = () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedUnit = unitFilter.value;
-        const selectedProduct = productFilter.value;
-        const selectedDate = dateFilter.value;
-        const selectedStatus = statusFilter.value;
-
-        let filtered = allSales.filter(sale => {
-            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
-            const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
-            const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-            const mainProductMatch = sale.productId === selectedProduct;
-            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
-            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
-            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
-
-            let dateMatch = true;
-            if (selectedDate && sale.created) {
-                const saleDate = sale.created.toDate().toISOString().split('T')[0];
-                dateMatch = saleDate === selectedDate;
-            }
-
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch;
-        });
-
-        const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && !selectedDate && !selectedStatus;
-        if (noFiltersApplied) {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            sevenDaysAgo.setHours(0, 0, 0, 0);
-
-            filtered = filtered.filter(sale => {
-                if (!sale.created) return false;
-                return sale.created.toDate() >= sevenDaysAgo;
-            });
-        }
-        return filtered;
-    };
-
     const fetchMpAccounts = async () => {
         if (!productMpAccountSelect) return;
         try {
-            const snap = await getDocs(collection(db, 'mercadopagoAccounts'));
-            let options = '<option value="default">Store (Matriz)</option>';
-            snap.forEach(doc => {
-                const acc = doc.data();
-                options += `<option value="${doc.id}">${acc.label || 'Sem Nome'} (${acc.userId})</option>`;
+            const q = query(collection(db, 'mercadopagoAccounts'));
+            const querySnapshot = await getDocs(q);
+            
+            // Keep the default option
+            productMpAccountSelect.innerHTML = '<option value="default">Vidual / Principal (Default)</option>';
+            
+            querySnapshot.forEach((doc) => {
+                const account = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = account.name || doc.id;
+                productMpAccountSelect.appendChild(option);
             });
-            productMpAccountSelect.innerHTML = options;
         } catch (error) {
-            console.error('Erro ao buscar contas do Mercado Pago:', error);
+            console.error('Error fetching MP Accounts:', error);
         }
     };
 
@@ -696,19 +678,7 @@ export async function setupStorePage() {
         }
     };
 
-    if (productSearchInput) {
-        productSearchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredProducts = allProducts.filter(p => 
-                p.name.toLowerCase().includes(searchTerm) || 
-                (p.category && p.category.toLowerCase().includes(searchTerm))
-            );
-            displayProducts(filteredProducts);
-        });
-    }
-
     const displayProducts = (productsToDisplay) => {
-        populateRecommendedProductsSelect();
         productsTableBody.innerHTML = '';
         if (productsToDisplay.length === 0) {
             productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
@@ -717,7 +687,7 @@ export async function setupStorePage() {
 
         productsToDisplay.forEach(product => {
             const row = productsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700');
+            row.classList.add('border-b', 'border-gray-800', 'hover:bg-gray-800/30', 'transition-colors');
 
             let price;
             if (product.priceType === 'variable' && product.priceVariants) {
@@ -729,35 +699,27 @@ export async function setupStorePage() {
                 price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             }
 
-            const productUrl = `${window.location.origin.replace('/intranet', '')}/produto.html?id=${product.id}`;
-            const visibilityBadge = product.visible 
-                ? '<span class="status-badge status-badge-visible">Visível</span>' 
-                : '<span class="status-badge status-badge-invisible">Invisível</span>';
-            const availabilityBadge = product.available 
-                ? '<span class="status-badge status-badge-available">Disponível</span>' 
-                : '<span class="status-badge status-badge-unavailable">Indisponível</span>';
-            const publicBadge = product.acessoPublico 
-                ? '<span class="status-badge status-badge-public">Público</span>' 
-                : '<span class="status-badge status-badge-private">Privado</span>';
-
             row.innerHTML = `
-                <td class="p-4" data-label="Nome">${product.name}</td>
-                <td class="p-4" data-label="Preço">${price}</td>
-                <td class="p-4" data-label="Status">
-                    <div class="flex items-center gap-2">
-                        ${visibilityBadge}
-                        ${availabilityBadge}
-                        ${publicBadge}
-                    </div>
+                <td class="p-4">
+                    <div class="font-bold text-white">${product.name}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">${product.category || 'Geral'}</div>
                 </td>
-                <td class="p-4" data-label="Link">
-                    <button class="store-action-btn btn-copy copy-link-btn" data-link="${productUrl}">
-                        <i class="fas fa-copy"></i> Copiar
+                <td class="p-4 font-mono text-sm text-gray-300 font-bold">${price}</td>
+                <td class="p-4">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                        ${product.visible ? 'Ativo' : 'Inativo'}
+                    </span>
+                </td>
+                <td class="p-4">
+                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-all copy-link-btn" 
+                        data-link="https://www.kihap.com.br/store/checkout?product=${product.id}">
+                        <i class="fas fa-link text-xs"></i>
                     </button>
                 </td>
-                <td class="p-4" data-label="Ações">
-                    <button class="store-action-btn btn-edit edit-btn" data-id="${product.id}">
-                        <i class="fas fa-pencil-alt"></i> Editar
+                <td class="p-4 text-right">
+                    <button class="inline-flex items-center gap-2 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all edit-btn" data-id="${product.id}">
+                        <i class="fas fa-pencil-alt text-[10px]"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Editar</span>
                     </button>
                 </td>
             `;
@@ -765,6 +727,7 @@ export async function setupStorePage() {
     };
 
     const populateRecommendedProductsSelect = () => {
+        if (!recommendedProductsSelect) return;
         const currentProductId = productIdInput.value;
         recommendedProductsSelect.innerHTML = '';
         allProducts.forEach(product => {
@@ -778,64 +741,30 @@ export async function setupStorePage() {
     };
 
     const openProductModal = () => {
-        productModal.classList.remove('hidden', 'opacity-0');
+        productModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     };
 
     const closeProductModal = () => {
         productModal.classList.add('hidden');
         document.body.style.overflow = 'auto';
-        resetProductForm();
+        productForm.reset();
+        eventConfigContainer.classList.add('hidden');
+        eventSlotsList.innerHTML = '';
+        if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
     };
 
-    if (addProductBtn) addProductBtn.addEventListener('click', () => {
-        resetProductForm();
-        openProductModal();
-    });
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', () => {
+            productFormTitle.textContent = 'Adicionar Produto';
+            productIdInput.value = '';
+            if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
+            populateRecommendedProductsSelect();
+            openProductModal();
+        });
+    }
     if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductModal);
     if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductModal);
-
-    const resetProductForm = () => {
-        productForm.reset();
-        productIdInput.value = '';
-        if (productCategoryInput) productCategoryInput.value = '';
-        productImageInput.dataset.existingImageUrl = '';
-        productVisibleInput.checked = false;
-        productAvailableInput.checked = true; // Default to available
-        productPublicInput.checked = false;
-        productIsTicketInput.checked = false;
-        if (productIsSubscriptionInput) productIsSubscriptionInput.checked = false;
-        productAvailabilityDateInput.value = '';
-        productHasSizesInput.checked = false;
-        productSizesContainer.classList.add('hidden');
-        productSizesInput.value = '';
-        if (productSizesLabelInput) productSizesLabelInput.value = '';
-        if (productVariantsLabelInput) productVariantsLabelInput.value = '';
-        productAskProfessorInput.checked = false;
-        productAskAgeInput.checked = false;
-        productControlStockInput.checked = false;
-        stockContainer.classList.add('hidden');
-        productStockQuantityInput.value = '';
-        productCustomUnitsInput.value = '';
-        priceVariantsList.innerHTML = '';
-        lotesList.innerHTML = '';
-        kitItemsList.innerHTML = '';
-        if (addonsList) addonsList.innerHTML = '';
-        recommendedProductsSelect.value = '';
-        Array.from(recommendedProductsSelect.options).forEach(option => option.selected = false);
-        document.querySelector('input[name="price-type"][value="fixed"]').checked = true;
-        fixedPriceContainer.classList.remove('hidden');
-        variablePricesContainer.classList.add('hidden');
-        lotesContainer.classList.add('hidden');
-        kitContainer.classList.add('hidden');
-        if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
-        if (productMpAccountSelect) productMpAccountSelect.value = 'default';
-        if (productMpSplitInput) productMpSplitInput.value = '';
-        if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
-        productFormTitle.textContent = 'Adicionar Novo Produto';
-        saveProductBtn.textContent = 'Salvar Produto';
-        sendBulkEmailsBtn.classList.add('hidden');
-    };
 
     if (productForm) productForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -854,7 +783,9 @@ export async function setupStorePage() {
                 imageUrl = await getDownloadURL(snapshot.ref);
             }
 
+            const eventConfigData = getEventConfigFromUI();
             const priceType = document.querySelector('input[name="price-type"]:checked').value;
+
             const productData = {
                 name: productNameInput.value,
                 category: productCategoryInput.value || '',
@@ -876,7 +807,9 @@ export async function setupStorePage() {
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
                 mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
                 sizesLabel: productSizesLabelInput ? productSizesLabelInput.value : '',
-                variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : ''
+                variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : '',
+                isEvent: eventConfigData.isEvent,
+                eventConfig: eventConfigData.eventConfig
             };
 
             // Handle stock fields
@@ -1130,6 +1063,20 @@ export async function setupStorePage() {
                             option.selected = true;
                         }
                     });
+                }
+
+                // Handle Event Config load
+                if (productIsEventInput) {
+                    productIsEventInput.checked = product.isEvent || false;
+                    eventConfigContainer.classList.toggle('hidden', !productIsEventInput.checked && !product.isEvent);
+                    if (eventSlotsList) {
+                        eventSlotsList.innerHTML = '';
+                        if (product.eventConfig && product.eventConfig.scheduleSlots) {
+                            product.eventConfig.scheduleSlots.forEach(slot => {
+                                addEventSlotRow(slot.variationName, slot.day, slot.time, slot.ring, slot.minAge, slot.maxAge, slot.programId || 'tradicional');
+                            });
+                        }
+                    }
                 }
 
                 saveProductBtn.textContent = 'Atualizar Produto';
@@ -1395,6 +1342,227 @@ export async function setupStorePage() {
         }
     });
 
+    // --- EVENT CONFIGURATION LOGIC ---
+    const refreshAllEventSlotDropdowns = () => {
+        if (!eventSlotsList) return;
+        const variants = getCurrentProductVariants();
+        const slots = eventSlotsList.querySelectorAll('.event-slot-row');
+        slots.forEach(slot => {
+            const select = slot.querySelector('[name="event-slot-category"]');
+            if (select) {
+                const currentValue = select.value;
+                let optionsHtml = variants.map(v => `<option value="${v}" ${v === currentValue ? 'selected' : ''}>${v}</option>`).join('');
+                if (currentValue && !variants.includes(currentValue)) {
+                    optionsHtml = `<option value="${currentValue}" selected>${currentValue} (Variação Antiga / Não Definida)</option>` + optionsHtml;
+                }
+                select.innerHTML = optionsHtml;
+            }
+        });
+    };
+
+    // Listeners for real-time sync with price variations
+    if (priceVariantsList) {
+        priceVariantsList.addEventListener('input', (e) => {
+            if (e.target.name === 'variant-name') refreshAllEventSlotDropdowns();
+        });
+        priceVariantsList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-price-variant-btn')) {
+                setTimeout(refreshAllEventSlotDropdowns, 50);
+            }
+        });
+    }
+    if (lotesList) {
+        lotesList.addEventListener('input', (e) => {
+            if (e.target.name === 'lote-name') refreshAllEventSlotDropdowns();
+        });
+        lotesList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-lote-btn')) {
+                setTimeout(refreshAllEventSlotDropdowns, 50);
+            }
+        });
+    }
+    if (addPriceVariantBtn) addPriceVariantBtn.addEventListener('click', () => setTimeout(refreshAllEventSlotDropdowns, 50));
+    if (addLoteBtn) addLoteBtn.addEventListener('click', () => setTimeout(refreshAllEventSlotDropdowns, 50));
+
+    if (productNameInput) {
+        productNameInput.addEventListener('input', () => refreshAllEventSlotDropdowns());
+    }
+
+    document.querySelectorAll('input[name="price-type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            setTimeout(refreshAllEventSlotDropdowns, 50);
+        });
+    });
+
+    if (productIsEventInput) {
+        productIsEventInput.addEventListener('change', () => {
+            const isEvent = productIsEventInput.checked;
+            eventConfigContainer.classList.toggle('hidden', !isEvent);
+            if (isEvent) {
+                refreshAllEventSlotDropdowns();
+                // Força o campo de idade se for evento, para garantir a precisão dos ringues
+                if (productAskAgeInput) productAskAgeInput.checked = true;
+            }
+        });
+    }
+
+    const kiHapPrograms = {
+        tradicional: {
+            label: 'Tradicional',
+            belts: ['Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida', 'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida', 'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida', 'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida', 'Vermelha e preta', 'Preta']
+        },
+        littles: {
+            label: 'Littles',
+            belts: ['Littles Branca', 'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta', 'Littles Jacaré', 'Littles Coruja', 'Littles Arara', 'Littles Macaco', 'Littles Fênix']
+        },
+        baby_littles: {
+            label: 'Baby Littles',
+            belts: ['Baby Littles Branco', 'Baby Littles Amarelo', 'Baby Littles Laranja', 'Baby Littles Verde']
+        }
+    };
+
+    const addEventSlotRow = (variationName = '', day = '', time = '', ring = '', minAge = '', maxAge = '', programId = 'tradicional') => {
+        const slotRow = document.createElement('div');
+        slotRow.className = 'event-slot-row bg-purple-900/10 p-5 rounded-2xl border border-purple-600/20 mb-4 transition-all hover:bg-purple-900/20 shadow-lg';
+        
+        // Handle legacy data where variationName might be the belt
+        // If variationName exists but programId is default, try to detect program
+        if (variationName && programId === 'tradicional') {
+            for (const [id, data] of Object.entries(kiHapPrograms)) {
+                if (data.belts.includes(variationName)) {
+                    programId = id;
+                    break;
+                }
+            }
+        }
+
+        const programOptions = Object.entries(kiHapPrograms).map(([id, data]) => 
+            `<option value="${id}" ${id === programId ? 'selected' : ''}>${data.label}</option>`
+        ).join('');
+
+        const updateBeltsForSlot = (selectEl, selectedProgram, selectedBelt) => {
+            const belts = kiHapPrograms[selectedProgram]?.belts || [];
+            selectEl.innerHTML = belts.map(b => `<option value="${b}" ${b === selectedBelt ? 'selected' : ''}>${b}</option>`).join('');
+        };
+
+        slotRow.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Programa</label>
+                        <select name="event-slot-program" 
+                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner">
+                            ${programOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Graduação (Faixa)</label>
+                        <select name="event-slot-category" 
+                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Dia do Evento</label>
+                        <input type="text" name="event-slot-day" value="${day}" placeholder="Ex: Sábado" 
+                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Hora</label>
+                            <input type="text" name="event-slot-time" value="${time}" placeholder="09:00" 
+                                class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 text-center shadow-inner">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Ringue</label>
+                            <input type="number" name="event-slot-ring" value="${ring}" placeholder="1" 
+                                class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 text-center shadow-inner font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Idade Mín.</label>
+                        <input type="number" name="event-slot-min-age" value="${minAge}" placeholder="0" 
+                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 text-center shadow-inner">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Idade Máx.</label>
+                        <input type="number" name="event-slot-max-age" value="${maxAge}" placeholder="99" 
+                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 text-center shadow-inner">
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2 border-t border-purple-600/10">
+                    <button type="button" class="remove-event-slot-btn text-red-400 hover:text-red-300 px-4 py-2 text-xs font-bold uppercase flex items-center gap-2 bg-red-500/5 rounded-lg border border-red-500/10 transition-all hover:bg-red-500/10">
+                        <i class="fas fa-trash-alt text-[10px]"></i> Remover Slot
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const programSelect = slotRow.querySelector('[name="event-slot-program"]');
+        const beltSelect = slotRow.querySelector('[name="event-slot-category"]');
+
+        programSelect.addEventListener('change', () => {
+            updateBeltsForSlot(beltSelect, programSelect.value, '');
+        });
+
+        // Initial population
+        updateBeltsForSlot(beltSelect, programId, variationName);
+
+        eventSlotsList.appendChild(slotRow);
+    };
+
+    if (addEventSlotBtn) {
+        addEventSlotBtn.addEventListener('click', () => addEventSlotRow());
+    }
+
+    if (eventSlotsList) {
+        eventSlotsList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-event-slot-btn');
+            if (btn) btn.closest('.event-slot-row').remove();
+        });
+    }
+
+    const getEventConfigFromUI = () => {
+        const slots = [];
+        const rows = eventSlotsList.querySelectorAll('.event-slot-row');
+        rows.forEach(row => {
+            const programSelect = row.querySelector('[name="event-slot-program"]');
+            const programId = programSelect ? programSelect.value : 'tradicional';
+            const categorySelect = row.querySelector('[name="event-slot-category"]');
+            const category = categorySelect ? categorySelect.value.trim() : '';
+            const day = row.querySelector('[name="event-slot-day"]').value.trim();
+            const time = row.querySelector('[name="event-slot-time"]').value.trim();
+            const ring = parseInt(row.querySelector('[name="event-slot-ring"]').value) || 0;
+            const minAge = parseInt(row.querySelector('[name="event-slot-min-age"]').value) || null;
+            const maxAge = parseInt(row.querySelector('[name="event-slot-max-age"]').value) || null;
+            
+            if (category) {
+                slots.push({ 
+                    variationName: category, 
+                    programId: programId,
+                    day, 
+                    time, 
+                    ring, 
+                    minAge, 
+                    maxAge 
+                });
+            }
+        });
+        return {
+            isEvent: productIsEventInput.checked,
+            eventConfig: {
+                scheduleSlots: slots
+            }
+        };
+    };
+
     // --- Modal Logic ---
     const openModalWithSaleDetails = async (saleId) => {
         const sale = allSales.find(s => s.id === saleId);
@@ -1538,11 +1706,10 @@ export async function setupStorePage() {
                             <p><span class="text-gray-400">Telefone:</span> <span class="text-white">${sale.userPhone || 'N/A'}</span></p>
                             <p><span class="text-gray-400">CPF:</span> <span class="text-white">${sale.userCpf || 'N/A'}</span></p>
                             ${sale.userAge ? `<p><span class="text-gray-400">Idade:</span> <span class="text-white">${sale.userAge}</span></p>` : ''}
-                            <div class="pt-2 border-t border-gray-700/50 mt-2">
-                                <p><span class="text-gray-400">Unidade:</span> <span class="text-white">${sale.userUnit || 'N/A'}</span></p>
-                                <p><span class="text-gray-400">Programa:</span> <span class="text-white">${sale.userPrograma || 'N/A'}</span></p>
-                                <p><span class="text-gray-400">Graduação:</span> <span class="text-white">${sale.userGraduacao || 'N/A'}</span></p>
-                            </div>
+                            <p><span class="text-gray-400">Unidade:</span> <span class="text-white">${sale.userUnit || 'N/A'}</span></p>
+                            <p><span class="text-gray-400">Programa:</span> <span class="text-white">${sale.userPrograma || 'N/A'}</span></p>
+                            <p><span class="text-gray-400">Graduação:</span> <span class="text-white">${sale.userGraduacao || 'N/A'}</span></p>
+                        </div>
                         </div>
                     </div>
 
@@ -1770,31 +1937,91 @@ export async function setupStorePage() {
     const initialLoad = async () => {
         await fetchMpAccounts(); // Fetch MP Accounts for product forms
         await fetchProducts(); // Fetch products first to populate filter
-        await fetchSales();   // Fetch sales
+        fetchSales();   // Fetch sales
         populateFilters();    // Then populate filters with data from both
+        populateEventFilter(); // Populate the events tab filter as well
         await fetchBanners();
         await fetchCoupons();
         // fetchCheckins() is now called when switching to the tab
         applyFilters();
     };
 
-    // --- Events Tab Logic ---
-    const fetchCheckins = async () => {
-        eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando check-ins...</td></tr>';
+    // --- Events Tab Logic (Upgraded) ---
+    const fetchEventSubscribers = async () => {
+        const selectedProductId = eventProductFilter.value;
+        if (!selectedProductId) {
+            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 italic">Selecione um evento para visualizar os inscritos.</td></tr>';
+            updateEventKPIs([]);
+            if (eventRingFilter) eventRingFilter.innerHTML = '<option value="">Todos</option>';
+            if (eventUnitFilter) eventUnitFilter.innerHTML = '<option value="">Todas</option>';
+            return;
+        }
+
+        eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Carregando inscritos...</td></tr>';
         try {
-            const q = query(collection(db, 'inscricoesFaixaPreta'), where('checkinStatus', '==', 'realizado'), orderBy('checkinTimestamp', 'desc'));
+            const q = query(
+                collection(db, 'inscricoesFaixaPreta'),
+                where('productId', '==', selectedProductId),
+                where('paymentStatus', '==', 'paid'),
+                orderBy('created', 'desc')
+            );
             const querySnapshot = await getDocs(q);
             allCheckins = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            populateEventFilter();
+            
+            // Popula filtros dinâmicos de Ringue e Unidade com base nos inscritos deste evento
+            const rings = new Set();
+            const units = new Set();
+            allCheckins.forEach(sub => {
+                if (sub.eventRing) rings.add(sub.eventRing);
+                if (sub.userUnit) units.add(sub.userUnit);
+            });
+
+            if (eventRingFilter) {
+                const sortedRings = Array.from(rings).sort((a, b) => a - b);
+                eventRingFilter.innerHTML = '<option value="">Todos</option>' + 
+                    sortedRings.map(r => `<option value="${r}">Ringue ${r}</option>`).join('');
+            }
+
+            if (eventUnitFilter) {
+                const sortedUnits = Array.from(units).sort();
+                eventUnitFilter.innerHTML = '<option value="">Todas</option>' + 
+                    sortedUnits.map(u => `<option value="${u}">${u}</option>`).join('');
+            }
+
+            applyEventFilters();
         } catch (error) {
-            console.error('Error fetching check-ins:', error);
-            eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar check-ins.</td></tr>';
+            console.error('Error fetching event subscribers:', error);
+            eventsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500">Erro ao carregar inscritos: ${error.message}</td></tr>`;
+        }
+    };
+
+    const updateEventKPIs = (subscribers) => {
+        if (totalEventSubscribersElem) totalEventSubscribersElem.textContent = subscribers.length;
+        
+        const checkins = subscribers.filter(s => s.checkinStatus === 'realizado');
+        if (totalEventCheckinsElem) totalEventCheckinsElem.textContent = checkins.length;
+
+        if (ringStatsList) {
+            const rings = {};
+            subscribers.forEach(s => {
+                const ring = s.eventRing || 'S/R';
+                rings[ring] = (rings[ring] || 0) + 1;
+            });
+
+            ringStatsList.innerHTML = Object.entries(rings)
+                .sort((a, b) => a[0] - b[0])
+                .map(([ring, count]) => `
+                    <div class="px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 min-w-[80px] text-center">
+                        <p class="text-[10px] text-gray-500 uppercase">Ringue ${ring}</p>
+                        <p class="text-lg font-bold text-blue-400">${count}</p>
+                    </div>
+                `).join('') || '<p class="text-xs text-gray-600 italic">Nenhum dado por ringue</p>';
         }
     };
 
     const populateEventFilter = () => {
-        const eventProducts = allProducts.filter(p => p.isTicket);
-        eventProductFilter.innerHTML = '<option value="">Todos os Eventos</option>';
+        const eventProducts = allProducts.filter(p => p.isEvent || p.isTicket);
+        eventProductFilter.innerHTML = '<option value="">Selecione um Evento...</option>';
         eventProducts.forEach(product => {
             const option = document.createElement('option');
             option.value = product.id;
@@ -1803,51 +2030,102 @@ export async function setupStorePage() {
         });
     };
 
-    const displayCheckins = (checkinsToDisplay) => {
+    const displayEventSubscribers = (subscribers) => {
         eventsTableBody.innerHTML = '';
-        if (checkinsToDisplay.length === 0) {
-            eventsTableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Nenhum check-in encontrado.</td></tr>';
+        if (subscribers.length === 0) {
+            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Nenhum inscrito encontrado com estes filtros.</td></tr>';
             return;
         }
 
-        checkinsToDisplay.forEach(checkin => {
+        subscribers.forEach(sub => {
             const row = eventsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer');
-            row.dataset.saleId = checkin.id; // Reutiliza o modal de detalhes da venda
-            const checkinDate = checkin.checkinTimestamp ? new Date(checkin.checkinTimestamp.toDate()).toLocaleString('pt-BR') : 'N/A';
+            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer', 'transition-colors');
+            row.dataset.saleId = sub.id;
+
+            const checkinStatusClass = sub.checkinStatus === 'realizado' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400';
+            const checkinStatusText = sub.checkinStatus === 'realizado' ? 'Check-in OK' : 'Pendente';
+            const graduation = sub.userGraduacao || sub.variationName || sub.chosenVariant || 'N/A';
+            const program = sub.userPrograma ? ` (${sub.userPrograma})` : '';
+            const variant = `${graduation}${program}`;
+            const ring = sub.eventRing || '-';
+            const dateTime = sub.eventDay && sub.eventTime ? `${sub.eventDay} às ${sub.eventTime}` : (sub.eventTime || '-');
 
             row.innerHTML = `
-                <td class="p-4" data-label="Nome do Cliente">${checkin.userName || 'N/A'}</td>
-                <td class="p-4" data-label="Email">${checkin.userEmail || 'N/A'}</td>
-                <td class="p-4" data-label="Produto (Evento)">${checkin.productName || 'N/A'}</td>
-                <td class="p-4" data-label="Data do Check-in">${checkinDate}</td>
+                <td class="p-4 font-mono text-xs text-blue-400">#${sub.attendeeNumber || '---'}</td>
+                <td class="p-4">
+                    <div class="font-medium">${sub.userName || 'N/A'}</div>
+                    <div class="text-[10px] text-gray-500">${sub.userEmail || ''}</div>
+                </td>
+                <td class="p-4 text-xs">${variant}</td>
+                <td class="p-4 text-center"><span class="px-2 py-1 bg-blue-500/10 rounded text-blue-400 font-bold">${ring}</span></td>
+                <td class="p-4 text-xs text-gray-400">${dateTime}</td>
+                <td class="p-4">
+                    <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${checkinStatusClass}">
+                        ${checkinStatusText}
+                    </span>
+                </td>
             `;
         });
+        updateEventKPIs(subscribers);
     };
 
     const applyEventFilters = () => {
-        const selectedProductId = eventProductFilter.value;
         const searchTerm = eventSearchInput.value.toLowerCase();
+        const ringFilter = eventRingFilter?.value || '';
+        const unitFilter = eventUnitFilter?.value || '';
 
-        let filteredCheckins = allCheckins.filter(checkin => {
-            const productMatch = !selectedProductId || checkin.productId === selectedProductId;
-            const nameMatch = !searchTerm || (checkin.userName && checkin.userName.toLowerCase().includes(searchTerm));
-            const emailMatch = !searchTerm || (checkin.userEmail && checkin.userEmail.toLowerCase().includes(searchTerm));
-
-            return productMatch && (nameMatch || emailMatch);
+        let filtered = allCheckins.filter(sub => {
+            const nameMatch = !searchTerm || (sub.userName && sub.userName.toLowerCase().includes(searchTerm));
+            const emailMatch = !searchTerm || (sub.userEmail && sub.userEmail.toLowerCase().includes(searchTerm));
+            const ringMatch = !ringFilter || (sub.eventRing == ringFilter);
+            const unitMatch = !unitFilter || (sub.userUnit == unitFilter);
+            
+            return (nameMatch || emailMatch) && ringMatch && unitMatch;
         });
-
-        displayCheckins(filteredCheckins);
+        displayEventSubscribers(filtered);
     };
 
-    if (eventProductFilter) eventProductFilter.addEventListener('change', applyEventFilters);
-    if (eventSearchInput) eventSearchInput.addEventListener('keyup', applyEventFilters);
+    const exportEventToCSV = () => {
+        if (allCheckins.length === 0) {
+            alert('Não há dados para exportar.');
+            return;
+        }
+        const selectedProduct = allProducts.find(p => p.id === eventProductFilter.value);
+        const eventName = selectedProduct ? selectedProduct.name.replace(/\s+/g, '_') : 'evento';
+        const headers = ['Numero', 'Nome', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
+        const rows = allCheckins.map(sub => [
+            sub.attendeeNumber || '',
+            sub.userName || '',
+            sub.userEmail || '',
+            sub.userPhone || '',
+            sub.userCPF || '',
+            sub.variationName || sub.chosenVariant || '',
+            sub.eventRing || '',
+            sub.eventDay || '',
+            sub.eventTime || '',
+            sub.checkinStatus === 'realizado' ? 'SIM' : 'NAO',
+            sub.created ? new Date(sub.created.toDate()).toLocaleString('pt-BR') : ''
+        ]);
+        let csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n"
+            + rows.map(e => e.map(field => `"${field}"`).join(",")).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `inscritos_${eventName}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
+    if (eventProductFilter) eventProductFilter.addEventListener('change', fetchEventSubscribers);
+    if (eventSearchInput) eventSearchInput.addEventListener('keyup', applyEventFilters);
+    if (eventRingFilter) eventRingFilter.addEventListener('change', applyEventFilters);
+    if (eventUnitFilter) eventUnitFilter.addEventListener('change', applyEventFilters);
+    if (exportEventCsvBtn) exportEventCsvBtn.addEventListener('click', exportEventToCSV);
     if (eventsTableBody) eventsTableBody.addEventListener('click', (e) => {
         const row = e.target.closest('tr');
-        if (row && row.dataset.saleId) {
-            openModalWithSaleDetails(row.dataset.saleId);
-        }
+        if (row && row.dataset.saleId) openModalWithSaleDetails(row.dataset.saleId);
     });
 
 

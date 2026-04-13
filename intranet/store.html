@@ -650,37 +650,79 @@
 
             <!-- Events Content -->
             <div id="content-events" class="tab-content hidden">
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Event KPIs -->
+                <div id="event-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
                         <div>
-                            <label for="event-product-filter" class="text-sm font-medium text-gray-400">Filtrar por
-                                Evento (Produto)</label>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Total Inscritos</p>
+                            <p id="total-event-subscribers" class="text-2xl font-bold text-white">0</p>
+                        </div>
+                        <div class="text-2xl text-blue-500"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div id="ring-stats-container" class="lg:col-span-2 bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 overflow-x-auto">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter mb-2">Inscritos por Ringue</p>
+                        <div id="ring-stats-list" class="flex gap-4">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Check-ins</p>
+                            <p id="total-event-checkins" class="text-2xl font-bold text-green-500">0</p>
+                        </div>
+                        <div class="text-2xl text-green-500"><i class="fas fa-user-check"></i></div>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 border border-gray-800">
+                    <div class="flex flex-col lg:flex-row items-end gap-3">
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="event-product-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Filtrar por Evento</label>
                             <select id="event-product-filter"
-                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                                 <option value="">Todos os Eventos</option>
                             </select>
                         </div>
-                        <div>
-                            <label for="event-search-input" class="text-sm font-medium text-gray-400">Buscar por
-                                Nome/Email:</label>
-                            <input type="text" id="event-search-input" placeholder="Nome ou e-mail do cliente..."
-                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="w-full lg:w-32">
+                            <label for="event-ring-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Ringue</label>
+                            <select id="event-ring-filter"
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Todos</option>
+                            </select>
                         </div>
+                        <div class="w-full lg:w-40">
+                            <label for="event-unit-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Unidade</label>
+                            <select id="event-unit-filter"
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="event-search-input" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Buscar Participante</label>
+                            <input type="text" id="event-search-input" placeholder="Nome ou e-mail..."
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <button id="export-event-csv-btn" class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all flex items-center h-[38px]">
+                            <i class="fas fa-file-excel mr-2"></i> Exportar
+                        </button>
                     </div>
                 </div>
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+
+                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto border border-gray-800">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-gray-700">
+                            <tr class="border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                                <th class="p-4">Nº</th>
                                 <th class="p-4">Nome do Cliente</th>
-                                <th class="p-4">Email</th>
-                                <th class="p-4">Produto (Evento)</th>
-                                <th class="p-4">Data do Check-in</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4 text-center">Ringue</th>
+                                <th class="p-4">Dia/Hora</th>
+                                <th class="p-4">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="events-table-body">
+                        <tbody id="events-table-body" class="text-sm">
                             <tr>
-                                <td colspan="4" class="text-center p-8">Carregando...</td>
+                                <td colspan="6" class="text-center p-8 text-gray-500 italic">Selecione um evento para visualizar os inscritos.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -807,6 +849,22 @@
                                 class="block text-sm font-medium text-gray-400">Unidade</label>
                             <select id="manual-sale-user-unit"
                                 class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="manual-sale-user-age"
+                                    class="block text-sm font-medium text-gray-400">Idade</label>
+                                <input type="number" id="manual-sale-user-age"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: 12">
+                            </div>
+                            <div>
+                                <label for="manual-sale-user-variant"
+                                    class="block text-sm font-medium text-gray-400">Faixa / Variação</label>
+                                <input type="text" id="manual-sale-user-variant"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: Branca">
+                            </div>
                         </div>
 
                         <!-- Produtos -->
@@ -1109,9 +1167,32 @@
                                     <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
+                            <div class="p-3 bg-purple-900/10 border border-purple-600/30 rounded-lg flex items-center justify-between col-span-1 sm:col-span-2">
+                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider"><i class="fas fa-calendar-star mr-2"></i>Configurar como Evento?</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-event" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-700">
+                        <!-- NEW: Full width block for Event Configuration -->
+                        <div id="event-config-container" class="hidden mt-6 p-6 bg-purple-900/5 border border-purple-600/20 rounded-2xl space-y-4 animate-fadeIn">
+                            <h3 class="text-sm font-bold text-purple-400 flex items-center">
+                                <i class="fas fa-clock mr-2 text-xs"></i>Cronograma por Categoria (Variações)
+                            </h3>
+                            <p class="text-xs text-gray-500 mb-2 italic">Mapeie as variações deste produto para ringues e horários específicos. As opções abaixo são puxadas automaticamente das variações de preço acima.</p>
+                            
+                            <div id="event-slots-list" class="space-y-4">
+                                <!-- Slots managed by JS -->
+                            </div>
+                            
+                            <button type="button" id="add-event-slot-btn" class="w-full py-3 text-xs font-bold text-purple-400 bg-purple-400/10 border border-purple-400/30 rounded-xl hover:bg-purple-400/20 transition-all shadow-sm">
+                                <i class="fas fa-plus mr-1"></i> Adicionar Slot de Cronograma
+                            </button>
+                        </div>
+
+                        <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-700 mt-6">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-300">Controlar Estoque?</span>
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -1153,7 +1234,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                      <div>
                         <label for="product-custom-units" class="block text-sm font-medium text-gray-400">Unidades Específicas (opcional)</label>
                         <textarea id="product-custom-units" rows="2" placeholder="Ex: Unidade A, Unidade B"
@@ -1165,6 +1246,26 @@
                             class="w-full px-4 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 text-sm">
                         </select>
                     </div>
+                </div>
+
+                <!-- NEW: Full width block for Event Configuration -->
+                <div id="event-config-container" class="hidden mt-8 p-6 bg-purple-900/5 border border-purple-600/25 rounded-2xl space-y-4 animate-fadeIn shadow-2xl shadow-purple-900/10">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-purple-400 flex items-center">
+                                <i class="fas fa-calendar-alt mr-2 text-xs"></i>Configuração do Cronograma (Kihap Experience)
+                            </h3>
+                            <p class="text-[11px] text-gray-500 mt-1">Defina os ringues e horários baseados no Programa e Graduação do aluno.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="event-slots-list" class="space-y-4">
+                        <!-- Slots managed by JS -->
+                    </div>
+                    
+                    <button type="button" id="add-event-slot-btn" class="w-full py-3.5 text-xs font-bold text-purple-400 bg-purple-400/10 border border-purple-400/20 rounded-xl hover:bg-purple-400/20 transition-all shadow-sm border-dashed">
+                        <i class="fas fa-plus mr-1"></i> Adicionar Novo Horário ao Cronograma
+                    </button>
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-800">

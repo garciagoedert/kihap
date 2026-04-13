@@ -98,22 +98,53 @@ const sendTicketEmail = async (saleId, saleData) => {
                         <h1 style="color: #FFC107; font-size: 28px; text-transform: uppercase; margin-bottom: 20px;">Compra Confirmada!</h1>
                         <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName}</strong>.</p>
                         <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
-                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
                         
-                        <div style="margin: 40px 0; background-color: #fff; padding: 20px; display: inline-block; border-radius: 10px;">
-                            <img src="${qrCodeDataURL}" alt="QR Code" style="width: 200px;">
+                        ${saleData.isEvent ? `
+                        <div style="margin: 30px 0; background-color: #111; border: 1px solid #FFC107; border-radius: 10px; padding: 20px; text-align: left;">
+                            <h3 style="color: #FFC107; margin-top: 0; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Detalhes do Evento</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                                <div>
+                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Número</span>
+                                    <span style="color: #FFF; font-size: 18px; font-weight: bold;">#${saleData.attendeeNumber}</span>
+                                </div>
+                                <div>
+                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Ringue</span>
+                                    <span style="color: #FFF; font-size: 18px; font-weight: bold;">${saleData.eventRing || 'TBD'}</span>
+                                </div>
+                                <div>
+                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Data</span>
+                                    <span style="color: #FFF; font-size: 14px;">${saleData.eventDay || 'TBD'}</span>
+                                </div>
+                                <div>
+                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Horário</span>
+                                    <span style="color: #FFF; font-size: 14px;">${saleData.eventTime || 'TBD'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : `
+                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
+                        `}
+                        
+                        <div style="margin: 30px 0; background-color: #fff; padding: 15px; display: inline-block; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
+                            <img src="cid:ticket_qr" alt="QR Code" style="width: 180px; height: 180px; display: block;">
                         </div>
 
-                        <div style="margin-top: 30px; text-align: center;">
-                             <a href="https://www.kihap.com.br" style="background-color: #FFC107; color: #000; padding: 15px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; text-transform: uppercase;">Visitar Site</a>
+                        <div style="margin-top: 20px; text-align: center;">
+                             <a href="https://www.kihap.com.br" style="background-color: #FFC107; color: #000; padding: 15px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Visitar Site</a>
                         </div>
                         
                         <hr style="border: 0; border-top: 1px solid #222; margin: 40px 0;">
-                        <p style="font-size: 11px; color: #555;">ID da Compra: ${saleId}</p>
+                        <p style="font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px;">ID da Compra: ${saleId}</p>
                     </div>
                 </div>
             `,
-            attachments: [{ filename: 'ingresso.png', path: qrCodeDataURL }]
+            attachments: [
+                {
+                    filename: 'ticket_qr.png',
+                    path: qrCodeDataURL,
+                    cid: 'ticket_qr' // Identificador para o src="cid:ticket_qr"
+                }
+            ]
         };
 
         const info = await transporter.sendMail(mailOptions);
@@ -254,6 +285,78 @@ function extractPaymentDetails(payment) {
     };
 }
 
+// Helper para atribuir dados de evento (Kihap Experience) a um participante
+async function assignEventParticipantData(saleId, saleData, productData) {
+    // Agora aceita tanto isEvent quanto isTicket, desde que tenha configuração de cronograma
+    if (!productData || (!productData.isEvent && !productData.isTicket)) return {};
+
+    console.log(`[assignEventParticipantData] Produto ${saleData.productId} é um evento. Gerando dados...`);
+    
+    // Gerar Número de Participante Único (001-999) para este produto
+    let attendeeNumber = '001';
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 10) {
+        const num = Math.floor(Math.random() * 999) + 1;
+        attendeeNumber = num.toString().padStart(3, '0');
+        const check = await db.collection('inscricoesFaixaPreta')
+            .where('productId', '==', saleData.productId)
+            .where('attendeeNumber', '==', attendeeNumber)
+            .get();
+        if (check.empty) isUnique = true;
+        attempts++;
+    }
+
+    // Mapear Programa/Graduação e Idade para Ringue/Dia/Horário
+    let eventRing = '';
+    let eventDay = '';
+    let eventTime = '';
+
+    // Prioridade para os campos específicos de checkout que implementamos
+    const beltToMatch = (saleData.userGraduacao || saleData.chosenVariant || saleData.variationName || (saleData.priceData ? saleData.priceData.variantName : '')).trim();
+    const programToMatch = (saleData.userPrograma || '').trim();
+    const userAge = parseInt(saleData.userAge || saleData.userIdade || 0);
+    
+    console.log(`[assignEventParticipantData] Tentando match para: Programa=${programToMatch}, Faixa=${beltToMatch}, Idade=${userAge}`);
+
+    if (productData.eventConfig && productData.eventConfig.scheduleSlots) {
+        // Busca o slot que bate com o programa (opcional), variação E com a faixa etária
+        const slot = productData.eventConfig.scheduleSlots.find(s => {
+            // Match da faixa/variação (Case-insensitive e sem espaços)
+            const slotVariant = (s.variationName || '').trim().toLowerCase();
+            const userVariant = beltToMatch.toLowerCase();
+            const variantMatch = slotVariant === userVariant;
+            
+            // Match do programa: se o slot tiver programId, deve bater com o programa do usuário. 
+            const slotProgram = (s.programId || '').trim().toLowerCase();
+            const userProgram = programToMatch.toLowerCase();
+            const programMatch = !slotProgram || !userProgram || slotProgram === userProgram;
+            
+            // Match de idade
+            const ageMatch = (!s.minAge || userAge >= s.minAge) && (!s.maxAge || userAge <= s.maxAge);
+            
+            return variantMatch && programMatch && ageMatch;
+        });
+
+        if (slot) {
+            eventRing = slot.ring;
+            eventDay = slot.day;
+            eventTime = slot.time;
+            console.log(`[assignEventParticipantData] ✅ Slot encontrado: Ring ${eventRing}, ${eventDay} ${eventTime}`);
+        } else {
+            console.warn(`[assignEventParticipantData] ❌ Nenhum slot encontrado para ${beltToMatch} (${programToMatch}) com idade ${userAge}`);
+        }
+    }
+
+    return {
+        attendeeNumber,
+        eventRing,
+        eventDay,
+        eventTime,
+        isEvent: true
+    };
+}
+
 // Helper para atualizar uma venda como paga, enviar e-mail e notificar gerente
 async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paymentDetails = null) {
     if (saleData.paymentStatus === 'paid') {
@@ -262,11 +365,24 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     }
 
     const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
-    
+    const productRef = db.collection('products').doc(saleData.productId);
+    const productSnap = await productRef.get();
+    const productData = productSnap.exists ? productSnap.data() : null;
+
+    // --- LÓGICA DE EVENTO (Kihap Experience) ---
+    let eventUpdateData = {};
+    if (productData && (productData.isEvent || productData.isTicket)) {
+        eventUpdateData = await assignEventParticipantData(saleId, saleData, productData);
+        // Atualiza saleData local para que o e-mail contenha as informações
+        Object.assign(saleData, eventUpdateData);
+    }
+    // ------------------------------------------
+
     // Atualiza o status para 'paid'
     const updateData = { 
         paymentStatus: 'paid',
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...eventUpdateData
     };
     if (providerPaymentId) updateData.mercadoPagoPaymentId = providerPaymentId;
     if (paymentDetails) updateData.paymentDetails = paymentDetails;
@@ -276,28 +392,24 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
 
     // Controle de Estoque
     try {
-        const productRef = db.collection('products').doc(saleData.productId);
-        await db.runTransaction(async (transaction) => {
-            const productSnap = await transaction.get(productRef);
-            if (productSnap.exists) {
-                const product = productSnap.data();
-                if (product.controlStock === true) {
+        if (productData && productData.controlStock === true) {
+            const productRefLocal = db.collection('products').doc(saleData.productId);
+            await db.runTransaction(async (transaction) => {
+                const prodSnap = await transaction.get(productRefLocal);
+                if (prodSnap.exists) {
+                    const product = prodSnap.data();
                     const updateProductData = {
                         updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     };
 
                     if (product.hasSizes && product.sizeStock && saleData.userSize) {
-                        // Per-size stock decrement
                         const currentStock = product.sizeStock;
                         const selectedSize = saleData.userSize;
                         const currentQty = currentStock[selectedSize] || 0;
                         const newQty = Math.max(0, currentQty - 1);
-                        
-                        // Use dot notation to update only the specific size field
                         updateProductData[`sizeStock.${selectedSize}`] = newQty;
                         
-                        // Check if ALL sizes are now 0
-                        let allZero = newQty <= 0; // Start with the updated size
+                        let allZero = newQty <= 0;
                         if (allZero) {
                             for (const size in currentStock) {
                                 if (size !== selectedSize && (currentStock[size] || 0) > 0) {
@@ -306,47 +418,29 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
                                 }
                             }
                         }
-
-                        // Recalculate total stockQuantity
                         let total = 0;
                         for (const size in currentStock) {
                             total += (size === selectedSize ? newQty : (currentStock[size] || 0));
                         }
                         updateProductData.stockQuantity = total;
-
-                        if (allZero) {
-                            updateProductData.available = false;
-                            console.log(`[updateSaleToPaid] Todos os tamanhos do produto ${saleData.productId} zeraram. Marcado como indisponível.`);
-                        }
-                        console.log(`[updateSaleToPaid] Estoque do tamanho "${selectedSize}" do produto ${saleData.productId} atualizado para: ${newQty}`);
+                        if (allZero) updateProductData.available = false;
                     } else {
-                        // Simple (non-sized) stock decrement
                         let newQuantity = (product.stockQuantity || 0) - 1;
                         updateProductData.stockQuantity = Math.max(0, newQuantity);
-
-                        if (newQuantity <= 0) {
-                            updateProductData.available = false;
-                            console.log(`[updateSaleToPaid] Produto ${saleData.productId} ficou sem estoque. Marcado como indisponível.`);
-                        }
-
-                        console.log(`[updateSaleToPaid] Estoque atualizado para o produto ${saleData.productId}: ${updateProductData.stockQuantity}`);
+                        if (newQuantity <= 0) updateProductData.available = false;
                     }
-
-                    transaction.update(productRef, updateProductData);
+                    transaction.update(productRefLocal, updateProductData);
                 }
-            }
-        });
+            });
+        }
     } catch (stockError) {
         console.error('[updateSaleToPaid] Erro ao atualizar estoque:', stockError);
     }
 
     // Envio de e-mail (ingresso ou recibo)
     if (!saleData.emailSent) {
-        const productRef = db.collection('products').doc(saleData.productId);
-        const productSnap = await productRef.get();
-        
-        if (productSnap.exists) {
-            if (productSnap.data().isTicket) {
+        if (productData) {
+            if (productData.isTicket || productData.isEvent) {
                 console.log(`[updateSaleToPaid] Enviando e-mail de ingresso para ${saleId}`);
                 await sendTicketEmail(saleId, saleData);
             } else {
@@ -402,6 +496,53 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     
     if (!cartItems || cartItems.length === 0 || totalAmount === undefined || !globalUserData) {
         return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData, totalAmount.' });
+    }
+
+    // FAIL-SAFE: Se o valor for zero ou negativo (cupom 100%), processa como gratuito imediatamente
+    if (totalAmount <= 0) {
+        console.log('[createCartCheckoutSession] Valor zero ou negativo detectado. Redirecionando para processamento gratuito.');
+        // Aqui podemos ou redirecionar internamente ou processar. Vamos processar para garantir.
+        try {
+            const saleDocIds = [];
+            for (const cartItem of cartItems) {
+                const productRef = db.collection('products').doc(cartItem.productId);
+                const productSnap = await productRef.get();
+                if (!productSnap.exists) continue;
+                const product = productSnap.data();
+
+                for (const itemFormData of cartItem.formDataList) {
+                    let saleData = {
+                        ...itemFormData,
+                        ...globalUserData,
+                        productId: cartItem.productId,
+                        productName: cartItem.productName,
+                        amountTotal: 0,
+                        currency: 'brl',
+                        paymentStatus: 'paid',
+                        couponCode: couponCode || null,
+                        created: admin.firestore.FieldValue.serverTimestamp(),
+                    };
+
+                    if (product.isEvent || product.isTicket) {
+                        const eventData = await assignEventParticipantData(null, saleData, product);
+                        saleData = { ...saleData, ...eventData };
+                    }
+
+                    const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+                    saleDocIds.push(docRef.id);
+
+                    if (product.isTicket || product.isEvent) {
+                        await sendTicketEmail(docRef.id, saleData);
+                    } else {
+                        await sendPurchaseReceiptEmail(docRef.id, saleData);
+                    }
+                }
+            }
+            return res.status(200).json({ status: 'success', saleDocIds, isFree: true });
+        } catch (error) {
+            console.error('[createCartCheckoutSession] Erro no fail-safe gratuito:', error);
+            return res.status(500).json({ error: 'Erro ao processar compra gratuita.' });
+        }
     }
 
     try {
@@ -502,7 +643,7 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
             const product = productDoc.data();
 
             for (const itemFormData of cartItem.formDataList) {
-                const saleData = {
+                let saleData = {
                     ...itemFormData,
                     ...globalUserData,
                     productId: cartItem.productId,
@@ -513,6 +654,13 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                     couponCode: couponCode || null,
                     created: admin.firestore.FieldValue.serverTimestamp(),
                 };
+
+                // Lógica de Evento para compras gratuitas
+                if (product.isEvent || product.isTicket) {
+                    const eventData = await assignEventParticipantData(null, saleData, product);
+                    saleData = { ...saleData, ...eventData };
+                }
+
                 const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
 
                 if (product.isTicket) {
@@ -769,23 +917,16 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
 
                         // Check if we need to update status OR if we need to send a missing email
                         if (saleData.paymentStatus === 'pending') {
-                            await docRef.update({ paymentStatus: 'paid' });
-                            console.log(`Updated payment status to 'paid' for doc ${docId}`);
-                            // Update local variable to reflect change for notification logic
-                            saleData.paymentStatus = 'paid';
-                        }
-
-                        // Check if ticket email needs to be sent (idempotent check)
-                        if (!saleData.emailSent) {
-                            const productRef = db.collection('products').doc(saleData.productId);
-                            const productSnap = await productRef.get();
-                            
-                            if (productSnap.exists) {
-                                if (productSnap.data().isTicket) {
-                                    console.log(`[verifyPayment] Sending missing ticket email for ${docId}`);
+                            await updateSaleToPaid(docId, saleData);
+                        } else if (!saleData.emailSent) {
+                            // If already paid but email not sent, send it now
+                            const productRefInner = db.collection('products').doc(saleData.productId);
+                            const productSnapInner = await productRefInner.get();
+                            if (productSnapInner.exists) {
+                                const pData = productSnapInner.data();
+                                if (pData.isTicket || pData.isEvent) {
                                     await sendTicketEmail(docId, saleData);
                                 } else {
-                                    console.log(`[verifyPayment] Sending store receipt email for ${docId}`);
                                     await sendPurchaseReceiptEmail(docId, saleData);
                                 }
                             }
@@ -1371,22 +1512,8 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                         const saleSnap = await docRef.get();
 
                         if (saleSnap.exists && saleSnap.data().paymentStatus === 'pending') {
-                            await docRef.update({ paymentStatus: 'paid' });
-                            console.log(`Webhook: Status atualizado para 'pago' para a venda ${docId}`);
-
                             const saleData = saleSnap.data();
-                            const productRef = db.collection('products').doc(saleData.productId);
-                            const productSnap = await productRef.get();
-
-                            const isTicket = productSnap.exists && productSnap.data().isTicket;
-                            console.log(`[Webhook] Verificando produto ${saleData.productId} para a venda ${docId}. É um ingresso? -> ${isTicket}`);
-
-                            if (isTicket) {
-                                console.log(`[Webhook] Condição atendida. Chamando sendTicketEmail para a venda ${docId}.`);
-                                await sendTicketEmail(docId, saleData);
-                            } else {
-                                console.log(`[Webhook] Produto não é um ingresso. E-mail não será enviado para a venda ${docId}.`);
-                            }
+                            await updateSaleToPaid(docId, saleData);
                         }
                     }
                 } else {
@@ -1534,22 +1661,7 @@ exports.pagarmeWebhook = functions.https.onRequest(async (req, res) => {
                 // Lógica específica para 'paid'
                 if (newStatus === 'paid') {
                     const saleData = saleSnap.data();
-                    const productRef = db.collection('products').doc(saleData.productId);
-                    const productSnap = await productRef.get();
-
-                    if (productSnap.exists && productSnap.data().isTicket) {
-                        // Verifica se o email já foi enviado para não enviar duplicado
-                        if (!saleData.ticketEmailSent) {
-                            await sendTicketEmail(docId, saleData);
-                        } else {
-                            console.log(`[Pagar.me Webhook] E-mail de ingresso já enviado para a venda ${docId}.`);
-                        }
-                    } else {
-                        console.log(`[Pagar.me Webhook] Produto não é um ingresso. E-mail não será enviado para a venda ${docId}.`);
-                    }
-
-                    // Notification to Unit Manager
-                    await notifyManagerOfEnrollment(docId, saleData);
+                    await updateSaleToPaid(docId, saleData);
                 }
             }
         }

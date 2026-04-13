@@ -2,6 +2,7 @@ import { getUserData, onAuthReady, getCurrentUser } from './auth.js';
 import { db } from '../../intranet/firebase-config.js';
 import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
+import { notificationsManager } from '../../intranet/notifications-manager.js';
 
 function setupUIListeners() {
     // Sidebar toggle
@@ -171,9 +172,13 @@ async function loadComponents(pageSpecificSetup) {
         setupProfileMenu();
         updateUserProfileUI();
 
+
         onAuthReady((user) => {
             if (user) {
                 listenForChatNotifications(user.id);
+                // Inicializa o gerenciador de notificações para o aluno
+                notificationsManager.init();
+                notificationsManager.listen(user.id);
             }
         });
 
