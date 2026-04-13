@@ -99,40 +99,61 @@
                             <div id="nps-status-label" class="px-4 py-1.5 bg-yellow-500 text-black text-xs font-black uppercase rounded-full tracking-widest">Calculando...</div>
                         </div>
 
-                        <!-- Distribution Card -->
+                        <!-- Distribution & Categories Card -->
                         <div class="md:col-span-2 bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
-                            <div>
-                                <h3 class="text-gray-400 text-sm font-medium mb-4">Distribuição de Avaliações</h3>
-                                <div id="distribution-bars" class="space-y-4">
-                                    <!-- Promoter Bar -->
-                                    <div>
-                                        <div class="flex justify-between text-xs mb-1.5">
-                                            <span class="text-green-500 font-bold uppercase tracking-wider">Promotores</span>
-                                            <span id="promoter-percent" class="text-white font-bold">0%</span>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <!-- NPS Distribution -->
+                                <div>
+                                    <h3 class="text-gray-400 text-sm font-medium mb-4">Distribuição de Avaliações</h3>
+                                    <div id="distribution-bars" class="space-y-4">
+                                        <!-- Promoter Bar -->
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1.5">
+                                                <span class="text-green-500 font-bold uppercase tracking-wider">Promotores</span>
+                                                <span id="promoter-percent" class="text-white font-bold">0%</span>
+                                            </div>
+                                            <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                                <div id="promoter-bar" class="h-full bg-green-500 transition-all duration-1000" style="width: 0%"></div>
+                                            </div>
                                         </div>
-                                        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
-                                            <div id="promoter-bar" class="h-full bg-green-500 transition-all duration-1000" style="width: 0%"></div>
+                                        <!-- Passive Bar -->
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1.5">
+                                                <span class="text-yellow-500 font-bold uppercase tracking-wider">Passivos</span>
+                                                <span id="passive-percent" class="text-white font-bold">0%</span>
+                                            </div>
+                                            <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                                <div id="passive-bar" class="h-full bg-yellow-500 transition-all duration-1000" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <!-- Detractor Bar -->
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1.5">
+                                                <span class="text-red-500 font-bold uppercase tracking-wider">Detratores</span>
+                                                <span id="detractor-percent" class="text-white font-bold">0%</span>
+                                            </div>
+                                            <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                                <div id="detractor-bar" class="h-full bg-red-500 transition-all duration-1000" style="width: 0%"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <!-- Passive Bar -->
-                                    <div>
-                                        <div class="flex justify-between text-xs mb-1.5">
-                                            <span class="text-yellow-500 font-bold uppercase tracking-wider">Passivos</span>
-                                            <span id="passive-percent" class="text-white font-bold">0%</span>
-                                        </div>
-                                        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
-                                            <div id="passive-bar" class="h-full bg-yellow-500 transition-all duration-1000" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                    <!-- Detractor Bar -->
-                                    <div>
-                                        <div class="flex justify-between text-xs mb-1.5">
-                                            <span class="text-red-500 font-bold uppercase tracking-wider">Detratores</span>
-                                            <span id="detractor-percent" class="text-white font-bold">0%</span>
-                                        </div>
-                                        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
-                                            <div id="detractor-bar" class="h-full bg-red-500 transition-all duration-1000" style="width: 0%"></div>
-                                        </div>
+                                </div>
+
+                                <!-- Category Averages -->
+                                <div>
+                                    <h3 class="text-gray-400 text-sm font-medium mb-4">Satisfação por Categoria</h3>
+                                    <div class="grid grid-cols-1 gap-3">
+                                        ${['Estrutura', 'Limpeza', 'Materiais', 'Atendimento', 'Professores'].map(cat => `
+                                            <div class="flex items-center justify-between p-2.5 bg-[#111] rounded-xl border border-gray-800/50">
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${cat}</span>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden hidden sm:block">
+                                                        <div id="avg-bar-${cat.toLowerCase()}" class="h-full bg-yellow-500/50" style="width: 0%"></div>
+                                                    </div>
+                                                    <span id="avg-val-${cat.toLowerCase()}" class="text-sm font-black text-white">--</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
                                     </div>
                                 </div>
                             </div>
@@ -180,6 +201,7 @@
                                         <th class="p-4 border-b border-gray-800">Data</th>
                                         <th class="p-4 border-b border-gray-800">Aluno</th>
                                         <th class="p-4 border-b border-gray-800">Score</th>
+                                        <th class="p-4 border-b border-gray-800">Métricas</th>
                                         <th class="p-4 border-b border-gray-800">Unidade / Prof.</th>
                                         <th class="p-4 border-b border-gray-800">Comentário</th>
                                     </tr>

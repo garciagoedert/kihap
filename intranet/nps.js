@@ -137,6 +137,26 @@ function renderStats(responses) {
     document.getElementById('detractor-bar').style.width = `${dPercent}%`;
     
     document.getElementById('total-responses-count').textContent = total;
+
+    // --- Category Averages ---
+    const categories = [
+        { id: 'estrutura', field: 'score_estrutura' },
+        { id: 'limpeza', field: 'score_limpeza' },
+        { id: 'materiais', field: 'score_materiais' },
+        { id: 'atendimento', field: 'score_atendimento' },
+        { id: 'professores', field: 'score_instructor' }
+    ];
+
+    categories.forEach(cat => {
+        const scores = responses.map(r => r[cat.field]).filter(v => v !== undefined && v !== null);
+        const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '--';
+        
+        const valEl = document.getElementById(`avg-val-${cat.id}`);
+        const barEl = document.getElementById(`avg-bar-${cat.id}`);
+        
+        if (valEl) valEl.textContent = avg;
+        if (barEl) barEl.style.width = avg !== '--' ? `${(parseFloat(avg) * 10)}%` : '0%';
+    });
 }
 
 function renderRankings(responses) {
@@ -207,14 +227,35 @@ function renderFeedbackTable(responses) {
         const date = r.timestamp.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
         const promoterClass = r.score >= 9 ? 'bg-green-500/10 text-green-500' : r.score >= 7 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500';
         
+        const metrics = [
+            { label: 'Estrutura', val: r.score_estrutura, icon: 'fa-building' },
+            { label: 'Limpeza', val: r.score_limpeza, icon: 'fa-broom' },
+            { label: 'Materiais', val: r.score_materiais, icon: 'fa-box' },
+            { label: 'Atendimento', val: r.score_atendimento, icon: 'fa-user-tie' },
+            { label: 'Professores', val: r.score_instructor, icon: 'fa-graduation-cap' }
+        ];
+
         return `
             <tr class="hover:bg-gray-800/30 transition-colors border-b border-gray-800/50">
                 <td class="p-4 text-gray-500 text-[11px] font-mono">${date}</td>
-                <td class="p-4 text-white font-medium">${r.studentName}</td>
+                <td class="p-4">
+                    <div class="text-white font-medium">${r.studentName}</div>
+                    ${r.contact ? `<div class="text-[10px] text-gray-500">${r.contact}</div>` : ''}
+                </td>
                 <td class="p-4">
                     <span class="w-8 h-8 flex items-center justify-center rounded-lg font-bold ${promoterClass}">
                         ${r.score}
                     </span>
+                </td>
+                <td class="p-4">
+                    <div class="flex gap-2">
+                        ${metrics.map(m => `
+                            <div class="flex flex-col items-center gap-0.5" title="${m.label}: ${m.val ?? '--'}">
+                                <i class="fas ${m.icon} text-[10px] ${m.val !== undefined ? 'text-yellow-500' : 'text-gray-700'}"></i>
+                                <span class="text-[9px] font-bold ${m.val !== undefined ? 'text-white' : 'text-gray-700'}">${m.val ?? '-'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </td>
                 <td class="p-4">
                     <div class="text-xs font-bold text-gray-300">${r.unitName}</div>
@@ -249,11 +290,17 @@ function setupFilterListeners() {
 function exportToCSV() {
     if (allResponses.length === 0) return;
     
-    const headers = ["Data", "Aluno", "Score", "Unidade", "Professor", "Comentario"];
+    const headers = ["Data", "Aluno", "Contato", "Score General", "Estrutura", "Limpeza", "Materiais", "Atendimento", "Professores", "Unidade", "Professor", "Comentario"];
     const rows = allResponses.map(r => [
         r.timestamp.toDate().toISOString(),
         r.studentName,
+        r.contact || "",
         r.score,
+        r.score_estrutura ?? "",
+        r.score_limpeza ?? "",
+        r.score_materiais ?? "",
+        r.score_atendimento ?? "",
+        r.score_instructor ?? "",
         r.unitName,
         r.professorName,
         `"${(r.comment || '').replace(/"/g, '""')}"`

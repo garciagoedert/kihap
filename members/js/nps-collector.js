@@ -62,42 +62,71 @@ async function renderNPSModal(userData) {
                     </div>
 
                     <form id="nps-form" class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-4">
-                                Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?
-                            </label>
-                            <div class="grid grid-cols-11 gap-1">
-                                ${Array.from({ length: 11 }).map((_, i) => `
-                                    <button type="button" data-score="${i}" class="nps-score-btn h-10 flex items-center justify-center rounded-lg border border-gray-800 text-gray-400 hover:border-yellow-500 hover:text-yellow-500 transition-all font-bold">
-                                        ${i}
-                                    </button>
+                        <!-- Step 1: Base Info & Main NPS -->
+                        <div id="nps-step-1" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-4">
+                                    Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?
+                                </label>
+                                <div class="grid grid-cols-11 gap-1">
+                                    ${Array.from({ length: 11 }).map((_, i) => `
+                                        <button type="button" data-score="${i}" class="nps-score-btn h-10 flex items-center justify-center rounded-lg border border-gray-800 text-gray-400 hover:border-yellow-500 hover:text-yellow-500 transition-all font-bold">
+                                            ${i}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Unidade</label>
+                                    <select id="nps-unit" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                                        <option value="${userData.unitId || ''}">${userData.branchName || 'Carregando unidade...'}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Professor(a)</label>
+                                    <select id="nps-professor" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                                        <option value="">Selecione o professor</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="button" id="nps-next-btn" disabled class="w-full bg-yellow-500 disabled:bg-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl hover:bg-yellow-400 transition-all">
+                                Avaliar Detalhes <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+
+                        <!-- Step 2: Category Ratings -->
+                        <div id="nps-step-2" class="hidden space-y-4">
+                            <h4 class="text-white font-bold text-center mb-2">Avalie as categorias (0 a 10)</h4>
+                            
+                            <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                ${['Estrutura', 'Limpeza', 'Materiais', 'Atendimento', 'Professores'].map(cat => `
+                                    <div>
+                                        <label class="block text-[10px] uppercase tracking-widest text-gray-500 mb-2 text-center">${cat}</label>
+                                        <div class="flex gap-1">
+                                            ${Array.from({length: 11}).map((_, i) => `
+                                                <button type="button" data-cat="${cat.toLowerCase()}" data-val="${i}" class="cat-score-btn flex-1 h-8 flex items-center justify-center rounded-md border border-gray-800 text-[10px] text-gray-500 hover:border-yellow-500 font-bold transition-all">${i}</button>
+                                            `).join('')}
+                                        </div>
+                                        <input type="hidden" id="nps-cat-${cat.toLowerCase()}" required>
+                                    </div>
                                 `).join('')}
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Unidade</label>
-                                <select id="nps-unit" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
-                                    <option value="${userData.unitId || ''}">${userData.branchName || 'Carregando unidade...'}</option>
-                                </select>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">O que podemos melhorar? (Opcional)</label>
+                                <textarea id="nps-comment" rows="3" class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Professor(a)</label>
-                                <select id="nps-professor" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
-                                    <option value="">Selecione o professor</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">O que podemos melhorar? (Opcional)</label>
-                            <textarea id="nps-comment" rows="3" class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
+                            <button type="submit" id="submit-nps" disabled class="w-full bg-yellow-500 disabled:bg-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20">
+                                Enviar Avaliação
+                            </button>
+                            <button type="button" onclick="document.getElementById('nps-step-1').classList.remove('hidden'); document.getElementById('nps-step-2').classList.add('hidden');" class="w-full text-gray-500 text-xs py-2 hover:text-white transition-colors">
+                                <i class="fas fa-arrow-left mr-1"></i> Voltar ao início
+                            </button>
                         </div>
-
-                        <button type="submit" id="submit-nps" disabled class="w-full bg-yellow-500 disabled:bg-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20">
-                            Enviar Avaliação
-                        </button>
                     </form>
                 </div>
             </div>
@@ -108,7 +137,11 @@ async function renderNPSModal(userData) {
 
     // Initializations
     let selectedScore = null;
+    let categoryScores = { estrutura: null, limpeza: null, materiais: null, atendimento: null, professores: null };
+    
     const scoreBtns = document.querySelectorAll('.nps-score-btn');
+    const catBtns = document.querySelectorAll('.cat-score-btn');
+    const nextBtn = document.getElementById('nps-next-btn');
     const submitBtn = document.getElementById('submit-nps');
     const professorSelect = document.getElementById('nps-professor');
     const unitSelect = document.getElementById('nps-unit');
@@ -121,13 +154,44 @@ async function renderNPSModal(userData) {
     // Populate instructors
     loadInstructorsIntoSelect(professorSelect);
 
+    // Step navigation logic
+    nextBtn.addEventListener('click', () => {
+        if (!selectedScore || !professorSelect.value || !unitSelect.value) {
+            alert('Por favor, preencha todos os campos do primeiro passo.');
+            return;
+        }
+        document.getElementById('nps-step-1').classList.add('hidden');
+        document.getElementById('nps-step-2').classList.remove('active', 'hidden');
+    });
+
     // Score selection logic
     scoreBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             scoreBtns.forEach(b => b.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-500'));
             btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-500');
             selectedScore = parseInt(btn.dataset.score);
-            submitBtn.disabled = false;
+            nextBtn.disabled = false;
+        });
+    });
+
+    // Category Score selection logic
+    catBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cat = btn.dataset.cat;
+            const val = parseInt(btn.dataset.val);
+            
+            // Toggle UI
+            document.querySelectorAll(`.cat-score-btn[data-cat="${cat}"]`).forEach(b => {
+                b.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-500');
+            });
+            btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-500');
+            
+            categoryScores[cat] = val;
+            document.getElementById(`nps-cat-${cat}`).value = val;
+            
+            // Check if all categories are rated to enable submit
+            const allRated = Object.values(categoryScores).every(v => v !== null);
+            if (allRated) submitBtn.disabled = false;
         });
     });
 
@@ -146,6 +210,11 @@ async function renderNPSModal(userData) {
 
         const npsData = {
             score: selectedScore,
+            score_estrutura: categoryScores.estrutura,
+            score_limpeza: categoryScores.limpeza,
+            score_materiais: categoryScores.materiais,
+            score_atendimento: categoryScores.atendimento,
+            score_instructor: categoryScores.professores,
             comment: document.getElementById('nps-comment').value.trim(),
             unitId: unitSelect.value,
             unitName: unitSelect.options[unitSelect.selectedIndex].text,
@@ -187,7 +256,7 @@ async function renderNPSModal(userData) {
         }
     });
 
-    // CSS for animations
+    // CSS for animations and custom scrollbar
     if (!document.getElementById('nps-styles')) {
         const styles = `
             <style id="nps-styles">
@@ -195,6 +264,9 @@ async function renderNPSModal(userData) {
                 @keyframes scale-up { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
                 .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
                 .animate-scale-up { animation: scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
             </style>
         `;
         document.head.insertAdjacentHTML('beforeend', styles);

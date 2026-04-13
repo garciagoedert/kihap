@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avaliação de Satisfação - Kihap Martial Arts</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #000; color: #fff; }
+        .nps-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nps-btn:hover { transform: translateY(-2px); }
+        .nps-btn.active { background-color: #eab308; color: #000; border-color: #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+
+        input, select, textarea {
+            background-color: #1a1a1a !important;
+            border-color: #333 !important;
+            color: white !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #eab308 !important;
+            ring-color: #eab308 !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-black min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-[#0a0a0a] border border-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+        <!-- Header -->
+        <div class="p-8 text-center border-b border-gray-900 bg-gradient-to-b from-gray-900 to-transparent">
+            <img src="/imgs/favicon.png" alt="Kihap Logo" class="h-12 mx-auto mb-4">
+            <h1 class="text-2xl font-black text-white uppercase tracking-tight">Sua opinião importa!</h1>
+            <p class="text-gray-400 text-sm mt-1">Ajude-nos a construir a melhor experiência em artes marciais.</p>
+        </div>
+
+        <!-- Form Content -->
+        <div class="p-8">
+            <form id="nps-external-form" class="space-y-8">
+                
+                <!-- Step 1: Identification -->
+                <div id="step-1" class="step active space-y-6">
+                    <div class="space-y-4">
+                        <h2 class="text-lg font-bold text-yellow-500 mb-2">Quem está falando?</h2>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Nome Completo</label>
+                            <input type="text" id="user-name" required placeholder="Digite seu nome" 
+                                class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">WhatsApp ou E-mail</label>
+                            <input type="text" id="user-contact" required placeholder="(00) 00000-0000 ou email@exemplo.com" 
+                                class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sua Unidade</label>
+                            <select id="user-unit" required class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                <option value="">Selecione a unidade</option>
+                                <option value="centro">Unidade Centro</option>
+                                <option value="coqueiros">Unidade Coqueiros</option>
+                                <option value="asa-sul">Unidade Asa Sul</option>
+                                <option value="sudoeste">Unidade Sudoeste</option>
+                                <option value="lago-sul">Unidade Lago Sul</option>
+                                <option value="noroeste">Unidade Noroeste</option>
+                                <option value="dourados">Unidade Dourados</option>
+                                <option value="santa-monica">Unidade Santa Mônica</option>
+                                <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Professor(a)</label>
+                            <select id="user-professor" required class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                <option value="">Carregando professores...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="nextStep(2)" class="w-full bg-white text-black font-black uppercase tracking-widest py-5 rounded-2xl hover:bg-yellow-500 transition-all shadow-xl">
+                        Começar Avaliação
+                    </button>
+                </div>
+
+                <!-- Step 2: Main NPS -->
+                <div id="step-2" class="step space-y-6">
+                    <div class="text-center">
+                        <label class="block text-lg font-bold text-white mb-6">
+                            Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?
+                        </label>
+                        <div class="grid grid-cols-6 sm:grid-cols-11 gap-2">
+                            <button type="button" data-score="0" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">0</button>
+                            <button type="button" data-score="1" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">1</button>
+                            <button type="button" data-score="2" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">2</button>
+                            <button type="button" data-score="3" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">3</button>
+                            <button type="button" data-score="4" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">4</button>
+                            <button type="button" data-score="5" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">5</button>
+                            <button type="button" data-score="6" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">6</button>
+                            <button type="button" data-score="7" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">7</button>
+                            <button type="button" data-score="8" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">8</button>
+                            <button type="button" data-score="9" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">9</button>
+                            <button type="button" data-score="10" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">10</button>
+                        </div>
+                        <input type="hidden" id="nps-score" required>
+                    </div>
+                    <div class="flex gap-4">
+                        <button type="button" onclick="nextStep(1)" class="flex-1 bg-gray-900 text-gray-400 py-4 rounded-2xl hover:bg-gray-800">Voltar</button>
+                        <button type="button" onclick="validateStep2()" class="flex-[2] bg-yellow-500 text-black font-bold py-4 rounded-2xl shadow-lg">Continuar</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Detailed Scores -->
+                <div id="step-3" class="step space-y-6">
+                    <h2 class="text-xl font-bold text-white text-center mb-4">Avalie os detalhes (0 a 10)</h2>
+                    
+                    <div class="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Categoria: Estrutura -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Estrutura da Unidade</label>
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
+                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="estrutura" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            </div>
+                            <input type="hidden" id="score-estrutura" required>
+                        </div>
+                        <!-- Categoria: Limpeza -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Limpeza e Higiene</label>
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
+                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="limpeza" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            </div>
+                            <input type="hidden" id="score-limpeza" required>
+                        </div>
+                        <!-- Categoria: Materiais -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Qualidade dos Materiais</label>
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
+                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="materiais" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            </div>
+                            <input type="hidden" id="score-materiais" required>
+                        </div>
+                        <!-- Categoria: Atendimento -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Atendimento na Recepção</label>
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
+                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="atendimento" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            </div>
+                            <input type="hidden" id="score-atendimento" required>
+                        </div>
+                        <!-- Categoria: Professor -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Performance do Instrutor / Aula</label>
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-2xl gap-1">
+                                ${Array.from({length: 11}).map((_, i) => `<button type="button" data-cat="instructor" data-val="${i}" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">${i}</button>`).join('')}
+                            </div>
+                            <input type="hidden" id="score-instructor" required>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 space-y-4">
+                        <label class="block text-sm font-semibold text-gray-400 mb-2">Comentários Adicionais (Opcional)</label>
+                        <textarea id="user-comment" rows="3" class="w-full bg-[#1a1a1a] border border-gray-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
+                        <div class="flex gap-4">
+                            <button type="button" onclick="nextStep(2)" class="flex-1 bg-gray-900 text-gray-400 py-4 rounded-2xl hover:bg-gray-800">Voltar</button>
+                            <button type="submit" id="submit-btn" class="flex-[3] bg-yellow-500 text-black font-black uppercase py-4 rounded-2xl shadow-lg hover:bg-yellow-400 transition-all">Enviar Avaliação</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config (Must match intranet/firebase-config.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1WKwAsAicGdRz9cRA2Nvv3LEZve1vZe0",
+            authDomain: "intranet-kihap.firebaseapp.com",
+            projectId: "intranet-kihap",
+            storageBucket: "intranet-kihap.firebasestorage.app",
+            messagingSenderId: "1055939458006",
+            appId: "1:1055939458006:web:1d67459a0bc0da60cf2a77",
+            measurementId: "G-5LP0W3QSVZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // UI State
+        let currentStep = 1;
+        const form = document.getElementById('nps-external-form');
+
+        // Step Navigation
+        window.nextStep = (step) => {
+            if (step === 2) {
+                if (!document.getElementById('user-name').value || !document.getElementById('user-contact').value || !document.getElementById('user-unit').value || !document.getElementById('user-professor').value) {
+                    alert('Por favor, preencha todos os campos de identificação.');
+                    return;
+                }
+            }
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-' + step).classList.add('active');
+            currentStep = step;
+        };
+
+        window.validateStep2 = () => {
+            if (!document.getElementById('nps-score').value) {
+                alert('Por favor, selecione uma nota de 0 a 10.');
+                return;
+            }
+            nextStep(3);
+        };
+
+        // NPS Multi-Score Selection Logic
+        document.querySelectorAll('.nps-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nps-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('nps-score').value = btn.dataset.score;
+            });
+        });
+
+        // Category Selection Logic
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const cat = btn.dataset.cat;
+                document.querySelectorAll(`.cat-btn[data-cat="${cat}"]`).forEach(b => {
+                    b.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-500');
+                    b.classList.add('border-gray-800', 'text-gray-500');
+                });
+                btn.classList.remove('border-gray-800', 'text-gray-500');
+                btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-500');
+                document.getElementById('score-' + cat).value = btn.dataset.val;
+            });
+        });
+
+        // Load Professors
+        async function loadProfessors() {
+            const select = document.getElementById('user-professor');
+            try {
+                const q = query(collection(db, 'users'), where('isInstructor', '==', true), orderBy('name'));
+                const snap = await getDocs(q);
+                
+                select.innerHTML = '<option value="">Selecione o professor</option>';
+                const blacklist = ['Admin', 'Coqueiros', 'Financeiro', 'Noroeste', 'Centro', 'Sudoeste', 'Asa Sul', 'Lago Sul', 'Jardim Botânico', 'Dourados', 'Santa Mônica', 'Suporte', 'Teste', 'Kihap'];
+                
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const name = data.name || '';
+                    if (!blacklist.some(u => name.toLowerCase().includes(u.toLowerCase())) || name.includes('Prof.') || name.includes('Mr.')) {
+                        const opt = document.createElement('option');
+                        opt.value = doc.id;
+                        opt.textContent = name;
+                        select.appendChild(opt);
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading teachers:", error);
+                select.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+        loadProfessors();
+
+        // Form Submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.textContent;
+            
+            // Validate categories
+            const cats = ['estrutura', 'limpeza', 'materiais', 'atendimento', 'instructor'];
+            for (const cat of cats) {
+                if (!document.getElementById('score-' + cat).value) {
+                    alert('Por favor, avalie todas as categorias do Passo 3.');
+                    return;
+                }
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
+
+            const payload = {
+                studentName: document.getElementById('user-name').value,
+                contact: document.getElementById('user-contact').value,
+                unitId: document.getElementById('user-unit').value,
+                unitName: document.getElementById('user-unit').options[document.getElementById('user-unit').selectedIndex].text,
+                professorId: document.getElementById('user-professor').value,
+                professorName: document.getElementById('user-professor').options[document.getElementById('user-professor').selectedIndex].text,
+                score: parseInt(document.getElementById('nps-score').value),
+                score_estrutura: parseInt(document.getElementById('score-estrutura').value),
+                score_limpeza: parseInt(document.getElementById('score-limpeza').value),
+                score_materiais: parseInt(document.getElementById('score-materiais').value),
+                score_atendimento: parseInt(document.getElementById('score-atendimento').value),
+                score_instructor: parseInt(document.getElementById('score-instructor').value),
+                comment: document.getElementById('user-comment').value.trim(),
+                timestamp: serverTimestamp(),
+                isExternal: true
+            };
+
+            try {
+                await addDoc(collection(db, "nps_responses"), payload);
+                
+                // Success UI
+                document.querySelector('.p-8').innerHTML = `
+                    <div class="text-center py-12 animate-fade-in">
+                        <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-check text-green-500 text-4xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Obrigado!</h3>
+                        <p class="text-gray-400">Sua avaliação foi enviada com sucesso. Valorizamos muito o seu feedback!</p>
+                        <div class="mt-8 flex justify-center gap-4">
+                            <a href="https://kihap.com.br" class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors">Voltar ao site</a>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error("Submission error:", error);
+                alert('Erro ao enviar avaliação. Por favor, tente novamente.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    </script>
+</body>
+</html>
