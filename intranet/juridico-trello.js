@@ -186,20 +186,40 @@ function renderDepartments() {
     if (departments.length === 0) {
         deptList.innerHTML = '<li class="text-sm text-gray-500">Nenhum departamento cadastrado.</li>';
         deptCardsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-12 text-lg">Nenhum departamento encontrado. Crie um novo para acessar o Kanban.</div>';
+        return;
     }
 
+    const getIconForDept = (name) => {
+        const lower = name.toLowerCase();
+        if (lower.includes('finan')) return 'fa-wallet';
+        if (lower.includes('opera')) return 'fa-cogs';
+        if (lower.includes('rh') || lower.includes('recursos')) return 'fa-users';
+        if (lower.includes('vídeo') || lower.includes('video')) return 'fa-play-circle';
+        if (lower.includes('marke')) return 'fa-bullhorn';
+        if (lower.includes('jurid') || lower.includes('juríd')) return 'fa-gavel';
+        if (lower.includes('comerc')) return 'fa-shopping-cart';
+        if (lower.includes('téc') || lower.includes('suporte')) return 'fa-tools';
+        return 'fa-folder-open';
+    };
+
     departments.forEach(dept => {
-        // ... build selection card code (omitted for brevity in replacement, but I must match it exactly)
         const card = document.createElement('div');
-        card.className = "bg-gray-800 border-l-4 rounded-xl shadow-lg p-6 cursor-pointer hover:bg-gray-700 transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center text-center group h-48";
+        // Mobile: horizontal layout (flex-row), Desktop: vertical (flex-col)
+        card.className = "bg-gray-800 border-l-4 rounded-xl shadow-lg p-4 md:p-6 cursor-pointer hover:bg-gray-750 transition-all transform hover:-translate-y-1 flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-left md:text-center group h-24 md:h-48";
         card.style.borderLeftColor = dept.color || '#3b82f6';
         
+        const icon = getIconForDept(dept.name);
+
         card.innerHTML = `
-            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shrink-0" style="background-color: ${dept.color}20; color: ${dept.color}">
-                <i class="fas fa-folder-open text-2xl"></i>
+            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center md:mb-4 transition-transform group-hover:scale-110 shrink-0" style="background-color: ${dept.color}20; color: ${dept.color}">
+                <i class="fas ${icon} text-xl md:text-2xl"></i>
             </div>
-            <h3 class="text-lg font-bold text-white mb-2 line-clamp-2" title="${dept.name}">${dept.name}</h3>
-            <span class="text-[10px] text-gray-400 bg-gray-900 px-3 py-1.5 rounded-full uppercase tracking-wider font-semibold border mt-auto" style="border-color: ${dept.color}40">Acessar Kanban</span>
+            <div class="flex-1 md:flex-none">
+                <h3 class="text-base md:text-lg font-bold text-white mb-0 md:mb-2 line-clamp-1 md:line-clamp-2" title="${dept.name}">${dept.name}</h3>
+                <span class="md:hidden text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Toque para acessar</span>
+            </div>
+            <span class="hidden md:block text-[10px] text-gray-400 bg-gray-900 px-3 py-1.5 rounded-full uppercase tracking-wider font-semibold border mt-auto" style="border-color: ${dept.color}40">Acessar Kanban</span>
+            <i class="fas fa-chevron-right text-gray-600 md:hidden ml-auto"></i>
         `;
         
         card.addEventListener('click', () => {
@@ -346,7 +366,7 @@ function renderCards() {
     // Create column structure
     boardColumns.forEach(col => {
         const colHtml = `
-            <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column shrink-0 w-80 md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0" data-column="${col.id}">
+            <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0" data-column="${col.id}">
                 <h2 class="font-bold mb-4 pb-2 border-b border-gray-700 flex justify-between items-center" style="color: ${getColorHex(col.color)}">
                     <span>${col.title}</span>
                     <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count" id="count-${col.id}">0</span>

@@ -79,20 +79,21 @@
             <div id="header-container" class="flex-shrink-0"></div>
 
             <!-- Department Selection Screen -->
-            <div id="dept-selection-container" class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto items-center justify-center relative">
+            <div id="dept-selection-container" class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto items-center lg:justify-center relative">
                 
-                <div class="absolute top-4 right-4 md:top-8 md:right-8">
-                    <button id="btnManageDeptInSelection" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-xl transition-all flex items-center gap-2">
-                        <i class="fas fa-plus-circle text-blue-400"></i> Novo Departamento
+                <!-- Novo Departamento Button: Responsive Positioning -->
+                <div class="w-full max-w-5xl flex justify-center lg:justify-end mb-6 lg:absolute lg:top-8 lg:right-8 lg:mb-0">
+                    <button id="btnManageDeptInSelection" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-xl transition-all flex items-center gap-2 text-sm">
+                        <i class="fas fa-plus-circle text-blue-400"></i> <span class="whitespace-nowrap">Novo Departamento</span>
                     </button>
                 </div>
 
                 <div class="w-full max-w-5xl">
-                    <div class="text-center mb-10">
-                        <h1 class="text-4xl font-bold text-white mb-4">Departamentos</h1>
-                        <p class="text-gray-400 text-lg">Selecione um departamento para acessar seu Kanban.</p>
+                    <div class="text-center mb-8 lg:mb-10">
+                        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Departamentos</h1>
+                        <p class="text-gray-400 text-base md:text-lg">Selecione um setor para acessar seu Kanban.</p>
                     </div>
-                    <div id="dept-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
+                    <div id="dept-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 px-2 md:px-4">
                         <!-- Loaded via JS -->
                     </div>
                 </div>
