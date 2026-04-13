@@ -258,12 +258,26 @@
                 const snap = await getDocs(q);
                 
                 select.innerHTML = '<option value="">Selecione o professor</option>';
-                const blacklist = ['Admin', 'Coqueiros', 'Financeiro', 'Noroeste', 'Centro', 'Sudoeste', 'Asa Sul', 'Lago Sul', 'Jardim Botânico', 'Dourados', 'Santa Mônica', 'Suporte', 'Teste', 'Kihap'];
+                
+                // Blacklist keywords (always excluded)
+                const blacklist = ['Admin', 'Financeiro', 'Suporte', 'Teste', 'Kihap', 'Unidade', 'Store'];
+                // Allowed titles (strictly required for non-whitelisted names)
+                const titles = ['Mr.', 'Mrs.', 'Ms.', 'Sra.', 'Srta.', 'Prof.', 'Professor', 'Master', 'Guro'];
                 
                 snap.forEach(doc => {
                     const data = doc.data();
                     const name = data.name || '';
-                    if (!blacklist.some(u => name.toLowerCase().includes(u.toLowerCase())) || name.includes('Prof.') || name.includes('Mr.')) {
+                    const lowerName = name.toLowerCase();
+                    
+                    // 1. Check blacklist
+                    if (blacklist.some(u => lowerName.includes(u.toLowerCase()))) return;
+                    
+                    // 2. Check if name contains a title
+                    const hasTitle = titles.some(t => name.includes(t));
+                    
+                    // 3. For names without titles, we apply extra caution to avoid students appearing
+                    // Only allow if it has a title or if it's a known exception (none currently)
+                    if (hasTitle) {
                         const opt = document.createElement('option');
                         opt.value = doc.id;
                         opt.textContent = name;

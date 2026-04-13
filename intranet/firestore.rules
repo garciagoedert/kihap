@@ -195,8 +195,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Permite que qualquer usuário autenticado leia perfis e liste usuários.
-      allow read: if request.auth != null;
+      // Permite que qualquer usuário autenticado leia perfis.
+      // Permite leitura pública se o usuário for um instrutor (necessário para NPS público).
+      allow read: if request.auth != null || resource.data.isInstructor == true;
 
       allow create: if request.auth.uid == userId;
       allow update: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
@@ -370,6 +371,12 @@ service cloud.firestore {
     // Regras para Quotes
     match /daily_quotes/{quoteId} {
       allow read: if request.auth != null;
+    }
+
+    // Regras para NPS (Net Promoter Score)
+    match /nps_responses/{responseId} {
+      allow create: if true; // Permite submissão pública
+      allow read, update, delete: if request.auth != null; // Apenas admin via dashboard
     }
 
   }

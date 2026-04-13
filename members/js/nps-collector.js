@@ -278,23 +278,26 @@ async function loadInstructorsIntoSelect(selectElement) {
         const q = query(collection(db, 'users'), where('isInstructor', '==', true), orderBy('name'));
         const querySnapshot = await getDocs(q);
         
-        // Mantém a opção default
         selectElement.innerHTML = '<option value="">Selecione o professor</option>';
         
-        // Unidades conhecidas para filtrar (caso estejam com flag isInstructor=true por erro)
-        const unitBlacklist = [
-            'Admin', 'Coqueiros', 'Financeiro', 'Noroeste', 'Centro', 'Sudoeste', 'Asa Sul', 
-            'Lago Sul', 'Jardim Botânico', 'Dourados', 'Santa Mônica', 'Suporte', 'Teste', 'Kihap'
-        ];
+        // Blacklist keywords (always excluded)
+        const blacklist = ['Admin', 'Financeiro', 'Suporte', 'Teste', 'Kihap', 'Unidade', 'Store'];
+        // Allowed titles (strictly required for non-whitelisted names)
+        const titles = ['Mr.', 'Mrs.', 'Ms.', 'Sra.', 'Srta.', 'Prof.', 'Professor', 'Master', 'Guro'];
 
         querySnapshot.forEach(doc => {
             const instructor = doc.data();
             const name = instructor.name || '';
+            const lowerName = name.toLowerCase();
             
-            // Filtro para garantir que é um professor real e não uma conta de unidade/sistema
-            const isActuallyInstructor = !unitBlacklist.some(u => name.toLowerCase().includes(u.toLowerCase())) || name.includes('Prof.') || name.includes('Mr.') || name.includes('Sra.') || name.includes('Master');
-
-            if (isActuallyInstructor) {
+            // 1. Check blacklist
+            if (blacklist.some(u => lowerName.includes(u.toLowerCase()))) return;
+            
+            // 2. Check if name contains a title
+            const hasTitle = titles.some(t => name.includes(t));
+            
+            // 3. Only allow if it has a official title
+            if (hasTitle) {
                 const option = document.createElement('option');
                 option.value = doc.id;
                 option.textContent = name;
