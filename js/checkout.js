@@ -202,7 +202,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    programaSelector.addEventListener('change', () => populateGraduacao(programaSelector.value));
 
     onAuthReady(async (user) => {
         if (user) {
