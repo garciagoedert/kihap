@@ -706,7 +706,7 @@ export async function setupStorePage() {
                 </td>
                 <td class="p-4">
                     <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-all copy-link-btn" 
-                        data-link="https://www.kihap.com.br/store/checkout?product=${product.id}">
+                        data-link="https://www.kihap.com.br/checkout?product=${product.id}">
                         <i class="fas fa-link text-xs"></i>
                     </button>
                 </td>

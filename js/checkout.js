@@ -1,10 +1,57 @@
 import { cart } from './cart.js';
 import { db } from '../intranet/firebase-config.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { onAuthReady, getUserData } from '../members/js/auth.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const checkoutForm = document.getElementById('checkout-form');
+    const urlParams = new URLSearchParams(window.location.search);
+    const directProductId = urlParams.get('product');
+
+    if (directProductId) {
+        try {
+            const productSnap = await getDoc(doc(db, 'products', directProductId));
+            if (productSnap.exists()) {
+                const product = { id: productSnap.id, ...productSnap.data() };
+                
+                // Check if product is complex (requires options)
+                const isComplex = 
+                    product.hasSizes || 
+                    product.priceType === 'variable' || 
+                    product.priceType === 'kit' || 
+                    product.priceType === 'lotes' || 
+                    product.askAge || 
+                    product.askProfessor ||
+                    (product.addons && product.addons.length > 0);
+
+                if (isComplex) {
+                    // Redirect to product page for configuration
+                    window.location.href = `produto.html?id=${directProductId}`;
+                    return;
+                } else {
+                    // Simple product: add to cart (clearing it first for direct link logic)
+                    cart.clearCart();
+                    cart.addItem({
+                        productId: product.id,
+                        productName: product.name,
+                        imageUrl: product.imageUrl,
+                        isSubscription: product.isSubscription || false,
+                        subscriptionFrequency: product.subscriptionFrequency || null,
+                        subscriptionPeriod: product.subscriptionPeriod || null,
+                        priceType: product.priceType || 'fixed',
+                        formDataList: [{ userAge: null, userSize: null, priceData: { amount: product.price } }],
+                        totalAmount: product.price,
+                        recommendedItems: [],
+                        addedAt: new Date().toISOString()
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Error handling direct product link:", error);
+        }
+    }
+
     const unitSelector = document.getElementById('unidade');
     const programaSelector = document.getElementById('programa');
     const graduacaoSelector = document.getElementById('graduacao');
