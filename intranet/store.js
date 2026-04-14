@@ -134,6 +134,7 @@ export async function setupStorePage() {
     const productsTableBody = document.getElementById('products-table-body');
     const sendBulkEmailsBtn = document.getElementById('send-bulk-emails-btn');
     const productIsEventInput = document.getElementById('product-is-event');
+    const productEventAddressInput = document.getElementById('product-event-address');
     const eventConfigContainer = document.getElementById('event-config-container');
     const eventSlotsList = document.getElementById('event-slots-list');
     const addEventSlotBtn = document.getElementById('add-event-slot-btn');
@@ -803,6 +804,7 @@ export async function setupStorePage() {
                 sizesLabel: productSizesLabelInput ? productSizesLabelInput.value : '',
                 variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : '',
                 isEvent: eventConfigData.isEvent,
+                eventAddress: eventConfigData.eventAddress,
                 eventConfig: eventConfigData.eventConfig
             };
 
@@ -1062,12 +1064,19 @@ export async function setupStorePage() {
                 // Handle Event Config load
                 if (productIsEventInput) {
                     productIsEventInput.checked = product.isEvent || false;
-                    eventConfigContainer.classList.toggle('hidden', !productIsEventInput.checked && !product.isEvent);
+                    eventConfigContainer.classList.toggle('hidden', !productIsEventInput.checked);
+                    
+                    if (productEventAddressInput) {
+                        productEventAddressInput.value = product.eventAddress || '';
+                    }
+
                     if (eventSlotsList) {
                         eventSlotsList.innerHTML = '';
                         if (product.eventConfig && product.eventConfig.scheduleSlots) {
                             product.eventConfig.scheduleSlots.forEach(slot => {
-                                addEventSlotRow(slot.variationName, slot.day, slot.time, slot.ring, slot.minAge, slot.maxAge, slot.programId || 'tradicional');
+                                // variationNames is the new array field, variationName is the fallback
+                                const belts = slot.variationNames || (slot.variationName ? [slot.variationName] : []);
+                                addEventSlotRow(belts, slot.day, slot.time, slot.ring, slot.minAge, slot.maxAge, slot.programId || 'tradicional');
                             });
                         }
                     }
@@ -1403,7 +1412,7 @@ export async function setupStorePage() {
     const kiHapPrograms = {
         tradicional: {
             label: 'Tradicional',
-            belts: ['Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida', 'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida', 'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida', 'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida', 'Vermelha e preta', 'Preta']
+            belts: ['Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida', 'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida', 'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida', 'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida', 'Vermelha e preta', 'Preta', '1º Dan', '2º Dan', '3º Dan', '4º Dan', '5º Dan', '6º Dan', '7º Dan', '8º Dan', '9º Dan']
         },
         littles: {
             label: 'Littles',
@@ -1419,11 +1428,19 @@ export async function setupStorePage() {
         const slotRow = document.createElement('div');
         slotRow.className = 'event-slot-row bg-purple-900/10 p-5 rounded-2xl border border-purple-600/20 mb-4 transition-all hover:bg-purple-900/20 shadow-lg';
         
+        // Handle variations (can be string or array)
+        let selectedBelts = [];
+        if (Array.isArray(variationName)) {
+            selectedBelts = variationName;
+        } else if (variationName) {
+            selectedBelts = [variationName];
+        }
+
         // Handle legacy data where variationName might be the belt
         // If variationName exists but programId is default, try to detect program
-        if (variationName && programId === 'tradicional') {
+        if (selectedBelts.length > 0 && programId === 'tradicional') {
             for (const [id, data] of Object.entries(kiHapPrograms)) {
-                if (data.belts.includes(variationName)) {
+                if (data.belts.includes(selectedBelts[0])) {
                     programId = id;
                     break;
                 }
@@ -1434,9 +1451,32 @@ export async function setupStorePage() {
             `<option value="${id}" ${id === programId ? 'selected' : ''}>${data.label}</option>`
         ).join('');
 
-        const updateBeltsForSlot = (selectEl, selectedProgram, selectedBelt) => {
+        const updateBeltsForSlot = (dropdownEl, textEl, selectedProgram, currentBelts) => {
             const belts = kiHapPrograms[selectedProgram]?.belts || [];
-            selectEl.innerHTML = belts.map(b => `<option value="${b}" ${b === selectedBelt ? 'selected' : ''}>${b}</option>`).join('');
+            dropdownEl.innerHTML = belts.map(b => `
+                <label class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer transition-colors">
+                    <input type="checkbox" name="event-slot-belt" value="${b}" ${currentBelts.includes(b) ? 'checked' : ''} 
+                        class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500">
+                    <span class="text-sm text-gray-200">${b}</span>
+                </label>
+            `).join('');
+            
+            const updateText = () => {
+                const checked = Array.from(dropdownEl.querySelectorAll('input:checked')).map(i => i.value);
+                if (checked.length === 0) {
+                    textEl.textContent = 'Selecionar Faixas...';
+                    textEl.classList.add('text-gray-500');
+                } else if (checked.length === 1) {
+                    textEl.textContent = checked[0];
+                    textEl.classList.remove('text-gray-500');
+                } else {
+                    textEl.textContent = `${checked.length} Faixas selecionadas`;
+                    textEl.classList.remove('text-gray-500');
+                }
+            };
+
+            dropdownEl.querySelectorAll('input').forEach(i => i.addEventListener('change', updateText));
+            updateText();
         };
 
         slotRow.innerHTML = `
@@ -1450,11 +1490,16 @@ export async function setupStorePage() {
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Graduação (Faixa)</label>
-                        <select name="event-slot-category" 
-                            class="w-full px-4 py-2.5 text-sm text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner">
-                            <!-- Populated by JS -->
-                        </select>
+                        <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Graduações (Multi-seleção)</label>
+                        <div class="relative event-belts-container">
+                            <button type="button" class="select-belts-btn w-full px-4 py-2.5 text-sm text-left text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner flex justify-between items-center transition-all">
+                                <span class="selected-belts-text truncate">Selecionar Faixas...</span>
+                                <i class="fas fa-chevron-down text-[10px] text-gray-500 transition-transform"></i>
+                            </button>
+                            <div class="belts-dropdown hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-gray-900 border border-gray-700/50 rounded-xl shadow-2xl p-2 space-y-1 backdrop-blur-md">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1500,14 +1545,31 @@ export async function setupStorePage() {
         `;
 
         const programSelect = slotRow.querySelector('[name="event-slot-program"]');
-        const beltSelect = slotRow.querySelector('[name="event-slot-category"]');
+        const beltBtn = slotRow.querySelector('.select-belts-btn');
+        const beltDropdown = slotRow.querySelector('.belts-dropdown');
+        const beltText = slotRow.querySelector('.selected-belts-text');
+
+        // Toggle dropdown
+        beltBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            beltDropdown.classList.toggle('hidden');
+            beltBtn.querySelector('i').classList.toggle('rotate-180');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!beltBtn.contains(e.target) && !beltDropdown.contains(e.target)) {
+                beltDropdown.classList.add('hidden');
+                beltBtn.querySelector('i').classList.remove('rotate-180');
+            }
+        });
 
         programSelect.addEventListener('change', () => {
-            updateBeltsForSlot(beltSelect, programSelect.value, '');
+            updateBeltsForSlot(beltDropdown, beltText, programSelect.value, []);
         });
 
         // Initial population
-        updateBeltsForSlot(beltSelect, programId, variationName);
+        updateBeltsForSlot(beltDropdown, beltText, programId, selectedBelts);
 
         eventSlotsList.appendChild(slotRow);
     };
@@ -1529,17 +1591,20 @@ export async function setupStorePage() {
         rows.forEach(row => {
             const programSelect = row.querySelector('[name="event-slot-program"]');
             const programId = programSelect ? programSelect.value : 'tradicional';
-            const categorySelect = row.querySelector('[name="event-slot-category"]');
-            const category = categorySelect ? categorySelect.value.trim() : '';
+            
+            // Get all checked belts
+            const checkedBelts = Array.from(row.querySelectorAll('input[name="event-slot-belt"]:checked')).map(i => i.value);
+            
             const day = row.querySelector('[name="event-slot-day"]').value.trim();
             const time = row.querySelector('[name="event-slot-time"]').value.trim();
             const ring = parseInt(row.querySelector('[name="event-slot-ring"]').value) || 0;
             const minAge = parseInt(row.querySelector('[name="event-slot-min-age"]').value) || null;
             const maxAge = parseInt(row.querySelector('[name="event-slot-max-age"]').value) || null;
             
-            if (category) {
+            if (checkedBelts.length > 0) {
                 slots.push({ 
-                    variationName: category, 
+                    variationNames: checkedBelts, // Storing as array
+                    variationName: checkedBelts[0], // Backward compatibility
                     programId: programId,
                     day, 
                     time, 
@@ -1551,6 +1616,7 @@ export async function setupStorePage() {
         });
         return {
             isEvent: productIsEventInput.checked,
+            eventAddress: productEventAddressInput ? productEventAddressInput.value.trim() : '',
             eventConfig: {
                 scheduleSlots: slots
             }

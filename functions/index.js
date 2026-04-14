@@ -120,6 +120,12 @@ const sendTicketEmail = async (saleId, saleData) => {
                                     <span style="color: #FFF; font-size: 14px;">${saleData.eventTime || 'TBD'}</span>
                                 </div>
                             </div>
+                            ${saleData.eventAddress ? `
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; text-align: left;">
+                                <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Endereço</span>
+                                <span style="color: #FFF; font-size: 13px; line-height: 1.4; display: block; margin-top: 5px;">${saleData.eventAddress}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         ` : `
                         <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
@@ -322,10 +328,16 @@ async function assignEventParticipantData(saleId, saleData, productData) {
     if (productData.eventConfig && productData.eventConfig.scheduleSlots) {
         // Busca o slot que bate com o programa (opcional), variação E com a faixa etária
         const slot = productData.eventConfig.scheduleSlots.find(s => {
-            // Match da faixa/variação (Case-insensitive e sem espaços)
-            const slotVariant = (s.variationName || '').trim().toLowerCase();
+            // Match da faixa/variação (novo: array variationNames, fallback: string variationName)
             const userVariant = beltToMatch.toLowerCase();
-            const variantMatch = slotVariant === userVariant;
+            let variantMatch = false;
+            
+            if (s.variationNames && Array.isArray(s.variationNames)) {
+                variantMatch = s.variationNames.some(v => v.trim().toLowerCase() === userVariant);
+            } else {
+                const slotVariant = (s.variationName || '').trim().toLowerCase();
+                variantMatch = slotVariant === userVariant;
+            }
             
             // Match do programa: se o slot tiver programId, deve bater com o programa do usuário. 
             const slotProgram = (s.programId || '').trim().toLowerCase();
@@ -353,6 +365,7 @@ async function assignEventParticipantData(saleId, saleData, productData) {
         eventRing,
         eventDay,
         eventTime,
+        eventAddress: productData.eventAddress || '',
         isEvent: true
     };
 }
