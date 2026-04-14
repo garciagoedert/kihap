@@ -670,7 +670,7 @@ export function setupPedidosPage() {
             modal.classList.remove('flex');
             document.getElementById('aluno-preta-input').value = '';
             document.getElementById('unidade-preta-select').value = '';
-            document.getElementById('faixa-preta-select').value = '1º Dan';
+            document.getElementById('faixa-preta-select').value = '1º Dan Preta';
             document.getElementById('tamanho-preta-input').value = '';
             document.getElementById('justificativa-preta-input').value = '';
             document.getElementById('justificativa-preta-container').classList.add('hidden');
