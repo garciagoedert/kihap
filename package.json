@@ -1,6 +1,6 @@
 {
   "name": "novokihap",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Este repositório contém o código-fonte da plataforma web da Kihap Martial Arts. O projeto é composto por um site público, um portal para membros e uma intranet administrativa para gerenciamento interno.",
   "main": "check_prospects.js",
   "scripts": {
