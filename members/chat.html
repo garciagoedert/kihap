@@ -26,51 +26,80 @@
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
         <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
-            <div id="header-container"></div>
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
-                <div class="flex flex-grow h-[calc(100vh-8rem)] bg-[#1a1a1a] rounded-lg shadow-lg text-gray-200">
-                    <!-- Sidebar de Conversas -->
-                    <div class="w-1/3 border-r border-gray-700 flex flex-col">
-                        <div class="p-4 border-b border-gray-700 relative">
-                            <input id="user-search-input" type="text" placeholder="Buscar ou iniciar nova conversa" class="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary">
-                            <div id="search-results" class="absolute z-20 w-full left-0 mt-1 bg-[#1a1a1a] border border-gray-700 rounded-b-lg shadow-lg hidden"></div>
-                        </div>
-                        <div class="flex-grow overflow-y-auto p-2 space-y-2">
-                            <div class="flex justify-between items-center mb-2 px-2">
-                                <h2 class="text-lg font-bold text-gray-300">Grupos</h2>
-                                <button id="newGroupBtn" title="Criar novo grupo" class="p-2 rounded-full hover:bg-gray-700"><i class="fas fa-plus"></i></button>
+            <div id="header-container" class="md:block hidden"></div>
+            <!-- Chat Wrapper for max-w center similar to Feed -->
+            <div class="flex-grow p-0 md:p-6 lg:p-8 flex justify-center overflow-hidden">
+                <div class="w-full max-w-4xl flex h-[100dvh] md:h-[calc(100vh-8rem)] bg-[#111111] md:bg-[#1a1a1a] md:rounded-2xl md:shadow-2xl text-gray-200 overflow-hidden relative border border-transparent md:border-gray-800">
+                    
+                    <!-- Lista de Conversas (Threads DM Like) -->
+                    <div id="chat-list-container" class="w-full md:w-[380px] md:border-r border-[#222] flex flex-col absolute md:static top-0 left-0 h-full z-10 transition-transform duration-300 bg-[#111111] md:bg-transparent">
+                        <div class="p-4 md:p-5 pt-8 md:pt-5 border-b border-[#222]">
+                            <div class="flex justify-between items-center mb-6">
+                                <h1 class="text-3xl font-extrabold text-white tracking-tight">Mensagens</h1>
+                                <button id="newGroupBtn" title="Inicar Conversa" class="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition"><i class="fas fa-edit text-lg"></i></button>
                             </div>
-                            <div id="group-list"></div>
-                            <h2 class="text-lg font-bold mt-4 px-2 text-gray-300">Conversas</h2>
-                            <div id="direct-message-list"></div>
+                            <div class="relative mb-6">
+                                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                                <input id="user-search-input" type="text" placeholder="Pesquisar" class="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-[#1e1e1e] md:bg-black/30 border border-transparent focus:outline-none focus:border-gray-600 focus:bg-[#222] text-[15px] font-medium transition-colors">
+                                <div id="search-results" class="absolute z-20 w-full left-0 mt-2 bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl hidden top-full overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar"></div>
+                            </div>
+                            <!-- Filtros estilo Threads -->
+                            <div class="flex space-x-2">
+                                <button class="px-5 py-2.5 bg-white text-black font-semibold rounded-full text-sm">Caixa de Entrada</button>
+                                <button class="px-5 py-2.5 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm hover:bg-[#222] transition-colors">Pedidos</button>
+                            </div>
+                        </div>
+        
+                        <div class="flex-grow overflow-y-auto pb-[5rem] md:pb-0 hide-scrollbar pt-2">
+                            <div id="group-list" class="flex flex-col"></div>
+                            <div id="direct-message-list" class="flex flex-col"></div>
                         </div>
                     </div>
-
-                    <!-- Área do Chat -->
-                    <div class="w-2/3 flex flex-col">
-                        <div id="chat-header" class="p-4 border-b border-gray-700 flex items-center space-x-4">
-                            <img id="chat-header-avatar" src="" alt="" class="w-10 h-10 rounded-full object-cover hidden">
-                            <h2 id="chat-title" class="text-xl font-bold text-gray-300">Selecione uma conversa</h2>
+        
+                    <!-- Sala de Conversa -->
+                    <div id="chat-room-container" class="w-full md:flex-1 flex flex-col fixed md:static inset-0 md:inset-auto h-full z-[110] transition-transform duration-300 translate-x-full md:translate-x-0 bg-[#111111] md:bg-transparent">
+                        <style>
+                            @media (max-width: 767px) {
+                                #chat-header {
+                                    padding-top: calc(0.75rem + env(safe-area-inset-top)) !important;
+                                }
+                                #chat-input-area {
+                                    padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+                                }
+                            }
+                        </style>
+                        
+                        <!-- Header Chat Room -->
+                        <div id="chat-header" class="p-3 md:p-4 border-b border-[#222] flex items-center space-x-3 md:pt-4 bg-[#111111] md:bg-transparent z-30">
+                            <button id="back-to-list-btn" class="md:hidden p-2 text-white hover:bg-white/10 rounded-full flex items-center justify-center shrink-0 w-10 h-10"><i class="fas fa-arrow-left text-lg"></i></button>
+                            <img id="chat-header-avatar" src="" alt="" class="w-10 h-10 rounded-full object-cover hidden border border-gray-800 shrink-0">
+                            <h2 id="chat-title" class="text-[16px] font-bold text-white flex-1 truncate">Selecione uma conversa</h2>
                         </div>
-                        <div id="chat-messages" class="flex flex-col flex-grow p-4 overflow-y-auto relative">
+                        
+                        <div id="chat-messages" class="flex flex-col flex-grow p-4 overflow-y-auto relative pb-5 custom-scrollbar hidden-if-empty">
                             <!-- Placeholder -->
-                            <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                                <i class="fas fa-comments text-5xl mb-4"></i>
-                                <p>Suas mensagens aparecerão aqui</p>
+                            <div class="flex flex-col items-center justify-center h-full text-gray-500 pb-[10vh]">
+                                <div class="w-[72px] h-[72px] rounded-full border-2 border-dashed border-[#333] flex items-center justify-center mb-4"><i class="fas fa-paper-plane text-3xl"></i></div>
+                                <p class="text-[18px] font-bold text-white">Suas mensagens</p>
+                                <p class="text-[15px] text-gray-500 mt-1">Inicie um bate-papo exclusivo.</p>
                             </div>
-                            <button id="scrollToBottomBtn" title="Rolar para baixo" class="absolute bottom-20 right-4 bg-primary text-black w-10 h-10 rounded-full opacity-0 transition-opacity duration-300 flex items-center justify-center shadow-lg">
-                                <i class="fas fa-arrow-down"></i>
+                            <button id="scrollToBottomBtn" title="Rolar para baixo" class="absolute bottom-6 right-4 bg-[#222] text-white w-10 h-10 rounded-full opacity-0 transition-opacity duration-300 flex items-center justify-center shadow-lg border border-[#333] z-50 hover:bg-[#333]">
+                                <i class="fas fa-chevron-down text-sm"></i>
                             </button>
                         </div>
-                        <div id="chat-input-area" class="p-4 border-t border-gray-700 flex items-center space-x-2">
-                            <div class="relative">
-                                <button id="emoji-button" title="Adicionar emoji" class="p-2 rounded-full hover:bg-gray-700 text-gray-400"><i class="fas fa-smile"></i></button>
-                                <div id="emoji-picker-container" class="absolute bottom-full mb-2" style="display: none;">
+                        <div id="chat-input-area" class="px-4 border-t border-[#222] flex items-center gap-3 bg-[#111111] md:bg-transparent pt-3 md:pb-4 opacity-30 grayscale pointer-events-none transition-all duration-300 z-[40] shrink-0 relative">
+                            <div class="relative shrink-0 mb-1">
+                                <button id="emoji-button" class="w-10 h-10 rounded-full bg-[#1e1e1e] hover:bg-[#333] text-gray-400 flex items-center justify-center transition-colors"><i class="fas fa-smile text-xl"></i></button>
+                                <div id="emoji-picker-container" class="absolute bottom-full mb-3 -left-2" style="display: none;">
                                     <emoji-picker class="dark"></emoji-picker>
                                 </div>
                             </div>
-                            <input id="message-input" type="text" placeholder="Digite sua mensagem..." class="flex-grow p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary" disabled>
-                            <button id="send-button" class="bg-primary text-black font-bold py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors" disabled>Enviar</button>
+                            <div class="flex-grow relative bg-[#1e1e1e] rounded-full border border-transparent focus-within:border-gray-600 flex items-center px-5 flex items-center self-stretch mb-1 transition-colors">
+                                <input id="message-input" type="text" placeholder="Escreva uma mensagem..." class="w-full bg-transparent focus:outline-none text-[15px] text-white placeholder-gray-500 h-full py-3" disabled>
+                            </div>
+                            <button id="send-button" class="shrink-0 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all duration-200 shadow-md" disabled>
+                                <i class="fas fa-paper-plane text-xl pr-1"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

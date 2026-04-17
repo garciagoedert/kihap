@@ -25,7 +25,7 @@ async function showNotification(options) {
     notification.className = 'notification-item bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 mb-4 flex items-start animate-fade-in-down';
     
     notification.innerHTML = `
-        <img src="${options.icon || './default-profile.svg'}" alt="Ícone" class="w-10 h-10 rounded-full mr-4">
+        <img src="${options.icon || '/imgs/kobe.png'}" alt="Ícone" class="w-10 h-10 rounded-full mr-4">
         <div class="flex-1">
             <h4 class="font-bold text-gray-900 dark:text-white">${options.title}</h4>
             <p class="text-sm text-gray-600 dark:text-gray-300">${options.message}</p>

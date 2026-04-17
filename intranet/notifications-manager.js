@@ -54,16 +54,15 @@ class NotificationsManager {
         const dropdown = document.getElementById('notifications-dropdown');
         const markAllReadBtn = document.getElementById('mark-all-read');
 
+        // Esses elementos do dropdown não existem mais se a view for mobile com botton nav.
+        // A lógica permanece aqui para Fallback caso a intranet desktop o use.
         if (toggleBtn && dropdown) {
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
-                
-                // Close profile dropdown if open
                 document.getElementById('profile-dropdown')?.classList.add('hidden');
             });
 
-            // Close when clicking outside
             document.addEventListener('click', (e) => {
                 if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
                     dropdown.classList.add('hidden');
@@ -71,6 +70,7 @@ class NotificationsManager {
             });
         }
 
+        // Caso exista o botão de limpar tudo na nova interface
         if (markAllReadBtn) {
             markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
         }
@@ -105,16 +105,25 @@ class NotificationsManager {
     }
 
     updateUI() {
-        const badge = document.getElementById('notification-badge');
+        // Tenta achar o badge do header ou do bottom-nav
+        let badge = document.getElementById('notification-badge');
+        if (!badge) badge = document.getElementById('nav-notif-badge');
         const list = document.getElementById('notifications-list');
 
         // Update Badge
         if (badge) {
             if (this.unreadCount > 0) {
-                badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
-                badge.classList.remove('hidden');
+                // Remove the strict numeric text if it's a structural dot in bottom nav
+                if (badge.id === 'nav-notif-badge') {
+                    badge.classList.remove('hidden');
+                    badge.classList.add('flex');
+                } else {
+                    badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
+                    badge.classList.remove('hidden');
+                }
             } else {
                 badge.classList.add('hidden');
+                badge.classList.remove('flex');
             }
         }
 
@@ -150,23 +159,31 @@ class NotificationsManager {
     renderNotificationItem(n) {
         const timeStr = this.formatRelativeTime(n.createdAt?.toDate());
         const isRead = n.read;
-        const iconClass = n.icon || this.getDefaultIcon(n.type);
-        const iconBg = this.getIconBg(n.type);
+        
+        let avatarOverlay = '';
+        if (n.type === 'chat') {
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-comments text-[9px] text-white"></i></div>';
+        } else if (n.type === 'admin') {
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-purple-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-bullhorn text-[9px] text-white"></i></div>';
+        } else {
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-info text-[9px] text-white"></i></div>';
+        }
+
+        let avatarImg = `<img src="${n.icon || '/imgs/kobe.png'}" class="w-11 h-11 rounded-full object-cover">`;
 
         return `
-            <div id="notification-${n.id}" class="p-4 border-b border-gray-700/50 hover:bg-gray-800/50 transition-colors cursor-pointer flex gap-4 ${isRead ? 'opacity-60' : ''}">
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full ${iconBg} flex items-center justify-center">
-                        <i class="${iconClass} text-white"></i>
-                    </div>
+            <div id="notification-${n.id}" class="py-4 border-b border-[#222] hover:bg-white/5 transition-colors cursor-pointer flex items-start gap-4 px-2 ${isRead ? 'opacity-60 grayscale-[30%]' : ''}">
+                <div class="flex-shrink-0 relative block mt-0.5">
+                    ${avatarImg}
+                    ${avatarOverlay}
                 </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="text-sm font-bold text-white truncate pr-2">${n.title}</p>
-                        ${!isRead ? '<span class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 ring-4 ring-blue-500/20"></span>' : ''}
+                <div class="flex-1 min-w-0 pr-2">
+                    <div class="flex items-center flex-wrap gap-x-2 mb-0.5">
+                        <span class="text-[15px] font-bold text-gray-100">${n.title}</span>
+                        <span class="text-[15px] text-gray-500">${timeStr}</span>
+                        ${!isRead ? '<div class="w-2 h-2 bg-blue-500 rounded-full mt-0.5 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></div>' : ''}
                     </div>
-                    <p class="text-xs text-gray-400 line-clamp-2 mb-2 leading-relaxed">${n.message}</p>
-                    <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">${timeStr}</span>
+                    <p class="text-[15px] text-gray-300 leading-snug">${n.message}</p>
                 </div>
             </div>
         `;

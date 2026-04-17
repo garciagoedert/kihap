@@ -70,6 +70,7 @@ export function checkAuth() {
 window.logout = function() {
     signOut(auth).then(() => {
         sessionStorage.clear();
+        localStorage.clear();
         window.location.href = '../intranet/login.html';
     }).catch((error) => {
         console.error('Erro ao fazer logout:', error);

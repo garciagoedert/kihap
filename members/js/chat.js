@@ -8,7 +8,7 @@ let groupList, directMessageList, chatTitle, chatMessages, messageInput, sendBut
     scrollToBottomBtn, newGroupBtn, newGroupModal, closeGroupModalBtn, cancelGroupBtn,
     createGroupBtn, groupNameInput, groupMembersContainer, userSearchInput,
     searchResultsContainer, emojiButton, emojiPickerContainer,
-    reactionEmojiPickerContainer;
+    reactionEmojiPickerContainer, backToListBtn;
 
 // Variáveis de estado
 let currentChatId = null;
@@ -38,6 +38,7 @@ function assignDomElements() {
     emojiButton = document.getElementById('emoji-button');
     emojiPickerContainer = document.getElementById('emoji-picker-container');
     reactionEmojiPickerContainer = document.getElementById('reaction-emoji-picker-container');
+    backToListBtn = document.getElementById('back-to-list-btn');
 }
 
 function setupEventListeners() {
@@ -48,6 +49,7 @@ function setupEventListeners() {
     if (closeGroupModalBtn) closeGroupModalBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
     if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => newGroupModal.classList.add('hidden'));
     if (createGroupBtn) createGroupBtn.addEventListener('click', createGroup);
+    if (backToListBtn) backToListBtn.addEventListener('click', closeMobileChat);
 
     document.addEventListener('click', (event) => {
         if (searchResultsContainer && !event.target.closest('#search-results') && event.target !== userSearchInput) {
@@ -208,7 +210,7 @@ async function renderUserItem(chat, chatId, currentUserId) {
         const photoUrl = otherUserData.profilePicture || otherUserData.photoURL;
         const avatarHtml = photoUrl
             ? `<img src="${photoUrl}" alt="Foto de perfil" class="w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover">`
-            : `<div class="w-10 h-10 rounded-full mr-3 flex-shrink-0 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-gray-400 text-2xl"></i></div>`;
+            : `<img src="/imgs/kobe.png" alt="Foto de perfil" class="w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover">`;
 
         userElement.innerHTML = `
             <div class="flex items-center overflow-hidden flex-1">
@@ -257,6 +259,7 @@ function selectChat(chatData, isGroup) {
 
     loadMessages(chatData.id, isGroup);
     enableChatInput();
+    openMobileChat();
 }
 
 async function loadChatFromId(chatId) {
@@ -301,9 +304,9 @@ async function searchUser() {
         } else {
             foundUsers.forEach(foundUser => {
                 const userElement = document.createElement('div');
-                userElement.className = 'flex items-center p-2 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer rounded-lg';
-                const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3">` : `<div class="w-10 h-10 rounded-full mr-3 bg-gray-300 flex items-center justify-center"><i class="fas fa-user-circle text-2xl"></i></div>`;
-                userElement.innerHTML = `${avatarHtml}<div><div class="font-bold">${foundUser.name || 'Usuário'}</div><div class="text-sm">${foundUser.email}</div></div>`;
+                userElement.className = 'flex items-center px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-[#222] transition-colors last:border-b-0';
+                const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-800">` : `<img src="/imgs/kobe.png" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-800">`;
+                userElement.innerHTML = `${avatarHtml}<div class="min-w-0"><div class="font-bold text-white text-[15px] truncate">${foundUser.name || 'Usuário'}</div><div class="text-[13px] text-gray-500 uppercase tracking-widest truncate">${foundUser.email}</div></div>`;
                 userElement.onclick = () => {
                     startChat(foundUser.id, foundUser.name || foundUser.email);
                     userSearchInput.value = '';
@@ -381,7 +384,7 @@ async function loadMessages(chatId, isGroup) {
             if (isGroup && !isSender) {
                 const senderData = userCache.get(message.senderId) || await getUserData(message.senderId);
                 if (senderData) {
-                    const avatarHtml = senderData.profilePicture ? `<img src="${senderData.profilePicture}" class="w-6 h-6 rounded-full mr-2 object-cover">` : `<div class="w-6 h-6 rounded-full mr-2 bg-gray-700 flex items-center justify-center"><i class="fas fa-user-circle text-sm"></i></div>`;
+                    const avatarHtml = senderData.profilePicture ? `<img src="${senderData.profilePicture}" class="w-6 h-6 rounded-full mr-2 object-cover">` : `<img src="/imgs/kobe.png" class="w-6 h-6 rounded-full mr-2 object-cover">`;
                     senderInfoHtml = `<div class="flex items-center mb-1">${avatarHtml}<span class="text-sm font-bold text-gray-400">${senderData.name || 'Usuário'}</span></div>`;
                 }
             }
@@ -475,9 +478,38 @@ async function createGroup() {
 }
 
 function enableChatInput() {
+    const chatInputArea = document.getElementById('chat-input-area');
     if (messageInput) messageInput.disabled = false;
     if (sendButton) sendButton.disabled = false;
-    if (messageInput) messageInput.placeholder = "Digite sua mensagem...";
+    if (messageInput) messageInput.placeholder = "Escreva uma mensagem...";
+    if (chatInputArea) chatInputArea.classList.remove('opacity-30', 'grayscale', 'pointer-events-none');
+}
+
+function disableChatInput() {
+    const chatInputArea = document.getElementById('chat-input-area');
+    if (messageInput) messageInput.disabled = true;
+    if (sendButton) sendButton.disabled = true;
+    if (messageInput) messageInput.placeholder = "Selecione uma conversa...";
+    if (chatInputArea) chatInputArea.classList.add('opacity-30', 'grayscale', 'pointer-events-none');
+}
+
+function openMobileChat() {
+    if (window.innerWidth < 768) {
+        document.getElementById('chat-list-container')?.classList.add('-translate-x-full');
+        document.getElementById('chat-room-container')?.classList.remove('translate-x-full');
+    }
+}
+
+function closeMobileChat() {
+    if (window.innerWidth < 768) {
+        document.getElementById('chat-list-container')?.classList.remove('-translate-x-full');
+        document.getElementById('chat-room-container')?.classList.add('translate-x-full');
+    }
+    // Opcional: Resetar chat atual para mobile
+    currentChatId = null;
+    sessionStorage.removeItem('activeChatId');
+    if (chatTitle) chatTitle.textContent = 'Mensagens';
+    disableChatInput();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

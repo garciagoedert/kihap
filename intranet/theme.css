@@ -1,11 +1,4 @@
-/* Ajustes para a Safe Area (Dynamic Island) do iPhone no App Native */
-body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-}
-
+/* O body padding foi removido para que o Header e a Sidebar gerenciem nativamente a área de segurança do iOS, garantindo cores de fundo contíguas até o topo real. */
 /* Estilos para a cor primária - será sobrescrito pelo JS de whitelabel */
 :root {
     --primary-color: #FFC107;

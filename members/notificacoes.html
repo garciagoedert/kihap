@@ -5,16 +5,7 @@
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
-    
-    
-    
-    
-    
-    
-        
-    
-    
-    <title>Kihap - Feed</title>
+    <title>Atividade - Kihap</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
@@ -28,16 +19,28 @@
 <body class="bg-[#111111] text-gray-200">
     <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+        <div id="sidebar-backdrop"></div>
         <main id="main-content" class="flex-1">
             <div id="header-container"></div>
             <div class="p-0 md:p-6 lg:p-8 flex justify-center">
                 <div class="w-full max-w-2xl">
-                    <div class="pt-6 md:pt-8 w-full">
-                    <div id="feed-list" class="flex flex-col pb-20 md:pb-0">
-                        <!-- As postagens do feed serão carregadas aqui -->
-                        <div class="flex justify-center items-center py-10">
-                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                    <div class="pt-6 md:pt-8 w-full px-4 md:px-0">
+                        <h1 class="text-3xl font-extrabold text-white mb-6 tracking-tight">Atividade</h1>
+                        
+                        <!-- Tabs -->
+                        <div class="flex overflow-x-auto hide-scrollbar space-x-2 mb-2 pb-2">
+                            <button class="px-5 py-2 bg-white text-black font-semibold rounded-full text-sm shrink-0 shadow-md">Tudo</button>
+                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Sistema</button>
+                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Conversas</button>
+                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Eventos</button>
+                        </div>
+
+                        <!-- Notification List Container -->
+                        <div id="notifications-list" class="flex flex-col pb-24 md:pb-0 min-h-[400px]">
+                            <!-- Notifications will be injected here by notificationsManager -->
+                            <div class="flex justify-center items-center py-10">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -47,10 +50,11 @@
     <script type="module" src="js/auth.js"></script>
     <script type="module">
         import { loadComponents } from './js/common-ui.js';
-        import { loadFeed } from './js/feed.js';
+        
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
-                loadFeed();
+                // A populacao de records acontece de forma autonoma pelo app no JS `notificationsManager`.
+                // Basta existir #notifications-list
             });
         });
     </script>

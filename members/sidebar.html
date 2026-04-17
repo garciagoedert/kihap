@@ -1,40 +1,66 @@
-<aside id="sidebar" class="bg-[#1a1a1a] w-64 h-screen flex flex-col fixed top-0 left-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-lg">
-    <div class="flex items-center justify-between p-6 border-b border-gray-700">
-         <img src="/imgs/favicon.png" alt="Kihap Icon" class="h-10">
-        <button id="sidebar-close-btn" class="p-2 rounded-md text-gray-300 hover:bg-gray-700 md:hidden" aria-label="Close sidebar">
+<aside id="sidebar" class="bg-[#0a0a0a] border-r border-[#1a1a1a] w-72 h-[100dvh] flex flex-col fixed top-0 left-0 z-[130] transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl" style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);">
+    <div class="flex items-center justify-between px-6 pb-6 pt-4 border-b border-gray-800 shrink-0">
+         <h2 class="text-xl font-extrabold text-gray-100 tracking-tight">Menu</h2>
+        <button id="sidebar-close-btn" class="p-2 rounded-md text-gray-300 hover:bg-gray-800 md:hidden" aria-label="Close sidebar">
             <i class="fas fa-times"></i>
         </button>
     </div>
-    <nav class="flex-grow p-4 min-h-0 overflow-y-auto space-y-2">
-        <a href="index.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-home w-6"></i> Início
-        </a>
-        <a href="chat.html" id="chat-link" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-comments w-6"></i> Chat
-        </a>
-        <a href="cursos.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-graduation-cap w-6"></i> Meus Cursos
-        </a>
-        <a href="feed.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-newspaper w-6"></i> Feed
-        </a>
-        <a href="tatame.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-user-ninja w-6"></i> Tatame
-        </a>
-        <a href="atividades.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-calendar-alt w-6"></i> Atividades
-        </a>
-        <a href="store.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-store w-6"></i> Loja
-        </a>
-        <a href="pedidos.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-shopping-bag w-6"></i> Meus Pedidos
-        </a>
-        <a href="assinatura.html" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
-            <i class="fas fa-credit-card w-6"></i> Assinatura
-        </a>
-        <button onclick="window.openNPSModal()" class="w-full flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 mt-4 border border-yellow-500/30">
-            <i class="fas fa-star w-6 text-yellow-500"></i> Avaliar Experiência
+    <style>
+        /* Força a estilização de link ativo independente do Cache do JS */
+        #sidebar a.bg-primary-light {
+            background-color: transparent !important;
+            color: #eab308 !important; /* Tailwind yellow-500 */
+            font-weight: 700 !important;
+        }
+        #sidebar a.bg-primary-light i {
+            color: #eab308 !important;
+        }
+    </style>
+    <nav class="flex-grow px-4 py-6 min-h-0 overflow-y-auto custom-scrollbar">
+        
+        <!-- Grupo Principal -->
+        <div class="bg-[#141414] rounded-[20px] border border-gray-800/60 overflow-hidden mb-6 shadow-sm">
+            <a href="feed.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-home w-8 text-[18px]"></i> Início
+            </a>
+            <a href="index.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-chart-line w-8 text-[18px]"></i> Painel
+            </a>
+            <a href="chat.html" id="chat-link" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors">
+                <i class="fas fa-comments w-8 text-[18px]"></i> Chat
+            </a>
+        </div>
+
+        <!-- Grupo de Estudo -->
+        <h3 class="px-3 text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-3">Evolução</h3>
+        <div class="bg-[#141414] rounded-[20px] border border-gray-800/60 overflow-hidden mb-6 shadow-sm">
+            <a href="cursos.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-graduation-cap w-8 text-[18px]"></i> Meus Cursos
+            </a>
+            <a href="tatame.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-user-ninja w-8 text-[18px]"></i> Tatame
+            </a>
+            <a href="atividades.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors">
+                <i class="fas fa-calendar-alt w-8 text-[18px]"></i> Atividades
+            </a>
+        </div>
+
+        <!-- Grupo Comercial -->
+        <h3 class="px-3 text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-3">Serviços</h3>
+        <div class="bg-[#141414] rounded-[20px] border border-gray-800/60 overflow-hidden mb-6 shadow-sm">
+            <a href="store.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-store w-8 text-[18px]"></i> Loja
+            </a>
+            <a href="pedidos.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors border-b border-gray-800/60">
+                <i class="fas fa-shopping-bag w-8 text-[18px]"></i> Meus Pedidos
+            </a>
+            <a href="assinatura.html" class="w-full flex items-center text-gray-300 font-medium py-3.5 px-4 hover:bg-white/5 transition-colors">
+                <i class="fas fa-credit-card w-8 text-[18px]"></i> Assinatura
+            </a>
+        </div>
+
+        <button onclick="window.openNPSModal()" class="w-full flex items-center justify-center bg-gray-800/30 hover:bg-gray-800 text-gray-300 font-semibold py-3.5 px-4 mt-2 rounded-[16px] transition-all duration-200 border border-yellow-500/20 group">
+            <i class="fas fa-star w-6 flex-shrink-0 text-yellow-500 group-hover:scale-110 transition-transform"></i> Avaliar Experiência
         </button>
     </nav>
 </aside>

@@ -45,7 +45,7 @@ async function handleLogin(e) {
             // --- LOGGING END ---
 
             if (userData.evoMemberId) {
-                window.location.href = '../members/index.html';
+                window.location.href = '../members/feed.html';
             } else {
                 window.location.href = 'index.html';
             }

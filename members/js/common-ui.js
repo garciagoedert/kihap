@@ -13,10 +13,18 @@ function setupUIListeners() {
     const backdrop = document.getElementById('sidebar-backdrop');
 
     if (sidebar && mainContent && sidebarOpenBtn && sidebarCloseBtn && backdrop) {
+        // Initialize backdrop with highly optimized solid dimming layer
+        backdrop.className = 'fixed inset-0 bg-black/60 z-[120] transition-opacity duration-300 opacity-0 pointer-events-none transform-gpu';
+
         const toggleSidebar = () => {
-            sidebar.classList.toggle('-translate-x-full');
-            backdrop.classList.toggle('hidden');
-            backdrop.classList.toggle('md:hidden');
+            const isClosed = sidebar.classList.toggle('-translate-x-full');
+            if (isClosed) {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                backdrop.classList.replace('pointer-events-auto', 'pointer-events-none');
+            } else {
+                backdrop.classList.replace('opacity-0', 'opacity-100');
+                backdrop.classList.replace('pointer-events-none', 'pointer-events-auto');
+            }
         };
 
         sidebarOpenBtn.addEventListener('click', toggleSidebar);
@@ -64,14 +72,14 @@ async function updateUserProfileUI() {
 
     try {
         let currentUser = null;
-        const currentUserStr = sessionStorage.getItem('currentUser');
+        const currentUserStr = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         
         if (currentUserStr) {
             currentUser = JSON.parse(currentUserStr);
         } else {
             currentUser = await getCurrentUser();
             if (currentUser) {
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
             }
         }
 
@@ -145,27 +153,55 @@ async function loadComponents(pageSpecificSetup) {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
     try {
-        const [headerRes, sidebarRes] = await Promise.all([
+        const [headerRes, sidebarRes, bottomNavRes] = await Promise.all([
             fetch(`header.html?v=${new Date().getTime()}`),
-            fetch(`sidebar.html?v=${new Date().getTime()}`)
+            fetch(`sidebar.html?v=${new Date().getTime()}`),
+            fetch(`bottom-nav.html?v=${new Date().getTime()}`)
         ]);
 
-        if (!headerRes.ok || !sidebarRes.ok) {
+        if (!headerRes.ok || !sidebarRes.ok || !bottomNavRes.ok) {
             throw new Error('Failed to fetch components');
         }
 
-        headerContainer.innerHTML = await headerRes.text();
-        sidebarContainer.innerHTML = await sidebarRes.text();
+        if (headerContainer) {
+            headerContainer.innerHTML = await headerRes.text();
+            headerContainer.className = 'w-full bg-[#1a1a1a]';
+            headerContainer.style.cssText = 'position: sticky; top: 0; z-index: 40;';
+        }
+        if (sidebarContainer) sidebarContainer.innerHTML = await sidebarRes.text();
+
+        // Inject Bottom Nav dynamically if not present
+        let bottomNavContainer = document.getElementById('bottom-nav-container');
+        if (!bottomNavContainer) {
+            bottomNavContainer = document.createElement('div');
+            bottomNavContainer.id = 'bottom-nav-container';
+            document.body.appendChild(bottomNavContainer);
+        }
+        bottomNavContainer.innerHTML = await bottomNavRes.text();
 
         // Set active link in sidebar
-        const sidebarLinks = sidebarContainer.querySelectorAll('nav a');
-        sidebarLinks.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop();
-            if (linkPage === currentPage) {
-                link.classList.add('bg-primary-light');
-                link.classList.remove('bg-gray-700', 'hover:bg-gray-600');
-            }
-        });
+        if (sidebarContainer) {
+            const sidebarLinks = sidebarContainer.querySelectorAll('nav a');
+            sidebarLinks.forEach(link => {
+                const linkPage = link.getAttribute('href').split('/').pop();
+                if (linkPage === currentPage) {
+                    link.classList.remove('text-gray-300', 'font-medium');
+                    link.classList.add('text-yellow-500', 'font-bold', 'bg-white/5');
+                }
+            });
+        }
+
+        // Set active link in bottom nav
+        if (bottomNavContainer) {
+            const bottomNavLinks = bottomNavContainer.querySelectorAll('nav a');
+            bottomNavLinks.forEach(link => {
+                const linkPage = link.getAttribute('href').split('/').pop();
+                // Associa painel/index como "Feed" para não deixar a barra inferior sem marcação em algumas páginas
+                if (linkPage === currentPage || (currentPage === 'index.html' && linkPage === 'feed.html') || (currentPage === '' && linkPage === 'feed.html') || (currentPage.startsWith('notificacoes') && linkPage === 'notificacoes.html')) {
+                    link.classList.add('active');
+                }
+            });
+        }
         
         // Setup listeners and UI
         setupUIListeners();

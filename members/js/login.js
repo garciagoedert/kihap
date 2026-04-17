@@ -18,8 +18,8 @@ async function handleLogin(e) {
 
         if (userDoc.exists()) {
             const userData = userDoc.data();
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', JSON.stringify({ ...userData, uid: user.uid, email: user.email }));
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUser', JSON.stringify({ ...userData, uid: user.uid, email: user.email }));
             
             errorEl.classList.add('hidden');
             window.location.href = 'index.html'; // Redireciona para o painel do aluno
