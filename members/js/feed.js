@@ -1,171 +1,130 @@
 import { db, auth } from '../../intranet/firebase-config.js';
-import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getUserData } from '../../intranet/auth.js';
 
 export const loadFeed = () => {
     const feedList = document.getElementById('feed-list');
     if (!feedList) return;
 
+    let userProfileCache = new Map();
+
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
-        // Buscar a unidade do aluno
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const userUnit = userDoc.exists() ? userDoc.data().unitId : null;
+                // Obter dados do usuário para filtragem
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                const userData = userDoc.exists() ? userDoc.data() : {};
+                const userUnit = userData.unidade || userData.unit || userData.unitId || '';
 
-        feedList.innerHTML = ''; // Limpar a lista
+                feedList.innerHTML = '<div class="flex justify-center p-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
 
-        const q = query(
-            collection(db, 'feed'),
-            where('targetUnit', 'in', ['all', userUnit || null]),
-            orderBy('createdAt', 'desc')
-        );
-
+                // Buscar todos os posts e filtrar no cliente para suportar OR complexo
+                const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'));
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
-                    feedList.innerHTML = '<p>Nenhuma postagem no feed ainda.</p>';
+                    feedList.innerHTML = '<div class="text-center py-10 text-gray-500">Nenhuma postagem no feed ainda.</div>';
                     return;
                 }
 
-                const formatContentLinks = (text) => {
-                    if (!text) return '';
-                    const urlRegex = /(https?:\/\/[^\s]+)/g;
-                    // Escape basic HTML before injecting links
-                    let escaped = text.replace(/[&<>'"]/g, tag => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[tag] || tag));
-                    return escaped.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 hover:text-yellow-400 hover:underline break-words font-medium">${url}</a>`);
-                };
+                feedList.innerHTML = '';
 
                 querySnapshot.forEach(docSnap => {
                     const post = docSnap.data();
                     const postId = docSnap.id;
-                    const postElement = document.createElement('div');
-                    postElement.className = 'py-5 border-b border-gray-800/60 first:border-t first:border-gray-800/60 px-4 md:px-0 transition-colors duration-300';
+                    
+                    // Lógica de Visibilidade para Alunos
+                    if (post.authorId !== user.uid) {
+                        const isForMe = post.targetStudents?.includes(user.uid);
+                        const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
+                        const isPublic = !post.targetUnit && (!post.targetStudents || post.targetStudents.length === 0);
+                        
+                        // Se não for público, nem para a unidade, nem para o aluno específico, ignora
+                        if (!isForMe && !isForMyUnit && !isPublic) return;
+                    }
 
-                    let mediaElement = '';
+                    const postElement = document.createElement('div');
+                    postElement.className = 'bg-[#1e1e1e] rounded-2xl border border-gray-800 shadow-xl overflow-hidden mb-6 transition-all hover:border-gray-700 animate-fade-in mx-4 md:mx-0';
+
+                    // Fix Foto de Perfil
+                    let authorPhoto = post.authorPhotoURL || '../intranet/default-profile.svg';
+                    const authorId = post.authorId;
+                    
+                    if (!post.authorPhotoURL || post.authorPhotoURL.includes('default-profile.svg')) {
+                        if (userProfileCache.has(authorId)) {
+                            authorPhoto = userProfileCache.get(authorId);
+                        } else {
+                            getUserData(authorId).then(u => {
+                                if (u && u.profilePicture) {
+                                    userProfileCache.set(authorId, u.profilePicture);
+                                    const img = postElement.querySelector(`.author-img-${authorId}`);
+                                    if (img) img.src = u.profilePicture;
+                                }
+                            });
+                        }
+                    }
+
+                    // Media Elements
+                    let mediaHtml = '';
                     if (post.mediaUrl) {
                         if (post.mediaType === 'youtube') {
-                            const videoId = new URL(post.mediaUrl).searchParams.get('v') || new URL(post.mediaUrl).pathname.split('/').pop();
-                            mediaElement = `<iframe class="mt-2 rounded-xl w-full aspect-video border border-gray-800/50" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                            const vid = post.mediaUrl.includes('v=') ? post.mediaUrl.split('v=')[1].split('&')[0] : post.mediaUrl.split('/').pop();
+                            mediaHtml = `<div class="px-5 pb-5"><iframe class="w-full aspect-video rounded-xl shadow-lg" src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
                         } else if (post.mediaType === 'spotify') {
-                            const spotifyUri = new URL(post.mediaUrl).pathname.split('/').pop();
-                            mediaElement = `<iframe class="mt-2 rounded-xl w-full" src="https://open.spotify.com/embed/track/${spotifyUri}" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`;
-                        } else if (post.mediaType.startsWith('image/')) {
-                            mediaElement = `<img src="${post.mediaUrl}" alt="Mídia da postagem" class="mt-2 rounded-xl w-full object-cover border border-gray-800/50">`;
-                        } else if (post.mediaType.startsWith('video/')) {
-                            mediaElement = `<video controls src="${post.mediaUrl}" class="mt-2 rounded-xl w-full border border-gray-800/50"></video>`;
-                        } else if (post.mediaType.startsWith('audio/')) {
-                            mediaElement = `<audio controls src="${post.mediaUrl}" class="mt-2 w-full"></audio>`;
+                            const spotId = post.mediaUrl.split('/').pop().split('?')[0];
+                            mediaHtml = `<div class="px-5 pb-5"><iframe src="https://open.spotify.com/embed/track/${spotId}" width="100%" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media" class="rounded-xl"></iframe></div>`;
+                        } else if (post.mediaType && (post.mediaType.startsWith('image/') || post.mediaType === 'image')) {
+                            mediaHtml = `<div class="px-5 pb-5"><img src="${post.mediaUrl}" class="w-full h-auto rounded-xl shadow-lg"></div>`;
+                        } else if (post.mediaType && (post.mediaType.startsWith('video/') || post.mediaType === 'video')) {
+                            mediaHtml = `<div class="px-5 pb-5"><video controls src="${post.mediaUrl}" class="w-full h-auto rounded-xl shadow-lg"></video></div>`;
                         }
                     }
 
                     const likes = post.likes || [];
                     const hasLiked = likes.includes(user.uid);
-                    const likeIconClass = hasLiked ? "fas fa-heart text-red-500" : "far fa-heart font-bold";
-                    const likeTextClass = hasLiked ? "text-red-500" : "text-gray-500";
+                    const createdAt = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recentemente';
 
                     postElement.innerHTML = `
-                        <div class="flex items-start space-x-3 lg:space-x-4">
-                            <img src="/imgs/kobe.png" alt="Avatar" class="author-avatar w-10 h-10 lg:w-11 lg:h-11 rounded-full object-cover border-2 border-gray-800 shrink-0 cursor-pointer mt-1">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex flex-row items-center justify-between mb-1">
-                                    <div class="flex items-center">
-                                        <p class="font-semibold text-gray-100 text-[15px] cursor-pointer hover:underline">${post.authorName}</p>
+                        <div class="p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <a href="perfil-publico.html?id=${authorId}" class="relative w-10 h-10 flex-shrink-0 block hover:opacity-80 transition-opacity">
+                                        <img src="${authorPhoto}" class="author-img-${authorId} w-10 h-10 rounded-full border-2 border-primary shadow-sm object-cover" onerror="this.src='../intranet/default-profile.svg'">
+                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1e1e1e] rounded-full"></div>
+                                    </a>
+                                    <div class="ml-3">
+                                        <a href="perfil-publico.html?id=${authorId}" class="font-bold text-gray-100 text-[14px] hover:text-primary transition-colors">${post.authorName}</a>
+                                        <p class="text-[9px] text-gray-500 uppercase font-medium mt-0.5 tracking-tight">${createdAt}</p>
                                     </div>
-                                    <p class="text-[14px] text-gray-500 hover:text-gray-400 cursor-pointer whitespace-nowrap">
-                                        ${new Date(post.createdAt.seconds * 1000).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                                    </p>
-                                </div>
-                                <div class="mb-3 pr-2">
-                                    <p class="text-gray-200 text-[15px] leading-relaxed whitespace-pre-wrap">${formatContentLinks(post.content)}</p>
-                                </div>
-                                
-                                ${mediaElement ? `<div class="mb-3 pr-2">${mediaElement}</div>` : ''}
-                                
-                                <div class="flex items-center space-x-6 mt-1">
-                                    <button class="like-btn flex items-center space-x-1.5 text-gray-500 hover:text-red-500 transition-colors group cursor-pointer focus:outline-none" data-id="${postId}">
-                                        <i class="${likeIconClass} text-[18px] group-hover:text-red-500 transition-colors"></i>
-                                        <span class="like-text ${likeTextClass} text-[14px] font-medium group-hover:text-red-500 transition-colors">${likes.length > 0 ? likes.length : ''}</span>
-                                    </button>
                                 </div>
                             </div>
+                            
+                            <div class="prose prose-invert max-w-none text-gray-200 text-[14px] leading-relaxed mb-5">
+                                ${post.isHtml ? post.content : `<p class="whitespace-pre-wrap">${post.content}</p>`}
+                            </div>
                         </div>
+
+                        ${mediaHtml}
+
+                        ${post.ctaButton ? `
+                            <div class="px-5 pb-5">
+                                <a href="${post.ctaButton.url}" target="_blank" class="w-full flex items-center justify-center bg-primary hover:bg-primary-dark text-black font-bold py-2.5 rounded-xl transition-all shadow-md text-sm">
+                                    ${post.ctaButton.text} <i class="fas fa-external-link-alt ml-2 text-[10px]"></i>
+                                </a>
+                            </div>
+                        ` : ''}
                     `;
-
-                    // Puxar a foto de perfil do autor
-                    if (post.authorId) {
-                        getDoc(doc(db, 'users', post.authorId)).then(authorSnap => {
-                            if (authorSnap.exists()) {
-                                const ad = authorSnap.data();
-                                const avatarSrc = ad.photoURL || ad.profilePicture;
-                                if (avatarSrc) {
-                                    const avatarImg = postElement.querySelector('.author-avatar');
-                                    if (avatarImg) {
-                                        avatarImg.src = avatarSrc;
-                                    }
-                                }
-                            }
-                        }).catch(err => console.error("Erro ao puxar foto do autor:", err));
-                    }
-
-
-                    // Like Button Logic
-                    const likeBtn = postElement.querySelector('.like-btn');
-                    const likeIcon = postElement.querySelector('.like-btn i');
-                    const likeText = postElement.querySelector('.like-text');
-                    const likesCountSpan = postElement.querySelector('.likes-count');
-
-                    let currentHasLiked = hasLiked;
-                    let currentLikesCount = likes.length;
-
-                    likeBtn.addEventListener('click', async () => {
-                        likeBtn.disabled = true; // prevent spam click
-                        const postRef = doc(db, 'feed', postId);
-                        
-                        try {
-                            if (currentHasLiked) {
-                                await updateDoc(postRef, {
-                                    likes: arrayRemove(user.uid)
-                                });
-                                currentHasLiked = false;
-                                currentLikesCount = Math.max(0, currentLikesCount - 1);
-                            } else {
-                                await updateDoc(postRef, {
-                                    likes: arrayUnion(user.uid)
-                                });
-                                currentHasLiked = true;
-                                currentLikesCount++;
-                            }
-                            
-                            // Visual Update
-                            likeIcon.className = currentHasLiked ? "fas fa-heart text-red-500 text-[18px] group-hover:text-red-500 transition-colors" : "far fa-heart font-bold text-[18px] group-hover:text-red-500 transition-colors";
-                            likeText.className = `like-text ${currentHasLiked ? "text-red-500" : "text-gray-500"} text-[14px] font-medium group-hover:text-red-500 transition-colors`;
-                            likesCountSpan.textContent = currentLikesCount > 0 ? currentLikesCount : '';
-                            
-                        } catch (err) {
-                            console.error("Error toggling like: ", err);
-                        } finally {
-                            likeBtn.disabled = false;
-                        }
-                    });
 
                     feedList.appendChild(postElement);
                 });
 
             } catch (error) {
                 console.error("Erro ao carregar o feed: ", error);
-                feedList.innerHTML = '<p>Ocorreu um erro ao carregar o feed. Tente novamente mais tarde.</p>';
+                feedList.innerHTML = '<p class="text-center p-10 text-red-500">Erro ao carregar o feed.</p>';
             }
         } else {
-            feedList.innerHTML = '<p>Você precisa estar logado para ver o feed.</p>';
+            feedList.innerHTML = '<p class="text-center p-10">Faça login para ver o feed.</p>';
         }
     });
 };

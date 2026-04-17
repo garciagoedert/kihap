@@ -25,14 +25,19 @@
             <div class="p-0 md:p-6 lg:p-8 flex justify-center">
                 <div class="w-full max-w-2xl">
                     <div class="pt-6 md:pt-8 w-full px-4 md:px-0">
-                        <h1 class="text-3xl font-extrabold text-white mb-6 tracking-tight">Atividade</h1>
+                        <div class="flex items-center justify-between mb-6">
+                            <h1 class="text-3xl font-extrabold text-white tracking-tight">Atividade</h1>
+                            <button id="mark-all-read" class="text-xs font-bold text-blue-500 hover:text-blue-400 bg-blue-500/5 px-3 py-1.5 rounded-full transition-all flex items-center">
+                                <i class="fas fa-check-double mr-1.5"></i> Marcar todas como lidas
+                            </button>
+                        </div>
                         
                         <!-- Tabs -->
                         <div class="flex overflow-x-auto hide-scrollbar space-x-2 mb-2 pb-2">
-                            <button class="px-5 py-2 bg-white text-black font-semibold rounded-full text-sm shrink-0 shadow-md">Tudo</button>
-                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Sistema</button>
-                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Conversas</button>
-                            <button class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Eventos</button>
+                            <button id="filter-all" class="px-5 py-2 bg-white text-black font-semibold rounded-full text-sm shrink-0 shadow-md">Tudo</button>
+                            <button id="filter-system" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Sistema</button>
+                            <button id="filter-chat" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Conversas</button>
+                            <button id="filter-events" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Eventos</button>
                         </div>
 
                         <!-- Notification List Container -->

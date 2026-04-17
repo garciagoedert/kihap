@@ -427,7 +427,7 @@
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Faixa Atual</label>
-                    <select name="belt" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <select name="belt" id="edit-belt-select" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
                         <option value="Branca Recomendada">Branca Recomendada</option>
                         <option value="Branca Decidida">Branca Decidida</option>
                         <option value="Laranja Recomendada">Laranja Recomendada</option>
@@ -460,6 +460,10 @@
                             <option value="Fênix">Fênix</option>
                         </optgroup>
                     </select>
+                </div>
+                <div id="partials-field-container" class="space-y-1 hidden">
+                    <label class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Parciais (Faixa Preta)</label>
+                    <input type="number" name="partials" min="0" class="w-full bg-[#111] border border-yellow-500/50 rounded-lg px-4 py-2.5 text-white outline-none focus:border-yellow-500 transition-colors" placeholder="0">
                 </div>
                 <div class="space-y-1 md:col-span-2">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Endereço</label>

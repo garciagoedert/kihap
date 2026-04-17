@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus } from './auth.js';
 import { showConfirm, showInviteLinkModal } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, auth } from './firebase-config.js'; // Import auth
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Cloud Functions
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -36,6 +36,14 @@ export function setupAlunoPage() {
             if (!studentId) {
                 document.body.innerHTML = '<div class="text-red-500 text-center p-8">ID do aluno não fornecido.</div>';
                 return;
+            }
+
+            // Tentar recuperar a unidade do Firestore se não estiver na URL
+            if (!currentUnitId) {
+                const studentDoc = await findUserByEvoId(parseInt(studentId));
+                if (studentDoc && (studentDoc.unitId || studentDoc.unit)) {
+                    currentUnitId = studentDoc.unitId || studentDoc.unit;
+                }
             }
 
             await loadAllSelectableContent();
@@ -74,7 +82,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ data: { memberId: studentId, unitId: unitId } }) // Enviar o ID da unidade
+            body: JSON.stringify({ data: { memberId: parseInt(studentId), unitId: unitId } }) // Enviar o ID da unidade como número
         });
 
         if (!response.ok) {
@@ -88,6 +96,23 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
         if (!currentStudent) {
             throw new Error("Aluno não encontrado.");
         }
+
+        // --- MERGE FIRESTORE DATA ---
+        try {
+            const studentUser = await findUserByEvoId(parseInt(studentId));
+            if (studentUser) {
+                // Se o dado existe no Firestore, ele prevalece para campos sociais/manuais
+                if (studentUser.belt) currentStudent.belt = studentUser.belt;
+                if (studentUser.partials !== undefined) currentStudent.partials = studentUser.partials;
+                if (studentUser.rankType) currentStudent.rankType = studentUser.rankType;
+                
+                // Armazenar o UID do Firestore para uso em outras partes
+                currentStudent.firestoreUid = studentUser.id;
+            }
+        } catch (e) {
+            console.warn("Aviso: Falha ao mesclar dados do Firestore:", e);
+        }
+        // ----------------------------
 
         renderStudentProfile();
         renderDetailsTab();
@@ -152,7 +177,8 @@ function renderDetailsTab() {
         responsible: "Responsável",
         origin: "Origem / Como conheceu",
         rankType: "Categoria",
-        belt: "Faixa"
+        belt: "Faixa",
+        partials: "Parciais (Faixa Preta)"
     };
 
     const formatValue = (key, value) => {
@@ -171,7 +197,7 @@ function renderDetailsTab() {
 
     let html = '<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">';
     for (const key in translations) {
-        if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt'].includes(key)) {
+        if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt', 'partials'].includes(key)) {
             html += `
                 <div>
                     <dt class="font-semibold text-gray-400">${translations[key]}</dt>
@@ -443,6 +469,22 @@ function openEditModal() {
     form.rankType.value = currentStudent.rankType || 'Tradicional';
     form.belt.value = currentStudent.belt || 'Branca Recomendada';
     
+    // Partials logic
+    const partialsContainer = document.getElementById('partials-field-container');
+    const beltSelect = document.getElementById('edit-belt-select');
+    
+    const updatePartialsVisibility = () => {
+        if (beltSelect.value === 'Preta') {
+            partialsContainer.classList.remove('hidden');
+        } else {
+            partialsContainer.classList.add('hidden');
+        }
+    };
+
+    beltSelect.onchange = updatePartialsVisibility;
+    updatePartialsVisibility();
+    form.partials.value = currentStudent.partials || 0;
+    
     if (currentStudent.birthDate) {
         form.birthDate.value = new Date(currentStudent.birthDate).toISOString().split('T')[0];
     }
@@ -469,6 +511,22 @@ async function handleEditSubmit(e) {
 
     try {
         await updateLocalStudent(updates);
+        
+        // Save social/manual fields directly to Firestore user document
+        const studentUser = await findUserByEvoId(parseInt(updates.idMember));
+        if (studentUser) {
+            const userRef = doc(db, 'users', studentUser.id);
+            const firestoreUpdates = {};
+            
+            if (updates.partials !== undefined) firestoreUpdates.partials = parseInt(updates.partials) || 0;
+            if (updates.belt) firestoreUpdates.belt = updates.belt;
+            if (updates.rankType) firestoreUpdates.rankType = updates.rankType;
+
+            if (Object.keys(firestoreUpdates).length > 0) {
+                await updateDoc(userRef, firestoreUpdates);
+            }
+        }
+
         alert("Dados atualizados com sucesso!");
         location.reload(); // Refresh to show new data
     } catch (error) {

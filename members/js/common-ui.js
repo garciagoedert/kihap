@@ -197,7 +197,11 @@ async function loadComponents(pageSpecificSetup) {
             bottomNavLinks.forEach(link => {
                 const linkPage = link.getAttribute('href').split('/').pop();
                 // Associa painel/index como "Feed" para não deixar a barra inferior sem marcação em algumas páginas
-                if (linkPage === currentPage || (currentPage === 'index.html' && linkPage === 'feed.html') || (currentPage === '' && linkPage === 'feed.html') || (currentPage.startsWith('notificacoes') && linkPage === 'notificacoes.html')) {
+                if (linkPage === currentPage || 
+                    (currentPage === 'index.html' && linkPage === 'feed.html') || 
+                    (currentPage === '' && linkPage === 'feed.html') || 
+                    (currentPage.startsWith('busca') && linkPage === 'busca.html') ||
+                    (currentPage.startsWith('notificacoes') && linkPage === 'notificacoes.html')) {
                     link.classList.add('active');
                 }
             });
@@ -212,9 +216,8 @@ async function loadComponents(pageSpecificSetup) {
         onAuthReady((user) => {
             if (user) {
                 listenForChatNotifications(user.id);
-                // Inicializa o gerenciador de notificações para o aluno
+                // Inicializa o gerenciador de notificações (filtros, listeners, etc)
                 notificationsManager.init();
-                notificationsManager.listen(user.id);
             }
         });
 

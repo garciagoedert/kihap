@@ -67,8 +67,10 @@ function renderRanking(students) {
             <tr class="ranking-table-row">
                 <td class="rank-position">${index + 1}º</td>
                 <td class="rank-student">
-                    <img src="${photoUrl}" alt="Foto de ${fullName}">
-                    <span class="rank-student-name">${fullName}</span>
+                    <a href="../members/perfil-publico.html?id=${student.idMember}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <img src="${photoUrl}" alt="Foto de ${fullName}">
+                        <span class="rank-student-name">${fullName}</span>
+                    </a>
                 </td>
                 <td class="rank-coins">${fitCoins}</td>
             </tr>

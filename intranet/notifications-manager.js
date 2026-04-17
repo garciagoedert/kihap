@@ -19,6 +19,7 @@ class NotificationsManager {
         this.notifications = [];
         this.unsubscribe = null;
         this.unreadCount = 0;
+        this.activeFilter = 'all'; // 'all', 'system', 'conversas', 'eventos'
     }
 
     async init() {
@@ -72,7 +73,42 @@ class NotificationsManager {
 
         // Caso exista o botão de limpar tudo na nova interface
         if (markAllReadBtn) {
-            markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+            markAllReadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.markAllAsRead();
+            });
+        }
+
+        // Listeners para os botões de filtro na página de Atividades
+        const filterBtns = {
+            'all': document.getElementById('filter-all'),
+            'system': document.getElementById('filter-system'),
+            'conversas': document.getElementById('filter-chat'),
+            'eventos': document.getElementById('filter-events')
+        };
+
+        Object.entries(filterBtns).forEach(([filter, btn]) => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    this.activeFilter = filter;
+                    this.updateFilterButtonsUI(filterBtns);
+                    this.updateUI();
+                });
+            }
+        });
+    }
+
+    updateFilterButtonsUI(btns) {
+        Object.values(btns).forEach(btn => {
+            if (btn) {
+                btn.classList.remove('bg-white', 'text-black');
+                btn.classList.add('bg-[#1a1a1a]', 'text-gray-200');
+            }
+        });
+        const activeBtn = btns[this.activeFilter];
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-[#1a1a1a]', 'text-gray-200');
+            activeBtn.classList.add('bg-white', 'text-black');
         }
     }
 
@@ -129,20 +165,30 @@ class NotificationsManager {
 
         // Update List
         if (list) {
-            if (this.notifications.length === 0) {
+            // Aplicar Filtros
+            let filtered = this.notifications;
+            if (this.activeFilter === 'system') {
+                filtered = this.notifications.filter(n => ['admin', 'system', 'trello'].includes(n.type));
+            } else if (this.activeFilter === 'conversas') {
+                filtered = this.notifications.filter(n => n.type === 'chat');
+            } else if (this.activeFilter === 'eventos') {
+                filtered = this.notifications.filter(n => n.type === 'event');
+            }
+
+            if (filtered.length === 0) {
                 list.innerHTML = `
                     <div class="p-8 text-center text-gray-500">
                         <i class="fas fa-bell-slash text-3xl mb-3 block opacity-20"></i>
-                        <p class="text-sm">Nenhuma notificação por enquanto</p>
+                        <p class="text-sm">Nenhuma notificação nesta categoria</p>
                     </div>
                 `;
                 return;
             }
 
-            list.innerHTML = this.notifications.map(n => this.renderNotificationItem(n)).join('');
+            list.innerHTML = filtered.map(n => this.renderNotificationItem(n)).join('');
             
             // Add click listeners to items
-            this.notifications.forEach(n => {
+            filtered.forEach(n => {
                 const el = document.getElementById(`notification-${n.id}`);
                 if (el) {
                     el.addEventListener('click', () => {
