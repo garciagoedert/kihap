@@ -31,6 +31,28 @@ function setupUIListeners() {
         sidebarCloseBtn.addEventListener('click', toggleSidebar);
         backdrop.addEventListener('click', toggleSidebar);
     }
+
+    // Global interceptor for profile links to be absolutely sure
+    document.addEventListener('click', async (e) => {
+        const link = e.target.closest('a[href="perfil.html"], #bottom-nav-profile-link');
+        if (link) {
+            e.preventDefault();
+            const currentUserStr = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            let uid = null;
+            if (currentUserStr) {
+                uid = JSON.parse(currentUserStr).uid || JSON.parse(currentUserStr).id;
+            } else {
+                const user = await getCurrentUser();
+                uid = user?.uid || user?.id;
+            }
+
+            if (uid) {
+                window.location.href = `perfil-publico.html?id=${uid}`;
+            } else {
+                window.location.href = 'perfil.html';
+            }
+        }
+    });
 }
 
 function setupProfileMenu() {
@@ -88,6 +110,17 @@ async function updateUserProfileUI() {
             if (userUnitEl) userUnitEl.textContent = currentUser.unit || currentUser.unidade || 'Kihap Member';
             if (userAvatarEl && currentUser.profilePicture) userAvatarEl.src = currentUser.profilePicture;
             if (userEmailEl) userEmailEl.textContent = currentUser.email || '';
+
+            // Update profile link to Public Profile
+            const updateLinks = () => {
+                const profileLinks = document.querySelectorAll('a[href="perfil.html"], #bottom-nav-profile-link');
+                profileLinks.forEach(link => {
+                    link.href = `perfil-publico.html?id=${currentUser.uid || currentUser.id}`;
+                });
+            };
+            updateLinks();
+            // Fallback: Tenta novamente em 500ms caso o DOM não estivesse pronto
+            setTimeout(updateLinks, 500);
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
@@ -201,7 +234,8 @@ async function loadComponents(pageSpecificSetup) {
                     (currentPage === 'index.html' && linkPage === 'feed.html') || 
                     (currentPage === '' && linkPage === 'feed.html') || 
                     (currentPage.startsWith('busca') && linkPage === 'busca.html') ||
-                    (currentPage.startsWith('notificacoes') && linkPage === 'notificacoes.html')) {
+                    (currentPage.startsWith('notificacoes') && linkPage === 'notificacoes.html') ||
+                    (currentPage.startsWith('perfil-publico') && linkPage === 'perfil.html')) {
                     link.classList.add('active');
                 }
             });
@@ -218,6 +252,12 @@ async function loadComponents(pageSpecificSetup) {
                 listenForChatNotifications(user.id);
                 // Inicializa o gerenciador de notificações (filtros, listeners, etc)
                 notificationsManager.init();
+
+                // Reforça a atualização do link de perfil quando o Auth está pronto
+                const profileLink = document.getElementById('bottom-nav-profile-link');
+                if (profileLink) {
+                    profileLink.href = `perfil-publico.html?id=${user.uid || user.id}`;
+                }
             }
         });
 

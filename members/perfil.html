@@ -72,7 +72,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Edit Profile Form -->
                 <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
                     <h2 class="text-xl font-semibold mb-4">Editar Informações</h2>
@@ -121,6 +120,67 @@
 
             </div>
         </main>
+    </div>
+
+    <!-- Modal de Seleção de Avatar -->
+    <div id="avatar-modal" class="fixed inset-0 bg-black/80 z-[200] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col">
+            <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-user-circle text-yellow-500"></i> Alterar Avatar
+                </h3>
+                <button id="close-avatar-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                <!-- Opção 1: Upload -->
+                <button id="trigger-upload" class="w-full flex items-center justify-center gap-3 p-4 bg-[#014fa4] hover:bg-blue-600 text-white rounded-2xl font-bold transition-all mb-8 shadow-lg">
+                    <i class="fas fa-cloud-upload-alt text-xl"></i> Fazer Upload de Foto Personalizada
+                </button>
+
+                <div class="relative flex items-center mb-6">
+                    <div class="flex-grow border-t border-gray-800"></div>
+                    <span class="flex-shrink mx-4 text-gray-500 text-xs font-bold uppercase tracking-widest">ou escolha um mascote</span>
+                    <div class="flex-grow border-t border-gray-800"></div>
+                </div>
+
+                <!-- Opção 2: Mascotes -->
+                <div id="mascot-grid" class="grid grid-cols-3 sm:grid-cols-3 gap-4">
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_01.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_01.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_02.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_02.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_03.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_03.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_04.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_04.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_05.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_05.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mascot-item group relative cursor-pointer" data-url="/imgs/personagens/perfilpersonagens/avatar_06.png">
+                        <div class="aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all">
+                            <img src="/imgs/personagens/perfilpersonagens/avatar_06.png" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="js/auth.js"></script>

@@ -24,13 +24,34 @@ export function setupProfilePage() {
     let currentUser = null;
     let evoMemberId = null;
 
-    // Handle photo click - attach to container for better hit area
+    // Handle photo click - Open Modal
     if (profilePhotoContainer) {
-        profilePhotoContainer.addEventListener('click', (e) => {
-            if (photoInput) {
-                photoInput.click();
-            }
+        profilePhotoContainer.addEventListener('click', () => {
+            const modal = document.getElementById('avatar-modal');
+            if (modal) modal.classList.remove('hidden', 'flex');
+            if (modal) modal.classList.add('flex');
         });
+    }
+
+    // Modal Controls
+    const avatarModal = document.getElementById('avatar-modal');
+    const closeAvatarModal = document.getElementById('close-avatar-modal');
+    const triggerUpload = document.getElementById('trigger-upload');
+
+    if (closeAvatarModal && avatarModal) {
+        closeAvatarModal.onclick = () => {
+            avatarModal.classList.add('hidden');
+            avatarModal.classList.remove('flex');
+        };
+        avatarModal.onclick = (e) => {
+            if (e.target === avatarModal) closeAvatarModal.onclick();
+        };
+    }
+
+    if (triggerUpload && photoInput) {
+        triggerUpload.onclick = () => {
+            photoInput.click();
+        };
     }
 
     // Handle file selection
@@ -57,6 +78,7 @@ export function setupProfilePage() {
 
                 // Update UI
                 avatar.src = photoURL;
+                if (avatarModal) avatarModal.classList.add('hidden');
                 alert("Foto de perfil atualizada com sucesso!");
 
             } catch (error) {
@@ -103,6 +125,7 @@ export function setupProfilePage() {
                     }
                 }
                 fetchPaymentHistory(user.uid);
+                setupMascotGallery(user.uid);
             }
         }
     });
@@ -197,5 +220,45 @@ export function setupProfilePage() {
             console.error("Erro ao buscar histórico de pagamentos:", error);
             paymentHistoryBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar histórico.</td></tr>';
         }
+    }
+
+    function setupMascotGallery(userId) {
+        const mascotItems = document.querySelectorAll('.mascot-item');
+        const userAvatar = document.getElementById('user-avatar');
+
+        mascotItems.forEach(item => {
+            item.onclick = async () => {
+                const imgUrl = item.dataset.url;
+                
+                // Visual feedback
+                const overlay = document.createElement('div');
+                overlay.className = 'absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center';
+                overlay.innerHTML = '<i class="fas fa-spinner fa-spin text-white"></i>';
+                item.appendChild(overlay);
+
+                try {
+                    // Update Firestore
+                    const userRef = doc(db, "users", userId);
+                    await updateDoc(userRef, { photoURL: imgUrl });
+
+                    // Update UI
+                    userAvatar.src = imgUrl;
+                    
+                    // Highlight selected
+                    mascotItems.forEach(m => m.querySelector('div').classList.remove('border-yellow-500', 'bg-yellow-500/10'));
+                    item.querySelector('div').classList.add('border-yellow-500', 'bg-yellow-500/10');
+                    
+                    const avatarModal = document.getElementById('avatar-modal');
+                    if (avatarModal) avatarModal.classList.add('hidden');
+
+                    alert("Seu avatar foi atualizado!");
+                } catch (error) {
+                    console.error("Erro ao selecionar mascote:", error);
+                    alert("Erro ao atualizar o avatar.");
+                } finally {
+                    overlay.remove();
+                }
+            };
+        });
     }
 }
