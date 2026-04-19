@@ -19,6 +19,9 @@ exports.syncEvoToOlistScheduled = syncEvoToOlistScheduled;
 const { getGoogleAdsData } = require('./google-ads.js');
 exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 
+const { getInstagramStories } = require('./instagram.js');
+exports.getInstagramStories = functions.https.onCall(getInstagramStories);
+
 exports.getStudentPurchases = functions.https.onCall(async (data, context) => {
     // Verifica autenticação
     if (!context.auth) {

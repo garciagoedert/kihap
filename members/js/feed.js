@@ -2,6 +2,7 @@ import { db, auth } from '../../intranet/firebase-config.js';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getUserData } from '../../intranet/auth.js';
+import { initStories } from './kihap-stories.js';
 
 export const loadFeed = () => {
     const feedList = document.getElementById('feed-list');
@@ -11,6 +12,9 @@ export const loadFeed = () => {
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
+            // Inicializar Stories
+            initStories();
+            
             try {
                 // Obter dados do usuário para filtragem
                 const userDoc = await getDoc(doc(db, 'users', user.uid));

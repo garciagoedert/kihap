@@ -219,7 +219,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create, update, delete: if request.auth != null && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRH == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isFinanceiro == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAcademy == true
       );
     }
 
@@ -387,6 +392,20 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.followerId;
       allow delete: if request.auth != null && request.auth.uid == resource.data.followerId;
+    }
+
+    // Regras para Stories (Kihap Stories)
+    match /stories/{storyId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRH == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isFinanceiro == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAcademy == true
+      );
     }
   }
 }

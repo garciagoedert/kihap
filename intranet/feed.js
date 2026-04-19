@@ -46,6 +46,25 @@ export const initFeedPage = () => {
     }
 
     // Lógica de Direcionamento por Aluno
+    const storyModeToggle = document.getElementById('story-mode-toggle');
+    const editorWrapper = document.getElementById('editor-wrapper');
+    const ctaContainer = document.getElementById('toggle-cta').parentElement;
+    
+    if (storyModeToggle) {
+        storyModeToggle.addEventListener('change', (e) => {
+            const isStory = e.target.checked;
+            if (isStory) {
+                editorWrapper.classList.add('hidden');
+                ctaContainer.classList.add('hidden');
+                document.querySelector('input[name="media-type"][value="url"]').parentElement.classList.add('hidden');
+            } else {
+                editorWrapper.classList.remove('hidden');
+                ctaContainer.classList.remove('hidden');
+                document.querySelector('input[name="media-type"][value="url"]').parentElement.classList.remove('hidden');
+            }
+        });
+    }
+
     const targetTypeRadios = document.querySelectorAll('input[name="target-type"]');
     const unitContainer = document.getElementById('unit-target-container');
     const studentContainer = document.getElementById('student-target-container');
@@ -293,6 +312,7 @@ export const initFeedPage = () => {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
         try {
+            const isStory = storyModeToggle?.checked;
             let mediaUrl = '';
             let mediaType = '';
             const mTypeOption = document.querySelector('input[name="media-type"]:checked').value;
@@ -300,7 +320,7 @@ export const initFeedPage = () => {
             if (mTypeOption === 'upload') {
                 const file = document.getElementById('post-media').files[0];
                 if (file) {
-                    const sRef = ref(storage, `feed-media/${Date.now()}_${file.name}`);
+                    const sRef = ref(storage, `${isStory ? 'stories' : 'feed-media'}/${Date.now()}_${file.name}`);
                     await uploadBytes(sRef, file);
                     mediaUrl = await getDownloadURL(sRef);
                     mediaType = file.type;
@@ -311,22 +331,43 @@ export const initFeedPage = () => {
                 else if (mediaUrl.includes('spotify')) mediaType = 'spotify';
             }
 
+            if (isStory && !mediaUrl) {
+                alert('Stories precisam de uma imagem ou vídeo!');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Publicar';
+                return;
+            }
+
             const uDoc = await getDoc(doc(db, 'users', user.uid));
             const uData = uDoc.exists() ? uDoc.data() : {};
 
-            await addDoc(collection(db, 'feed'), {
-                authorId: user.uid,
-                authorName: uData.name || user.displayName || 'Usuário',
-                authorPhotoURL: uData.profilePicture || user.photoURL || '',
-                content,
-                isHtml: true,
-                mediaUrl,
-                mediaType,
-                ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
-                targetUnit: targetType === 'unit' ? targetUnit : null,
-                targetStudents: targetType === 'students' ? targetStudentsIds : [],
-                createdAt: serverTimestamp()
-            });
+            if (isStory) {
+                await addDoc(collection(db, 'stories'), {
+                    authorId: user.uid,
+                    authorName: uData.name || user.displayName || 'Usuário',
+                    authorPhotoURL: uData.profilePicture || user.photoURL || '',
+                    mediaUrl,
+                    mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
+                    targetUnit: targetType === 'unit' ? targetUnit : null,
+                    targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                    createdAt: serverTimestamp(),
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+                });
+            } else {
+                await addDoc(collection(db, 'feed'), {
+                    authorId: user.uid,
+                    authorName: uData.name || user.displayName || 'Usuário',
+                    authorPhotoURL: uData.profilePicture || user.photoURL || '',
+                    content,
+                    isHtml: true,
+                    mediaUrl,
+                    mediaType,
+                    ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
+                    targetUnit: targetType === 'unit' ? targetUnit : null,
+                    targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                    createdAt: serverTimestamp()
+                });
+            }
 
             postForm.reset();
             quill.setContents([]);
