@@ -46,7 +46,7 @@ let users = [];
 // --- AUTHENTICATION ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        if (localStorage.getItem('isLoggedIn') === 'true') {
             loadComponents(() => setupUIListeners());
             loadUsers();
             setupNodeListener();

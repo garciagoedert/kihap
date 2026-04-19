@@ -14,7 +14,7 @@ export function initializeAppWithFirebase(firebaseConfig) {
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
                 loadComponents(() => {
                     setupUIListeners({}); // Setup sidebar interactivity
                     loadArchivedLeads();

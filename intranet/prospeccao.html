@@ -875,7 +875,7 @@
         // --- AUTHENTICATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                if (localStorage.getItem('isLoggedIn') === 'true') {
                     document.getElementById('kanban-container').classList.remove('hidden');
                     setupListeners();
                 } else {
@@ -1161,7 +1161,7 @@
                 return;
             }
 
-            const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
             logContainer.innerHTML = logs
                 .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
@@ -1572,7 +1572,7 @@
                 try {
                     // Standard Internal Note
                     const newLog = {
-                        author: sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
+                        author: localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
                         description: description,
                         timestamp: new Date(),
                         type: 'note'
@@ -1779,7 +1779,7 @@
                     data.status = 'Novo';
                     data.pagina = 'Prospecção';
                     data.createdAt = serverTimestamp();
-                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                    data.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
 
                     const batch = writeBatch(db);
 
@@ -1806,7 +1806,7 @@
                     data.status = 'Novo'; // FIX: Was 'Pendente'
                     data.pagina = 'Prospecção';
                     data.createdAt = serverTimestamp();
-                    data.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                    data.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
                     await addDoc(prospectsCollection, data);
                     generalLog.add(user, 'Create Card', `New card "${data.responsavel}" created`);
                 }

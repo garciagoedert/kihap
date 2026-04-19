@@ -168,14 +168,14 @@ async function updateUserProfileUI() {
 
     try {
         let currentUser = null;
-        const currentUserStr = sessionStorage.getItem('currentUser');
+        const currentUserStr = localStorage.getItem('currentUser');
         
         if (currentUserStr) {
             currentUser = JSON.parse(currentUserStr);
         } else {
             currentUser = await getCurrentUser();
             if (currentUser) {
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
             }
         }
 
@@ -195,7 +195,7 @@ async function updateUserProfileUI() {
             }
             
             // Handle admin-only elements in dropdown
-            const isAdmin = currentUser.isAdmin === true || sessionStorage.getItem('isAdmin') === 'true';
+            const isAdmin = currentUser.isAdmin === true || localStorage.getItem('isAdmin') === 'true';
             document.querySelectorAll('#profile-dropdown .admin-only').forEach(el => {
                 if (isAdmin) {
                     el.classList.remove('hidden');
@@ -471,7 +471,7 @@ async function loadComponents(pageSpecificSetup) {
         });
 
         // Show/hide elements based on page and user role
-        const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+        const isAdmin = localStorage.getItem('isAdmin') === 'true';
         const adminOnlyElements = document.querySelectorAll('.admin-only');
 
         adminOnlyElements.forEach(el => {
@@ -488,7 +488,7 @@ async function loadComponents(pageSpecificSetup) {
             adminLink.classList.remove('hidden');
         }
 
-        const currentUserStr = sessionStorage.getItem('currentUser');
+        const currentUserStr = localStorage.getItem('currentUser');
         const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
         const isInstructor = currentUser.isInstructor === true;
 

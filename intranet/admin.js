@@ -18,7 +18,7 @@ async function deleteProspect(prospectId) {
 
 
 export function setupAdminPage() {
-    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
     if (!isAdmin) {
         window.location.href = 'index.html';
         return;

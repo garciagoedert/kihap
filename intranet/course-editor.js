@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     onAuthReady(async (user) => {
         if (user) {
-            const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
             if (!isAdmin) {
                 alert('Acesso negado. Você precisa ser um administrador para acessar esta página.');
                 window.location.href = 'cursos.html';
@@ -142,7 +142,7 @@ async function saveCourse(event) {
     saveButton.disabled = true;
     saveButton.textContent = 'Salvando...';
 
-    const user = JSON.parse(sessionStorage.getItem('currentUser'));
+    const user = JSON.parse(localStorage.getItem('currentUser'));
     const isSubscription = document.getElementById('subscription-enabled').checked;
 
     const courseData = {

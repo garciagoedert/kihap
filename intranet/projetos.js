@@ -35,7 +35,7 @@ const manageProjectsBtn = document.getElementById('manage-projects-btn');
 // --- AUTHENTICATION ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        if (localStorage.getItem('isLoggedIn') === 'true') {
             loadComponents(() => setupUIListeners());
             loadInitialData();
         } else {

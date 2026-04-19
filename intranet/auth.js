@@ -95,6 +95,7 @@ export function getCurrentUser() {
 window.logout = function () {
     signOut(auth).then(() => {
         sessionStorage.clear();
+        localStorage.clear();
         window.location.href = 'login.html';
     }).catch((error) => {
         console.error('Erro ao fazer logout:', error);

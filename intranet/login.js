@@ -1,6 +1,33 @@
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, getDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
+
+// --- AUTO-REDIRECT LOGIC ---
+// Verifica se o usuário já está logado para evitar que ele veja a tela de login
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        console.log("Usuário já autenticado detectado, redirecionando...");
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            updateLocalStorage(user, userData);
+            if (userData.evoMemberId) {
+                window.location.href = '../members/feed.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+    }
+});
+
+function updateLocalStorage(user, userData) {
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('currentUser', JSON.stringify({ ...userData, uid: user.uid, email: user.email }));
+    localStorage.setItem('userName', userData.name || user.email.split('@')[0]);
+    localStorage.setItem('isAdmin', userData.isAdmin || false);
+}
 
 async function handleLogin(e) {
     console.log("Iniciando tentativa de login no app...");
@@ -23,13 +50,10 @@ async function handleLogin(e) {
 
         if (userDoc.exists()) {
             const userData = userDoc.data();
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', JSON.stringify({ ...userData, uid: user.uid, email: user.email }));
-            sessionStorage.setItem('userName', userData.name);
-            sessionStorage.setItem('isAdmin', userData.isAdmin || false);
+            updateLocalStorage(user, userData);
             errorEl.classList.add('hidden');
 
-            // --- LOGGING START ---
+            // --- LOGGING ---
             try {
                 const userType = userData.evoMemberId ? "Aluno" : "Funcionário";
                 await addDoc(collection(db, "login_logs"), {
@@ -39,10 +63,7 @@ async function handleLogin(e) {
                     name: userData.name || "Unknown",
                     userType: userType
                 });
-            } catch (logError) {
-                console.error("Failed to log login event:", logError);
-            }
-            // --- LOGGING END ---
+            } catch (logError) { console.error(logError); }
 
             if (userData.evoMemberId) {
                 window.location.href = '../members/feed.html';
@@ -50,13 +71,11 @@ async function handleLogin(e) {
                 window.location.href = 'index.html';
             }
         } else {
-            // Se o documento não existe (comum em ambiente local), permite o login como admin básico
             console.warn("Documento do usuário não encontrado. Criando sessão básica.");
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', JSON.stringify({ uid: user.uid, email: user.email, isAdmin: true }));
-            sessionStorage.setItem('userName', user.email.split('@')[0]);
-            sessionStorage.setItem('isAdmin', 'true');
-
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUser', JSON.stringify({ uid: user.uid, email: user.email, isAdmin: true }));
+            localStorage.setItem('userName', user.email.split('@')[0]);
+            localStorage.setItem('isAdmin', 'true');
             window.location.href = 'index.html';
         }
     } catch (error) {

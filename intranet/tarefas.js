@@ -13,7 +13,7 @@ export function initializeAppWithFirebase(firebaseConfig) {
     const prospectsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
 
     onAuthStateChanged(auth, (user) => {
-        if (user && sessionStorage.getItem('isLoggedIn') === 'true') {
+        if (user && localStorage.getItem('isLoggedIn') === 'true') {
             // Usuário autenticado, pode carregar a UI
             loadComponents(async () => {
                 await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
@@ -279,7 +279,7 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
             } else {
                 taskData.status = 'pending';
                 taskData.createdAt = serverTimestamp();
-                taskData.createdBy = sessionStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
+                taskData.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
                 await addDoc(tasksCollectionRef, taskData);
             }
             closeModal();

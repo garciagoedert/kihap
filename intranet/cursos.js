@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     onAuthReady(async (user) => {
         if (user) {
-            const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
             if (isAdmin) {
                 document.getElementById('add-course-btn').classList.remove('hidden');
             }
