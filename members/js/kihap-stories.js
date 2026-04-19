@@ -136,30 +136,44 @@ function openStoryPlayer(stories, account) {
     
     modal.innerHTML = `
         <div class="relative w-full h-full max-w-lg bg-black rounded-none md:rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+            <!-- Top Gradient Overlay (for legibility) -->
+            <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent z-40 pointer-events-none"></div>
+
             <!-- Progress Bars -->
-            <div class="absolute top-4 left-4 right-4 z-50 flex gap-1">
-                ${stories.map((_, i) => `<div class="h-1 bg-white/30 flex-1 rounded-full overflow-hidden"><div id="progress-${i}" class="h-full bg-white w-0 transition-all duration-[5000ms] linear"></div></div>`).join('')}
+            <div class="absolute top-0 left-0 right-0 z-50 flex gap-1.5 px-3" style="padding-top: calc(env(safe-area-inset-top) + 12px);">
+                ${stories.map((_, i) => `
+                    <div class="h-[3px] bg-white/20 flex-1 rounded-full overflow-hidden">
+                        <div id="progress-${i}" class="h-full bg-white w-0 transition-all duration-[5000ms] linear shadow-[0_0_8px_rgba(255,255,255,0.5)]"></div>
+                    </div>
+                `).join('')}
             </div>
 
             <!-- Header -->
-            <div class="absolute top-8 left-4 right-4 z-50 flex justify-between items-center">
+            <div class="absolute left-0 right-0 z-50 flex justify-between items-center px-4" style="top: calc(env(safe-area-inset-top) + 24px);">
                 <div class="flex items-center gap-3">
-                    <img src="${account.profile_picture || '../intranet/default-profile.svg'}" class="w-8 h-8 rounded-full border border-white/20 object-cover" onerror="this.src='../intranet/default-profile.svg'">
-                    <span class="text-white font-bold text-sm shadow-sm">${account.username}</span>
+                    <div class="p-[1.5px] bg-gradient-to-tr from-yellow-500 to-red-500 rounded-full">
+                        <img src="${account.profile_picture || '../intranet/default-profile.svg'}" 
+                             class="w-10 h-10 rounded-full border border-black/10 shadow-lg object-cover" 
+                             onerror="this.src='../intranet/default-profile.svg'">
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-white font-bold text-[15px] leading-tight drop-shadow-md">${account.username}</span>
+                        <span class="text-white/70 text-[10px] uppercase tracking-wider font-semibold">Kihap Staff</span>
+                    </div>
                 </div>
-                <button id="close-player" class="text-white hover:text-gray-300 transition-colors p-2">
-                    <i class="fas fa-times text-xl"></i>
+                <button id="close-player" class="text-white/80 hover:text-white transition-all p-2 bg-black/10 rounded-full backdrop-blur-sm">
+                    <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <!-- Content Container -->
-            <div id="story-content" class="w-full h-full flex items-center justify-center bg-gray-900">
+            <div id="story-content" class="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
                 <!-- Media will be injected here -->
             </div>
 
             <!-- Navigation Overlays -->
-            <div class="absolute inset-y-0 left-0 w-1/3 z-40 cursor-pointer" id="prev-btn"></div>
-            <div class="absolute inset-y-0 right-0 w-1/3 z-40 cursor-pointer" id="next-btn"></div>
+            <div class="absolute inset-y-0 left-0 w-1/4 z-40 cursor-pointer" id="prev-btn"></div>
+            <div class="absolute inset-y-0 right-0 w-1/4 z-40 cursor-pointer" id="next-btn"></div>
         </div>
     `;
 
