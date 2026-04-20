@@ -58,18 +58,26 @@ const btnRemoveCommentAnexo = document.getElementById('btnRemoveCommentAnexo');
 
 // Load Data
 function init() {
-    loadComponents(); 
-    onAuthStateChanged(auth, user => {
-        currentUser = user;
-        if (user) {
-            currentUserId = user.uid;
+    loadComponents(async () => {
+        // Double check permissions after components are loaded and userData is available
+        const userData = await getCurrentUser();
+        if (userData && !userData.isAdmin && !userData.isJuridico) {
+            console.error("Acesso negado: Usuário não possui permissão jurídica.");
+            window.location.href = 'index.html';
+            return;
         }
+        
+        onAuthStateChanged(auth, user => {
+            currentUser = user;
+            if (user) {
+                currentUserId = user.uid;
+            }
+        });
+        loadUsers();
+        setupListeners();
+        observeDepartments();
+        observeDemands(); 
     });
-    loadUsers();
-    setupListeners();
-    observeDepartments();
-    // Demandas are now observed per department or globally filtered in renderCards
-    observeDemands(); 
 }
 
 async function loadUsers() {

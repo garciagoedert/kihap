@@ -78,16 +78,34 @@ export function onAuthReady(callback) {
 
 // Função para obter o usuário atualmente logado e seus dados
 export function getCurrentUser() {
+    console.log('[DEBUG-AUTH] Solicitando getCurrentUser...');
     return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            console.error('[DEBUG-AUTH] Timeout ao tentar obter estado de autenticação (5s).');
+            resolve(null);
+        }, 5000);
+
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            clearTimeout(timeout);
             unsubscribe(); // Para de ouvir após obter o primeiro resultado
             if (user) {
+                console.log('[DEBUG-AUTH] Firebase Auth detectou usuário:', user.uid);
                 const userData = await getUserData(user.uid);
+                if (userData) {
+                    console.log('[DEBUG-AUTH] Documento Firestore carregado com sucesso para:', user.uid);
+                } else {
+                    console.warn('[DEBUG-AUTH] Usuário logado no Auth, mas documento no Firestore NÃO encontrado.');
+                }
                 resolve(userData);
             } else {
+                console.warn('[DEBUG-AUTH] Firebase Auth reportou usuário como NULL.');
                 resolve(null);
             }
-        }, reject);
+        }, (error) => {
+            clearTimeout(timeout);
+            console.error('[DEBUG-AUTH] Erro no onAuthStateChanged:', error);
+            reject(error);
+        });
     });
 }
 
@@ -229,3 +247,34 @@ async function setupMessaging(userId) {
         console.error("Erro ao configurar mensagens push:", error);
     }
 }
+
+/**
+ * Garante que o usuário logado é um administrador.
+ * Caso contrário, retorna falso. Atualiza o localStorage se necessário.
+ */
+export async function ensureAdmin() {
+    console.log('[DEBUG-AUTH] Iniciando ensureAdmin...');
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            console.warn('[DEBUG-AUTH] Nenhum usuário logado encontrado em getCurrentUser.');
+            return false;
+        }
+        
+        console.log('[DEBUG-AUTH] Usuário carregado no ensureAdmin:', user.uid, 'isAdmin:', user.isAdmin);
+        
+        if (user.isAdmin === true) {
+            localStorage.setItem('isAdmin', 'true');
+            return true;
+        } else {
+            console.warn('[DEBUG-AUTH] O campo isAdmin no Firestore NÃO é true para este usuário.');
+            localStorage.setItem('isAdmin', 'false');
+            return false;
+        }
+    } catch (error) {
+        console.error("[DEBUG-AUTH] Erro crítico no ensureAdmin:", error);
+        return false;
+    }
+}
+
+export { setupMessaging };

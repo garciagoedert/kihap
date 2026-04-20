@@ -1,29 +1,16 @@
-import { getAllUsers, updateUserPassword, updateUser, addUser } from './auth.js';
-import { loadComponents, setupUIListeners } from './common-ui.js';
-import { db, appId } from './firebase-config.js';
-import {
-    doc, setDoc, getDoc, addDoc, collection, getDocs, deleteDoc, updateDoc, query, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAllUsers, updateUser, addUser, deleteUser, updateUserPassword } from './auth.js';
+import { db } from './firebase-config.js';
+import { addDoc, collection, query, orderBy, getDocs, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-async function deleteProspect(prospectId) {
-    try {
-        const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospectId);
-        await deleteDoc(prospectRef);
-        alert('Prospect excluído com sucesso!');
-    } catch (error) {
-        console.error("Erro ao excluir prospect:", error);
-        alert('Erro ao excluir prospect.');
-    }
+export async function setupAdminPage() {
+    // A validação de admin agora é feita globalmente no common-ui.js
+    // antes de carregar os componentes da página.
+    continueSetup();
 }
 
-
-export function setupAdminPage() {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (!isAdmin) {
-        window.location.href = 'index.html';
-        return;
-    }
-
+function continueSetup() {
+    console.log('[AdminCheck] Inicializando painel administrativo...');
+    
     const userTableBody = document.getElementById('user-table-body');
     const userMobileList = document.getElementById('user-mobile-list');
     const userForm = document.getElementById('user-form');
@@ -39,6 +26,7 @@ export function setupAdminPage() {
     const isAdministrativoInput = document.getElementById('isAdministrativo');
     const isStoreInput = document.getElementById('isStore');
     const isAcademyInput = document.getElementById('isAcademy');
+    const isJuridicoInput = document.getElementById('isJuridico');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
@@ -49,7 +37,6 @@ export function setupAdminPage() {
     const changePasswordForm = document.getElementById('change-password-form');
     const cancelChangePasswordBtn = document.getElementById('cancel-change-password');
     const changePasswordUserIdInput = document.getElementById('change-password-user-id');
-
     const newPasswordInput = document.getElementById('new-password');
 
     // Quotes Elements
@@ -61,11 +48,13 @@ export function setupAdminPage() {
     const quoteAuthorInput = document.getElementById('quote-author-input');
     const cancelQuoteBtn = document.getElementById('cancel-quote-btn');
 
-    addUserBtn.addEventListener('click', () => {
-        resetForm();
-        userModal.classList.remove('hidden');
-        formTitle.textContent = 'Adicionar Novo Usuário';
-    });
+    if (addUserBtn) {
+        addUserBtn.addEventListener('click', () => {
+            resetForm();
+            userModal.classList.remove('hidden');
+            formTitle.textContent = 'Adicionar Novo Usuário';
+        });
+    }
 
     async function renderUsers(filter = '') {
         if (userTableBody) userTableBody.innerHTML = '';
@@ -76,8 +65,8 @@ export function setupAdminPage() {
 
         const lowercasedFilter = filter.toLowerCase();
         const filteredUsers = adminUsers.filter(user => {
-            return user.name.toLowerCase().includes(lowercasedFilter) ||
-                user.email.toLowerCase().includes(lowercasedFilter);
+            return (user.name || '').toLowerCase().includes(lowercasedFilter) ||
+                (user.email || '').toLowerCase().includes(lowercasedFilter);
         });
 
         filteredUsers.forEach(user => {
@@ -89,12 +78,13 @@ export function setupAdminPage() {
             if (user.isAdministrativo) roles.push('<span class="bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded">Admin.</span>');
             if (user.isStore) roles.push('<span class="bg-yellow-900 text-yellow-200 text-xs px-2 py-1 rounded">Store</span>');
             if (user.isAcademy) roles.push('<span class="bg-indigo-900 text-indigo-200 text-xs px-2 py-1 rounded">Academy</span>');
+            if (user.isJuridico) roles.push('<span class="bg-teal-900 text-teal-200 text-xs px-2 py-1 rounded">Jurídico</span>');
 
             // Desktop Row
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="py-2 px-4 border-b border-gray-700">${user.name}</td>
-                <td class="py-2 px-4 border-b border-gray-700">${user.email}</td>
+                <td class="py-2 px-4 border-b border-gray-700">${user.name || 'N/A'}</td>
+                <td class="py-2 px-4 border-b border-gray-700">${user.email || 'N/A'}</td>
                 <td class="py-2 px-4 border-b border-gray-700 flex flex-wrap gap-1">${roles.join(' ') || '<span class="text-gray-500 text-xs">Sem cargo</span>'}</td>
                 <td class="py-2 px-4 border-b border-gray-700">
                     <button class="text-primary hover:text-primary-dark mr-2 edit-btn" data-id="${user.id}">
@@ -116,8 +106,8 @@ export function setupAdminPage() {
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
                     <div class="min-w-0 flex-1 pr-4">
-                        <h3 class="font-bold text-white text-lg truncate">${user.name}</h3>
-                        <p class="text-gray-400 text-sm truncate">${user.email}</p>
+                        <h3 class="font-bold text-white text-lg truncate">${user.name || 'N/A'}</h3>
+                        <p class="text-gray-400 text-sm truncate">${user.email || 'N/A'}</p>
                     </div>
                     <div class="flex space-x-3 shrink-0">
                         <button class="text-primary hover:text-primary-dark edit-btn p-1" data-id="${user.id}">
@@ -141,40 +131,29 @@ export function setupAdminPage() {
 
     async function handleFormSubmit(e) {
         e.preventDefault();
-        const name = nameInput.value;
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        const isAdmin = isAdminInput.checked;
-        const isInstructor = isInstructorInput.checked;
-        const isRH = isRHInput.checked;
-        const isFinanceiro = isFinanceiroInput.checked;
-        const isAdministrativo = isAdministrativoInput.checked;
-        const isStore = isStoreInput.checked;
-        const isAcademy = isAcademyInput.checked;
+        
+        const userData = {
+            name: nameInput.value,
+            isAdmin: isAdminInput.checked,
+            isInstructor: isInstructorInput.checked,
+            isRH: isRHInput.checked,
+            isFinanceiro: isFinanceiroInput.checked,
+            isAdministrativo: isAdministrativoInput.checked,
+            isStore: isStoreInput.checked,
+            isAcademy: isAcademyInput.checked,
+            isJuridico: isJuridicoInput.checked
+        };
 
         const userId = hiddenEmailInput.value;
 
-        const userData = {
-            name,
-            isAdmin,
-            isInstructor,
-            isRH,
-            isFinanceiro,
-            isAdministrativo,
-            isStore,
-            isAcademy
-        };
-
         if (userId) {
-            // Editing user
             await updateUser(userId, userData);
         } else {
-            // Adding new user
-            if (!password) {
+            if (!passwordInput.value) {
                 alert('A senha é obrigatória para novos usuários.');
                 return;
             }
-            await addUser({ ...userData, email, password });
+            await addUser({ ...userData, email: emailInput.value, password: passwordInput.value });
         }
 
         resetForm();
@@ -182,23 +161,15 @@ export function setupAdminPage() {
     }
 
     function resetForm() {
-        formTitle.textContent = 'Adicionar Novo Usuário';
-        userForm.reset();
-        hiddenEmailInput.value = '';
-        emailInput.disabled = false;
-        passwordInput.disabled = false;
-        passwordInput.placeholder = "";
-
-        isAdminInput.checked = false;
-        isInstructorInput.checked = false;
-        isRHInput.checked = false;
-        isFinanceiroInput.checked = false;
-        isAdministrativoInput.checked = false;
-        isStoreInput.checked = false;
-        isAcademyInput.checked = false;
-
-        cancelEditBtn.classList.remove('hidden');
-        userModal.classList.add('hidden');
+        if (formTitle) formTitle.textContent = 'Adicionar Novo Usuário';
+        if (userForm) userForm.reset();
+        if (hiddenEmailInput) hiddenEmailInput.value = '';
+        if (emailInput) emailInput.disabled = false;
+        if (passwordInput) {
+            passwordInput.disabled = false;
+            passwordInput.placeholder = "";
+        }
+        if (userModal) userModal.classList.add('hidden');
     }
 
     async function handleUserActions(e) {
@@ -207,8 +178,7 @@ export function setupAdminPage() {
         const changePasswordBtn = e.target.closest('.change-password-btn');
 
         if (changePasswordBtn) {
-            const userId = changePasswordBtn.dataset.id;
-            changePasswordUserIdInput.value = userId;
+            changePasswordUserIdInput.value = changePasswordBtn.dataset.id;
             changePasswordModal.classList.remove('hidden');
         }
 
@@ -219,9 +189,9 @@ export function setupAdminPage() {
             if (user) {
                 userModal.classList.remove('hidden');
                 formTitle.textContent = 'Editar Usuário';
-                nameInput.value = user.name;
-                emailInput.value = user.email;
-                emailInput.disabled = true; // Não permitir edição de email
+                nameInput.value = user.name || '';
+                emailInput.value = user.email || '';
+                emailInput.disabled = true;
                 isAdminInput.checked = user.isAdmin || false;
                 isInstructorInput.checked = user.isInstructor || false;
                 isRHInput.checked = user.isRH || false;
@@ -229,29 +199,16 @@ export function setupAdminPage() {
                 isAdministrativoInput.checked = user.isAdministrativo || false;
                 isStoreInput.checked = user.isStore || false;
                 isAcademyInput.checked = user.isAcademy || false;
-                hiddenEmailInput.value = user.id; // Armazenar UID
-                passwordInput.placeholder = "Não é possível alterar a senha aqui";
+                isJuridicoInput.checked = user.isJuridico || false;
+                hiddenEmailInput.value = user.id;
+                passwordInput.placeholder = "Não editável aqui";
                 passwordInput.disabled = true;
-                cancelEditBtn.classList.remove('hidden');
             }
         }
 
         if (deleteBtn) {
-            const userId = deleteBtn.dataset.id;
-            // Try to find email in row or card
-            let userEmail = "Usuário";
-            const row = deleteBtn.closest('tr');
-            if (row) {
-                userEmail = row.querySelector('td:nth-child(2)').textContent;
-            } else {
-                const card = deleteBtn.closest('.mobile-user-card');
-                if (card) {
-                    userEmail = card.querySelector('p').textContent;
-                }
-            }
-
-            if (confirm(`Tem certeza que deseja excluir o usuário ${userEmail}?`)) {
-                await deleteUser(userId);
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                await deleteUser(deleteBtn.dataset.id);
                 renderUsers();
             }
         }
@@ -260,100 +217,86 @@ export function setupAdminPage() {
     if (userTableBody) userTableBody.addEventListener('click', handleUserActions);
     if (userMobileList) userMobileList.addEventListener('click', handleUserActions);
 
-    cancelChangePasswordBtn.addEventListener('click', () => {
-        changePasswordModal.classList.add('hidden');
-        changePasswordForm.reset();
-    });
+    if (cancelChangePasswordBtn) {
+        cancelChangePasswordBtn.addEventListener('click', () => {
+            changePasswordModal.classList.add('hidden');
+            changePasswordForm.reset();
+        });
+    }
 
-    changePasswordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const userId = changePasswordUserIdInput.value;
-        const newPassword = newPasswordInput.value;
-
-        if (userId && newPassword) {
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             try {
-                await updateUserPassword(userId, newPassword);
-                alert('Senha atualizada com sucesso!');
+                await updateUserPassword(changePasswordUserIdInput.value, newPasswordInput.value);
+                alert('Senha atualizada!');
                 changePasswordModal.classList.add('hidden');
                 changePasswordForm.reset();
             } catch (error) {
-                console.error("Erro ao atualizar a senha:", error);
-                alert('Erro ao atualizar a senha.');
+                alert('Erro ao atualizar senha.');
             }
-        }
-    });
+        });
+    }
 
-    cancelEditBtn.addEventListener('click', resetForm);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetForm);
     if (closeModalBtn) closeModalBtn.addEventListener('click', resetForm);
-    userForm.addEventListener('submit', handleFormSubmit);
+    if (userForm) userForm.addEventListener('submit', handleFormSubmit);
 
-    searchInput.addEventListener('input', (e) => {
-        renderUsers(e.target.value);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => renderUsers(e.target.value));
+    }
 
-    setupTabs();
-    renderUsers();
-    renderLoginLogs();
     setupTabs();
     renderUsers();
     renderLoginLogs();
     renderQuotes();
 
     // Quotes Logic
-    addQuoteBtn.addEventListener('click', () => {
-        quoteForm.reset();
-        quoteModal.classList.remove('hidden');
-    });
+    if (addQuoteBtn) {
+        addQuoteBtn.addEventListener('click', () => {
+            quoteForm.reset();
+            quoteModal.classList.remove('hidden');
+        });
+    }
 
-    cancelQuoteBtn.addEventListener('click', () => {
-        quoteModal.classList.add('hidden');
-    });
+    if (cancelQuoteBtn) {
+        cancelQuoteBtn.addEventListener('click', () => quoteModal.classList.add('hidden'));
+    }
 
-    quoteForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const text = quoteTextInput.value;
-        const author = quoteAuthorInput.value;
-
-        if (text && author) {
+    if (quoteForm) {
+        quoteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             try {
                 await addDoc(collection(db, "daily_quotes"), {
-                    text,
-                    author,
+                    text: quoteTextInput.value,
+                    author: quoteAuthorInput.value,
                     createdAt: new Date().toISOString()
                 });
-                alert('Frase adicionada com sucesso!');
+                alert('Frase adicionada!');
                 quoteModal.classList.add('hidden');
                 renderQuotes();
             } catch (error) {
-                console.error("Erro ao adicionar frase:", error);
                 alert('Erro ao adicionar frase.');
             }
-        }
-    });
+        });
+    }
 
     async function renderQuotes() {
         if (!quotesTableBody) return;
-        quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center">Carregando...</td></tr>';
-
+        
         try {
             const q = query(collection(db, "daily_quotes"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-
+            const snapshot = await getDocs(q);
             quotesTableBody.innerHTML = '';
 
-            if (querySnapshot.empty) {
-                quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">Nenhuma frase cadastrada.</td></tr>';
-                return;
-            }
-
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="py-2 px-4 border-b border-gray-700 text-sm italic">"${data.text}"</td>
                     <td class="py-2 px-4 border-b border-gray-700 text-sm font-semibold">${data.author}</td>
                     <td class="py-2 px-4 border-b border-gray-700">
-                        <button class="text-red-400 hover:text-red-600 delete-quote-btn" data-id="${doc.id}">
+                        <button class="text-red-400 hover:text-red-600 delete-quote-btn" data-id="${docSnap.id}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -361,144 +304,63 @@ export function setupAdminPage() {
                 quotesTableBody.appendChild(row);
             });
 
-            // Add delete listeners
             document.querySelectorAll('.delete-quote-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
-                    const id = e.currentTarget.dataset.id;
-                    if (confirm('Tem certeza que deseja excluir esta frase?')) {
-                        try {
-                            await deleteDoc(doc(db, "daily_quotes", id));
-                            renderQuotes();
-                        } catch (error) {
-                            console.error("Erro ao excluir frase:", error);
-                            alert('Erro ao excluir frase.');
-                        }
+                    if (confirm('Excluir frase?')) {
+                        await deleteDoc(doc(db, "daily_quotes", e.currentTarget.dataset.id));
+                        renderQuotes();
                     }
                 });
             });
-
         } catch (error) {
-            console.error("Erro ao carregar frases:", error);
-            quotesTableBody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+            console.error(error);
         }
     }
 }
 
 function setupTabs() {
-    const tabUsers = document.getElementById('tab-users');
-    const tabLogs = document.getElementById('tab-logs');
-    const tabQuotes = document.getElementById('tab-quotes');
-    const contentUsers = document.getElementById('users-content');
-    const contentLogs = document.getElementById('logs-content');
-    const contentQuotes = document.getElementById('quotes-content');
-
-    if (!tabUsers || !tabLogs) {
-        console.error("Tab elements not found!");
-        return;
-    }
-
-    tabUsers.addEventListener('click', () => {
-        // Activate Users Tab
-        tabUsers.classList.add('text-primary', 'border-b-2', 'border-primary');
-        tabUsers.classList.remove('text-gray-400');
-
-        // Deactivate Logs Tab
-        tabLogs.classList.remove('text-primary', 'border-b-2', 'border-primary');
-        tabLogs.classList.add('text-gray-400');
-
-        // Show Users Content
-        contentUsers.classList.remove('hidden');
-        contentLogs.classList.add('hidden');
-        contentQuotes.classList.add('hidden');
-
-        tabQuotes.classList.remove('text-primary', 'border-b-2', 'border-primary');
-        tabQuotes.classList.add('text-gray-400');
+    const tabs = ['users', 'logs', 'quotes'];
+    tabs.forEach(tab => {
+        const btn = document.getElementById(`tab-${tab}`);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    document.getElementById(`tab-${t}`)?.classList.remove('text-primary', 'border-b-2', 'border-primary');
+                    document.getElementById(`tab-${t}`)?.classList.add('text-gray-400');
+                    document.getElementById(`${t}-content`)?.classList.add('hidden');
+                });
+                btn.classList.add('text-primary', 'border-b-2', 'border-primary');
+                btn.classList.remove('text-gray-400');
+                document.getElementById(`${tab}-content`)?.classList.remove('hidden');
+            });
+        }
     });
-
-    tabLogs.addEventListener('click', () => {
-        // Activate Logs Tab
-        tabLogs.classList.add('text-primary', 'border-b-2', 'border-primary');
-        tabLogs.classList.remove('text-gray-400');
-
-        // Deactivate Users Tab
-        tabUsers.classList.remove('text-primary', 'border-b-2', 'border-primary');
-        tabUsers.classList.add('text-gray-400');
-
-        // Show Logs Content
-        contentLogs.classList.remove('hidden');
-        contentUsers.classList.add('hidden');
-        contentQuotes.classList.add('hidden');
-
-        tabQuotes.classList.remove('text-primary', 'border-b-2', 'border-primary');
-        tabQuotes.classList.add('text-gray-400');
-    });
-
-    if (tabQuotes) {
-        tabQuotes.addEventListener('click', () => {
-            // Activate Quotes Tab
-            tabQuotes.classList.add('text-primary', 'border-b-2', 'border-primary');
-            tabQuotes.classList.remove('text-gray-400');
-
-            // Deactivate other Tabs
-            tabUsers.classList.remove('text-primary', 'border-b-2', 'border-primary');
-            tabUsers.classList.add('text-gray-400');
-            tabLogs.classList.remove('text-primary', 'border-b-2', 'border-primary');
-            tabLogs.classList.add('text-gray-400');
-
-            // Show Quotes Content
-            contentQuotes.classList.remove('hidden');
-            contentUsers.classList.add('hidden');
-            contentLogs.classList.add('hidden');
-        });
-    }
 }
-
-// Imports already handled at the top of the file. 
 
 async function renderLoginLogs() {
     const logsBody = document.getElementById('login-logs-body');
     if (!logsBody) return;
-
-    logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center">Carregando...</td></tr>';
-
+    
     try {
-        const q = query(
-            collection(db, "login_logs"),
-            orderBy("timestamp", "desc"),
-            limit(50)
-        );
-
-        const querySnapshot = await getDocs(q);
-
+        const q = query(collection(db, "login_logs"), orderBy("timestamp", "desc"), limit(50));
+        const snapshot = await getDocs(q);
         logsBody.innerHTML = '';
 
-        if (querySnapshot.empty) {
-            logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">Nenhum registro encontrado.</td></tr>';
-            return;
-        }
-
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const date = new Date(data.timestamp);
-            const formattedDate = date.toLocaleString('pt-BR');
-
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="py-2 px-4 border-b border-gray-700 text-sm">${formattedDate}</td>
+                <td class="py-2 px-4 border-b border-gray-700 text-sm">${new Date(data.timestamp).toLocaleString('pt-BR')}</td>
                 <td class="py-2 px-4 border-b border-gray-700 text-sm">${data.name || 'N/A'}</td>
                 <td class="py-2 px-4 border-b border-gray-700 text-sm">${data.email || 'N/A'}</td>
                 <td class="py-2 px-4 border-b border-gray-700 text-sm">
-                    <span class="${data.userType === 'Aluno' ? 'text-green-400' : 'text-blue-400'}">
-                        ${data.userType || 'N/A'}
-                    </span>
+                    <span class="${data.userType === 'Aluno' ? 'text-green-400' : 'text-blue-400'}">${data.userType || 'N/A'}</span>
                 </td>
             `;
             logsBody.appendChild(row);
         });
-
     } catch (error) {
-        console.error("Erro ao carregar logs de login:", error);
-        logsBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+        console.error(error);
     }
 }
 
