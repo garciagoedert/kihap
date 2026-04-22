@@ -520,6 +520,12 @@ async function loadComponents(pageSpecificSetup) {
             }
         });
 
+        const adminLink = document.getElementById('admin-link');
+        if (isAdmin && adminLink) {
+            adminLink.classList.remove('hidden');
+        }
+
+
         // VISIBILIDADE DA SIDEBAR
         const isRH = userData.isRH === true;
         const isMarketing = userData.isMarketing === true;
