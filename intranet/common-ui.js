@@ -434,46 +434,48 @@ async function loadComponents(pageSpecificSetup) {
     const sidebarContainer = document.getElementById('sidebar-container');
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
-    // Lista de páginas protegidas e seus respectivos requisitos
-    const protectedPages = {
-        'admin.html': { roles: ['isAdmin'] },
-        'newsletter.html': { roles: ['isAdmin'] },
-        'arquivo.html': { roles: ['isAdmin', 'isMarketing'] },
-        'analise.html': { roles: ['isAdmin'] },
-        'contas-mp.html': { roles: ['isAdmin'] },
-        'planificador.html': { roles: ['isAdmin'] },
-        'unidades-planos.html': { roles: ['isAdmin'] },
-        'comunicados.html': { roles: ['isAdmin'] },
-        'grade.html': { roles: ['isAdmin'] },
-        'relatorios.html': { roles: ['isAdmin'] },
-        'snapshots-history.html': { roles: ['isAdmin'] },
-        'sales-history.html': { roles: ['isAdmin'] },
-        'gerenciar-emblemas.html': { roles: ['isAdmin'] },
-        'juridico-trello.html': { roles: ['isAdmin', 'isJuridico'] },
-        'juridico-novademanda.html': { roles: ['isAdmin', 'isJuridico'] },
-        'alunos.html': { roles: ['isAdmin', 'isInstructor', 'isRH', 'isAdministrativo'] },
-        'cursos.html': { roles: ['isAdmin', 'isInstructor', 'isAcademy'] },
-        'feed.html': { roles: ['isAdmin', 'isInstructor', 'isRH', 'isAdministrativo', 'isMarketing'] }
-    };
+    // Lista de páginas que exigem acesso administrativo
+    const adminPages = [
+        'admin.html',
+        'newsletter.html',
+        'arquivo.html',
+        'analise.html',
+        'contas-mp.html',
+        'planificador.html',
+        'unidades-planos.html',
+        'comunicados.html',
+        'grade.html',
+        'relatorios.html',
+        'snapshots-history.html',
+        'sales-history.html',
+        'gerenciar-emblemas.html'
+    ];
+
+    // Páginas específicas do Jurídico
+    const juridicoPages = ['juridico-trello.html', 'juridico-novademanda.html'];
 
     try {
         const currentUserData = await getCurrentUser();
         const userData = currentUserData || {};
+        const isAdmin = userData.isAdmin === true;
+        const isJuridico = userData.isJuridico === true;
 
-        if (protectedPages[currentPage]) {
-            console.log(`[ACL] Página protegida detectada: ${currentPage}. Validando acesso...`);
-            const allowedRoles = protectedPages[currentPage].roles;
-            // Admins sempre têm acesso, outros dependem da lista
-            const hasAccess = userData.isAdmin === true || allowedRoles.some(role => userData[role] === true);
-
-            if (!hasAccess) {
-                console.error(`[ACL] Acesso negado para ${currentPage}. Redirecionando...`);
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
+        // Se for uma página administrativa, valida acesso
+        if (adminPages.includes(currentPage)) {
+            if (!isAdmin) {
+                console.error(`[ACL] Acesso administrativo NEGADO para ${currentPage}.`);
+                window.location.href = 'index.html';
                 return;
             }
-            console.log(`[ACL] Acesso CONCEDIDO para: ${currentPage}`);
+        }
+
+        // Se for uma página do Jurídico, valida acesso
+        if (juridicoPages.includes(currentPage)) {
+            if (!isAdmin && !isJuridico) {
+                console.error(`[ACL] Acesso jurídico NEGADO para ${currentPage}.`);
+                window.location.href = 'index.html';
+                return;
+            }
         }
 
         const [headerRes, sidebarRes] = await Promise.all([
@@ -509,80 +511,55 @@ async function loadComponents(pageSpecificSetup) {
         });
 
         // Show/hide elements based on page and user role
-        const isAdmin = userData.isAdmin === true;
         localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
 
         const adminOnlyElements = document.querySelectorAll('.admin-only');
-
         adminOnlyElements.forEach(el => {
-            // Mostra o link de suporte para todos, mas outros elementos admin-only apenas para admins
-            if (el.getAttribute('href') === 'suporte.html') {
-                el.classList.remove('hidden');
-            } else if (isAdmin) {
+            if (el.getAttribute('href') === 'suporte.html' || isAdmin) {
                 el.classList.remove('hidden');
             }
         });
 
         const adminLink = document.getElementById('admin-link');
-        if (isAdmin && adminLink) {
-            adminLink.classList.remove('hidden');
-        }
+        if (isAdmin && adminLink) adminLink.classList.remove('hidden');
 
-        // Show/hide sidebar sections based on roles
-        const isJuridico = userData.isJuridico === true;
+        // VISIBILIDADE DA SIDEBAR
         const isRH = userData.isRH === true;
         const isMarketing = userData.isMarketing === true;
         
-        // Jurídico
+        // Jurídico: Visível para Admin ou Juridico
         const juridicoMenu = document.getElementById('juridico-menu-btn')?.parentElement;
-        if (juridicoMenu) {
-            if (isAdmin || isJuridico) juridicoMenu.classList.remove('hidden');
-            else juridicoMenu.classList.add('hidden');
-        }
+        if (juridicoMenu && !isAdmin && !isJuridico) juridicoMenu.classList.add('hidden');
 
-        // RH
+        // RH: Visível para Admin ou RH
         const rhMenu = document.getElementById('rh-menu-btn')?.parentElement;
-        if (rhMenu) {
-            if (isAdmin || isRH) rhMenu.classList.remove('hidden');
-            else rhMenu.classList.add('hidden');
-        }
+        if (rhMenu && !isAdmin && !isRH) rhMenu.classList.add('hidden');
 
-        // Marketing
+        // Marketing: Visível para Admin ou Marketing
         const marketingMenu = document.getElementById('prospeccao-menu-btn')?.parentElement;
-        if (marketingMenu) {
-            if (isAdmin || isMarketing) marketingMenu.classList.remove('hidden');
-            else marketingMenu.classList.add('hidden');
-        }
+        if (marketingMenu && !isAdmin && !isMarketing) marketingMenu.classList.add('hidden');
 
-        // Administrativo
-        const administrativoMenu = document.getElementById('administrativo-menu-btn')?.parentElement;
-        if (administrativoMenu) {
-            if (isAdmin) administrativoMenu.classList.remove('hidden');
-            else administrativoMenu.classList.add('hidden');
-        }
-
-        // Store & Tatame
-        const tatameMenu = document.getElementById('tatame-menu-btn')?.parentElement;
-        const storeMenu = document.getElementById('store-menu-btn')?.parentElement;
-        
-        if (isAdmin) {
-            if (tatameMenu) tatameMenu.classList.remove('hidden');
-            if (storeMenu) storeMenu.classList.remove('hidden');
-        } else {
-            if (tatameMenu) tatameMenu.classList.add('hidden');
-            if (storeMenu) storeMenu.classList.add('hidden');
-        }
-
-        // Restrição específica para Jurídico (ou qualquer um que NÃO seja Admin e não tenha os cargos específicos)
-        if (!isAdmin && isJuridico) {
-            // Oculta Alunos, Cursos, Livrinhos, Feed
-            sidebarContainer.querySelectorAll('nav a').forEach(link => {
-                const href = link.getAttribute('href');
-                if (href === 'alunos.html' || href === 'cursos.html' || href === 'feed.html' || href?.includes('livrinhos')) {
-                    link.classList.add('hidden');
+        // Outras seções: Esconder apenas se for um usuário RESTRITO (Jurídico)
+        if (isJuridico && !isAdmin) {
+            // Oculta Alunos, Cursos, Livrinhos, Feed e outras seções administrativas
+            const selectorsToHide = [
+                'a[href="alunos.html"]',
+                'a[href="cursos.html"]',
+                'a[href="feed.html"]',
+                'a[href*="livrinhos"]',
+                '#administrativo-menu-btn',
+                '#tatame-menu-btn',
+                '#store-menu-btn'
+            ];
+            selectorsToHide.forEach(selector => {
+                const el = sidebarContainer.querySelector(selector);
+                if (el) {
+                    const container = el.tagName === 'BUTTON' ? el.parentElement : el;
+                    container.classList.add('hidden');
                 }
             });
         }
+
 
 
 
