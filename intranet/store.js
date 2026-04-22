@@ -12,6 +12,7 @@ import { getCurrentUser, checkAdminStatus } from './auth.js';
 export async function setupStorePage() {
     const currentUser = await getCurrentUser();
     const isAdmin = await checkAdminStatus(currentUser);
+    const isStore = currentUser && currentUser.isStore === true;
 
     // Tab elements
     const tabSalesLog = document.getElementById('tab-sales-log');
@@ -29,7 +30,7 @@ export async function setupStorePage() {
     const subtabBanners = document.getElementById('subtab-banners');
     const subtabCoupons = document.getElementById('subtab-coupons');
 
-    if (!isAdmin) {
+    if (!isAdmin && !isStore) {
         tabManageProducts.style.display = 'none';
         tabMarketing.style.display = 'none';
         tabEvents.style.display = 'none';
@@ -533,6 +534,12 @@ export async function setupStorePage() {
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
                 <td class="p-4" data-label="Data da Compra">${date}</td>
+                <td class="p-4" data-label="Ações">
+                    <button class="update-status-btn bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs transition-colors" 
+                        data-sale-id="${sale.id}">
+                        <i class="fas fa-edit mr-1"></i>Atualizar
+                    </button>
+                </td>
             `;
         });
     };
@@ -1500,8 +1507,6 @@ export async function setupStorePage() {
                                 <!-- Populated by JS -->
                             </div>
                         </div>
-                    </div>
-                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -1836,7 +1841,7 @@ export async function setupStorePage() {
             recoverCartBtnModal.onclick = null;
         }
 
-        if (currentUser && currentUser.isAdmin) {
+        if (currentUser && (currentUser.isAdmin || currentUser.isStore)) {
             deleteSaleBtnModal.style.display = 'inline-block';
         } else {
             deleteSaleBtnModal.style.display = 'none';
@@ -1913,6 +1918,12 @@ export async function setupStorePage() {
     };
 
     if (salesTableBody) salesTableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.update-status-btn');
+        if (btn) {
+            openModalWithSaleDetails(btn.dataset.saleId);
+            return;
+        }
+        
         const row = e.target.closest('tr');
         if (row && row.dataset.saleId) {
             openModalWithSaleDetails(row.dataset.saleId);
@@ -1949,7 +1960,7 @@ export async function setupStorePage() {
 
     const deleteSaleLog = async (saleId) => {
         const currentUser = await getCurrentUser();
-        if (!currentUser || !currentUser.isAdmin) {
+        if (!currentUser || (!currentUser.isAdmin && !currentUser.isStore)) {
             alert('Você não tem permissão para executar esta ação.');
             return;
         }
@@ -2487,7 +2498,7 @@ export async function setupStorePage() {
                 </div>
             `;
 
-            if (isAdmin) {
+            if (isAdmin || isStore) {
                 kpiHtml += `
                     <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>

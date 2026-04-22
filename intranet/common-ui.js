@@ -459,10 +459,18 @@ async function loadComponents(pageSpecificSetup) {
         const userData = currentUserData || {};
         const isAdmin = userData.isAdmin === true;
         const isJuridico = userData.isJuridico === true;
+        const isStore = userData.isStore === true;
+        const isRH = userData.isRH === true;
+        const isMarketing = userData.isMarketing === true;
+        const isInstructor = userData.isInstructor === true;
+        const isAdministrativo = userData.isAdministrativo === true;
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {
-            if (!isAdmin) {
+            // Permite acesso se for Admin OU se for Store acessando páginas de histórico/store
+            const isStorePage = ['sales-history.html', 'store.html'].includes(currentPage);
+
+            if (!isAdmin && !(isStore && isStorePage)) {
                 console.error(`[ACL] Acesso administrativo NEGADO para ${currentPage}.`);
                 window.location.href = 'index.html';
                 return;
@@ -512,6 +520,7 @@ async function loadComponents(pageSpecificSetup) {
 
         // Show/hide elements based on page and user role
         localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
+        localStorage.setItem('isStore', isStore ? 'true' : 'false');
 
         const adminOnlyElements = document.querySelectorAll('.admin-only');
         adminOnlyElements.forEach(el => {
@@ -527,10 +536,7 @@ async function loadComponents(pageSpecificSetup) {
 
 
         // VISIBILIDADE DA SIDEBAR
-        const isRH = userData.isRH === true;
-        const isMarketing = userData.isMarketing === true;
-        const isInstructor = userData.isInstructor === true;
-        const isAdministrativo = userData.isAdministrativo === true;
+        // VISIBILIDADE DA SIDEBAR
         
         // Jurídico: Visível para Admin ou Juridico
         const juridicoMenu = document.getElementById('juridico-menu-btn')?.parentElement;
@@ -564,6 +570,10 @@ async function loadComponents(pageSpecificSetup) {
                     container.classList.add('hidden');
                 }
             });
+        } else if (isStore && !isAdmin) {
+            // Oculta apenas o Admin se for um usuário de Store (outras seções podem ser úteis)
+            const adminLink = sidebarContainer.querySelector('#admin-link');
+            if (adminLink) adminLink.classList.add('hidden');
         }
 
 
