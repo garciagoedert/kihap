@@ -566,7 +566,8 @@ async function loadComponents(pageSpecificSetup) {
 
         const currentUserStr = localStorage.getItem('currentUser');
         const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
-        const isInstructor = currentUser.isInstructor === true;
+        // isInstructor já foi declarado acima usando userData do Firestore
+
 
 
 
