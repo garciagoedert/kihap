@@ -3,6 +3,8 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { collection, addDoc, getDocs, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { loadComponents } from "./common-ui.js";
+import { getCurrentUser } from "./auth.js";
+
 
 const deptsCol = collection(db, 'juridico_departments');
 const demandsCol = collection(db, 'juridico_demands');
