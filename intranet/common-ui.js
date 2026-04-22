@@ -520,12 +520,11 @@ async function loadComponents(pageSpecificSetup) {
             }
         });
 
-        const adminLink = document.getElementById('admin-link');
-        if (isAdmin && adminLink) adminLink.classList.remove('hidden');
-
         // VISIBILIDADE DA SIDEBAR
         const isRH = userData.isRH === true;
         const isMarketing = userData.isMarketing === true;
+        const isInstructor = userData.isInstructor === true;
+        const isAdministrativo = userData.isAdministrativo === true;
         
         // Jurídico: Visível para Admin ou Juridico
         const juridicoMenu = document.getElementById('juridico-menu-btn')?.parentElement;
@@ -535,9 +534,10 @@ async function loadComponents(pageSpecificSetup) {
         const rhMenu = document.getElementById('rh-menu-btn')?.parentElement;
         if (rhMenu && !isAdmin && !isRH) rhMenu.classList.add('hidden');
 
-        // Marketing: Visível para Admin ou Marketing
+        // Marketing: Visível para Admin ou Marketing ou Instrutor ou Administrativo
         const marketingMenu = document.getElementById('prospeccao-menu-btn')?.parentElement;
-        if (marketingMenu && !isAdmin && !isMarketing) marketingMenu.classList.add('hidden');
+        if (marketingMenu && !isAdmin && !isMarketing && !isInstructor && !isAdministrativo) marketingMenu.classList.add('hidden');
+
 
         // Outras seções: Esconder apenas se for um usuário RESTRITO (Jurídico)
         if (isJuridico && !isAdmin) {

@@ -22,6 +22,7 @@ function continueSetup() {
     const isAdminInput = document.getElementById('isAdmin');
     const isInstructorInput = document.getElementById('isInstructor');
     const isRHInput = document.getElementById('isRH');
+    const isMarketingInput = document.getElementById('isMarketing');
     const isFinanceiroInput = document.getElementById('isFinanceiro');
     const isAdministrativoInput = document.getElementById('isAdministrativo');
     const isStoreInput = document.getElementById('isStore');
@@ -137,6 +138,7 @@ function continueSetup() {
             isAdmin: isAdminInput.checked,
             isInstructor: isInstructorInput.checked,
             isRH: isRHInput.checked,
+            isMarketing: isMarketingInput.checked,
             isFinanceiro: isFinanceiroInput.checked,
             isAdministrativo: isAdministrativoInput.checked,
             isStore: isStoreInput.checked,
@@ -195,6 +197,7 @@ function continueSetup() {
                 isAdminInput.checked = user.isAdmin || false;
                 isInstructorInput.checked = user.isInstructor || false;
                 isRHInput.checked = user.isRH || false;
+                isMarketingInput.checked = user.isMarketing || false;
                 isFinanceiroInput.checked = user.isFinanceiro || false;
                 isAdministrativoInput.checked = user.isAdministrativo || false;
                 isStoreInput.checked = user.isStore || false;
