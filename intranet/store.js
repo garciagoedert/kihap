@@ -274,7 +274,7 @@ export async function setupStorePage() {
         row.className = 'manual-sale-product-row grid grid-cols-3 gap-2 items-center';
 
         const productSelect = document.createElement('select');
-        productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
         productSelect.innerHTML = '<option value="">Selecione um produto</option>';
         allProducts.forEach(product => {
             const option = document.createElement('option');
@@ -286,7 +286,7 @@ export async function setupStorePage() {
 
         const priceInput = document.createElement('input');
         priceInput.type = 'number';
-        priceInput.className = 'manual-sale-product-price w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        priceInput.className = 'manual-sale-product-price w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
         priceInput.placeholder = 'Preço';
 
         const removeBtn = document.createElement('button');
@@ -450,7 +450,7 @@ export async function setupStorePage() {
 
         switch (status) {
             case 'processing':
-                colorClass = 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-transparent';
+                colorClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/30';
                 text = 'Em Preparação';
                 break;
             case 'shipped':
@@ -710,12 +710,12 @@ export async function setupStorePage() {
                 </td>
                 <td class="p-4 font-mono text-sm text-gray-300 font-bold">${price}</td>
                 <td class="p-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-500 border border-green-100 dark:border-green-500/20' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-500/20'}">
                         ${product.visible ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
                 <td class="p-4">
-                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-all copy-link-btn" 
+                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700" 
                         data-link="https://www.kihap.com.br/checkout?product=${product.id}">
                         <i class="fas fa-link text-xs"></i>
                     </button>
@@ -1237,10 +1237,10 @@ export async function setupStorePage() {
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-3';
                 row.innerHTML = `
-                    <span class="text-sm font-medium text-gray-200 w-16 flex-shrink-0">${size}</span>
-                    <input type="number" data-size="${size}" data-stock-size-input 
-                        class="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Qtd" min="0" value="${qty}" />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200 w-16 flex-shrink-0">${size}</span>
+                <input type="number" data-size="${size}" data-stock-size-input 
+                    class="flex-1 px-3 py-1.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Qtd" min="0" value="${qty}" />
                 `;
                 stockPerSizeInputs.appendChild(row);
             });
@@ -1275,9 +1275,9 @@ export async function setupStorePage() {
         const isVariablePrice = document.querySelector('input[name="price-type"]:checked').value === 'variable';
 
         variantItem.innerHTML = `
-            <input type="text" name="variant-name" placeholder="Nome da Variação (ex: 1BD)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="variant-name" placeholder="Nome da Variação" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         priceVariantsList.appendChild(variantItem);
     };
@@ -1297,10 +1297,10 @@ export async function setupStorePage() {
         const isLotePrice = document.querySelector('input[name="price-type"]:checked').value === 'lotes';
 
         loteItem.innerHTML = `
-            <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
-            <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
-            <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3">&times; Remover</button>
+            <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3 text-xs font-bold uppercase mt-1 flex items-center gap-1 justify-end"><i class="fas fa-trash-alt"></i> Remover</button>
         `;
         lotesList.appendChild(loteItem);
     };
@@ -1319,9 +1319,9 @@ export async function setupStorePage() {
         const isKitPrice = document.querySelector('input[name="price-type"]:checked').value === 'kit';
 
         itemRow.innerHTML = `
-            <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
+            <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
+            <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         kitItemsList.appendChild(itemRow);
     };
@@ -1339,9 +1339,9 @@ export async function setupStorePage() {
         const addonItem = document.createElement('div');
         addonItem.className = 'addon-item flex items-center space-x-2 mb-2';
         addonItem.innerHTML = `
-            <input type="text" name="addon-name" placeholder="Nome do Addon (ex: Camiseta Extra)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="addon-name" placeholder="Nome do Addon" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         addonsList.appendChild(addonItem);
     };
@@ -1435,7 +1435,7 @@ export async function setupStorePage() {
 
     const addEventSlotRow = (variationName = '', day = '', time = '', ring = '', minAge = '', maxAge = '', programId = 'tradicional') => {
         const slotRow = document.createElement('div');
-        slotRow.className = 'event-slot-row bg-purple-900/10 p-5 rounded-2xl border border-purple-600/20 mb-4 transition-all hover:bg-purple-900/20 shadow-lg';
+        slotRow.className = 'event-slot-row bg-purple-50 dark:bg-purple-900/10 p-5 rounded-2xl border border-purple-100 dark:border-purple-600/20 mb-4 transition-all hover:bg-white dark:hover:bg-purple-900/20 shadow-sm';
         
         // Handle variations (can be string or array)
         let selectedBelts = [];
@@ -1501,11 +1501,11 @@ export async function setupStorePage() {
                     <div>
                         <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Graduações (Multi-seleção)</label>
                         <div class="relative event-belts-container">
-                            <button type="button" class="select-belts-btn w-full px-4 py-2.5 text-sm text-left text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner flex justify-between items-center transition-all">
+                            <button type="button" class="select-belts-btn w-full px-4 py-2.5 text-sm text-left text-gray-900 dark:text-white bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-sm flex justify-between items-center transition-all">
                                 <span class="selected-belts-text truncate">Selecionar Faixas...</span>
-                                <i class="fas fa-chevron-down text-[10px] text-gray-500 transition-transform"></i>
+                                <i class="fas fa-chevron-down text-[10px] text-gray-400 transition-transform"></i>
                             </button>
-                            <div class="belts-dropdown hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-gray-900 border border-gray-700/50 rounded-xl shadow-2xl p-2 space-y-1 backdrop-blur-md">
+                            <div class="belts-dropdown hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/50 rounded-xl shadow-2xl p-2 space-y-1 backdrop-blur-md">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
@@ -1725,72 +1725,72 @@ export async function setupStorePage() {
             };
             method = methodMap[method] || method;
 
-            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700/50">
-                <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Origem do Pagamento</h4>
-                <p><span class="text-gray-400">Método:</span> <span class="text-white font-medium">${method}</span></p>`;
+            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                <h4 class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Origem do Pagamento</h4>
+                <p><span class="text-gray-500 dark:text-gray-400">Método:</span> <span class="text-gray-900 dark:text-white font-bold">${method}</span></p>`;
 
             if (details.cardLast4) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Cartão:</span> <span class="text-white">**** **** **** ${details.cardLast4}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Cartão:</span> <span class="text-gray-900 dark:text-white font-medium">**** **** **** ${details.cardLast4}</span></p>`;
             }
             if (details.cardBrand || details.paymentMethodId) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Bandeira/Rede:</span> <span class="text-white uppercase">${details.cardBrand || details.paymentMethodId}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Bandeira/Rede:</span> <span class="text-gray-900 dark:text-white uppercase font-bold">${details.cardBrand || details.paymentMethodId}</span></p>`;
             }
             if (details.installments && details.installments > 1) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Parcelas:</span> <span class="text-white">${details.installments}x</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Parcelas:</span> <span class="text-gray-900 dark:text-white font-medium">${details.installments}x</span></p>`;
             }
             if (details.authCode) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Cód. Autorização:</span> <span class="text-white">${details.authCode}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Cód. Autorização:</span> <span class="text-gray-900 dark:text-white font-medium">${details.authCode}</span></p>`;
             }
             if (details.updatedBy) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Atualizado por:</span> <span class="text-white">${details.updatedBy}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Atualizado por:</span> <span class="text-gray-900 dark:text-white font-medium">${details.updatedBy}</span></p>`;
             }
             paymentDetailsHtml += `</div>`;
+
         }
 
         modalContent.innerHTML = `
             <div class="space-y-6">
                 <!-- ID e Info Básica -->
-                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID da Venda</p>
-                    <p class="text-sm font-mono text-blue-400 break-all">${sale.id}</p>
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 font-bold">ID da Venda</p>
+                    <p class="text-sm font-mono text-blue-600 dark:text-blue-400 break-all">${sale.id}</p>
                     ${sale.studentId ? `
-                        <div class="mt-2 pt-2 border-t border-gray-700/50">
-                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID do Aluno</p>
-                            <p class="text-sm font-mono text-gray-300 break-all">${sale.studentId}</p>
+                        <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 font-bold">ID do Aluno</p>
+                            <p class="text-sm font-mono text-gray-600 dark:text-gray-300 break-all">${sale.studentId}</p>
                         </div>
                     ` : ''}
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Coluna 1: Cliente -->
-                    <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
-                        <h4 class="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                    <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                        <h4 class="text-blue-600 dark:text-blue-400 font-bold mb-3 flex items-center gap-2">
                             <span>👤</span> Dados do Cliente
                         </h4>
                         <div class="space-y-2 text-sm">
-                            <p><span class="text-gray-400">Nome:</span> <span class="text-white font-medium">${sale.userName || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Email:</span> <span class="text-white break-all">${sale.userEmail || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Telefone:</span> <span class="text-white">${sale.userPhone || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">CPF:</span> <span class="text-white">${sale.userCpf || 'N/A'}</span></p>
-                            ${sale.userAge ? `<p><span class="text-gray-400">Idade:</span> <span class="text-white">${sale.userAge}</span></p>` : ''}
-                            <p><span class="text-gray-400">Unidade:</span> <span class="text-white">${sale.userUnit || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Programa:</span> <span class="text-white">${sale.userPrograma || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Graduação:</span> <span class="text-white">${sale.userGraduacao || 'N/A'}</span></p>
-                        </div>
+                            <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white break-all font-medium">${sale.userEmail || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPhone || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userCpf || 'N/A'}</span></p>
+                            ${sale.userAge ? `<p><span class="text-gray-500 dark:text-gray-400">Idade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userAge}</span></p>` : ''}
+                            <p><span class="text-gray-500 dark:text-gray-400">Unidade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Programa:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPrograma || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Graduação:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userGraduacao || 'N/A'}</span></p>
                         </div>
                     </div>
 
                     <!-- Coluna 2: Produto e Pagamento -->
                     <div class="space-y-4">
                         <!-- Card Produto -->
-                        <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50 h-full">
-                            <h4 class="text-purple-400 font-bold mb-3 flex items-center gap-2">
+                        <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50 h-full">
+                            <h4 class="text-purple-600 dark:text-purple-400 font-bold mb-3 flex items-center gap-2">
                                 <span>🛍️</span> Produto
                             </h4>
                             <div class="space-y-2 text-sm">
-                                <p><span class="text-gray-400">Item:</span> <span class="text-white font-medium">${sale.productName || 'N/A'}</span></p>
-                                ${sale.userSize ? `<p><span class="text-gray-400">Tamanho:</span> <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded font-bold">${sale.userSize}</span></p>` : ''}
-                                <div class="mt-2 text-gray-300">
+                                <p><span class="text-gray-500 dark:text-gray-400">Item:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.productName || 'N/A'}</span></p>
+                                ${sale.userSize ? `<p><span class="text-gray-500 dark:text-gray-400">Tamanho:</span> <span class="px-2 py-0.5 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-500 rounded font-bold">${sale.userSize}</span></p>` : ''}
+                                <div class="mt-2 text-gray-700 dark:text-gray-300">
                                     ${productDetailsHtml}
                                 </div>
                             </div>
@@ -1799,23 +1799,24 @@ export async function setupStorePage() {
                 </div>
 
                 <!-- Info Pagamento -->
-                <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
-                    <h4 class="text-green-400 font-bold mb-3 flex items-center gap-2">
+                <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                    <h4 class="text-green-600 dark:text-green-400 font-bold mb-3 flex items-center gap-2">
                         <span>💳</span> Detalhes Financeiros
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div class="space-y-2">
-                            <p><span class="text-gray-400">Valor Total:</span> <span class="text-green-400 font-bold text-lg">${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
-                            <p><span class="text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
-                            <p><span class="text-gray-400">Data:</span> <span class="text-white">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Valor Total:</span> <span class="text-green-600 dark:text-green-400 font-bold text-lg">${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Data:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
                         </div>
-                        <div class="border-l border-gray-700/50 pl-4">
+                        <div class="border-l border-gray-200 dark:border-gray-700/50 pl-4">
                             ${paymentDetailsHtml}
                         </div>
                     </div>
                 </div>
             </div>
         `;
+
 
         // Load email logs
         await loadEmailLogs(saleId);
@@ -1900,15 +1901,16 @@ export async function setupStorePage() {
                 const dateStr = log.sentAt ? new Date(log.sentAt.toDate()).toLocaleString('pt-BR') : 'N/A';
 
                 const logItem = document.createElement('div');
-                logItem.className = 'bg-[#2a2a2a] p-3 rounded-lg text-sm';
+                logItem.className = 'bg-gray-50 dark:bg-[#2a2a2a] p-3 rounded-lg text-sm border border-gray-100 dark:border-gray-800/50';
                 logItem.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span>${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
-                        <span class="text-gray-400">${dateStr}</span>
+                        <span class="font-bold text-gray-900 dark:text-white">${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</span>
                     </div>
-                    ${log.error ? `<p class="text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
+                    ${log.error ? `<p class="text-red-600 dark:text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
                 `;
                 emailLogsList.appendChild(logItem);
+
             });
         } catch (error) {
             console.error('Error loading email logs:', error);
@@ -2084,11 +2086,11 @@ export async function setupStorePage() {
             ringStatsList.innerHTML = Object.entries(rings)
                 .sort((a, b) => a[0] - b[0])
                 .map(([ring, count]) => `
-                    <div class="px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 min-w-[80px] text-center">
-                        <p class="text-[10px] text-gray-500 uppercase">Ringue ${ring}</p>
-                        <p class="text-lg font-bold text-blue-400">${count}</p>
+                    <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 min-w-[80px] text-center">
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Ringue ${ring}</p>
+                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400">${count}</p>
                     </div>
-                `).join('') || '<p class="text-xs text-gray-600 italic">Nenhum dado por ringue</p>';
+                `).join('') || '<p class="text-xs text-gray-500 italic">Nenhum dado por ringue</p>';
         }
     };
 
@@ -2225,18 +2227,18 @@ export async function setupStorePage() {
 
         banners.forEach(banner => {
             const bannerEl = document.createElement('div');
-            bannerEl.className = 'bg-gray-800 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4';
+            bannerEl.className = 'bg-gray-50 dark:bg-gray-800 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-100 dark:border-gray-700 transition-all';
             bannerEl.innerHTML = `
                 <div class="flex items-center">
-                    <img src="${banner.imageUrl}" class="w-24 h-12 object-cover rounded-md mr-4">
+                    <img src="${banner.imageUrl}" class="w-24 h-12 object-cover rounded-md mr-4 shadow-sm">
                     <div>
-                        <a href="${banner.link}" target="_blank" class="hover:underline">${banner.link || 'Sem link'}</a>
-                        <p class="text-sm text-gray-400">${banner.active ? 'Ativo' : 'Inativo'}</p>
+                        <a href="${banner.link}" target="_blank" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all">${banner.link || 'Sem link'}</a>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">${banner.active ? 'Ativo' : 'Inativo'}</p>
                     </div>
                 </div>
-                <div>
-                    <button class="edit-banner-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${banner.id}"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="delete-banner-btn text-red-500 hover:text-red-400" data-id="${banner.id}"><i class="fas fa-trash-alt"></i></button>
+                <div class="flex gap-2">
+                    <button class="edit-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-gray-900 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200 dark:border-gray-700 transition-all" data-id="${banner.id}"><i class="fas fa-pencil-alt text-xs"></i></button>
+                    <button class="delete-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-gray-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 border border-gray-200 dark:border-gray-700 transition-all" data-id="${banner.id}"><i class="fas fa-trash-alt text-xs"></i></button>
                 </div>
             `;
             bannersList.appendChild(bannerEl);
@@ -2359,7 +2361,7 @@ export async function setupStorePage() {
 
         couponsToDisplay.forEach(coupon => {
             const row = couponsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700');
+            row.classList.add('border-b', 'border-gray-100', 'dark:border-gray-800', 'hover:bg-gray-50', 'dark:hover:bg-gray-800/30', 'transition-colors');
 
             const value = coupon.type === 'percentage' ? `${coupon.value}%` : (coupon.value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const expiry = coupon.expiry ? new Date(coupon.expiry).toLocaleDateString('pt-BR') : 'Sem validade';
@@ -2464,22 +2466,22 @@ export async function setupStorePage() {
         kpiContainer.innerHTML = `
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total de Vendas</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
             </div>
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Receita Total</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
             </div>
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ticket Médio</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
             </div>
@@ -2493,8 +2495,8 @@ export async function setupStorePage() {
             let kpiHtml = `
                 <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
-                        <p class="text-3xl font-bold text-white mt-1">${totalSales.toLocaleString('pt-BR')}</p>
+                        <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total de Vendas</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${totalSales.toLocaleString('pt-BR')}</p>
                     </div>
                     <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
                 </div>
@@ -2504,8 +2506,8 @@ export async function setupStorePage() {
                 kpiHtml += `
                     <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
-                            <p class="text-3xl font-bold text-white mt-1">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Receita Total</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
                         <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
                     </div>
@@ -2513,8 +2515,8 @@ export async function setupStorePage() {
                 kpiHtml += `
                     <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
-                            <p class="text-3xl font-bold text-white mt-1">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ticket Médio</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
                         <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
                     </div>

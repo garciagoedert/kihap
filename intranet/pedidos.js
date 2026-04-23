@@ -5,14 +5,20 @@ import { getCurrentUser, checkAdminStatus } from './auth.js';
 
 // Função helper para retornar classes CSS baseadas no status
 function getStatusClasses(status) {
-    const statusMap = {
-        'Pendente': 'bg-yellow-900 text-yellow-300',
-        'Em produção': 'bg-blue-900 text-blue-300',
-        'Enviado': 'bg-purple-900 text-purple-300',
-        'Entregue': 'bg-green-900 text-green-300',
-        'Cancelado': 'bg-red-900 text-red-300'
-    };
-    return statusMap[status] || 'bg-gray-900 text-gray-300';
+    switch (status) {
+        case 'Enviado':
+            return 'bg-blue-100/50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/20';
+        case 'Entregue':
+            return 'bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20';
+        case 'Cancelado':
+            return 'bg-red-100/50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-500/20';
+        case 'Em produção':
+            return 'bg-yellow-100/50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200/50 dark:border-yellow-500/20';
+        case 'Pendente':
+            return 'bg-orange-100/50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border border-orange-200/50 dark:border-orange-500/20';
+        default:
+            return 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-400 border border-gray-200/50 dark:border-gray-700/50';
+    }
 }
 
 const faixas = [
@@ -170,9 +176,9 @@ function renderItensPedido() {
         submitBtn.disabled = true;
     } else {
         container.innerHTML = itensPedido.map((item, index) => `
-            <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
-                <span>${item.quantidade}x ${item.faixa} (${item.tamanho})</span>
-                <button data-index="${index}" class="remove-item-btn text-red-500 hover:text-red-700">&times;</button>
+            <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">${item.quantidade}x ${item.faixa} (${item.tamanho})</span>
+                <button data-index="${index}" class="remove-item-btn w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">&times;</button>
             </div>
         `).join('');
         submitBtn.disabled = false;
@@ -329,12 +335,12 @@ async function loadPedidos() {
                 : pedido.itens.map(item => `${item.quantidade}x ${item.faixa} (${item.tamanho})`).join('<br>');
 
             html += `
-                <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
-                    <td class="p-4">${data}</td>
-                    <td class="p-4">${pedido.unidade}</td>
-                    <td class="p-4">${itensResumo}</td>
+                <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group" data-id="${pedido.id}">
+                    <td class="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">${data}</td>
+                    <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${pedido.unidade}</td>
+                    <td class="p-4 text-sm text-gray-600 dark:text-gray-300">${itensResumo}</td>
                     <td class="p-4">
-                        <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
+                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                     </td>
                 </tr>
             `;
@@ -372,8 +378,14 @@ async function openDetailsModal(pedidoId) {
         document.getElementById('details-unidade').textContent = pedido.unidade;
         document.getElementById('details-data').textContent = data;
         document.getElementById('details-status').textContent = pedido.status;
+        document.getElementById('details-status').className = `font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider border ${getStatusClasses(pedido.status)}`;
         document.getElementById('details-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
-        document.getElementById('details-itens').innerHTML = pedido.itens.map(item => `<li>${item.quantidade}x ${item.faixa} (${item.tamanho})</li>`).join('');
+        document.getElementById('details-itens').innerHTML = pedido.itens.map(item => `
+            <li class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 rounded-xl">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">${item.faixa} - ${item.tamanho}</span>
+                <span class="text-xs font-bold text-gray-500 bg-gray-200/50 dark:bg-gray-700/50 px-2.5 py-1 rounded-lg">x${item.quantidade}</span>
+            </li>
+        `).join('');
 
         const justificativaContainer = document.getElementById('details-justificativa-container');
         if (pedido.status === 'Cancelado' && pedido.justificativa) {
@@ -784,13 +796,13 @@ export function setupPedidosPage() {
             pedidos.forEach(pedido => {
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
                 html += `
-                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
-                        <td class="p-4">${data}</td>
-                        <td class="p-4">${pedido.unidade}</td>
-                        <td class="p-4">${pedido.aluno}</td>
-                        <td class="p-4">${pedido.faixa}</td>
+                    <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group" data-id="${pedido.id}">
+                        <td class="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">${data}</td>
+                        <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${pedido.unidade}</td>
+                        <td class="p-4 text-sm font-medium text-blue-600 dark:text-blue-400">${pedido.aluno}</td>
+                        <td class="p-4 text-sm text-gray-600 dark:text-gray-300">${pedido.faixa}</td>
                         <td class="p-4">
-                            <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                         </td>
                     </tr>
                 `;
@@ -885,10 +897,11 @@ export function setupPedidosPage() {
             document.getElementById('details-preta-unidade').textContent = pedido.unidade;
             document.getElementById('details-preta-data').textContent = data;
             document.getElementById('details-preta-status').textContent = pedido.status;
+            document.getElementById('details-preta-status').className = `font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider border ${getStatusClasses(pedido.status)}`;
             document.getElementById('details-preta-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
             document.getElementById('details-preta-aluno').textContent = pedido.aluno;
             document.getElementById('details-preta-faixa').textContent = pedido.faixa;
-            document.getElementById('details-preta-tamanho').textContent = pedido.tamanho || 'N/A';
+            document.getElementById('details-preta-tamanho').textContent = pedido.tamanho ? `${pedido.tamanho} cm` : 'N/A';
 
             const justificativaContainer = document.getElementById('details-preta-justificativa-container');
             if (pedido.status === 'Cancelado' && pedido.justificativa) {
@@ -1117,16 +1130,21 @@ export function setupPedidosPage() {
             let html = '';
             pedidos.forEach(pedido => {
                 const data = pedido.data ? new Date(pedido.data.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A';
-                const faixaPretaIndicator = pedido.isFaixaPreta ? '<span class="ml-2 px-2 py-1 text-xs font-semibold text-white bg-black rounded-full">Faixa Preta</span>' : '';
+                const faixaPretaIndicator = pedido.isFaixaPreta ? '<span class="px-2 py-0.5 text-[10px] font-bold text-white bg-black dark:bg-white dark:text-black rounded-full uppercase tracking-tighter">Preta</span>' : '';
                 const colarinhoInfo = pedido.colarinho ? ` (${pedido.colarinho})` : '';
                 html += `
-                    <tr class="cursor-pointer hover:bg-gray-800" data-id="${pedido.id}">
-                        <td class="p-4">${data}</td>
-                        <td class="p-4">${pedido.unidade}</td>
-                        <td class="p-4">${pedido.aluno || 'N/A'} ${faixaPretaIndicator}</td>
-                        <td class="p-4">${pedido.tamanho}${colarinhoInfo}</td>
+                    <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group" data-id="${pedido.id}">
+                        <td class="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">${data}</td>
+                        <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${pedido.unidade}</td>
+                        <td class="p-4 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                            <div class="flex items-center gap-2">
+                                ${pedido.aluno || 'N/A'}
+                                ${faixaPretaIndicator}
+                            </div>
+                        </td>
+                        <td class="p-4 text-sm text-gray-600 dark:text-gray-300">${pedido.tamanho}${colarinhoInfo}</td>
                         <td class="p-4">
-                            <span class="px-2 py-1 text-sm rounded-full ${getStatusClasses(pedido.status)}">${pedido.status}</span>
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusClasses(pedido.status)}">${pedido.status}</span>
                         </td>
                     </tr>
                 `;
@@ -1192,6 +1210,7 @@ export function setupPedidosPage() {
             document.getElementById('details-dobok-unidade').textContent = pedido.unidade;
             document.getElementById('details-dobok-data').textContent = data;
             document.getElementById('details-dobok-status').textContent = pedido.status;
+            document.getElementById('details-dobok-status').className = `font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider border ${getStatusClasses(pedido.status)}`;
             document.getElementById('details-dobok-solicitante').textContent = pedido.solicitante?.nome || 'Não informado';
             document.getElementById('details-dobok-aluno').textContent = pedido.aluno || 'N/A';
             document.getElementById('details-dobok-tamanho').textContent = pedido.tamanho;

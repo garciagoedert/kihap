@@ -57,24 +57,24 @@
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Gestão de Pedidos</h1>
                         <div class="flex items-center gap-2">
                             <button id="refresh-pedidos"
-                                class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded"
+                                class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200"
                                 aria-label="Atualizar Histórico">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                             <button id="open-pedido-modal-btn"
-                                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-yellow-500/20 transition-all duration-200 text-sm">
                                 Fazer Novo Pedido
                             </button>
                             <button id="export-pedidos-btn"
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-emerald-900/20 transition-all duration-200 flex items-center gap-2">
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2 text-sm">
                                 <i class="fas fa-file-export"></i> Exportar Pendentes
                             </button>
                             <button id="open-faixa-preta-modal-btn"
-                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded hidden">
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-200 text-sm hidden">
                                 Novo Pedido Faixa Preta
                             </button>
                             <button id="open-dobok-modal-btn"
-                                class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded hidden">
+                                class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-200 text-sm hidden">
                                 Novo Pedido Dobok
                             </button>
                         </div>
@@ -88,11 +88,11 @@
                                 Faixas Coloridas
                             </button>
                             <button id="tab-pretas"
-                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-1 py-3 text-sm font-medium transition-all duration-200">
+                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-1 py-3 text-sm font-medium transition-all duration-200">
                                 Faixas Pretas
                             </button>
                             <button id="tab-doboks"
-                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-1 py-3 text-sm font-medium transition-all duration-200">
+                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-1 py-3 text-sm font-medium transition-all duration-200">
                                 Doboks
                             </button>
                         </nav>
@@ -102,11 +102,11 @@
                     <div id="tab-content-coloridas" class="tab-content table-responsive flex-grow">
                         <table class="table w-full text-left">
                             <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="p-4">Data</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">Itens</th>
-                                    <th class="p-4">Status</th>
+                                <tr class="border-b border-gray-100 dark:border-gray-800">
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Itens</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="pedidos-table-body"></tbody>
@@ -116,12 +116,12 @@
                     <div id="tab-content-pretas" class="tab-content table-responsive flex-grow hidden">
                         <table class="table w-full text-left">
                             <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="p-4">Data</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">Aluno</th>
-                                    <th class="p-4">Faixa</th>
-                                    <th class="p-4">Status</th>
+                                <tr class="border-b border-gray-100 dark:border-gray-800">
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Aluno</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Faixa</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="pedidos-pretas-table-body"></tbody>
@@ -129,36 +129,38 @@
                     </div>
 
                     <div id="tab-content-doboks" class="tab-content table-responsive flex-grow hidden">
-                        <div id="dobok-filters" class="flex items-center space-x-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-inner">
-                            <div>
+                        <div id="dobok-filters" class="flex flex-wrap items-center gap-4 mb-6 p-6 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl">
+                            <div class="flex-grow min-w-[200px]">
                                 <label for="filter-unidade-dobok"
-                                    class="block text-sm font-medium text-gray-300">Unidade</label>
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
                                 <select id="filter-unidade-dobok"
-                                    class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm font-medium">
                                     <option value="">Todas</option>
                                 </select>
                             </div>
-                            <div class="flex items-center pt-6">
-                                <input id="filter-faixa-preta-dobok" type="checkbox"
-                                    class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
-                                <label for="filter-faixa-preta-dobok" class="ml-2 block text-sm text-gray-300">Apenas
-                                    Faixa Preta</label>
+                            <div class="flex items-center pt-5">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="filter-faixa-preta-dobok" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                    <span class="ml-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Apenas Faixa Preta</span>
+                                </label>
                             </div>
-                            <div class="flex items-center pt-6">
-                                <input id="filter-tradicional-dobok" type="checkbox"
-                                    class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
-                                <label for="filter-tradicional-dobok" class="ml-2 block text-sm text-gray-300">Apenas
-                                    Tradicional</label>
+                            <div class="flex items-center pt-5">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="filter-tradicional-dobok" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                    <span class="ml-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Apenas Tradicional</span>
+                                </label>
                             </div>
                         </div>
                         <table class="table w-full text-left">
                             <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="p-4">Data</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">Aluno</th>
-                                    <th class="p-4">Tamanho</th>
-                                    <th class="p-4">Status</th>
+                                <tr class="border-b border-gray-100 dark:border-gray-800">
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Aluno</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tamanho</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="pedidos-doboks-table-body"></tbody>
@@ -170,23 +172,25 @@
     </div>
 
     <!-- Modal de Novo/Editar Pedido -->
-    <div id="pedido-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 id="pedido-modal-title" class="text-xl font-bold text-white">Novo Pedido de Faixas</h2>
-                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="pedido-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 id="pedido-modal-title" class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Faixas</h2>
+                <button id="close-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 flex-grow overflow-y-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="p-8 flex-grow overflow-y-auto custom-scrollbar space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="unidade-select" class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <label for="unidade-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
                         <select id="unidade-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"></select>
                     </div>
                     <div>
-                        <label for="status-select" class="block text-sm font-medium text-gray-300">Status</label>
+                        <label for="status-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Status</label>
                         <select id="status-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
                             <option>Pendente</option>
                             <option>Em produção</option>
                             <option>Enviado</option>
@@ -196,96 +200,136 @@
                     </div>
                 </div>
                 <!-- Campo de Justificativa de Cancelamento -->
-                <div id="justificativa-container" class="mb-4 hidden">
-                    <label for="justificativa-input" class="block text-sm font-medium text-red-400 mb-1">Justificativa
-                        do Cancelamento *</label>
+                <div id="justificativa-container" class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <label for="justificativa-input" class="block text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Justificativa do Cancelamento *</label>
                     <textarea id="justificativa-input" rows="3"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-red-500 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900/50 border border-red-200 dark:border-red-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
                         placeholder="Por favor, explique o motivo do cancelamento..."></textarea>
                 </div>
-                <form id="add-item-form" class="flex items-end gap-4 mb-6">
-                    <div class="flex-1">
-                        <label for="faixa-select" class="block text-sm font-medium text-gray-300">Faixa</label>
-                        <select id="faixa-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
+
+                <div class="p-6 bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-3xl">
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-4 flex items-center">
+                        <i class="fas fa-plus-circle mr-2 text-blue-500"></i> Adicionar Item
+                    </h3>
+                    <form id="add-item-form" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="faixa-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Faixa</label>
+                                <select id="faixa-select" required
+                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"></select>
+                            </div>
+                            <div>
+                                <label for="tamanho-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Tamanho</label>
+                                <select id="tamanho-select" required
+                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"></select>
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-4">
+                            <div class="flex-grow">
+                                <label for="quantidade-input" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Quantidade</label>
+                                <input type="number" id="quantidade-input" required min="1"
+                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                                    value="1">
+                            </div>
+                            <button type="submit"
+                                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 text-sm">
+                                Adicionar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center">
+                        <i class="fas fa-list-ul mr-2"></i> Itens do Pedido
+                    </h3>
+                    <div id="itens-pedido-container" class="space-y-2">
+                        <!-- Itens renderizados pelo JS -->
                     </div>
-                    <div class="flex-1">
-                        <label for="tamanho-select" class="block text-sm font-medium text-gray-300">Tamanho</label>
-                        <select id="tamanho-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
-                    </div>
-                    <div>
-                        <label for="quantidade-input" class="block text-sm font-medium text-gray-300">Qtd.</label>
-                        <input type="number" id="quantidade-input" required min="1"
-                            class="w-24 mt-1 px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors"
-                            value="1">
-                    </div>
-                    <button type="submit"
-                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Adicionar</button>
-                </form>
-                <h3 class="text-lg font-semibold mb-2">Itens do Pedido</h3>
-                <div id="itens-pedido-container" class="space-y-2"></div>
+                </div>
             </div>
-            <div class="flex justify-end p-4 border-t border-gray-700">
+            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+                <button id="cancel-modal-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-pedido-btn"
-                    class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded" disabled>Salvar
-                    Pedido</button>
+                    class="px-10 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none" disabled>
+                    Salvar Pedido
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Detalhes do Pedido -->
-    <div id="details-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-bold text-white">Detalhes do Pedido</h2>
-                <button id="close-details-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="details-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
+                <button id="close-details-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <p><strong>Unidade:</strong> <span id="details-unidade"></span></p>
-                <p><strong>Data do Pedido:</strong> <span id="details-data"></span></p>
-                <p><strong>Status:</strong> <span id="details-status"></span></p>
-                <p><strong>Solicitante:</strong> <span id="details-solicitante"></span></p>
-                <div>
-                    <h3 class="font-semibold mb-2">Itens:</h3>
-                    <ul id="details-itens" class="list-disc list-inside pl-2 space-y-1"></ul>
+            <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidade</p>
+                        <p id="details-unidade" class="font-semibold text-gray-900 dark:text-white"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Data</p>
+                        <p id="details-data" class="font-semibold text-gray-900 dark:text-white"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                        <p id="details-status" class="font-semibold text-gray-900 dark:text-white"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Solicitante</p>
+                        <p id="details-solicitante" class="font-semibold text-gray-900 dark:text-white"></p>
+                    </div>
                 </div>
-                <!-- Nova seção de Justificativa -->
+
+                <div class="space-y-3">
+                    <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                        <i class="fas fa-list-ul mr-2"></i> Itens Solicitados
+                    </h3>
+                    <ul id="details-itens" class="space-y-2"></ul>
+                </div>
+
+                <!-- Seção de Justificativa -->
                 <div id="details-justificativa-container"
-                    class="hidden mt-4 p-3 bg-red-900/30 border border-red-700 rounded">
-                    <p class="text-red-300 font-semibold mb-1">Motivo do Cancelamento:</p>
-                    <p id="details-justificativa" class="text-gray-300 italic"></p>
+                    class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <p class="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Motivo do Cancelamento</p>
+                    <p id="details-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
+            <div id="details-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-pedido-btn"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
+                    class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-pedido-btn"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
+                    class="px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">Editar Pedido</button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Novo Pedido de Faixa Preta -->
-    <div id="faixa-preta-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-bold text-white">Novo Pedido de Faixa Preta</h2>
-                <button id="close-faixa-preta-modal-btn"
-                    class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="faixa-preta-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Faixa Preta</h2>
+                <button id="close-faixa-preta-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 flex-grow overflow-y-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="p-8 flex-grow overflow-y-auto custom-scrollbar space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="unidade-preta-select"
-                            class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <label for="unidade-preta-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
                         <select id="unidade-preta-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"></select>
                     </div>
                     <div>
-                        <label for="status-preta-select" class="block text-sm font-medium text-gray-300">Status</label>
+                        <label for="status-preta-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Status</label>
                         <select id="status-preta-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
                             <option>Pendente</option>
                             <option>Em produção</option>
                             <option>Enviado</option>
@@ -294,136 +338,197 @@
                         </select>
                     </div>
                 </div>
+
                 <!-- Campo de Justificativa de Cancelamento -->
-                <div id="justificativa-preta-container" class="mb-4 hidden">
-                    <label for="justificativa-preta-input"
-                        class="block text-sm font-medium text-red-400 mb-1">Justificativa do Cancelamento *</label>
+                <div id="justificativa-preta-container" class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <label for="justificativa-preta-input" class="block text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Justificativa do Cancelamento *</label>
                     <textarea id="justificativa-preta-input" rows="3"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-red-500 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900/50 border border-red-200 dark:border-red-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
                         placeholder="Por favor, explique o motivo do cancelamento..."></textarea>
                 </div>
-                <div class="mb-4">
-                    <label for="aluno-preta-input" class="block text-sm font-medium text-gray-300">Nome do Aluno</label>
-                    <input type="text" id="aluno-preta-input" required
-                        class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md"
-                        placeholder="Nome completo do aluno">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                <div class="space-y-4">
                     <div>
-                        <label for="faixa-preta-select" class="block text-sm font-medium text-gray-300">Faixa</label>
-                        <select id="faixa-preta-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
-                            <option>1º Dan Preta</option>
-                            <option>2º Dan Preta</option>
-                            <option>3º Dan Preta</option>
-                            <option>4º Dan Preta</option>
-                            <option>5º Dan Preta</option>
-                            <option>6º Dan Preta</option>
-                            <option>7º Dan Preta</option>
-                            <option>8º Dan Preta</option>
-                            <option>9º Dan Preta</option>
-                        </select>
+                        <label for="aluno-preta-input" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Nome do Aluno</label>
+                        <input type="text" id="aluno-preta-input" required
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                            placeholder="Nome completo do aluno">
                     </div>
-                    <div>
-                        <label for="tamanho-preta-input" class="block text-sm font-medium text-gray-300">Tamanho
-                            (cm)</label>
-                        <input type="number" id="tamanho-preta-input" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md"
-                            placeholder="Ex: 280">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="faixa-preta-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Faixa</label>
+                            <select id="faixa-preta-select" required
+                                class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                <option>1º Dan Preta</option>
+                                <option>2º Dan Preta</option>
+                                <option>3º Dan Preta</option>
+                                <option>4º Dan Preta</option>
+                                <option>5º Dan Preta</option>
+                                <option>6º Dan Preta</option>
+                                <option>7º Dan Preta</option>
+                                <option>8º Dan Preta</option>
+                                <option>9º Dan Preta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tamanho-preta-input" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Tamanho (cm)</label>
+                            <input type="number" id="tamanho-preta-input" required
+                                class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                                placeholder="Ex: 280">
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="flex justify-end p-4 border-t border-gray-700">
+            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+                <button id="cancel-faixa-preta-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-faixa-preta-btn"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded">Salvar Pedido</button>
+                    class="px-10 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">Salvar Pedido</button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Detalhes do Pedido de Faixa Preta -->
-    <div id="details-preta-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-bold text-white">Detalhes do Pedido de Faixa Preta</h2>
-                <button id="close-details-preta-modal-btn"
-                    class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="details-preta-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
+                <button id="close-details-preta-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <p><strong>Unidade:</strong> <span id="details-preta-unidade"></span></p>
-                <p><strong>Data do Pedido:</strong> <span id="details-preta-data"></span></p>
-                <p><strong>Status:</strong> <span id="details-preta-status"></span></p>
-                <p><strong>Solicitante:</strong> <span id="details-preta-solicitante"></span></p>
-                <p><strong>Aluno:</strong> <span id="details-preta-aluno"></span></p>
-                <p><strong>Faixa:</strong> <span id="details-preta-faixa"></span></p>
-                <p><strong>Tamanho:</strong> <span id="details-preta-tamanho"></span> cm</p>
-                <!-- Nova seção de Justificativa -->
+            <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidade</p>
+                        <p id="details-preta-unidade" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Data</p>
+                        <p id="details-preta-data" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                        <p id="details-preta-status" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Solicitante</p>
+                        <p id="details-preta-solicitante" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-500/20 col-span-2">
+                        <p class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Aluno</p>
+                        <p id="details-preta-aluno" class="font-bold text-blue-700 dark:text-blue-300"></p>
+                        <div class="flex gap-6 mt-3 pt-3 border-t border-blue-200/50 dark:border-blue-500/20">
+                            <div>
+                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">Faixa</p>
+                                <p id="details-preta-faixa" class="font-semibold text-blue-800 dark:text-blue-200 text-sm"></p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">Tamanho</p>
+                                <p id="details-preta-tamanho" class="font-semibold text-blue-800 dark:text-blue-200 text-sm"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção de Justificativa -->
                 <div id="details-preta-justificativa-container"
-                    class="hidden mt-4 p-3 bg-red-900/30 border border-red-700 rounded">
-                    <p class="text-red-300 font-semibold mb-1">Motivo do Cancelamento:</p>
-                    <p id="details-preta-justificativa" class="text-gray-300 italic"></p>
+                    class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <p class="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Motivo do Cancelamento</p>
+                    <p id="details-preta-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-preta-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
+            <div id="details-preta-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-preta-pedido-btn"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
+                    class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-preta-pedido-btn"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
+                    class="px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">Editar Pedido</button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Detalhes do Pedido de Dobok -->
-    <div id="details-dobok-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-bold text-white">Detalhes do Pedido de Dobok</h2>
-                <button id="close-details-dobok-modal-btn"
-                    class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="details-dobok-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
+                <button id="close-details-dobok-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <p><strong>Unidade:</strong> <span id="details-dobok-unidade"></span></p>
-                <p><strong>Data do Pedido:</strong> <span id="details-dobok-data"></span></p>
-                <p><strong>Status:</strong> <span id="details-dobok-status"></span></p>
-                <p><strong>Solicitante:</strong> <span id="details-dobok-solicitante"></span></p>
-                <p><strong>Aluno:</strong> <span id="details-dobok-aluno"></span></p>
-                <p><strong>Tamanho:</strong> <span id="details-dobok-tamanho"></span></p>
-                <p><strong>Colarinho:</strong> <span id="details-dobok-colarinho"></span></p>
-                <p><strong>Tipo:</strong> <span id="details-dobok-tipo"></span></p>
-                <!-- Nova seção de Justificativa -->
+            <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidade</p>
+                        <p id="details-dobok-unidade" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Data</p>
+                        <p id="details-dobok-data" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                        <p id="details-dobok-status" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Solicitante</p>
+                        <p id="details-dobok-solicitante" class="font-semibold text-gray-900 dark:text-white text-sm"></p>
+                    </div>
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20 col-span-2">
+                        <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Aluno</p>
+                        <p id="details-dobok-aluno" class="font-bold text-emerald-700 dark:text-emerald-300"></p>
+                        <div class="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-emerald-200/50 dark:border-emerald-500/20">
+                            <div>
+                                <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-0.5">Tamanho</p>
+                                <p id="details-dobok-tamanho" class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm"></p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-0.5">Colarinho</p>
+                                <p id="details-dobok-colarinho" class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm"></p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-0.5">Tipo</p>
+                                <p id="details-dobok-tipo" class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção de Justificativa -->
                 <div id="details-dobok-justificativa-container"
-                    class="hidden mt-4 p-3 bg-red-900/30 border border-red-700 rounded">
-                    <p class="text-red-300 font-semibold mb-1">Motivo do Cancelamento:</p>
-                    <p id="details-dobok-justificativa" class="text-gray-300 italic"></p>
+                    class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <p class="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Motivo do Cancelamento</p>
+                    <p id="details-dobok-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-dobok-admin-actions" class="flex justify-end p-4 border-t border-gray-700 gap-4 hidden">
+            <div id="details-dobok-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-dobok-pedido-btn"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Excluir</button>
+                    class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-dobok-pedido-btn"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Editar</button>
+                    class="px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">Editar Pedido</button>
             </div>
         </div>
     </div>
 
     <!-- Modal de Novo Pedido de Dobok -->
-    <div id="dobok-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b border-gray-700">
-                <h2 id="dobok-modal-title" class="text-xl font-bold text-white">Novo Pedido de Dobok</h2>
-                <button id="close-dobok-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+    <div id="dobok-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+                <h2 id="dobok-modal-title" class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Dobok</h2>
+                <button id="close-dobok-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 flex-grow overflow-y-auto">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="p-8 flex-grow overflow-y-auto custom-scrollbar space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="unidade-dobok-select"
-                            class="block text-sm font-medium text-gray-300">Unidade</label>
+                        <label for="unidade-dobok-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
                         <select id="unidade-dobok-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"></select>
                     </div>
                     <div>
-                        <label for="status-dobok-select" class="block text-sm font-medium text-gray-300">Status</label>
+                        <label for="status-dobok-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Status</label>
                         <select id="status-dobok-select" required
-                            class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
                             <option>Pendente</option>
                             <option>Em produção</option>
                             <option>Enviado</option>
@@ -432,48 +537,50 @@
                         </select>
                     </div>
                 </div>
+
                 <!-- Campo de Justificativa de Cancelamento -->
-                <div id="justificativa-dobok-container" class="mb-4 hidden">
-                    <label for="justificativa-dobok-input"
-                        class="block text-sm font-medium text-red-400 mb-1">Justificativa do Cancelamento *</label>
+                <div id="justificativa-dobok-container" class="hidden animate-fadeIn p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-2xl">
+                    <label for="justificativa-dobok-input" class="block text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Justificativa do Cancelamento *</label>
                     <textarea id="justificativa-dobok-input" rows="3"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-red-500 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900/50 border border-red-200 dark:border-red-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
                         placeholder="Por favor, explique o motivo do cancelamento..."></textarea>
                 </div>
-                <div class="mb-4">
-                    <label for="aluno-dobok-input" class="block text-sm font-medium text-gray-300">Nome do Aluno
-                        (Opcional)</label>
-                    <input type="text" id="aluno-dobok-input"
-                        class="w-full mt-1 px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors"
-                        placeholder="Nome completo do aluno">
-                </div>
-                <div class="mb-4">
-                    <label for="tamanho-dobok-select" class="block text-sm font-medium text-gray-300">Tamanho</label>
-                    <select id="tamanho-dobok-select" required
-                        class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors"></select>
-                </div>
-                <div class="mb-4">
-                    <label for="colarinho-dobok-select"
-                        class="block text-sm font-medium text-gray-300">Colarinho</label>
-                    <select id="colarinho-dobok-select"
-                        class="w-full mt-1 px-3 py-2 text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
-                        <option value="">Padrão</option>
-                        <option>Vermelho</option>
-                        <option>Vermelho e Preto</option>
-                        <option>Preto</option>
-                    </select>
-                </div>
-                <div class="flex items-center mb-4">
-                    <input id="faixa-preta-dobok-checkbox" type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
-                    <label for="faixa-preta-dobok-checkbox" class="ml-2 block text-sm text-gray-300">Dobok de Faixa
-                        Preta</label>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="aluno-dobok-input" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Nome do Aluno (Opcional)</label>
+                        <input type="text" id="aluno-dobok-input"
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                            placeholder="Nome completo do aluno">
+                    </div>
+                    <div>
+                        <label for="tamanho-dobok-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Tamanho</label>
+                        <select id="tamanho-dobok-select" required
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"></select>
+                    </div>
+                    <div>
+                        <label for="colarinho-dobok-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Colarinho</label>
+                        <select id="colarinho-dobok-select"
+                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                            <option value="">Padrão</option>
+                            <option>Vermelho</option>
+                            <option>Vermelho e Preto</option>
+                            <option>Preto</option>
+                        </select>
+                    </div>
+                    <div class="pt-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="faixa-preta-dobok-checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                            <span class="ml-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Dobok de Faixa Preta</span>
+                        </label>
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end p-4 border-t border-gray-700">
+            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+                <button id="cancel-dobok-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-dobok-btn"
-                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded">Salvar
-                    Pedido</button>
+                    class="px-10 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/20">Salvar Pedido</button>
             </div>
         </div>
     </div>

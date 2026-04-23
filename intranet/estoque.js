@@ -90,16 +90,43 @@ export async function setupEstoquePage() {
 
         filteredData.forEach(item => {
             const row = document.createElement('tr');
-            row.className = 'cursor-pointer hover:bg-gray-700';
+            row.className = 'border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group';
             row.dataset.id = item.id;
-            const statusClass = item.status.toLowerCase().replace(/\s+/g, '-');
+            const getStatusClasses = (status) => {
+                switch (status) {
+                    case 'Em estoque':
+                        return 'bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20';
+                    case 'Estoque baixo':
+                        return 'bg-yellow-100/50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200/50 dark:border-yellow-500/20';
+                    case 'Fora de estoque':
+                        return 'bg-red-100/50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-500/20';
+                    default:
+                        return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700';
+                }
+            };
+
             const price = (item.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             row.innerHTML = `
-                <td class="p-4">${item.product}</td>
-                <td class="p-4">${item.unit}</td>
-                <td class="p-4">${price}</td>
-                <td class="p-4">${item.quantity}</td>
-                <td class="p-4"><span class="status ${statusClass}">${item.status}</span></td>
+                <td class="p-6">
+                    <div class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${item.product}</div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">ID: #${item.id.slice(-6)}</div>
+                </td>
+                <td class="p-6">
+                    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg text-[10px] font-bold uppercase border border-gray-200 dark:border-gray-700">
+                        ${item.unit}
+                    </span>
+                </td>
+                <td class="p-6 font-bold text-gray-900 dark:text-white">${price}</td>
+                <td class="p-6 text-center">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        ${item.quantity}
+                    </span>
+                </td>
+                <td class="p-6 text-center">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusClasses(item.status)}">
+                        ${item.status}
+                    </span>
+                </td>
             `;
             row.addEventListener('click', () => openModal(item));
             stockTableBody.appendChild(row);

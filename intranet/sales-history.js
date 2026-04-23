@@ -244,56 +244,58 @@ const openSaleDetailsModal = async (saleIds) => {
     }
 
     let productDetailsHtml = allGroupSales.map(s => `
-        <div class="p-3 bg-gray-100 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600/30 mb-2">
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 mb-3 shadow-sm">
             <p class="font-bold text-blue-600 dark:text-blue-400">${s.productName || 'Produto N/A'}</p>
-            ${s.userSize ? `<p class="text-xs text-gray-500 dark:text-gray-400">Tamanho: <span class="text-gray-900 dark:text-white">${s.userSize}</span></p>` : ''}
-            ${s.kitSelections ? Object.entries(s.kitSelections).map(([key, val]) => `<p class="text-xs text-gray-500 dark:text-gray-400">${key}: <span class="text-gray-900 dark:text-white">${val}</span></p>`).join('') : ''}
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Valor: <span class="text-green-600 dark:text-green-400 font-medium">${(s.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: s.currency || 'BRL' })}</span></p>
+            ${s.userSize ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tamanho: <span class="text-gray-900 dark:text-white font-medium">${s.userSize}</span></p>` : ''}
+            ${s.kitSelections ? Object.entries(s.kitSelections).map(([key, val]) => `<p class="text-xs text-gray-500 dark:text-gray-400">${key}: <span class="text-gray-900 dark:text-white font-medium">${val}</span></p>`).join('') : ''}
+            <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Subtotal</span>
+                <span class="text-sm font-bold text-green-600 dark:text-green-400">${(s.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: s.currency || 'BRL' })}</span>
+            </div>
         </div>
     `).join('');
 
     modalContent.innerHTML = `
-    modalContent.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
-                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h4 class="text-blue-600 dark:text-blue-400 font-bold mb-3 flex items-center gap-2">
+                <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm">
+                    <h4 class="text-blue-600 dark:text-blue-400 font-bold mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
                         <i class="fas fa-user-circle"></i> Dados do Cliente
                     </h4>
-                    <div class="space-y-2 text-sm">
-                        <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userName || 'N/A'}</span></p>
-                        <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userEmail || 'N/A'}</span></p>
-                        <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPhone || 'N/A'}</span></p>
-                        <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userCpf || 'N/A'}</span></p>
+                    <div class="space-y-3 text-sm">
+                        <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</span></p>
+                        <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white break-all">${sale.userEmail || 'N/A'}</span></p>
+                        <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white">${sale.userPhone || 'N/A'}</span></p>
+                        <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white">${sale.userCpf || 'N/A'}</span></p>
                         <p><span class="text-gray-500 dark:text-gray-400">Unidade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
                     </div>
                 </div>
             </div>
             <div class="space-y-4">
-                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h4 class="text-purple-600 dark:text-purple-400 font-bold mb-3 flex items-center gap-2">
+                <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm">
+                    <h4 class="text-purple-600 dark:text-purple-400 font-bold mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
                         <i class="fas fa-shopping-bag"></i> Itens do Pedido
                     </h4>
-                    <div class="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                         ${productDetailsHtml}
                     </div>
                 </div>
             </div>
         </div>
-        <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h4 class="text-green-600 dark:text-green-400 font-bold mb-3 flex items-center gap-2">
-                <i class="fas fa-credit-card"></i> Pagamento
+        <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm mt-6">
+            <h4 class="text-green-600 dark:text-green-400 font-bold mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
+                <i class="fas fa-credit-card"></i> Resumo do Pagamento
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div class="space-y-2">
-                    <p><span class="text-gray-500 dark:text-gray-400">Status Financeiro:</span> ${renderStatusTag(sale.paymentStatus)}</p>
-                    <p><span class="text-gray-500 dark:text-gray-400">Total Pago:</span> <span class="text-green-600 dark:text-green-400 font-bold text-lg">${(allGroupSales.reduce((acc, curr) => acc + curr.amountTotal, 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
-                    <p><span class="text-gray-500 dark:text-gray-400">Data e Hora:</span> <span class="text-gray-900 dark:text-white">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div class="space-y-3">
+                    <p class="flex items-center justify-between"><span class="text-gray-500 dark:text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
+                    <p class="flex items-center justify-between"><span class="text-gray-500 dark:text-gray-400">Total Pago:</span> <span class="text-green-600 dark:text-green-400 font-bold text-xl">${(allGroupSales.reduce((acc, curr) => acc + curr.amountTotal, 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                    <p class="flex items-center justify-between"><span class="text-gray-500 dark:text-gray-400">Data:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
                 </div>
-                <div class="border-l border-gray-200 dark:border-gray-700/50 pl-4 space-y-2">
-                    <p><span class="text-gray-500 dark:text-gray-400">Método:</span> <span class="text-gray-900 dark:text-white uppercase font-bold">${sale.paymentMethod || 'N/A'}</span></p>
-                    ${sale.stripeSessionId ? `<p class="text-xs text-blue-600 dark:text-blue-400 mt-2 truncate" title="${sale.stripeSessionId}">Stripe ID: ${sale.stripeSessionId}</p>` : ''}
-                    ${sale.mercadoPagoPreferenceId ? `<p class="text-xs text-blue-600 dark:text-blue-400 mt-1 truncate" title="${sale.mercadoPagoPreferenceId}">MP ID: ${sale.mercadoPagoPreferenceId}</p>` : ''}
+                <div class="md:border-l border-gray-200 dark:border-gray-700 md:pl-6 space-y-3">
+                    <p class="flex items-center justify-between"><span class="text-gray-500 dark:text-gray-400">Método:</span> <span class="text-gray-900 dark:text-white uppercase font-bold">${sale.paymentMethod || 'N/A'}</span></p>
+                    ${sale.stripeSessionId ? `<p class="text-[10px] text-blue-600 dark:text-blue-400 mt-2 break-all opacity-70" title="${sale.stripeSessionId}">Stripe ID: ${sale.stripeSessionId}</p>` : ''}
+                    ${sale.mercadoPagoPreferenceId ? `<p class="text-[10px] text-blue-600 dark:text-blue-400 mt-1 break-all opacity-70" title="${sale.mercadoPagoPreferenceId}">MP ID: ${sale.mercadoPagoPreferenceId}</p>` : ''}
                 </div>
             </div>
         </div>
@@ -445,13 +447,17 @@ const loadEmailLogs = async (saleId) => {
             const statusIcon = log.success ? '✅' : '❌';
             const dateStr = log.sentAt ? new Date(log.sentAt.toDate()).toLocaleString('pt-BR') : 'N/A';
             const logItem = document.createElement('div');
-            logItem.className = 'bg-gray-50 dark:bg-[#2a2a2a] p-3 rounded-lg text-sm border border-gray-200 dark:border-gray-700/50';
+            logItem.className = 'bg-gray-50 dark:bg-[#2a2a2a] p-4 rounded-xl text-sm border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:bg-white dark:hover:bg-[#333333]';
             logItem.innerHTML = `
                 <div class="flex items-center justify-between">
-                    <span class="font-medium text-gray-900 dark:text-white">${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
-                    <span class="text-xs text-gray-500">${dateStr}</span>
+                    <span class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>${typeIcon}</span>
+                        <span>${log.type === 'ticket' ? 'Ingresso' : 'Recibo'}</span>
+                        <span class="ml-1">${statusIcon}</span>
+                    </span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">${dateStr}</span>
                 </div>
-                ${log.error ? `<p class="text-red-600 dark:text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
+                ${log.error ? `<p class="text-red-600 dark:text-red-400 text-xs mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-900/20">Erro: ${log.error}</p>` : ''}
             `;
             emailLogsList.appendChild(logItem);
         });
@@ -570,25 +576,25 @@ function renderSalesLog(groupsToDisplay) {
             : `<span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">Pendente</span>`;
 
         return `
-            <tr class="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] border-b border-gray-100 dark:border-gray-800 transition-colors">
-                <td class="p-4 text-gray-900 dark:text-white font-medium">${namesList}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${emailsList}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${phonesList}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${agesList}</td>
+            <tr class="hover:bg-gray-50 dark:hover:bg-[#2a2a2a] border-b border-gray-100 dark:border-gray-800 transition-colors group">
+                <td class="p-4 text-gray-900 dark:text-white font-bold">${namesList}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${emailsList}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${phonesList}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${agesList}</td>
                 <td class="p-4 text-gray-900 dark:text-white font-medium">${productName}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${mainSale.userPrograma || 'N/A'}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${mainSale.userGraduacao || 'N/A'}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userPrograma || 'N/A'}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userGraduacao || 'N/A'}</td>
                 <td class="p-4 text-gray-900 dark:text-white font-bold">${amount}</td>
                 <td class="p-4">${status}</td>
                 <td class="p-4">${emailSentStatusHtml}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${date}</td>
+                <td class="p-4 text-gray-400 dark:text-gray-500 text-[10px] font-medium">${date}</td>
                 <td class="p-4 text-center">
-                    <button class="update-status-btn bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-blue-100 dark:border-transparent" 
+                    <button class="update-status-btn bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-blue-100 dark:border-transparent flex items-center justify-center gap-2 mx-auto" 
                         data-ids="${group.map(s => s.id).join(',')}" 
                         data-name="${mainSale.userName}" 
                         data-product="${productName}"
                         data-status="${mainSale.paymentStatus}">
-                        <i class="fas fa-eye mr-1"></i>Ver
+                        <i class="fas fa-eye text-[10px]"></i> Ver
                     </button>
                 </td>
             </tr>
@@ -680,21 +686,21 @@ const renderStatusTag = (status) => {
     if (!status) return 'N/A';
     
     let statusText = 'Pendente';
-    let colorClasses = 'bg-yellow-500/20 text-yellow-400';
+    let colorClasses = 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-100 dark:border-yellow-500/20';
     
     if (status === 'paid') {
         statusText = 'Pago';
-        colorClasses = 'bg-green-500/20 text-green-400';
+        colorClasses = 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-500 border border-green-100 dark:border-green-500/20';
     } else if (status === 'canceled') {
         statusText = 'Cancelado';
-        colorClasses = 'bg-red-500/20 text-red-400';
+        colorClasses = 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-500/20';
     } else if (status === 'pending') {
         statusText = 'Pendente';
-        colorClasses = 'bg-yellow-500/20 text-yellow-400';
+        colorClasses = 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-100 dark:border-yellow-500/20';
     } else {
         statusText = status.charAt(0).toUpperCase() + status.slice(1);
     }
 
-    return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
+    return `<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${colorClasses}">${statusText}</span>`;
 };
 

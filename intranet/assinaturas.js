@@ -41,7 +41,7 @@ export async function setupAssinaturasPage() {
         emptyState.classList.add('hidden');
         subscriptions.forEach(sub => {
             const tr = document.createElement('tr');
-            tr.className = 'table-row-hover transition-colors cursor-pointer group';
+            tr.className = 'border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group';
             tr.setAttribute('data-id', sub.idx);
             
             // Status Badge Logic
@@ -67,27 +67,31 @@ export async function setupAssinaturasPage() {
             const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             tr.innerHTML = `
-                <td class="p-4">
-                    <div class="font-medium text-white group-hover:text-blue-400 transition-colors">${sub.userName}</div>
-                    <div class="text-xs text-gray-500">${sub.userEmail} &bull; ${sub.userUnit || 'Não informada'}</div>
+                <td class="p-6">
+                    <div class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${sub.userName}</div>
+                    <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                        <span class="truncate max-w-[150px]">${sub.userEmail}</span>
+                        <span class="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
+                        <span class="font-medium text-gray-600 dark:text-gray-400">${sub.userUnit || 'Unidade Geral'}</span>
+                    </div>
                 </td>
-                <td class="p-4">
-                    <span class="inline-flex items-center gap-1.5 py-1 px-2 rounded-md bg-gray-700/50 text-gray-300 font-medium">
+                <td class="p-6">
+                    <span class="inline-flex items-center py-1 px-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">
                         ${sub.productName}
                     </span>
                 </td>
-                <td class="p-4 font-medium text-yellow-400">${priceFmt}</td>
-                <td class="p-4 text-center">
+                <td class="p-6 font-bold text-emerald-600 dark:text-emerald-400">${priceFmt}</td>
+                <td class="p-6 text-center">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
                 </td>
-                <td class="p-4 text-gray-400">${dateStr}</td>
-                <td class="p-4 text-center">
-                    <div class="flex items-center justify-center gap-1">
-                        <button class="sync-sub-btn p-2 text-gray-400 hover:text-blue-400 transition-colors" data-id="${sub.idx}" title="Sincronizar Status">
-                            <i class="fas fa-sync-alt"></i>
+                <td class="p-6 text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</td>
+                <td class="p-6 text-center">
+                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="sync-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-all shadow-sm" data-id="${sub.idx}" title="Sincronizar">
+                            <i class="fas fa-sync-alt text-sm"></i>
                         </button>
-                        <button class="view-sub-btn p-2 text-gray-400 hover:text-white transition-colors" data-id="${sub.idx}" title="Ver Detalhes">
-                            <i class="fas fa-eye"></i>
+                        <button class="view-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm" data-id="${sub.idx}" title="Detalhes">
+                            <i class="fas fa-eye text-sm"></i>
                         </button>
                     </div>
                 </td>
@@ -129,52 +133,67 @@ export async function setupAssinaturasPage() {
 
         const dateObj = new Date(sub.created._seconds * 1000);
         const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-        const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-        subModalContent.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });        subModalContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <!-- Info Section -->
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Informações do Aluno</h3>
-                        <p class="text-lg font-bold text-white">${sub.userName}</p>
-                        <p class="text-sm text-gray-400">${sub.userEmail}</p>
-                        <p class="text-sm text-gray-400">Unidade: ${sub.userUnit || 'Não informada'}</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Informações do Aluno</h3>
+                        <div class="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <p class="text-lg font-bold text-gray-900 dark:text-white">${sub.userName}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sub.userEmail}</p>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-lg uppercase border border-blue-100 dark:border-blue-500/20">
+                                    ${sub.userUnit || 'Geral'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Plano / Produto</h3>
-                        <p class="text-lg font-bold text-blue-400">${sub.productName}</p>
-                        <p class="text-xs text-gray-500">ID da Venda: #sub_${sub.idx}</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Plano / Produto</h3>
+                        <div class="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-500/10">
+                            <p class="text-lg font-bold text-blue-700 dark:text-blue-400">${sub.productName}</p>
+                            <p class="text-[10px] font-bold text-blue-500 dark:text-blue-500/70 mt-1 uppercase tracking-tighter">ID: #sub_${sub.idx}</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Status Section -->
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status da Assinatura</h3>
-                        <span class="status-badge ${statusClass} text-sm">${statusLabel}</span>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Status da Assinatura</h3>
+                        <div class="flex">
+                            <span class="status-badge ${statusClass} py-1.5 px-4 text-xs font-bold">${statusLabel}</span>
+                        </div>
                     </div>
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Valor Recorrente</h3>
-                        <p class="text-2xl font-bold text-yellow-400">${priceFmt}</p>
-                        <p class="text-xs text-gray-500">Cobrança mensal automatizada</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Valor Recorrente</h3>
+                        <div class="flex flex-col">
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white tracking-tighter">${priceFmt}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Cobrança mensal automatizada</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="pt-6 border-t border-[#333]">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-4 text-sm text-gray-400">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-blue-500"></i>
-                        <span>Início em: <strong>${dateStr}</strong></span>
+            <div class="pt-8 border-t border-gray-50 dark:border-gray-800/50">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-6 text-sm">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-blue-500">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span>Início em: <strong class="text-gray-900 dark:text-white font-semibold">${dateStr}</strong></span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-credit-card text-emerald-500"></i>
-                        <span>Gateway: <strong>Mercado Pago</strong></span>
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-emerald-500">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <span>Gateway: <strong class="text-gray-900 dark:text-white font-semibold">Mercado Pago</strong></span>
                     </div>
                 </div>
             </div>
         `;
+    `;
 
         // Show/Hide Cancel Button
         if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
