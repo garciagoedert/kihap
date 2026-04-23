@@ -30,7 +30,7 @@ export async function loadProducts() {
                 <img src="${product.imageUrl || 'https://via.placeholder.com/300x180.png?text=Sem+Imagem'}" alt="${product.name}" class="product-card-img">
                 <div class="product-card-content">
                     <h3 class="text-xl font-bold text-white">${product.name}</h3>
-                    <p class="text-gray-400 mt-2">${product.description || ''}</p>
+                    <p class="text-gray-500 dark:text-gray-400 mt-2">${product.description || ''}</p>
                     <div class="mt-4 flex justify-between items-center">
                         <span class="text-lg font-semibold text-yellow-500">${price}</span>
                         <button class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">

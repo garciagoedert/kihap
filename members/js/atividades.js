@@ -81,8 +81,8 @@ function displayActivities(activities, container) {
 
         activityElement.innerHTML = `
             <h3 class="text-lg font-bold text-white mb-2">${name}</h3>
-            <p class="text-sm text-gray-400"><strong>Instrutor:</strong> ${instructor}</p>
-            <p class="text-sm text-gray-300 font-semibold">${time}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400"><strong>Instrutor:</strong> ${instructor}</p>
+            <p class="text-sm text-gray-700 dark:text-gray-300 font-semibold">${time}</p>
             <p class="text-xs text-gray-500 mt-1"><strong>Vagas:</strong> ${spotsAvailable} / ${spotsTotal}</p>
         `;
         activitiesList.appendChild(activityElement);

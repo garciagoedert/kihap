@@ -14,7 +14,7 @@ export function loadStudentTatameContent() {
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
-                    articlesList.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum conteúdo encontrado.</p>';
+                    articlesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 col-span-full">Nenhum conteúdo encontrado.</p>';
                     return;
                 }
 
@@ -48,7 +48,7 @@ function createArticleCard(article, articleId) {
                 <h3 class="text-xl font-bold text-gray-100">${article.title}</h3>
             </div>
             <div class="article-card-content mb-4">
-                <p class="text-gray-400 text-sm">${contentText}</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">${contentText}</p>
             </div>
         </div>
         <div>

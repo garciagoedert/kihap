@@ -134,7 +134,7 @@ function updateNotificationIndicator(element, count) {
     if (count > 0) {
         if (!indicator) {
             indicator = document.createElement('span');
-            indicator.className = 'notification-indicator absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-[#1a1a1a] shadow-sm';
+            indicator.className = 'notification-indicator absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white dark:border-[#1a1a1a] shadow-sm';
             element.classList.add('relative');
             element.appendChild(indicator);
         }
@@ -184,24 +184,41 @@ async function loadComponents(pageSpecificSetup) {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // Configurações de Cache
+    const CACHE_VERSION = '1.0.4'; // Incremente para forçar atualização
+    const getCached = (key) => {
+        const item = sessionStorage.getItem(`kihap_comp_${key}`);
+        if (item) {
+            const parsed = JSON.parse(item);
+            if (parsed.version === CACHE_VERSION) return parsed.html;
+        }
+        return null;
+    };
+    const setCached = (key, html) => {
+        sessionStorage.setItem(`kihap_comp_${key}`, JSON.stringify({ version: CACHE_VERSION, html }));
+    };
 
     try {
-        const [headerRes, sidebarRes, bottomNavRes] = await Promise.all([
-            fetch(`header.html?v=${new Date().getTime()}`),
-            fetch(`sidebar.html?v=${new Date().getTime()}`),
-            fetch(`bottom-nav.html?v=${new Date().getTime()}`)
-        ]);
+        // Carregamento Otimizado (Cache-first)
+        const loadComp = async (id, file, container, className) => {
+            if (!container) return;
+            let html = getCached(id);
+            if (!html) {
+                const res = await fetch(`${file}?v=${CACHE_VERSION}`);
+                if (res.ok) {
+                    html = await res.text();
+                    setCached(id, html);
+                }
+            }
+            if (html) {
+                container.innerHTML = html;
+                if (className) container.className = className;
+            }
+        };
 
-        if (!headerRes.ok || !sidebarRes.ok || !bottomNavRes.ok) {
-            throw new Error('Failed to fetch components');
-        }
-
-        if (headerContainer) {
-            headerContainer.innerHTML = await headerRes.text();
-            headerContainer.className = 'w-full bg-[#1a1a1a]';
-            headerContainer.style.cssText = 'position: sticky; top: 0; z-index: 40;';
-        }
-        if (sidebarContainer) sidebarContainer.innerHTML = await sidebarRes.text();
+        const headerPromise = loadComp('header', 'header.html', headerContainer, 'sticky top-0 z-40 w-full bg-white dark:bg-[#1a1a1a] shadow-sm');
+        const sidebarPromise = loadComp('sidebar', 'sidebar.html', sidebarContainer);
 
         // Inject Bottom Nav dynamically if not present
         let bottomNavContainer = document.getElementById('bottom-nav-container');
@@ -210,7 +227,9 @@ async function loadComponents(pageSpecificSetup) {
             bottomNavContainer.id = 'bottom-nav-container';
             document.body.appendChild(bottomNavContainer);
         }
-        bottomNavContainer.innerHTML = await bottomNavRes.text();
+        const bottomNavPromise = loadComp('bottomnav', 'bottom-nav.html', bottomNavContainer);
+
+        await Promise.all([headerPromise, sidebarPromise, bottomNavPromise]);
 
         // Set active link in sidebar
         if (sidebarContainer) {
@@ -218,7 +237,7 @@ async function loadComponents(pageSpecificSetup) {
             sidebarLinks.forEach(link => {
                 const linkPage = link.getAttribute('href').split('/').pop();
                 if (linkPage === currentPage) {
-                    link.classList.remove('text-gray-300', 'font-medium');
+                    link.classList.remove('text-gray-700', 'dark:text-gray-300', 'font-medium');
                     link.classList.add('text-yellow-500', 'font-bold', 'bg-white/5');
                 }
             });

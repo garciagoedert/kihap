@@ -148,7 +148,7 @@ async function renderAvailablePlans(unitId, studentId) {
         grid.innerHTML = '';
 
         if (plans.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8 bg-[#111] rounded-lg border border-gray-800">Nenhum plano disponível no momento para sua unidade. Entre em contato com a recepção.</div>';
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 dark:text-gray-400 py-8 bg-gray-50 dark:bg-[#111] rounded-lg border border-gray-200 dark:border-gray-800">Nenhum plano disponível no momento para sua unidade. Entre em contato com a recepção.</div>';
             return;
         }
 
@@ -157,15 +157,15 @@ async function renderAvailablePlans(unitId, studentId) {
             const freq = plan.frequency === 1 ? '/ mês' : `/ a cada ${plan.frequency} meses`;
 
             const card = document.createElement('div');
-            card.className = 'bg-[#1a1a1a] border border-gray-800 hover:border-yellow-500 rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.15)] flex flex-col items-center text-center';
+            card.className = 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:border-yellow-500 rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.15)] flex flex-col items-center text-center';
             card.innerHTML = `
-                <div class="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded mb-4 uppercase tracking-wider font-semibold">Plano de Mensalidade</div>
-                <h4 class="text-xl font-bold text-white mb-2">${plan.name}</h4>
+                <div class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs px-2 py-1 rounded mb-4 uppercase tracking-wider font-semibold">Plano de Mensalidade</div>
+                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">${plan.name}</h4>
                 <div class="mb-6 mt-2">
                     <span class="text-3xl font-black text-yellow-500">${valorReais}</span>
                     <span class="text-gray-500 text-sm ml-1">${freq}</span>
                 </div>
-                <ul class="text-gray-400 text-sm mb-8 space-y-2 text-left w-full">
+                <ul class="text-gray-500 dark:text-gray-400 text-sm mb-8 space-y-2 text-left w-full">
                     <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Acesso aos treinos regulares</li>
                     <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Cobrança automática no cartão</li>
                     <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Sem burocracia para cancelar</li>

@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -44,7 +54,7 @@
     </style>
 </head>
 
-<body class="bg-[#111111] text-gray-200 h-screen">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 h-screen">
     <div id="sidebar-container"></div>
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
@@ -53,7 +63,7 @@
 
         <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
             <div class="flex items-center mb-6">
-                <a href="alunos.html" class="text-gray-400 hover:text-white mr-4">
+                <a href="alunos.html" class="text-gray-500 hover:text-primary mr-4 transition-colors">
                     <i class="fas fa-arrow-left"></i> Voltar para Alunos
                 </a>
                 <h1 id="student-name-header" class="text-2xl font-bold">Carregando...</h1>
@@ -62,17 +72,17 @@
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Coluna Esquerda: Perfil -->
                 <aside class="lg:w-1/3 xl:w-1/4 space-y-6">
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg text-center">
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg text-center">
                         <img id="student-photo" src="default-profile.svg" alt="Foto do Aluno"
                             class="w-32 h-32 rounded-full object-cover border-4 border-gray-600 mx-auto mb-4">
-                        <h2 id="student-name-sidebar" class="text-xl font-bold text-white">Carregando...</h2>
+                        <h2 id="student-name-sidebar" class="text-xl font-bold text-gray-900 dark:text-white">Carregando...</h2>
                         <p id="student-email" class="text-sm text-gray-400">...</p>
                         <div id="student-status-badge"
                             class="mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full">
                             ...
                         </div>
                     </div>
-                    <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg">
+                    <div class="bg-white dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
                         <button id="invite-btn"
                             class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2">
                             <i class="fas fa-envelope mr-2"></i>Convidar Aluno
@@ -91,28 +101,28 @@
 
                 <!-- Coluna Direita: Abas de Conteúdo -->
                 <div class="lg:w-2/3 xl:w-3/4">
-                    <div class="bg-[#1a1a1a] rounded-lg shadow-lg">
+                    <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
                         <!-- Navegação das Abas -->
-                        <div class="border-b border-gray-700 px-6">
+                        <div class="border-b border-gray-200 dark:border-gray-700 px-6">
                             <nav class="flex space-x-4" aria-label="Tabs">
                                 <button id="tab-details"
-                                    class="tab-btn text-yellow-500 border-b-2 border-yellow-500 px-3 py-2 font-medium text-sm">
+                                    class="tab-btn text-primary border-b-2 border-primary px-3 py-2 font-semibold text-sm">
                                     Detalhes
                                 </button>
                                 <button id="tab-permissions"
-                                    class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
                                     Permissões
                                 </button>
                                 <button id="tab-physical-test"
-                                    class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
                                     Teste Físico
                                 </button>
                                 <button id="tab-badges"
-                                    class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
                                     Emblemas
                                 </button>
                                 <button id="tab-financial"
-                                    class="tab-btn text-gray-400 hover:text-white px-3 py-2 font-medium text-sm">
+                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
                                     Financeiro
                                 </button>
                             </nav>
@@ -122,7 +132,7 @@
                             <!-- Conteúdo da Aba: Detalhes -->
                             <div id="tab-content-details" class="tab-content space-y-4">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-semibold text-white">Dados do Aluno</h3>
+                                    <h3 class="text-gray-900 dark:text-white font-semibold">Dados do Aluno</h3>
                                     <button id="edit-details-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors">
                                         <i class="fas fa-edit mr-1"></i> Editar
                                     </button>
@@ -135,24 +145,24 @@
                             <!-- Conteúdo da Aba: Financeiro -->
                             <div id="tab-content-financial" class="tab-content hidden space-y-6">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                         <span class="text-gray-400 text-xs uppercase font-bold">Status da Assinatura</span>
-                                        <div id="fin-status" class="text-xl font-bold mt-1 text-gray-200">...</div>
+                                        <div id="fin-status" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
                                     </div>
-                                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                         <span class="text-gray-400 text-xs uppercase font-bold">Mensalidades Pagas</span>
-                                        <div id="fin-count" class="text-xl font-bold mt-1 text-gray-200">...</div>
+                                        <div id="fin-count" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
                                     </div>
-                                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                         <span class="text-gray-400 text-xs uppercase font-bold">Data de Início</span>
-                                        <div id="fin-start-date" class="text-xl font-bold mt-1 text-gray-200">...</div>
+                                        <div id="fin-start-date" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
                                     </div>
                                 </div>
 
-                                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                                <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                     <div class="flex justify-between items-center mb-4">
-                                        <h4 class="font-bold text-gray-200 flex items-center">
-                                            <i class="fas fa-credit-card mr-2 text-yellow-500"></i> Detalhes do Mercado Pago
+                                        <h4 class="font-bold text-gray-900 dark:text-gray-200 flex items-center">
+                                            <i class="fas fa-credit-card mr-2 text-primary"></i> Detalhes do Mercado Pago
                                         </h4>
                                         <button id="open-generate-link-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded transition-colors flex items-center">
                                             <i class="fas fa-link mr-1"></i> Gerar Link
@@ -176,14 +186,14 @@
                                     <div>
                                         <h4 class="font-bold text-gray-300 mb-2">Cursos</h4>
                                         <div id="courses-checklist"
-                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-800 rounded">
+                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-inner">
                                             <p class="text-gray-500">Carregando cursos...</p>
                                         </div>
                                     </div>
                                     <div>
                                         <h4 class="font-bold text-gray-300 mb-2">Tatame</h4>
                                         <div id="tatame-checklist"
-                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-800 rounded">
+                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-inner">
                                             <p class="text-gray-500">Carregando conteúdos...</p>
                                         </div>
                                     </div>
@@ -313,7 +323,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">Tipo de Certificado / Faixa</label>
                     <select id="cert-belt"
-                        class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors appearance-none">
+                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-primary transition-colors appearance-none">
                         <option value="Branca Recomendada">Branca Recomendada</option>
                         <option value="Branca Decidida">Branca Decidida</option>
                         <option value="Laranja Recomendada">Laranja Recomendada</option>
@@ -388,46 +398,46 @@
                 <input type="hidden" name="idMember">
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Nome</label>
-                    <input type="text" name="firstName" required class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="firstName" required class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Sobrenome</label>
-                    <input type="text" name="lastName" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="lastName" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">E-mail</label>
-                    <input type="email" name="email" required class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="email" name="email" required class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Telefone</label>
-                    <input type="text" name="phone" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="phone" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">CPF</label>
-                    <input type="text" name="cpf" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="cpf" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Data de Nascimento</label>
-                    <input type="date" name="birthDate" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="date" name="birthDate" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Responsável</label>
-                    <input type="text" name="responsible" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="responsible" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Como conheceu</label>
-                    <input type="text" name="origin" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="origin" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Categoria de Graduação</label>
-                    <select name="rankType" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <select name="rankType" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                         <option value="Tradicional">Tradicional</option>
                         <option value="Littles">Littles</option>
                     </select>
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Faixa Atual</label>
-                    <select name="belt" id="edit-belt-select" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <select name="belt" id="edit-belt-select" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                         <option value="Branca Recomendada">Branca Recomendada</option>
                         <option value="Branca Decidida">Branca Decidida</option>
                         <option value="Laranja Recomendada">Laranja Recomendada</option>
@@ -467,7 +477,7 @@
                 </div>
                 <div class="space-y-1 md:col-span-2">
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Endereço</label>
-                    <input type="text" name="address" class="w-full bg-[#111] border border-gray-700 rounded-lg px-4 py-2.5 text-white outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" name="address" class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white outline-none focus:border-primary transition-colors">
                 </div>
 
                 <div class="md:col-span-2 flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-800">

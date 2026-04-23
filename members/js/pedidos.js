@@ -74,24 +74,24 @@ document.addEventListener('DOMContentLoaded', () => {
             let statusMarkup = '';
             
             if (order.paymentStatus === 'paid') {
-                statusMarkup = `<span class="px-3 py-1 bg-green-900/50 text-green-400 border border-green-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-check-circle mr-1"></i> Aprovado</span>`;
+                statusMarkup = `<span class="px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-check-circle mr-1"></i> Aprovado</span>`;
             } else if (order.paymentStatus === 'pending') {
-                statusMarkup = `<span class="px-3 py-1 bg-yellow-900/50 text-yellow-500 border border-yellow-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-clock mr-1"></i> Aguardando Pagamento</span>`;
+                statusMarkup = `<span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-500 border border-yellow-200 dark:border-yellow-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-clock mr-1"></i> Aguardando Pagamento</span>`;
             } else if (order.paymentStatus === 'canceled' || order.paymentStatus === 'failed') {
-                statusMarkup = `<span class="px-3 py-1 bg-red-900/50 text-red-400 border border-red-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-times-circle mr-1"></i> Cancelado</span>`;
+                statusMarkup = `<span class="px-3 py-1 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700/50 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fas fa-times-circle mr-1"></i> Cancelado</span>`;
             } else {
-                statusMarkup = `<span class="px-3 py-1 bg-gray-700 text-gray-300 rounded-full text-xs font-bold uppercase tracking-wider">${order.paymentStatus || 'Desconhecido'}</span>`;
+                statusMarkup = `<span class="px-3 py-1 bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold uppercase tracking-wider">${order.paymentStatus || 'Desconhecido'}</span>`;
             }
 
             const itemCard = document.createElement('div');
-            itemCard.className = `bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300`;
+            itemCard.className = `bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300`;
             
             itemCard.innerHTML = `
                 <div class="p-6 md:p-8">
-                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-gray-700 pb-4">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
                         <div>
-                            <span class="text-xs text-gray-400 font-mono tracking-widest uppercase block mb-1">ID do Pedido: ${order.id.slice(-8)}</span>
-                            <span class="text-sm text-gray-400 block"><i class="far fa-calendar-alt mr-2"></i>${formatDate(order.created)}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-widest uppercase block mb-1">ID do Pedido: ${order.id.slice(-8)}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400 block"><i class="far fa-calendar-alt mr-2"></i>${formatDate(order.created)}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             ${statusMarkup}
@@ -100,22 +100,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     <div class="flex flex-col md:flex-row items-center gap-6">
                         <div class="flex-grow w-full">
-                            <h3 class="text-xl font-bold text-white mb-2">${order.productName || 'Produto Kihap'}</h3>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">${order.productName || 'Produto Kihap'}</h3>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-gray-900/50 rounded-lg p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                                 <div>
                                     <span class="text-xs text-gray-500 block uppercase tracking-wider">Aluno(a)</span>
-                                    <span class="text-sm font-medium text-gray-300">${order.userName || 'N/A'}</span>
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">${order.userName || 'N/A'}</span>
                                 </div>
                                 <div>
                                     <span class="text-xs text-gray-500 block uppercase tracking-wider">Unidade</span>
-                                    <span class="text-sm font-medium text-gray-300">${order.userUnit || 'N/A'}</span>
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">${order.userUnit || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="flex flex-col items-end md:items-center md:pl-8 md:border-l border-gray-700 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0">
-                            <span class="text-sm text-gray-400 mb-1">Valor Total</span>
+                        <div class="flex flex-col items-end md:items-center md:pl-8 md:border-l border-gray-100 dark:border-gray-700 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0">
+                            <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">Valor Total</span>
                             <span class="text-3xl font-black text-yellow-500">${formatCurrency(order.amountTotal)}</span>
                         </div>
                     </div>

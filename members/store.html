@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -17,6 +17,11 @@
     <title>Kihap - Loja</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class"
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../intranet/theme.css">
@@ -28,8 +33,17 @@
         .product-card:hover .product-card-img { transform: scale(1.05); }
         .product-card-content { padding: 1rem; }
     </style>
+
+    <script>
+        // Default to light mode unless explicitly set to dark
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>

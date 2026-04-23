@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-br" class="dark">
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -26,7 +36,7 @@
         }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
@@ -34,20 +44,20 @@
         <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-2xl font-bold">Controle de Estoque</h1>
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 shadow-sm flex-grow flex flex-col transition-all duration-300">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Controle de Estoque</h1>
                         <div class="flex items-center gap-2">
                             <input type="text" id="search-input" placeholder="Buscar por produto..." class="w-full sm:w-auto bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <select id="unit-filter" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filtrar por Unidade">
                                 <option value="geral">Visão Geral</option>
                                 <!-- As unidades serão carregadas aqui -->
                             </select>
-                            <button id="refresh-stock" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-2 rounded" aria-label="Atualizar Estoque">
+                            <button id="refresh-stock" class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200" aria-label="Atualizar Estoque">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
-                            <button id="add-product" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                            <button id="add-product" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg shadow-lg shadow-yellow-900/10 transition-all duration-200">
                                 Adicionar Produto
                             </button>
                         </div>
@@ -55,12 +65,12 @@
                     <div class="overflow-x-auto">
                         <table class="table w-full text-left">
                             <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="p-4">Produto</th>
-                                    <th class="p-4">Unidade</th>
-                                    <th class="p-4">Preço</th>
-                                    <th class="p-4">Quantidade</th>
-                                    <th class="p-4">Status</th>
+                                <tr class="border-b border-gray-100 dark:border-gray-800/50">
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Produto</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Preço</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Quantidade</th>
+                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="stock-table-body">

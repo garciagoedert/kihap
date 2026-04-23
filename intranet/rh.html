@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -90,18 +100,30 @@
             #drawflow {
                 width: 100%;
                 height: 100%;
-                background: #1a1a1a;
+                background: #f9fafb;
                 background-size: 25px 25px;
+                background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+            }
+
+            .dark #drawflow {
+                background: #1a1a1a;
                 background-image: linear-gradient(to right, #2a2a2a 1px, transparent 1px), linear-gradient(to bottom, #2a2a2a 1px, transparent 1px);
             }
 
             .drawflow .drawflow-node {
-                background: #2a2a2a;
-                border: 1px solid #4a4a4a;
-                color: white;
+                background: white;
+                border: 1px solid #e5e7eb;
+                color: #111827;
                 min-width: 250px;
                 padding: 0;
                 border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }
+
+            .dark .drawflow .drawflow-node {
+                background: #2a2a2a;
+                border: 1px solid #4a4a4a;
+                color: white;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             }
 
@@ -131,7 +153,7 @@
     </style>
 </head>
 
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
 
     <div id="kanban-container" class="flex h-screen">
         <div id="sidebar-container"></div>
@@ -154,15 +176,15 @@
                     <div class="relative flex-grow">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
-                            class="w-full bg-[#1a1a1a] text-gray-200 border border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-md">
+                            class="w-full bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm dark:shadow-md transition-all">
                     </div>
                     <button id="openFiltersBtn"
-                        class="bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-700 flex items-center gap-2 transition-all shrink-0">
                         <i class="fas fa-filter text-yellow-500"></i> <span class="hidden sm:inline">Filtros</span>
                     </button>
 
                     <button id="openFlowEditorBtn" onclick="openVisualEditor()" style="display: none !important;"
-                        class="hidden bg-[#1a1a1a] hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-700 flex items-center gap-2 transition-all shrink-0">
+                        class="hidden bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-700 flex items-center gap-2 transition-all shrink-0">
                         <i class="fas fa-project-diagram text-blue-500"></i> <span class="hidden sm:inline">Editor de
                             Fluxo</span>
                     </button>
@@ -180,7 +202,7 @@
     <!-- Configuration Modal -->
     <div id="configModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
         <div
-            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
+            class="bg-white dark:bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-800">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
                 <h2 class="text-xl font-bold">Configuração do Bot WhatsApp</h2>
                 <button id="closeConfigModalBtn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -207,13 +229,13 @@
                 <div class="form-group">
                     <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Solicitação de Nome</label>
                     <textarea id="cfg_ask_name" rows="2"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors"></textarea>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Boas Vindas
                         (Matrícula)</label>
                     <textarea id="cfg_welcome_new_student" rows="3"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors"
                         placeholder="Mensagem enviada após confirmação de pagamento da matrícula..."></textarea>
                 </div>
 
@@ -222,26 +244,26 @@
                         <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
                             (Brasília)</label>
                         <input type="text" id="cfg_id_brasilia"
-                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
                             (Floripa)</label>
                         <input type="text" id="cfg_id_floripa"
-                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-400 mb-1">ID Produto Matrícula
                             (Dourados)</label>
                         <input type="text" id="cfg_id_dourados"
-                            class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors">
                     </div>
                 </div>
 
                 <div class="form-group mb-4">
                     <label class="block text-sm font-medium text-gray-400 mb-1">Mensagem de Atendimento Humano</label>
                     <textarea id="cfg_human_handoff" rows="2"
-                        class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:border-primary transition-colors"
                         placeholder="Mensagem enviada quando solicitam humano..."></textarea>
                 </div>
 
@@ -335,7 +357,7 @@
     <!-- Add/Edit Prospect Modal -->
     <div id="formModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center sm:p-4">
         <div
-            class="bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col">
+            class="bg-white dark:bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-800">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 gap-4">
                 <div class="flex items-center gap-4">
                     <h2 id="modalTitle" class="text-xl font-bold">Adicionar Novo Candidato</h2>
@@ -363,14 +385,14 @@
                             <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome
                                 Completo</label>
                             <input type="text" id="responsavel"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <div class="form-group">
                             <label for="prioridade"
                                 class="block text-sm font-medium text-gray-300 mb-1">Prioridade</label>
                             <select id="prioridade"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                                 <option value="3">3 - Média</option>
                                 <option value="5">5 - Máxima 🚀</option>
                                 <option value="4">4 - Alta 🔥</option>
@@ -383,7 +405,7 @@
                             <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone /
                                 WhatsApp</label>
                             <input type="text" id="telefone"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                             <a id="whatsappLink" href="#" target="_blank"
                                 class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
                                 <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
@@ -393,21 +415,21 @@
                         <div class="form-group">
                             <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
                             <input type="email" id="email"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <div class="form-group">
                             <label for="dataNascimento" class="block text-sm font-medium text-gray-300 mb-1">Data
                                 Nascimento</label>
                             <input type="date" id="dataNascimento"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-300">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white text-gray-300">
                         </div>
 
                         <div class="form-group">
                             <label for="endereco"
                                 class="block text-sm font-medium text-gray-300 mb-1">Cidade/Bairro</label>
                             <input type="text" id="endereco"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <!-- Vaga e Disponibilidade -->
@@ -419,14 +441,14 @@
                             <label for="vaga" class="block text-sm font-medium text-gray-300 mb-1">Vaga
                                 Pretendida</label>
                             <input type="text" id="vaga"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <div class="form-group">
                             <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade
                                 (CRM)</label>
                             <select id="unidade"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                                 <option value="">Selecione a Unidade</option>
                             </select>
                         </div>
@@ -435,13 +457,13 @@
                             <label for="disponibilidade"
                                 class="block text-sm font-medium text-gray-300 mb-1">Disponibilidade</label>
                             <input type="text" id="disponibilidade"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <div class="form-group">
                             <label for="inicio" class="block text-sm font-medium text-gray-300 mb-1">Início</label>
                             <input type="text" id="inicio"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                         </div>
 
                         <!-- Experiência -->
@@ -640,7 +662,7 @@
                     <div class="form-group">
                         <label class="block text-sm font-medium text-gray-400 mb-1">Prioridade</label>
                         <select id="priorityFilter"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
                             <option value="">Todas</option>
                             <option value="5">Máxima (5)</option>
                             <option value="4">Alta (4)</option>
@@ -1010,39 +1032,39 @@
             kanbanBoard.innerHTML = '';
             const isMobile = window.innerWidth < 768;
 
-            COLUMN_NAMES.forEach(status => {
-                const columnId = COLUMNS[status];
-                const columnProspects = filteredProspects.filter(p => p.status === status);
+                COLUMN_NAMES.forEach(status => {
+                    const columnId = COLUMNS[status];
+                    const columnProspects = filteredProspects.filter(p => p.status === status);
 
-                const columnEl = document.createElement('div');
+                    const columnEl = document.createElement('div');
 
-                let contentHTML;
-                if (isMobile) {
-                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col';
-                    contentHTML = `
-                        <div class="overflow-x-auto pb-3">
-                            <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-3 p-2 min-h-[120px] pr-2">
-                                <!-- Cards will be injected here -->
+                    let contentHTML;
+                    if (isMobile) {
+                        columnEl.className = 'bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col border border-gray-100 dark:border-gray-800/50 backdrop-blur-xl transition-all duration-300';
+                        contentHTML = `
+                            <div class="overflow-x-auto pb-3">
+                                <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-4 p-4 min-h-[120px]">
+                                    <!-- Cards will be injected here -->
+                                </div>
                             </div>
-                        </div>
-                    `;
-                } else {
-                    columnEl.className = 'bg-[#1a1a1a] rounded-lg flex flex-col overflow-hidden';
-                    contentHTML = `
-                        <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-2 space-y-3 rounded-md overflow-y-auto">
-                           <!-- Cards will be injected here -->
-                        </div>
-                    `;
-                }
+                        `;
+                    } else {
+                        columnEl.className = 'bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-800/50 backdrop-blur-xl transition-all duration-300';
+                        contentHTML = `
+                            <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-4 space-y-4 rounded-md overflow-y-auto custom-scrollbar">
+                               <!-- Cards will be injected here -->
+                            </div>
+                        `;
+                    }
 
-                columnEl.innerHTML = `
-                    <div class="flex justify-between items-center p-3 flex-shrink-0">
-                        <h3 class="font-bold">${status}</h3>
-                        <span class="bg-gray-700 text-gray-300 text-xs font-semibold px-2 py-1 rounded-full">${columnProspects.length}</span>
-                    </div>
-                    ${contentHTML}
-                `;
-                kanbanBoard.appendChild(columnEl);
+                    columnEl.innerHTML = `
+                        <div class="flex justify-between items-center p-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-800/50">
+                            <h3 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-[11px]">${status}</h3>
+                            <span class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-700">${columnProspects.length}</span>
+                        </div>
+                        ${contentHTML}
+                    `;
+                    kanbanBoard.appendChild(columnEl);
 
                 const contentArea = columnEl.querySelector('.column-content');
                 if (columnProspects.length === 0) {
@@ -1072,30 +1094,30 @@
         function createProspectCard(prospect, isMobile = false) {
             const card = document.createElement('div');
             const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
-            card.className = `prospect-card bg-[#111111] p-3 rounded-lg shadow-md cursor-pointer border-l-4 transition-all duration-200 hover:shadow-xl hover:bg-gray-700 ${mobileClasses}`;
+            card.className = `prospect-card bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm hover:shadow-md cursor-pointer border-l-4 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 ${mobileClasses}`;
             card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
             card.draggable = true;
             card.dataset.id = prospect.id;
 
-            const sectorColor = getSectorColor(prospect.setor);
-
-            const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200">${tag}</span>`).join('');
+            const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 uppercase tracking-wider">${tag}</span>`).join('');
 
             card.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <h4 class="font-bold mb-2 flex-grow pr-2">${prospect.responsavel || 'Prospect sem nome'}</h4>
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-gray-900 dark:text-white leading-tight">${prospect.responsavel || 'Candidato sem nome'}</h4>
                 </div>
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
-                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">P${prospect.prioridade}</span>
-                    ${prospect.unread ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/50 animate-pulse">Novo</span>' : ''}
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">P${prospect.prioridade}</span>
+                    ${prospect.unread ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase tracking-wider">Novo</span>' : ''}
                 </div>
                 <div class="flex items-center gap-1 mb-3 flex-wrap">
                     ${tagsHTML}
                 </div>
-                ${prospect.unidade ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> ${prospect.unidade}</p>` : ''}
-                ${prospect.origemLead ? `<p class="text-xs text-gray-400 mb-2"><i class="fas fa-sign-in-alt mr-1"></i> ${prospect.origemLead}</p>` : ''}
-                <p class="text-sm text-green-400 font-semibold mb-2">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
-                ${prospect.createdBy ? `<p class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700"><i class="fas fa-user-plus mr-1"></i> ${prospect.createdBy}</p>` : ''}
+                ${prospect.unidade ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1"><i class="fas fa-map-marker-alt"></i> ${prospect.unidade}</p>` : ''}
+                ${prospect.vaga ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1"><i class="fas fa-briefcase"></i> ${prospect.vaga}</p>` : ''}
+                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <p class="text-sm text-emerald-600 dark:text-emerald-400 font-bold">${prospect.disponibilidade || 'N/A'}</p>
+                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-2">por ${prospect.createdBy.split('@')[0]}</span>` : ''}
+                </div>
             `;
 
             card.addEventListener('click', () => {

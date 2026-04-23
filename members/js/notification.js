@@ -30,7 +30,7 @@ async function showNotification(options) {
             <h4 class="font-bold text-gray-900 dark:text-white">${options.title}</h4>
             <p class="text-sm text-gray-600 dark:text-gray-300">${options.message}</p>
         </div>
-        <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">&times;</button>
+        <button class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-800 dark:text-gray-200">&times;</button>
     `;
 
     if (options.onClickUrl) {

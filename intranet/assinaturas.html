@@ -1,7 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -44,7 +54,7 @@
         .status-pending { background-color: rgba(156, 163, 175, 0.2); color: #9ca3af; }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div id="alertModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50">
         <div class="bg-gray-800 p-6 rounded-lg w-96">
             <h2 id="alertTitle" class="text-xl font-bold mb-4">Aviso</h2>

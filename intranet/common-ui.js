@@ -23,27 +23,31 @@ function setupUIListeners(handlers = {}) {
         const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
         const backdrop = document.getElementById('sidebar-backdrop');
 
-        if (sidebar && mainContent && sidebarCloseBtn && backdrop) {
+        if (sidebar && mainContent && backdrop) {
             const toggleSidebar = () => {
-                const isHidden = sidebar.classList.contains('-translate-x-full');
-                if (isHidden) {
-                    sidebar.classList.remove('-translate-x-full');
-                    backdrop.classList.remove('hidden');
-                    // A classe md:ml-64 é gerenciada pelo Tailwind, não precisa de JS
-                } else {
-                    sidebar.classList.add('-translate-x-full');
-                    backdrop.classList.add('hidden');
-                    // A classe md:ml-64 é gerenciada pelo Tailwind, não precisa de JS
+                // Toggle apenas para mobile
+                if (window.innerWidth < 768) {
+                    const isHidden = sidebar.classList.contains('-translate-x-full');
+                    if (isHidden) {
+                        sidebar.classList.remove('-translate-x-full');
+                        sidebar.classList.add('translate-x-0');
+                        backdrop.classList.remove('hidden');
+                    } else {
+                        sidebar.classList.add('-translate-x-full');
+                        sidebar.classList.remove('translate-x-0');
+                        backdrop.classList.add('hidden');
+                    }
                 }
             };
             menuToggle.addEventListener('click', toggleSidebar);
-            sidebarCloseBtn.addEventListener('click', toggleSidebar);
+            if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
             backdrop.addEventListener('click', toggleSidebar);
 
-            // Garante que o layout se ajuste em redimensionamento
+            // Garante estado correto no resize
             window.addEventListener('resize', () => {
-                if (window.innerWidth < 768) {
-                    sidebar.classList.add('-translate-x-full');
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('md:translate-x-0');
                     backdrop.classList.add('hidden');
                 }
             });
@@ -379,18 +383,22 @@ async function applyWhitelabelSettings() {
     const settings = await loadWhitelabelSettings();
     const primaryColor = settings?.primaryColor || '#FFC107'; // Default to Tailwind's blue-600
 
-    // Apply header logo
+    // Apply header logo - REMOVED for clean UI (Logo is on Sidebar)
+    /*
     if (settings?.headerLogoUrl) {
         const headerLogo = document.querySelector('#header-container img');
         if (headerLogo) {
             headerLogo.src = settings.headerLogoUrl;
         }
     }
+    */
     // Apply sidebar logo
     if (settings?.sidebarLogoUrl) {
         const sidebarLogo = document.querySelector('#sidebar-container img');
         if (sidebarLogo) {
             sidebarLogo.src = settings.sidebarLogoUrl;
+            // Ensure inversion is applied if it's a white logo
+            sidebarLogo.classList.add('invert', 'dark:invert-0');
         }
     }
 
@@ -434,6 +442,20 @@ async function loadComponents(pageSpecificSetup) {
     const sidebarContainer = document.getElementById('sidebar-container');
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
+    // Configurações de Cache
+    const CACHE_VERSION = '1.0.6'; 
+    const getCached = (key) => {
+        const item = localStorage.getItem(`kihap_intranet_${key}`);
+        if (item) {
+            const parsed = JSON.parse(item);
+            if (parsed.version === CACHE_VERSION) return parsed.html;
+        }
+        return null;
+    };
+    const setCached = (key, html) => {
+        localStorage.setItem(`kihap_intranet_${key}`, JSON.stringify({ version: CACHE_VERSION, html }));
+    };
+
     // Lista de páginas que exigem acesso administrativo
     const adminPages = [
         'admin.html',
@@ -455,8 +477,63 @@ async function loadComponents(pageSpecificSetup) {
     const juridicoPages = ['juridico-trello.html', 'juridico-novademanda.html'];
 
     try {
-        const currentUserData = await getCurrentUser();
-        const userData = currentUserData || {};
+        const loadComp = async (id, file, container) => {
+            if (!container) return;
+            
+            // 1. Tentar carregar do cache IMEDIATAMENTE
+            let html = getCached(id);
+            if (html) {
+                container.innerHTML = html;
+            }
+
+            // 2. Sempre buscar a versão mais recente em background
+            try {
+                const res = await fetch(`${file}?v=${CACHE_VERSION}`);
+                if (res.ok) {
+                    const freshHtml = await res.text();
+                    // Só atualiza o DOM se o conteúdo for diferente para evitar re-renders desnecessários
+                    if (freshHtml !== html) {
+                        container.innerHTML = freshHtml;
+                        setCached(id, freshHtml);
+                    }
+                }
+            } catch (e) {
+                console.warn(`Erro ao buscar componente ${id}:`, e);
+            }
+        };
+
+        // Inicia o carregamento dos componentes IMEDIATAMENTE do cache/network
+        const componentsPromise = Promise.all([
+            loadComp('header', 'header.html', headerContainer),
+            loadComp('sidebar', 'sidebar.html', sidebarContainer)
+        ]);
+
+        // Aguarda os componentes serem injetados antes de prosseguir com ACL da sidebar
+        await componentsPromise;
+
+        // Garante que o container principal tenha a classe correta para o layout fixo
+        const mainEl = document.getElementById('main-content');
+        if (mainEl && window.innerWidth >= 768) {
+            mainEl.style.marginLeft = '0';
+            mainEl.style.width = '100%';
+        }
+
+        // Enquanto os componentes carregam (ou logo após), buscamos o usuário para ACL
+        // Usamos o cache do localStorage se disponível para rapidez total, depois validamos
+        const cachedUser = localStorage.getItem('currentUser');
+        let userData = cachedUser ? JSON.parse(cachedUser) : null;
+        
+        // Se não tem cache, busca do Firestore (mais lento)
+        if (!userData) {
+            const currentUserData = await getCurrentUser();
+            userData = currentUserData || {};
+        } else {
+            // Se tem cache, valida em background
+            getCurrentUser().then(fresh => {
+                if (fresh) localStorage.setItem('currentUser', JSON.stringify(fresh));
+            });
+        }
+
         const isAdmin = userData.isAdmin === true;
         const isJuridico = userData.isJuridico === true;
         const isStore = userData.isStore === true;
@@ -467,11 +544,8 @@ async function loadComponents(pageSpecificSetup) {
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {
-            // Permite acesso se for Admin OU se for Store acessando páginas de histórico/store
             const isStorePage = ['sales-history.html', 'store.html'].includes(currentPage);
-
             if (!isAdmin && !(isStore && isStorePage)) {
-                console.error(`[ACL] Acesso administrativo NEGADO para ${currentPage}.`);
                 window.location.href = 'index.html';
                 return;
             }
@@ -480,33 +554,21 @@ async function loadComponents(pageSpecificSetup) {
         // Se for uma página do Jurídico, valida acesso
         if (juridicoPages.includes(currentPage)) {
             if (!isAdmin && !isJuridico) {
-                console.error(`[ACL] Acesso jurídico NEGADO para ${currentPage}.`);
                 window.location.href = 'index.html';
                 return;
             }
         }
 
-        const [headerRes, sidebarRes] = await Promise.all([
-            fetch(`header.html?v=${new Date().getTime()}`),
-            fetch(`sidebar.html?v=${new Date().getTime()}`)
-        ]);
-
-        if (!headerRes.ok || !sidebarRes.ok) {
-            throw new Error('Failed to fetch components');
-        }
-
-        headerContainer.innerHTML = await headerRes.text();
-        sidebarContainer.innerHTML = await sidebarRes.text();
-
-        await applyWhitelabelSettings();
+        applyWhitelabelSettings(); // Non-blocking apply
 
         // Set active link in sidebar
         const sidebarLinks = sidebarContainer.querySelectorAll('nav a');
         sidebarLinks.forEach(link => {
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
-                link.classList.add('bg-primary-light');
-                link.classList.remove('bg-gray-700', 'hover:bg-gray-600', 'text-white');
+                link.classList.add('bg-primary');
+                link.classList.remove('bg-white', 'dark:bg-gray-700', 'hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-white', 'border-gray-200');
+                link.classList.add('text-black', 'border-transparent');
 
                 if (linkPage === 'index.html') {
                     const prospectActions = document.getElementById('prospect-actions');

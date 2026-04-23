@@ -11,7 +11,7 @@ export function loadStudentCourses() {
         if (user) {
             currentUser = user;
             const courseListContainer = document.getElementById('course-list');
-            courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Carregando cursos...</p>';
+            courseListContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 col-span-full">Carregando cursos...</p>';
 
             try {
                 // 1. Fetch user subscriptions
@@ -26,7 +26,7 @@ export function loadStudentCourses() {
                 courseListContainer.innerHTML = '';
 
                 if (querySnapshot.empty) {
-                    courseListContainer.innerHTML = '<p class="text-gray-400 col-span-full">Nenhum curso encontrado.</p>';
+                    courseListContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 col-span-full">Nenhum curso encontrado.</p>';
                     return;
                 }
 
@@ -49,7 +49,7 @@ export function loadStudentCourses() {
 
 function createCourseCard(course, courseId) {
     const card = document.createElement('div');
-    card.className = 'course-card bg-[#1a1a1a] rounded-lg overflow-hidden shadow-lg flex flex-col';
+    card.className = 'course-card bg-white dark:bg-[#1a1a1a] rounded-lg overflow-hidden shadow-lg flex flex-col';
     const thumbnailUrl = course.thumbnailURL || 'https://placehold.co/640x360.png?text=Curso';
 
     // Check access
@@ -104,8 +104,8 @@ function createCourseCard(course, courseId) {
         </div>
         <div class="p-4 flex-1 flex flex-col justify-between">
             <div>
-                <h3 class="text-xl font-bold font-title mb-1 text-white">${course.title}</h3>
-                <p class="text-sm text-gray-400 mb-4">Por ${course.author || 'Autor desconhecido'}</p>
+                <h3 class="text-xl font-bold font-title mb-1 text-gray-900 dark:text-white">${course.title}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Por ${course.author || 'Autor desconhecido'}</p>
             </div>
             <div class="mt-auto">
                 ${actionButton}

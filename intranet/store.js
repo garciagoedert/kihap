@@ -445,35 +445,35 @@ export async function setupStorePage() {
     };
 
     const renderFulfillmentStatusTag = (status) => {
-        let colorClass = 'bg-gray-800 text-gray-400';
+        let colorClass = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-transparent';
         let text = 'Pendente';
 
         switch (status) {
             case 'processing':
-                colorClass = 'bg-blue-900/50 text-blue-300';
+                colorClass = 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-transparent';
                 text = 'Em Preparação';
                 break;
             case 'shipped':
-                colorClass = 'bg-indigo-900/50 text-indigo-300';
+                colorClass = 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-transparent';
                 text = 'Enviado';
                 break;
             case 'delivered':
-                colorClass = 'bg-green-900/50 text-green-300';
+                colorClass = 'bg-green-50 dark:bg-green-900/50 text-green-600 dark:text-green-300 border border-green-100 dark:border-transparent';
                 text = 'Entregue';
                 break;
             case 'returned':
-                colorClass = 'bg-yellow-900/50 text-yellow-300';
+                colorClass = 'bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300 border border-yellow-100 dark:border-transparent';
                 text = 'Devolvido';
                 break;
             case 'canceled':
-                colorClass = 'bg-red-900/50 text-red-300';
+                colorClass = 'bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-300 border border-red-100 dark:border-transparent';
                 text = 'Cancelado';
                 break;
             default:
                 break;
         }
 
-        return `<span class="px-3 py-1 text-xs font-bold rounded-full ${colorClass}">${text}</span>`;
+        return `<span class="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${colorClass}">${text}</span>`;
     };
 
     const renderStatusTag = (status) => {
@@ -509,7 +509,7 @@ export async function setupStorePage() {
 
         salesToDisplay.forEach(sale => {
             const row = salesTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer');
+            row.classList.add('border-b', 'border-gray-100', 'dark:border-gray-800', 'hover:bg-gray-50', 'dark:hover:bg-gray-800/30', 'cursor-pointer', 'transition-colors');
             row.dataset.saleId = sale.id;
 
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
@@ -527,17 +527,19 @@ export async function setupStorePage() {
             }
 
             row.innerHTML = `
-                <td class="p-4" data-label="Nome do Cliente">${nameDisplay}</td>
-                <td class="p-4" data-label="Email">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4" data-label="Produto">${productDisplay}</td>
-                <td class="p-4" data-label="Valor">${amount}</td>
+                <td class="p-4" data-label="Nome do Cliente">
+                    <div class="text-gray-900 dark:text-white font-medium">${nameDisplay}</div>
+                </td>
+                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
+                <td class="p-4 text-gray-900 dark:text-white font-medium" data-label="Produto">${productDisplay}</td>
+                <td class="p-4 text-gray-900 dark:text-white font-bold" data-label="Valor">${amount}</td>
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
-                <td class="p-4" data-label="Data da Compra">${date}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs" data-label="Data da Compra">${date}</td>
                 <td class="p-4" data-label="Ações">
-                    <button class="update-status-btn bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs transition-colors" 
+                    <button class="update-status-btn bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-blue-100 dark:border-transparent" 
                         data-sale-id="${sale.id}">
-                        <i class="fas fa-edit mr-1"></i>Atualizar
+                        <i class="fas fa-eye mr-1"></i>Ver
                     </button>
                 </td>
             `;

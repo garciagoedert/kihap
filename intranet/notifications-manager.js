@@ -36,7 +36,7 @@ class NotificationsManager {
             notificationsRef,
             where('userId', '==', userId),
             orderBy('createdAt', 'desc'),
-            limit(20)
+            limit(50)
         );
 
         this.unsubscribe = onSnapshot(q, (snapshot) => {
@@ -101,14 +101,14 @@ class NotificationsManager {
     updateFilterButtonsUI(btns) {
         Object.values(btns).forEach(btn => {
             if (btn) {
-                btn.classList.remove('bg-white', 'text-black');
-                btn.classList.add('bg-[#1a1a1a]', 'text-gray-200');
+                btn.classList.remove('bg-gray-800', 'text-white', 'dark:bg-white', 'dark:text-black', 'border-transparent', 'dark:border-transparent');
+                btn.classList.add('bg-white', 'dark:bg-[#1a1a1a]', 'text-gray-800', 'dark:text-gray-200', 'border-gray-300', 'dark:border-gray-700');
             }
         });
         const activeBtn = btns[this.activeFilter];
         if (activeBtn) {
-            activeBtn.classList.remove('bg-[#1a1a1a]', 'text-gray-200');
-            activeBtn.classList.add('bg-white', 'text-black');
+            activeBtn.classList.remove('bg-white', 'dark:bg-[#1a1a1a]', 'text-gray-800', 'dark:text-gray-200', 'border-gray-300', 'dark:border-gray-700');
+            activeBtn.classList.add('bg-gray-800', 'text-white', 'dark:bg-white', 'dark:text-black', 'border-transparent', 'dark:border-transparent');
         }
     }
 
@@ -208,28 +208,28 @@ class NotificationsManager {
         
         let avatarOverlay = '';
         if (n.type === 'chat') {
-            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-comments text-[9px] text-white"></i></div>';
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-[#111]"><i class="fas fa-comments text-[9px] text-white"></i></div>';
         } else if (n.type === 'admin') {
-            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-purple-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-bullhorn text-[9px] text-white"></i></div>';
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-purple-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-[#111]"><i class="fas fa-bullhorn text-[9px] text-white"></i></div>';
         } else {
-            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111]"><i class="fas fa-info text-[9px] text-white"></i></div>';
+            avatarOverlay = '<div class="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-[#111]"><i class="fas fa-info text-[9px] text-white"></i></div>';
         }
 
         let avatarImg = `<img src="${n.icon || '/imgs/kobe.png'}" class="w-11 h-11 rounded-full object-cover">`;
 
         return `
-            <div id="notification-${n.id}" class="py-4 border-b border-[#222] hover:bg-white/5 transition-colors cursor-pointer flex items-start gap-4 px-2 ${isRead ? 'opacity-60 grayscale-[30%]' : ''}">
+            <div id="notification-${n.id}" class="py-4 border-b border-gray-200 dark:border-[#222] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-start gap-4 px-2 ${isRead ? 'opacity-60 grayscale-[30%]' : ''}">
                 <div class="flex-shrink-0 relative block mt-0.5">
                     ${avatarImg}
                     ${avatarOverlay}
                 </div>
                 <div class="flex-1 min-w-0 pr-2">
                     <div class="flex items-center flex-wrap gap-x-2 mb-0.5">
-                        <span class="text-[15px] font-bold text-gray-100">${n.title}</span>
+                        <span class="text-[15px] font-bold text-gray-900 dark:text-gray-100">${n.title}</span>
                         <span class="text-[15px] text-gray-500">${timeStr}</span>
                         ${!isRead ? '<div class="w-2 h-2 bg-blue-500 rounded-full mt-0.5 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></div>' : ''}
                     </div>
-                    <p class="text-[15px] text-gray-300 leading-snug">${n.message}</p>
+                    <p class="text-[15px] text-gray-600 dark:text-gray-300 leading-snug">${n.message}</p>
                 </div>
             </div>
         `;

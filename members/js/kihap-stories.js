@@ -111,7 +111,7 @@ function createStoryCircle(authorData) {
                      onerror="this.src='../intranet/default-profile.svg'">
             </div>
         </div>
-        <span class="text-[11px] text-gray-400 font-medium truncate w-20 text-center">${authorData.authorName}</span>
+        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate w-20 text-center">${authorData.authorName}</span>
     `;
 
     div.addEventListener('click', () => {
@@ -167,7 +167,7 @@ function openStoryPlayer(stories, account) {
             </div>
 
             <!-- Content Container -->
-            <div id="story-content" class="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+            <div id="story-content" class="w-full h-full flex items-center justify-center bg-white dark:bg-[#0a0a0a]">
                 <!-- Media will be injected here -->
             </div>
 

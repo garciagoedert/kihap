@@ -1,7 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -24,7 +34,7 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200 h-screen">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 h-screen">
     <div id="sidebar-container"></div>
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
@@ -55,31 +65,31 @@
             <!-- Sales Log Content -->
             <div id="content-sales-log" class="tab-content">
                 <!-- Filters -->
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6">
+                <div class="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg shadow-sm dark:shadow-lg mb-6 border border-gray-200 dark:border-transparent transition-all">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                            <label for="search-input" class="text-sm font-medium text-gray-400">Buscar por Nome/Email:</label>
-                            <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..." class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label for="search-input" class="text-sm font-medium text-gray-500 dark:text-gray-400">Buscar por Nome/Email:</label>
+                            <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..." class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                         </div>
                         <div>
-                            <label for="filter-unit" class="text-sm font-medium text-gray-400">Filtrar por Unidade:</label>
-                            <select id="filter-unit" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label for="filter-unit" class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Unidade:</label>
+                            <select id="filter-unit" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                                 <option value="">Todas as Unidades</option>
                             </select>
                         </div>
                         <div>
-                            <label for="filter-product" class="text-sm font-medium text-gray-400">Filtrar por Produto:</label>
-                            <select id="filter-product" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label for="filter-product" class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Produto:</label>
+                            <select id="filter-product" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                                 <option value="">Todos os Produtos</option>
                             </select>
                         </div>
                         <div>
-                            <label for="filter-date" class="text-sm font-medium text-gray-400">Filtrar por Data:</label>
-                            <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label for="filter-date" class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Data:</label>
+                            <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                         </div>
                         <div>
-                            <label for="filter-fulfillment" class="text-sm font-medium text-gray-400">Status Entrega:</label>
-                            <select id="filter-fulfillment" class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label for="filter-fulfillment" class="text-sm font-medium text-gray-500 dark:text-gray-400">Status Entrega:</label>
+                            <select id="filter-fulfillment" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                                 <option value="">Todos os Status</option>
                                 <option value="pending">Pendente</option>
                                 <option value="processing">Em Preparação</option>
@@ -93,10 +103,10 @@
                 </div>
                 
                 <!-- Sales Table -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg overflow-x-auto">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-lg shadow-sm dark:shadow-lg overflow-x-auto border border-gray-200 dark:border-transparent transition-all">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-gray-700">
+                            <tr class="border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 uppercase text-[10px] tracking-wider font-bold">
                                 <th class="p-4">Nome do Cliente</th>
                                 <th class="p-4">Email</th>
                                 <th class="p-4">Telefone</th>
@@ -105,9 +115,9 @@
                                 <th class="p-4">Programa</th>
                                 <th class="p-4">Graduação</th>
                                 <th class="p-4">Valor</th>
-                                <th class="p-4">Status do Pagamento</th>
-                                <th class="p-4">Email Enviado</th>
-                                <th class="p-4">Data da Compra</th>
+                                <th class="p-4">Pagamento</th>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Compra</th>
                                 <th class="p-4 text-center">Ações</th>
                             </tr>
                         </thead>

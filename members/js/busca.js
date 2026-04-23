@@ -20,8 +20,8 @@ async function loadAllUsers() {
     const list = document.getElementById('results-list');
     
     try {
-        // Aumentamos o limite para garantir que a busca local encontre quase todo mundo
-        const q = query(collection(db, 'users'), limit(1000)); 
+        // Inicialmente carregamos apenas os 100 mais recentes ou personagens
+        const q = query(collection(db, 'users'), limit(100)); 
         const snap = await getDocs(q);
         
         allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -52,10 +52,10 @@ function setupListeners() {
         tag.onclick = () => {
             tags.forEach(t => {
                 t.classList.remove('active', 'bg-blue-600', 'text-white');
-                t.classList.add('bg-white/5', 'text-gray-400');
+                t.classList.add('bg-white/5', 'text-gray-500', 'dark:text-gray-400');
             });
             tag.classList.add('active', 'bg-blue-600', 'text-white');
-            tag.classList.remove('bg-white/5', 'text-gray-400');
+            tag.classList.remove('bg-white/5', 'text-gray-500', 'dark:text-gray-400');
             
             currentFilter = tag.dataset.filter;
             applyFilters(input.value.toLowerCase().trim(), currentFilter);
@@ -109,26 +109,26 @@ function renderResults() {
         const isStaff = u.isInstructor === true || u.isAdmin === true;
         
         return `
-            <div class="glass-card p-4 rounded-2xl flex items-center gap-4 hover:bg-white/5 transition-all cursor-pointer group"
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-all cursor-pointer group"
                  onclick="window.location.href='perfil-publico.html?id=${u.id}'">
                 <div class="relative">
                     <img src="${u.profilePicture || u.photoURL || '/imgs/kobe.png'}" 
-                        class="w-12 h-12 rounded-full object-cover border border-white/10 group-hover:scale-105 transition-transform">
-                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-[#121212] rounded-full"></div>
+                        class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-white/10 group-hover:scale-105 transition-transform">
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full"></div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
-                        <h3 class="font-bold text-white group-hover:text-blue-400 transition-colors truncate">${u.name || u.displayName || 'Usuário Kihap'}</h3>
-                        ${isStaff ? '<span class="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase rounded border border-blue-500/20">Instrutor</span>' : ''}
-                        ${u.isCharacter ? '<span class="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-400 text-[8px] font-black uppercase rounded border border-yellow-500/20">Personagem</span>' : ''}
+                        <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">${u.name || u.displayName || 'Usuário Kihap'}</h3>
+                        ${isStaff ? '<span class="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded border border-blue-500/20">Instrutor</span>' : ''}
+                        ${u.isCharacter ? '<span class="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-[8px] font-black uppercase rounded border border-yellow-500/20">Personagem</span>' : ''}
                     </div>
                     <div class="flex items-center gap-2 overflow-hidden">
                         <span class="text-[10px] text-gray-500 uppercase tracking-widest font-black whitespace-nowrap">${u.belt || 'Membro'}</span>
-                        <span class="text-[10px] text-gray-700">•</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-700">•</span>
                         <span class="text-[10px] text-gray-500 truncate">${u.unit || u.unidade || 'Kihap Unit'}</span>
                     </div>
                 </div>
-                <i class="fas fa-chevron-right text-gray-800 text-xs group-hover:translate-x-1 transition-transform"></i>
+                <i class="fas fa-chevron-right text-gray-400 dark:text-gray-800 text-xs group-hover:translate-x-1 transition-transform"></i>
             </div>
         `;
     }).join('');

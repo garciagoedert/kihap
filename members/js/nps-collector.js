@@ -44,7 +44,7 @@ async function renderNPSModal(userData) {
 
     const modalHtml = `
         <div id="nps-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div class="bg-[#1a1a1a] border border-gray-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-scale-up">
+            <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-scale-up">
                 <div class="p-8">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-3">
@@ -53,7 +53,7 @@ async function renderNPSModal(userData) {
                             </div>
                             <div>
                                 <h3 class="text-xl font-bold text-white">Sua opinião importa!</h3>
-                                <p class="text-gray-400 text-sm">Como está sendo sua experiência na Kihap?</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Como está sendo sua experiência na Kihap?</p>
                             </div>
                         </div>
                         <button id="close-nps" class="text-gray-500 hover:text-white transition-colors">
@@ -65,12 +65,12 @@ async function renderNPSModal(userData) {
                         <!-- Step 1: Base Info & Main NPS -->
                         <div id="nps-step-1" class="space-y-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-4">
+                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
                                     Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?
                                 </label>
                                 <div class="grid grid-cols-11 gap-1">
                                     ${Array.from({ length: 11 }).map((_, i) => `
-                                        <button type="button" data-score="${i}" class="nps-score-btn h-10 flex items-center justify-center rounded-lg border border-gray-800 text-gray-400 hover:border-yellow-500 hover:text-yellow-500 transition-all font-bold">
+                                        <button type="button" data-score="${i}" class="nps-score-btn h-10 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-yellow-500 hover:text-yellow-500 transition-all font-bold">
                                             ${i}
                                         </button>
                                     `).join('')}
@@ -79,14 +79,14 @@ async function renderNPSModal(userData) {
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-2">Unidade</label>
-                                    <select id="nps-unit" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Unidade</label>
+                                    <select id="nps-unit" required class="w-full bg-[#222] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
                                         <option value="${userData.unitId || ''}">${userData.branchName || 'Carregando unidade...'}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-400 mb-2">Professor(a)</label>
-                                    <select id="nps-professor" required class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Professor(a)</label>
+                                    <select id="nps-professor" required class="w-full bg-[#222] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors">
                                         <option value="">Selecione o professor</option>
                                     </select>
                                 </div>
@@ -107,7 +107,7 @@ async function renderNPSModal(userData) {
                                         <label class="block text-[10px] uppercase tracking-widest text-gray-500 mb-2 text-center">${cat}</label>
                                         <div class="flex gap-1">
                                             ${Array.from({length: 11}).map((_, i) => `
-                                                <button type="button" data-cat="${cat.toLowerCase()}" data-val="${i}" class="cat-score-btn flex-1 h-8 flex items-center justify-center rounded-md border border-gray-800 text-[10px] text-gray-500 hover:border-yellow-500 font-bold transition-all">${i}</button>
+                                                <button type="button" data-cat="${cat.toLowerCase()}" data-val="${i}" class="cat-score-btn flex-1 h-8 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-800 text-[10px] text-gray-500 hover:border-yellow-500 font-bold transition-all">${i}</button>
                                             `).join('')}
                                         </div>
                                         <input type="hidden" id="nps-cat-${cat.toLowerCase()}" required>
@@ -116,8 +116,8 @@ async function renderNPSModal(userData) {
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">O que podemos melhorar? (Opcional)</label>
-                                <textarea id="nps-comment" rows="3" class="w-full bg-[#222] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
+                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">O que podemos melhorar? (Opcional)</label>
+                                <textarea id="nps-comment" rows="3" class="w-full bg-[#222] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
                             </div>
 
                             <button type="submit" id="submit-nps" disabled class="w-full bg-yellow-500 disabled:bg-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20">
@@ -236,7 +236,7 @@ async function renderNPSModal(userData) {
                         <i class="fas fa-check text-green-500 text-4xl"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-2">Obrigado pelo seu feedback!</h3>
-                    <p class="text-gray-400">Sua avaliação foi enviada com sucesso e nos ajuda a melhorar cada dia mais.</p>
+                    <p class="text-gray-500 dark:text-gray-400">Sua avaliação foi enviada com sucesso e nos ajuda a melhorar cada dia mais.</p>
                     <button onclick="this.closest('#nps-modal').remove()" class="mt-8 px-8 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors">
                         Fechar
                     </button>

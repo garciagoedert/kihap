@@ -155,13 +155,13 @@ async function renderChatLists(groups, directMessages, currentUserId) {
 
 function renderGroupItem(chat, chatId, currentUserId) {
     const groupElement = document.createElement('div');
-    groupElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+    groupElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
     groupElement.setAttribute('data-chat-id', chatId);
     
     const safeUserKey = currentUserId.replace(/\./g, '_');
     const unreadCount = chat.unreadCount?.[safeUserKey] || 0;
     if (unreadCount > 0) {
-        groupElement.classList.add('bg-gray-700', 'font-bold');
+        groupElement.classList.add('bg-gray-100', 'dark:bg-gray-700', 'font-bold');
     }
     if (chatId === currentChatId) {
         groupElement.classList.add('bg-primary-dark');
@@ -195,13 +195,13 @@ async function renderUserItem(chat, chatId, currentUserId) {
 
     if (otherUserData) {
         const userElement = document.createElement('div');
-        userElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
+        userElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded-lg transition-colors duration-150';
         userElement.setAttribute('data-chat-id', chatId);
 
         const safeUserKey = currentUserId.replace(/\./g, '_');
         const unreadCount = chat.unreadCount?.[safeUserKey] || 0;
         if (unreadCount > 0) {
-            userElement.classList.add('bg-gray-700', 'font-bold');
+            userElement.classList.add('bg-gray-100', 'dark:bg-gray-700', 'font-bold');
         }
         if (chatId === currentChatId) {
             userElement.classList.add('bg-primary-dark');
@@ -216,8 +216,8 @@ async function renderUserItem(chat, chatId, currentUserId) {
             <div class="flex items-center overflow-hidden flex-1">
                 ${avatarHtml}
                 <div class="overflow-hidden">
-                    <div class="truncate">${otherUserData.name || 'Usuário'}</div>
-                    <div class="text-sm text-gray-400 truncate">${otherUserData.email}</div>
+                    <div class="truncate text-gray-900 dark:text-gray-100">${otherUserData.name || 'Usuário'}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate">${otherUserData.email}</div>
                 </div>
             </div>
             ${unreadCount > 0 ? `<div class="bg-primary text-black text-xs rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 ml-2">${unreadCount}</div>` : ''}
@@ -304,9 +304,9 @@ async function searchUser() {
         } else {
             foundUsers.forEach(foundUser => {
                 const userElement = document.createElement('div');
-                userElement.className = 'flex items-center px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-[#222] transition-colors last:border-b-0';
-                const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-800">` : `<img src="/imgs/kobe.png" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-800">`;
-                userElement.innerHTML = `${avatarHtml}<div class="min-w-0"><div class="font-bold text-white text-[15px] truncate">${foundUser.name || 'Usuário'}</div><div class="text-[13px] text-gray-500 uppercase tracking-widest truncate">${foundUser.email}</div></div>`;
+                userElement.className = 'flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer border-b border-gray-200 dark:border-[#222] transition-colors last:border-b-0';
+                const avatarHtml = foundUser.profilePicture ? `<img src="${foundUser.profilePicture}" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-200 dark:border-gray-800">` : `<img src="/imgs/kobe.png" alt="Foto" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover border border-gray-200 dark:border-gray-800">`;
+                userElement.innerHTML = `${avatarHtml}<div class="min-w-0"><div class="font-bold text-gray-900 dark:text-white text-[15px] truncate">${foundUser.name || 'Usuário'}</div><div class="text-[13px] text-gray-500 uppercase tracking-widest truncate">${foundUser.email}</div></div>`;
                 userElement.onclick = () => {
                     startChat(foundUser.id, foundUser.name || foundUser.email);
                     userSearchInput.value = '';
@@ -361,8 +361,9 @@ async function loadMessages(chatId, isGroup) {
         unsubscribeMessages();
     }
 
+    const { limit } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
     const messagesCollection = collection(db, 'chats', chatId, 'messages');
-    const q = query(messagesCollection, orderBy('timestamp'));
+    const q = query(messagesCollection, orderBy('timestamp', 'desc'), limit(50));
 
     let isInitialLoad = true;
     unsubscribeMessages = onSnapshot(q, async (snapshot) => {
@@ -375,7 +376,10 @@ async function loadMessages(chatId, isGroup) {
             chatMessages.innerHTML = ''; // Clear placeholder if messages exist
         }
 
-        for (const messageDoc of snapshot.docs) {
+        // Reverter a ordem para exibição (já que pegamos os últimos 50 com desc)
+        const sortedDocs = [...snapshot.docs].sort((a, b) => (a.data().timestamp?.toMillis() || 0) - (b.data().timestamp?.toMillis() || 0));
+
+        for (const messageDoc of sortedDocs) {
             const message = messageDoc.data();
             const messageId = messageDoc.id;
             const isSender = message.senderId === currentUser.id;
@@ -385,7 +389,7 @@ async function loadMessages(chatId, isGroup) {
                 const senderData = userCache.get(message.senderId) || await getUserData(message.senderId);
                 if (senderData) {
                     const avatarHtml = senderData.profilePicture ? `<img src="${senderData.profilePicture}" class="w-6 h-6 rounded-full mr-2 object-cover">` : `<img src="/imgs/kobe.png" class="w-6 h-6 rounded-full mr-2 object-cover">`;
-                    senderInfoHtml = `<div class="flex items-center mb-1">${avatarHtml}<span class="text-sm font-bold text-gray-400">${senderData.name || 'Usuário'}</span></div>`;
+                    senderInfoHtml = `<div class="flex items-center mb-1">${avatarHtml}<span class="text-sm font-bold text-gray-500 dark:text-gray-400">${senderData.name || 'Usuário'}</span></div>`;
                 }
             }
 
@@ -394,7 +398,7 @@ async function loadMessages(chatId, isGroup) {
             messageElement.className = `message-container group relative flex flex-col mb-2 max-w-md ${isSender ? 'items-end self-end' : 'items-start self-start'}`;
             messageElement.setAttribute('data-message-id', messageId);
 
-            const bubbleClass = isSender ? 'bg-primary text-black' : 'bg-gray-700 text-gray-200';
+            const bubbleClass = isSender ? 'bg-primary text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
             messageElement.innerHTML = `
                 ${senderInfoHtml}
                 <div class="message-bubble relative p-3 rounded-lg ${bubbleClass}">

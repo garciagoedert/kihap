@@ -129,23 +129,21 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
     };
 
     const getPriorityClass = (priority) => {
-        // Returns a text color class based on the image
         switch (priority) {
-            case 'urgent': return 'text-red-400';
-            case 'high': return 'text-yellow-400';
-            case 'normal': return 'text-primary';
-            case 'low': return 'text-green-400';
-            default: return 'text-gray-400';
+            case 'urgent': return 'text-red-500 dark:text-red-400 font-bold';
+            case 'high': return 'text-orange-500 dark:text-orange-400 font-semibold';
+            case 'normal': return 'text-blue-500 dark:text-blue-400';
+            case 'low': return 'text-emerald-500 dark:text-emerald-400';
+            default: return 'text-gray-500 dark:text-gray-400';
         }
     };
 
     const getStatusBadge = (status) => {
-        // Returns the badge HTML based on the image
-        const baseClasses = 'text-xs font-semibold px-3 py-1 rounded-full';
+        const baseClasses = 'text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md border';
         switch (status) {
-            case 'pending': return `<span class="bg-yellow-400 text-yellow-900 ${baseClasses}">Pendente</span>`;
-            case 'in_progress': return `<span class="bg-blue-400 text-blue-900 ${baseClasses}">Em Progresso</span>`;
-            case 'done': return `<span class="bg-green-400 text-green-900 ${baseClasses}">Concluída</span>`;
+            case 'pending': return `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 ${baseClasses}">Pendente</span>`;
+            case 'in_progress': return `<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50 ${baseClasses}">Em Progresso</span>`;
+            case 'done': return `<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 ${baseClasses}">Concluída</span>`;
             default: return '';
         }
     };
@@ -187,7 +185,7 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
         tasksToRender.forEach(task => {
             const row = document.createElement('tr');
             const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
-            row.className = `bg-gray-800 border-b border-gray-700 hover:bg-gray-700/60 cursor-pointer ${isOverdue ? 'bg-red-900/30' : ''}`;
+            row.className = `border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ''}`;
             row.addEventListener('click', () => openModalForEdit(task));
 
             const assignee = systemUsers.find(u => u.email === task.assignee_email);
@@ -200,13 +198,13 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
                 : (task.parent_entity || 'N/A');
 
             row.innerHTML = `
-                <td class="px-6 py-4 font-medium text-white">${task.title}</td>
+                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">${task.title}</td>
                 <td class="px-6 py-4">${clientLinkHTML}</td>
-                <td class="px-6 py-4">${assignee?.name || 'N/A'}</td>
-                <td class="px-6 py-4 ${isOverdue ? 'text-red-400 font-semibold' : ''}">${dueDate}</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">${assignee?.name || 'N/A'}</td>
+                <td class="px-6 py-4 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-600 dark:text-gray-300'}">${dueDate}</td>
                 <td class="px-6 py-4 ${getPriorityClass(task.priority)}">${priorityText}</td>
                 <td class="px-6 py-4">${getStatusBadge(task.status)}</td>
-                <td class="px-6 py-4 text-gray-400">${task.createdBy || 'N/A'}</td>
+                <td class="px-6 py-4 text-xs text-gray-400 dark:text-gray-500">${task.createdBy || 'N/A'}</td>
             `;
             
             tasksContainer.appendChild(row);

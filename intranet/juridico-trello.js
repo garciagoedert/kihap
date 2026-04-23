@@ -215,21 +215,21 @@ function renderDepartments() {
     departments.forEach(dept => {
         const card = document.createElement('div');
         // Mobile: horizontal layout (flex-row), Desktop: vertical (flex-col)
-        card.className = "bg-gray-800 border-l-4 rounded-xl shadow-lg p-4 md:p-6 cursor-pointer hover:bg-gray-750 transition-all transform hover:-translate-y-1 flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-left md:text-center group h-24 md:h-48";
-        card.style.borderLeftColor = dept.color || '#3b82f6';
+        card.className = "bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 rounded-2xl shadow-sm p-4 md:p-6 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 transform hover:-translate-y-1 flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-left md:text-center group h-24 md:h-56";
+        card.style.borderLeft = `4px solid ${dept.color || '#3b82f6'}`;
         
         const icon = getIconForDept(dept.name);
 
         card.innerHTML = `
-            <div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center md:mb-4 transition-transform group-hover:scale-110 shrink-0" style="background-color: ${dept.color}20; color: ${dept.color}">
+            <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center md:mb-5 transition-all duration-300 group-hover:scale-110 shadow-lg" style="background-color: ${dept.color}15; color: ${dept.color}; border: 1px solid ${dept.color}30">
                 <i class="fas ${icon} text-xl md:text-2xl"></i>
             </div>
             <div class="flex-1 md:flex-none">
-                <h3 class="text-base md:text-lg font-bold text-white mb-0 md:mb-2 line-clamp-1 md:line-clamp-2" title="${dept.name}">${dept.name}</h3>
-                <span class="md:hidden text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Toque para acessar</span>
+                <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-white mb-0 md:mb-3 leading-tight line-clamp-1 md:line-clamp-2" title="${dept.name}">${dept.name}</h3>
+                <span class="md:hidden text-[9px] text-gray-400 uppercase tracking-widest font-bold">Toque para acessar</span>
             </div>
-            <span class="hidden md:block text-[10px] text-gray-400 bg-gray-900 px-3 py-1.5 rounded-full uppercase tracking-wider font-semibold border mt-auto" style="border-color: ${dept.color}40">Acessar Kanban</span>
-            <i class="fas fa-chevron-right text-gray-600 md:hidden ml-auto"></i>
+            <span class="hidden md:block text-[10px] text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800 px-4 py-2 rounded-xl uppercase tracking-widest font-bold border border-gray-100 dark:border-gray-700 mt-auto transition-colors group-hover:bg-gray-900 group-hover:text-white">Acessar Kanban</span>
+            <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 md:hidden ml-auto"></i>
         `;
         
         card.addEventListener('click', () => {
@@ -376,12 +376,15 @@ function renderCards() {
     // Create column structure
     boardColumns.forEach(col => {
         const colHtml = `
-            <div class="bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0" data-column="${col.id}">
-                <h2 class="font-bold mb-4 pb-2 border-b border-gray-700 flex justify-between items-center" style="color: ${getColorHex(col.color)}">
-                    <span>${col.title}</span>
-                    <span class="bg-gray-800 text-xs py-1 px-2 rounded-full count" id="count-${col.id}">0</span>
-                </h2>
-                <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-${col.id}"></div>
+            <div class="bg-white/50 dark:bg-[#1a1a1a]/50 backdrop-blur-xl rounded-2xl flex flex-col border border-gray-100 dark:border-gray-800/50 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0 transition-all duration-300" data-column="${col.id}">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800/50 flex-shrink-0">
+                    <h2 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-[11px] flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full" style="background-color: ${getColorHex(col.color)}"></div>
+                        <span>${col.title}</span>
+                    </h2>
+                    <span class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-700 count" id="count-${col.id}">0</span>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar column-body p-4 space-y-4" id="col-${col.id}"></div>
             </div>
         `;
         kanbanBoard.insertAdjacentHTML('beforeend', colHtml);
@@ -448,22 +451,22 @@ function renderCards() {
         }
 
         const cardHTML = `
-            <div class="bg-gray-800 border-l-4 rounded shadow p-3 cursor-pointer hover:bg-gray-750 transition-colors card"
+            <div class="prospect-card bg-white dark:bg-[#111111] border border-gray-100 dark:border-gray-800/50 p-4 rounded-xl shadow-sm cursor-pointer border-l-4 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-md card"
                 draggable="true" data-id="${d.id}" style="border-left-color: ${color};"
                 ondragstart="dragStart(event)" ondragend="dragEnd(event)"
                 onclick="window.openDemandaDetalhes('${d.id}')">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-[10px] bg-gray-900 text-gray-300 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold" style="color: ${color}; border: 1px solid ${color}40">${deptName}</span>
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 uppercase tracking-widest" style="color: ${color}; border-color: ${color}40">${deptName}</span>
                     <div class="flex items-center gap-1">
                         ${priorityHtml}
                         ${attachBadge}
                     </div>
                 </div>
-                <div class="text-sm font-semibold text-white mb-1 line-clamp-2" title="${d.titulo || d.demanda}">${d.titulo || d.demanda}</div>
-                <div class="text-xs text-gray-400 mb-2 truncate"><i class="fas fa-user mr-1"></i>${d.nome} - ${d.unidade}</div>
+                <div class="text-sm font-bold text-gray-900 dark:text-white mb-2 leading-tight line-clamp-2" title="${d.titulo || d.demanda}">${d.titulo || d.demanda}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1"><i class="fas fa-user-circle"></i> ${d.nome} • ${d.unidade}</div>
                 <div class="flex flex-wrap gap-1 mb-3">${finalidadesHtml}</div>
-                <div class="mt-auto pt-2 border-t border-gray-700 flex justify-between items-center text-[10px] text-gray-400">
-                    <div class="flex items-center gap-1 ${isOverdue ? 'text-red-400 font-bold' : ''}">
+                <div class="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/50 flex justify-between items-center">
+                    <div class="flex items-center gap-1.5 text-[10px] ${isOverdue ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-gray-500'}">
                         <i class="far fa-calendar-alt"></i> ${formattedDate}
                     </div>
                     ${assigneeHtml}

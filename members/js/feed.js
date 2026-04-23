@@ -21,8 +21,9 @@ export const loadFeed = async () => {
                     const userData = userDoc.exists() ? userDoc.data() : {};
                     const userUnit = userData.unidade || userData.unit || userData.unitId || '';
 
-                    // Buscar todos os posts e filtrar no cliente
-                    const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'));
+                    // Buscar os 20 posts mais recentes e filtrar no cliente
+                    const { limit } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(20));
                     const querySnapshot = await getDocs(q);
 
                     if (querySnapshot.empty) {
@@ -46,18 +47,29 @@ export const loadFeed = async () => {
                         }
 
                         const postElement = document.createElement('div');
-                        postElement.className = 'bg-[#1e1e1e] rounded-2xl border border-gray-800 shadow-xl overflow-hidden mb-6 transition-all hover:border-gray-700 animate-fade-in mx-4 md:mx-0';
+                        postElement.className = 'bg-white dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden mb-6 transition-all hover:border-gray-700 animate-fade-in mx-4 md:mx-0';
 
                         let authorPhoto = post.authorPhotoURL || '../intranet/default-profile.svg';
                         const authorId = post.authorId;
                         
                         if (!post.authorPhotoURL || post.authorPhotoURL.includes('default-profile.svg')) {
-                            getUserData(authorId).then(u => {
-                                if (u && u.profilePicture) {
+                            const cached = userProfileCache.get(authorId);
+                            if (cached) {
+                                if (cached.profilePicture) {
                                     const img = postElement.querySelector(`.author-img-${authorId}`);
-                                    if (img) img.src = u.profilePicture;
+                                    if (img) img.src = cached.profilePicture;
                                 }
-                            });
+                            } else {
+                                getUserData(authorId).then(u => {
+                                    if (u) {
+                                        userProfileCache.set(authorId, u);
+                                        if (u.profilePicture) {
+                                            const img = postElement.querySelector(`.author-img-${authorId}`);
+                                            if (img) img.src = u.profilePicture;
+                                        }
+                                    }
+                                });
+                            }
                         }
 
                         let mediaHtml = '';
@@ -83,15 +95,15 @@ export const loadFeed = async () => {
                                     <div class="flex items-center">
                                         <a href="perfil-publico.html?id=${authorId}" class="relative w-10 h-10 flex-shrink-0 block hover:opacity-80 transition-opacity">
                                             <img src="${authorPhoto}" class="author-img-${authorId} w-10 h-10 rounded-full border-2 border-primary shadow-sm object-cover" onerror="this.src='../intranet/default-profile.svg'">
-                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1e1e1e] rounded-full"></div>
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-[#1e1e1e] rounded-full"></div>
                                         </a>
                                         <div class="ml-3">
-                                            <a href="perfil-publico.html?id=${authorId}" class="font-bold text-gray-100 text-[14px] hover:text-primary transition-colors">${post.authorName}</a>
+                                            <a href="perfil-publico.html?id=${authorId}" class="font-bold text-gray-900 dark:text-gray-100 text-[14px] hover:text-primary transition-colors">${post.authorName}</a>
                                             <p class="text-[9px] text-gray-500 uppercase font-medium mt-0.5 tracking-tight">${createdAt}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="prose prose-invert max-w-none text-gray-200 text-[14px] leading-relaxed mb-5">
+                                <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-[14px] leading-relaxed mb-5">
                                     ${post.isHtml ? post.content : `<p class="whitespace-pre-wrap">${post.content}</p>`}
                                 </div>
                             </div>

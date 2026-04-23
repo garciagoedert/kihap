@@ -323,16 +323,16 @@ export function setupAlunosPage() {
                 for (const name in tabConfigs) {
                     if (tabConfigs[name].content) tabConfigs[name].content.classList.add('hidden');
                     if (tabConfigs[name].button) {
-                        tabConfigs[name].button.classList.remove('text-yellow-500', 'border-yellow-500');
-                        tabConfigs[name].button.classList.add('text-gray-400', 'hover:text-white');
+                        tabConfigs[name].button.classList.remove('text-primary', 'border-primary', 'border-b-2', 'font-semibold');
+                        tabConfigs[name].button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-primary', 'dark:hover:text-white', 'font-medium');
                     }
                 }
 
                 const activeConfig = tabConfigs[activeTabName];
                 if (activeConfig.content) activeConfig.content.classList.remove('hidden');
                 if (activeConfig.button) {
-                    activeConfig.button.classList.add('text-yellow-500', 'border-yellow-500');
-                    activeConfig.button.classList.remove('text-gray-400', 'hover:text-white');
+                    activeConfig.button.classList.add('text-primary', 'border-primary', 'border-b-2', 'font-semibold');
+                    activeConfig.button.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-primary', 'dark:hover:text-white', 'font-medium');
                 }
 
                 if (activeTabName === 'manage-badges') {
@@ -520,12 +520,14 @@ function renderStudents(students, isAdmin = false) {
             const email = emailContact?.description || 'N/A';
 
             return `
-                <tr data-id="${member.idMember}" class="border-b border-gray-800 hover:bg-gray-700 cursor-pointer student-row group">
-                    <td class="p-4 font-medium text-white flex items-center">${fullName}</td>
-                    <td class="p-4 text-gray-400">${email}</td>
-                    <td class="p-4 text-gray-400">${member.branchName || 'Centro'}</td>
-                    <td class="p-4 text-right flex justify-end">
-                        <i class="fas fa-chevron-right text-gray-600 group-hover:text-blue-500 transition-colors"></i>
+                <tr data-id="${member.idMember}" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer student-row group transition-all duration-200">
+                    <td class="p-4 font-bold text-gray-900 dark:text-white flex items-center text-sm">${fullName}</td>
+                    <td class="p-4 text-sm text-gray-600 dark:text-gray-400">${email}</td>
+                    <td class="p-4 text-sm text-gray-600 dark:text-gray-400 font-medium">${member.branchName || 'Centro'}</td>
+                    <td class="p-4 text-right">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </span>
                     </td>
                 </tr>
             `;
@@ -602,9 +604,14 @@ async function handleCheckEntriesClick() {
         const { totalEntries, uniqueMembersCount } = result.data;
 
         resultDiv.innerHTML = `
-            <span class="font-semibold">Resultados para ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}:</span> 
-            <span class="text-yellow-500">${uniqueMembersCount}</span> alunos únicos de um total de 
-            <span class="text-yellow-500">${totalEntries}</span> entradas.
+            <div class="flex flex-col items-center text-center">
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Resultados para ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-4xl font-black text-primary">${uniqueMembersCount}</span>
+                    <span class="text-sm font-bold text-gray-500">alunos únicos</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">de um total de <span class="font-bold text-gray-900 dark:text-white">${totalEntries}</span> entradas registradas.</p>
+            </div>
         `;
 
     } catch (error) {
@@ -652,11 +659,16 @@ function renderRanking(students) {
         const fitCoins = student.totalFitCoins || 0;
 
         return `
-            <tr class="border-b border-gray-800">
-                <td class="p-4 text-center font-medium">${index + 1}º</td>
-                <td class="p-4">${fullName}</td>
-                <td class="p-4">${unitName}</td>
-                <td class="p-4 font-bold text-yellow-500">${fitCoins}</td>
+            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200">
+                <td class="p-4 text-center font-black text-gray-900 dark:text-white text-sm">${index + 1}º</td>
+                <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${fullName}</td>
+                <td class="p-4 text-sm text-gray-600 dark:text-gray-400">${unitName}</td>
+                <td class="p-4">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-black text-sm">
+                        <i class="fas fa-coins text-xs"></i>
+                        ${fitCoins}
+                    </span>
+                </td>
             </tr>
         `;
     }).join('');
@@ -716,10 +728,15 @@ function renderAccessRanking(rankedUnits) {
 
     const rowsHtml = rankedUnits.map((unit, index) => {
         return `
-            <tr class="border-b border-gray-800">
-                <td class="p-4 text-center font-medium">${index + 1}º</td>
-                <td class="p-4">${unit.unitName}</td>
-                <td class="p-4 font-bold text-blue-400">${unit.count}</td>
+            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200">
+                <td class="p-4 text-center font-black text-gray-900 dark:text-white text-sm">${index + 1}º</td>
+                <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${unit.unitName}</td>
+                <td class="p-4">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 font-black text-sm">
+                        <i class="fas fa-users text-xs"></i>
+                        ${unit.count}
+                    </span>
+                </td>
             </tr>
         `;
     }).join('');
@@ -815,20 +832,20 @@ async function renderTuitionsTable() {
             if (plan) planName = plan.name;
         }
         
-        let statusBadge = '<span class="text-gray-500 border border-gray-700 px-2 py-1 rounded text-xs">Sem Plano</span>';
-        if (s.tuitionStatus === 'pending') statusBadge = '<span class="text-yellow-500 bg-yellow-900/30 border border-yellow-800 px-2 py-1 rounded text-xs">Aguardando Pgto</span>';
-        if (s.tuitionStatus === 'active' || s.tuitionStatus === 'authorized') statusBadge = '<span class="text-green-500 bg-green-900/30 border border-green-800 px-2 py-1 rounded text-xs">Mensalidade Ativa</span>';
-        if (s.tuitionStatus === 'cancelled') statusBadge = '<span class="text-red-500 bg-red-900/30 border border-red-800 px-2 py-1 rounded text-xs">Cancelado</span>';
+        let statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 uppercase tracking-wider">Sem Plano</span>';
+        if (s.tuitionStatus === 'pending') statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 uppercase tracking-wider">Aguardando Pgto</span>';
+        if (s.tuitionStatus === 'active' || s.tuitionStatus === 'authorized') statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 uppercase tracking-wider">Mensalidade Ativa</span>';
+        if (s.tuitionStatus === 'cancelled') statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 uppercase tracking-wider">Cancelado</span>';
         
         html += `
-            <tr class="border-b border-gray-800 hover:bg-gray-700/50 transition-colors">
-                <td class="p-4 font-medium text-white">${s.firstName} ${s.lastName}</td>
-                <td class="p-4 text-gray-400 text-sm">${s.unitId || 'N/A'}</td>
-                <td class="p-4"><span class="${s.tuitionPlanId ? 'text-yellow-500 font-semibold' : 'text-gray-500'}">${planName}</span></td>
+            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200">
+                <td class="p-4 font-bold text-gray-900 dark:text-white text-sm">${s.firstName} ${s.lastName}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider">${s.unitId || 'N/A'}</td>
+                <td class="p-4"><span class="${s.tuitionPlanId ? 'text-primary font-bold text-sm' : 'text-gray-400 text-xs italic'}">${planName}</span></td>
                 <td class="p-4 text-center">${statusBadge}</td>
                 <td class="p-4 text-right">
-                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" class="inline-flex items-center justify-center text-blue-400 hover:text-white bg-blue-900/30 hover:bg-blue-600 px-3 py-2 rounded transition-colors text-sm font-medium">
-                        <i class="fas fa-external-link-alt mr-2"></i> Abrir Ficha
+                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" class="inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-black px-4 py-2 rounded-xl transition-all duration-300 text-xs font-bold shadow-sm active:scale-95 border border-primary/20">
+                        <i class="fas fa-external-link-alt"></i> Abrir Ficha
                     </a>
                 </td>
             </tr>

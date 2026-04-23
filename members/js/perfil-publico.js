@@ -142,7 +142,7 @@ async function loadBadges(earnedIds) {
             el.title = badge.description || badge.name;
             el.innerHTML = `
                 <img src="${badge.imageUrl}" class="w-12 h-12 object-contain group-hover:scale-110 transition-transform">
-                <span class="text-[10px] text-center font-bold text-gray-400 group-hover:text-white truncate w-full">${badge.name}</span>
+                <span class="text-[10px] text-center font-bold text-gray-500 dark:text-gray-400 group-hover:text-white truncate w-full">${badge.name}</span>
             `;
             grid.appendChild(el);
         });

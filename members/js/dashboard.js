@@ -113,9 +113,9 @@ async function loadMemberPhysicalTestHistory(userId) {
             const data = doc.data();
             const date = data.date.toDate().toLocaleDateString('pt-BR');
             html += `
-                <li class="flex justify-between items-center bg-gray-800 p-3 rounded">
-                    <span>Data: <span class="font-semibold">${date}</span></span>
-                    <span>Pontuação: <span class="font-semibold text-yellow-500">${data.score}</span></span>
+                <li class="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-100 dark:border-transparent">
+                    <span class="text-gray-700 dark:text-gray-300">Data: <span class="font-semibold text-gray-900 dark:text-white">${date}</span></span>
+                    <span class="text-gray-700 dark:text-gray-300">Pontuação: <span class="font-semibold text-yellow-600 dark:text-yellow-500">${data.score}</span></span>
                 </li>
             `;
         });
@@ -208,22 +208,22 @@ async function loadMemberPurchases(cpf) {
             const date = purchase.data; // Já vem formatada do Tiny ou precisa formatar? Tiny manda DD/MM/YYYY
             const total = parseFloat(purchase.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            let itemsHtml = '<ul class="mt-2 text-sm text-gray-400 pl-4 border-l-2 border-gray-700">';
+            let itemsHtml = '<ul class="mt-2 text-sm text-gray-500 dark:text-gray-400 pl-4 border-l-2 border-gray-200 dark:border-gray-700">';
             purchase.itens.forEach(item => {
                 itemsHtml += `<li>${parseFloat(item.quantidade).toFixed(0)}x ${item.descricao}</li>`;
             });
             itemsHtml += '</ul>';
 
             html += `
-                <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-semibold text-white">Pedido #${purchase.numero}</p>
-                            <p class="text-sm text-gray-400">${date}</p>
+                            <p class="font-semibold text-gray-900 dark:text-white">Pedido #${purchase.numero}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${date}</p>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-yellow-500">${total}</p>
-                            <span class="text-xs px-2 py-1 rounded bg-gray-700 text-gray-300">${purchase.situacao}</span>
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">${purchase.situacao}</span>
                         </div>
                     </div>
                     ${itemsHtml}

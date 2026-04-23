@@ -8,11 +8,49 @@
     --accent-gradient: linear-gradient(90deg, #FFC107, #FF9800);
 }
 
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
+/* ============================================================
+   GLOBAL LAYOUT - Sidebar Fixa no Desktop
+   Aplicado em todas as páginas da intranet via log.css
+   ============================================================ */
+@media (min-width: 768px) {
+    body {
+        padding-left: 288px !important;
+        box-sizing: border-box !important;
+        font-family: 'Inter', sans-serif;
+    }
+    #sidebar {
+        transform: translateX(0) !important;
+        width: 288px !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        transition: none !important;
+    }
+    #menu-toggle,
+    header #menu-toggle,
+    header a[href="index.html"] {
+        display: none !important;
+    }
+    header,
+    #header-container header,
+    .sticky.top-0 {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+    }
 }
+
+/* ============================================================
+   SCROLLBAR GLOBAL - Minimalista e adaptável ao tema
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
 
 .table {
     width: 100%;
@@ -39,10 +77,7 @@ body {
     background-color: var(--bg-tertiary);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { height: 8px; width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
-::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+/* Custom scrollbar is now managed globally in theme.css */
 
 /* General UI elements */
 .btn-primary {

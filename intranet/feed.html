@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
@@ -25,14 +35,29 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="log.css">
     <style>
-        .ql-editor { font-size: 16px; min-height: 150px; background: #2a2a2a; color: #e5e7eb; border-radius: 0 0 0.5rem 0.5rem; }
-        .ql-toolbar { background: #1e1e1e; border-color: #4b5563 !important; border-radius: 0.5rem 0.5rem 0 0; }
-        .ql-container { border-color: #4b5563 !important; }
-        .ql-stroke { stroke: #9ca3af !important; }
-        .ql-fill { fill: #9ca3af !important; }
-        .ql-picker { color: #9ca3af !important; }
-        .ql-active .ql-stroke { stroke: #FFC107 !important; }
-        .ql-active .ql-fill { fill: #FFC107 !important; }
+        .ql-editor { font-size: 16px; min-height: 150px; background: #f9fafb; color: #111827; border-radius: 0 0 0.5rem 0.5rem; border: 1px solid #e5e7eb; border-top: none; }
+        .dark .ql-editor { background: #2a2a2a; color: #e5e7eb; border-color: #4b5563 !important; }
+        
+        .ql-toolbar { background: #f3f4f6; border-color: #e5e7eb !important; border-radius: 0.5rem 0.5rem 0 0; }
+        .dark .ql-toolbar { background: #1e1e1e; border-color: #4b5563 !important; }
+        
+        .ql-container { border-color: #e5e7eb !important; }
+        .dark .ql-container { border-color: #4b5563 !important; }
+        
+        .ql-stroke { stroke: #4b5563 !important; }
+        .dark .ql-stroke { stroke: #9ca3af !important; }
+        
+        .ql-fill { fill: #4b5563 !important; }
+        .dark .ql-fill { fill: #9ca3af !important; }
+        
+        .ql-picker { color: #4b5563 !important; }
+        .dark .ql-picker { color: #9ca3af !important; }
+        
+        .ql-active .ql-stroke { stroke: #3b82f6 !important; }
+        .dark .ql-active .ql-stroke { stroke: #FFC107 !important; }
+        
+        .ql-active .ql-fill { fill: #3b82f6 !important; }
+        .dark .ql-active .ql-fill { fill: #FFC107 !important; }
         
         /* Custom formatting for posts */
         .post-text-content { line-height: 1.6; }
@@ -44,7 +69,7 @@
         .post-text-content ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; }
     </style>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
@@ -57,21 +82,21 @@
                     </div>
 
                 <!-- Formulário de Nova Postagem -->
-                <div class="bg-[#1e1e1e] p-6 rounded-xl border border-gray-800 shadow-2xl mb-8">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-800">
-                        <h2 class="text-xl font-bold flex items-center">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-2xl mb-8 transition-all">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
+                        <h2 class="text-xl font-bold flex items-center text-gray-900 dark:text-white">
                             <i class="fas fa-edit mr-3 text-primary"></i> 
                             Criar Nova Postagem
                         </h2>
                         
                         <!-- Toggle Modo Story -->
-                        <div class="flex items-center gap-3 bg-[#252525] p-2 rounded-lg border border-gray-700">
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Post Comum</span>
+                        <div class="flex items-center gap-3 bg-gray-50 dark:bg-[#252525] p-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Post Comum</span>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="story-mode-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r from-yellow-500 to-red-500"></div>
+                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r from-yellow-500 to-red-500"></div>
                             </label>
-                            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Modo Story</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Modo Story</span>
                         </div>
                     </div>
 
@@ -87,18 +112,18 @@
                         </div>
 
                         <!-- CTA Button Settings -->
-                        <div class="mb-6 bg-[#252525] p-4 rounded-lg border border-gray-700">
-                            <button type="button" id="toggle-cta" class="flex items-center text-sm font-medium text-gray-300 hover:text-primary transition-colors">
+                        <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button type="button" id="toggle-cta" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
                                 <i class="fas fa-plus-circle mr-2"></i> Adicionar Botão de Link (Opcional)
                             </button>
                             <div id="cta-fields" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label for="cta-text" class="block text-xs text-gray-500 mb-1">Texto do Botão</label>
-                                    <input type="text" id="cta-text" class="w-full bg-[#333] border border-gray-600 rounded p-2 text-sm focus:border-primary outline-none" placeholder="Ex: Saiba Mais">
+                                    <input type="text" id="cta-text" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="Ex: Saiba Mais">
                                 </div>
                                 <div>
                                     <label for="cta-url" class="block text-xs text-gray-500 mb-1">URL do Link</label>
-                                    <input type="url" id="cta-url" class="w-full bg-[#333] border border-gray-600 rounded p-2 text-sm focus:border-primary outline-none" placeholder="https://...">
+                                    <input type="url" id="cta-url" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="https://...">
                                 </div>
                             </div>
                         </div>
@@ -119,16 +144,16 @@
                                     </label>
                                 </div>
 
-                                <div id="upload-container" class="flex items-center bg-[#2a2a2a] p-3 rounded-lg border border-dashed border-gray-600 hover:border-primary transition-colors cursor-pointer group" onclick="document.getElementById('post-media').click()">
-                                    <div class="bg-[#3a3a3a] p-2 rounded mr-3 group-hover:bg-primary transition-colors">
-                                        <i class="fas fa-cloud-upload-alt text-gray-300 group-hover:text-black"></i>
+                                <div id="upload-container" class="flex items-center bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer group" onclick="document.getElementById('post-media').click()">
+                                    <div class="bg-gray-200 dark:bg-[#3a3a3a] p-2 rounded mr-3 group-hover:bg-primary transition-colors">
+                                        <i class="fas fa-cloud-upload-alt text-gray-600 dark:text-gray-300 group-hover:text-black"></i>
                                     </div>
-                                    <span id="file-name" class="text-sm text-gray-400 truncate">Escolher arquivo...</span>
+                                    <span id="file-name" class="text-sm text-gray-500 dark:text-gray-400 truncate">Escolher arquivo...</span>
                                     <input type="file" id="post-media" class="hidden">
                                 </div>
 
                                 <div id="url-container" class="hidden">
-                                    <input type="text" id="media-url" class="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="Link YouTube ou Spotify">
+                                    <input type="text" id="media-url" class="w-full bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none" placeholder="Link YouTube ou Spotify">
                                 </div>
                             </div>
 
@@ -155,7 +180,7 @@
                             <div id="unit-target-container" class="md:col-span-12">
                                 <label for="target-unit" class="block text-gray-400 text-xs font-medium mb-2 text-left">Selecione a Unidade</label>
                                 <div class="relative max-w-md">
-                                    <select id="target-unit" class="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer pr-10">
+                                    <select id="target-unit" class="w-full bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer pr-10 transition-all">
                                         <option value="all">Todas as Unidades</option>
                                         <!-- Outras unidades serão carregadas aqui -->
                                     </select>
@@ -168,11 +193,11 @@
                             <div id="student-target-container" class="md:col-span-12 hidden">
                                 <label class="block text-gray-400 text-xs font-medium mb-2 text-left">Buscar e Selecionar Alunos</label>
                                 <div class="relative max-w-xl">
-                                    <div class="flex flex-wrap gap-2 p-2 bg-[#2a2a2a] border border-gray-600 rounded-lg min-h-[46px] focus-within:ring-1 focus-within:ring-primary transition-all">
+                                    <div class="flex flex-wrap gap-2 p-2 bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg min-h-[46px] focus-within:ring-1 focus-within:ring-primary transition-all">
                                         <div id="selected-students-tags" class="flex flex-wrap gap-2"></div>
                                         <input type="text" id="student-search" class="flex-1 bg-transparent border-none outline-none text-sm p-1 min-w-[120px]" placeholder="Digite o nome do aluno...">
                                     </div>
-                                    <div id="student-search-results" class="absolute z-50 left-0 right-0 mt-1 bg-[#2a2a2a] border border-gray-700 rounded-lg shadow-2xl max-h-60 overflow-y-auto hidden">
+                                    <div id="student-search-results" class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto hidden">
                                         <!-- Search results will appear here -->
                                     </div>
                                 </div>

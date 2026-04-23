@@ -112,13 +112,13 @@ function renderUnits(units) {
     }
 
     const html = units.map(u => `
-        <tr class="border-b border-gray-800 hover:bg-gray-700 transition-colors">
-            <td class="p-4 font-medium text-white">${u.label}</td>
-            <td class="p-4 text-gray-400 font-mono text-sm">${u.id}</td>
+        <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="p-4 font-semibold text-gray-900 dark:text-white">${u.label}</td>
+            <td class="p-4 text-gray-500 dark:text-gray-400 font-mono text-sm">${u.id}</td>
             <td class="p-4">
                 ${u.hasToken 
-                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300"><i class="fas fa-check-circle mr-1"></i> Conectado</span>'
-                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900 text-red-300"><i class="fas fa-times-circle mr-1"></i> Inválido</span>'}
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"><i class="fas fa-check-circle mr-1"></i> Conectado</span>'
+                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50"><i class="fas fa-times-circle mr-1"></i> Inválido</span>'}
             </td>
         </tr>
     `).join('');
@@ -148,21 +148,21 @@ function renderPlans(plans, unitFilter) {
         const valorReal = (p.amountCentavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const frequencia = p.frequency === 1 && p.frequencyType === 'months' ? 'Mensal' : `A cada ${p.frequency} meses`;
         const activeBadge = p.active
-            ? '<span class="px-2 py-1 text-xs bg-green-900/50 text-green-400 rounded border border-green-800">Ativo</span>'
-            : '<span class="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded border border-gray-700">Inativo</span>';
+            ? '<span class="px-2 py-1 text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-md border border-emerald-200 dark:border-emerald-800/50">Ativo</span>'
+            : '<span class="px-2 py-1 text-[10px] font-bold uppercase bg-gray-100 dark:bg-gray-800/30 text-gray-600 dark:text-gray-400 rounded-md border border-gray-200 dark:border-gray-700">Inativo</span>';
 
         return `
-            <tr class="border-b border-gray-800 hover:bg-gray-700/50 transition-colors group">
-                <td class="p-4 font-medium text-white">${p.name}</td>
-                <td class="p-4"><span class="px-2 py-1 bg-gray-800 rounded text-xs text-gray-300 border border-gray-700">${p.unitId}</span></td>
-                <td class="p-4 font-bold text-yellow-500">${valorReal}</td>
-                <td class="p-4 text-gray-400 text-sm">${frequencia}</td>
+            <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors group">
+                <td class="p-4 font-semibold text-gray-900 dark:text-white">${p.name}</td>
+                <td class="p-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md text-[10px] font-bold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 uppercase tracking-wider">${p.unitId}</span></td>
+                <td class="p-4 font-bold text-emerald-600 dark:text-emerald-400">${valorReal}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm">${frequencia}</td>
                 <td class="p-4 text-center">${activeBadge}</td>
-                <td class="p-4 text-right opacity-50 group-hover:opacity-100 transition-opacity">
-                    <button class="edit-plan-btn text-blue-400 hover:text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 p-2 rounded mr-2 transition-colors" data-id="${p.id}" title="Editar">
+                <td class="p-4 text-right opacity-0 group-hover:opacity-100 transition-all">
+                    <button class="edit-plan-btn text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" data-id="${p.id}" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="delete-plan-btn text-red-400 hover:text-red-300 bg-red-900/30 hover:bg-red-900/50 p-2 rounded transition-colors" data-id="${p.id}" title="Excluir">
+                    <button class="delete-plan-btn text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" data-id="${p.id}" title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>

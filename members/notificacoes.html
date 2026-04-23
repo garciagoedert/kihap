@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,6 +8,11 @@
     <title>Atividade - Kihap</title>
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class"
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../intranet/theme.css">
@@ -15,8 +20,17 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
+
+    <script>
+        // Default to light mode unless explicitly set to dark
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
-<body class="bg-[#111111] text-gray-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div class="relative min-h-screen md:flex">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop"></div>
@@ -26,7 +40,7 @@
                 <div class="w-full max-w-2xl">
                     <div class="pt-6 md:pt-8 w-full px-4 md:px-0">
                         <div class="flex items-center justify-between mb-6">
-                            <h1 class="text-3xl font-extrabold text-white tracking-tight">Atividade</h1>
+                            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Atividade</h1>
                             <button id="mark-all-read" class="text-xs font-bold text-blue-500 hover:text-blue-400 bg-blue-500/5 px-3 py-1.5 rounded-full transition-all flex items-center">
                                 <i class="fas fa-check-double mr-1.5"></i> Marcar todas como lidas
                             </button>
@@ -34,10 +48,10 @@
                         
                         <!-- Tabs -->
                         <div class="flex overflow-x-auto hide-scrollbar space-x-2 mb-2 pb-2">
-                            <button id="filter-all" class="px-5 py-2 bg-white text-black font-semibold rounded-full text-sm shrink-0 shadow-md">Tudo</button>
-                            <button id="filter-system" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Sistema</button>
-                            <button id="filter-chat" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Conversas</button>
-                            <button id="filter-events" class="px-5 py-2 bg-[#1a1a1a] border border-gray-700 text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-800 transition">Eventos</button>
+                            <button id="filter-all" class="px-5 py-2 bg-gray-800 text-white dark:bg-white dark:text-black border border-transparent font-semibold rounded-full text-sm shrink-0 shadow-md">Tudo</button>
+                            <button id="filter-system" class="px-5 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition">Sistema</button>
+                            <button id="filter-chat" class="px-5 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition">Conversas</button>
+                            <button id="filter-events" class="px-5 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-full text-sm shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition">Eventos</button>
                         </div>
 
                         <!-- Notification List Container -->
