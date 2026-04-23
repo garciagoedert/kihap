@@ -215,7 +215,7 @@ function renderDepartments() {
     departments.forEach(dept => {
         const card = document.createElement('div');
         // Mobile: horizontal layout (flex-row), Desktop: vertical (flex-col)
-        card.className = "bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 rounded-2xl shadow-sm p-4 md:p-6 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 transform hover:-translate-y-1 flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-left md:text-center group h-24 md:h-56";
+        card.className = "bg-white dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200 dark:border-gray-800/50 rounded-2xl shadow-sm p-4 md:p-6 cursor-pointer hover:shadow-lg dark:hover:bg-gray-800 transition-all duration-300 transform hover:-translate-y-1 flex flex-row md:flex-col items-center md:justify-center gap-4 md:gap-0 text-left md:text-center group h-24 md:h-56";
         card.style.borderLeft = `4px solid ${dept.color || '#3b82f6'}`;
         
         const icon = getIconForDept(dept.name);
@@ -226,9 +226,9 @@ function renderDepartments() {
             </div>
             <div class="flex-1 md:flex-none">
                 <h3 class="text-base md:text-xl font-bold text-gray-900 dark:text-white mb-0 md:mb-3 leading-tight line-clamp-1 md:line-clamp-2" title="${dept.name}">${dept.name}</h3>
-                <span class="md:hidden text-[9px] text-gray-400 uppercase tracking-widest font-bold">Toque para acessar</span>
+                <span class="md:hidden text-[9px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Toque para acessar</span>
             </div>
-            <span class="hidden md:block text-[10px] text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800 px-4 py-2 rounded-xl uppercase tracking-widest font-bold border border-gray-100 dark:border-gray-700 mt-auto transition-colors group-hover:bg-gray-900 group-hover:text-white">Acessar Kanban</span>
+            <span class="hidden md:block text-[10px] text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl uppercase tracking-widest font-bold border border-gray-200 dark:border-gray-700 mt-auto transition-colors group-hover:bg-gray-900 group-hover:text-white">Acessar Kanban</span>
             <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 md:hidden ml-auto"></i>
         `;
         

@@ -1,5 +1,45 @@
+<style>
+    /* Estilos para ocultar a barra de rolagem por padrão e mostrar no hover */
+    #sidebar-nav {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;  /* IE/Edge */
+        transition: scrollbar-color 0.3s;
+    }
+    
+    #sidebar-nav::-webkit-scrollbar {
+        width: 5px;
+        display: none; /* Chrome/Safari */
+    }
+
+    #sidebar-nav:hover {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
+
+    #sidebar-nav:hover::-webkit-scrollbar {
+        display: block;
+    }
+
+    #sidebar-nav::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #sidebar-nav::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.3);
+        border-radius: 20px;
+    }
+
+    #sidebar-nav:hover::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+    }
+    
+    .dark #sidebar-nav:hover::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+</style>
+
 <aside id="sidebar"
-    class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-xl w-72 h-screen flex flex-col fixed top-0 left-0 z-40 shadow-2xl border-r border-gray-100 dark:border-gray-800 transition-none">
+    class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-xl w-72 h-screen flex flex-col fixed top-0 left-0 z-40 shadow-2xl border-r border-gray-200 dark:border-gray-800 transition-none">
     <div class="flex items-center justify-between p-8 border-b border-gray-100 dark:border-gray-800">
         <img src="/imgs/favicon.png" alt="Kihap Icon" class="h-12 invert dark:invert-0 drop-shadow-xl">
         <button id="sidebar-close-btn" class="p-2 rounded-md text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
@@ -7,7 +47,7 @@
             <i class="fas fa-times"></i>
         </button>
     </div>
-    <nav class="flex-grow p-4 min-h-0 overflow-y-auto space-y-2">
+    <nav id="sidebar-nav" class="flex-grow p-4 min-h-0 overflow-y-auto space-y-2">
         <a href="index.html"
             class="w-full flex items-center bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 group">
             <i class="fas fa-home w-8 text-lg group-hover:scale-110 transition-transform"></i> Início
