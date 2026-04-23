@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <title>Programa Baby Littles - Kihap Martial Arts</title>
     
@@ -14,7 +14,7 @@
 
     <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="antialiased">
+<body class="antialiased bg-[#f8f7f4] text-[#111111]">
 
     <!-- Header -->
     <div id="header-container"></div>
@@ -22,113 +22,122 @@
     <!-- Main Content -->
     <main>
         <!-- Hero Section -->
-        <section class="program-hero hero-baby-littles">
-            <div class="program-hero-content px-6">
-                <!-- Image already contains the title -->
+        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
+            <!-- Background Image Overlay -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1595152230353-8686e088a8f1?q=80&w=1600&auto=format&fit=crop" 
+                     class="w-full h-full object-cover opacity-30" alt="Baby Littles Background">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 container mx-auto px-6">
+                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90 opacity-0 animate-fadeInUp">
+                    <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    1.5 a 3 Anos
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Baby <span class="text-yellow-400">Littles</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/80 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    O primeiro passo na jornada do seu pequeno guerreiro. Desenvolvimento motor, social e diversão em um ambiente seguro.
+                </p>
             </div>
         </section>
 
-        <section class="py-24 relative overflow-hidden bg-transparent">
+        <section class="py-24 bg-white relative overflow-hidden">
             <div class="container mx-auto px-6 lg:px-8 relative z-10 max-w-7xl">
                 <!-- Main Header / Glass Panel & Video -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                    <div class="glass-panel group hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] transition-all duration-500 border border-white/10 rounded-3xl p-8 lg:p-12 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-orange-500"></div>
-                        <h2 class="text-3xl md:text-4xl lg:text-5xl font-title uppercase mb-8 text-yellow-400" style="line-height: 1.3;">
-                            Desenvolvimento<br>com Diversão
+                    <div class="glass-card p-10 border-gray-100 shadow-2xl">
+                        <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-4 block">Foco no Crescimento</span>
+                        <h2 class="text-3xl md:text-4xl lg:text-5xl font-title uppercase mb-8 text-gray-900 leading-tight">
+                            Desenvolvimento<br><span class="text-yellow-500 italic">com Diversão</span>
                         </h2>
-                        <p class="text-lg lg:text-xl text-gray-300 leading-relaxed mb-6 font-light">
-                            Nosso programa <strong class="text-white font-bold">Baby Littles</strong> é projetado para introduzir os conceitos mais básicos das artes marciais de uma forma lúdica e segura para os nossos menores alunos.
-                        </p>
-                        <p class="text-lg lg:text-xl text-gray-300 leading-relaxed font-light">
-                            O foco está no desenvolvimento da coordenação motora, equilíbrio e habilidades sociais essenciais, tudo sob a supervisão de instrutores especializados.
-                        </p>
+                        <div class="text-gray-600 space-y-6 text-lg leading-relaxed font-light">
+                            <p>Nosso programa <strong class="text-gray-900 font-bold italic underline decoration-yellow-400 underline-offset-4">Baby Littles</strong> é projetado para introduzir os conceitos mais básicos das artes marciais de uma forma lúdica e segura.</p>
+                            <p>O foco está no desenvolvimento da coordenação motora, equilíbrio e habilidades sociais essenciais, tudo sob a supervisão de instrutores especializados e apaixonados pelo que fazem.</p>
+                        </div>
                     </div>
                     
-                    <div class="video-container-horizontal group rounded-3xl overflow-hidden hover:scale-[1.02] transition-transform duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(234,179,8,0.3)] ring-1 ring-white/10">
-                        <iframe src="https://www.youtube.com/embed/fX_ERRYVUBA?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <div class="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-video">
+                        <iframe class="w-full h-full" src="https://www.youtube.com/embed/fX_ERRYVUBA?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                 </div>
 
                 <!-- Benefícios / Features -->
-                <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
-                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
-                        <h3 class="text-2xl font-title text-white mb-3">Diversão Garantida</h3>
-                        <p class="text-gray-400">Atividades dinâmicas e lúdicas desenhadas para capturar a atenção dos pequenos.</p>
+                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Diversão Garantida</h3>
+                        <p class="text-gray-600 leading-relaxed">Atividades dinâmicas e lúdicas desenhadas para capturar a atenção total dos pequenos.</p>
                     </div>
-                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
-                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                         </div>
-                        <h3 class="text-2xl font-title text-white mb-3">Coordenação</h3>
-                        <p class="text-gray-400">Desenvolvimento motor direcionado para aperfeiçoar os reflexos e equilíbrio no dia a dia.</p>
+                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Coordenação</h3>
+                        <p class="text-gray-600 leading-relaxed">Desenvolvimento motor direcionado para aperfeiçoar os reflexos e equilíbrio no dia a dia.</p>
                     </div>
-                    <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-300 border border-white/5 hover:border-yellow-500/30">
-                        <div class="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </div>
-                        <h3 class="text-2xl font-title text-white mb-3">Sociabilidade</h3>
-                        <p class="text-gray-400">Aprendizado valioso sobre disciplina, foco e respeito e interação com os colegas.</p>
+                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Sociabilidade</h3>
+                        <p class="text-gray-600 leading-relaxed">Aprendizado valioso sobre disciplina, foco e respeito através da interação saudável.</p>
                     </div>
                 </div>
 
                 <!-- Biblioteca Kihap Section -->
-                <div class="mt-32 w-full glass-panel !p-0 rounded-3xl overflow-hidden relative border border-white/5 group bg-[#0e0e11]">
+                <div class="mt-32 w-full glass-card !p-0 rounded-3xl overflow-hidden relative border-none group bg-gray-900">
                     <div class="grid grid-cols-1 md:grid-cols-2 items-center h-full">
                         <div class="p-8 lg:p-14 z-10 relative">
-                            <span class="px-3 py-1 bg-yellow-500 text-black text-xs font-bold rounded uppercase tracking-widest mb-4 inline-block shadow-md">Novidade</span>
-                            <h2 class="text-3xl md:text-4xl lg:text-5xl font-title uppercase mb-6 text-white leading-tight">
+                            <span class="px-4 py-1 bg-yellow-400 text-black text-xs font-black rounded-full uppercase tracking-widest mb-6 inline-block shadow-lg">Novidade</span>
+                            <h2 class="text-4xl md:text-5xl font-black font-title uppercase mb-6 text-white leading-tight italic">
                                 <span class="text-yellow-400">Biblioteca</span><br> Kihap
                             </h2>
-                            <p class="text-gray-300 text-lg mb-8 leading-relaxed font-light">
+                            <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
                                 Criamos um espaço mágico cheio de historinhas exclusivas para você ler e aprender junto com seu pequeno guerreiro.
                             </p>
-                            <a href="livrinhos.html" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-colors duration-300 hover:scale-105 shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                            <a href="livrinhos.html" class="inline-flex items-center justify-center px-10 py-4 text-lg font-black text-black bg-yellow-400 rounded-xl hover:bg-white transition-all duration-300 hover:scale-[1.03] shadow-2xl uppercase tracking-wider">
                                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                 Acessar Biblioteca
                             </a>
                         </div>
-                        <div class="relative h-full min-h-[350px] overflow-hidden">
-                            <img src="../imgs/littles/story001/001.jpg" class="absolute inset-0 w-full h-full object-cover object-left md:object-center opacity-80 group-hover:scale-105 transition-transform duration-700" alt="Capa da História Babys">
-                            <div class="absolute inset-0 bg-gradient-to-r from-[#0e0e11] via-[#0e0e11]/50 to-transparent hidden md:block"></div>
-                            <div class="absolute inset-0 bg-gradient-to-t from-[#0e0e11] via-transparent to-transparent md:hidden"></div>
+                        <div class="relative h-full min-h-[400px] overflow-hidden">
+                            <img src="../imgs/littles/story001/001.jpg" class="absolute inset-0 w-full h-full object-cover object-left md:object-center opacity-80 group-hover:scale-110 transition-transform duration-1000" alt="Capa da História Babys">
+                            <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent hidden md:block"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent md:hidden"></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Vídeos Momentos -->
                 <div class="mt-32 text-center">
-                    <h2 class="text-4xl font-title uppercase mb-16 inline-block relative text-yellow-400">
-                        Momentos Kihap
-                        <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-yellow-500 rounded-full"></div>
+                    <h2 class="text-4xl md:text-5xl font-black font-title uppercase mb-16 inline-block relative text-gray-900 italic">
+                        Momentos <span class="text-yellow-500">Kihap</span>
+                        <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-yellow-500 rounded-full"></div>
                     </h2>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
-                        <div class="hidden lg:block"></div>
-                        <div class="video-container-vertical w-full max-w-[280px] rounded-3xl overflow-hidden shadow-xl hover:scale-[1.03] transition-transform duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.4)] ring-1 ring-white/10 group">
-                            <iframe src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+                        <div class="rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.03] transition-all duration-500 aspect-[9/16] ring-1 ring-black/5">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                         </div>
-                        <div class="video-container-vertical w-full max-w-[280px] rounded-3xl overflow-hidden shadow-xl hover:scale-[1.03] transition-transform duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.4)] ring-1 ring-white/10 group">
-                            <iframe src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <div class="rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.03] transition-all duration-500 aspect-[9/16] ring-1 ring-black/5">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                         </div>
-                        <div class="hidden lg:block"></div>
                     </div>
                 </div>
             </div>
             
-            <!-- Decorative background elements -->
-            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-yellow-500/5 to-transparent z-0 pointer-events-none"></div>
-            <div class="absolute -top-[20%] -left-[10%] w-[40%] h-[40%] rounded-full bg-yellow-500/10 blur-[120px] pointer-events-none"></div>
+            <!-- Decorative elements -->
+            <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-yellow-500/5 to-transparent pointer-events-none"></div>
         </section>
 
         <!-- Testimonials -->
         <div id="testimonials-container"></div>
-
-        <!-- Video Section (Hidden or merged above) -->
-        <div id="video-container" class="hidden"></div>
 
         <!-- CTA Section -->
         <div id="cta-container"></div>

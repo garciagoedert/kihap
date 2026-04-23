@@ -2,19 +2,16 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     <title>Programa Kids - Kihap Martial Arts</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Swiper.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
-
     <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="antialiased">
+<body class="antialiased bg-[#f8f7f4] text-[#111111]">
 
     <!-- Header -->
     <div id="header-container"></div>
@@ -22,27 +19,44 @@
     <!-- Main Content -->
     <main>
         <!-- Hero Section -->
-        <section class="program-hero hero-kids">
-            <div class="program-hero-content">
-                <h1 class="text-4xl md:text-6xl uppercase font-title">Kids</h1>
-                <p class="text-yellow-500 text-2xl mt-2">7 a 12 anos</p>
+        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
+            <!-- Background Image Overlay -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1593854524137-81418f3563a2?q=80&w=1600&auto=format&fit=crop" 
+                     class="w-full h-full object-cover opacity-30" alt="Kids Background">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 container mx-auto px-6">
+                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90 opacity-0 animate-fadeInUp">
+                    <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    7 a 12 Anos
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Kihap <span class="text-yellow-400">Kids</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/80 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    Construindo autoconfiança através da técnica e valores. Um ambiente focado em liderança, respeito e amizade.
+                </p>
             </div>
         </section>
 
-        <section class="py-16">
-            <div class="container mx-auto px-6">
-                <div class="max-w-3xl mx-auto text-left text-gray-300">
-                    <p class="mb-4">No programa Kids, as crianças aprofundam seus conhecimentos técnicos nas artes marciais. As aulas são estruturadas para desenvolver habilidades de autodefesa, melhorar o condicionamento físico e fortalecer a autoconfiança.</p>
-                    <p>Além da técnica, trabalhamos valores como perseverança, respeito ao próximo e liderança, preparando-os para os desafios dentro e fora do tatame.</p>
+        <!-- Content Section -->
+        <section class="py-24 bg-white">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <div class="glass-card p-12 text-left shadow-2xl border-gray-100">
+                    <div class="space-y-6 text-gray-600 text-lg leading-relaxed font-light">
+                        <p>No programa <strong class="text-gray-900 font-black italic underline decoration-yellow-400 underline-offset-4 tracking-tight">Kids</strong>, as crianças aprofundam seus conhecimentos técnicos nas artes marciais em um ambiente estruturado e altamente motivador.</p>
+                        <p>Nossas aulas são desenhadas para desenvolver não apenas habilidades de autodefesa, mas também para melhorar o condicionamento físico e, acima de tudo, fortalecer a <span class="font-bold text-gray-900 italic">autoconfiança</span> necessária para enfrentar os desafios da vida.</p>
+                        <p>Além da técnica pura, trabalhamos valores fundamentais como <span class="text-yellow-600 font-bold uppercase tracking-widest text-sm">perseverança, respeito ao próximo e liderança</span>, preparando os jovens para brilharem dentro e fora do tatame.</p>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Testimonials -->
         <div id="testimonials-container"></div>
-
-        <!-- Video Section -->
-        <div id="video-container"></div>
 
         <!-- CTA Section -->
         <div id="cta-container"></div>
