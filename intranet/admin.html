@@ -11,7 +11,19 @@
                 document.documentElement.classList.remove("dark");
             }
         })();
-        window.tailwind = { config: { darkMode: "class" } };
+        window.tailwind = { 
+            config: { 
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#FF9800",
+                            "primary-dark": "#E68900"
+                        }
+                    }
+                }
+            } 
+        };
     </script>    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
@@ -49,114 +61,132 @@
         <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
-                <h1 class="text-2xl font-bold mb-4">Painel de Administração</h1>
-
-                <!-- Tabs Navigation -->
-                <div class="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-2 scrollbar-hide">
-                    <button id="tab-users"
-                        class="px-4 py-2 font-semibold text-primary border-b-2 border-primary focus:outline-none transition-colors whitespace-nowrap">
-                        Usuários
-                    </button>
-                    <button id="tab-logs"
-                        class="px-4 py-2 font-medium text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap">
-                        Histórico de Logins
-                    </button>
-                    <button id="tab-quotes"
-                        class="px-4 py-2 font-medium text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap">
-                        Frases do Dia
-                    </button>
+            <div class="flex-grow p-4 md:p-8 lg:p-10 flex flex-col overflow-y-auto max-w-[1600px] mx-auto w-full">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                    <div>
+                        <p class="text-primary font-bold text-xs uppercase tracking-[0.2em] mb-2 opacity-80">Administração</p>
+                        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">Painel de Controle</h1>
+                    </div>
+                    
+                    <!-- Tabs Navigation -->
+                    <div class="flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl backdrop-blur-sm">
+                        <button id="tab-users"
+                            class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 bg-white dark:bg-gray-700 text-primary shadow-sm">
+                            Usuários
+                        </button>
+                        <button id="tab-logs"
+                            class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                            Logins
+                        </button>
+                        <button id="tab-quotes"
+                            class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                            Frases
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Users Tab Content -->
-                <div id="users-content">
-                    <div class="bg-white dark:bg-[#1a1a1a] p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg mb-6">
+                <div id="users-content" class="space-y-6">
+                    <div class="glass-panel premium-shadow p-6 rounded-2xl border border-gray-200 dark:border-gray-800 mb-6">
                         <div
                             class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-                            <h2 class="text-xl font-semibold">Usuários</h2>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                    <i class="fas fa-users-cog text-xl"></i>
+                                </div>
+                                <h2 class="text-xl font-bold">Gestão de Equipe</h2>
+                            </div>
                             <div
-                                class="flex flex-col md:flex-row items-stretch md:items-center space-y-3 md:space-y-0 md:space-x-4 w-full md:w-auto">
-                                <input type="text" id="search-users" placeholder="Buscar por nome ou email..."
-                                    class="px-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-full md:w-64">
+                                class="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
+                                <div class="relative group">
+                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                                    <input type="text" id="search-users" placeholder="Buscar por nome ou email..."
+                                        class="pl-10 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-full md:w-72">
+                                </div>
                                 <button id="add-user-btn"
-                                    class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark w-full md:w-auto">
-                                    <i class="fas fa-plus mr-2"></i>Adicionar Usuário
+                                    class="px-6 py-2.5 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Novo Usuário</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Desktop Table View -->
-                    <div class="hidden md:block overflow-x-auto">
-                        <table class="min-w-full bg-white dark:bg-[#1a1a1a]">
+                    <div class="hidden md:block glass-panel premium-shadow rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                        <table class="min-w-full">
                             <thead>
-                                <tr>
-                                    <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Nome</th>
-                                    <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Email</th>
-                                    <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Permissões</th>
-                                    <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Ações</th>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30">
+                                    <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Colaborador</th>
+                                    <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Acesso & Permissões</th>
+                                    <th class="py-4 px-6 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="user-table-body">
+                            <tbody id="user-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                 <!-- User rows will be inserted here -->
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Mobile Card View -->
-                    <div id="user-mobile-list" class="md:hidden space-y-4">
+                    <div id="user-mobile-list" class="md:hidden space-y-4 pb-10">
                         <!-- User cards will be inserted here -->
                     </div>
                 </div>
 
                 <!-- Login History Tab Content -->
                 <div id="logs-content" class="hidden">
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold">Histórico de Logins</h2>
-                            <div class="flex items-center space-x-4">
-                                <!-- Placeholder for future filters if needed -->
+                    <div class="glass-panel premium-shadow rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                                    <i class="fas fa-history text-xl"></i>
+                                </div>
+                                <h2 class="text-xl font-bold">Histórico de Atividade</h2>
                             </div>
                         </div>
-                        <div class="overflow-x-auto max-h-96"> <!-- Scrollable container -->
-                            <table class="min-w-full bg-white dark:bg-[#1a1a1a]">
-                                <thead class="sticky top-0 bg-[#1a1a1a] z-10">
+                        <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
+                            <table class="min-w-full">
+                                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 shadow-sm">
                                     <tr>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Data/Hora</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Nome</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Email</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Tipo</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Data/Hora</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Colaborador</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Perfil</th>
                                     </tr>
                                 </thead>
-                                <tbody id="login-logs-body">
+                                <tbody id="login-logs-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                     <!-- Logs will be inserted here -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+
                 <!-- Quotes Tab Content -->
                 <div id="quotes-content" class="hidden">
-                    <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold">Frases do Dia</h2>
-                            <div class="flex items-center space-x-4">
-                                <button id="add-quote-btn"
-                                    class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">
-                                    <i class="fas fa-plus mr-2"></i>Adicionar Frase
-                                </button>
+                    <div class="glass-panel premium-shadow rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
+                                    <i class="fas fa-quote-left text-xl"></i>
+                                </div>
+                                <h2 class="text-xl font-bold">Frases do Dia</h2>
                             </div>
+                            <button id="add-quote-btn"
+                                class="px-5 py-2 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-md flex items-center gap-2">
+                                <i class="fas fa-plus text-xs"></i> Nova Frase
+                            </button>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white dark:bg-[#1a1a1a]">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="min-w-full">
                                 <thead>
-                                    <tr>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider w-3/4">Frase</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Autor</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-left text-gray-600 dark:text-gray-400 font-semibold uppercase text-xs tracking-wider">Ações</th>
+                                    <tr class="bg-gray-50/50 dark:bg-gray-800/20">
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest w-3/4">Conteúdo</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Autor</th>
+                                        <th class="py-4 px-6 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="quotes-table-body">
+                                <tbody id="quotes-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                     <!-- Quote rows will be inserted here -->
                                 </tbody>
                             </table>
@@ -168,26 +198,35 @@
 
             <!-- Add Quote Modal -->
             <div id="quote-modal"
-                class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-lg">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Adicionar Nova Frase</h2>
+                class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md">
+                <div class="glass-card p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-lg">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
+                            <i class="fas fa-quote-left text-lg"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Nova Frase</h2>
+                    </div>
                     <form id="quote-form">
-                        <div class="mb-4">
-                            <label for="quote-text" class="block text-sm font-medium text-gray-600 dark:text-gray-300">Frase</label>
-                            <textarea id="quote-text" required rows="3"
-                                class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:border-primary transition-all"></textarea>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="quote-text" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Conteúdo da Frase</label>
+                                <textarea id="quote-text" required rows="3"
+                                    class="w-full px-4 py-3 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                    placeholder="Digite a frase inspiradora do dia..."></textarea>
+                            </div>
+                            <div>
+                                <label for="quote-author-input"
+                                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Autor</label>
+                                <input type="text" id="quote-author-input" required
+                                    class="w-full px-4 py-3 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    placeholder="Nome do autor">
+                            </div>
                         </div>
-                        <div class="mb-4">
-                            <label for="quote-author-input"
-                                class="block text-sm font-medium text-gray-600 dark:text-gray-300">Autor</label>
-                            <input type="text" id="quote-author-input" required
-                                class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:border-primary transition-all">
-                        </div>
-                        <div class="mt-6 flex space-x-4">
-                            <button type="submit"
-                                class="flex-1 px-4 py-2.5 font-bold text-white bg-primary rounded-lg hover:bg-primary-dark transition-all shadow-lg">Salvar</button>
+                        <div class="mt-8 flex gap-3">
                             <button type="button" id="cancel-quote-btn"
-                                class="flex-1 px-4 py-2.5 font-bold text-gray-700 dark:text-white bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-all">Cancelar</button>
+                                class="flex-1 px-4 py-3 font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancelar</button>
+                            <button type="submit"
+                                class="flex-1 px-4 py-3 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30">Salvar Frase</button>
                         </div>
                     </form>
                 </div>
@@ -195,184 +234,121 @@
 
             <!-- Add/Edit User Modal -->
             <div id="user-modal"
-                class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-                <div class="bg-white dark:bg-[#1a1a1a] p-8 rounded-xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-800">
-                    <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-                        <h2 id="form-title" class="text-2xl font-bold text-gray-900 dark:text-white">Adicionar Novo Usuário</h2>
+                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy">
+                <div class="bg-white dark:bg-[#1a1a1a] p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-800 transform transition-all">
+                    <div class="flex justify-between items-center mb-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                                <i class="fas fa-user-plus text-2xl"></i>
+                            </div>
+                            <h2 id="form-title" class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Novo Colaborador</h2>
+                        </div>
                         <button type="button" id="close-modal-btn"
-                            class="text-gray-500 hover:text-primary transition-colors">
+                            class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-500 transition-all">
                             <i class="fas fa-times text-xl"></i>
                         </button>
                     </div>
 
-                    <form id="user-form" class="space-y-6">
+                    <form id="user-form" class="space-y-8">
                         <input type="hidden" id="user-email-hidden">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                             <!-- Basic Info Section -->
-                            <div class="space-y-4">
-                                <h3 class="text-lg font-semibold text-primary border-b border-gray-700 pb-2">Informações
-                                    Básicas</h3>
-                                <div>
-                                    <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nome
-                                        Completo</label>
-                                    <div class="relative">
-                                        <div
-                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-user text-gray-500"></i>
+                            <div class="space-y-5">
+                                <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Informações de Acesso</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="name" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome Completo</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                <i class="fas fa-user text-sm"></i>
+                                            </div>
+                                            <input type="text" id="name" required
+                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                placeholder="Ex: João Silva">
                                         </div>
-                                        <input type="text" id="name" required
-                                            class="w-full pl-10 pr-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                            placeholder="Ex: João Silva">
                                     </div>
-                                </div>
-                                <div>
-                                    <label for="email"
-                                        class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                                    <div class="relative">
-                                        <div
-                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-envelope text-gray-500"></i>
+                                    <div>
+                                        <label for="email" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">E-mail Corporativo</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                <i class="fas fa-envelope text-sm"></i>
+                                            </div>
+                                            <input type="email" id="email" required
+                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                placeholder="Ex: joao@kihap.com.br">
                                         </div>
-                                        <input type="email" id="email" required
-                                            class="w-full pl-10 pr-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                            placeholder="Ex: joao@exemplo.com">
                                     </div>
-                                </div>
-                                <div>
-                                    <label for="password"
-                                        class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
-                                    <div class="relative">
-                                        <div
-                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-lock text-gray-500"></i>
+                                    <div>
+                                        <label for="password" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Senha de Acesso</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                <i class="fas fa-lock text-sm"></i>
+                                            </div>
+                                            <input type="password" id="password"
+                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                placeholder="No mínimo 6 caracteres">
                                         </div>
-                                        <input type="password" id="password"
-                                            class="w-full pl-10 pr-3 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                            placeholder="Mínimo 6 caracteres">
+                                        <p class="text-[10px] text-gray-500 mt-2 italic ml-1 opacity-70">Deixe vazio para manter a senha atual durante a edição.</p>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-1">Deixe em branco para manter a senha atual ao
-                                        editar.</p>
                                 </div>
                             </div>
 
                             <!-- Roles Section -->
-                            <div class="space-y-4">
-                                <h3 class="text-lg font-semibold text-primary border-b border-gray-700 pb-2">Permissões
-                                    e Cargos</h3>
-                                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <!-- Admin -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isAdmin"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Administrador</span>
+                            <div class="space-y-5">
+                                <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Atribuições & Permissões</h3>
+                                <div class="bg-gray-50/50 dark:bg-gray-900/30 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 max-h-[350px] overflow-y-auto custom-scrollbar">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <!-- Checkboxes -->
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isAdmin" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Admin</span>
                                         </label>
-
-                                        <!-- Instrutor -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isInstructor"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Instrutor</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isInstructor" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Instrutor</span>
                                         </label>
-
-                                        <!-- RH -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isRH"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">RH</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isRH" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">R.H.</span>
                                         </label>
-
-                                        <!-- Marketing -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isMarketing"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Marketing</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isMarketing" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Marketing</span>
                                         </label>
-
-                                        <!-- Financeiro -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isFinanceiro"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Financeiro</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isFinanceiro" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Financeiro</span>
                                         </label>
-
-                                        <!-- Administrativo -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isAdministrativo"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Administrativo</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isAdministrativo" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Administrativo</span>
                                         </label>
-
-                                        <!-- Store -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isStore"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Store</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isStore" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Store</span>
                                         </label>
-
-                                        <!-- Academy -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isAcademy"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Academy</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isAcademy" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Academy</span>
                                         </label>
-
-                                        <!-- Jurídico -->
-                                        <label
-                                            class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                                            <div class="relative flex items-center">
-                                                <input type="checkbox" id="isJuridico"
-                                                    class="peer h-5 w-5 text-primary bg-gray-700 border-gray-500 rounded focus:ring-primary focus:ring-offset-gray-800">
-                                            </div>
-                                            <span
-                                                class="text-sm font-medium text-gray-300 group-hover:text-white">Jurídico</span>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
+                                            <input type="checkbox" id="isJuridico" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Jurídico</span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+                        <div class="flex justify-end gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
                             <button type="button" id="cancel-edit"
-                                class="px-5 py-2.5 font-medium text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all">
+                                class="px-8 py-3.5 font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
                                 Cancelar
                             </button>
                             <button type="submit"
-                                class="px-5 py-2.5 font-bold text-white bg-primary rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 transition-all shadow-lg hover:shadow-primary/30">
-                                Salvar Usuário
+                                class="px-10 py-3.5 font-black text-white bg-primary rounded-2xl hover:bg-primary-dark transition-all shadow-xl hover:shadow-primary/40">
+                                Salvar Alterações
                             </button>
                         </div>
                     </form>
@@ -381,23 +357,27 @@
 
             <!-- Change Password Modal -->
             <div id="change-password-modal"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg w-full max-w-md">
-                    <h2 class="text-xl font-semibold mb-4">Alterar Senha</h2>
+                class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md">
+                <div class="glass-card p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-md">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
+                            <i class="fas fa-key text-lg"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Alterar Senha</h2>
+                    </div>
                     <form id="change-password-form">
                         <input type="hidden" id="change-password-user-id">
                         <div>
-                            <label for="new-password" class="block text-sm font-medium text-gray-300">Nova
-                                Senha</label>
+                            <label for="new-password" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nova Senha</label>
                             <input type="password" id="new-password" required
-                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md">
+                                class="w-full px-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                placeholder="Digite a nova senha">
                         </div>
-                        <div class="mt-6 flex space-x-4">
-                            <button type="submit"
-                                class="px-4 py-2 font-bold text-white bg-primary rounded-md hover:bg-primary-dark">Salvar
-                                Senha</button>
+                        <div class="mt-8 flex gap-3">
                             <button type="button" id="cancel-change-password"
-                                class="px-4 py-2 font-bold text-white bg-gray-600 rounded-md hover:bg-gray-700">Cancelar</button>
+                                class="flex-1 px-4 py-3 font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancelar</button>
+                            <button type="submit"
+                                class="flex-1 px-4 py-3 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30">Salvar Senha</button>
                         </div>
                     </form>
                 </div>

@@ -70,25 +70,25 @@
         <div id="header-container"></div>
 
         <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
-            <h1 class="text-2xl font-bold mb-6">Gerenciamento de Alunos</h1>
+            <h1 class="text-2xl font-bold mb-6 tracking-tight">Gerenciamento de Alunos</h1>
 
             <!-- Unified Command Bar -->
-            <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-md p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl mb-8 flex flex-col lg:flex-row lg:items-center gap-6">
+            <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8 flex flex-col lg:flex-row lg:items-center gap-6">
                 <!-- Search Section -->
-                <div class="relative flex-grow max-w-md">
-                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 pointer-events-none">
+                <div class="relative flex-grow max-w-md group">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 group-focus-within:text-primary transition-colors">
                         <i class="fas fa-search text-sm"></i>
                     </span>
                     <input type="text" id="search-input" placeholder="Buscar aluno por nome..."
-                        class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                        class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                 </div>
 
                 <!-- Filters Section -->
                 <div class="flex flex-wrap items-center gap-6">
                     <div class="flex items-center gap-3">
-                        <label for="unit-filter" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade:</label>
+                        <label for="unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade</label>
                         <select id="unit-filter"
-                            class="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[220px] transition-all">
+                            class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]">
                             <option value="all">Todas as Unidades</option>
                             <option value="centro">Unidade Centro</option>
                             <option value="coqueiros">Unidade Coqueiros</option>
@@ -108,7 +108,7 @@
                 <!-- Actions Section -->
                 <div class="flex items-center gap-3 lg:ml-auto">
                     <button id="add-student-btn"
-                        class="bg-primary hover:bg-primary-dark text-black font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95">
+                        class="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/30 active:scale-95 uppercase tracking-widest text-xs">
                         <i class="fas fa-plus"></i>
                         <span>Novo Aluno</span>
                     </button>
@@ -120,7 +120,7 @@
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <div id="actions-dropdown-menu"
-                            class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-50 py-2 focus:outline-none backdrop-blur-xl">
+                            class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-50 py-2 focus:outline-none backdrop-blur-xl transition-all duration-200 opacity-0 scale-95">
                             <button id="batch-password-btn" class="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary transition-colors flex items-center gap-3">
                                 <i class="fas fa-key text-yellow-500"></i> Gerar Senhas Padrão
                             </button>
@@ -136,71 +136,68 @@
                 </div>
             </div>
 
-            <!-- Tabs Navigation -->
-            <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
-                <nav class="flex space-x-4" aria-label="Tabs">
+            <!-- Tabs Navigation (Premium Pill Style) -->
+            <div class="mb-8 flex justify-start">
+                <div class="flex bg-gray-200/40 dark:bg-gray-800/40 p-1 rounded-xl backdrop-blur-sm overflow-x-auto custom-scrollbar max-w-full">
                     <button id="tab-manage-students"
-                        class="tab-btn text-primary border-b-2 border-primary px-3 py-2 font-semibold text-sm">
-                        Gerenciamento de Alunos
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 bg-primary text-black shadow-lg whitespace-nowrap">
+                        👥 Alunos
                     </button>
                     <button id="tab-manage-tuitions"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                        Mensalidades
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                        💰 Mensalidades
                     </button>
                     <button id="tab-check-entries"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                        Verificar Entradas
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                        ✅ Entradas
                     </button>
                     <button id="tab-manage-badges"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                        Gerenciar Emblemas
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                        🛡️ Emblemas
                     </button>
                     <button id="tab-ranking"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                        Ranking
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                        🏆 Ranking
                     </button>
                     <button id="tab-access-ranking"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                        Ranking de Acessos
+                        class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                        📊 Acessos
                     </button>
-                </nav>
+                </div>
             </div>
 
             <!-- Tab Content: Gerenciamento de Alunos -->
             <div id="tab-content-manage-students" class="tab-content">
-                <!-- Students Table Wrapper -->
-
-                <!-- Students Table -->
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-100 dark:border-gray-700">
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Nome</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Email</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-right pr-6">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body" class="divide-y divide-gray-50 dark:divide-gray-800">
-                            <!-- Linhas serão inseridas dinamicamente aqui -->
-                            <tr>
-                                <td colspan="4" class="text-center p-12 text-gray-500 italic">Carregando alunos...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    <th class="p-4">Aluno</th>
+                                    <th class="p-4">Contato / Email</th>
+                                    <th class="p-4">Unidade de Origem</th>
+                                    <th class="p-4 text-right pr-6">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="4" class="text-center p-12 text-gray-400 italic">Carregando alunos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Tab Content: Mensalidades -->
             <div id="tab-content-manage-tuitions" class="tab-content hidden">
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl mb-8 flex flex-col md:flex-row md:items-center gap-6">
+                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8 flex flex-col md:flex-row md:items-center gap-6">
                     <div class="flex-1 max-w-sm">
-                        <label for="tuition-search-input" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Buscar Aluno:</label>
-                        <input type="text" id="tuition-search-input" placeholder="Digite o nome..." class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                        <label for="tuition-search-input" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Buscar Aluno</label>
+                        <input type="text" id="tuition-search-input" placeholder="Digite o nome..." class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
                     </div>
                     <div>
-                        <label for="tuition-status-filter" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Filtrar Status:</label>
-                        <select id="tuition-status-filter" class="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[220px] transition-all">
+                        <label for="tuition-status-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Filtrar Status</label>
+                        <select id="tuition-status-filter" class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[220px] transition-all">
                             <option value="all">Todos os Status</option>
                             <option value="adimplente">Adimplentes (Ativos)</option>
                             <option value="inadimplente">Inadimplentes (Pendentes)</option>
@@ -209,77 +206,82 @@
                     </div>
                 </div>
 
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-100 dark:border-gray-700">
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Aluno</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Plano Vigente</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">Status</th>
-                                <th class="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tuitions-table-body" class="divide-y divide-gray-50 dark:divide-gray-800">
-                            <tr>
-                                <td colspan="5" class="text-center p-12 text-gray-500 italic">Carregando mensalidades...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    <th class="p-4">Aluno</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4">Plano Vigente</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-right pr-6">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tuitions-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="5" class="text-center p-12 text-gray-400 italic">Carregando mensalidades...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Tab Content: Verificar Entradas -->
             <div id="tab-content-check-entries" class="tab-content hidden">
                 <!-- Daily Entries Check -->
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl max-w-2xl">
+                <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm max-w-2xl">
                     <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Verificar Entradas Diárias</h2>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-8">Selecione uma data para ver o número de alunos únicos que fizeram check-in na unidade selecionada.</p>
                     <div class="flex flex-col sm:flex-row items-end gap-4">
                         <div class="flex-1 w-full">
-                            <label for="daily-entries-date" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Data:</label>
+                            <label for="daily-entries-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Selecionar Data</label>
                             <input type="date" id="daily-entries-date"
-                                class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                                class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
                         </div>
                         <button id="check-entries-btn"
-                            class="w-full sm:w-auto bg-primary hover:bg-primary-dark text-black font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95">
-                            Verificar Entradas
+                            class="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
+                            Verificar
                         </button>
                     </div>
-                    <div id="entries-result" class="mt-8 p-6 bg-gray-50 dark:bg-[#111] rounded-2xl border border-gray-100 dark:border-gray-800 min-h-[80px] flex items-center justify-center text-gray-500 italic">
-                        <!-- Resultado será exibido aqui -->
+                    <div id="entries-result" class="mt-8 p-8 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl border border-gray-100 dark:border-gray-800/50 min-h-[120px] flex items-center justify-center text-gray-400 italic">
                         Nenhuma verificação realizada ainda.
                     </div>
                 </div>
             </div>
 
-            <!-- Tab Content: Gerenciar Emblemas -->
             <div id="tab-content-manage-badges" class="tab-content hidden">
                 <!-- Formulário para Adicionar Novo Emblema -->
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl mb-8">
-                    <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">Adicionar Novo Emblema</h2>
+                <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                    <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white tracking-tight">🛡️ Adicionar Novo Emblema</h2>
                     <form id="add-badge-form" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div>
-                                <label for="badge-name" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema</label>
-                                <input type="text" id="badge-name" required
-                                    class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema</label>
+                                <input type="text" id="badge-name" placeholder="Ex: Guerreiro de Elite" required
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
                             </div>
                             <div>
-                                <label for="badge-image" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Imagem do Emblema</label>
-                                <input type="file" id="badge-image" accept="image/*" required
-                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary file:text-black hover:file:bg-primary-dark transition-all">
+                                <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Imagem do Emblema</label>
+                                <div class="flex flex-col gap-3">
+                                    <input type="file" id="badge-image" accept="image/*" class="hidden" required>
+                                    <button type="button" onclick="document.getElementById('badge-image').click()" 
+                                        class="px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Escolher ícone</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div>
                             <label for="badge-description"
-                                class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição</label>
-                            <textarea id="badge-description" rows="3" required
-                                class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"></textarea>
+                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição da Conquista</label>
+                            <textarea id="badge-description" rows="3" placeholder="Descreva o que o aluno precisa fazer para ganhar este emblema..." required
+                                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
                         </div>
                         <div class="flex justify-end">
                             <button type="submit" id="submit-badge-btn"
-                                class="bg-primary hover:bg-primary-dark text-black font-bold py-3 px-10 rounded-xl shadow-md transition-all active:scale-95">
+                                class="bg-primary hover:bg-primary-dark text-white font-bold py-4 px-12 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
                                 Salvar Emblema
                             </button>
                         </div>
@@ -287,63 +289,66 @@
                 </div>
 
                 <!-- Lista de Emblemas Existentes -->
-                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl flex-grow">
-                    <h2 class="text-xl font-bold mb-8 text-gray-900 dark:text-white">Emblemas Existentes</h2>
+                <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                    <h2 class="text-xl font-bold mb-8 text-gray-900 dark:text-white tracking-tight">Emblemas Ativos</h2>
                     <div id="badges-list-container"
                         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                        <!-- Emblemas serão carregados aqui -->
-                        <p class="col-span-full text-center text-gray-500 italic p-12">Carregando emblemas...</p>
+                        <p class="col-span-full text-center text-gray-400 italic p-12">Carregando emblemas...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab Content: Ranking -->
             <div id="tab-content-ranking" class="tab-content hidden">
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Ranking de KihapCoins</h2>
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20 flex justify-between items-center">
+                        <h2 class="text-xl font-bold tracking-tight">🏆 Ranking de KihapCoins</h2>
                         <button id="sync-evo-ranking-btn"
-                            class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
+                            class="hidden px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 transition-all text-xs uppercase tracking-widest shadow-lg">
                             <i class="fas fa-sync"></i>
-                            <span>Sincronizar com EVO</span>
+                            <span>Sincronizar EVO</span>
                         </button>
                     </div>
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-200 dark:border-gray-700">
-                                <th class="p-4">Posição</th>
-                                <th class="p-4">Nome</th>
-                                <th class="p-4">Unidade</th>
-                                <th class="p-4">KihapCoins</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ranking-table-body">
-                            <tr>
-                                <td colspan="4" class="text-center p-8">Carregando ranking...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    <th class="p-4 w-24 text-center">Posição</th>
+                                    <th class="p-4">Aluno</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4 text-right pr-6">KihapCoins</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ranking-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="4" class="text-center p-12 text-gray-400 italic">Carregando ranking...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Tab Content: Ranking de Acessos -->
             <div id="tab-content-access-ranking" class="tab-content hidden">
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto">
-                    <h2 class="text-xl font-bold mb-4">Ranking de Acessos à Plataforma por Unidade</h2>
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-200 dark:border-gray-700">
-                                <th class="p-4">Posição</th>
-                                <th class="p-4">Unidade</th>
-                                <th class="p-4">Alunos com Acesso</th>
-                            </tr>
-                        </thead>
-                        <tbody id="access-ranking-table-body">
-                            <tr>
-                                <td colspan="3" class="text-center p-8">Carregando ranking de acessos...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                        <h2 class="text-xl font-bold tracking-tight">📊 Engajamento por Unidade</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    <th class="p-4 w-24 text-center">Rank</th>
+                                    <th class="p-4">Unidade</th>
+                                    <th class="p-4 text-right pr-6">Alunos Ativos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="access-ranking-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="3" class="text-center p-12 text-gray-400 italic">Carregando ranking de acessos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

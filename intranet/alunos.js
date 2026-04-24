@@ -321,18 +321,19 @@ export function setupAlunosPage() {
                 };
 
                 for (const name in tabConfigs) {
-                    if (tabConfigs[name].content) tabConfigs[name].content.classList.add('hidden');
-                    if (tabConfigs[name].button) {
-                        tabConfigs[name].button.classList.remove('text-primary', 'border-primary', 'border-b-2', 'font-semibold');
-                        tabConfigs[name].button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-primary', 'dark:hover:text-white', 'font-medium');
+                    const config = tabConfigs[name];
+                    if (config.content) config.content.classList.add('hidden');
+                    if (config.button) {
+                        config.button.classList.remove('bg-primary', 'text-black', 'shadow-lg');
+                        config.button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
                     }
                 }
 
                 const activeConfig = tabConfigs[activeTabName];
-                if (activeConfig.content) activeConfig.content.classList.remove('hidden');
-                if (activeConfig.button) {
-                    activeConfig.button.classList.add('text-primary', 'border-primary', 'border-b-2', 'font-semibold');
-                    activeConfig.button.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-primary', 'dark:hover:text-white', 'font-medium');
+                if (activeConfig && activeConfig.content) activeConfig.content.classList.remove('hidden');
+                if (activeConfig && activeConfig.button) {
+                    activeConfig.button.classList.add('bg-primary', 'text-black', 'shadow-lg');
+                    activeConfig.button.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
                 }
 
                 if (activeTabName === 'manage-badges') {
@@ -518,16 +519,42 @@ function renderStudents(students, isAdmin = false) {
             const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
             const emailContact = member.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4);
             const email = emailContact?.description || 'N/A';
+            const initials = (member.firstName?.[0] || '') + (member.lastName?.[0] || '');
+            const photoUrl = member.photoUrl || member.photo || null;
+            const avatarContent = photoUrl 
+                ? `<img src="${photoUrl}" class="w-full h-full object-cover rounded-full" onerror="this.outerHTML='${initials.toUpperCase()}'">`
+                : initials.toUpperCase();
 
             return `
-                <tr data-id="${member.idMember}" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer student-row group transition-all duration-200">
-                    <td class="p-4 font-bold text-gray-900 dark:text-white flex items-center text-sm">${fullName}</td>
-                    <td class="p-4 text-sm text-gray-600 dark:text-gray-400">${email}</td>
-                    <td class="p-4 text-sm text-gray-600 dark:text-gray-400 font-medium">${member.branchName || 'Centro'}</td>
-                    <td class="p-4 text-right">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
-                            <i class="fas fa-chevron-right text-xs"></i>
+                <tr data-id="${member.idMember}" class="student-row group transition-all duration-200 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 cursor-pointer">
+                    <td class="p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-xs border border-primary/10 shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
+                                ${avatarContent}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="font-bold text-gray-900 dark:text-white text-sm group-hover:text-primary transition-colors">${fullName}</span>
+                                <span class="text-[10px] text-gray-400 font-medium">ID: ${member.idMember}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">${email}</span>
+                            <span class="text-[10px] text-gray-400">Principal</span>
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            ${member.branchName || 'Centro'}
                         </span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end">
+                            <span class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                                <i class="fas fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -543,36 +570,9 @@ function renderStudents(students, isAdmin = false) {
 }
 
 async function highlightRegisteredStudents(evoIds) {
-    if (evoIds.length === 0) return;
-
-    try {
-        const result = await getRegisteredUsersByEvoId({ evoIds });
-        const registeredEvoIds = new Set(result.data.registeredEvoIds);
-
-        const rows = document.querySelectorAll('.student-row');
-        rows.forEach(row => {
-            const memberId = parseInt(row.dataset.id, 10);
-            if (registeredEvoIds.has(memberId)) {
-                // Remove highlight visual antigo se existir
-                row.classList.remove('bg-blue-900');
-
-                // Adiciona ícone de check verde ANTES do nome
-                const nameCell = row.cells[0]; // Primeira célula é o nome
-                if (nameCell && !nameCell.querySelector('.fa-check-circle')) {
-                    const icon = document.createElement('i');
-                    icon.className = 'fas fa-check-circle text-green-500 mr-2';
-                    icon.title = 'Aluno com acesso à plataforma';
-                    nameCell.prepend(icon);
-                }
-            }
-        });
-    } catch (error) {
-        if (error.code === 'permission-denied' || error.message.includes('Apenas administradores')) {
-            console.warn("Permissão negada para destacar alunos registrados. Apenas administradores podem ver esta informação.");
-        } else {
-            console.error("Erro ao destacar alunos registrados:", error);
-        }
-    }
+    // A pedido do usuário, removemos a sinalização visual (check verde) de alunos registrados.
+    // Mantemos a função para futuras implementações de status ou permissões se necessário.
+    return;
 }
 
 // Funções do modal removidas
@@ -657,17 +657,38 @@ function renderRanking(students) {
         const fullName = `${student.firstName || ''} ${student.lastName || ''}`;
         const unitName = student.branchName || 'N/A';
         const fitCoins = student.totalFitCoins || 0;
+        const initials = (student.firstName?.[0] || '') + (student.lastName?.[0] || '');
+
+        let rankClass = "bg-gray-100 dark:bg-gray-800 text-gray-500";
+        if (index === 0) rankClass = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50";
+        else if (index === 1) rankClass = "bg-gray-200 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600";
+        else if (index === 2) rankClass = "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50";
 
         return `
-            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200">
-                <td class="p-4 text-center font-black text-gray-900 dark:text-white text-sm">${index + 1}º</td>
-                <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${fullName}</td>
-                <td class="p-4 text-sm text-gray-600 dark:text-gray-400">${unitName}</td>
-                <td class="p-4">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-black text-sm">
-                        <i class="fas fa-coins text-xs"></i>
-                        ${fitCoins}
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200">
+                <td class="p-4 text-center">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg font-black text-xs ${rankClass}">
+                        ${index + 1}
                     </span>
+                </td>
+                <td class="p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] border border-primary/10">
+                            ${initials.toUpperCase()}
+                        </div>
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">${fullName}</span>
+                    </div>
+                </td>
+                <td class="p-4">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${unitName}</span>
+                </td>
+                <td class="p-4 text-right pr-6">
+                    <div class="flex justify-end">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-white font-black text-[10px] shadow-sm shadow-primary/20">
+                            <i class="fas fa-coins text-[8px]"></i>
+                            ${fitCoins.toLocaleString()}
+                        </span>
+                    </div>
                 </td>
             </tr>
         `;
@@ -727,15 +748,31 @@ function renderAccessRanking(rankedUnits) {
     }
 
     const rowsHtml = rankedUnits.map((unit, index) => {
+        let rankClass = "bg-gray-100 dark:bg-gray-800 text-gray-500";
+        if (index === 0) rankClass = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50";
+        else if (index === 1) rankClass = "bg-gray-200 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600";
+        else if (index === 2) rankClass = "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50";
+
         return `
-            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200">
-                <td class="p-4 text-center font-black text-gray-900 dark:text-white text-sm">${index + 1}º</td>
-                <td class="p-4 text-sm font-bold text-gray-900 dark:text-white">${unit.unitName}</td>
-                <td class="p-4">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 font-black text-sm">
-                        <i class="fas fa-users text-xs"></i>
-                        ${unit.count}
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200">
+                <td class="p-4 text-center">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg font-black text-xs ${rankClass}">
+                        ${index + 1}
                     </span>
+                </td>
+                <td class="p-4">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">${unit.unitName}</span>
+                        <span class="text-[10px] text-gray-400">Unidade Kihap</span>
+                    </div>
+                </td>
+                <td class="p-4 text-right pr-6">
+                    <div class="flex justify-end">
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 font-black text-[10px]">
+                            <i class="fas fa-users text-[8px]"></i>
+                            ${unit.count} Alunos
+                        </span>
+                    </div>
                 </td>
             </tr>
         `;

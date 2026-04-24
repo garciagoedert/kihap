@@ -9,6 +9,21 @@ import {
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
+// Global cache variables for performance
+let allSales = [];
+let allProducts = [];
+let allBanners = [];
+let allCoupons = [];
+let allCheckins = [];
+let searchTimeout = null;
+
+const debounce = (func, delay) => {
+    return (...args) => {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => func.apply(null, args), delay);
+    };
+};
+
 export async function setupStorePage() {
     const currentUser = await getCurrentUser();
     const isAdmin = await checkAdminStatus(currentUser);
@@ -179,67 +194,97 @@ export async function setupStorePage() {
     const manualSaleUnitSelect = document.getElementById('manual-sale-user-unit');
 
 
-    let allSales = [];
-    let allProducts = [];
-    let allBanners = [];
-    let allCoupons = [];
     let currentOpenSaleId = null;
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
-        [tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
-            tab.classList.remove('text-white', 'border-blue-500');
-            tab.classList.add('text-gray-400', 'hover:border-gray-500');
+        const tabs = [
+            { id: 'sales', el: tabSalesLog },
+            { id: 'products', el: tabManageProducts },
+            { id: 'marketing', el: tabMarketing },
+            { id: 'events', el: tabEvents }
+        ];
+
+        tabs.forEach(tab => {
+            if (!tab.el) return;
+            if (tab.id === activeTab) {
+                tab.el.classList.add('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            } else {
+                tab.el.classList.remove('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            }
         });
 
         [contentSalesLog, contentManageProducts, contentMarketing, contentEvents].forEach(content => {
-            content.classList.add('hidden');
+            if (content) content.classList.add('hidden');
         });
 
-        if (activeTab === 'sales') {
-            tabSalesLog.classList.add('text-white', 'border-blue-500');
-            tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
+        if (activeTab === 'sales' && contentSalesLog) {
             contentSalesLog.classList.remove('hidden');
-        } else if (activeTab === 'products') {
-            tabManageProducts.classList.add('text-white', 'border-blue-500');
-            tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
+        } else if (activeTab === 'products' && contentManageProducts) {
             contentManageProducts.classList.remove('hidden');
-        } else if (activeTab === 'marketing') {
-            tabMarketing.classList.add('text-white', 'border-blue-500');
-            tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
+        } else if (activeTab === 'marketing' && contentMarketing) {
             contentMarketing.classList.remove('hidden');
-        } else if (activeTab === 'events') {
+        } else if (activeTab === 'events' && contentEvents) {
             populateEventFilter();
             fetchEventSubscribers();
-            tabEvents.classList.add('text-white', 'border-blue-500');
-            tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
             contentEvents.classList.remove('hidden');
         }
     }
 
     // --- Marketing Sub-tab Switching Logic ---
     function switchMarketingSubTab(activeSubTab) {
-        if (activeSubTab === 'banners') {
-            subtabBanners.classList.add('text-white', 'border-blue-500');
-            subtabBanners.classList.remove('text-gray-400', 'hover:border-gray-500');
-            subtabCoupons.classList.remove('text-white', 'border-blue-500');
-            subtabCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
+        const subtabs = [
+            { id: 'banners', el: subtabBanners },
+            { id: 'coupons', el: subtabCoupons }
+        ];
+
+        subtabs.forEach(tab => {
+            if (!tab.el) return;
+            if (tab.id === activeSubTab) {
+                tab.el.classList.add('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            } else {
+                tab.el.classList.remove('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            }
+        });
+
+        [contentManageBanners, contentManageCoupons].forEach(content => {
+            if (content) content.classList.add('hidden');
+        });
+
+        if (activeSubTab === 'banners' && contentManageBanners) {
             contentManageBanners.classList.remove('hidden');
-            contentManageCoupons.classList.add('hidden');
-        } else if (activeSubTab === 'coupons') {
-            subtabCoupons.classList.add('text-white', 'border-blue-500');
-            subtabCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
-            subtabBanners.classList.remove('text-white', 'border-blue-500');
-            subtabBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            fetchBanners();
+        } else if (activeSubTab === 'coupons' && contentManageCoupons) {
             contentManageCoupons.classList.remove('hidden');
-            contentManageBanners.classList.add('hidden');
+            fetchCoupons();
         }
     }
 
-    if (tabSalesLog) tabSalesLog.addEventListener('click', () => switchTab('sales'));
-    if (tabManageProducts) tabManageProducts.addEventListener('click', () => switchTab('products'));
-    if (tabMarketing) tabMarketing.addEventListener('click', () => switchTab('marketing'));
-    if (tabEvents) tabEvents.addEventListener('click', () => switchTab('events'));
+    if (tabSalesLog) tabSalesLog.addEventListener('click', () => {
+        console.log('[Store] Switching to Sales Log');
+        switchTab('sales');
+        if (allSales.length === 0) fetchSales().then(() => applyFilters());
+    });
+    if (tabManageProducts) tabManageProducts.addEventListener('click', () => {
+        console.log('[Store] Switching to Products');
+        switchTab('products');
+        if (allProducts.length === 0) fetchProducts();
+    });
+    if (tabMarketing) tabMarketing.addEventListener('click', () => {
+        console.log('[Store] Switching to Marketing');
+        switchTab('marketing');
+        // Initial fetch for marketing if needed
+    });
+    if (tabEvents) tabEvents.addEventListener('click', () => {
+        console.log('[Store] Switching to Events');
+        switchTab('events');
+        populateEventFilter();
+        if (allCheckins.length === 0) fetchEventSubscribers();
+    });
 
     if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
     if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
@@ -501,15 +546,17 @@ export async function setupStorePage() {
     };
 
     const displaySales = (salesToDisplay) => {
-        salesTableBody.innerHTML = '';
+        if (!salesTableBody) return;
+        
         if (salesToDisplay.length === 0) {
-            salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
+            salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic">Nenhuma venda encontrada com os filtros atuais.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         salesToDisplay.forEach(sale => {
-            const row = salesTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-100', 'dark:border-gray-800', 'hover:bg-gray-50', 'dark:hover:bg-gray-800/30', 'cursor-pointer', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-all duration-200 group';
             row.dataset.saleId = sale.id;
 
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
@@ -517,33 +564,37 @@ export async function setupStorePage() {
 
             let nameDisplay = sale.userName || 'N/A';
             if (sale.saleType === 'manual') {
-                nameDisplay += ` <span class="ml-2 px-2 py-1 text-xs font-semibold text-blue-300 bg-blue-800/50 rounded-full">Manual</span>`;
+                nameDisplay += ` <span class="ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-transparent">Manual</span>`;
             }
 
-            let productDisplay = sale.productName || 'N/A';
+            let productDisplay = `<span class="font-bold text-gray-900 dark:text-white">${sale.productName || 'N/A'}</span>`;
             if (sale.recommendedItems && sale.recommendedItems.length > 0) {
                 const recommendedNames = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
-                productDisplay += `<br><span class="text-xs text-gray-400">+ ${recommendedNames}</span>`;
+                productDisplay += `<div class="text-[10px] text-gray-400 mt-0.5">+ ${recommendedNames}</div>`;
             }
 
             row.innerHTML = `
                 <td class="p-4" data-label="Nome do Cliente">
-                    <div class="text-gray-900 dark:text-white font-medium">${nameDisplay}</div>
+                    <div class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</div>
                 </td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4 text-gray-900 dark:text-white font-medium" data-label="Produto">${productDisplay}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
+                <td class="p-4" data-label="Produto">${productDisplay}</td>
                 <td class="p-4 text-gray-900 dark:text-white font-bold" data-label="Valor">${amount}</td>
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
-                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs" data-label="Data da Compra">${date}</td>
+                <td class="p-4 text-gray-400 text-[10px] font-medium" data-label="Data da Compra">${date}</td>
                 <td class="p-4" data-label="Ações">
-                    <button class="update-status-btn bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-blue-100 dark:border-transparent" 
-                        data-sale-id="${sale.id}">
-                        <i class="fas fa-eye mr-1"></i>Ver
+                    <button class="update-status-btn w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" 
+                        data-sale-id="${sale.id}" title="Ver Detalhes">
+                        <i class="fas fa-eye text-xs"></i>
                     </button>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        salesTableBody.innerHTML = '';
+        salesTableBody.appendChild(fragment);
     };
 
     const applyFilters = () => {
@@ -639,12 +690,28 @@ export async function setupStorePage() {
         });
     }
 
-    [searchInput, unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter, fulfillmentFilter].forEach(el => {
-        if (el) {
-            el.addEventListener('change', applyFilters);
-            el.addEventListener('keyup', applyFilters);
-        }
+    // Optimizing filter listeners with debounce for keyup
+    const debouncedSalesFilter = debounce(applyFilters, 300);
+    
+    [unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter, fulfillmentFilter].forEach(el => {
+        if (el) el.addEventListener('change', applyFilters);
     });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', debouncedSalesFilter);
+    }
+    
+    // Adding product search listener (it was missing or incomplete)
+    if (productSearchInput) {
+        productSearchInput.addEventListener('input', debounce(() => {
+            const term = productSearchInput.value.toLowerCase();
+            const filtered = allProducts.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                (p.category && p.category.toLowerCase().includes(term))
+            );
+            displayProducts(filtered);
+        }, 300));
+    }
 
 
     const fetchMpAccounts = async () => {
@@ -683,15 +750,17 @@ export async function setupStorePage() {
     };
 
     const displayProducts = (productsToDisplay) => {
-        productsTableBody.innerHTML = '';
+        if (!productsTableBody) return;
+        
         if (productsToDisplay.length === 0) {
-            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500 italic">Nenhum produto cadastrado.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         productsToDisplay.forEach(product => {
-            const row = productsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-800', 'hover:bg-gray-800/30', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-all duration-200 group';
 
             let price;
             if (product.priceType === 'variable' && product.priceVariants) {
@@ -705,29 +774,33 @@ export async function setupStorePage() {
 
             row.innerHTML = `
                 <td class="p-4">
-                    <div class="font-bold text-white">${product.name}</div>
-                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">${product.category || 'Geral'}</div>
+                    <div class="font-bold text-gray-900 dark:text-white">${product.name}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1">${product.category || 'Geral'}</div>
                 </td>
-                <td class="p-4 font-mono text-sm text-gray-300 font-bold">${price}</td>
+                <td class="p-4 font-mono text-sm text-primary font-bold">${price}</td>
                 <td class="p-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-500 border border-green-100 dark:border-green-500/20' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-500/20'}">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'}">
                         ${product.visible ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
                 <td class="p-4">
-                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700" 
+                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700 shadow-sm" 
                         data-link="https://www.kihap.com.br/checkout?product=${product.id}">
                         <i class="fas fa-link text-xs"></i>
                     </button>
                 </td>
                 <td class="p-4 text-right">
-                    <button class="inline-flex items-center gap-2 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all edit-btn" data-id="${product.id}">
-                        <i class="fas fa-pencil-alt text-[10px]"></i>
-                        <span class="text-[10px] font-bold uppercase tracking-widest">Editar</span>
+                    <button class="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all edit-btn font-bold uppercase tracking-widest text-[10px] shadow-sm" data-id="${product.id}">
+                        <i class="fas fa-pencil-alt"></i>
+                        <span>Editar</span>
                     </button>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        productsTableBody.innerHTML = '';
+        productsTableBody.appendChild(fragment);
     };
 
     const populateRecommendedProductsSelect = () => {
@@ -2106,18 +2179,20 @@ export async function setupStorePage() {
     };
 
     const displayEventSubscribers = (subscribers) => {
-        eventsTableBody.innerHTML = '';
+        if (!eventsTableBody) return;
+        
         if (subscribers.length === 0) {
-            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Nenhum inscrito encontrado com estes filtros.</td></tr>';
+            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 italic">Nenhum inscrito encontrado com estes filtros.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         subscribers.forEach(sub => {
-            const row = eventsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-all duration-200';
             row.dataset.saleId = sub.id;
 
-            const checkinStatusClass = sub.checkinStatus === 'realizado' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400';
+            const checkinStatusClass = sub.checkinStatus === 'realizado' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-gray-500/10 text-gray-500';
             const checkinStatusText = sub.checkinStatus === 'realizado' ? 'Check-in OK' : 'Pendente';
             const graduation = sub.userGraduacao || sub.variationName || sub.chosenVariant || 'N/A';
             const program = sub.userPrograma ? ` (${sub.userPrograma})` : '';
@@ -2126,21 +2201,25 @@ export async function setupStorePage() {
             const dateTime = sub.eventDay && sub.eventTime ? `${sub.eventDay} às ${sub.eventTime}` : (sub.eventTime || '-');
 
             row.innerHTML = `
-                <td class="p-4 font-mono text-xs text-blue-400">#${sub.attendeeNumber || '---'}</td>
+                <td class="p-4 font-mono text-[10px] font-bold text-primary">#${sub.attendeeNumber || '---'}</td>
                 <td class="p-4">
-                    <div class="font-medium">${sub.userName || 'N/A'}</div>
-                    <div class="text-[10px] text-gray-500">${sub.userEmail || ''}</div>
+                    <div class="font-bold text-gray-900 dark:text-white">${sub.userName || 'N/A'}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400">${sub.userEmail || ''}</div>
                 </td>
-                <td class="p-4 text-xs">${variant}</td>
-                <td class="p-4 text-center"><span class="px-2 py-1 bg-blue-500/10 rounded text-blue-400 font-bold">${ring}</span></td>
-                <td class="p-4 text-xs text-gray-400">${dateTime}</td>
+                <td class="p-4 text-[11px] font-medium text-gray-600 dark:text-gray-400">${variant}</td>
+                <td class="p-4 text-center"><span class="px-2 py-1 bg-primary/10 rounded text-primary font-bold text-[11px]">${ring}</span></td>
+                <td class="p-4 text-[11px] text-gray-500 dark:text-gray-400">${dateTime}</td>
                 <td class="p-4">
-                    <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${checkinStatusClass}">
+                    <span class="px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${checkinStatusClass}">
                         ${checkinStatusText}
                     </span>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        eventsTableBody.innerHTML = '';
+        eventsTableBody.appendChild(fragment);
         updateEventKPIs(subscribers);
     };
 
@@ -2194,7 +2273,8 @@ export async function setupStorePage() {
     };
 
     if (eventProductFilter) eventProductFilter.addEventListener('change', fetchEventSubscribers);
-    if (eventSearchInput) eventSearchInput.addEventListener('keyup', applyEventFilters);
+    const debouncedEventFilter = debounce(applyEventFilters, 300);
+    if (eventSearchInput) eventSearchInput.addEventListener('input', debouncedEventFilter);
     if (eventRingFilter) eventRingFilter.addEventListener('change', applyEventFilters);
     if (eventUnitFilter) eventUnitFilter.addEventListener('change', applyEventFilters);
     if (exportEventCsvBtn) exportEventCsvBtn.addEventListener('click', exportEventToCSV);
@@ -2227,18 +2307,33 @@ export async function setupStorePage() {
 
         banners.forEach(banner => {
             const bannerEl = document.createElement('div');
-            bannerEl.className = 'bg-gray-50 dark:bg-gray-800 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-100 dark:border-gray-700 transition-all';
+            bannerEl.className = 'glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-all group';
             bannerEl.innerHTML = `
-                <div class="flex items-center">
-                    <img src="${banner.imageUrl}" class="w-24 h-12 object-cover rounded-md mr-4 shadow-sm">
-                    <div>
-                        <a href="${banner.link}" target="_blank" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all">${banner.link || 'Sem link'}</a>
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">${banner.active ? 'Ativo' : 'Inativo'}</p>
+                <div class="flex items-center gap-4 flex-grow">
+                    <div class="relative overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-700 w-32 h-16 flex-shrink-0 group-hover:scale-[1.02] transition-transform">
+                        <img src="${banner.imageUrl}" class="w-full h-full object-cover">
+                        ${!banner.active ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><span class="text-[8px] text-white font-bold uppercase tracking-widest">Inativo</span></div>' : ''}
+                    </div>
+                    <div class="min-w-0">
+                        <a href="${banner.link}" target="_blank" class="text-xs font-bold text-primary hover:underline truncate block">
+                            ${banner.link ? banner.link.replace(/^https?:\/\//, '') : 'Sem link de destino'}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${banner.active ? 'bg-green-500/10 text-green-600' : 'bg-gray-500/10 text-gray-500'}">
+                                ${banner.active ? 'Ativo' : 'Pausado'}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button class="edit-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-gray-900 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200 dark:border-gray-700 transition-all" data-id="${banner.id}"><i class="fas fa-pencil-alt text-xs"></i></button>
-                    <button class="delete-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-gray-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 border border-gray-200 dark:border-gray-700 transition-all" data-id="${banner.id}"><i class="fas fa-trash-alt text-xs"></i></button>
+                    <button class="edit-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-primary hover:bg-white dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        data-id="${banner.id}" title="Editar">
+                        <i class="fas fa-pencil-alt text-[10px]"></i>
+                    </button>
+                    <button class="delete-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-white dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        data-id="${banner.id}" title="Excluir">
+                        <i class="fas fa-trash-alt text-[10px]"></i>
+                    </button>
                 </div>
             `;
             bannersList.appendChild(bannerEl);

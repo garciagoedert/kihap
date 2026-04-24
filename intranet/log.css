@@ -198,3 +198,93 @@
 .profile-page #addProspectBtnHeader {
     display: none;
 }
+
+/* ============================================================
+   PREMIUM UI UTILITIES
+   ============================================================ */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.dark .glass-card {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Performant panel without heavy blur (ideal for scrolling) */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: none; /* Removed for performance in lists */
+}
+
+.dark .glass-panel {
+    background: rgba(24, 24, 27, 0.85);
+    backdrop-filter: none;
+}
+
+/* Performant blurred background for fixed elements (modals) */
+.glass-blur-heavy {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.premium-shadow {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .premium-shadow {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* Row Hover Effects */
+.premium-row-hover {
+    transition: all 0.2s ease;
+}
+
+.premium-row-hover:hover {
+    background-color: rgba(0, 0, 0, 0.015) !important;
+}
+
+.dark .premium-row-hover:hover {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Modern Badges */
+.badge-soft {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+}
+
+/* Custom Scrollbar for Containers */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 10px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.premium-row-hover {
+    animation: fadeIn 0.3s ease-out forwards;
+}

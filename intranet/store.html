@@ -38,76 +38,6 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Enhanced Tab Styles */
-        .tab-btn,
-        .subtab-btn {
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem 0.5rem 0 0;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-        }
-
-        .tab-btn:hover,
-        .subtab-btn:hover {
-            background: rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .tab-btn.active,
-        .tab-btn.text-white {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6 !important;
-        }
-
-        .dark .tab-btn.active,
-        .dark .tab-btn.text-white {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-        }
-
-        .tab-btn::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%) scaleX(0);
-            width: 80%;
-            height: 3px;
-            background: linear-gradient(90deg, #3b82f6, #60a5fa);
-            border-radius: 3px 3px 0 0;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .tab-btn.text-white::before,
-        .tab-btn.active::before {
-            transform: translateX(-50%) scaleX(1);
-        }
-
-        .subtab-btn {
-            border-radius: 0.375rem;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-        }
-
-        .subtab-btn.text-white {
-            background: rgba(59, 130, 246, 0.15);
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-        }
-
-        .tab-content {
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        .tab-content.hidden {
-            opacity: 0;
-            pointer-events: none;
-            display: none;
-        }
-
         /* Toggle Switch */
         .toggle-checkbox:checked {
             right: 0;
@@ -312,25 +242,26 @@
                 <h1 class="text-2xl font-bold">Store</h1>
             </div>
 
-            <!-- Tabs -->
-            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-                <nav class="flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
-                    <button id="tab-sales-log" class="tab-btn text-primary dark:text-white px-3 py-2 text-sm font-semibold flex-shrink-0">
+            <!-- Tabs Navigation (Modern Pill Style) -->
+            <div class="mb-8 flex justify-start">
+                <div class="flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl backdrop-blur-sm overflow-x-auto no-scrollbar max-w-full">
+                    <button id="tab-sales-log" 
+                        class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 bg-white dark:bg-gray-700 text-primary shadow-sm whitespace-nowrap">
                         📊 Log de Vendas
                     </button>
                     <button id="tab-manage-products"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
                         📦 Produtos
                     </button>
                     <button id="tab-marketing"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
                         🎯 Marketing
                     </button>
                     <button id="tab-events"
-                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
                         🎫 Eventos
                     </button>
-                </nav>
+                </div>
             </div>
 
             <!-- Sales Log Content -->
@@ -341,7 +272,7 @@
                     <!-- Store KPI Cards will be injected here by JavaScript -->
                 </div>
                 <!-- Filters -->
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-[#333] shadow-sm dark:shadow-lg mb-8">
+                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
                     <div class="flex flex-col lg:flex-row lg:items-end gap-4">
                         <!-- Search and Filter Toggle -->
                         <div class="flex-grow flex items-end gap-3">
@@ -476,7 +407,7 @@
                 
 
                 <!-- Sales Table -->
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto">
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -501,7 +432,7 @@
 
             <!-- Manage Products Content -->
             <div id="content-manage-products" class="tab-content hidden">
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold">Produtos Cadastrados</h2>
                         <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -540,138 +471,140 @@
                 </div>
             </div>
 
-            <!-- Marketing Content (Banners + Coupons) -->
+            <!-- Marketing Content -->
             <div id="content-marketing" class="tab-content hidden">
-                <div class="mb-6">
-                    <div class="border-b border-gray-700">
-                        <nav class="flex space-x-4" aria-label="Marketing Tabs">
-                            <button id="subtab-banners" class="subtab-btn text-white px-3 py-2 text-sm font-medium">
-                                Banners
-                            </button>
-                            <button id="subtab-coupons"
-                                class="subtab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium">
-                                Cupons
-                            </button>
-                        </nav>
+                <!-- Marketing Sub-Tabs (Smaller Pill Style) -->
+                <div class="mb-6 flex justify-start">
+                    <div class="flex bg-gray-200/40 dark:bg-gray-800/40 p-1 rounded-lg backdrop-blur-sm">
+                        <button id="subtab-banners" 
+                            class="px-4 py-1.5 rounded-md font-bold text-xs transition-all duration-300 bg-white dark:bg-gray-700 text-primary shadow-sm">
+                            🖼️ Banners
+                        </button>
+                        <button id="subtab-coupons"
+                            class="px-4 py-1.5 rounded-md font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                            🎟️ Cupons
+                        </button>
                     </div>
                 </div>
 
-                <!-- Banners Sub-content -->
                 <div id="content-manage-banners" class="marketing-subcontent">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <!-- Add/Edit Banner Form -->
-                        <div class="lg:col-span-1 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
-                            <h2 id="banner-form-title" class="text-xl font-bold mb-4">Adicionar Novo Banner</h2>
-                            <form id="banner-form">
+                        <div class="lg:col-span-1 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 id="banner-form-title" class="text-xl font-bold mb-6">Adicionar Novo Banner</h2>
+                            <form id="banner-form" class="space-y-6">
                                 <input type="hidden" id="banner-id">
-                                <div class="mb-4">
-                                    <label for="banner-image" class="block text-sm font-medium text-gray-400">Imagem do
-                                        Banner</label>
-                                    <input type="file" id="banner-image"
-                                        class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
-                                        required />
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Imagem do Banner</label>
+                                    <div class="flex flex-col gap-3">
+                                        <input type="file" id="banner-image" accept="image/*" class="hidden">
+                                        <button type="button" onclick="document.getElementById('banner-image').click()" 
+                                            class="px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Escolher arquivo</span>
+                                        </button>
+                                        <div id="banner-image-preview" class="text-[10px] text-gray-400 italic text-center">Nenhum arquivo escolhido</div>
+                                    </div>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="banner-link" class="block text-sm font-medium text-gray-400">Link
-                                        (opcional)</label>
-                                    <input type="url" id="banner-link"
-                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div>
+                                    <label for="banner-link" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Link (opcional)</label>
+                                    <input type="text" id="banner-link" placeholder="https://..."
+                                        class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                                 </div>
-                                <div class="mb-4">
-                                    <label for="banner-active"
-                                        class="flex items-center justify-between text-sm font-medium text-gray-400">
-                                        <span>Ativo</span>
-                                        <div
-                                            class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                            <input type="checkbox" name="banner-active" id="banner-active"
-                                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                            <label for="banner-active"
-                                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                                        </div>
+                                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                    <span class="text-sm font-bold text-gray-500">Status Ativo</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="banner-active" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
-                                <div class="flex items-center justify-end space-x-2">
-                                    <button type="button" id="cancel-banner-edit-btn"
-                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                <div class="flex flex-col gap-3">
                                     <button type="submit" id="save-banner-btn"
-                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
-                                        Banner</button>
+                                        class="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 uppercase tracking-widest text-xs">
+                                        Salvar Banner
+                                    </button>
+                                    <button type="button" id="cancel-banner-edit-btn"
+                                        class="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-xs uppercase tracking-widest hidden">
+                                        Cancelar Edição
+                                    </button>
                                 </div>
                             </form>
                         </div>
                         <!-- Banners List -->
-                        <div class="lg:col-span-2 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
-                            <h2 class="text-xl font-bold mb-4">Banners Cadastrados</h2>
-                            <div id="banners-list" class="space-y-4">
-                                <!-- Banners will be loaded here -->
+                        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 class="text-xl font-bold mb-6">Banners Cadastrados</h2>
+                            <div id="banners-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div class="flex items-center justify-center p-12 text-gray-400 italic">Carregando banners...</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Coupons Sub-content -->
                 <div id="content-manage-coupons" class="marketing-subcontent hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <!-- Add/Edit Coupon Form -->
-                        <div class="lg:col-span-1 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
-                            <h2 id="coupon-form-title" class="text-xl font-bold mb-4">Adicionar Novo Cupom</h2>
-                            <form id="coupon-form">
+                        <div class="lg:col-span-1 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 id="coupon-form-title" class="text-xl font-bold mb-6">Adicionar Novo Cupom</h2>
+                            <form id="coupon-form" class="space-y-6">
                                 <input type="hidden" id="coupon-id">
-                                <div class="mb-4">
-                                    <label for="coupon-code" class="block text-sm font-medium text-gray-400">Código do
-                                        Cupom</label>
-                                    <input type="text" id="coupon-code"
-                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                <div>
+                                    <label for="coupon-code" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Código do Cupom</label>
+                                    <input type="text" id="coupon-code" placeholder="EX: KIHAP10"
+                                        class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
                                         required>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="coupon-type" class="block text-sm font-medium text-gray-400">Tipo de
-                                        Desconto</label>
-                                    <select id="coupon-type"
-                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="percentage">Porcentagem</option>
-                                        <option value="fixed">Valor Fixo</option>
-                                    </select>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="coupon-type" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Tipo</label>
+                                        <select id="coupon-type"
+                                            class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                                            <option value="percentage">Porcentagem (%)</option>
+                                            <option value="fixed">Valor Fixo (R$)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="coupon-value" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Valor</label>
+                                        <input type="number" id="coupon-value"
+                                            class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                            required>
+                                    </div>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="coupon-value" class="block text-sm font-medium text-gray-400">Valor do
-                                        Desconto</label>
-                                    <input type="number" id="coupon-value"
-                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required>
-                                </div>
-                                <div class="mb-4">
-                                    <label for="coupon-expiry" class="block text-sm font-medium text-gray-400">Data de
-                                        Validade</label>
+                                <div>
+                                    <label for="coupon-expiry" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Data de Validade</label>
                                     <input type="date" id="coupon-expiry"
-                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
                                 </div>
-                                <div class="flex items-center justify-end space-x-2">
-                                    <button type="button" id="cancel-coupon-edit-btn"
-                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                <div class="flex flex-col gap-3 pt-2">
                                     <button type="submit" id="save-coupon-btn"
-                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
-                                        Cupom</button>
+                                        class="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 uppercase tracking-widest text-xs">
+                                        Salvar Cupom
+                                    </button>
+                                    <button type="button" id="cancel-coupon-edit-btn"
+                                        class="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-xs uppercase tracking-widest hidden">
+                                        Cancelar
+                                    </button>
                                 </div>
                             </form>
                         </div>
                         <!-- Coupons List -->
-                        <div class="lg:col-span-2 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
-                            <h2 class="text-xl font-bold mb-4">Cupons Cadastrados</h2>
+                        <div class="lg:col-span-2 glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                                <h2 class="text-xl font-bold">Cupons Cadastrados</h2>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
                                     <thead>
-                                        <tr class="border-b border-gray-700">
+                                        <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
                                             <th class="p-4">Código</th>
                                             <th class="p-4">Tipo</th>
                                             <th class="p-4">Valor</th>
                                             <th class="p-4">Validade</th>
-                                            <th class="p-4">Ações</th>
+                                            <th class="p-4 text-right pr-6">Ações</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="coupons-table-body">
+                                    <tbody id="coupons-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                         <tr>
-                                            <td colspan="5" class="text-center p-8">Carregando cupons...</td>
+                                            <td colspan="5" class="text-center p-12 text-gray-400 italic">Carregando cupons...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -684,81 +617,96 @@
             <!-- Events Content -->
             <div id="content-events" class="tab-content hidden">
                 <!-- Event KPIs -->
-                <div id="event-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+                <div id="event-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-primary/30 transition-all">
                         <div>
-                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Total Inscritos</p>
-                            <p id="total-event-subscribers" class="text-2xl font-bold text-white">0</p>
+                            <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Total Inscritos</p>
+                            <p id="total-event-subscribers" class="text-3xl font-extrabold text-gray-900 dark:text-white">0</p>
                         </div>
-                        <div class="text-2xl text-blue-500"><i class="fas fa-users"></i></div>
+                        <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users text-xl"></i>
+                        </div>
                     </div>
-                    <div id="ring-stats-container" class="lg:col-span-2 bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 overflow-x-auto">
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter mb-2">Inscritos por Ringue</p>
-                        <div id="ring-stats-list" class="flex gap-4">
+                    <div id="ring-stats-container" class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto custom-scrollbar">
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Inscritos por Ringue</p>
+                        <div id="ring-stats-list" class="flex gap-6">
                             <!-- Injected by JS -->
+                            <div class="text-gray-400 italic text-xs">Selecione um evento...</div>
                         </div>
                     </div>
-                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+                    <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-green-500/30 transition-all">
                         <div>
-                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Check-ins</p>
-                            <p id="total-event-checkins" class="text-2xl font-bold text-green-500">0</p>
+                            <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Check-ins</p>
+                            <p id="total-event-checkins" class="text-3xl font-extrabold text-green-500">0</p>
                         </div>
-                        <div class="text-2xl text-green-500"><i class="fas fa-user-check"></i></div>
+                        <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user-check text-xl"></i>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 border border-gray-800">
-                    <div class="flex flex-col lg:flex-row items-end gap-3">
-                        <div class="flex-1 min-w-[180px]">
-                            <label for="event-product-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Filtrar por Evento</label>
+                <!-- Event Filters -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div class="lg:col-span-1">
+                            <label for="event-product-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block">Selecionar Evento</label>
                             <select id="event-product-filter"
-                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                                 <option value="">Todos os Eventos</option>
                             </select>
                         </div>
-                        <div class="w-full lg:w-32">
-                            <label for="event-ring-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Ringue</label>
+                        <div>
+                            <label for="event-ring-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block">Ringue</label>
                             <select id="event-ring-filter"
-                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                                 <option value="">Todos</option>
                             </select>
                         </div>
-                        <div class="w-full lg:w-40">
-                            <label for="event-unit-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Unidade</label>
+                        <div>
+                            <label for="event-unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block">Unidade</label>
                             <select id="event-unit-filter"
-                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                                 <option value="">Todas</option>
                             </select>
                         </div>
-                        <div class="flex-1 min-w-[180px]">
-                            <label for="event-search-input" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Buscar Participante</label>
-                            <input type="text" id="event-search-input" placeholder="Nome ou e-mail..."
-                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <div class="lg:col-span-1">
+                            <label for="event-search-input" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block">Buscar Participante</label>
+                            <div class="relative group">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                                <input type="text" id="event-search-input" placeholder="Nome ou e-mail..."
+                                    class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                            </div>
                         </div>
-                        <button id="export-event-csv-btn" class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all flex items-center h-[38px]">
-                            <i class="fas fa-file-excel mr-2"></i> Exportar
-                        </button>
+                        <div>
+                            <button id="export-event-csv-btn" class="w-full px-6 py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-green-500/30 flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
+                                <i class="fas fa-file-csv"></i>
+                                <span>Exportar</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto border border-gray-800">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
-                                <th class="p-4">Nº</th>
-                                <th class="p-4">Nome do Cliente</th>
-                                <th class="p-4">Categoria</th>
-                                <th class="p-4 text-center">Ringue</th>
-                                <th class="p-4">Dia/Hora</th>
-                                <th class="p-4">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="events-table-body" class="text-sm">
-                            <tr>
-                                <td colspan="6" class="text-center p-8 text-gray-500 italic">Selecione um evento para visualizar os inscritos.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Event Table -->
+                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    <th class="p-4 w-16">Nº</th>
+                                    <th class="p-4">Participante</th>
+                                    <th class="p-4">Categoria/Programa</th>
+                                    <th class="p-4 text-center">Ringue</th>
+                                    <th class="p-4">Dia/Hora</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="6" class="text-center p-12 text-gray-400 italic">Selecione um evento para visualizar os inscritos.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -767,10 +715,13 @@
     <script type="module" src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
-        import { setupStorePage } from './store.js';
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadComponents(() => {
+            const v = new Date().getTime();
+            loadComponents(async () => {
+                // Carregamento dinâmico com timestamp para forçar atualização do cache
+                console.log(`[CacheBuster] Carregando store.js?v=${v}`);
+                const { setupStorePage } = await import(`./store.js?v=${v}`);
                 setupStorePage();
             });
         });

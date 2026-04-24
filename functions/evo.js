@@ -828,6 +828,36 @@ exports.updateStudentPermissions = functions.https.onCall(async (data, context) 
 });
 
 /**
+ * Atualiza os emblemas (badges) conquistados por um aluno.
+ */
+exports.updateStudentBadges = functions.https.onCall(async (data, context) => {
+    // Verificação de permissão de admin
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists || !userDoc.data().isAdmin) {
+        throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para executar esta ação.");
+    }
+
+    const { studentUid, earnedBadges } = data;
+    if (!studentUid || !Array.isArray(earnedBadges)) {
+        throw new functions.https.HttpsError("invalid-argument", "ID do aluno e lista de emblemas são obrigatórios.");
+    }
+
+    try {
+        const studentUserRef = admin.firestore().collection('users').doc(studentUid);
+        await studentUserRef.update({
+            earnedBadges: earnedBadges
+        });
+        return { success: true, message: "Emblemas atualizados com sucesso." };
+    } catch (error) {
+        functions.logger.error(`Erro ao atualizar emblemas para o aluno ${studentUid}:`, error);
+        throw new functions.https.HttpsError("internal", "Não foi possível atualizar os emblemas.");
+    }
+});
+
+/**
  * Busca o número de contratos ativos para uma ou todas as unidades, com cache para resiliência.
  */
 exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 }).https.onRequest((req, res) => {

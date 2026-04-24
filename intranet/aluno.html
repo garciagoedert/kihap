@@ -72,192 +72,196 @@
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Coluna Esquerda: Perfil -->
                 <aside class="lg:w-1/3 xl:w-1/4 space-y-6">
-                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg text-center">
-                        <img id="student-photo" src="default-profile.svg" alt="Foto do Aluno"
-                            class="w-32 h-32 rounded-full object-cover border-4 border-gray-600 mx-auto mb-4">
-                        <h2 id="student-name-sidebar" class="text-xl font-bold text-gray-900 dark:text-white">Carregando...</h2>
-                        <p id="student-email" class="text-sm text-gray-400">...</p>
+                    <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm text-center">
+                        <div id="student-photo-container" class="relative inline-block mb-6">
+                            <img id="student-photo" src="default-profile.svg" alt="Foto do Aluno"
+                                class="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-xl mx-auto transition-transform hover:scale-105 duration-300">
+                            <div id="student-status-indicator" class="absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 bg-gray-400"></div>
+                        </div>
+                        <h2 id="student-name-sidebar" class="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Carregando...</h2>
+                        <p id="student-email" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">...</p>
                         <div id="student-status-badge"
-                            class="mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full">
+                            class="mt-4 inline-flex items-center px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
                             ...
                         </div>
                     </div>
-                    <div class="bg-white dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                         <button id="invite-btn"
-                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2">
-                            <i class="fas fa-envelope mr-2"></i>Convidar Aluno
+                            class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-black py-3.5 px-4 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-green-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Convidar Aluno</span>
                         </button>
                         <button id="generate-certificate-btn"
-                            class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mb-2">
-                            <i class="fas fa-certificate mr-2"></i>Gerar Certificado
+                            class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-black py-3.5 px-4 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-yellow-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fas fa-certificate"></i>
+                            <span>Gerar Certificado</span>
                         </button>
                         <button id="delete-student-btn"
-                            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mb-2 mt-4 transition-all active:scale-95">
-                            <i class="fas fa-trash-alt mr-2"></i>Excluir Aluno
+                            class="w-full bg-white dark:bg-red-900/10 text-red-600 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 font-black py-3.5 px-4 rounded-xl text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 mt-6">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Excluir Aluno</span>
                         </button>
-                        <!-- Outros botões de ação podem ser adicionados aqui -->
                     </div>
                 </aside>
 
                 <!-- Coluna Direita: Abas de Conteúdo -->
-                <div class="lg:w-2/3 xl:w-3/4">
-                    <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
-                        <!-- Navegação das Abas -->
-                        <div class="border-b border-gray-200 dark:border-gray-700 px-6">
-                            <nav class="flex space-x-4" aria-label="Tabs">
-                                <button id="tab-details"
-                                    class="tab-btn text-primary border-b-2 border-primary px-3 py-2 font-semibold text-sm">
-                                    Detalhes
-                                </button>
-                                <button id="tab-permissions"
-                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                                    Permissões
-                                </button>
-                                <button id="tab-physical-test"
-                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                                    Teste Físico
-                                </button>
-                                <button id="tab-badges"
-                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                                    Emblemas
-                                </button>
-                                <button id="tab-financial"
-                                    class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 font-medium text-sm">
-                                    Financeiro
-                                </button>
-                            </nav>
-                        </div>
-
-                        <div class="p-6">
-                            <!-- Conteúdo da Aba: Detalhes -->
-                            <div id="tab-content-details" class="tab-content space-y-4">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-gray-900 dark:text-white font-semibold">Dados do Aluno</h3>
-                                    <button id="edit-details-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors">
-                                        <i class="fas fa-edit mr-1"></i> Editar
-                                    </button>
-                                </div>
-                                <div id="details-grid-container">
-                                    <p class="text-gray-500">Carregando detalhes...</p>
-                                </div>
-                            </div>
-
-                            <!-- Conteúdo da Aba: Financeiro -->
-                            <div id="tab-content-financial" class="tab-content hidden space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                        <span class="text-gray-400 text-xs uppercase font-bold">Status da Assinatura</span>
-                                        <div id="fin-status" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
-                                    </div>
-                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                        <span class="text-gray-400 text-xs uppercase font-bold">Mensalidades Pagas</span>
-                                        <div id="fin-count" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
-                                    </div>
-                                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                        <span class="text-gray-400 text-xs uppercase font-bold">Data de Início</span>
-                                        <div id="fin-start-date" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h4 class="font-bold text-gray-900 dark:text-gray-200 flex items-center">
-                                            <i class="fas fa-credit-card mr-2 text-primary"></i> Detalhes do Mercado Pago
-                                        </h4>
-                                        <button id="open-generate-link-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded transition-colors flex items-center">
-                                            <i class="fas fa-link mr-1"></i> Gerar Link
-                                        </button>
-                                    </div>
-                                    <div id="mp-details-container" class="space-y-3 text-sm">
-                                        <p class="text-gray-500 italic">Carregando informações financeiras...</p>
-                                    </div>
-                                    <div id="cancel-subscription-container" class="mt-6 pt-6 border-t border-gray-700 hidden">
-                                        <button id="cancel-sub-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors">
-                                            Cancelar Assinatura
-                                        </button>
-                                        <p class="text-gray-500 text-xs mt-2 italic">Atenção: Esta ação cancelará as cobranças recorrentes no Mercado Pago.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Conteúdo da Aba: Permissões -->
-                            <div id="tab-content-permissions" class="tab-content hidden space-y-4">
-                                <div id="permissions-content" class="space-y-4">
-                                    <div>
-                                        <h4 class="font-bold text-gray-300 mb-2">Cursos</h4>
-                                        <div id="courses-checklist"
-                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-inner">
-                                            <p class="text-gray-500">Carregando cursos...</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-300 mb-2">Tatame</h4>
-                                        <div id="tatame-checklist"
-                                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-inner">
-                                            <p class="text-gray-500">Carregando conteúdos...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex justify-end pt-4 border-t border-gray-700">
-                                    <button id="save-permissions-btn"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                        Salvar Permissões
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Conteúdo da Aba: Emblemas -->
-                            <div id="tab-content-badges" class="tab-content hidden">
-                                <div id="badges-checklist"
-                                    class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto p-2 bg-gray-800 rounded">
-                                    <p class="text-gray-500 col-span-full">Carregando emblemas...</p>
-                                </div>
-                                <div class="flex justify-end pt-4 mt-4 border-t border-gray-700">
-                                    <button id="save-badges-btn"
-                                        class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
-                                        Salvar Emblemas
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Conteúdo da Aba: Teste Físico -->
-                            <div id="tab-content-physical-test" class="tab-content hidden">
-                                <div class="space-y-6">
-                                    <div>
-                                        <h3 class="text-lg font-semibold">Adicionar Novo Log de Teste Físico</h3>
-                                        <div class="flex items-center space-x-4 mt-2">
-                                            <div>
-                                                <label for="physical-test-date"
-                                                    class="text-sm font-medium text-gray-400">Data:</label>
-                                                <input type="date" id="physical-test-date"
-                                                    class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="physical-test-score"
-                                                    class="text-sm font-medium text-gray-400">Pontuação Total:</label>
-                                                <input type="number" id="physical-test-score" placeholder="0"
-                                                    class="w-32 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                                            <button id="save-physical-test-btn"
-                                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded self-end">
-                                                Adicionar Log
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="mt-6">
-                                        <h3 class="text-lg font-semibold">Histórico de Testes</h3>
-                                        <div id="physical-test-history"
-                                            class="mt-2 max-h-60 overflow-y-auto p-2 bg-gray-800 rounded">
-                                            <p class="text-gray-500">Carregando histórico...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="lg:w-2/3 xl:w-3/4 flex flex-col">
+                    <!-- Navegação das Abas (Pill Style) -->
+                    <div class="mb-8 flex justify-start">
+                        <div class="flex bg-gray-200/40 dark:bg-gray-800/40 p-1 rounded-xl backdrop-blur-sm overflow-x-auto custom-scrollbar max-w-full">
+                            <button id="tab-details"
+                                class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 bg-primary text-black shadow-lg whitespace-nowrap">
+                                📋 Detalhes
+                            </button>
+                            <button id="tab-permissions"
+                                class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                                🔐 Permissões
+                            </button>
+                            <button id="tab-physical-test"
+                                class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                                🏃 Teste Físico
+                            </button>
+                            <button id="tab-badges"
+                                class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                                🛡️ Emblemas
+                            </button>
+                            <button id="tab-financial"
+                                class="px-6 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap">
+                                💳 Financeiro
+                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+
+                    <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm min-h-[400px]">
+                        <!-- Conteúdo da Aba: Detalhes -->
+                        <div id="tab-content-details" class="tab-content space-y-4">
+                            <div class="flex justify-between items-center mb-8">
+                                <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">📋 Dados Cadastrais</h3>
+                                <button id="edit-details-btn" class="bg-primary/10 hover:bg-primary text-primary hover:text-black text-[10px] font-black py-2 px-6 rounded-xl transition-all uppercase tracking-widest border border-primary/20">
+                                    <i class="fas fa-edit mr-2"></i> Editar Dados
+                                </button>
+                            </div>
+                            <div id="details-grid-container">
+                                <p class="text-gray-500 italic p-12 text-center">Carregando detalhes...</p>
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da Aba: Financeiro -->
+                        <div id="tab-content-financial" class="tab-content hidden space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <span class="text-gray-400 text-xs uppercase font-bold">Status da Assinatura</span>
+                                    <div id="fin-status" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <span class="text-gray-400 text-xs uppercase font-bold">Mensalidades Pagas</span>
+                                    <div id="fin-count" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <span class="text-gray-400 text-xs uppercase font-bold">Data de Início</span>
+                                    <div id="fin-start-date" class="text-xl font-bold mt-1 text-gray-900 dark:text-gray-200">...</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-gray-200 flex items-center">
+                                        <i class="fas fa-credit-card mr-2 text-primary"></i> Detalhes do Mercado Pago
+                                    </h4>
+                                    <button id="open-generate-link-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded transition-colors flex items-center">
+                                        <i class="fas fa-link mr-1"></i> Gerar Link
+                                    </button>
+                                </div>
+                                <div id="mp-details-container" class="space-y-3 text-sm">
+                                    <p class="text-gray-500 italic">Carregando informações financeiras...</p>
+                                </div>
+                                <div id="cancel-subscription-container" class="mt-6 pt-6 border-t border-gray-700 hidden">
+                                    <button id="cancel-sub-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors">
+                                        Cancelar Assinatura
+                                    </button>
+                                    <p class="text-gray-500 text-xs mt-2 italic">Atenção: Esta ação cancelará as cobranças recorrentes no Mercado Pago.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da Aba: Permissões -->
+                        <div id="tab-content-permissions" class="tab-content hidden space-y-8">
+                            <div id="permissions-content" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <h4 class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Acesso a Cursos</h4>
+                                    <div id="courses-checklist"
+                                        class="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto p-6 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm">
+                                        <p class="text-gray-500 italic text-xs">Carregando cursos...</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Acesso ao Tatame</h4>
+                                    <div id="tatame-checklist"
+                                        class="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto p-6 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm">
+                                        <p class="text-gray-500 italic text-xs">Carregando conteúdos...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <button id="save-permissions-btn"
+                                    class="bg-primary hover:brightness-110 text-black font-black py-3 px-10 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95">
+                                    Salvar Permissões
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da Aba: Emblemas -->
+                        <div id="tab-content-badges" class="tab-content hidden">
+                            <div id="badges-checklist"
+                                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 max-h-96 overflow-y-auto p-6 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm">
+                                <p class="text-gray-500 col-span-full italic text-center p-12">Carregando emblemas...</p>
+                            </div>
+                            <div class="flex justify-end pt-6 mt-6 border-t border-gray-100 dark:border-gray-800">
+                                <button id="save-badges-btn"
+                                    class="bg-primary hover:bg-primary-dark text-black font-black py-3 px-10 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95">
+                                    Salvar Conquistas
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Conteúdo da Aba: Teste Físico -->
+                        <div id="tab-content-physical-test" class="tab-content hidden">
+                            <div class="space-y-8">
+                                <div>
+                                    <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">📝 Adicionar Novo Log de Teste Físico</h3>
+                                    <div class="flex flex-col sm:flex-row items-end gap-4 bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                                        <div class="w-full sm:w-auto">
+                                            <label for="physical-test-date"
+                                                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Data:</label>
+                                            <input type="date" id="physical-test-date"
+                                                class="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary shadow-sm transition-all text-sm">
+                                        </div>
+                                        <div class="w-full sm:w-auto">
+                                            <label for="physical-test-score"
+                                                class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Pontuação Total:</label>
+                                            <input type="number" id="physical-test-score" placeholder="0"
+                                                class="w-full sm:w-32 bg-white dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary shadow-sm transition-all text-sm font-bold">
+                                        </div>
+                                        <button id="save-physical-test-btn"
+                                            class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-black py-3 px-8 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-green-500/20 transition-all active:scale-95">
+                                            Adicionar Log
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white mb-4">📈 Histórico de Testes</h3>
+                                    <div id="physical-test-history"
+                                        class="max-h-60 overflow-y-auto p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm">
+                                        <p class="text-gray-500 italic text-center py-8">Carregando histórico...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- Fecha glass-panel -->
+                </div> <!-- Fecha Coluna Direita -->
+            </div> <!-- Fecha flex-row -->
+        </div> <!-- Fecha flex-grow -->
     </main>
 
     <script type="module" src="auth.js"></script>
