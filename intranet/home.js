@@ -80,7 +80,7 @@ async function displayDailyQuote() {
             });
             // Only switch to DB quotes if we found valid ones
             if (dbQuotes.length > 0) {
-                activeQuotes = dbQuotes;
+                activeQuotes = [...quotes, ...dbQuotes];
                 // Render again with new quotes
                 renderQuote();
             }
@@ -88,6 +88,8 @@ async function displayDailyQuote() {
     } catch (error) {
         console.error("Error fetching quotes:", error);
     }
+
+    // Hide Skeleton and Show Content
 }
 
 async function loadStats() {
@@ -117,5 +119,15 @@ async function loadStats() {
             console.error("Error loading checkins:", error);
             checkinsEl.textContent = "-";
         }
+    }
+
+    // Hide Skeleton and Show Content
+    const skeleton = document.getElementById('dashboard-skeleton');
+    const content = document.getElementById('dashboard-content');
+    if (skeleton && content) {
+        skeleton.classList.add('hidden');
+        skeleton.classList.remove('flex');
+        content.classList.remove('hidden');
+        content.classList.add('flex');
     }
 }

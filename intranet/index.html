@@ -49,7 +49,24 @@
         <main id="main-content" class="flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-x-hidden">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+            <!-- SKELETON LOADER -->
+            <div id="dashboard-skeleton" class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col animate-pulse space-y-8">
+                <!-- Quote Skeleton -->
+                <div class="hidden md:block bg-gray-200 dark:bg-gray-800/50 h-48 md:h-64 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                <!-- Main Grid Skeleton -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Stats Skeleton -->
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="h-32 bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                        <div class="h-32 bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                    </div>
+                    <!-- Quick Actions Skeleton -->
+                    <div class="h-[280px] bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO PRINCIPAL (Inicialmente Oculto) -->
+            <div id="dashboard-content" class="hidden flex-grow p-4 md:p-6 lg:p-8 flex-col overflow-y-auto custom-scrollbar">
 
                 <!-- Daily Quote Section -->
                 <div
