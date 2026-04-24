@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         subscriptionFrequency: product.subscriptionFrequency || null,
                         subscriptionPeriod: product.subscriptionPeriod || null,
                         priceType: product.priceType || 'fixed',
+                        customUnits: product.customUnits || [],
                         formDataList: [{ userAge: null, userSize: null, priceData: { amount: product.price } }],
                         totalAmount: product.price,
                         recommendedItems: [],
@@ -167,16 +168,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const normalizeString = (str) => {
+        if (!str) return '';
+        return str.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/[-_]/g, ' ') // Replace hyphens/underscores with spaces
+            .replace(/\s+/g, ' ') // Remove extra spaces
+            .trim();
+    };
+
     const populateUnits = () => {
         unitSelector.innerHTML = '<option value="">Selecione sua unidade</option>';
-        unitsCache.forEach(unit => {
-            if (unit.toLowerCase() !== 'atadf') {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
-                unitSelector.appendChild(option);
+        
+        const items = cart.getCart();
+        let allowedUnitsIntersection = null;
+
+        items.forEach(item => {
+            if (item.customUnits && item.customUnits.length > 0) {
+                // Fail-safe: Split by newline in case data was saved as a single block (legacy)
+                const cleanUnits = item.customUnits.flatMap(u => u.split(/\n/)).map(u => u.trim()).filter(u => u);
+                
+                if (allowedUnitsIntersection === null) {
+                    allowedUnitsIntersection = [...cleanUnits];
+                } else {
+                    allowedUnitsIntersection = allowedUnitsIntersection.filter(au => 
+                        cleanUnits.some(itemUnit => {
+                            const n1 = normalizeString(au);
+                            const n2 = normalizeString(itemUnit);
+                            return n1.includes(n2) || n2.includes(n1);
+                        })
+                    );
+                }
             }
         });
+
+        // Caso haja restrições específicas por produto
+        if (allowedUnitsIntersection !== null) {
+            allowedUnitsIntersection.forEach(customUnit => {
+                const normalizedCustom = normalizeString(customUnit);
+                
+                // Busca se esse nome customizado corresponde a uma unidade do sistema EVO
+                const matchingEvoUnit = unitsCache.find(evoUnit => {
+                    if (evoUnit.toLowerCase() === 'atadf') return false;
+                    const n1 = normalizeString(customUnit);
+                    const n2 = normalizeString(evoUnit);
+                    return n1.includes(n2) || n2.includes(n1);
+                });
+
+                const option = document.createElement('option');
+                // Se bater com uma unidade EVO, usamos o ID da EVO como value para o backend
+                // Mas mostramos o texto bonito que o usuário digitou
+                option.value = matchingEvoUnit ? matchingEvoUnit : customUnit;
+                option.textContent = customUnit;
+                unitSelector.appendChild(option);
+            });
+        } else {
+            // Caso NÃO haja restrições, mostra a lista global padrão (EVO)
+            unitsCache.forEach(unit => {
+                const unitLower = unit.toLowerCase();
+                if (unitLower !== 'atadf') {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1).replace('-', ' ');
+                    unitSelector.appendChild(option);
+                }
+            });
+        }
     };
 
     const populateGraduacao = (program, container, selector) => {

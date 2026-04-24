@@ -586,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 subscriptionFrequency: productData.subscriptionFrequency || null,
                 subscriptionPeriod: productData.subscriptionPeriod || null,
                 priceType: productData.priceType,
+                customUnits: productData.customUnits || [],
                 formDataList: formDataList,
                 totalAmount: totalAmount,
                 recommendedItems: recommendedItems,

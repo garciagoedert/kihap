@@ -806,7 +806,7 @@ export async function setupStorePage() {
                 askProfessor: productAskProfessorInput.checked,
                 askAge: productAskAgeInput.checked,
                 controlStock: productControlStockInput.checked,
-                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
+                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(/,|\n/).map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
                 mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
@@ -1051,7 +1051,7 @@ export async function setupStorePage() {
                     stockContainer.classList.add('hidden');
                     productStockQuantityInput.value = '';
                 }
-                productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
+                productCustomUnitsInput.value = product.customUnits ? product.customUnits.join('\n') : '';
                 
                 if (productMpAccountSelect) productMpAccountSelect.value = product.mpAccountId || 'default';
                 if (productMpSplitInput) productMpSplitInput.value = product.mpSplitPercentage || '';
