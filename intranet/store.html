@@ -154,77 +154,170 @@
         @media (max-width: 768px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
-
-            #products-table-body {
+            #products-table-body, #sales-table-body {
                 display: grid;
                 grid-template-columns: 1fr;
                 gap: 1rem;
                 padding: 0.5rem;
             }
 
+            /* Generic Card Styles for Rows */
             tr {
-                background: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 1rem;
-                padding: 1rem;
-                margin-bottom: 0; /* Handled by grid gap */
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(229, 231, 235, 0.5);
+                backdrop-filter: blur(12px);
+                border-radius: 1.5rem;
+                padding: 1.25rem;
+                margin-bottom: 0;
                 position: relative;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                display: flex;
-                flex-direction: row;
-                flex-wrap: wrap;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+                display: grid;
+                grid-template-columns: 1fr auto;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .dark tr {
+                background: rgba(30, 30, 30, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             }
 
             td {
                 border: none;
                 padding: 0 !important;
-                margin-bottom: 0.75rem;
-                width: 100%; /* Default to full width (stacked) */
+                margin: 0;
+                width: auto;
             }
 
-            td[data-label="Nome"] {
+            /* ====== SALES LOG CARDS ====== */
+            #sales-table-body tr {
+                grid-template-areas: 
+                    "name status"
+                    "email email"
+                    "product product"
+                    "price price"
+                    "date action";
+            }
+
+            td[data-label="Nome do Cliente"] {
+                grid-area: name;
                 font-size: 1.125rem;
                 font-weight: 700;
-                color: #fff;
+                color: #111827;
+            }
+            .dark td[data-label="Nome do Cliente"] { color: #f9fafb; }
+
+            td[data-label="Email"] {
+                grid-area: email;
+                font-size: 0.75rem;
+                color: #6b7280;
+                margin-top: -0.25rem;
                 margin-bottom: 0.5rem;
             }
 
+            td[data-label="Status do Pagamento"] {
+                grid-area: status;
+                justify-self: end;
+                align-self: start;
+            }
+
+            td[data-label="Entrega"] {
+                display: none; /* Oculto na visualização minimizada */
+            }
+
+            td[data-label="Produto"] {
+                grid-area: product;
+                padding: 0.75rem !important;
+                background: rgba(0,0,0,0.03);
+                border-radius: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+            .dark td[data-label="Produto"] { background: rgba(255,255,255,0.05); }
+
+            td[data-label="Valor"] {
+                grid-area: price;
+                font-size: 1.25rem;
+                font-weight: 800;
+                color: #10b981;
+                margin-bottom: 0.5rem;
+            }
+
+            td[data-label="Data da Compra"] {
+                grid-area: date;
+                font-size: 0.75rem;
+                color: #9ca3af;
+                align-self: center;
+            }
+
+            td[data-label="Ações"] {
+                grid-area: action;
+                justify-self: end;
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            /* ====== PRODUCTS CARDS ====== */
+            #products-table-body tr {
+                grid-template-areas: 
+                    "name status"
+                    "price stock"
+                    "link action";
+            }
+
+            td[data-label="Nome"] {
+                grid-area: name;
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: #111827;
+                margin-bottom: 0.5rem;
+            }
+            .dark td[data-label="Nome"] { color: #f9fafb; }
+
             td[data-label="Preço"] {
+                grid-area: price;
                 font-size: 1rem;
                 font-weight: 600;
                 color: #3b82f6;
             }
 
-            td[data-label="Status"] {
-                margin-bottom: 0.75rem;
+            td[data-label="Estoque"] {
+                grid-area: stock;
+                justify-self: end;
+                font-size: 0.875rem;
+                color: #6b7280;
             }
 
+            td[data-label="Status"] {
+                grid-area: status;
+                justify-self: end;
+                align-self: start;
+            }
             td[data-label="Status"] .flex {
                 flex-wrap: wrap;
+                justify-content: flex-end;
                 gap: 0.375rem;
             }
 
-            /* Action buttons side-by-side at bottom */
-            td[data-label="Link"], td[data-label="Ações"] {
-                display: flex;
-                width: 50%;
-                margin-bottom: 0;
+            td[data-label="Link"] {
+                grid-area: link;
+                align-self: end;
                 padding-top: 1rem !important;
-                border-top: 1px solid #27272a;
-                margin-top: 0.5rem;
-                box-sizing: border-box;
             }
 
-            td[data-label="Ações"] {
-                justify-content: flex-end;
+            #products-table-body td[data-label="Ações"] {
+                grid-area: action;
+                justify-self: end;
+                display: flex;
+                gap: 0.5rem;
+                padding-top: 1rem !important;
             }
 
             .store-action-btn {
                 padding: 0.5rem 0.5rem;
                 font-size: 0.75rem;
-                width: 95%; /* Fill the 50% container with small gap */
             }
-
+            
             td:before { display: none !important; } /* Hide the old labels */
         }
     </style>
@@ -272,7 +365,7 @@
                     <!-- Store KPI Cards will be injected here by JavaScript -->
                 </div>
                 <!-- Filters -->
-                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
                     <div class="flex flex-col lg:flex-row lg:items-end gap-4">
                         <!-- Search and Filter Toggle -->
                         <div class="flex-grow flex items-end gap-3">
@@ -407,7 +500,7 @@
                 
 
                 <!-- Sales Table -->
-                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto">
+                <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-0 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -432,7 +525,7 @@
 
             <!-- Manage Products Content -->
             <div id="content-manage-products" class="tab-content hidden">
-                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold">Produtos Cadastrados</h2>
                         <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -490,7 +583,7 @@
                 <div id="content-manage-banners" class="marketing-subcontent">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <!-- Add/Edit Banner Form -->
-                        <div class="lg:col-span-1 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="lg:col-span-1 glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
                             <h2 id="banner-form-title" class="text-xl font-bold mb-6">Adicionar Novo Banner</h2>
                             <form id="banner-form" class="space-y-6">
                                 <input type="hidden" id="banner-id">
@@ -531,7 +624,7 @@
                             </form>
                         </div>
                         <!-- Banners List -->
-                        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="lg:col-span-2 glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
                             <h2 class="text-xl font-bold mb-6">Banners Cadastrados</h2>
                             <div id="banners-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                 <div class="flex items-center justify-center p-12 text-gray-400 italic">Carregando banners...</div>
@@ -543,7 +636,7 @@
                 <div id="content-manage-coupons" class="marketing-subcontent hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <!-- Add/Edit Coupon Form -->
-                        <div class="lg:col-span-1 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="lg:col-span-1 glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
                             <h2 id="coupon-form-title" class="text-xl font-bold mb-6">Adicionar Novo Cupom</h2>
                             <form id="coupon-form" class="space-y-6">
                                 <input type="hidden" id="coupon-id">
@@ -587,7 +680,7 @@
                             </form>
                         </div>
                         <!-- Coupons List -->
-                        <div class="lg:col-span-2 glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                        <div class="lg:col-span-2 glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-0 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                             <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
                                 <h2 class="text-xl font-bold">Cupons Cadastrados</h2>
                             </div>
@@ -618,7 +711,7 @@
             <div id="content-events" class="tab-content hidden">
                 <!-- Event KPIs -->
                 <div id="event-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-primary/30 transition-all">
+                    <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-primary/30 transition-all">
                         <div>
                             <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Total Inscritos</p>
                             <p id="total-event-subscribers" class="text-3xl font-extrabold text-gray-900 dark:text-white">0</p>
@@ -627,14 +720,14 @@
                             <i class="fas fa-users text-xl"></i>
                         </div>
                     </div>
-                    <div id="ring-stats-container" class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto custom-scrollbar">
+                    <div id="ring-stats-container" class="lg:col-span-2 glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 overflow-x-auto custom-scrollbar">
                         <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Inscritos por Ringue</p>
                         <div id="ring-stats-list" class="flex gap-6">
                             <!-- Injected by JS -->
                             <div class="text-gray-400 italic text-xs">Selecione um evento...</div>
                         </div>
                     </div>
-                    <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-green-500/30 transition-all">
+                    <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 flex items-center justify-between group hover:border-green-500/30 transition-all">
                         <div>
                             <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Check-ins</p>
                             <p id="total-event-checkins" class="text-3xl font-extrabold text-green-500">0</p>
@@ -646,7 +739,7 @@
                 </div>
 
                 <!-- Event Filters -->
-                <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                         <div class="lg:col-span-1">
                             <label for="event-product-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block">Selecionar Evento</label>
@@ -687,7 +780,7 @@
                 </div>
 
                 <!-- Event Table -->
-                <div class="glass-panel p-0 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-0 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead>
@@ -732,7 +825,7 @@
     <!-- Sale Details Modal -->
     <div id="sale-details-modal"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col transition-all animate-fadeIn">
+        <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col transition-all animate-fadeIn">
             <div class="p-6 border-b border-gray-50 dark:border-gray-800/50 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -799,7 +892,7 @@
     <!-- Manual Sale Modal -->
     <div id="manual-sale-modal"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
-        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all">
+        <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all">
             <form id="manual-sale-form" class="flex flex-col h-full">
                 <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-transparent">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Adicionar Venda Manual</h2>
@@ -954,7 +1047,7 @@
 
     <!-- Product Modal -->
     <div id="product-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden p-4">
-        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 transition-all">
+        <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-800 transition-all">
             <!-- Fixed Header -->
             <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-transparent shrink-0">
                 <h2 id="product-form-title" class="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Produto</h2>
