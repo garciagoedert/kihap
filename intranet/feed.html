@@ -35,14 +35,17 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="log.css">
     <style>
-        .ql-editor { font-size: 16px; min-height: 150px; background: #f9fafb; color: #111827; border-radius: 0 0 0.5rem 0.5rem; border: 1px solid #e5e7eb; border-top: none; }
-        .dark .ql-editor { background: #2a2a2a; color: #e5e7eb; border-color: #4b5563 !important; }
+        .ql-editor { font-size: 16px; min-height: 150px; background: transparent; color: #111827; border-radius: 0 0 1rem 1rem; border: 1px solid rgba(229, 231, 235, 0.5); border-top: none; }
+        .dark .ql-editor { background: transparent; color: #e5e7eb; border-color: rgba(75, 85, 99, 0.3) !important; }
         
-        .ql-toolbar { background: #f3f4f6; border-color: #e5e7eb !important; border-radius: 0.5rem 0.5rem 0 0; }
-        .dark .ql-toolbar { background: #1e1e1e; border-color: #4b5563 !important; }
+        .ql-toolbar { background: rgba(249, 250, 251, 0.5); border-color: rgba(229, 231, 235, 0.5) !important; border-radius: 1rem 1rem 0 0; }
+        .dark .ql-toolbar { background: rgba(0, 0, 0, 0.2); border-color: rgba(75, 85, 99, 0.3) !important; }
+
+        /* Remove estilos hardcoded vindos do editor rico para não quebrar o layout no modo claro */
+        .prose * { background-color: transparent !important; color: inherit !important; }
         
-        .ql-container { border-color: #e5e7eb !important; }
-        .dark .ql-container { border-color: #4b5563 !important; }
+        .ql-container { border-color: rgba(229, 231, 235, 0.5) !important; }
+        .dark .ql-container { border-color: rgba(75, 85, 99, 0.3) !important; }
         
         .ql-stroke { stroke: #4b5563 !important; }
         .dark .ql-stroke { stroke: #9ca3af !important; }
@@ -77,12 +80,15 @@
             <div id="header-container"></div>
             <div class="p-6 flex-1 overflow-y-auto">
                 <div class="max-w-4xl mx-auto">
-                    <div class="flex justify-between items-center mb-6">
-                        <h1 class="text-3xl font-bold">Feed de Conteúdo</h1>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 shadow-sm">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Feed de Conteúdo</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Compartilhe novidades com a rede</p>
                     </div>
+                </div>
 
                 <!-- Formulário de Nova Postagem -->
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-2xl mb-8 transition-all">
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm mb-10">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
                         <h2 class="text-xl font-bold flex items-center text-gray-900 dark:text-white">
                             <i class="fas fa-edit mr-3 text-primary"></i> 
@@ -135,12 +141,12 @@
                                     <label class="flex items-center cursor-pointer group">
                                         <input type="radio" name="media-type" value="upload" checked class="hidden peer">
                                         <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
-                                        <span class="text-sm peer-checked:text-white text-gray-400 transition-colors">Upload</span>
+                                        <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Upload</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer group">
                                         <input type="radio" name="media-type" value="url" class="hidden peer">
                                         <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
-                                        <span class="text-sm peer-checked:text-white text-gray-400 transition-colors">Link Externo</span>
+                                        <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Link Externo</span>
                                     </label>
                                 </div>
 
@@ -165,14 +171,15 @@
                                         <div class="w-5 h-5 rounded border-2 border-gray-600 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
                                             <i class="fas fa-check text-[10px] text-black hidden peer-checked:block"></i>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-300">Por Unidade</span>
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Por Unidade</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="target-type" value="students" class="hidden peer">
                                         <div class="w-5 h-5 rounded border-2 border-gray-600 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
                                             <i class="fas fa-check text-[10px] text-black hidden peer-checked:block"></i>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-300">Alunos Específicos</span>
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Alunos Específicos</span>
+                                        
                                     </label>
                                 </div>
                             </div>

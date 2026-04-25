@@ -321,11 +321,11 @@ async function displayEvoKpi() {
     if (oldCard) oldCard.remove();
 
     const placeholderHtml = `
-        <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (EVO)</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
@@ -347,11 +347,11 @@ async function displayEvoKpi() {
         }
         
         const finalHtml = `
-            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">📝</div>
                 <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${value.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">${label}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${value.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
@@ -362,10 +362,10 @@ async function displayEvoKpi() {
     } catch (error) {
         console.error("Erro ao carregar KPIs da EVO:", error);
         const errorHtml = `
-            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (EVO)</p>
                     <p class="text-xl font-bold text-red-500">Erro</p>
                 </div>
             </div>
@@ -416,11 +416,11 @@ async function displayDailyEntriesKpi() {
 
     // Placeholder de carregamento
     const placeholderHtml = `
-        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🏃</div>
             <div>
-                <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Alunos Ativos (Hoje)</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
@@ -438,11 +438,11 @@ async function displayDailyEntriesKpi() {
         }
 
         const finalHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">🏃</div>
                 <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">${label}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
@@ -453,10 +453,10 @@ async function displayDailyEntriesKpi() {
     } catch (error) {
         console.error("Erro ao carregar KPI de Alunos Ativos Hoje:", error);
         const errorHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Alunos Ativos (Hoje)</p>
                     <p class="text-xl font-bold text-red-500">Erro</p>
                 </div>
             </div>
@@ -478,9 +478,13 @@ function renderEvolutionCharts() {
     const contractsData = sortedSnapshots.map(snap => snap.totalContracts || 0);
     const studentsData = sortedSnapshots.map(snap => snap.totalDailyActives || 0);
 
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#a0aec0' : '#4b5563';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
     // Configurações globais para os gráficos
-    Chart.defaults.color = '#a0aec0'; // Cor do texto (cinza claro)
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'; // Cor das bordas/grades
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
 
     const sharedConfig = {
         type: 'line',
@@ -502,19 +506,19 @@ function renderEvolutionCharts() {
             scales: {
                 x: {
                     ticks: {
-                        color: '#a0aec0',
+                        color: textColor,
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: gridColor
                     }
                 },
                 y: {
                     beginAtZero: false,
                     ticks: {
-                        color: '#a0aec0',
+                        color: textColor,
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: gridColor
                     }
                 }
             }
@@ -588,6 +592,10 @@ async function renderStoreSalesChart() {
         const labels = Object.keys(salesByDay);
         const data = Object.values(salesByDay).map(total => total / 100);
 
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#a0aec0' : '#4b5563';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
         new Chart(salesCtx, {
             type: 'bar',
             data: {
@@ -618,22 +626,22 @@ async function renderStoreSalesChart() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#a0aec0',
+                            color: textColor,
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: gridColor
                         }
                     },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            color: '#a0aec0',
+                            color: textColor,
                             callback: function(value) {
                                 return 'R$ ' + value;
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: gridColor
                         }
                     }
                 }
@@ -647,25 +655,25 @@ async function renderStoreSalesChart() {
 async function displayStoreSalesKpi(unitId = 'geral') {
     const kpiContainer = document.getElementById('store-sales-kpi-container');
     kpiContainer.innerHTML = `
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Total de Vendas</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total de Vendas</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Receita Total</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Receita Total</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Ticket Médio</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Ticket Médio</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
     `;
@@ -700,29 +708,29 @@ async function displayStoreSalesKpi(unitId = 'geral') {
         const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
         let kpiHtml = `
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+            <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">🛒</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Total de Vendas</p>
-                    <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total de Vendas</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${totalSales.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
 
         if (isAdmin) {
             kpiHtml += `
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                     <div class="text-3xl mr-4">💰</div>
                     <div>
-                        <p class="text-gray-400 text-sm">Receita Total</p>
-                        <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Receita Total</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </div>
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                     <div class="text-3xl mr-4">📊</div>
                     <div>
-                        <p class="text-gray-400 text-sm">Ticket Médio</p>
-                        <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Ticket Médio</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </div>
             `;
@@ -732,10 +740,10 @@ async function displayStoreSalesKpi(unitId = 'geral') {
     } catch (error) {
         console.error("Erro ao carregar KPIs de vendas da loja:", error);
         kpiContainer.innerHTML = `
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+            <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Store</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Store</p>
                     <p class="text-xl font-bold text-red-500">Erro ao carregar</p>
                 </div>
             </div>

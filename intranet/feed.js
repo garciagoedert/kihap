@@ -203,7 +203,7 @@ export const initFeedPage = () => {
             }
 
             const postElement = document.createElement('div');
-            postElement.className = 'bg-[#1e1e1e] rounded-2xl border border-gray-800 shadow-xl overflow-hidden mb-8 animate-fade-in group';
+            postElement.className = 'bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm overflow-hidden mb-10 animate-fade-in group hover:shadow-md transition-shadow';
             
             // Fix Foto de Perfil
             let authorPhoto = post.authorPhotoURL || './default-profile.svg';
@@ -247,20 +247,20 @@ export const initFeedPage = () => {
                         <div class="flex items-center">
                             <a href="../members/perfil-publico.html?id=${authorId}" class="relative w-11 h-11 flex-shrink-0 block hover:opacity-80 transition-opacity">
                                 <img src="${authorPhoto}" class="author-img-${authorId} w-11 h-11 rounded-full border-2 border-primary shadow-sm object-cover" onerror="this.src='./default-profile.svg'">
-                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1e1e1e] rounded-full"></div>
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full"></div>
                             </a>
                             <div class="ml-3">
-                                <a href="../members/perfil-publico.html?id=${authorId}" class="font-bold text-gray-100 text-sm hover:text-primary transition-colors">${post.authorName}</a>
+                                <a href="../members/perfil-publico.html?id=${authorId}" class="font-bold text-gray-900 dark:text-white text-sm hover:text-primary transition-colors">${post.authorName}</a>
                                 <p class="text-[9px] text-gray-500 uppercase font-medium mt-0.5">${createdAt}</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                             ${post.targetStudents?.length > 0 ? '<span class="text-[8px] bg-blue-500/10 text-blue-400 py-0.5 px-2 rounded-full border border-blue-500/20 font-bold uppercase tracking-widest">Privado</span>' : ''}
-                             <span class="text-[8px] bg-gray-800 text-gray-400 py-0.5 px-2 rounded-full border border-gray-700 font-bold uppercase tracking-widest">${post.targetUnit === 'all' ? 'Público' : (post.targetUnit || 'Unidade')}</span>
-                             ${(isAdmin || post.authorId === user.uid) ? `<button class="delete-btn p-2 text-gray-600 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>` : ''}
+                             ${post.targetStudents?.length > 0 ? '<span class="text-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0.5 px-2 rounded-full border border-blue-500/20 font-bold uppercase tracking-widest">Privado</span>' : ''}
+                             <span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200 dark:border-gray-700/50 font-bold uppercase tracking-widest">${post.targetUnit === 'all' ? 'Público' : (post.targetUnit || 'Unidade')}</span>
+                             ${(isAdmin || post.authorId === user.uid) ? `<button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>` : ''}
                         </div>
                     </div>
-                    <div class="prose prose-invert max-w-none text-gray-300 text-sm leading-relaxed mb-6">
+                    <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-6">
                         ${post.isHtml ? post.content : `<p>${post.content.replace(/\n/g, '<br>')}</p>`}
                     </div>
                 </div>

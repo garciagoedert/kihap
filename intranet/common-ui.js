@@ -14,44 +14,48 @@ function setupUIListeners(handlers = {}) {
     } = handlers;
 
     // Sidebar toggle
-    const menuToggle = document.getElementById('menu-toggle');
-    if (menuToggle && !menuToggle.dataset.listenerAttached) {
-        menuToggle.dataset.listenerAttached = 'true';
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    
+    if (sidebar && !sidebar.dataset.listenerAttached) {
+        sidebar.dataset.listenerAttached = 'true';
 
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('main-content');
-        const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-        const backdrop = document.getElementById('sidebar-backdrop');
-
-        if (sidebar && mainContent && backdrop) {
-            const toggleSidebar = () => {
-                // Toggle apenas para mobile
-                if (window.innerWidth < 768) {
-                    const isHidden = sidebar.classList.contains('-translate-x-full');
-                    if (isHidden) {
-                        sidebar.classList.remove('-translate-x-full');
-                        sidebar.classList.add('translate-x-0');
-                        backdrop.classList.remove('hidden');
-                    } else {
-                        sidebar.classList.add('-translate-x-full');
-                        sidebar.classList.remove('translate-x-0');
-                        backdrop.classList.add('hidden');
-                    }
-                }
-            };
-            menuToggle.addEventListener('click', toggleSidebar);
-            if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
-            backdrop.addEventListener('click', toggleSidebar);
-
-            // Garante estado correto no resize
-            window.addEventListener('resize', () => {
-                if (window.innerWidth >= 768) {
+        const toggleSidebar = () => {
+            // Toggle apenas para mobile
+            if (window.innerWidth < 768) {
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
                     sidebar.classList.remove('-translate-x-full');
-                    sidebar.classList.add('md:translate-x-0');
-                    backdrop.classList.add('hidden');
+                    sidebar.classList.add('translate-x-0');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('translate-x-0');
+                    if (backdrop) backdrop.classList.add('hidden');
                 }
-            });
-        }
+            }
+        };
+
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+
+        if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+        if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
+        if (backdrop) backdrop.addEventListener('click', toggleSidebar);
+
+        // Garante estado correto no resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('md:translate-x-0');
+                if (backdrop) backdrop.classList.add('hidden');
+            } else {
+                // Ao voltar pro mobile, se não estiver visível (translate-x-0), garantir q tem translate-x-full
+                if (!sidebar.classList.contains('translate-x-0')) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            }
+        });
     }
 
     // Profile Menu toggle
@@ -105,7 +109,6 @@ function setupUIListeners(handlers = {}) {
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
 
     // Generic Submenu toggles (Event Delegation)
-    const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.dataset.delegatedListenerAttached) {
         sidebar.dataset.delegatedListenerAttached = 'true';
         sidebar.addEventListener('click', (event) => {
@@ -443,7 +446,7 @@ async function loadComponents(pageSpecificSetup) {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.0.6'; 
+    const CACHE_VERSION = '1.0.7'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
