@@ -43,44 +43,51 @@ async function loadCourses(isAdmin) {
     } catch (error) {
         console.error("Error loading courses: ", error);
         courseListContainer.innerHTML = '<p class="text-red-500 col-span-full">Erro ao carregar os cursos.</p>';
+    } finally {
+        const skeleton = document.getElementById('course-skeleton');
+        if (skeleton) skeleton.classList.add('hidden');
+        courseListContainer.classList.remove('hidden');
     }
 }
 
 function createCourseCard(course, courseId, isAdmin) {
     const card = document.createElement('div');
-    card.className = 'course-card relative group'; // Added relative group for hover effects if needed
+    card.className = 'bg-white dark:bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800/50 flex flex-col group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative';
 
     const thumbnailUrl = course.thumbnailURL || 'https://placehold.co/640x360.png?text=Curso';
 
     let adminActionsHTML = '';
     if (isAdmin) {
         adminActionsHTML = `
-            <div class="absolute top-3 right-3 z-20 flex space-x-2">
-                <button onclick="viewSubscribers('${courseId}', '${course.title.replace(/'/g, "\\'")}')" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg" title="Ver Assinantes">
-                    <i class="fas fa-users fa-sm"></i>
-                </button>
-                <a href="course-editor.html?courseId=${courseId}" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg" title="Editar">
-                    <i class="fas fa-pencil-alt fa-sm"></i>
-                </a>
-                <button onclick="deleteCourse('${courseId}', '${course.title.replace(/'/g, "\\'")}')" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg" title="Excluir">
-                    <i class="fas fa-trash-alt fa-sm"></i>
-                </button>
+            <div class="border-t border-gray-100 dark:border-gray-800/50 p-3 bg-gray-50/50 dark:bg-gray-900/30 flex justify-between items-center relative z-20">
+                <span class="text-[10px] uppercase font-bold tracking-widest text-gray-400 pl-2">Admin</span>
+                <div class="flex space-x-2">
+                    <button onclick="viewSubscribers('${courseId}', '${course.title.replace(/'/g, "\\'")}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white transition-colors" title="Ver Assinantes">
+                        <i class="fas fa-users text-xs"></i>
+                    </button>
+                    <a href="course-editor.html?courseId=${courseId}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-colors" title="Editar">
+                        <i class="fas fa-pencil-alt text-xs"></i>
+                    </a>
+                    <button onclick="deleteCourse('${courseId}', '${course.title.replace(/'/g, "\\'")}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white transition-colors" title="Excluir">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </div>
             </div>
         `;
     }
 
     card.innerHTML = `
-        <a href="player.html?courseId=${courseId}" class="absolute inset-0 z-10"></a>
-        <img src="${thumbnailUrl}" alt="${course.title}" class="course-card-img w-full h-48 object-cover rounded-t-lg">
-        <div class="course-card-content p-4">
-            <h3 class="text-xl font-bold font-title text-white">${course.title}</h3>
-            <p class="text-sm text-gray-400">Por ${course.author || 'Autor desconhecido'}</p>
+        <a href="player.html?courseId=${courseId}" class="absolute inset-0 z-10 block"></a>
+        <div class="relative h-48 overflow-hidden">
+            <img src="${thumbnailUrl}" alt="${course.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        </div>
+        <div class="p-5 flex-1 flex flex-col relative z-10">
+            <h3 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white mb-1 line-clamp-2">${course.title}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-auto font-medium">Por ${course.author || 'Autor desconhecido'}</p>
         </div>
         ${adminActionsHTML}
     `;
-
-    // Note: The onclick handlers need to be globally accessible or attached via event listeners.
-    // Since we are using onclick in HTML string, we attach them to window below.
 
     return card;
 }

@@ -40,6 +40,12 @@
         .module-header .fa-chevron-up {
             transform: rotate(180deg);
         }
+        
+        /* Força a herança de cor do Tailwind sobrepondo estilos inline do editor rico */
+        #lesson-description * {
+            color: inherit !important;
+            background-color: transparent !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
@@ -48,27 +54,30 @@
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
         <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
-            <div class="p-6 flex-1 overflow-y-auto">
-            <div class="flex flex-col lg:flex-row gap-6">
-                <!-- Conteúdo Principal da Aula -->
-                <div class="flex-grow lg:w-3/4">
-                    <div id="lesson-content-container" class="bg-black rounded-lg mb-4">
-                        <!-- Player de vídeo ou conteúdo da aula aqui -->
+            <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto custom-scrollbar">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Conteúdo Principal da Aula -->
+                    <div class="flex-grow lg:w-3/4 flex flex-col">
+                        <div id="lesson-content-container" class="bg-black rounded-2xl mb-6 shadow-xl overflow-hidden border border-gray-800 flex-shrink-0">
+                            <!-- Player de vídeo ou conteúdo da aula aqui -->
+                        </div>
+                        <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 md:p-10 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm mt-4">
+                            <h1 id="lesson-title" class="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-6">Carregando...</h1>
+                            <div class="h-px w-full bg-gradient-to-r from-gray-200 dark:from-gray-800 to-transparent mb-8"></div>
+                            <div id="lesson-description" class="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed prose prose-lg dark:prose-invert max-w-none prose-p:mb-6 prose-p:leading-loose"></div>
+                        </div>
                     </div>
-                    <h1 id="lesson-title" class="text-3xl font-bold">Carregando...</h1>
-                    <p id="lesson-description" class="text-gray-400 mt-2"></p>
-                </div>
 
-                <!-- Lista de Aulas -->
-                <div class="lg:w-1/4">
-                    <div class="bg-gray-800 p-4 rounded-lg">
-                        <h2 id="course-title-sidebar" class="text-xl font-bold mb-4">Conteúdo do Curso</h2>
-                        <div id="modules-list" class="space-y-3">
-                            <!-- Módulos e aulas serão listados aqui -->
+                    <!-- Lista de Aulas -->
+                    <div class="lg:w-1/4 flex-shrink-0">
+                        <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 shadow-sm sticky top-0">
+                            <h2 id="course-title-sidebar" class="text-lg font-bold text-gray-900 dark:text-white mb-6 uppercase tracking-widest text-[11px]">Conteúdo do Curso</h2>
+                            <div id="modules-list" class="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar pr-2">
+                                <!-- Módulos e aulas serão listados aqui -->
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             </div>
         </main>
     </div>

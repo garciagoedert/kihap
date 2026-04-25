@@ -50,21 +50,28 @@ function renderModules() {
         moduleEl.classList.add('module-item');
 
         const moduleHeader = document.createElement('div');
-        moduleHeader.classList.add('module-header', 'flex', 'justify-between', 'items-center', 'cursor-pointer', 'p-2', 'hover:bg-gray-700', 'rounded-md');
+        moduleHeader.classList.add('module-header', 'flex', 'justify-between', 'items-center', 'cursor-pointer', 'p-4', 'bg-gray-50', 'dark:bg-[#111111]', 'border', 'border-gray-100', 'dark:border-gray-800', 'hover:border-primary/50', 'rounded-xl', 'transition-all', 'group');
         moduleHeader.innerHTML = `
-            <h3 class="font-semibold text-lg text-white">${module.title}</h3>
-            <i class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-center text-primary">
+                    <i class="fas fa-layer-group text-xs"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 dark:text-white">${module.title}</h3>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400 transition-transform group-hover:text-primary"></i>
         `;
 
         const lessonsList = document.createElement('ul');
-        lessonsList.className = 'space-y-1 mt-1 pl-4 border-l border-gray-700 ml-2 hidden'; // Oculto por padrão
+        lessonsList.className = 'space-y-2 mt-3 mb-6 pl-2 hidden'; // Oculto por padrão
         
         module.lessons.forEach((lesson, lessonIndex) => {
             const lessonEl = document.createElement('li');
             lessonEl.innerHTML = `
-                <a href="#" class="flex items-center gap-2 text-gray-300 hover:text-white p-1 rounded-md" data-module="${moduleIndex}" data-lesson="${lessonIndex}">
-                    <i class="far fa-play-circle"></i>
-                    <span>${lesson.title}</span>
+                <a href="#" class="flex items-center gap-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-[#111111] border border-transparent hover:border-gray-100 dark:hover:border-gray-800 p-3 rounded-xl transition-all group/lesson" data-module="${moduleIndex}" data-lesson="${lessonIndex}">
+                    <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover/lesson:bg-primary group-hover/lesson:text-white transition-colors">
+                        <i class="fas fa-play text-[8px] ml-0.5"></i>
+                    </div>
+                    <span class="line-clamp-2">${lesson.title}</span>
                 </a>
             `;
             lessonsList.appendChild(lessonEl);
@@ -114,13 +121,13 @@ function loadLesson(moduleIndex, lessonIndex) {
             contentContainer.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
             break;
         case 'text':
-            contentContainer.innerHTML = `<div class="p-6 bg-gray-800 rounded-lg">${lesson.content}</div>`;
+            contentContainer.innerHTML = `<div class="p-8 bg-gray-50 dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-2xl text-gray-900 dark:text-gray-300 min-h-[400px] prose dark:prose-invert max-w-none">${lesson.content}</div>`;
             break;
         case 'quiz':
             // Basic quiz display, can be expanded
-            contentContainer.innerHTML = `<div class="p-6 bg-gray-800 rounded-lg">Quiz: ${lesson.content}</div>`;
+            contentContainer.innerHTML = `<div class="p-8 bg-gray-50 dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-2xl text-gray-900 dark:text-gray-300 min-h-[400px] flex items-center justify-center font-bold text-xl">Quiz: ${lesson.content}</div>`;
             break;
         default:
-            contentContainer.innerHTML = `<div class="p-6 bg-gray-800 rounded-lg">Tipo de conteúdo não suportado.</div>`;
+            contentContainer.innerHTML = `<div class="p-8 bg-gray-50 dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-2xl text-red-500 min-h-[400px] flex items-center justify-center">Tipo de conteúdo não suportado.</div>`;
     }
 }
