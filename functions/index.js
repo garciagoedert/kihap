@@ -373,6 +373,96 @@ async function assignEventParticipantData(saleId, saleData, productData) {
     };
 }
 
+/**
+ * Helper to reduce product stock in a transaction
+ */
+async function reduceProductStock(productId, size = null, quantity = 1) {
+    if (!productId) return;
+    
+    const productRef = db.collection('products').doc(productId);
+    
+    try {
+        await db.runTransaction(async (transaction) => {
+            const prodSnap = await transaction.get(productRef);
+            if (!prodSnap.exists) return;
+            
+            const product = prodSnap.data();
+            if (!product.controlStock) return;
+            
+            const updateProductData = {
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (product.hasSizes && product.sizeStock && size) {
+                const currentStock = product.sizeStock;
+                const currentQty = currentStock[size] || 0;
+                const newQty = Math.max(0, currentQty - quantity);
+                
+                // Use dot notation to update specific field in the map
+                updateProductData[`sizeStock.${size}`] = newQty;
+                
+                // Recalculate total stock
+                let total = 0;
+                let anyAvailable = false;
+                for (const s in currentStock) {
+                    const qty = (s === size ? newQty : (currentStock[s] || 0));
+                    total += qty;
+                    if (qty > 0) anyAvailable = true;
+                }
+                
+                updateProductData.stockQuantity = total;
+                if (!anyAvailable) updateProductData.available = false;
+            } else {
+                // Simple stock
+                let currentQty = product.stockQuantity || 0;
+                let newQuantity = Math.max(0, currentQty - quantity);
+                updateProductData.stockQuantity = newQuantity;
+                if (newQuantity <= 0) updateProductData.available = false;
+            }
+            
+            transaction.update(productRef, updateProductData);
+            console.log(`[reduceProductStock] Stock reduced for product ${productId} (size: ${size || 'N/A'}, qty: ${quantity})`);
+        });
+    } catch (error) {
+        console.error(`[reduceProductStock] Error reducing stock for product ${productId}:`, error);
+    }
+}
+
+/**
+ * Trigger to handle stock reduction when a sale is marked as paid
+ */
+exports.onSalePaid = functions.firestore
+    .document('inscricoesFaixaPreta/{saleId}')
+    .onWrite(async (change, context) => {
+        const beforeData = change.before.exists ? change.before.data() : null;
+        const afterData = change.after.exists ? change.after.data() : null;
+
+        // Check if paymentStatus just became 'paid'
+        const isPaidNow = afterData && afterData.paymentStatus === 'paid' && (!beforeData || beforeData.paymentStatus !== 'paid');
+        
+        if (!isPaidNow) return null;
+
+        console.log(`[onSalePaid] Processing stock for sale ${context.params.saleId}`);
+
+        // 1. Handle single product sale (Standard/Online)
+        if (afterData.productId) {
+            await reduceProductStock(afterData.productId, afterData.userSize, 1);
+        }
+
+        // 2. Handle manual multi-item sale
+        if (afterData.items && Array.isArray(afterData.items)) {
+            for (const item of afterData.items) {
+                if (item.productId) {
+                    // Manual sales might have size in item.size or afterData.chosenVariant
+                    const itemSize = item.size || afterData.chosenVariant || null;
+                    await reduceProductStock(item.productId, itemSize, 1);
+                }
+            }
+        }
+
+        return null;
+    });
+
 // Helper para atualizar uma venda como paga, enviar e-mail e notificar gerente
 async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paymentDetails = null) {
     if (saleData.paymentStatus === 'paid') {
@@ -406,52 +496,7 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     await docRef.update(updateData);
     console.log(`[updateSaleToPaid] Status atualizado para 'paid' para a venda ${saleId}`);
 
-    // Controle de Estoque
-    try {
-        if (productData && productData.controlStock === true) {
-            const productRefLocal = db.collection('products').doc(saleData.productId);
-            await db.runTransaction(async (transaction) => {
-                const prodSnap = await transaction.get(productRefLocal);
-                if (prodSnap.exists) {
-                    const product = prodSnap.data();
-                    const updateProductData = {
-                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    if (product.hasSizes && product.sizeStock && saleData.userSize) {
-                        const currentStock = product.sizeStock;
-                        const selectedSize = saleData.userSize;
-                        const currentQty = currentStock[selectedSize] || 0;
-                        const newQty = Math.max(0, currentQty - 1);
-                        updateProductData[`sizeStock.${selectedSize}`] = newQty;
-                        
-                        let allZero = newQty <= 0;
-                        if (allZero) {
-                            for (const size in currentStock) {
-                                if (size !== selectedSize && (currentStock[size] || 0) > 0) {
-                                    allZero = false;
-                                    break;
-                                }
-                            }
-                        }
-                        let total = 0;
-                        for (const size in currentStock) {
-                            total += (size === selectedSize ? newQty : (currentStock[size] || 0));
-                        }
-                        updateProductData.stockQuantity = total;
-                        if (allZero) updateProductData.available = false;
-                    } else {
-                        let newQuantity = (product.stockQuantity || 0) - 1;
-                        updateProductData.stockQuantity = Math.max(0, newQuantity);
-                        if (newQuantity <= 0) updateProductData.available = false;
-                    }
-                    transaction.update(productRefLocal, updateProductData);
-                }
-            });
-        }
-    } catch (stockError) {
-        console.error('[updateSaleToPaid] Erro ao atualizar estoque:', stockError);
-    }
+    // Controle de estoque agora é lidado pelo trigger onSalePaid
 
     // Envio de e-mail (ingresso ou recibo)
     if (!saleData.emailSent) {
