@@ -1850,6 +1850,7 @@ export async function setupStorePage() {
                             <p><span class="text-gray-500 dark:text-gray-400">Unidade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
                             <p><span class="text-gray-500 dark:text-gray-400">Programa:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPrograma || 'N/A'}</span></p>
                             <p><span class="text-gray-500 dark:text-gray-400">Graduação:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userGraduacao || 'N/A'}</span></p>
+                            ${sale.userProfessor ? `<p><span class="text-gray-500 dark:text-gray-400">Professor:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userProfessor}</span></p>` : ''}
                         </div>
                     </div>
 

@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Item ${idx + 1}</span>
                         ${form.userSize ? `<br>Tamanho: <span class="text-yellow-500 font-bold">${form.userSize}</span>` : ''}
                         ${form.userAge ? `<br>Idade: <span class="text-white">${form.userAge} anos</span>` : ''}
+                        ${form.userProfessor ? `<br>Professor: <span class="text-white">${form.userProfessor}</span>` : ''}
                         ${form.variantName ? `<br>Opção: <span class="text-white">${form.variantName}</span>` : ''}
                         ${addontsText ? `<br>Extras: <span class="text-white">${addontsText}</span>` : ''}
                     </div>

@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentUser = null;
     let unitsCache = [];
+    let instructors = [];
 
     const formatCurrency = (amount) => {
         return (amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -138,6 +139,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <option value="">Selecione</option>
                             </select>
                         </div>
+                        ${form.hasOwnProperty('userProfessor') ? `
+                        <div class="professor-container">
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Professor Responsável</label>
+                            <select name="participant-professor" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                                <option value="">Selecione o Professor</option>
+                                ${instructors.map(instr => `<option value="${instr.name || instr.id}" ${form.userProfessor === (instr.name || instr.id) ? 'selected' : ''}>${instr.name || instr.id}</option>`).join('')}
+                            </select>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -153,6 +163,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 participantIndex++;
             });
         });
+    };
+
+    const fetchInstructors = async () => {
+        try {
+            const q = query(collection(db, 'users'), where('isInstructor', '==', true));
+            const querySnapshot = await getDocs(q);
+            instructors = [];
+            querySnapshot.forEach(doc => {
+                instructors.push({ id: doc.id, ...doc.data() });
+            });
+            instructors.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        } catch (error) {
+            console.error("Error fetching instructors:", error);
+        }
     };
 
     const fetchUnits = async () => {
@@ -295,6 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const names = document.querySelectorAll('[name="participant-name"]');
         const programs = document.querySelectorAll('[name="participant-program"]');
         const grads = document.querySelectorAll('[name="participant-grad"]');
+        const professors = document.querySelectorAll('[name="participant-professor"]');
         
         names.forEach((input, index) => {
             const itemIdx = input.dataset.item;
@@ -303,6 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             items[itemIdx].formDataList[formIdx].userName = input.value;
             items[itemIdx].formDataList[formIdx].userPrograma = programs[index].value;
             items[itemIdx].formDataList[formIdx].userGraduacao = grads[index].required ? grads[index].value : null;
+            items[itemIdx].formDataList[formIdx].userProfessor = professors[index] ? professors[index].value : (items[itemIdx].formDataList[formIdx].userProfessor || null);
         });
 
         const globalUserData = {
@@ -362,5 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkoutForm.addEventListener('submit', handleCheckout);
 
     renderSummary();
+    await fetchInstructors();
     fetchUnits();
 });

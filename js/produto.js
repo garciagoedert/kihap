@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let productData = null;
     let currentUser = null;
     let appliedCoupon = null;
+    let instructors = [];
 
     const getProductId = () => {
         const params = new URLSearchParams(window.location.search);
@@ -85,6 +86,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-2xl text-red-500 mb-4">Erro ao carregar o produto.</p>
                     <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
                 </div>`;
+        }
+    };
+
+    const fetchInstructors = async () => {
+        try {
+            const q = query(collection(db, 'users'), where('isInstructor', '==', true));
+            const querySnapshot = await getDocs(q);
+            instructors = [];
+            querySnapshot.forEach(doc => {
+                instructors.push({ id: doc.id, ...doc.data() });
+            });
+            instructors.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        } catch (error) {
+            console.error("Error fetching instructors:", error);
         }
     };
 
@@ -208,6 +223,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (ageInput) {
                         ageInput.id = `idade-${i}`;
                         ageInput.required = true;
+                    }
+                }
+            }
+
+            // Campo Professor condicional
+            if (productData.askProfessor) {
+                const professorContainer = formInstance.querySelector('.professor-container');
+                if (professorContainer) {
+                    professorContainer.classList.remove('hidden');
+                    const professorSelector = professorContainer.querySelector('select[name="professor-selector"]');
+                    if (professorSelector) {
+                        professorSelector.id = `professor-${i}`;
+                        professorSelector.required = true;
+                        
+                        professorSelector.innerHTML = '<option value="" disabled selected>Selecione o Professor</option>';
+                        instructors.forEach(instr => {
+                            const option = document.createElement('option');
+                            option.value = instr.name || instr.id;
+                            option.textContent = instr.name || instr.id;
+                            professorSelector.appendChild(option);
+                        });
                     }
                 }
             }
@@ -519,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = {
                 userAge: form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null,
                 userSize: form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null,
+                userProfessor: form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null,
             };
 
             let priceData = {};
@@ -620,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const init = async () => {
         productId = getProductId();
+        await fetchInstructors();
         await fetchProduct(productId);
         paymentForm.addEventListener('submit', handleFormSubmit);
     };
