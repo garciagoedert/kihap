@@ -238,10 +238,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         professorSelector.required = true;
                         
                         professorSelector.innerHTML = '<option value="" disabled selected>Selecione o Professor</option>';
-                        instructors.forEach(instr => {
+                        
+                        // Se houver uma lista manual de professores, usa ela. Caso contrário, usa a lista automática.
+                        const listToUse = (productData.availableProfessors && productData.availableProfessors.length > 0) 
+                            ? productData.availableProfessors 
+                            : instructors.map(instr => instr.name || instr.id);
+
+                        listToUse.forEach(profName => {
                             const option = document.createElement('option');
-                            option.value = instr.name || instr.id;
-                            option.textContent = instr.name || instr.id;
+                            option.value = profName;
+                            option.textContent = profName;
                             professorSelector.appendChild(option);
                         });
                     }
@@ -627,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formDataList: formDataList,
                 totalAmount: totalAmount,
                 recommendedItems: recommendedItems,
+                availableProfessors: productData.availableProfessors || [],
                 coupon: appliedCoupon ? appliedCoupon.code : null,
                 addedAt: new Date().toISOString()
             });

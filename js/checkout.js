@@ -144,7 +144,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Professor Responsável</label>
                             <select name="participant-professor" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
                                 <option value="">Selecione o Professor</option>
-                                ${instructors.map(instr => `<option value="${instr.name || instr.id}" ${form.userProfessor === (instr.name || instr.id) ? 'selected' : ''}>${instr.name || instr.id}</option>`).join('')}
+                                ${(item.availableProfessors && item.availableProfessors.length > 0) 
+                                    ? item.availableProfessors.map(prof => `<option value="${prof}" ${form.userProfessor === prof ? 'selected' : ''}>${prof}</option>`).join('')
+                                    : instructors.map(instr => `<option value="${instr.name || instr.id}" ${form.userProfessor === (instr.name || instr.id) ? 'selected' : ''}>${instr.name || instr.id}</option>`).join('')
+                                }
                             </select>
                         </div>
                         ` : ''}

@@ -131,6 +131,8 @@ export async function setupStorePage() {
     const productIsSubscriptionInput = document.getElementById('product-is-subscription');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const productAskProfessorInput = document.getElementById('product-ask-professor');
+    const availableProfessorsContainer = document.getElementById('available-professors-container');
+    const availableProfessorsInput = document.getElementById('product-available-professors');
     const productAskAgeInput = document.getElementById('product-ask-age');
     const productControlStockInput = document.getElementById('product-control-stock');
     const stockContainer = document.getElementById('stock-container');
@@ -877,6 +879,7 @@ export async function setupStorePage() {
                 hasSizes: productHasSizesInput.checked,
                 sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
                 askProfessor: productAskProfessorInput.checked,
+                availableProfessors: productAskProfessorInput.checked && availableProfessorsInput.value ? availableProfessorsInput.value.split(',').map(p => p.trim()).filter(p => p) : [],
                 askAge: productAskAgeInput.checked,
                 controlStock: productControlStockInput.checked,
                 customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(/,|\n/).map(u => u.trim()).filter(u => u) : [],
@@ -1108,6 +1111,13 @@ export async function setupStorePage() {
                     productSizesInput.value = '';
                 }
                 productAskProfessorInput.checked = product.askProfessor || false;
+                if (product.askProfessor) {
+                    availableProfessorsContainer.classList.remove('hidden');
+                    availableProfessorsInput.value = product.availableProfessors ? product.availableProfessors.join(', ') : '';
+                } else {
+                    availableProfessorsContainer.classList.add('hidden');
+                    availableProfessorsInput.value = '';
+                }
                 productAskAgeInput.checked = product.askAge || false;
                 productControlStockInput.checked = product.controlStock || false;
                 if (product.controlStock) {
@@ -1284,6 +1294,16 @@ export async function setupStorePage() {
                 if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.remove('hidden');
             } else {
                 if (subscriptionFrequencyContainer) subscriptionFrequencyContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    if (productAskProfessorInput) {
+        productAskProfessorInput.addEventListener('change', () => {
+            if (productAskProfessorInput.checked) {
+                availableProfessorsContainer.classList.remove('hidden');
+            } else {
+                availableProfessorsContainer.classList.add('hidden');
             }
         });
     }
