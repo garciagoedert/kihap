@@ -1,0 +1,100 @@
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { functions } from './firebase-config.js';
+
+const getPublicRanking = httpsCallable(functions, 'getPublicRanking');
+
+async function fetchAndDisplayRanking() {
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = `
+        <tr>
+            <td colspan="3" class="loader">
+                <i class="fas fa-spinner fa-spin"></i> Atualizando Ranking...
+            </td>
+        </tr>`;
+
+    try {
+        // Chama a função getPublicRanking para buscar os dados diretamente da API EVO
+        const result = await getPublicRanking();
+        const allStudents = result.data || [];
+
+        // A remoção de duplicatas é importante aqui, pois a busca por unidade pode retornar o mesmo aluno
+        const uniqueStudentsMap = new Map();
+        allStudents.forEach(student => {
+            if (!uniqueStudentsMap.has(student.idMember)) {
+                uniqueStudentsMap.set(student.idMember, student);
+            }
+        });
+        const uniqueStudentList = Array.from(uniqueStudentsMap.values());
+
+        // Filtra e ordena os alunos pelas KihapCoins
+        const rankedStudents = uniqueStudentList
+            .filter(student => student.totalFitCoins > 0)
+            .sort((a, b) => (b.totalFitCoins || 0) - (a.totalFitCoins || 0));
+
+        renderRanking(rankedStudents);
+
+    } catch (error) {
+        console.error("Erro ao carregar o ranking:", error);
+        rankingBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="loader text-red-500">
+                    Erro ao carregar o ranking. Tentando novamente em breve...
+                </td>
+            </tr>`;
+    }
+}
+
+function renderRanking(students) {
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = ''; // Clear previous content
+
+    if (students.length === 0) {
+        rankingBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="loader">
+                    Nenhum aluno com KihapCoins encontrado.
+                </td>
+            </tr>`;
+        return;
+    }
+
+    const rowsHtml = students.map((student, index) => {
+        const fullName = `${student.firstName || ''} ${student.lastName || ''}`;
+        const fitCoins = student.totalFitCoins || 0;
+        const photoUrl = student.photoUrl || 'default-profile.svg';
+
+        return `
+            <tr class="ranking-table-row">
+                <td class="rank-position">${index + 1}º</td>
+                <td class="rank-student">
+                    <a href="../members/perfil-publico.html?id=${student.idMember}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <img src="${photoUrl}" alt="Foto de ${fullName}">
+                        <span class="rank-student-name">${fullName}</span>
+                    </a>
+                </td>
+                <td class="rank-coins">${fitCoins}</td>
+            </tr>
+        `;
+    }).join('');
+
+    rankingBody.innerHTML = rowsHtml;
+}
+
+function initVideoSlider() {
+    const videos = document.querySelectorAll('#video-slider .tiktok-video');
+    let currentVideoIndex = 0;
+
+    if (videos.length > 0) {
+        setInterval(() => {
+            videos[currentVideoIndex].classList.remove('active');
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            videos[currentVideoIndex].classList.add('active');
+        }, 30000); // Troca de vídeo a cada 30 segundos
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchAndDisplayRanking(); // Initial load
+    setInterval(fetchAndDisplayRanking, 300000); // Refresh every 5 minutes (300000 ms)
+    initVideoSlider();
+});

@@ -507,8 +507,8 @@ async function loadComponents(pageSpecificSetup) {
 
         // Inicia o carregamento dos componentes IMEDIATAMENTE do cache/network
         const componentsPromise = Promise.all([
-            loadComp('header', 'header.html', headerContainer),
-            loadComp('sidebar', 'sidebar.html', sidebarContainer)
+            loadComp('header', '/intranet/header.html', headerContainer),
+            loadComp('sidebar', '/intranet/sidebar.html', sidebarContainer)
         ]);
 
         // Aguarda os componentes serem injetados antes de prosseguir com ACL da sidebar

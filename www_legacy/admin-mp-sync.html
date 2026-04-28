@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+    
+    <title>Kihap - Admin MP Sync</title>
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b0b0b; color: white; }
+        .kihap-yellow { color: #facc15; }
+        .bg-kihap-yellow { background-color: #facc15; }
+        .border-kihap-yellow { border-color: #facc15; }
+        .btn-gradient {
+            background: linear-gradient(90deg, #facc15 0%, #eab308 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
+        }
+        .loader {
+            border: 3px solid #333;
+            border-top: 3px solid #facc15;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div class="max-w-md w-full bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl">
+        <div class="text-center mb-8">
+            <img src="/imgs/favicon.png" alt="Kihap Logo" class="w-16 mx-auto mb-4">
+            <h1 class="text-2xl font-black uppercase tracking-tight">Admin <span class="kihap-yellow">MP Sync</span></h1>
+            <p class="text-gray-400 text-sm mt-2">Sincronização manual de vendas do Mercado Pago</p>
+        </div>
+
+        <!-- Sync All Section -->
+        <div class="mb-10">
+            <h2 class="text-sm font-bold uppercase text-gray-500 mb-4 tracking-widest">Sincronização em Massa</h2>
+            <button id="btnSyncAll" class="w-full btn-gradient text-black font-extrabold py-4 rounded-xl uppercase tracking-wider flex items-center justify-center">
+                <span id="loaderAll" class="loader hidden"></span>
+                Sincronizar Últimas 24h
+            </button>
+            <p id="statusAll" class="mt-3 text-xs text-center"></p>
+        </div>
+
+        <div class="border-t border-gray-800 my-8"></div>
+
+        <!-- Sync Single Section -->
+        <div>
+            <h2 class="text-sm font-bold uppercase text-gray-500 mb-4 tracking-widest">Venda Específica</h2>
+            <div class="flex flex-col gap-3">
+                <input type="text" id="saleId" placeholder="ID da Venda (ex: 2mARiz...)" 
+                    class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-kihap-yellow transition-colors">
+                <button id="btnSyncSingle" class="w-full border border-kihap-yellow kihap-yellow font-bold py-3 rounded-xl uppercase tracking-wider hover:bg-kihap-yellow hover:text-black transition-all flex items-center justify-center">
+                    <span id="loaderSingle" class="loader hidden"></span>
+                    Sincronizar Venda
+                </button>
+            </div>
+            <p id="statusSingle" class="mt-3 text-xs text-center"></p>
+        </div>
+
+        <div class="mt-10 text-center">
+            <a href="/" class="text-gray-500 hover:text-white text-xs transition-colors underline underline-offset-4">Voltar para o site</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { functions } from './intranet/firebase-config.js';
+        import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+        const syncAllFn = httpsCallable(functions, 'syncMercadoPagoSalesStatus');
+        const syncSingleFn = httpsCallable(functions, 'syncSingleMercadoPagoSale');
+
+        const btnSyncAll = document.getElementById('btnSyncAll');
+        const loaderAll = document.getElementById('loaderAll');
+        const statusAll = document.getElementById('statusAll');
+
+        const btnSyncSingle = document.getElementById('btnSyncSingle');
+        const loaderSingle = document.getElementById('loaderSingle');
+        const statusSingle = document.getElementById('statusSingle');
+        const saleIdInput = document.getElementById('saleId');
+
+        btnSyncAll.addEventListener('click', async () => {
+            setLoading('all', true);
+            try {
+                const result = await syncAllFn({ limitHours: 24 });
+                const { processed, updated } = result.data;
+                statusAll.textContent = `✅ Sucesso! Processadas: ${processed}, Atualizadas: ${updated}`;
+                statusAll.className = 'mt-3 text-xs text-center text-green-500';
+            } catch (error) {
+                console.error(error);
+                statusAll.textContent = `❌ Erro: ${error.message}`;
+                statusAll.className = 'mt-3 text-xs text-center text-red-500';
+            } finally {
+                setLoading('all', false);
+            }
+        });
+
+        btnSyncSingle.addEventListener('click', async () => {
+            const id = saleIdInput.value.trim();
+            if (!id) {
+                alert('Informe o ID da venda.');
+                return;
+            }
+
+            setLoading('single', true);
+            try {
+                const result = await syncSingleFn({ saleId: id });
+                const { success, updated, msg, status } = result.data;
+                
+                if (updated) {
+                    statusSingle.textContent = `✅ Venda atualizada para PAGO!`;
+                    statusSingle.className = 'mt-3 text-xs text-center text-green-500';
+                } else {
+                    statusSingle.textContent = `ℹ️ ${msg || 'Pagamento não aprovado.'} (Status: ${status || 'Não encontrado'})`;
+                    statusSingle.className = 'mt-3 text-xs text-center text-yellow-500';
+                }
+            } catch (error) {
+                console.error(error);
+                statusSingle.textContent = `❌ Erro: ${error.message}`;
+                statusSingle.className = 'mt-3 text-xs text-center text-red-500';
+            } finally {
+                setLoading('single', false);
+            }
+        });
+
+        function setLoading(type, isLoading) {
+            if (type === 'all') {
+                btnSyncAll.disabled = isLoading;
+                loaderAll.classList.toggle('hidden', !isLoading);
+                if (isLoading) statusAll.textContent = 'Processando...';
+            } else {
+                btnSyncSingle.disabled = isLoading;
+                loaderSingle.classList.toggle('hidden', !isLoading);
+                if (isLoading) statusSingle.textContent = 'Consultando...';
+            }
+        }
+    </script>
+</body>
+</html>

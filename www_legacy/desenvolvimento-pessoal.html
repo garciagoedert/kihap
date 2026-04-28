@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Desenvolvimento Pessoal - Kihap</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased bg-[#f8f7f4] text-[#111111]">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
+            <!-- Background Image Overlay -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1600&auto=format&fit=crop" 
+                     class="w-full h-full object-cover opacity-30" alt="Desenvolvimento Pessoal Background">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 container mx-auto px-6">
+                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90 opacity-0 animate-fadeInUp">
+                    <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    Mente & Propósito
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Desenvolvimento <span class="text-yellow-400">Pessoal</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-4xl mx-auto text-white/80 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    Propósito, energia interior e disciplina positiva para evoluir sua realidade e atingir o inatingível.
+                </p>
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 opacity-0 animate-fadeInUp delay-300">
+                    <a href="#newsletter" class="btn-gradient text-black font-bold py-4 px-10 rounded-full shadow-lg shadow-yellow-500/20 hover:scale-105 transition-all uppercase tracking-wider text-sm">
+                        Assinar Newsletter
+                    </a>
+                    <a href="#metodologia" class="bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold py-4 px-10 rounded-full hover:bg-white/20 transition-all uppercase tracking-wider text-sm">
+                        Saiba Mais
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Metodologia Section -->
+        <section id="metodologia" class="py-24 bg-white relative overflow-hidden">
+            <div class="container mx-auto px-6 max-w-4xl text-center">
+                <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-4 block">Nossa Essência</span>
+                <h2 class="text-4xl md:text-5xl font-black uppercase font-title text-gray-900 mb-8 leading-tight">Metodologia</h2>
+                <div class="glass-card p-10 text-gray-600 space-y-6 text-lg leading-relaxed text-left border-gray-100 shadow-xl">
+                    <p>O <span class="font-bold text-gray-900 italic">Kihap Desenvolvimento Pessoal</span> utiliza a filosofia da disciplina positiva da arte marcial para ajudar pessoas comuns a atingirem o que nunca antes imaginaram.</p>
+                    <p>Transformamos vivências e insights do tatame em treinamentos práticos, com didática única e exclusiva Kihap, focada em aprendizado e evolução real.</p>
+                    <p>Aqui, os aprendizados são fora do tatame: com papel, caneta, planejamento e ação para buscar o crescimento mental e emocional.</p>
+                    <div class="pt-6 border-t border-gray-100">
+                        <p class="text-sm">Interessado na prática física? <a href="/artes-marciais.html" class="text-yellow-600 font-bold hover:underline">Explore nossas Artes Marciais &rarr;</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Programas Section -->
+        <section class="py-24 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    
+                    <!-- Mente Faixa Preta -->
+                    <div id="mente-faixa-preta" class="glass-card p-12 flex flex-col justify-between hover:bg-white transition-all">
+                        <div>
+                            <h3 class="text-3xl font-black uppercase font-title text-gray-900 mb-6 italic border-l-4 border-yellow-500 pl-4 text-left">Introdução a Mente Faixa Preta</h3>
+                            <div class="text-gray-600 space-y-4 text-left leading-relaxed">
+                                <p>O início de uma caminhada para quem busca clareza. Surgiu da metodologia que aplicamos com nossos alunos e que foi muito além das artes marciais.</p>
+                                <p>Focado em 3 pilares fundamentais: <span class="font-bold text-gray-900">clareza, planejamento e ação.</span> Só conseguimos mudar aquilo que entendemos de forma sólida.</p>
+                                <p class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg inline-block text-sm font-semibold">Disponível em formato 100% online.</p>
+                            </div>
+                        </div>
+                        <div class="mt-10">
+                            <a href="/desenvolvimento/mente-faixa-preta.html" class="btn-gradient text-black font-bold py-4 px-8 rounded-xl block text-center hover:scale-[1.02] transition-transform shadow-lg">
+                                INSCREVA-SE AGORA
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Kihap Do -->
+                    <div id="kihap-do" class="glass-card p-12 flex flex-col justify-between bg-gray-900/5 hover:bg-white transition-all">
+                        <div>
+                            <h3 class="text-3xl font-black uppercase font-title text-gray-900 mb-6 italic border-l-4 border-yellow-500 pl-4 text-left">Kihap Do</h3>
+                            <div class="text-gray-600 space-y-4 text-left leading-relaxed">
+                                <p>Uma mentoria de <span class="italic font-semibold">Sprint de resultados</span>. O "DO" do Kihap DO significa o "caminho" (coreano) e o "fazer" (inglês).</p>
+                                <p>Acompanhamento ativo através de encontros online e ao vivo, aplicando elementos da disciplina positiva para atingir metas concretas.</p>
+                                <p class="text-sm font-medium border-l-2 border-gray-300 pl-4">Acesso exclusivo para alunos que concluíram a Introdução a Mente Faixa Preta.</p>
+                            </div>
+                        </div>
+                        <div class="mt-10">
+                            <a href="#" class="border-2 border-gray-900 text-gray-900 font-bold py-4 px-8 rounded-xl block text-center hover:bg-gray-900 hover:text-white transition-all">
+                                SAIBA MAIS SOBRE A MENTORIA
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section id="newsletter" class="py-24 bg-white text-center">
+            <div class="container mx-auto px-6">
+                <div class="max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-black uppercase font-title text-gray-900 mb-4 italic">Fique por <span class="text-yellow-500">Dentro</span></h2>
+                    <p class="mt-4 text-lg text-gray-600 mb-12">
+                        Assine nossa newsletter para receber vivências, insights e dicas de desenvolvimento pessoal diretamente no seu e-mail.
+                    </p>
+                    <div class="p-4 bg-gray-50 rounded-3xl border border-gray-100 shadow-inner">
+                        <iframe src="https://embeds.beehiiv.com/10b6139c-0d4d-433d-aae7-5f4c46eb98a1?slim=true" data-test-id="beehiiv-embed" height="52" frameborder="0" scrolling="no" style="margin: 0; border-radius: 0px !important; background-color: transparent; width: 100%;"></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

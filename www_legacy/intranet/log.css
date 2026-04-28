@@ -1,0 +1,200 @@
+:root {
+    --bg-primary: #111111;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --text-primary: #f5f5f5;
+    --text-secondary: #d1d5db;
+    --accent-primary: #FFC107;
+    --accent-gradient: linear-gradient(90deg, #FFC107, #FF9800);
+}
+
+/* ============================================================
+   GLOBAL LAYOUT - Sidebar Fixa no Desktop
+   Aplicado em todas as páginas da intranet via log.css
+   ============================================================ */
+@media (min-width: 768px) {
+    body {
+        padding-left: 288px !important;
+        box-sizing: border-box !important;
+        font-family: 'Inter', sans-serif;
+    }
+    #sidebar {
+        transform: translateX(0) !important;
+        width: 288px !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        transition: none !important;
+    }
+    #menu-toggle,
+    header #menu-toggle,
+    header a[href="index.html"] {
+        display: none !important;
+    }
+    header,
+    #header-container header,
+    .sticky.top-0 {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+    }
+}
+
+/* ============================================================
+   SCROLLBAR GLOBAL - Minimalista e adaptável ao tema
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.table th {
+    background-color: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+.table tbody tr:nth-child(odd) {
+    background-color: var(--bg-secondary);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Custom scrollbar is now managed globally in theme.css */
+
+/* General UI elements */
+.btn-primary {
+    background: var(--accent-gradient);
+    color: #111;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 179, 0, 0.4);
+}
+
+.btn-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563; /* gray-600 */
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background-color: #dc2626; /* red-600 */
+    color: white;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c; /* red-700 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
+.bg-primary-light {
+    background-color: var(--accent-primary);
+}
+.bg-primary {
+    background-color: #FF9800;
+}
+
+/* Quill.js Dark Theme */
+.ql-toolbar {
+    background-color: #374151; /* gray-700 */
+    border-color: #4B5563 !important; /* gray-600 */
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+.ql-container {
+    border-color: #4B5563 !important; /* gray-600 */
+    border-radius: 0 0 0.5rem 0.5rem;
+    background-color: #4B5563; /* gray-600 */
+}
+.ql-editor {
+    color: #F3F4F6; /* gray-200 */
+}
+.ql-snow .ql-stroke {
+    stroke: #D1D5DB; /* gray-300 */
+}
+.ql-snow .ql-picker-label {
+    color: #D1D5DB; /* gray-300 */
+}
+.ql-snow .ql-picker-options {
+    background-color: #374151; /* gray-700 */
+    border-color: #4B5563 !important; /* gray-600 */
+}
+.ql-snow .ql-picker-item:hover {
+    background-color: #4B5563; /* gray-600 */
+}
+.ql-snow .ql-picker-item.ql-selected {
+    background-color: #6B7280; /* gray-500 */
+}
+
+.ql-snow .ql-stroke, .ql-snow .ql-fill {
+    stroke: #D1D5DB !important; /* gray-300 */
+}
+
+.ql-snow .ql-picker-label {
+    color: #D1D5DB !important; /* gray-300 */
+}
+
+.ql-snow .ql-picker-item {
+    color: #D1D5DB; /* gray-300 */
+}
+
+/* Ocultar botão de adicionar no header da página de admin */
+.admin-page #addProspectBtnHeader {
+    display: none;
+}
+
+/* Ocultar botão de adicionar no header da página de perfil */
+.profile-page #addProspectBtnHeader {
+    display: none;
+}

@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+        
+    
+    
+    <title>Kihap - Store</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Enhanced Tab Styles */
+        .tab-btn,
+        .subtab-btn {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn:hover,
+        .subtab-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active,
+        .tab-btn.text-white {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6 !important;
+        }
+
+        .dark .tab-btn.active,
+        .dark .tab-btn.text-white {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 3px 3px 0 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.text-white::before,
+        .tab-btn.active::before {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        .subtab-btn {
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .subtab-btn.text-white {
+            background: rgba(59, 130, 246, 0.15);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .tab-content {
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .tab-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4A90E2;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #4A90E2;
+        }
+
+        /* Desktop UI Improvements */
+        .kpi-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+
+        .dark .kpi-card {
+            background: linear-gradient(145deg, #2a2a2a, #222);
+            border: 1px solid #333;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+            border-color: #4A90E2;
+        }
+
+        /* Table Styles */
+        thead tr {
+            background-color: #f9fafb;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            color: #4b5563;
+        }
+
+        .dark thead tr {
+            background-color: #111;
+            color: #9ca3af;
+        }
+
+        tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #f3f4f6 !important;
+        }
+
+        .dark tbody tr:hover {
+            background-color: #27272a !important;
+        }
+
+        /* Modern Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            border: 1px solid transparent;
+        }
+
+        .status-badge-visible { background: rgba(34, 197, 94, 0.1); color: #4ade80; border-color: rgba(34, 197, 94, 0.2); }
+        .status-badge-invisible { background: rgba(156, 163, 175, 0.1); color: #9ca3af; border-color: rgba(156, 163, 175, 0.2); }
+        .status-badge-available { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+        .status-badge-unavailable { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+        .status-badge-public { background: rgba(99, 102, 241, 0.1); color: #818cf8; border-color: rgba(99, 102, 241, 0.2); }
+        .status-badge-private { background: rgba(107, 114, 128, 0.1); color: #6b7280; border-color: rgba(107, 114, 128, 0.2); }
+
+        /* Action Buttons Styling */
+        .store-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.875rem;
+            border-radius: 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-copy {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+        .btn-copy:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-edit {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+        .btn-edit:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Responsive Modern Cards (Mobile) */
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+
+            #products-table-body {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 0.5rem;
+            }
+
+            tr {
+                background: #18181b;
+                border: 1px solid #27272a;
+                border-radius: 1rem;
+                padding: 1rem;
+                margin-bottom: 0; /* Handled by grid gap */
+                position: relative;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            td {
+                border: none;
+                padding: 0 !important;
+                margin-bottom: 0.75rem;
+                width: 100%; /* Default to full width (stacked) */
+            }
+
+            td[data-label="Nome"] {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: #fff;
+                margin-bottom: 0.5rem;
+            }
+
+            td[data-label="Preço"] {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #3b82f6;
+            }
+
+            td[data-label="Status"] {
+                margin-bottom: 0.75rem;
+            }
+
+            td[data-label="Status"] .flex {
+                flex-wrap: wrap;
+                gap: 0.375rem;
+            }
+
+            /* Action buttons side-by-side at bottom */
+            td[data-label="Link"], td[data-label="Ações"] {
+                display: flex;
+                width: 50%;
+                margin-bottom: 0;
+                padding-top: 1rem !important;
+                border-top: 1px solid #27272a;
+                margin-top: 0.5rem;
+                box-sizing: border-box;
+            }
+
+            td[data-label="Ações"] {
+                justify-content: flex-end;
+            }
+
+            .store-action-btn {
+                padding: 0.5rem 0.5rem;
+                font-size: 0.75rem;
+                width: 95%; /* Fill the 50% container with small gap */
+            }
+
+            td:before { display: none !important; } /* Hide the old labels */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 h-screen">
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out">
+        <div id="header-container"></div>
+
+        <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-bold">Store</h1>
+            </div>
+
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+                <nav class="flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
+                    <button id="tab-sales-log" class="tab-btn text-primary dark:text-white px-3 py-2 text-sm font-semibold flex-shrink-0">
+                        📊 Log de Vendas
+                    </button>
+                    <button id="tab-manage-products"
+                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        📦 Produtos
+                    </button>
+                    <button id="tab-marketing"
+                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        🎯 Marketing
+                    </button>
+                    <button id="tab-events"
+                        class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        🎫 Eventos
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Sales Log Content -->
+            <div id="content-sales-log" class="tab-content">
+                <!-- KPIs -->
+                <div id="store-kpi-container"
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+                    <!-- Store KPI Cards will be injected here by JavaScript -->
+                </div>
+                <!-- Filters -->
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-[#333] shadow-sm dark:shadow-lg mb-8">
+                    <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+                        <!-- Search and Filter Toggle -->
+                        <div class="flex-grow flex items-end gap-3">
+                            <div class="flex-grow">
+                                <label for="search-input"
+                                    class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Buscar</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400"></i>
+                                    </div>
+                                    <input type="text" id="search-input" placeholder="Nome ou e-mail do cliente..."
+                                        class="w-full pl-10 pr-3 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400">
+                                </div>
+                            </div>
+                            <button id="toggle-filters-btn" class="p-3 bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white hover:border-blue-500 transition-all duration-200 h-[46px]" title="Filtros Avançados">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="add-manual-sale-btn"
+                                class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-lg shadow-blue-600/20 whitespace-nowrap">
+                                <i class="fas fa-plus mr-2"></i>Venda Manual
+                            </button>
+                            
+                            <a href="sales-history.html" id="view-all-sales-btn"
+                                class="px-4 py-2.5 text-sm font-medium text-gray-300 bg-[#2a2a2a] border border-[#444] rounded-lg hover:bg-[#333] hover:text-white transition-all duration-200 whitespace-nowrap" title="Ver Histórico Completo">
+                                <i class="fas fa-history mr-2"></i>Histórico
+                            </a>
+
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Filter Grid -->
+                    <div id="filter-grid-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-gray-800 mt-6 animate-fadeIn">
+                        <div>
+                            <label for="filter-unit"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Unidade</label>
+                            <div class="relative">
+                                <select id="filter-unit"
+                                    class="w-full pl-3 pr-10 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="">Todas as Unidades</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="filter-product"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Produto</label>
+                            <div class="relative">
+                                <select id="filter-product"
+                                    class="w-full pl-3 pr-10 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="">Todos os Produtos</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="filter-period"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Período</label>
+                            <div class="relative mb-2">
+                                <select id="filter-period"
+                                    class="w-full pl-3 pr-10 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="7">Últimos 7 dias</option>
+                                    <option value="15">Últimos 15 dias</option>
+                                    <option value="30">Últimos 30 dias</option>
+                                    <option value="month">Este Mês</option>
+                                    <option value="all">Todo o Período</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                            <div id="filter-custom-date" class="hidden grid grid-cols-2 gap-2 mt-2">
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 mb-1">Início</label>
+                                    <input type="date" id="filter-start-date"
+                                        class="w-full px-2 py-1.5 text-xs text-white bg-[#2a2a2a] border border-[#444] rounded focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 mb-1">Fim</label>
+                                    <input type="date" id="filter-end-date"
+                                        class="w-full px-2 py-1.5 text-xs text-white bg-[#2a2a2a] border border-[#444] rounded focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="filter-status"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Pagamento</label>
+                            <div class="relative">
+                                <select id="filter-status"
+                                    class="w-full pl-3 pr-10 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="">Todos os Status</option>
+                                    <option value="paid">Pago</option>
+                                    <option value="pending">Pendente</option>
+                                    <option value="canceled">Cancelado</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="filter-fulfillment"
+                                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Status Entrega</label>
+                            <div class="relative">
+                                <select id="filter-fulfillment"
+                                    class="w-full pl-3 pr-10 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200">
+                                    <option value="">Todos os Status</option>
+                                    <option value="pending">Pendente</option>
+                                    <option value="processing">Em Preparação</option>
+                                    <option value="shipped">Enviado</option>
+                                    <option value="delivered">Entregue</option>
+                                    <option value="returned">Devolvido</option>
+                                    <option value="canceled">Cancelado</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    </div>
+                
+
+                <!-- Sales Table -->
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="p-4">Nome do Cliente</th>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Produto</th>
+                                <th class="p-4">Valor</th>
+                                <th class="p-4">Status do Pagamento</th>
+                                <th class="p-4">Entrega</th>
+                                <th class="p-4">Data da Compra</th>
+                                <th class="p-4">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body">
+                            <tr>
+                                <td colspan="8" class="text-center p-8 text-gray-500">Carregando vendas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Manage Products Content -->
+            <div id="content-manage-products" class="tab-content hidden">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold">Produtos Cadastrados</h2>
+                        <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                            <div class="relative w-full md:w-64">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </span>
+                                <input type="text" id="product-search-input" placeholder="Buscar produto..."
+                                    class="w-full pl-10 pr-4 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <button id="add-product-btn"
+                                class="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center justify-center transition-all">
+                                <i class="fas fa-plus mr-2"></i> Novo Produto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="p-4">Nome</th>
+                                    <th class="p-4">Preço</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Link</th>
+                                    <th class="p-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <tr>
+                                    <td colspan="5" class="text-center p-8 text-gray-400">Carregando produtos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Marketing Content (Banners + Coupons) -->
+            <div id="content-marketing" class="tab-content hidden">
+                <div class="mb-6">
+                    <div class="border-b border-gray-700">
+                        <nav class="flex space-x-4" aria-label="Marketing Tabs">
+                            <button id="subtab-banners" class="subtab-btn text-white px-3 py-2 text-sm font-medium">
+                                Banners
+                            </button>
+                            <button id="subtab-coupons"
+                                class="subtab-btn text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 text-sm font-medium">
+                                Cupons
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Banners Sub-content -->
+                <div id="content-manage-banners" class="marketing-subcontent">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Add/Edit Banner Form -->
+                        <div class="lg:col-span-1 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                            <h2 id="banner-form-title" class="text-xl font-bold mb-4">Adicionar Novo Banner</h2>
+                            <form id="banner-form">
+                                <input type="hidden" id="banner-id">
+                                <div class="mb-4">
+                                    <label for="banner-image" class="block text-sm font-medium text-gray-400">Imagem do
+                                        Banner</label>
+                                    <input type="file" id="banner-image"
+                                        class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+                                        required />
+                                </div>
+                                <div class="mb-4">
+                                    <label for="banner-link" class="block text-sm font-medium text-gray-400">Link
+                                        (opcional)</label>
+                                    <input type="url" id="banner-link"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="banner-active"
+                                        class="flex items-center justify-between text-sm font-medium text-gray-400">
+                                        <span>Ativo</span>
+                                        <div
+                                            class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" name="banner-active" id="banner-active"
+                                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                            <label for="banner-active"
+                                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button type="button" id="cancel-banner-edit-btn"
+                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                    <button type="submit" id="save-banner-btn"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
+                                        Banner</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Banners List -->
+                        <div class="lg:col-span-2 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                            <h2 class="text-xl font-bold mb-4">Banners Cadastrados</h2>
+                            <div id="banners-list" class="space-y-4">
+                                <!-- Banners will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coupons Sub-content -->
+                <div id="content-manage-coupons" class="marketing-subcontent hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Add/Edit Coupon Form -->
+                        <div class="lg:col-span-1 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                            <h2 id="coupon-form-title" class="text-xl font-bold mb-4">Adicionar Novo Cupom</h2>
+                            <form id="coupon-form">
+                                <input type="hidden" id="coupon-id">
+                                <div class="mb-4">
+                                    <label for="coupon-code" class="block text-sm font-medium text-gray-400">Código do
+                                        Cupom</label>
+                                    <input type="text" id="coupon-code"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-type" class="block text-sm font-medium text-gray-400">Tipo de
+                                        Desconto</label>
+                                    <select id="coupon-type"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="percentage">Porcentagem</option>
+                                        <option value="fixed">Valor Fixo</option>
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-value" class="block text-sm font-medium text-gray-400">Valor do
+                                        Desconto</label>
+                                    <input type="number" id="coupon-value"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="coupon-expiry" class="block text-sm font-medium text-gray-400">Data de
+                                        Validade</label>
+                                    <input type="date" id="coupon-expiry"
+                                        class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button type="button" id="cancel-coupon-edit-btn"
+                                        class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 hidden">Cancelar</button>
+                                    <button type="submit" id="save-coupon-btn"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
+                                        Cupom</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Coupons List -->
+                        <div class="lg:col-span-2 bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg">
+                            <h2 class="text-xl font-bold mb-4">Cupons Cadastrados</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b border-gray-700">
+                                            <th class="p-4">Código</th>
+                                            <th class="p-4">Tipo</th>
+                                            <th class="p-4">Valor</th>
+                                            <th class="p-4">Validade</th>
+                                            <th class="p-4">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coupons-table-body">
+                                        <tr>
+                                            <td colspan="5" class="text-center p-8">Carregando cupons...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Content -->
+            <div id="content-events" class="tab-content hidden">
+                <!-- Event KPIs -->
+                <div id="event-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Total Inscritos</p>
+                            <p id="total-event-subscribers" class="text-2xl font-bold text-white">0</p>
+                        </div>
+                        <div class="text-2xl text-blue-500"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div id="ring-stats-container" class="lg:col-span-2 bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 overflow-x-auto">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter mb-2">Inscritos por Ringue</p>
+                        <div id="ring-stats-list" class="flex gap-4">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                    <div class="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-tighter">Check-ins</p>
+                            <p id="total-event-checkins" class="text-2xl font-bold text-green-500">0</p>
+                        </div>
+                        <div class="text-2xl text-green-500"><i class="fas fa-user-check"></i></div>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] p-4 rounded-lg shadow-lg mb-6 border border-gray-800">
+                    <div class="flex flex-col lg:flex-row items-end gap-3">
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="event-product-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Filtrar por Evento</label>
+                            <select id="event-product-filter"
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Todos os Eventos</option>
+                            </select>
+                        </div>
+                        <div class="w-full lg:w-32">
+                            <label for="event-ring-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Ringue</label>
+                            <select id="event-ring-filter"
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="w-full lg:w-40">
+                            <label for="event-unit-filter" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Unidade</label>
+                            <select id="event-unit-filter"
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="event-search-input" class="text-[10px] font-bold text-gray-500 uppercase mb-1 block tracking-wider">Buscar Participante</label>
+                            <input type="text" id="event-search-input" placeholder="Nome ou e-mail..."
+                                class="w-full px-3 py-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <button id="export-event-csv-btn" class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all flex items-center h-[38px]">
+                            <i class="fas fa-file-excel mr-2"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-lg overflow-x-auto border border-gray-800">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                                <th class="p-4">Nº</th>
+                                <th class="p-4">Nome do Cliente</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4 text-center">Ringue</th>
+                                <th class="p-4">Dia/Hora</th>
+                                <th class="p-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-table-body" class="text-sm">
+                            <tr>
+                                <td colspan="6" class="text-center p-8 text-gray-500 italic">Selecione um evento para visualizar os inscritos.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupStorePage } from './store.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupStorePage();
+            });
+        });
+    </script>
+
+
+
+    <!-- Sale Details Modal -->
+    <div id="sale-details-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-transparent">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Detalhes da Venda</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="space-y-4">
+                <!-- Content will be populated by JS -->
+            </div>
+
+            <!-- Fulfillment Status Section -->
+            <div id="fulfillment-status-section" class="mt-6 pt-6 pb-4 border-t border-gray-700">
+                <h3 class="text-lg font-bold mb-3">📦 Status de Entrega</h3>
+                <div class="flex items-center gap-4 mb-4">
+                    <label for="sale-fulfillment-status" class="text-sm text-gray-400">Situação do Pedido:</label>
+                    <select id="sale-fulfillment-status" class="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="pending">Pendente</option>
+                        <option value="processing">Em Preparação</option>
+                        <option value="shipped">Enviado</option>
+                        <option value="delivered">Entregue</option>
+                        <option value="returned">Devolvido</option>
+                        <option value="canceled">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Email Logs Section -->
+            <div id="email-logs-section" class="mt-4 pt-6 border-t border-gray-700 hidden">
+                <h3 class="text-lg font-bold mb-3">📧 Histórico de Emails</h3>
+                <div id="email-logs-list" class="space-y-2">
+                    <!-- Email logs will be loaded here -->
+                </div>
+            </div>
+
+            <div class="mt-10 pt-6 border-t border-gray-700 flex justify-between items-center flex-wrap gap-4">
+                <div class="flex gap-2">
+                    <button id="resend-email-btn-modal"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">
+                        <i class="fas fa-paper-plane mr-2"></i><span id="resend-email-text">Renviar Email</span>
+                    </button>
+                    <button id="recover-cart-btn-modal"
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-500 hidden">
+                        <i class="fas fa-link mr-2"></i>Link de Pagamento
+                    </button>
+                </div>
+                <button id="delete-sale-btn-modal"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500">Apagar
+                    Log</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Sale Modal -->
+    <div id="manual-sale-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all">
+            <form id="manual-sale-form" class="flex flex-col h-full">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-transparent">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Adicionar Venda Manual</h2>
+                    <button type="button" id="close-manual-sale-modal-btn"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Coluna 1: Dados do Cliente e Produto -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="manual-sale-user-name" class="block text-sm font-medium text-gray-400">Nome do
+                                Cliente</label>
+                            <input type="text" id="manual-sale-user-name"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required>
+                        </div>
+                        <div>
+                            <label for="manual-sale-user-email"
+                                class="block text-sm font-medium text-gray-400">Email</label>
+                            <input type="email" id="manual-sale-user-email"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="manual-sale-user-phone"
+                                class="block text-sm font-medium text-gray-400">Telefone</label>
+                            <input type="tel" id="manual-sale-user-phone"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="manual-sale-user-cpf"
+                                class="block text-sm font-medium text-gray-400">CPF</label>
+                            <input type="text" id="manual-sale-user-cpf"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="manual-sale-user-graduacao"
+                                class="block text-sm font-medium text-gray-400">Graduação</label>
+                            <input type="text" id="manual-sale-user-graduacao"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="manual-sale-user-unit"
+                                class="block text-sm font-medium text-gray-400">Unidade</label>
+                            <select id="manual-sale-user-unit"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="manual-sale-user-age"
+                                    class="block text-sm font-medium text-gray-400">Idade</label>
+                                <input type="number" id="manual-sale-user-age"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: 12">
+                            </div>
+                            <div>
+                                <label for="manual-sale-user-variant"
+                                    class="block text-sm font-medium text-gray-400">Faixa / Variação</label>
+                                <input type="text" id="manual-sale-user-variant"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: Branca">
+                            </div>
+                        </div>
+
+                        <!-- Produtos -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <h3 class="text-lg font-medium text-white mb-2">Produtos</h3>
+                            <div id="manual-sale-products-container" class="space-y-3">
+                                <!-- Linha de produto será adicionada dinamicamente aqui -->
+                            </div>
+                            <button type="button" id="add-manual-sale-product-btn"
+                                class="mt-2 px-3 py-1 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
+                                <i class="fas fa-plus mr-1"></i> Adicionar Produto
+                            </button>
+                        </div>
+
+                        <div>
+                            <label for="manual-sale-amount" class="block text-sm font-medium text-gray-400">Valor Total
+                                (em centavos)</label>
+                            <input type="number" id="manual-sale-amount" placeholder="Calculado automaticamente"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Detalhes do Pagamento -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="manual-sale-payment-method"
+                                class="block text-sm font-medium text-gray-400">Método de Pagamento</label>
+                            <select id="manual-sale-payment-method"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required>
+                                <option value="card">Cartão</option>
+                                <option value="pix">PIX</option>
+                                <option value="cash">Dinheiro</option>
+                                <option value="credit">Crédito Interno</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos para Cartão -->
+                        <div id="manual-sale-card-details" class="space-y-4">
+                            <div>
+                                <label for="manual-sale-card-last4" class="block text-sm font-medium text-gray-400">4
+                                    Últimos Dígitos do Cartão</label>
+                                <input type="text" id="manual-sale-card-last4"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    maxlength="4">
+                            </div>
+                            <div>
+                                <label for="manual-sale-card-brand"
+                                    class="block text-sm font-medium text-gray-400">Bandeira</label>
+                                <input type="text" id="manual-sale-card-brand"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="manual-sale-card-auth"
+                                    class="block text-sm font-medium text-gray-400">Código de Autorização</label>
+                                <input type="text" id="manual-sale-card-auth"
+                                    class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Campos para PIX e Dinheiro (informativo) -->
+                        <div id="manual-sale-pix-details" class="hidden">
+                            <p class="text-sm text-gray-400">Registro de pagamento via PIX.</p>
+                        </div>
+                        <div id="manual-sale-cash-details" class="hidden">
+                            <p class="text-sm text-gray-400">Registro de pagamento em dinheiro.</p>
+                        </div>
+
+                        <!-- Detalhes Adicionais -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <label for="manual-sale-details" class="block text-sm font-medium text-gray-400">Detalhes
+                                Adicionais</label>
+                            <textarea id="manual-sale-details" rows="3"
+                                class="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end space-x-4">
+                    <button type="button" id="cancel-manual-sale-btn"
+                        class="px-6 py-2 text-sm font-medium text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500">Cancelar</button>
+                    <button type="submit" id="save-manual-sale-btn"
+                        class="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">Salvar
+                        Venda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden transition-all duration-300">
+        <div class="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-800 overflow-hidden">
+            <!-- Fixed Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-800 bg-[#1a1a1a] shrink-0">
+                <h2 id="product-form-title" class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Adicionar Novo Produto</h2>
+                <button id="close-product-modal-btn" class="text-gray-400 hover:text-white text-3xl transition-colors">&times;</button>
+            </div>
+            
+            <!-- Scrollable Content -->
+            <div class="p-8 overflow-y-auto flex-1">
+                <form id="product-form" class="space-y-6">
+                    <input type="hidden" id="product-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-name" class="block text-sm font-medium text-gray-400">Nome do Produto</label>
+                            <input type="text" id="product-name"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                                required>
+                        </div>
+                        
+                        <div>
+                            <label for="product-category" class="block text-sm font-medium text-gray-400">Categoria</label>
+                            <input type="text" id="product-category"
+                                placeholder="Ex: Uniforme, Equipamento, Kit"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Tipo de Preço</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="fixed" class="form-radio text-blue-500" checked>
+                                    <span class="ml-2 text-sm">Fixo</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="variable" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Variável</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="lotes" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Lotes</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all">
+                                    <input type="radio" name="price-type" value="kit" class="form-radio text-blue-500">
+                                    <span class="ml-2 text-sm">Kit</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Price Containers -->
+                        <div id="fixed-price-container">
+                            <label for="product-price" class="block text-sm font-medium text-gray-400">Preço Principal (em centavos)</label>
+                            <input type="number" id="product-price" name="product-price"
+                                placeholder="Ex: 1000 para R$10,00"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+
+                        <div id="variable-prices-container" class="hidden animate-fadeIn">
+                            <label class="block text-sm font-medium text-gray-400">Variações de Preço</label>
+                            <input type="text" id="product-variants-label" placeholder="Título da Opção (Padrão: Opções)"
+                                class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm mb-2">
+                            <div id="price-variants-list" class="space-y-2 mt-2"></div>
+                            <button type="button" id="add-price-variant-btn"
+                                class="w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-2"></i> Adicionar Variação
+                            </button>
+                        </div>
+
+                        <div id="lotes-container" class="hidden animate-fadeIn">
+                            <label class="block text-sm font-medium text-gray-400">Lotes</label>
+                            <div id="lotes-list" class="space-y-2 mt-2"></div>
+                            <button type="button" id="add-lote-btn"
+                                class="w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-2"></i> Adicionar Lote
+                            </button>
+                        </div>
+
+                        <div id="kit-container" class="hidden animate-fadeIn">
+                            <div class="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <label for="kit-base-price" class="block text-sm font-medium text-gray-400 mb-1">Preço Base do Kit (em centavos)</label>
+                                <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" 
+                                    class="w-full px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                
+                                <label class="block text-sm font-medium text-gray-400 mt-4 mb-2">Itens do Kit</label>
+                                <div id="kit-items-list" class="space-y-3"></div>
+                                <button type="button" id="add-kit-item-btn" 
+                                    class="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                    <i class="fas fa-plus mr-2"></i> Adicionar Item ao Kit
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="addons-container" class="p-4 border border-yellow-600/30 rounded-xl bg-yellow-900/5">
+                            <label class="block text-sm font-bold text-yellow-500 mb-2">
+                                <i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)
+                            </label>
+                            <div id="addons-list" class="space-y-3 mt-1"></div>
+                            <button type="button" id="add-addon-btn" class="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-plus mr-1"></i> Adicionar Add-on
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-description" class="block text-sm font-medium text-gray-400">Descrição</label>
+                            <textarea id="product-description" rows="4"
+                                class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="product-image" class="block text-sm font-medium text-gray-400">Imagem do Produto</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-lg hover:border-blue-500 transition-all">
+                                <div class="space-y-1 text-center">
+                                    <i class="fas fa-image text-gray-400 text-3xl mb-2"></i>
+                                    <div class="flex text-sm text-gray-400">
+                                        <label for="product-image" class="relative cursor-pointer bg-gray-800 rounded-md font-medium text-blue-500 hover:text-blue-400 focus-within:outline-none">
+                                            <span>Upload de arquivo</span>
+                                            <input type="file" id="product-image" class="sr-only">
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF até 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Toggles Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Visível</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-visible" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Disponível</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-available" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Público</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-public" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Ingresso</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-ticket" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-green-900/10 border border-green-600/30 rounded-xl">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-bold text-green-400 flex items-center">
+                                    <i class="fas fa-sync-alt mr-2 text-xs"></i>Assinatura?
+                                </label>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-subscription" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
+                            </div>
+                            <div id="subscription-frequency-container" class="hidden animate-fadeIn">
+                                <select id="subscription-frequency" class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm">
+                                    <option value="1_months">Mensal</option>
+                                    <option value="6_months">Semestral</option>
+                                    <option value="1_years">Anual</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-blue-900/10 border border-blue-600/30 rounded-xl text-blue-400">
+                             <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-bold flex items-center">
+                                    <i class="fas fa-ruler-combined mr-2 text-xs"></i>Tamanhos?
+                                </label>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-has-sizes" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div id="product-sizes-container" class="hidden animate-fadeIn">
+                                <input type="text" id="product-sizes-label" placeholder="Título da Opção (Padrão: Escolha o Tamanho)"
+                                    class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                                <input type="text" id="product-sizes" placeholder="Ex: P, M, G, GG ou 38, 40, 42"
+                                    class="w-full px-4 py-2 mt-2 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Solicitar Professor</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-ask-professor" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-gray-800/30 rounded-lg border border-gray-700 flex items-center justify-between">
+                                <span class="text-xs font-medium text-gray-300">Solicitar Idade</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-ask-age" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="p-3 bg-purple-900/10 border border-purple-600/30 rounded-lg flex items-center justify-between col-span-1 sm:col-span-2">
+                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider"><i class="fas fa-calendar-star mr-2"></i>Configurar como Evento?</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-is-event" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+
+                        <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-700 mt-6">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-300">Controlar Estoque?</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="product-control-stock" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div id="stock-container" class="hidden animate-fadeIn mt-3 space-y-3">
+                                <div id="stock-simple" class="">
+                                    <label class="block text-xs text-gray-500 mb-1">Quantidade em Estoque</label>
+                                    <input type="number" id="product-stock-quantity"
+                                        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="Qtd total" min="0" />
+                                </div>
+                                <div id="stock-per-size" class="hidden">
+                                    <label class="block text-xs text-gray-500 mb-2">Estoque por Tamanho</label>
+                                    <div id="stock-per-size-inputs" class="space-y-2">
+                                        <!-- rendered dynamically by JS -->
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1">Os tamanhos vêm do campo "Tamanhos" acima.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                    <div>
+                        <label for="product-availability-date" class="block text-sm font-medium text-gray-400">Disponível até</label>
+                        <input type="date" id="product-availability-date"
+                            class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    </div>
+                    
+                    <div>
+                        <label for="product-mp-account" class="block text-sm font-medium text-gray-400">Conta no Mercado Pago</label>
+                        <select id="product-mp-account" class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                            <option value="default">Store (Matriz)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                     <div>
+                        <label for="product-custom-units" class="block text-sm font-medium text-gray-400">Unidades Específicas (opcional)</label>
+                        <textarea id="product-custom-units" rows="2" placeholder="Ex: Unidade A, Unidade B"
+                            class="w-full px-4 py-3 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="recommended-products" class="block text-sm font-medium text-gray-400">Produtos para Recomendação</label>
+                        <select id="recommended-products" multiple
+                            class="w-full px-4 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 text-sm">
+                        </select>
+                    </div>
+                </div>
+
+                <!-- NEW: Full width block for Event Configuration -->
+                <div id="event-config-container" class="hidden mt-8 p-6 bg-purple-900/5 border border-purple-600/25 rounded-2xl space-y-4 animate-fadeIn shadow-2xl shadow-purple-900/10">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-purple-400 flex items-center">
+                                <i class="fas fa-calendar-alt mr-2 text-xs"></i>Configuração do Evento (Kihap Experience)
+                            </h3>
+                            <p class="text-[11px] text-gray-500 mt-1">Defina o endereço do evento e os ringues/horários baseados no Programa e Graduação do aluno.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <label for="product-event-address" class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Endereço do Evento</label>
+                        <textarea id="product-event-address" rows="2" placeholder="Ex: Ginásio Municipal, Rua Exemplo, 123 - Centro"
+                            class="w-full px-4 py-3 text-white bg-gray-900/50 border border-purple-600/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm"></textarea>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <h4 class="text-sm font-bold text-purple-400 flex items-center mb-4">
+                            <i class="fas fa-clock mr-2 text-xs"></i>Cronograma por Categoria
+                        </h4>
+                        <div id="event-slots-list" class="space-y-4">
+                            <!-- Slots managed by JS -->
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="add-event-slot-btn" class="w-full py-3.5 text-xs font-bold text-purple-400 bg-purple-400/10 border border-purple-400/20 rounded-xl hover:bg-purple-400/20 transition-all shadow-sm border-dashed">
+                        <i class="fas fa-plus mr-1"></i> Adicionar Novo Horário ao Cronograma
+                    </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-800">
+                    <button type="button" id="delete-product-btn"
+                        class="w-full sm:w-auto px-6 py-3 text-sm font-bold text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all hidden">
+                        <i class="fas fa-trash-alt mr-2"></i> Excluir
+                    </button>
+                    <button type="button" id="send-bulk-emails-btn"
+                        class="w-full sm:w-auto px-6 py-3 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-500 transition-all flex items-center justify-center hidden shadow-lg shadow-green-900/20">
+                        <i class="fas fa-envelope mr-2"></i> Enviar Ingressos em Massa
+                    </button>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <button type="button" id="cancel-product-modal-btn"
+                            class="flex-1 sm:flex-none px-6 py-3 text-sm font-bold text-white bg-gray-700 rounded-xl hover:bg-gray-600 transition-all shadow-lg shadow-black/20">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="save-product-btn"
+                            class="flex-1 sm:flex-none px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/40">
+                            Salvar Produto
+                        </button>
+                    </div>
+                </div>
+            </form>
+            </div>
+        </div>
+        <!-- Delete Confirmation Modal -->
+    <div id="delete-confirmation-modal" class="fixed inset-0 z-[70] flex items-center justify-center hidden">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-md p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl scale-95 transition-all">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Excluir Produto?</h3>
+                <p id="delete-confirmation-message" class="text-gray-400 text-sm">
+                    Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" id="cancel-delete-btn"
+                    class="flex-1 px-6 py-3 text-sm font-bold text-white bg-gray-800 rounded-xl hover:bg-gray-700 transition-all">
+                    Cancelar
+                </button>
+                <button type="button" id="confirm-delete-btn"
+                    class="flex-1 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-all shadow-lg shadow-red-900/40">
+                    Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

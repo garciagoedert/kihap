@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Configuração do seu aplicativo da web do Firebase
@@ -12,8 +12,9 @@ const firebaseConfig = {
     measurementId: "G-KRW331FL5F"
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+// Inicializa o Firebase com um nome específico para evitar conflitos com o [DEFAULT] da intranet
+const appName = "kanban-app";
+const app = getApps().find(a => a.name === appName) || initializeApp(firebaseConfig, appName);
 const db = getFirestore(app);
 const appId = firebaseConfig.appId || 'default-kanban-app';
 

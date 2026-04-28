@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+        
+    
+    
+    <title>Início - Kihap Intranet</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
+
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-x-hidden">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+
+                <!-- Daily Quote Section -->
+                <div
+                    class="hidden md:block bg-gradient-to-r from-blue-900 to-[#1a1a1a] p-6 md:p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden border border-white/10">
+                    <div class="absolute top-0 right-0 opacity-20 transform translate-x-10 -translate-y-10">
+                        <i class="fas fa-quote-right text-9xl text-white"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h2 class="text-gray-300 text-sm uppercase tracking-wide font-semibold mb-2">Mensagem do Dia
+                        </h2>
+                        <p id="daily-quote"
+                            class="text-xl md:text-3xl font-bold text-white italic leading-relaxed break-words whitespace-normal">
+                            "Carregando uma dose de inspiração..."
+                        </p>
+                        <p id="quote-author" class="text-right text-gray-400 mt-4 font-medium">- Kihap</p>
+                    </div>
+                </div>
+
+                <!-- Main Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+                    <!-- Stats Column -->
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Active Contracts Card -->
+                        <div
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            <div>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Contratos Ativos</p>
+                                <h3 id="total-contracts" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Total geral (EVO)</p>
+                            </div>
+                            <div class="bg-blue-500/10 p-4 rounded-2xl group-hover:bg-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/5">
+                                <i class="fas fa-file-contract text-blue-500 text-2xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Daily Check-ins Card -->
+                        <div
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            <div>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Alunos hoje</p>
+                                <h3 id="daily-checkins" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Alunos ativos no dia</p>
+                            </div>
+                            <div class="bg-emerald-500/10 p-4 rounded-2xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-500/5">
+                                <i class="fas fa-user-check text-emerald-500 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Column -->
+                    <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all duration-300">
+                        <h3 class="text-gray-900 dark:text-white font-bold text-lg mb-6 flex items-center tracking-tight">
+                            <i class="fas fa-bolt text-yellow-500 mr-2"></i> Acesso Rápido
+                        </h3>
+                        <div class="space-y-4">
+                            <a href="planificador.html"
+                                class="flex items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all duration-200 group">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-calendar-alt text-indigo-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-gray-900 dark:text-white font-bold text-sm">Planificador</div>
+                                    <div class="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Cronograma</div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors"></i>
+                            </a>
+
+                            <a href="tarefas.html"
+                                class="flex items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all duration-200 group">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-check-circle text-orange-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-gray-900 dark:text-white font-bold text-sm">Nova Tarefa</div>
+                                    <div class="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Lembretes</div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 group-hover:text-orange-400 transition-colors"></i>
+                            </a>
+
+                            <a href="prospeccao.html"
+                                class="flex items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all duration-200 group">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-filter text-blue-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-gray-900 dark:text-white font-bold text-sm">Funil de Vendas</div>
+                                    <div class="text-[10px] text-gray-500 font-medium uppercase tracking-widest">CRM</div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 group-hover:text-blue-400 transition-colors"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="home.js"></script>
+</body>
+
+</html>

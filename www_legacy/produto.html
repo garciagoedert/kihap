@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+    
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Kihap - Compra de Produto</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Stripe.js CDN -->
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="antialiased bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main class="py-16">
+        <section class="container mx-auto px-6">
+            <div id="product-loading" class="text-center">
+                <p class="text-2xl">Carregando produto...</p>
+            </div>
+
+            <div id="product-content" class="hidden">
+                <div class="text-center mb-8">
+                    <img id="product-image-display" src="" alt="Imagem do Produto" class="w-full max-w-sm mx-auto rounded-lg shadow-lg hidden">
+                </div>
+                <h1 id="product-name-title" class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-4">
+                    <!-- Nome do Produto -->
+                </h1>
+                <p id="product-description" class="text-lg text-gray-300 mb-12 text-center max-w-3xl mx-auto">
+                    <!-- Descrição do Produto -->
+                </p>
+
+                <div class="max-w-2xl mx-auto bg-gray-800 p-8 rounded-lg shadow-xl">
+                    <div class="text-center mb-8">
+                        <span class="text-gray-400 text-lg">Valor Total</span>
+                        <p id="product-price-display" class="text-4xl font-bold text-yellow-500">
+                            <!-- Preço do Produto -->
+                        </p>
+                        <p id="product-lote-display" class="text-lg text-yellow-400 mt-2 hidden">
+                            <!-- Lote do Produto -->
+                        </p>
+                        <p id="product-stock-display" class="text-sm text-gray-400 mt-1 hidden">
+                            <!-- Estoque do Produto -->
+                        </p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="coupon-code" class="block text-sm font-medium text-gray-400 mb-1">Cupom de Desconto</label>
+                        <div class="flex items-center">
+                            <input type="text" id="coupon-code" placeholder="Insira seu cupom" class="w-full px-4 py-3 rounded-l-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <button type="button" id="apply-coupon-btn" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-r-lg hover:bg-yellow-600 transition">Aplicar</button>
+                        </div>
+                        <p id="coupon-status" class="mt-2 text-sm"></p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="quantity-selector" class="block text-sm font-medium text-gray-400 mb-1">Quantidade</label>
+                        <select id="quantity-selector" class="w-full max-w-xs px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+
+                    <form id="payment-form">
+                        <div id="forms-container" class="space-y-8">
+                            <!-- Formulários dinâmicos serão inseridos aqui -->
+                        </div>
+                        
+                        <button type="submit" id="pay-button" class="mt-8 bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition w-full text-lg">
+                            Adicionar ao Carrinho
+                        </button>
+                    </form>
+                    <p id="form-status" class="mt-6 text-center text-lg"></p>
+                </div>
+
+                <!-- Recommended Products Section -->
+                <div id="recommended-products-container" class="max-w-2xl mx-auto mt-12 hidden">
+                    <h2 class="text-3xl font-bold text-center mb-8">Compre Junto</h2>
+                    <div id="recommended-products-list" class="space-y-6">
+                        <!-- Recommended products will be injected here by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Swiper JS -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="js/script.js"></script>
+    <script type="module" src="js/cart.js"></script>
+    <script type="module" src="js/produto.js"></script>
+
+    <!-- Template para o formulário dinâmico -->
+    <template id="form-template">
+        <div class="form-instance border-t border-gray-700 pt-6">
+            <h3 class="text-lg font-semibold text-yellow-500 mb-4 form-instance-title">Inscrição <span class="form-instance-number">1</span></h3>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="price-variant-selector-container hidden">
+                    <label for="price-variant-selector" class="block text-sm font-medium text-gray-400 mb-1 variants-label">Opções</label>
+                    <select name="price-variant-selector" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="kit-options-container hidden grid grid-cols-1 gap-4">
+                    <!-- Dynamic selects for kit items will be populated here -->
+                </div>
+                <div class="addons-options-container hidden grid grid-cols-1 gap-3 mt-2">
+                    <!-- Dynamic checkboxes for addons will be populated here -->
+                </div>
+                <div class="size-selector-container hidden mb-4">
+                    <label for="size-selector" class="block text-sm font-medium text-gray-400 mb-1 sizes-label">Escolha o Tamanho</label>
+                    <select name="size-selector" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <!-- Sizes will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="age-container hidden">
+                    <label for="idade" class="block text-sm font-medium text-gray-400 mb-1">Idade do Aluno</label>
+                    <input type="number" name="idade" placeholder="Idade" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+            </div>
+        </div>
+    </template>
+</body>
+</html>

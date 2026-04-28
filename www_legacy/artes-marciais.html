@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Artes Marciais - Kihap</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased bg-[#f8f7f4] text-[#111111]">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
+            <!-- Background Image Overlay -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1555597673-b21d5c935865?q=80&w=1600&auto=format&fit=crop" 
+                     class="w-full h-full object-cover opacity-40" alt="Artes Marciais Background">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 container mx-auto px-6">
+                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90 opacity-0 animate-fadeInUp">
+                    <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    Tradição & Modernidade
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Artes <span class="text-yellow-400">Marciais</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/80 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    Conheça nossos programas, desenvolvidos para todas as idades e objetivos, unindo técnica milenar com desenvolvimento humano.
+                </p>
+            </div>
+        </section>
+
+        <!-- Programs Section -->
+        <section class="py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+
+                    <!-- Card KIHAP LITTLES -->
+                    <a href="programas/littles.html" class="glass-card flex flex-col overflow-hidden group">
+                        <div class="overflow-hidden h-56">
+                            <img src="imgs/littles.png" alt="KIHAP LITTLES" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">2 a 7 anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">KIHAP LITTLES</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Desenvolvemos as habilidades motoras das crianças e aumentamos a capacidade de foco e disciplina desde cedo.</p>
+                                <p class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-600 font-semibold">Ver detalhes do programa &rarr;</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card KIHAP KIDS -->
+                    <a href="programas/kids.html" class="glass-card flex flex-col overflow-hidden group">
+                        <div class="overflow-hidden h-56">
+                            <img src="imgs/kids.png" alt="KIHAP KIDS" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">7 a 12 anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">KIHAP KIDS</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Base sólida em lições de vida como cortesia e respeito, em um ambiente seguro e motivador.</p>
+                                <p class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-600 font-semibold">Ver detalhes do programa &rarr;</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card ADOLESCENTES & ADULTOS -->
+                    <a href="programas/adultos.html" class="glass-card flex flex-col overflow-hidden group">
+                        <div class="overflow-hidden h-56">
+                            <img src="imgs/adultos.png" alt="ADOLESCENTES & ADULTOS" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">13+ anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Adolescentes & Adultos</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Fortalecimento integral, defesa pessoal e condicionamento físico em um ambiente familiar.</p>
+                                <p class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-600 font-semibold">Ver detalhes do programa &rarr;</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card FAMÍLIA -->
+                    <a href="programas/familia.html" class="glass-card flex flex-col overflow-hidden group">
+                        <div class="overflow-hidden h-56">
+                            <img src="imgs/familia.png" alt="FAMÍLIA" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Para todos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">FAMÍLIA</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>O pilar que estreita os vínculos através de uma atividade saudável e transformadora.</p>
+                                <p class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-600 font-semibold">Ver detalhes do programa &rarr;</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card MULHERES -->
+                    <a href="programas/mulheres.html" class="glass-card flex flex-col overflow-hidden group">
+                        <div class="overflow-hidden h-56">
+                            <img src="imgs/kihap-mulheres.png" alt="MULHERES" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Exclusivo</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">MULHERES</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Defesa pessoal, agilidade e bem-estar, promovendo autoconfiança e segurança.</p>
+                                <p class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-600 font-semibold">Ver detalhes do programa &rarr;</p>
+                            </div>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA Section -->
+        <section id="cta" class="py-24 bg-gradient-to-br from-yellow-400 to-yellow-600 text-black">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase font-title mb-6">Sua Jornada Começa Aqui.</h2>
+                <p class="mt-4 text-xl max-w-2xl mx-auto mb-12 opacity-90">Dê o primeiro passo e agende uma aula experimental grátis. A transformação espera por você.</p>
+                <div class="max-w-2xl mx-auto bg-white/20 backdrop-blur-xl p-8 rounded-3xl border border-white/30 shadow-2xl">
+                    <form id="lead-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="nome" placeholder="Nome Completo" class="w-full px-6 py-4 rounded-xl bg-white/90 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition" required>
+                        <input type="email" id="email" placeholder="Seu melhor e-mail" class="w-full px-6 py-4 rounded-xl bg-white/90 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition" required>
+                        <input type="tel" id="telefone" placeholder="WhatsApp" class="w-full px-6 py-4 rounded-xl bg-white/90 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition" required>
+                        <select id="unidade" title="Unidade" class="w-full px-6 py-4 rounded-xl bg-white/90 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition" required>
+                            <option value="" disabled selected>Selecione a unidade</option>
+                            <option value="Brasília">Brasília</option>
+                            <option value="Florianópolis">Florianópolis</option>
+                            <option value="Dourados">Dourados</option>
+                        </select>
+                        <button type="submit" class="md:col-span-2 bg-black text-white font-bold py-4 px-8 rounded-xl hover:bg-gray-900 transform hover:scale-[1.02] transition-all shadow-xl">
+                            AGENDAR AULA EXPERIMENTAL
+                        </button>
+                    </form>
+                </div>
+                <p id="form-status" class="mt-6 text-lg font-bold"></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/form-handler.js"></script>
+</body>
+</html>

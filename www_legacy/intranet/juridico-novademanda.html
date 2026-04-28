@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+        
+    
+    
+    <title>Kihap - Solicitar Demanda Jurídica</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0f0f;
+            color: white;
+        }
+
+        input,
+        select,
+        textarea {
+            color-scheme: dark;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+
+        .form-card {
+            background: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            border-radius: 16px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #262626;
+            border: 1px solid #3d3d3d;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: white;
+            font-size: 0.95rem;
+            transition: border-color 0.15s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: #6b7280;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #d1d5db;
+            margin-bottom: 6px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #d1d5db;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+
+        .checkbox-label:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+        }
+
+        #authOverlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+        }
+
+        .success-animation {
+            animation: fadeInScale 0.4s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-[#0f0f0f]">
+
+    <!-- Auth Overlay (shown if not logged in) -->
+    <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-[#1a1a1a] border border-gray-700 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <div class="w-16 h-16 rounded-full bg-blue-600/20 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-lock text-blue-400 text-2xl"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Acesso Restrito</h2>
+            <p class="text-gray-400 text-sm mb-6">Você precisa estar logado na Intranet Kihap para solicitar demandas.
+            </p>
+            <a href="log.html"
+                class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i> Fazer Login
+            </a>
+        </div>
+    </div>
+
+    <!-- Success Screen (hidden initially) -->
+    <div id="successScreen" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-[#0f0f0f]">
+        <div class="text-center success-animation max-w-md mx-4">
+            <div class="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-green-400 text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-white">Demanda Enviada!</h2>
+            <p class="text-gray-400 mb-6">Sua solicitação foi registrada com sucesso e já aparece no quadro de demandas.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="juridico-trello.html"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors inline-block">
+                    <i class="fab fa-trello mr-2"></i> Ver no Quadro
+                </a>
+                <button onclick="resetForm()"
+                    class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+                    <i class="fas fa-plus mr-2"></i> Nova Demanda
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <!-- Top bar -->
+        <header class="border-b border-gray-800 bg-[#111111] sticky top-0 z-30">
+            <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <img src="/imgs/favicon.png" alt="Kihap" class="h-8">
+                    <span class="text-lg font-bold">Solicitar Demanda Jurídica</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="userInfo" class="flex items-center gap-2 text-sm text-gray-400">
+                        <div id="userAvatar"
+                            class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+                        </div>
+                        <span id="userName" class="hidden sm:block"></span>
+                    </div>
+                    <a href="juridico-trello.html"
+                        class="text-sm text-blue-400 hover:text-blue-300 transition-colors hidden sm:inline-flex items-center gap-1">
+                        <i class="fab fa-trello"></i> Ver Quadro
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form -->
+        <main class="max-w-3xl mx-auto px-4 py-8">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold">Nova Solicitação de Demanda Jurídica</h1>
+                <p class="text-gray-400 text-sm mt-1">Preencha os campos abaixo para solicitar uma nova demanda. Ela
+                    será enviada automaticamente para o departamento escolhido.</p>
+            </div>
+
+            <form id="novaDemandaForm" class="space-y-6">
+
+                <!-- Informações do Solicitante -->
+                <div class="form-card p-6 space-y-5">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider"><i
+                            class="fas fa-user mr-2"></i>Informações do Solicitante</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <label class="form-label">E-mail <span class="text-red-500">*</span></label>
+                            <input type="email" id="nd_email" class="form-input" placeholder="seu@kihap.com.br"
+                                required>
+                        </div>
+                        <div>
+                            <label class="form-label">Nome Completo <span class="text-red-500">*</span></label>
+                            <input type="text" id="nd_nome" class="form-input" placeholder="Seu nome" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Unidade <span class="text-red-500">*</span></label>
+                            <select id="nd_unidade" class="form-input" required>
+                                <option value="Todas" selected>Todas</option>
+                                <option value="Brasília">Brasília</option>
+                                <option value="Florianópolis">Florianópolis</option>
+                                <option value="Dourados">Dourados</option>
+                                <option value="BC">BC</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Departamento Destino <span class="text-red-500">*</span></label>
+                            <select id="nd_departamento" class="form-input" required>
+                                <option value="">Escolher Departamento</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhes da Demanda -->
+                <div class="form-card p-6 space-y-5">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider"><i
+                            class="fas fa-file-alt mr-2"></i>Detalhes da Demanda</h2>
+
+                    <div>
+                        <label class="form-label">Título da Demanda <span class="text-red-500">*</span></label>
+                        <input type="text" id="nd_titulo" class="form-input"
+                            placeholder="Ex: Elaboração de contrato modelo" required>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Descrição detalhada <span class="text-red-500">*</span></label>
+                        <p class="text-xs text-gray-500 mb-2">Escreva todas as informações necessárias: contexto, partes envolvidas, prazos etc. <span class="text-yellow-500">Em caso de urgência, mencione no
+                                início.</span></p>
+                        <textarea id="nd_demanda" rows="5" class="form-input resize-none"
+                            placeholder="Descreva aqui sua demanda com o máximo de detalhes possível..."
+                            required></textarea>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Finalidade <span class="text-red-500">*</span></label>
+                        <p class="text-xs text-gray-500 mb-3">Escolha quantos itens precisar.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                            <label class="checkbox-label"><input type="checkbox" name="nd_finalidade"
+                                    value="Contrato"> Contrato</label>
+                            <label class="checkbox-label"><input type="checkbox" name="nd_finalidade" value="Ação Trabalhista">
+                                Ação Trabalhista</label>
+                            <label class="checkbox-label"><input type="checkbox" name="nd_finalidade" value="Ação Cível">
+                                Ação Cível</label>
+                            <label class="checkbox-label"><input type="checkbox" name="nd_finalidade" value="Notificação Extrajudicial">
+                                Notificação Extrajudicial</label>
+                            <label class="checkbox-label"><input type="checkbox" name="nd_finalidade" value="Consultoria/Dúvida">
+                                Consultoria/Dúvida</label>
+                            <label class="checkbox-label col-span-2 sm:col-span-3">
+                                <input type="checkbox" id="nd_check_outro" name="nd_finalidade" value="Outro">
+                                <span class="flex-1 flex items-center gap-2">Outro: <input type="text" id="nd_outro"
+                                        class="form-input flex-1 py-1 text-sm" placeholder="especifique..."
+                                        disabled></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+                        <div class="md:col-span-2">
+                            <label class="form-label">Responsável (opcional)</label>
+                            <div class="relative">
+                                <input type="text" id="assigneeSearchInput" 
+                                    class="form-input" 
+                                    placeholder="Buscar responsável...">
+                                <div id="selectedAssigneesContainer" class="flex flex-wrap gap-2 mt-2"></div>
+                                <div id="assigneeDropdown" 
+                                    class="hidden absolute left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                    <!-- Users rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Data Máxima <span class="text-red-500">*</span></label>
+                            <input type="date" id="nd_data" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Prioridade <span class="text-red-500">*</span></label>
+                            <select id="nd_prioridade" class="form-input" required>
+                                <option value="Baixa">Baixa</option>
+                                <option value="Média" selected>Média</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Urgente">Urgente 🔥</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referências Opcionais -->
+                <div class="form-card p-6 space-y-5">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider"><i
+                            class="fas fa-paperclip mr-2"></i>Referências (opcionais)</h2>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="form-label mb-0">Links de Referência (opcional)</label>
+                            <button type="button" id="btnAddLink" class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Adicionar outro link
+                            </button>
+                        </div>
+                        <div id="linksContainer" class="space-y-2">
+                            <div class="flex gap-2">
+                                <input type="url" name="nd_link" class="form-input" placeholder="Ex: https://drive.google.com/...">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Anexar Arquivo</label>
+                        <input type="file" id="nd_anexo"
+                            class="form-input py-2.5 text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-700/50 file:text-blue-300 hover:file:bg-blue-700/70 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="flex justify-end gap-4 pb-8">
+                    <a href="juridico-trello.html"
+                        class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-colors">Cancelar</a>
+                    <button type="submit" id="submitBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-colors flex items-center gap-2">
+                        <i class="fas fa-paper-plane"></i> Enviar Demanda
+                    </button>
+                </div>
+
+            </form>
+        </main>
+    </div>
+
+    <!-- Firebase + Logic -->
+    <script type="module">
+        import { db, storage, auth } from './firebase-config.js';
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, addDoc, getDocs, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const demandsCol = collection(db, 'juridico_demands');
+        const deptsCol = collection(db, 'juridico_departments');
+        const usersCol = collection(db, 'users');
+
+        let allUsers = [];
+        let selectedAssignees = [];
+
+        const authOverlay = document.getElementById('authOverlay');
+        const mainContent = document.getElementById('mainContent');
+        const successScreen = document.getElementById('successScreen');
+        const deptSelect = document.getElementById('nd_departamento');
+        const assigneeSearchInput = document.getElementById('assigneeSearchInput');
+        const assigneeDropdown = document.getElementById('assigneeDropdown');
+        const linksContainer = document.getElementById('linksContainer');
+
+        function renderSelectedAssignees() {
+            const container = document.getElementById('selectedAssigneesContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            selectedAssignees.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 bg-blue-900/50 border border-blue-700 text-blue-100 text-xs px-2 py-1 pl-1 rounded-full';
+                const initial = u.name[0].toUpperCase();
+                const photoHtml = u.photoUrl 
+                    ? `<img src="${u.photoUrl}" class="w-5 h-5 rounded-full object-cover shrink-0">`
+                    : `<div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">${initial}</div>`;
+                
+                div.innerHTML = `
+                    ${photoHtml}
+                    <span class="font-medium">${u.name}</span>
+                    <button type="button" class="text-blue-300 hover:text-red-400 ml-1 transition-colors outline-none" onclick="removeAssignee('${u.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.removeAssignee = (id) => {
+            selectedAssignees = selectedAssignees.filter(u => u.id !== id);
+            renderSelectedAssignees();
+        };
+
+        function renderAssigneeOptions(filter = '') {
+            assigneeDropdown.innerHTML = '';
+            const filteredUsers = allUsers.filter(u => {
+                const name = (u.displayName || u.name || u.email || '').toLowerCase();
+                return name.includes(filter.toLowerCase()) && !selectedAssignees.some(sa => sa.id === u.id);
+            });
+
+            if (filteredUsers.length === 0) {
+                assigneeDropdown.innerHTML = '<div class="p-3 text-gray-500 text-xs italic">Nenhum usuário encontrado.</div>';
+            } else {
+                filteredUsers.forEach(u => {
+                    const name = u.displayName || u.name || u.email;
+                    const div = document.createElement('div');
+                    div.className = 'p-2.5 flex items-center gap-3 cursor-pointer hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0';
+                    
+                    const initial = name[0].toUpperCase();
+                    const photoHtml = u.photoUrl 
+                        ? `<img src="${u.photoUrl}" class="w-6 h-6 rounded-full">`
+                        : `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">${initial}</div>`;
+
+                    div.innerHTML = `
+                        ${photoHtml}
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-white">${name}</div>
+                            <div class="text-[10px] text-gray-400">${u.email}</div>
+                        </div>
+                        <i class="fas fa-plus text-blue-500"></i>
+                    `;
+                    div.onclick = () => {
+                        selectedAssignees.push({ id: u.id, name, photoUrl: (u.photoUrl || null) });
+                        renderSelectedAssignees();
+                        assigneeSearchInput.value = '';
+                        assigneeDropdown.classList.add('hidden');
+                        assigneeSearchInput.focus();
+                    };
+                    assigneeDropdown.appendChild(div);
+                });
+            }
+        }
+
+        assigneeSearchInput.addEventListener('input', (e) => {
+            renderAssigneeOptions(e.target.value);
+            assigneeDropdown.classList.remove('hidden');
+        });
+
+        assigneeSearchInput.addEventListener('focus', () => {
+            renderAssigneeOptions(assigneeSearchInput.value);
+            assigneeDropdown.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!assigneeSearchInput.contains(e.target) && !assigneeDropdown.contains(e.target)) {
+                assigneeDropdown.classList.add('hidden');
+            }
+        });
+
+        // Dynamic Links
+        document.getElementById('btnAddLink')?.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input type="url" name="nd_link" class="form-input flex-1" placeholder="Ex: https://drive.google.com/...">
+                <button type="button" class="remove-link-btn text-red-500 hover:text-red-400 px-3 transition-colors bg-gray-800 border border-gray-700 rounded-lg shrink-0">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            div.querySelector('.remove-link-btn').addEventListener('click', () => div.remove());
+            linksContainer.appendChild(div);
+        });
+
+        // Auth Guard
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                authOverlay.classList.remove('hidden');
+                return;
+            }
+            authOverlay.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+
+            // Show user info
+            const displayName = user.displayName || user.name || user.email;
+            document.getElementById('userAvatar').textContent = (displayName || 'U')[0].toUpperCase();
+            document.getElementById('userName').textContent = displayName;
+
+            // Pre-fill email and name
+            document.getElementById('nd_email').value = user.email || '';
+            document.getElementById('nd_nome').value = displayName || '';
+            document.getElementById('nd_unidade').value = 'Todas';
+
+            // Load departments and users
+            try {
+                const snap = await getDocs(query(deptsCol, orderBy('name')));
+                snap.docs.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.data().name;
+                    deptSelect.appendChild(opt);
+                });
+
+                const usersSnap = await getDocs(usersCol);
+                allUsers = usersSnap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(u => !u.evoMemberId); // Exclude students
+            } catch (e) {
+                console.warn('Could not load data:', e);
+            }
+        });
+
+        // Outro checkbox
+        document.getElementById('nd_check_outro').addEventListener('change', e => {
+            const input = document.getElementById('nd_outro');
+            input.disabled = !e.target.checked;
+            if (e.target.checked) input.focus();
+        });
+
+        // Form Submit
+        document.getElementById('novaDemandaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('nd_email').value;
+            const nome = document.getElementById('nd_nome').value;
+            const unidade = document.getElementById('nd_unidade').value;
+            const departamentoId = document.getElementById('nd_departamento').value;
+            const titulo = document.getElementById('nd_titulo').value;
+            const demanda = document.getElementById('nd_demanda').value;
+            const prioridade = document.getElementById('nd_prioridade').value || 'Média';
+            const linkRefInputs = document.querySelectorAll('input[name="nd_link"]');
+            const linkRefs = Array.from(linkRefInputs).map(i => i.value).filter(v => !!v);
+            const fileInput = document.getElementById('nd_anexo');
+            const file = fileInput.files[0] || null;
+
+            const finalidades = [];
+            document.querySelectorAll('input[name="nd_finalidade"]:checked').forEach(cb => {
+                if (cb.value === 'Outro') {
+                    const outroVal = document.getElementById('nd_outro').value.trim();
+                    if (outroVal) finalidades.push(outroVal);
+                } else {
+                    finalidades.push(cb.value);
+                }
+            });
+
+            if (!departamentoId) { alert('Por favor selecione um departamento.'); return; }
+            if (finalidades.length === 0) { alert('Por favor selecione pelo menos uma finalidade.'); return; }
+
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            btn.disabled = true;
+
+            try {
+                let anexoUrl = null;
+                let anexoNome = null;
+
+                if (file) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fazendo upload...';
+                    const fileRef = storageRef(storage, `juridico_demands/${Date.now()}_${file.name}`);
+                    await uploadBytes(fileRef, file);
+                    anexoUrl = await getDownloadURL(fileRef);
+                    anexoNome = file.name;
+                }
+
+                await addDoc(demandsCol, {
+                    email, nome, unidade, departamentoId,
+                    titulo, demanda, finalidade: finalidades,
+                    dataMaxima, status: 'todo',
+                    priority: prioridade,
+                    assignees: selectedAssignees,
+                    linkRefs, anexoUrl, anexoNome,
+                    createdAt: serverTimestamp(),
+                    createdBy: auth.currentUser?.uid || null
+                });
+
+                // Show success screen
+                document.getElementById('novaDemandaForm').closest('main').style.display = 'none';
+                successScreen.classList.remove('hidden');
+                successScreen.querySelector('div').classList.add('success-animation');
+
+            } catch (err) {
+                alert('Erro ao enviar demanda: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Demanda';
+                btn.disabled = false;
+            }
+        });
+
+        // Reset form for new demand
+        window.resetForm = () => {
+            successScreen.classList.add('hidden');
+            document.getElementById('novaDemandaForm').closest('main').style.display = '';
+            document.getElementById('novaDemandaForm').reset();
+            document.getElementById('nd_outro').disabled = true;
+            
+            // Clear specific states
+            selectedAssignees = [];
+            renderSelectedAssignees();
+            if (linksContainer) {
+                linksContainer.innerHTML = '<div class="flex gap-2"><input type="url" name="nd_link" class="form-input flex-1" placeholder="Ex: https://drive.google.com/..."></div>';
+            }
+            
+            // Re-apply pre-fills
+            if (auth.currentUser) {
+                document.getElementById('nd_email').value = auth.currentUser.email || '';
+                document.getElementById('nd_nome').value = auth.currentUser.displayName || auth.currentUser.name || '';
+            }
+            document.getElementById('nd_unidade').value = 'Todas';
+        };
+    </script>
+
+</body>
+
+</html>

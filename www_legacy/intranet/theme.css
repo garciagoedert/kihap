@@ -1,0 +1,120 @@
+/* Global Layout & Sidebar */
+@media (min-width: 768px) {
+    body {
+        padding-left: 288px !important; /* Reservando espaço para a sidebar */
+        position: relative;
+    }
+    #sidebar {
+        transform: translateX(0) !important;
+        width: 288px !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        transition: none !important;
+    }
+    #menu-toggle, 
+    header #menu-toggle,
+    header a[href="index.html"] {
+        display: none !important;
+    }
+    /* Header e elementos fixos devem ocupar apenas a área de conteúdo */
+    header, 
+    #header-container header,
+    .sticky.top-0 {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Conteúdo principal também deve respeitar o padding */
+    #main-content,
+    .flex-grow,
+    main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* Custom Scrollbar Global & Modern */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Forçar cores do corpo para evitar flash de cor errada */
+html.dark body { background-color: #111111 !important; color: #f5f5f5 !important; }
+html:not(.dark) body { background-color: #f9fafb !important; color: #111111 !important; }
+
+/* Estilos para a cor primária - será sobrescrito pelo JS de whitelabel */
+:root {
+    --primary-color: #FFC107;
+    --primary-color-dark: #d39e00;
+    --primary-color-light: #ffd452;
+    --primary-text-color: #111111;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.hover\:bg-primary-dark:hover {
+    background-color: var(--primary-color-dark) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.bg-primary-light {
+    background-color: var(--primary-color-light) !important;
+    color: var(--primary-text-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.border-primary {
+    border-color: var(--primary-color) !important;
+}
+
+/* Utilitários para transição suave de tema */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Fix para tabelas em light mode */
+.custom-table-container {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.dark .custom-table-container {
+    background-color: #1a1a1a;
+    border-color: #1f2937;
+}

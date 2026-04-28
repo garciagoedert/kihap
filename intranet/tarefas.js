@@ -1,23 +1,21 @@
-import { loadComponents, setupUIListeners, getAllUsers } from './common-ui.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAllUsers } from './common-ui.js';
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Função principal que será exportada e chamada pelo HTML
 export function initializeAppWithFirebase(firebaseConfig) {
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     const db = getFirestore(app);
     const auth = getAuth(app);
     const appId = firebaseConfig.appId || 'default-app';
     const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
     const prospectsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'prospects');
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user && localStorage.getItem('isLoggedIn') === 'true') {
-            // Usuário autenticado, pode carregar a UI
-            loadComponents(async () => {
-                await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef);
-            });
+            // Usuário autenticado, inicializa a página de tarefas
+            await initializeTasksPage(tasksCollectionRef, prospectsCollectionRef, auth, db);
         } else {
             // Usuário não autenticado, redireciona para o login
             window.location.href = 'login.html';
@@ -25,9 +23,9 @@ export function initializeAppWithFirebase(firebaseConfig) {
     });
 }
 
-async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
-    const systemUsers = await getAllUsers();
+async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef, auth, db) {
     let tasks = []; // O array será populado pelo Firebase
+    let users = []; // Lista de usuários para o sistema
     let prospects = []; // Array para os cards do Kanban
     let showDone = false; // Estado para controlar a visibilidade de tarefas concluídas
 
@@ -51,83 +49,7 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
     const taskLinkedCardId = document.getElementById('task-linked-card-id');
     const taskLinkedCardResults = document.getElementById('task-linked-card-results');
 
-    // Funções
-    const autoPrioritizeOverdueTasks = async (tasksToUpdate) => {
-        const now = new Date();
-        const priorityOrder = ['low', 'normal', 'high', 'urgent'];
-
-        for (const task of tasksToUpdate) {
-            const isOverdue = task.due_date && new Date(task.due_date) < now && task.status !== 'done';
-            
-            if (isOverdue) {
-                const currentPriorityIndex = priorityOrder.indexOf(task.priority);
-                if (currentPriorityIndex < priorityOrder.length - 1) {
-                    const newPriority = priorityOrder[currentPriorityIndex + 1];
-                    const taskRef = doc(tasksCollectionRef, task.id);
-                    await updateDoc(taskRef, { priority: newPriority });
-                }
-            }
-        }
-    };
-
-    const fetchProspects = async () => {
-        try {
-            const snapshot = await getDocs(prospectsCollectionRef);
-            prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } catch (error) {
-            console.error("Erro ao buscar prospects:", error);
-        }
-    };
-
-    const renderCardSearchResults = (results) => {
-        taskLinkedCardResults.innerHTML = '';
-        if (results.length === 0) {
-            taskLinkedCardResults.classList.add('hidden');
-            return;
-        }
-        results.forEach(prospect => {
-            const div = document.createElement('div');
-            div.className = 'p-2 hover:bg-gray-500 cursor-pointer';
-            div.textContent = `${prospect.empresa} (${prospect.status})`;
-            div.dataset.id = prospect.id;
-            div.dataset.name = prospect.empresa;
-            div.addEventListener('click', () => {
-                taskLinkedCardSearch.value = prospect.empresa;
-                taskLinkedCardId.value = prospect.id;
-                taskLinkedCardResults.classList.add('hidden');
-            });
-            taskLinkedCardResults.appendChild(div);
-        });
-        taskLinkedCardResults.classList.remove('hidden');
-    };
-
-    const openModal = () => {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex'); // Use flex to center it
-    };
-
-    const closeModal = () => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        taskForm.reset();
-        document.getElementById('task-id').value = '';
-        modalTitle.textContent = 'Nova Tarefa';
-        deleteTaskBtn.classList.add('hidden'); // Esconde o botão de apagar
-    };
-
-    const populateUsers = () => {
-        filterAssignee.innerHTML = '<option value="">Todos os Responsáveis</option>';
-        taskAssigneeSelect.innerHTML = ''; // Limpa para não duplicar
-
-        systemUsers.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.email;
-            option.textContent = user.name;
-            filterAssignee.appendChild(option.cloneNode(true));
-            taskAssigneeSelect.appendChild(option);
-        });
-    };
-
+    // Funções auxiliares
     const getPriorityClass = (priority) => {
         switch (priority) {
             case 'urgent': return 'text-red-500 dark:text-red-400 font-bold';
@@ -148,16 +70,69 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
         }
     };
 
+    const applyFiltersAndRender = () => {
+        if (!tasksContainer) return;
+        
+        const searchTerm = searchInput?.value?.toLowerCase() || '';
+        const assigneeVal = filterAssignee?.value || '';
+        const statusVal = filterStatus?.value || '';
+        const priorityVal = filterPriority?.value || '';
+        
+        const filteredTasks = tasks.filter(task => {
+            if (!showDone && task.status === 'done') return false;
+            if (statusVal && task.status !== statusVal) return false;
+            if (priorityVal && task.priority !== priorityVal) return false;
+            if (assigneeVal && task.assignee_email !== assigneeVal) return false;
+            if (searchTerm) {
+                const titleMatch = task.title && task.title.toLowerCase().includes(searchTerm);
+                const descriptionMatch = task.description && task.description.toLowerCase().includes(searchTerm);
+                if (!titleMatch && !descriptionMatch) return false;
+            }
+            return true;
+        });
+
+        tasksContainer.innerHTML = '';
+        if (filteredTasks.length === 0) {
+            tasksContainer.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhuma tarefa encontrada.</td></tr>`;
+            return;
+        }
+
+        filteredTasks.forEach(task => {
+            const row = document.createElement('tr');
+            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
+            row.className = `border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ''}`;
+            row.addEventListener('click', () => openModalForEdit(task));
+
+            const assignee = users.find(u => u.email === task.assignee_email);
+            const linkedCard = prospects.find(p => p.id === task.linked_card_id);
+            const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : 'N/A';
+            
+            const clientLinkHTML = linkedCard 
+                ? `<a href="index.html?cardId=${linkedCard.id}" class="text-primary hover:underline" onclick="event.stopPropagation()">${linkedCard.empresa}</a>`
+                : (task.parent_entity || 'N/A');
+
+            row.innerHTML = `
+                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">${task.title}</td>
+                <td class="px-6 py-4">${clientLinkHTML}</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">${assignee?.name || task.assignee_email || 'N/A'}</td>
+                <td class="px-6 py-4 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-600 dark:text-gray-300'}">${dueDate}</td>
+                <td class="px-6 py-4 ${getPriorityClass(task.priority)}">${task.priority?.toUpperCase() || 'NORMAL'}</td>
+                <td class="px-6 py-4">${getStatusBadge(task.status)}</td>
+                <td class="px-6 py-4 text-xs text-gray-400 dark:text-gray-500">${task.createdBy || 'N/A'}</td>
+            `;
+            tasksContainer.appendChild(row);
+        });
+    };
+
     const openModalForEdit = (task) => {
         document.getElementById('task-id').value = task.id;
         document.getElementById('task-title').value = task.title;
         document.getElementById('task-description').value = task.description || '';
-        document.getElementById('task-assignee').value = task.assignee_email;
-        // Formata a data para o input datetime-local (YYYY-MM-DDTHH:mm)
+        document.getElementById('task-assignee').value = task.assignee_email || '';
         document.getElementById('task-due-date').value = task.due_date ? new Date(task.due_date).toISOString().slice(0, 16) : '';
-        document.getElementById('task-priority').value = task.priority;
+        document.getElementById('task-priority').value = task.priority || 'normal';
         document.getElementById('task-status').value = task.status || 'pending';
-        document.getElementById('task-parent-entity').value = task.parent_entity;
+        document.getElementById('task-parent-entity').value = task.parent_entity || '';
         taskLinkedCardId.value = task.linked_card_id || '';
         const linkedCard = prospects.find(p => p.id === task.linked_card_id);
         taskLinkedCardSearch.value = linkedCard ? linkedCard.empresa : '';
@@ -172,91 +147,92 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
         }
         
         modalTitle.textContent = 'Editar Tarefa';
-        deleteTaskBtn.classList.remove('hidden'); // Mostra o botão de apagar
-        openModal();
+        deleteTaskBtn.classList.remove('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     };
 
-    const renderTasks = (tasksToRender) => {
-        tasksContainer.innerHTML = '';
-        if (tasksToRender.length === 0) {
-            tasksContainer.innerHTML = `<tr><td colspan="7" class="text-center py-4">Nenhuma tarefa encontrada.</td></tr>`;
-            return;
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        taskForm.reset();
+        document.getElementById('task-id').value = '';
+        modalTitle.textContent = 'Nova Tarefa';
+        deleteTaskBtn.classList.add('hidden');
+    };
+
+    // Load users and populate selects
+    try {
+        users = await getAllUsers();
+        if (filterAssignee) {
+            filterAssignee.innerHTML = '<option value="">Todos os Responsáveis</option>';
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email;
+                option.textContent = user.name;
+                filterAssignee.appendChild(option);
+            });
         }
-        tasksToRender.forEach(task => {
-            const row = document.createElement('tr');
-            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
-            row.className = `border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ''}`;
-            row.addEventListener('click', () => openModalForEdit(task));
+        if (taskAssigneeSelect) {
+            taskAssigneeSelect.innerHTML = '<option value="">Selecione um Responsável</option>';
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email;
+                option.textContent = user.name;
+                taskAssigneeSelect.appendChild(option);
+            });
+        }
+        applyFiltersAndRender();
+    } catch (e) {
+        console.error("Erro ao carregar usuários:", e);
+    }
 
-            const assignee = systemUsers.find(u => u.email === task.assignee_email);
-            const linkedCard = prospects.find(p => p.id === task.linked_card_id);
-            const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A';
-            const priorityText = task.priority.charAt(0).toUpperCase() + task.priority.slice(1);
-            
-            const clientLinkHTML = linkedCard 
-                ? `<a href="index.html?cardId=${linkedCard.id}" class="text-primary hover:underline" onclick="event.stopPropagation()">${linkedCard.empresa}</a>`
-                : (task.parent_entity || 'N/A');
+    // Load prospects
+    try {
+        const snapshot = await getDocs(prospectsCollectionRef);
+        prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+        console.error("Erro ao carregar prospects:", e);
+    }
 
-            row.innerHTML = `
-                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">${task.title}</td>
-                <td class="px-6 py-4">${clientLinkHTML}</td>
-                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">${assignee?.name || 'N/A'}</td>
-                <td class="px-6 py-4 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-600 dark:text-gray-300'}">${dueDate}</td>
-                <td class="px-6 py-4 ${getPriorityClass(task.priority)}">${priorityText}</td>
-                <td class="px-6 py-4">${getStatusBadge(task.status)}</td>
-                <td class="px-6 py-4 text-xs text-gray-400 dark:text-gray-500">${task.createdBy || 'N/A'}</td>
-            `;
-            
-            tasksContainer.appendChild(row);
-        });
-    };
-
-    const applyFiltersAndRender = () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        const assigneeFilter = filterAssignee.value;
-        const statusFilter = filterStatus.value;
-        const priorityFilter = filterPriority.value;
+    // Snapshot for real-time tasks
+    onSnapshot(tasksCollectionRef, (snapshot) => {
+        tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log(`[Tarefas] ${tasks.length} tarefas carregadas.`);
         
-        showDoneTasksCheckbox.checked = showDone; // Sincroniza o checkbox com o estado
-
-        const filteredTasks = tasks.filter(task => {
-            // Filtro 1: Checkbox de concluídas
-            if (!showDone && task.status === 'done') {
-                return false;
+        // Sort tasks
+        tasks.sort((a, b) => {
+            const statusOrder = { 'pending': 1, 'in_progress': 2, 'done': 3 };
+            if (statusOrder[a.status] !== statusOrder[b.status]) {
+                return statusOrder[a.status] - statusOrder[b.status];
             }
-
-            // Filtro 2: Status (Pendente, Em Progresso)
-            if (statusFilter && task.status !== statusFilter) {
-                return false;
-            }
-
-            // Filtro 3: Prioridade
-            if (priorityFilter && task.priority !== priorityFilter) {
-                return false;
-            }
-
-            // Filtro 4: Responsável
-            if (assigneeFilter && task.assignee_email !== assigneeFilter) {
-                return false;
-            }
-
-            // Filtro 5: Busca por texto
-            if (searchTerm) {
-                const titleMatch = task.title && task.title.toLowerCase().includes(searchTerm);
-                const descriptionMatch = task.description && task.description.toLowerCase().includes(searchTerm);
-                if (!titleMatch && !descriptionMatch) {
-                    return false;
-                }
-            }
-
-            return true; // Se passou por todos os filtros, inclui a tarefa
+            const dateA = a.createdAt?.toDate() || 0;
+            const dateB = b.createdAt?.toDate() || 0;
+            return dateB - dateA;
         });
+        
+        applyFiltersAndRender();
+    }, (error) => {
+        console.error("Erro ao buscar tarefas:", error);
+        if (tasksContainer) {
+            tasksContainer.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">Erro ao carregar as tarefas.</td></tr>`;
+        }
+    });
 
-        renderTasks(filteredTasks);
-    };
-
-    const handleFormSubmit = async (event) => {
-        event.preventDefault();
+    // Event Listeners
+    createTaskBtn?.addEventListener('click', () => {
+        taskForm.reset();
+        document.getElementById('task-id').value = '';
+        modalTitle.textContent = 'Nova Tarefa';
+        deleteTaskBtn.classList.add('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    });
+    closeModalBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    
+    taskForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
         const taskId = document.getElementById('task-id').value;
         const taskData = {
             title: document.getElementById('task-title').value,
@@ -275,7 +251,6 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
                 const taskRef = doc(tasksCollectionRef, taskId);
                 await updateDoc(taskRef, taskData);
             } else {
-                taskData.status = 'pending';
                 taskData.createdAt = serverTimestamp();
                 taskData.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
                 await addDoc(tasksCollectionRef, taskData);
@@ -283,87 +258,55 @@ async function initializeTasksPage(tasksCollectionRef, prospectsCollectionRef) {
             closeModal();
         } catch (error) {
             console.error("Erro ao salvar tarefa:", error);
-            alert("Não foi possível salvar a tarefa. Verifique o console para mais detalhes.");
+            alert("Erro ao salvar tarefa.");
         }
-    };
+    });
 
-    const handleDeleteTask = async () => {
+    deleteTaskBtn?.addEventListener('click', async () => {
         const taskId = document.getElementById('task-id').value;
         if (!taskId) return;
-
-        if (confirm('Você tem certeza que deseja apagar esta tarefa?')) {
+        if (confirm('Deseja apagar esta tarefa?')) {
             try {
-                const taskRef = doc(tasksCollectionRef, taskId);
-                await deleteDoc(taskRef);
+                await deleteDoc(doc(tasksCollectionRef, taskId));
                 closeModal();
             } catch (error) {
-                console.error("Erro ao apagar tarefa:", error);
-                alert("Não foi possível apagar a tarefa. Verifique o console para mais detalhes.");
+                console.error("Erro ao apagar:", error);
             }
         }
-    };
-
-    // Event Listeners
-    createTaskBtn.addEventListener('click', () => {
-        taskForm.reset();
-        document.getElementById('task-id').value = '';
-        modalTitle.textContent = 'Nova Tarefa';
-        deleteTaskBtn.classList.add('hidden');
-        openModal();
     });
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    deleteTaskBtn.addEventListener('click', handleDeleteTask);
-    taskForm.addEventListener('submit', handleFormSubmit);
-    
-    searchInput.addEventListener('input', applyFiltersAndRender);
-    filterAssignee.addEventListener('change', applyFiltersAndRender);
-    filterStatus.addEventListener('change', applyFiltersAndRender);
-    filterPriority.addEventListener('change', applyFiltersAndRender);
-    
-    showDoneTasksCheckbox.addEventListener('change', () => {
+
+    searchInput?.addEventListener('input', applyFiltersAndRender);
+    filterAssignee?.addEventListener('change', applyFiltersAndRender);
+    filterStatus?.addEventListener('change', applyFiltersAndRender);
+    filterPriority?.addEventListener('change', applyFiltersAndRender);
+    showDoneTasksCheckbox?.addEventListener('change', () => {
         showDone = showDoneTasksCheckbox.checked;
         applyFiltersAndRender();
     });
 
-    // O event listener da linha agora é tratado dentro da função renderTasks
-    // para melhor controle e para evitar delegação complexa.
-    // Este bloco pode ser removido.
-
-    taskLinkedCardSearch.addEventListener('keyup', () => {
-        const searchTerm = taskLinkedCardSearch.value.toLowerCase();
-        if (searchTerm.length < 2) {
+    taskLinkedCardSearch?.addEventListener('keyup', () => {
+        const term = taskLinkedCardSearch.value.toLowerCase();
+        if (term.length < 2) {
             taskLinkedCardResults.classList.add('hidden');
             return;
         }
-        const results = prospects.filter(p => p.empresa.toLowerCase().includes(searchTerm));
-        renderCardSearchResults(results);
-    });
-
-    // Inicialização
-    populateUsers();
-    fetchProspects(); // Busca os cards do Kanban
-    
-    // Listener do Firebase para atualizar as tarefas em tempo real
-    onSnapshot(tasksCollectionRef, (snapshot) => {
-        tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        autoPrioritizeOverdueTasks(tasks);
-
-        // Ordenar tarefas: pendentes e em progresso primeiro, depois por data de criação
-        tasks.sort((a, b) => {
-            const statusOrder = { 'pending': 1, 'in_progress': 2, 'done': 3 };
-            if (statusOrder[a.status] !== statusOrder[b.status]) {
-                return statusOrder[a.status] - statusOrder[b.status];
-            }
-            // Se os status são os mesmos, ordenar por data de criação (mais recentes primeiro)
-            const dateA = a.createdAt?.toDate() || 0;
-            const dateB = b.createdAt?.toDate() || 0;
-            return dateB - dateA;
+        const results = prospects.filter(p => p.empresa?.toLowerCase().includes(term));
+        taskLinkedCardResults.innerHTML = '';
+        if (results.length === 0) {
+            taskLinkedCardResults.classList.add('hidden');
+            return;
+        }
+        results.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm';
+            div.textContent = p.empresa;
+            div.addEventListener('click', () => {
+                taskLinkedCardSearch.value = p.empresa;
+                taskLinkedCardId.value = p.id;
+                taskLinkedCardResults.classList.add('hidden');
+            });
+            taskLinkedCardResults.appendChild(div);
         });
-        applyFiltersAndRender();
-    }, (error) => {
-        console.error("Erro ao buscar tarefas:", error);
-        tasksContainer.innerHTML = `<p class="text-center text-red-500 p-4 col-span-full">Erro ao carregar as tarefas.</p>`;
+        taskLinkedCardResults.classList.remove('hidden');
     });
 }

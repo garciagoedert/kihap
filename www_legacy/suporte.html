@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+    
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <title>Suporte ao Aluno - Kihap Martial Arts</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Hero icons (Font Awesome alternative) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="bg-black text-white antialiased">
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main class="pt-32 pb-20">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase mb-6 tracking-wide font-title">
+                Central de Ajuda & <span class="text-yellow-500">Suporte</span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12">
+                Nossa equipe está pronta para ajudar você com qualquer dúvida sobre o Kihap App ou nossos treinamentos.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- E-mail Support Card -->
+                <div class="bg-gray-900 p-10 rounded-2xl border border-gray-800 hover:border-yellow-500 transition-all duration-300 group">
+                    <div class="bg-yellow-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-envelope text-black text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-4 text-yellow-500">E-mail Oficial</h3>
+                    <p class="text-gray-400 mb-8 font-medium">Relate problemas técnicos ou dúvidas administrativas.</p>
+                    <a href="mailto:comercial@kihap.com.br" 
+                       class="inline-block bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition tracking-wide uppercase text-sm">
+                        Enviar E-mail
+                    </a>
+                </div>
+
+                <!-- WhatsApp Support Card -->
+                <div class="bg-gray-900 p-10 rounded-2xl border border-gray-800 hover:border-yellow-500 transition-all duration-300 group">
+                    <div class="bg-green-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fab fa-whatsapp text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-4 text-green-500">WhatsApp</h3>
+                    <p class="text-gray-400 mb-8 font-medium">Atendimento rápido para agendamentos e suporte imediato.</p>
+                    <a href="https://wa.me/5547996321287" target="_blank"
+                       class="inline-block bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition tracking-wide uppercase text-sm">
+                        Conversar Agora
+                    </a>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="mt-20 max-w-3xl mx-auto text-left">
+                <h2 class="text-3xl font-black uppercase mb-10 text-center">Perguntas <span class="text-yellow-500">Frequentes</span></h2>
+                
+                <div class="space-y-6">
+                    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                        <h4 class="text-yellow-500 font-bold text-lg mb-2">Não consigo acessar o app, o que fazer?</h4>
+                        <p class="text-gray-400">Certifique-se de que está usando o e-mail cadastrado na sua unidade. Caso tenha esquecido a senha, use a opção "Recuperar Senha" na tela de login.</p>
+                    </div>
+                    
+                    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                        <h4 class="text-yellow-500 font-bold text-lg mb-2">Como vejo meu progresso de graduação?</h4>
+                        <p class="text-gray-400">Dentro do Kihap App, acesse a "Área do Aluno" no menu lateral. Lá você encontrará seu histórico de faixas e presença.</p>
+                    </div>
+
+                    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+                        <h4 class="text-yellow-500 font-bold text-lg mb-2">O app funciona offline?</h4>
+                        <p class="text-gray-400">Algumas funcionalidades exigem conexão constante com a internet (como o chat e a sincronização de dados). Recomendamos o uso de Wi-Fi ou rede 4G/5G.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

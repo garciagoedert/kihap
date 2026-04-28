@@ -23,5 +23,14 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "emulators": {
+    "hosting": {
+      "port": 8000
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
   }
 }

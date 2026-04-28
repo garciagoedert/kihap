@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR" >
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    <title>Perfil - Kihap Social</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class"
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../intranet/theme.css">
+    <link rel="stylesheet" href="../intranet/log.css">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .dark .glass-card {
+            background: rgba(26, 26, 26, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stats-button:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .kihap-gradient {
+            background: linear-gradient(135deg, #014fa4 0%, #002d5d 100%);
+        }
+    </style>
+
+    <script>
+        // Default to light mode unless explicitly set to dark
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-200 min-h-screen transition-colors duration-300">
+    <div class="relative min-h-screen md:flex">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-[120] hidden"></div>
+
+        <main id="main-content" class="flex-1 overflow-x-hidden">
+            <div id="header-container"></div>
+
+            <!-- Profile Header/Cover -->
+            <div class="relative h-48 md:h-64 kihap-gradient w-full">
+                <div class="absolute inset-0 bg-black/20"></div>
+            </div>
+
+            <div class="max-w-4xl mx-auto px-4 -mt-20 relative z-10 pb-20">
+                <!-- User Info Profile Card -->
+                <div class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl mb-6">
+                    <div class="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
+                        <!-- Avatar -->
+                        <div class="relative">
+                            <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-[#0a0a0a] overflow-hidden shadow-xl bg-gray-200 dark:bg-gray-800">
+                                <img id="target-avatar" src="/imgs/kobe.png" class="w-full h-full object-cover">
+                            </div>
+                            <div id="belt-badge" class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-yellow-500 text-black text-[10px] font-black rounded-full shadow-lg uppercase tracking-wider whitespace-nowrap">
+                                Carregando...
+                            </div>
+                        </div>
+
+                        <!-- Info & Actions -->
+                        <div class="flex-1 text-center md:text-left">
+                            <h1 id="target-name" class="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">Carregando...</h1>
+                            <p id="target-unit" class="text-gray-500 dark:text-gray-400 font-medium mb-4 flex items-center justify-center md:justify-start gap-2">
+                                <i class="fas fa-map-marker-alt text-red-500"></i> <span>...</span>
+                            </p>
+
+                            <!-- Social Stats -->
+                            <div class="flex items-center justify-center md:justify-start gap-6">
+                                <button id="view-followers" class="stats-button text-center px-4 py-2 rounded-xl transition-all">
+                                    <div id="count-followers" class="text-xl font-bold text-gray-900 dark:text-white">0</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Seguidores</div>
+                                </button>
+                                <button id="view-following" class="stats-button text-center px-4 py-2 rounded-xl transition-all">
+                                    <div id="count-following" class="text-xl font-bold text-gray-900 dark:text-white">0</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Seguindo</div>
+                                </button>
+                                <div class="text-center px-4 py-2">
+                                    <div id="count-coins" class="text-xl font-bold text-yellow-500">0</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Kihapcoins</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Action Button -->
+                        <div class="mt-4 md:mt-0">
+                            <button id="follow-btn" class="hidden px-8 py-3 bg-white text-black font-extrabold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg">
+                                Seguir
+                            </button>
+                            <button id="edit-profile-btn" class="hidden px-8 py-3 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-extrabold rounded-2xl border border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 transition-all">
+                                Editar Perfil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Sidebar (Physical Test & Info) -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="glass-card rounded-3xl p-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-heartbeat text-red-500"></i> Teste Físico
+                            </h3>
+                            <div id="physical-test-preview" class="space-y-4">
+                                <!-- Partial Score UI -->
+                                <div id="latest-test-card" class="bg-gray-100 dark:bg-black/40 p-4 rounded-2xl border border-gray-200 dark:border-white/5 hidden">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Último Resultado</span>
+                                        <span id="test-date" class="text-xs text-blue-400">...</span>
+                                    </div>
+                                    <div class="flex items-end gap-1">
+                                        <span id="test-score" class="text-3xl font-black text-gray-900 dark:text-white">0</span>
+                                        <span class="text-sm text-gray-500 mb-1">pontos</span>
+                                    </div>
+                                </div>
+                                <p id="no-test-msg" class="text-sm text-gray-500 italic">Nenhum teste registrado.</p>
+                            </div>
+                        </div>
+
+                        <div id="partials-card" class="glass-card rounded-3xl p-6 hidden">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-star text-yellow-500"></i> Parciais
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span id="partials-count" class="text-3xl font-black text-yellow-500">0</span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">exames concluídos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content (Badges/Emblemas) -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-card rounded-3xl p-6 md:p-8">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                <i class="fas fa-medal text-yellow-500"></i> Emblemas & Conquistas
+                            </h3>
+                            <div id="badges-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                <!-- Badges dynamic load -->
+                                <div class="h-20 bg-white/5 rounded-2xl animate-pulse"></div>
+                                <div class="h-20 bg-white/5 rounded-2xl animate-pulse"></div>
+                                <div class="h-20 bg-white/5 rounded-2xl animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals for Followers/Following -->
+    <div id="social-modal" class="fixed inset-0 bg-black/80 z-[200] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10">
+            <div class="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Seguidores</h3>
+                <button id="close-social-modal" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="social-list" class="max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
+                <!-- Social items -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './js/common-ui.js';
+        import { setupPublicProfile } from './js/perfil-publico.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupPublicProfile();
+            });
+        });
+    </script>
+</body>
+</html>

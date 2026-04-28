@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -14,7 +14,9 @@ const firebaseConfig = {
 };
 
 // --- INITIALIZATION ---
-const app = initializeApp(firebaseConfig);
+// Inicializa o Firebase com um nome específico para evitar conflitos com o [DEFAULT] da intranet
+const appName = "kanban-app";
+const app = getApps().find(a => a.name === appName) || initializeApp(firebaseConfig, appName);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = firebaseConfig.appId || 'default-kanban-app';
