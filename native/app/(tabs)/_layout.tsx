@@ -48,25 +48,14 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color, focused }) => (
-            <View>
-               <Send size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
-               {/* Badge Example */}
-               <View className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-yellow-500 rounded-full border border-white dark:border-[#0a0a0a]" />
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) => <Send size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
         name="notificacoes"
         options={{
           title: 'Notificações',
-          tabBarIcon: ({ color, focused }) => (
-            <View>
-              <Heart size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
-              <View className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white dark:border-[#0a0a0a]" />
-            </View>
-          ),
+          tabBarIcon: ({ color, focused }) => <Heart size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen

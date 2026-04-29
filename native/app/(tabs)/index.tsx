@@ -238,7 +238,7 @@ export default function FeedScreen() {
                 <SidebarItem icon={Activity} label="Atividades" onPress={() => router.push('/(tabs)/notificacoes')} />
 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
-                <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => {}} />
+                <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
                 <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => {}} />
                 <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => {}} />
 
