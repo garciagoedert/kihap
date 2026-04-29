@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import FeedCard from '../../src/components/FeedCard';
@@ -35,40 +35,34 @@ export default function FeedScreen() {
   
   const displayUnit = userData?.unidade || userData?.unit || 'Kihap Member';
 
-  const fetchData = async () => {
-    if (!user) {
-      console.log("Feed: No user found, stopping fetch.");
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      console.log("Feed: Starting data fetch for user", user.uid);
+  useEffect(() => {
+    let unsubscribeFeed: any = null;
+
+    const startDataFlow = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       const userUnit = userData?.unidade || userData?.unit || '';
 
-      // 1. Fetch Stories
+      // 1. Fetch Stories (Static)
       try {
-        console.log("Feed: Fetching stories...");
         const now = new Date();
         const storiesQ = query(
           collection(db, 'stories'), 
           where('expiresAt', '>=', now),
           orderBy('expiresAt', 'asc')
         );
-        
         const storiesSnap = await getDocs(storiesQ);
-        console.log("Feed: Stories fetched, processing", storiesSnap.size, "docs");
-        
         const allStories: any[] = [];
         storiesSnap.forEach(docSnap => {
           const story = { id: docSnap.id, ...docSnap.data() };
           const isForMe = story.targetStudents?.includes(user.uid);
           const isForMyUnit = story.targetUnit === 'all' || story.targetUnit === userUnit;
           const isAuthor = story.authorId === user.uid;
-          if (isForMe || isForMyUnit || isAuthor) {
-            allStories.push(story);
-          }
+          if (isForMe || isForMyUnit || isAuthor) allStories.push(story);
         });
 
         const groupedStories = allStories.reduce((acc, story) => {
@@ -85,16 +79,12 @@ export default function FeedScreen() {
         }, {});
         setStories(Object.values(groupedStories));
       } catch (err) {
-        console.error("Feed: Error fetching stories:", err);
+        console.error("Feed: Stories error:", err);
       }
 
-      // 2. Fetch Feed
-      try {
-        console.log("Feed: Fetching posts...");
-        const feedQ = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(50));
-        const feedSnap = await getDocs(feedQ);
-        console.log("Feed: Posts fetched, processing", feedSnap.size, "docs");
-        
+      // 2. Subscribe to Feed (Real-time)
+      const feedQ = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(50));
+      unsubscribeFeed = onSnapshot(feedQ, (feedSnap) => {
         const filteredPosts: any[] = [];
         feedSnap.forEach(docSnap => {
           const post = { id: docSnap.id, ...docSnap.data() };
@@ -102,36 +92,31 @@ export default function FeedScreen() {
           const isForMe = post.targetStudents?.includes(user.uid);
           const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
           const isPublic = !post.targetUnit || post.targetUnit === '' || post.targetUnit === 'all';
-
-          if (isAuthor || isForMe || isForMyUnit || isPublic) {
-            filteredPosts.push(post);
-          }
+          if (isAuthor || isForMe || isForMyUnit || isPublic) filteredPosts.push(post);
         });
-        
         setPosts(filteredPosts);
-      } catch (err) {
-        console.error("Feed: Error fetching posts:", err);
-      }
-      
-      console.log("Feed: Data fetch flow ended.");
+        setLoading(false);
+        setRefreshing(false);
+      }, (err) => {
+        console.error("Feed: Snapshot error:", err);
+        setLoading(false);
+      });
+    };
 
-    } catch (error) {
-      console.error("Feed: Global error fetching data:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      console.log("Feed: Loading set to false.");
-    }
-  };
+    startDataFlow();
 
-  useEffect(() => {
-    fetchData();
+    return () => {
+      if (unsubscribeFeed) unsubscribeFeed();
+    };
   }, [user, userData]);
 
   const onRefresh = () => {
-    console.log("Feed: Refreshing data via Pull-to-Refresh...");
     setRefreshing(true);
-    fetchData();
+    // Real-time listener will already have latest data, but we can restart flow if needed
+    // Actually, just for the stories which are static:
+    if (user) {
+      setRefreshing(false); // Snapshots are instant
+    }
   };
 
   const SidebarItem = ({ icon: Icon, label, onPress, color = isDark ? '#fff' : '#333' }: any) => (
@@ -221,10 +206,10 @@ export default function FeedScreen() {
                       <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
                     </View>
                   </View>
+                  <TouchableOpacity onPress={() => setSidebarOpen(false)} className="p-2 -mr-2">
+                    <X size={20} color={isDark ? '#fff' : '#333'} />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => setSidebarOpen(false)} className="p-2">
-                  <X size={20} color={isDark ? '#fff' : '#333'} />
-                </TouchableOpacity>
               </View>
 
               <ScrollView className="flex-1 p-4">
@@ -233,14 +218,14 @@ export default function FeedScreen() {
                 <SidebarItem icon={MessageSquare} label="Chat" onPress={() => router.push('/(tabs)/chat')} />
                 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Evolução</Text>
-                <SidebarItem icon={BookOpen} label="Meus Cursos" onPress={() => {}} />
-                <SidebarItem icon={UserCheck} label="Tatame" onPress={() => {}} />
-                <SidebarItem icon={Activity} label="Atividades" onPress={() => router.push('/(tabs)/notificacoes')} />
+                <SidebarItem icon={BookOpen} label="Meus Cursos" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/cursos'); }} />
+                <SidebarItem icon={UserCheck} label="Tatame" onPress={() => { setSidebarOpen(false); router.push('/tatame'); }} />
+                <SidebarItem icon={Activity} label="Atividades" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
-                <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => {}} />
-                <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => {}} />
+                <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => { setSidebarOpen(false); router.push('/pedidos'); }} />
+                <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => { setSidebarOpen(false); router.push('/assinatura'); }} />
 
                 <TouchableOpacity className="mt-8 mx-2 bg-yellow-400/10 py-4 rounded-2xl flex-row items-center justify-center border border-yellow-400/20">
                   <Star size={16} color="#eab308" fill="#eab308" />

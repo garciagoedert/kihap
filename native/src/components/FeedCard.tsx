@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
+import { Heart, ExternalLink } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import RenderHtml from 'react-native-render-html';
+import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
 
 interface FeedCardProps {
   post: {
@@ -20,13 +23,48 @@ interface FeedCardProps {
     };
     authorId: string;
     isHtml?: boolean;
+    likes?: string[];
   };
 }
 
 export default function FeedCard({ post }: FeedCardProps) {
+  const { user } = useAuth();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { width } = useWindowDimensions();
+
+  const [isLiked, setIsLiked] = useState(
+    Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false
+  );
+  const [likesCount, setLikesCount] = useState(
+    Array.isArray(post.likes) ? post.likes.length : 0
+  );
+
+  // Sync state when post prop changes (real-time updates)
+  useEffect(() => {
+    setIsLiked(Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false);
+    setLikesCount(Array.isArray(post.likes) ? post.likes.length : 0);
+  }, [post.likes, user?.uid]);
+
+  const handleLike = async () => {
+    if (!user) return;
+
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    setLikesCount(prev => newLikedState ? prev + 1 : prev - 1);
+
+    try {
+      const postRef = doc(db, 'feed', post.id);
+      await updateDoc(postRef, {
+        likes: newLikedState ? arrayUnion(user.uid) : arrayRemove(user.uid)
+      });
+    } catch (error) {
+      console.error("Error updating like:", error);
+      // Revert state on error
+      setIsLiked(!newLikedState);
+      setLikesCount(prev => !newLikedState ? prev + 1 : prev - 1);
+    }
+  };
 
   const formattedDate = post.createdAt 
     ? new Date(post.createdAt.seconds * 1000).toLocaleString('pt-BR', { 
@@ -50,7 +88,8 @@ export default function FeedCard({ post }: FeedCardProps) {
       lineHeight: 22,
     },
     p: {
-      marginBottom: 8,
+      marginVertical: 0,
+      marginBottom: 4,
       backgroundColor: 'transparent',
     },
     span: {
@@ -69,7 +108,9 @@ export default function FeedCard({ post }: FeedCardProps) {
     }
   };
 
-  const cleanContent = post.content
+  const cleanContent = (post.content || '')
+    .replace(/<p><br><\/p>/g, '') // Remove empty lines with breaks
+    .replace(/<p>&nbsp;<\/p>/g, '') // Remove empty lines with spaces
     .replace(/background-color:[^;]+;/g, '')
     .replace(/background:[^;]+;/g, '')
     .replace(/font-family:[^;]+;/g, '')
@@ -105,8 +146,8 @@ export default function FeedCard({ post }: FeedCardProps) {
             ignoredStyles={['background-color', 'background', 'font-family', 'color', 'margin', 'padding']}
           />
         ) : (
-          <Text className="text-gray-800 dark:text-gray-200 text-[14px] leading-relaxed">
-            {post.content}
+          <Text className="text-gray-800 dark:text-gray-200 text-[14px]" style={{ lineHeight: 20 }}>
+            {post.content.trim()}
           </Text>
         )}
       </View>
@@ -126,7 +167,7 @@ export default function FeedCard({ post }: FeedCardProps) {
             <Image 
               source={{ uri: post.mediaUrl }} 
               className="w-full aspect-video"
-              resizeMode="contain" // Back to contain to see full image
+              resizeMode="contain" 
             />
           )}
         </View>
@@ -146,18 +187,21 @@ export default function FeedCard({ post }: FeedCardProps) {
       ) : null}
 
       {/* Actions */}
-      <View className="flex-row items-center justify-between px-4 py-4 border-t border-gray-50 dark:border-white/5">
-        <View className="flex-row items-center space-x-6">
-          <TouchableOpacity className="flex-row items-center">
-            <Heart size={22} color={isDark ? '#aaa' : '#666'} />
-          </TouchableOpacity>
-          <TouchableOpacity className="flex-row items-center">
-            <MessageCircle size={22} color={isDark ? '#aaa' : '#666'} />
+      <View className="flex-row items-center justify-between px-4 py-3 border-t border-gray-50 dark:border-white/5">
+        <View className="flex-row items-center space-x-2">
+          <TouchableOpacity onPress={handleLike} className="flex-row items-center py-2 px-1">
+            <Heart 
+              size={22} 
+              color={isLiked ? '#ef4444' : (isDark ? '#aaa' : '#666')} 
+              fill={isLiked ? '#ef4444' : 'transparent'} 
+            />
+            {likesCount > 0 && (
+              <Text className={`ml-2 text-[13px] font-bold ${isLiked ? 'text-red-500' : 'text-gray-400'}`}>
+                {likesCount}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
-        <TouchableOpacity>
-          <Share2 size={22} color={isDark ? '#aaa' : '#666'} />
-        </TouchableOpacity>
       </View>
     </View>
   );
