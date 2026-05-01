@@ -50,6 +50,8 @@ async function initializeDashboard() {
     document.getElementById('snapshot-search').addEventListener('input', (e) => {
         renderSnapshotLog(e.target.value);
     });
+
+    document.getElementById('export-snapshots-btn').addEventListener('click', exportSnapshotsToCsv);
     
     updateAllKpis();
 
@@ -749,4 +751,69 @@ async function displayStoreSalesKpi(unitId = 'geral') {
             </div>
         `;
     }
+}
+
+function exportSnapshotsToCsv() {
+    if (snapshots.length === 0) {
+        alert('Nenhum snapshot disponível para exportar.');
+        return;
+    }
+
+    // Collect all unique unit IDs across all snapshots
+    const allUnitIds = new Set();
+    snapshots.forEach(snap => {
+        if (snap.units) {
+            Object.keys(snap.units).forEach(uid => allUnitIds.add(uid));
+        }
+    });
+    const sortedUnitIds = [...allUnitIds].sort();
+
+    // Build header row
+    const headers = ['Data', 'Total Contratos', 'Total Alunos Ativos', 'Vendas (Loja)', 'Receita (Loja)'];
+    sortedUnitIds.forEach(uid => {
+        const displayName = uid.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        headers.push(`${displayName} - Contratos`);
+        headers.push(`${displayName} - Alunos Ativos`);
+        headers.push(`${displayName} - Receita Loja`);
+    });
+
+    // Build data rows (oldest first for spreadsheet-friendly chronological order)
+    const sortedSnapshots = [...snapshots].reverse();
+    const rows = sortedSnapshots.map(snap => {
+        const date = snap.timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const storeRevenue = ((snap.storeTotalRevenue || 0) / 100).toFixed(2).replace('.', ',');
+
+        const row = [
+            date,
+            snap.totalContracts || 0,
+            snap.totalDailyActives || 0,
+            snap.storeTotalSales || 0,
+            storeRevenue
+        ];
+
+        sortedUnitIds.forEach(uid => {
+            const unitData = snap.units?.[uid];
+            row.push(unitData?.contracts || 0);
+            row.push(unitData?.dailyActives || 0);
+            row.push(((unitData?.storeRevenue || 0) / 100).toFixed(2).replace('.', ','));
+        });
+
+        return row;
+    });
+
+    // Encode CSV with BOM for proper Excel encoding (accents)
+    const csvContent = '\uFEFF' + [
+        headers.map(h => `"${h}"`).join(';'),
+        ...rows.map(r => r.map(v => `"${v}"`).join(';'))
+    ].join('\n');
+
+    // Trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    link.href = url;
+    link.download = `kihap_snapshots_${today}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
 }
