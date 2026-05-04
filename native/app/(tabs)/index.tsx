@@ -159,9 +159,9 @@ export default function FeedScreen() {
           <View className="flex-1 items-center justify-center">
             <Image 
               source={{ uri: 'https://kihap.com.br/imgs/favicon.png' }} 
-              className={`h-9 w-9 mt-1 ${isDark ? '' : 'grayscale'}`}
+              className="h-9 w-9 mt-1"
               resizeMode="contain"
-              style={!isDark ? { tintColor: '#014fa4' } : {}}
+              style={{ tintColor: isDark ? '#ffffff' : '#000000' }}
             />
           </View>
           <View className="w-10" />

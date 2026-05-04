@@ -143,7 +143,7 @@ export default function FeedCard({ post }: FeedCardProps) {
             contentWidth={width - 64}
             source={{ html: `<body>${cleanContent}</body>` }}
             tagsStyles={tagsStyles as any}
-            ignoredStyles={['background-color', 'background', 'font-family', 'color', 'margin', 'padding']}
+            ignoredStyles={['backgroundColor', 'background', 'fontFamily', 'color', 'margin', 'padding']}
           />
         ) : (
           <Text className="text-gray-800 dark:text-gray-200 text-[14px]" style={{ lineHeight: 20 }}>

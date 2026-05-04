@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../src/services/firebase';
 import RenderHtml from 'react-native-render-html';
-
+import { WebView } from 'react-native-webview';
 export default function PlayerScreen() {
   const { courseId } = useLocalSearchParams();
   const router = useRouter();
@@ -74,19 +74,20 @@ export default function PlayerScreen() {
     let embedUrl = url;
     if (url.includes('youtube.com/watch?v=')) {
       const videoId = url.split('v=')[1]?.split('&')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      embedUrl = `https://www.youtube.com/embed/${videoId}?playsinline=1`;
     } else if (url.includes('vimeo.com/')) {
       const videoId = url.split('/').pop();
-      embedUrl = `https://player.vimeo.com/video/${videoId}`;
+      embedUrl = `https://player.vimeo.com/video/${videoId}?playsinline=1`;
     }
 
     return (
       <View className="bg-black w-full aspect-video">
-        <iframe 
-          src={embedUrl} 
-          style={{ width: '100%', height: '100%', border: 'none' }}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
+        <WebView 
+          source={{ uri: embedUrl }} 
+          style={{ width: '100%', height: '100%', backgroundColor: 'black' }}
+          allowsFullscreenVideo={true}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
         />
       </View>
     );

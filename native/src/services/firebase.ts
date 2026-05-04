@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence } from "firebase/auth";
+import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
@@ -21,7 +22,7 @@ console.log("Firebase: Initializing Auth...");
 let auth;
 try {
   auth = initializeAuth(app, {
-    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    persistence: getReactNativePersistence(AsyncStorage),
   });
 } catch (e) {
   console.log("Firebase: Auth already initialized, using getAuth.");

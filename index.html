@@ -17,7 +17,8 @@
     
     <script>
         // Redireciona para o login se estiver rodando no App Mobile (detecção via UserAgent customizado)
-        if (navigator.userAgent.includes('KihapApp') || window.location.search.includes('isApp=true')) {
+        // Ignora o redirecionamento se estiver em localhost para facilitar o desenvolvimento
+        if ((navigator.userAgent.includes('KihapApp') || window.location.search.includes('isApp=true')) && window.location.hostname !== 'localhost') {
             window.location.href = 'intranet/login.html';
         }
     </script>
@@ -543,8 +544,8 @@
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Baixar na App Store" class="h-12">
                     </a>
                     <!-- Google Play -->
-                    <a href="#" class="transition-transform hover:scale-105 opacity-80 cursor-not-allowed" title="Em breve na Play Store">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Em breve na Google Play" class="h-12">
+                    <a href="https://play.google.com/store/apps/details?id=com.kihap.app" target="_blank" class="transition-transform hover:scale-105">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Baixar na Google Play" class="h-12">
                     </a>
                 </div>
 
