@@ -38,6 +38,27 @@ document.addEventListener("DOMContentLoaded", function () {
     loadComponent('testimonials-container', 'testimonials.html');
     loadComponent('video-container', 'video.html');
     loadComponent('cta-container', 'form-cta.html');
+    
+    // Injeta container do banner de app e carrega se for mobile
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    const isApp = navigator.userAgent.includes('KihapApp') || window.location.search.includes('isApp=true');
+    const bannerClosed = localStorage.getItem('appBannerClosed');
+
+    if (isMobile && !isApp && !bannerClosed) {
+        const appBannerContainer = document.createElement('div');
+        appBannerContainer.id = 'app-banner-container';
+        document.body.appendChild(appBannerContainer);
+        loadComponent('app-banner-container', 'app-banner.html');
+        
+        // Polling para garantir que o componente carregou antes de configurar
+        const checkBannerInterval = setInterval(() => {
+            const banner = document.getElementById('app-promo-banner');
+            if (banner) {
+                clearInterval(checkBannerInterval);
+                setupAppBanner();
+            }
+        }, 100);
+    }
 
     // A lógica do menu será adicionada após o carregamento do header
     document.addEventListener('headerLoaded', setupMobileMenu);
@@ -145,6 +166,32 @@ document.addEventListener("DOMContentLoaded", function () {
             if (e.target === modal) {
                 closeModal();
             }
+        });
+    }
+
+    function setupAppBanner() {
+        const banner = document.getElementById('app-promo-banner');
+        const closeBtn = document.getElementById('close-app-banner');
+        const linkBtn = document.getElementById('app-banner-link');
+        
+        if (!banner || !closeBtn || !linkBtn) return;
+
+        // Detectar OS para o link correto
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const appStoreUrl = 'https://apps.apple.com/br/app/kihap/id6761770657';
+        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.kihap.app';
+        
+        linkBtn.href = isIOS ? appStoreUrl : playStoreUrl;
+
+        // Mostrar banner com delay
+        setTimeout(() => {
+            banner.classList.remove('hidden');
+        }, 2000);
+
+        closeBtn.addEventListener('click', () => {
+            banner.classList.add('hidden');
+            // Salvar no localStorage para não mostrar novamente nesta sessão/dispositivo
+            localStorage.setItem('appBannerClosed', 'true');
         });
     }
 });
