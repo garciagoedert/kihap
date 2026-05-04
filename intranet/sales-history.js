@@ -190,6 +190,7 @@ const handleExport = (e) => {
             userUnit: { header: 'Unidade', value: sale.userUnit || 'N/A' },
             userPrograma: { header: 'Programa', value: sale.userPrograma || 'N/A' },
             userGraduacao: { header: 'Graduação', value: sale.userGraduacao || 'N/A' },
+            userProfessor: { header: 'Professor', value: sale.userProfessor || 'N/A' },
             amountTotal: { header: 'Valor Unitário', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
             paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
             fulfillmentStatus: { header: 'Status de Entrega', value: getFulfillmentStatusLabel(sale.fulfillmentStatus) }
@@ -267,7 +268,11 @@ const openSaleDetailsModal = async (saleIds) => {
                         <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white break-all">${sale.userEmail || 'N/A'}</span></p>
                         <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white">${sale.userPhone || 'N/A'}</span></p>
                         <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white">${sale.userCpf || 'N/A'}</span></p>
+                        ${sale.userAge ? `<p><span class="text-gray-500 dark:text-gray-400">Idade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userAge}</span></p>` : ''}
                         <p><span class="text-gray-500 dark:text-gray-400">Unidade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
+                        <p><span class="text-gray-500 dark:text-gray-400">Programa:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPrograma || 'N/A'}</span></p>
+                        <p><span class="text-gray-500 dark:text-gray-400">Graduação:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userGraduacao || 'N/A'}</span></p>
+                        ${sale.userProfessor ? `<p><span class="text-gray-500 dark:text-gray-400">Professor:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userProfessor}</span></p>` : ''}
                     </div>
                 </div>
             </div>
@@ -551,7 +556,7 @@ function renderSalesLog(groupsToDisplay) {
     const paginatedGroups = groupsToDisplay.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
     if (paginatedGroups.length === 0) {
-        logBody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-gray-500">Nenhuma venda encontrada.</td></tr>`;
+        logBody.innerHTML = `<tr><td colspan="13" class="text-center p-4 text-gray-500">Nenhuma venda encontrada.</td></tr>`;
         renderPagination(0);
         return;
     }
@@ -584,6 +589,7 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4 text-gray-900 dark:text-white font-medium">${productName}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userPrograma || 'N/A'}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userGraduacao || 'N/A'}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs font-bold">${mainSale.userProfessor || 'N/A'}</td>
                 <td class="p-4 text-gray-900 dark:text-white font-bold">${amount}</td>
                 <td class="p-4">${status}</td>
                 <td class="p-4">${emailSentStatusHtml}</td>
