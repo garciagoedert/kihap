@@ -196,6 +196,19 @@ exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
         functions.logger.info(`EVO API response for getMemberDetails (ID: ${memberId}):`, memberData);
         return res.status(200).send({ data: memberData });
     } catch (error) {
+        functions.logger.warn(`EVO API failed for member ${memberId}, checking Firestore cache...`, error.message);
+        
+        try {
+            const memberDoc = await db.collection('evo_students').doc(String(memberIdInt)).get();
+            if (memberDoc.exists) {
+                const memberData = memberDoc.data();
+                functions.logger.info(`Found member ${memberId} in Firestore cache.`);
+                return res.status(200).send({ data: memberData });
+            }
+        } catch (fsError) {
+            functions.logger.error(`Error fetching from Firestore for member ${memberId}:`, fsError.message);
+        }
+
         functions.logger.error(`Detailed error fetching member ${memberId}:`, {
             status: error.response?.status,
             data: error.response?.data,
