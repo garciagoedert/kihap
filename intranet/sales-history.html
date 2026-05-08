@@ -46,7 +46,7 @@
                 <div class="flex items-center gap-4">
                     <div>
                         <h1 class="text-2xl font-bold">Histórico de Vendas</h1>
-                        <p class="text-gray-400 text-sm">Todos os registros da loja</p>
+                        <p id="sales-stats" class="text-gray-400 text-sm">Carregando registros...</p>
                     </div>
                     <button id="resend-missing-tickets-btn"
                         class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-500 transition-all duration-200 shadow-lg shadow-purple-600/20" title="Reenviar Ingressos não recebidos">
@@ -96,6 +96,15 @@
                                 <option value="shipped">Enviado</option>
                                 <option value="delivered">Entregue</option>
                                 <option value="returned">Devolvido</option>
+                                <option value="canceled">Cancelado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-payment-status" class="text-sm font-medium text-gray-500 dark:text-gray-400">Status Pagamento:</label>
+                            <select id="filter-payment-status" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="">Todos os Status</option>
+                                <option value="paid">Pago</option>
+                                <option value="pending">Pendente</option>
                                 <option value="canceled">Cancelado</option>
                             </select>
                         </div>

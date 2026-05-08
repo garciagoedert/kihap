@@ -26,6 +26,7 @@ async function initializeHistory() {
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
     const fulfillmentFilter = document.getElementById('filter-fulfillment');
+    const paymentStatusFilter = document.getElementById('filter-payment-status');
     const resendMissingTicketsBtn = document.getElementById('resend-missing-tickets-btn');
     const exportBtn = document.getElementById('export-btn');
     const exportModal = document.getElementById('export-modal');
@@ -34,7 +35,7 @@ async function initializeHistory() {
     const exportForm = document.getElementById('export-form');
 
     // Filter Listeners
-    [searchInput, unitFilter, productFilter, dateFilter, fulfillmentFilter].forEach(el => {
+    [searchInput, unitFilter, productFilter, dateFilter, fulfillmentFilter, paymentStatusFilter].forEach(el => {
         if (!el) return;
         el.addEventListener('change', () => {
             currentPage = 1;
@@ -521,12 +522,14 @@ function applyFilters() {
     const productFilter = document.getElementById('filter-product');
     const dateFilter = document.getElementById('filter-date');
     const fulfillmentFilter = document.getElementById('filter-fulfillment');
+    const paymentStatusFilter = document.getElementById('filter-payment-status');
 
     const searchTerm = searchInput.value.toLowerCase();
     const selectedUnit = unitFilter.value;
     const selectedProduct = productFilter.value;
     const selectedDate = dateFilter.value;
     const selectedFulfillment = fulfillmentFilter.value;
+    const selectedPaymentStatus = paymentStatusFilter.value;
 
     let filteredGroups = allSales.filter(group => {
         return group.some(sale => {
@@ -535,6 +538,7 @@ function applyFilters() {
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const productMatch = !selectedProduct || sale.productId === selectedProduct;
             const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
+            const paymentStatusMatch = !selectedPaymentStatus || sale.paymentStatus === selectedPaymentStatus;
 
             let dateMatch = true;
             if (selectedDate && sale.created) {
@@ -542,9 +546,15 @@ function applyFilters() {
                 dateMatch = saleDate === selectedDate;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && fulfillmentMatch;
+            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && fulfillmentMatch && paymentStatusMatch;
         });
     });
+
+    const statsEl = document.getElementById('sales-stats');
+    if (statsEl) {
+        const totalAmount = filteredGroups.reduce((acc, group) => acc + group.reduce((sum, s) => sum + s.amountTotal, 0), 0);
+        statsEl.textContent = `${filteredGroups.length} ${filteredGroups.length === 1 ? 'venda encontrada' : 'vendas encontradas'} • Total: ${(totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    }
 
     renderSalesLog(filteredGroups);
 }

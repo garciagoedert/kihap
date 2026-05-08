@@ -13,7 +13,12 @@ onAuthStateChanged(auth, async (user) => {
         if (userDoc.exists()) {
             const userData = userDoc.data();
             updateLocalStorage(user, userData);
-            if (userData.evoMemberId) {
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else if (userData.evoMemberId) {
                 window.location.href = '../members/feed.html';
             } else {
                 window.location.href = 'index.html';
@@ -65,7 +70,11 @@ async function handleLogin(e) {
                 });
             } catch (logError) { console.error(logError); }
 
-            if (userData.evoMemberId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else if (userData.evoMemberId) {
                 window.location.href = '../members/feed.html';
             } else {
                 window.location.href = 'index.html';
@@ -76,7 +85,14 @@ async function handleLogin(e) {
             localStorage.setItem('currentUser', JSON.stringify({ uid: user.uid, email: user.email, isAdmin: true }));
             localStorage.setItem('userName', user.email.split('@')[0]);
             localStorage.setItem('isAdmin', 'true');
-            window.location.href = 'index.html';
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                window.location.href = 'index.html';
+            }
         }
     } catch (error) {
         console.error("Erro de login:", error);

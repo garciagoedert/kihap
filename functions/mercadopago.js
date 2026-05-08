@@ -262,6 +262,30 @@ const searchMercadoPagoPayments = async (externalReference, customToken = null) 
     }
 };
 
+const searchMercadoPagoPaymentsByPreference = async (preferenceId, customToken = null) => {
+    const client = getMPClient(customToken);
+    try {
+        // O endpoint /v1/payments/search NÃO aceita preference_id.
+        // A forma correta de buscar pagamentos de uma preferência é via Merchant Orders.
+        const response = await client.get(`/merchant_orders/search`, {
+            params: {
+                preference_id: preferenceId
+            }
+        });
+        
+        if (response.data.results && response.data.results.length > 0) {
+            // Retornamos os pagamentos vinculados à Merchant Order
+            // Nota: Uma Merchant Order pode ter múltiplos pagamentos (ex: várias tentativas)
+            return response.data.results[0].payments || [];
+        }
+        
+        return [];
+    } catch (error) {
+        console.error(`[searchMercadoPagoPaymentsByPreference] Erro ao buscar via Merchant Order para ${preferenceId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
+
 const getMercadoPagoPreference = async (preferenceId, customToken = null) => {
     const client = getMPClient(customToken);
     try {
@@ -332,5 +356,6 @@ module.exports = {
     exchangeOAuthCode,
     cancelPreapproval,
     getPreapprovalStatus,
-    createTuitionPreapproval
+    createTuitionPreapproval,
+    searchMercadoPagoPaymentsByPreference
 };
