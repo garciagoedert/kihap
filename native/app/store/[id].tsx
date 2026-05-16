@@ -233,15 +233,27 @@ export default function ProductDetailScreen() {
                   <View>
                     <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Professor Responsável</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                      {instructors.map((inst) => (
-                        <TouchableOpacity 
-                          key={inst.id}
-                          onPress={() => updateParticipant(index, 'userProfessor', inst.name)}
-                          className={`mr-2 px-4 py-2 rounded-xl border ${participant.userProfessor === inst.name ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
-                        >
-                          <Text className={`text-xs font-bold ${participant.userProfessor === inst.name ? 'text-white' : 'text-gray-500'}`}>{inst.name}</Text>
-                        </TouchableOpacity>
-                      ))}
+                      {product.availableProfessors && product.availableProfessors.length > 0 ? (
+                        product.availableProfessors.map((profName: string, i: number) => (
+                          <TouchableOpacity 
+                            key={`prof-${i}`}
+                            onPress={() => updateParticipant(index, 'userProfessor', profName)}
+                            className={`mr-2 px-4 py-2 rounded-xl border ${participant.userProfessor === profName ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
+                          >
+                            <Text className={`text-xs font-bold ${participant.userProfessor === profName ? 'text-white' : 'text-gray-500'}`}>{profName}</Text>
+                          </TouchableOpacity>
+                        ))
+                      ) : (
+                        instructors.map((inst) => (
+                          <TouchableOpacity 
+                            key={inst.id}
+                            onPress={() => updateParticipant(index, 'userProfessor', inst.name)}
+                            className={`mr-2 px-4 py-2 rounded-xl border ${participant.userProfessor === inst.name ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
+                          >
+                            <Text className={`text-xs font-bold ${participant.userProfessor === inst.name ? 'text-white' : 'text-gray-500'}`}>{inst.name}</Text>
+                          </TouchableOpacity>
+                        ))
+                      )}
                     </ScrollView>
                   </View>
                 )}

@@ -285,12 +285,12 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
 function extractPaymentDetails(payment) {
     if (!payment) return null;
     return {
-        method: payment.payment_type_id,
-        paymentMethodId: payment.payment_method_id,
-        installments: payment.installments,
-        cardLast4: payment.card ? payment.card.last_four_digits : null,
-        cardHolder: payment.card && payment.card.cardholder ? payment.card.cardholder.name : null,
-        dateApproved: payment.date_approved
+        method: payment.payment_type_id || null,
+        paymentMethodId: payment.payment_method_id || null,
+        installments: payment.installments || null,
+        cardLast4: (payment.card && payment.card.last_four_digits) ? payment.card.last_four_digits : null,
+        cardHolder: (payment.card && payment.card.cardholder) ? payment.card.cardholder.name : null,
+        dateApproved: payment.date_approved || null
     };
 }
 
@@ -322,7 +322,7 @@ async function assignEventParticipantData(saleId, saleData, productData) {
     let eventTime = '';
 
     // Prioridade para os campos específicos de checkout que implementamos
-    const beltToMatch = (saleData.userGraduacao || saleData.chosenVariant || saleData.variationName || (saleData.priceData ? saleData.priceData.variantName : '')).trim();
+    const beltToMatch = (saleData.userGraduacao || saleData.chosenVariant || saleData.variationName || (saleData.priceData ? saleData.priceData.variantName : '') || '').trim();
     const programToMatch = (saleData.userPrograma || '').trim();
     const userAge = parseInt(saleData.userAge || saleData.userIdade || 0);
     
@@ -1823,7 +1823,7 @@ const syncMercadoPagoSales = async (limitHours = 24) => {
     const pendingSalesSnapshot = await db.collection('inscricoesFaixaPreta')
         .where('paymentStatus', '==', 'pending')
         .where('created', '>=', startTime)
-        .limit(100) // Limite de 100 por vez para evitar timeout
+        .limit(25) // Reduzido para 25 para evitar timeout em períodos longos
         .get();
 
     if (pendingSalesSnapshot.empty) {
@@ -1834,23 +1834,30 @@ const syncMercadoPagoSales = async (limitHours = 24) => {
     console.log(`[syncMercadoPagoSales] Encontradas ${pendingSalesSnapshot.size} vendas pendentes.`);
     
     let updatedCount = 0;
-    
     const processedIds = new Set();
-    
+    const tokenCache = {};
+
     for (const doc of pendingSalesSnapshot.docs) {
         const saleId = doc.id;
-        if (processedIds.has(saleId)) continue;
-        
         const saleData = doc.data();
         
+        if (processedIds.has(saleId)) continue;
+        console.log(`[syncMercadoPagoSales] Processando venda: ${saleId}...`);
+        
         try {
-            // Resolve Token for this sale
             let customToken = null;
-            if (saleData.productId) {
-                const productDoc = await db.collection('products').doc(saleData.productId).get();
-                if (productDoc.exists) {
-                    const productData = productDoc.data();
-                    customToken = await getAccessTokenForAccountId(productData.mpAccountId);
+            if (saleData.productId && typeof saleData.productId === 'string' && saleData.productId.trim() !== '') {
+                // Resolve Token com cache
+                const accountId = saleData.mpAccountId || 'default';
+                if (tokenCache[accountId]) {
+                    customToken = tokenCache[accountId];
+                } else {
+                    const productDoc = await db.collection('products').doc(saleData.productId).get();
+                    if (productDoc.exists) {
+                        const productData = productDoc.data();
+                        customToken = await getAccessTokenForAccountId(productData.mpAccountId);
+                        tokenCache[accountId] = customToken;
+                    }
                 }
             }
 
@@ -1903,7 +1910,7 @@ const syncMercadoPagoSales = async (limitHours = 24) => {
 };
 
 // Cloud Function acionável manualmente para sincronizar vendas
-exports.syncMercadoPagoSalesStatus = functions.https.onCall(async (data, context) => {
+exports.syncMercadoPagoSalesStatus = functions.runWith({ timeoutSeconds: 300, memory: '512MB' }).https.onCall(async (data, context) => {
     try {
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
@@ -1931,14 +1938,34 @@ exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context)
     let saleIdToUse = saleId;
 
     if (!saleSnap.exists) {
-        // Tenta buscar por preferenceId no banco (o usuário pode ter colado o ID da preferência ou do MP)
-        console.log(`[syncSingleMercadoPagoSale] Venda ${saleId} não encontrada como doc ID. Tentando buscar por mercadoPagoPreferenceId...`);
-        const prefQuery = await db.collection('inscricoesFaixaPreta').where('mercadoPagoPreferenceId', '==', saleId).limit(1).get();
-        if (!prefQuery.empty) {
-            saleSnap = prefQuery.docs[0];
-            saleIdToUse = saleSnap.id;
-        } else {
-            throw new functions.https.HttpsError('not-found', 'Venda não encontrada no banco de dados Kihap pelo ID informado.');
+        // 1. Tenta buscar por Payment ID (se for apenas números)
+        if (/^\d+$/.test(saleId)) {
+            console.log(`[syncSingleMercadoPagoSale] ${saleId} parece um ID de pagamento. Buscando no Mercado Pago...`);
+            try {
+                // Tentamos buscar o pagamento diretamente para pegar o external_reference
+                const payment = await getMercadoPagoPayment(saleId); 
+                if (payment && payment.external_reference) {
+                    console.log(`[syncSingleMercadoPagoSale] Pagamento encontrado! Referência: ${payment.external_reference}`);
+                    // O external_reference pode ser um ID único ou uma lista (carrinho)
+                    const firstId = payment.external_reference.split(',')[0];
+                    saleSnap = await db.collection('inscricoesFaixaPreta').doc(firstId).get();
+                    saleIdToUse = firstId;
+                }
+            } catch (e) {
+                console.warn(`[syncSingleMercadoPagoSale] Erro ao buscar por ID de pagamento:`, e.message);
+            }
+        }
+
+        // 2. Se ainda não encontrou, tenta buscar por preferenceId no banco
+        if (!saleSnap || !saleSnap.exists) {
+            console.log(`[syncSingleMercadoPagoSale] Venda ${saleId} não encontrada como doc ID. Tentando buscar por mercadoPagoPreferenceId...`);
+            const prefQuery = await db.collection('inscricoesFaixaPreta').where('mercadoPagoPreferenceId', '==', saleId).limit(1).get();
+            if (!prefQuery.empty) {
+                saleSnap = prefQuery.docs[0];
+                saleIdToUse = saleSnap.id;
+            } else {
+                throw new functions.https.HttpsError('not-found', 'Venda não encontrada no banco de dados Kihap pelo ID informado (ID Doc, ID Pagamento ou ID Preferência).');
+            }
         }
     }
 
@@ -1999,11 +2026,13 @@ exports.syncSingleMercadoPagoSale = functions.https.onCall(async (data, context)
                 const approvedPayment = await getMercadoPagoPayment(approvedPaymentPartial.id, customToken);
                 
                 if (approvedPayment) {
-                    const externalReference = approvedPayment.external_reference || saleIdToUse;
-                    const relatedDocIds = externalReference.split(',');
+                    // Pega os IDs da referência externa, mas garante que o ID que estamos buscando também seja processado
+                    const externalReference = approvedPayment.external_reference || '';
+                    const relatedDocIds = new Set(externalReference.split(',').filter(id => id.trim() !== ''));
+                    relatedDocIds.add(saleIdToUse);
+                    
                     let totalUpdated = 0;
-
-                    console.log(`[syncSingleMercadoPagoSale] Pagamento aprovado encontrado! Sincronizando ${relatedDocIds.length} item(ns).`);
+                    console.log(`[syncSingleMercadoPagoSale] Pagamento aprovado encontrado! Sincronizando ${relatedDocIds.size} item(ns).`);
 
                     for (const rId of relatedDocIds) {
                         const rDocRef = db.collection('inscricoesFaixaPreta').doc(rId);
