@@ -403,7 +403,7 @@ function renderCards() {
         const formattedDate = !isNaN(parsedDate) ? parsedDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
         const isOverdue = parsedDate < new Date() && d.status !== 'concluido';
 
-        const finalidadesHtml = Array.isArray(d.finalidade) ? d.finalidade.map(f => `<span class="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded">${f}</span>`).join(' ') : '';
+        const finalidadesHtml = Array.isArray(d.finalidade) ? d.finalidade.map(f => `<span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded">${f}</span>`).join(' ') : '';
         const hasAttachment = d.anexoUrl || d.linkRefs?.length > 0;
         const attachBadge = hasAttachment ? `<span class="text-gray-500 text-[10px]"><i class="fas fa-paperclip"></i></span>` : '';
         
@@ -418,22 +418,22 @@ function renderCards() {
             d.assignees.slice(0, 3).forEach(a => {
                 const initial = (a.name || '?')[0].toUpperCase();
                 if (a.photoUrl) {
-                    assigneeHtml += `<img src="${a.photoUrl}" title="${a.name}" class="w-6 h-6 rounded-full border-2 border-gray-800 object-cover relative hover:z-10 bg-gray-700 shadow-sm">`;
+                    assigneeHtml += `<img src="${a.photoUrl}" title="${a.name}" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 object-cover relative hover:z-10 bg-gray-200 dark:bg-gray-700 shadow-sm">`;
                 } else {
-                    assigneeHtml += `<div title="${a.name}" class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white border-2 border-gray-800 relative hover:z-10 shadow-sm">${initial}</div>`;
+                    assigneeHtml += `<div title="${a.name}" class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white dark:border-gray-800 relative hover:z-10 shadow-sm">${initial}</div>`;
                 }
             });
             if (d.assignees.length > 3) {
-                assigneeHtml += `<div class="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[9px] font-bold text-white border-2 border-gray-800 relative z-10 shadow-sm">+${d.assignees.length - 3}</div>`;
+                assigneeHtml += `<div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[9px] font-bold text-gray-800 dark:text-white border-2 border-white dark:border-gray-800 relative z-10 shadow-sm">+${d.assignees.length - 3}</div>`;
             }
             assigneeHtml += `</div>`;
         } else if (d.assigneeId) {
             const user = allUsers.find(u => u.id === d.assigneeId);
             const initial = (user?.displayName || user?.name || '?')[0].toUpperCase();
             if (user?.photoUrl) {
-                assigneeHtml = `<img src="${user.photoUrl}" title="${user.displayName || user.name}" class="w-6 h-6 rounded-full border border-gray-800 object-cover shadow-sm mr-2">`;
+                assigneeHtml = `<img src="${user.photoUrl}" title="${user.displayName || user.name}" class="w-6 h-6 rounded-full border border-white dark:border-gray-800 object-cover shadow-sm mr-2">`;
             } else {
-                assigneeHtml = `<div title="${user?.displayName || user?.name}" class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white border border-gray-800 shadow-sm mr-2">${initial}</div>`;
+                assigneeHtml = `<div title="${user?.displayName || user?.name}" class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white border border-white dark:border-gray-800 shadow-sm mr-2">${initial}</div>`;
             }
         }
 
@@ -645,7 +645,7 @@ window.openDemandaDetalhes = (id) => {
                 const photo = a.photoUrl 
                     ? `<img src="${a.photoUrl}" class="w-6 h-6 rounded-full object-cover">`
                     : `<div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-[10px] font-bold text-white">${initial}</div>`;
-                return `<div class="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-1.5 pr-3 w-fit"><span class="shrink-0">${photo}</span><span class="text-sm font-medium text-gray-200">${a.name}</span></div>`;
+                return `<div class="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 pr-3 w-fit shadow-sm"><span class="shrink-0">${photo}</span><span class="text-sm font-medium text-gray-900 dark:text-gray-200">${a.name}</span></div>`;
             }).join('');
             assigneesContainer.parentElement.classList.remove('hidden');
         } else {
@@ -655,7 +655,7 @@ window.openDemandaDetalhes = (id) => {
 
     const finalidadesContainer = document.getElementById('detalhe_finalidades');
     if (Array.isArray(demand.finalidade) && demand.finalidade.length > 0) {
-        finalidadesContainer.innerHTML = demand.finalidade.map(f => `<span class="bg-gray-700 text-gray-300 text-[10px] px-2 py-1 rounded tracking-wide uppercase">${f}</span>`).join('');
+        finalidadesContainer.innerHTML = demand.finalidade.map(f => `<span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] px-2 py-1 rounded tracking-wide uppercase">${f}</span>`).join('');
     } else {
         finalidadesContainer.innerHTML = '<span class="text-gray-500 italic text-sm">Nenhuma finalidade especificada.</span>';
     }
@@ -780,7 +780,7 @@ function loadComments(demandId) {
                 const nameLower = (c.anexoNome || '').toLowerCase();
                 const isImage = nameLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) || !c.anexoNome;
                 if (isImage) {
-                    anexoHtml = `<div class="mt-2"><img src="${c.anexoUrl}" class="max-w-full rounded-lg border border-gray-700 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${c.anexoUrl}', '_blank')"></div>`;
+                    anexoHtml = `<div class="mt-2"><img src="${c.anexoUrl}" class="max-w-full rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${c.anexoUrl}', '_blank')"></div>`;
                 } else {
                     let iconClass = 'fa-file text-gray-400';
                     if (nameLower.endsWith('.pdf')) iconClass = 'fa-file-pdf text-red-400';
@@ -791,7 +791,7 @@ function loadComments(demandId) {
                     
                     anexoHtml = `
                         <div class="mt-2">
-                            <a href="${c.anexoUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 bg-gray-900 border border-gray-700 p-2 rounded hover:bg-gray-800 transition-colors w-fit">
+                            <a href="${c.anexoUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-fit">
                                 <i class="fas ${iconClass}"></i>
                                 <span class="text-xs text-blue-400 underline truncate max-w-[200px] block">${c.anexoNome}</span>
                             </a>
@@ -806,10 +806,10 @@ function loadComments(demandId) {
                 <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5 shadow-sm">${initial}</div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-2">
-                        <span class="text-sm font-semibold text-gray-200">${c.authorName || 'Usuário'}</span>
+                        <span class="text-sm font-semibold text-gray-900 dark:text-gray-200">${c.authorName || 'Usuário'}</span>
                         <span class="text-[10px] text-gray-500 shrink-0">${time}</span>
                     </div>
-                    <div class="text-sm text-gray-300 mt-0.5 bg-gray-800/80 p-2.5 rounded-r-lg rounded-bl-lg break-words whitespace-pre-wrap shadow-sm border border-gray-700/50">
+                    <div class="text-sm text-gray-800 dark:text-gray-300 mt-0.5 bg-white dark:bg-gray-800/80 p-2.5 rounded-r-lg rounded-bl-lg break-words whitespace-pre-wrap shadow-sm border border-gray-200 dark:border-gray-700/50">
                         ${formattedText}
                         ${anexoHtml}
                     </div>
