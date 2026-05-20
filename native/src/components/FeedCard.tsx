@@ -4,6 +4,7 @@ import { Video, ResizeMode } from 'expo-av';
 import { Heart, ExternalLink } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import RenderHtml from 'react-native-render-html';
+import { WebView } from 'react-native-webview';
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +27,8 @@ interface FeedCardProps {
     likes?: string[];
   };
 }
+
+
 
 export default function FeedCard({ post }: FeedCardProps) {
   const { user } = useAuth();
@@ -108,7 +111,22 @@ export default function FeedCard({ post }: FeedCardProps) {
     }
   };
 
-  const cleanContent = (post.content || '')
+  let finalContent = (post.content || '');
+  
+  // Extrair o iframe manualmente
+  const iframeRegex = /<iframe.*?src=['"](.*?)['"].*?><\/iframe>/i;
+  const match = finalContent.match(iframeRegex);
+  let extractedUrl = null;
+  
+  if (match && match[1]) {
+    extractedUrl = match[1];
+    if (extractedUrl.startsWith('//')) {
+      extractedUrl = 'https:' + extractedUrl;
+    }
+    finalContent = finalContent.replace(match[0], ''); // remove iframe do HTML
+  }
+
+  const cleanContent = finalContent
     .replace(/<p><br><\/p>/g, '') // Remove empty lines with breaks
     .replace(/<p>&nbsp;<\/p>/g, '') // Remove empty lines with spaces
     .replace(/background-color:[^;]+;/g, '')
@@ -150,12 +168,53 @@ export default function FeedCard({ post }: FeedCardProps) {
             {post.content.trim()}
           </Text>
         )}
+
+        {/* WebView Manual para Iframes Extraídos */}
+        {extractedUrl && (
+          <View className="mt-4 rounded-xl overflow-hidden bg-black" style={{ width: '100%', height: Math.floor((width - 64) * 9 / 16) }}>
+            <WebView
+              source={{ uri: extractedUrl }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              allowsFullscreenVideo={true}
+              allowsInlineMediaPlayback={true}
+              style={{ flex: 1, backgroundColor: 'transparent' }}
+            />
+          </View>
+        )}
       </View>
 
-      {/* Media */}
+        {/* Media */}
       {post.mediaUrl ? (
         <View className="mt-2 overflow-hidden bg-white dark:bg-[#1a1a1a]">
-          {post.mediaType?.includes('video') ? (
+          {post.mediaType === 'youtube' ? (
+            <View style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: '#000' }}>
+              <WebView
+                source={{ 
+                  uri: `https://www.youtube.com/embed/${
+                    post.mediaUrl.includes('v=') 
+                      ? post.mediaUrl.split('v=')[1].split('&')[0] 
+                      : post.mediaUrl.split('/').pop()
+                  }?rel=0`
+                }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                allowsFullscreenVideo={true}
+                allowsInlineMediaPlayback={true}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
+              />
+            </View>
+          ) : post.mediaType === 'spotify' ? (
+            <View style={{ width: '100%', height: 80, backgroundColor: '#000' }}>
+              <WebView
+                source={{ 
+                  uri: `https://open.spotify.com/embed/track/${post.mediaUrl.split('/').pop()?.split('?')[0]}`
+                }}
+                javaScriptEnabled={true}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
+              />
+            </View>
+          ) : post.mediaType?.includes('video') ? (
             <Video
               source={{ uri: post.mediaUrl }}
               className="w-full aspect-video"

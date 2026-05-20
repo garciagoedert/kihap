@@ -239,7 +239,7 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
                         </div>
                         <div class="content">
                             <h1>Compra Confirmada!</h1>
-                            <p>Olá, <strong>${saleData.userName}</strong>,</p>
+                            <p>Olá, <strong>${saleData.payerName || saleData.userName}</strong>,</p>
                             <p>Obrigado por comprar na <strong>Kihap Store</strong>. Seu pedido foi recebido e já estamos preparando tudo!</p>
                             
                             <div class="receipt-box">
@@ -623,8 +623,9 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             
             for (const itemFormData of cartItem.formDataList) {
                 const saleData = {
-                    ...itemFormData,   // Dados específicos deste item (Tamanho, Idade, etc)
-                    ...globalUserData, // Dados globais de cadastro (Nome, Email, CPF, Unidade, etc) - SOBRESCREVE itemFormData se houver conflito
+                    ...globalUserData, // Dados globais de cadastro (Nome, Email, CPF, Unidade, etc)
+                    ...itemFormData,   // Dados específicos deste item (Tamanho, Idade, etc) - Mantém o userName do participante
+                    payerName: globalUserData.userName || null, // Guarda explicitamente o nome do pagador
                     productId: cartItem.productId,
                     productName: cartItem.productName,
                     amountTotal: itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length),
@@ -643,6 +644,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     for (let i = 0; i < item.quantity; i++) {
                         const saleData = {
                             ...globalUserData,
+                            payerName: globalUserData.userName || null,
                             userPrograma: globalUserData.userPrograma || null,
                             userGraduacao: globalUserData.userGraduacao || null,
                             productId: item.productId,
@@ -705,8 +707,9 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
 
             for (const itemFormData of cartItem.formDataList) {
                 let saleData = {
-                    ...itemFormData,
                     ...globalUserData,
+                    ...itemFormData,
+                    payerName: globalUserData.userName || null,
                     productId: cartItem.productId,
                     productName: cartItem.productName,
                     amountTotal: 0,
@@ -736,6 +739,7 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                     for (let i = 0; i < item.quantity; i++) {
                         const saleData = {
                             ...globalUserData,
+                            payerName: globalUserData.userName || null,
                             userPrograma: globalUserData.userPrograma || null,
                             userGraduacao: globalUserData.userGraduacao || null,
                             productId: item.productId,

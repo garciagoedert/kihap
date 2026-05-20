@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kihap",
     "slug": "kihap",
-    "version": "2.6.0",
+    "version": "2.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "native",
@@ -11,11 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kihap.app",
-      "buildNumber": "16"
+      "buildNumber": "17"
     },
     "android": {
       "package": "com.kihap.app",
-      "versionCode": 16,
+      "versionCode": 17,
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-fixed.png"

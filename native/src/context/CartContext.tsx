@@ -11,11 +11,23 @@ interface CartItem {
   totalAmount: number;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+}
+
 interface CartContextType {
   items: CartItem[];
   addItem: (product: any, quantity: number) => void;
   removeItem: (cartId: string) => void;
   clearCart: () => void;
+  coupon: Coupon | null;
+  applyCoupon: (coupon: Coupon) => void;
+  removeCoupon: () => void;
+  subtotal: number;
+  discount: number;
   total: number;
   itemCount: number;
 }
@@ -24,6 +36,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     loadCart();
@@ -48,6 +61,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const applyCoupon = (newCoupon: Coupon) => {
+    setCoupon(newCoupon);
+  };
+
+  const removeCoupon = () => {
+    setCoupon(null);
+  };
+
   const addItem = (item: any, quantity: number) => {
     const cartId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     const newItem: CartItem = {
@@ -69,14 +90,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    setCoupon(null);
     saveCart([]);
   };
 
-  const total = items.reduce((sum, item) => sum + item.totalAmount, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.totalAmount, 0);
+  
+  let discount = 0;
+  if (coupon) {
+    if (coupon.type === 'percentage') {
+      discount = subtotal * (coupon.value / 100);
+    } else if (coupon.type === 'fixed') {
+      discount = coupon.value * 100; // Convert to cents
+    }
+  }
+
+  const total = Math.max(0, subtotal - discount);
   const itemCount = items.length;
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, clearCart, total, itemCount }}>
+    <CartContext.Provider value={{ 
+      items, addItem, removeItem, clearCart, 
+      coupon, applyCoupon, removeCoupon, 
+      subtotal, discount, total, itemCount 
+    }}>
       {children}
     </CartContext.Provider>
   );

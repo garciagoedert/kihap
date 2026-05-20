@@ -564,9 +564,12 @@ export async function setupStorePage() {
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
             const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
 
-            let nameDisplay = sale.userName || 'N/A';
+            let nameDisplay = `<div class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</div>`;
+            if (sale.payerName && sale.payerName !== sale.userName) {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400 font-normal mt-0.5">Responsável: ${sale.payerName}</div>`;
+            }
             if (sale.saleType === 'manual') {
-                nameDisplay += ` <span class="ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-transparent">Manual</span>`;
+                nameDisplay += `<div class="mt-1"><span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-transparent">Manual</span></div>`;
             }
 
             let productDisplay = `<span class="font-bold text-gray-900 dark:text-white">${sale.productName || 'N/A'}</span>`;
@@ -577,7 +580,7 @@ export async function setupStorePage() {
 
             row.innerHTML = `
                 <td class="p-4" data-label="Nome do Cliente">
-                    <div class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</div>
+                    ${nameDisplay}
                 </td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
                 <td class="p-4" data-label="Produto">${productDisplay}</td>
@@ -610,7 +613,9 @@ export async function setupStorePage() {
         const selectedFulfillment = fulfillmentFilter ? fulfillmentFilter.value : '';
 
         let filteredSales = allSales.filter(sale => {
-            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+            const nameMatch = !searchTerm || 
+                (sale.userName && sale.userName.toLowerCase().includes(searchTerm)) ||
+                (sale.payerName && sale.payerName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const mainProductMatch = sale.productId === selectedProduct;
@@ -1862,7 +1867,12 @@ export async function setupStorePage() {
                             <span>👤</span> Dados do Cliente
                         </h4>
                         <div class="space-y-2 text-sm">
-                            <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                            ${sale.payerName && sale.payerName !== sale.userName ? `
+                                <p><span class="text-gray-500 dark:text-gray-400">Inscrito/Aluno:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</span></p>
+                                <p><span class="text-gray-500 dark:text-gray-400">Responsável/Pagador:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.payerName}</span></p>
+                            ` : `
+                                <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                            `}
                             <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white break-all font-medium">${sale.userEmail || 'N/A'}</span></p>
                             <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPhone || 'N/A'}</span></p>
                             <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userCpf || 'N/A'}</span></p>
@@ -2221,11 +2231,17 @@ export async function setupStorePage() {
             const ring = sub.eventRing || '-';
             const dateTime = sub.eventDay && sub.eventTime ? `${sub.eventDay} às ${sub.eventTime}` : (sub.eventTime || '-');
 
+            let nameDisplay = `<div class="font-bold text-gray-900 dark:text-white">${sub.userName || 'N/A'}</div>`;
+            if (sub.payerName && sub.payerName !== sub.userName) {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400">Responsável: ${sub.payerName} | ${sub.userEmail || ''}</div>`;
+            } else {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400">${sub.userEmail || ''}</div>`;
+            }
+
             row.innerHTML = `
                 <td class="p-4 font-mono text-[10px] font-bold text-primary">#${sub.attendeeNumber || '---'}</td>
                 <td class="p-4">
-                    <div class="font-bold text-gray-900 dark:text-white">${sub.userName || 'N/A'}</div>
-                    <div class="text-[10px] text-gray-500 dark:text-gray-400">${sub.userEmail || ''}</div>
+                    ${nameDisplay}
                 </td>
                 <td class="p-4 text-[11px] font-medium text-gray-600 dark:text-gray-400">${variant}</td>
                 <td class="p-4 text-center"><span class="px-2 py-1 bg-primary/10 rounded text-primary font-bold text-[11px]">${ring}</span></td>
@@ -2250,7 +2266,9 @@ export async function setupStorePage() {
         const unitFilter = eventUnitFilter?.value || '';
 
         let filtered = allCheckins.filter(sub => {
-            const nameMatch = !searchTerm || (sub.userName && sub.userName.toLowerCase().includes(searchTerm));
+            const nameMatch = !searchTerm || 
+                (sub.userName && sub.userName.toLowerCase().includes(searchTerm)) ||
+                (sub.payerName && sub.payerName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sub.userEmail && sub.userEmail.toLowerCase().includes(searchTerm));
             const ringMatch = !ringFilter || (sub.eventRing == ringFilter);
             const unitMatch = !unitFilter || (sub.userUnit == unitFilter);
@@ -2267,13 +2285,14 @@ export async function setupStorePage() {
         }
         const selectedProduct = allProducts.find(p => p.id === eventProductFilter.value);
         const eventName = selectedProduct ? selectedProduct.name.replace(/\s+/g, '_') : 'evento';
-        const headers = ['Numero', 'Nome', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
+        const headers = ['Numero', 'Nome', 'Responsavel/Pagador', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
         const rows = allCheckins.map(sub => [
             sub.attendeeNumber || '',
             sub.userName || '',
+            sub.payerName || '',
             sub.userEmail || '',
             sub.userPhone || '',
-            sub.userCPF || '',
+            sub.userCpf || sub.userCPF || '',
             sub.variationName || sub.chosenVariant || '',
             sub.eventRing || '',
             sub.eventDay || '',

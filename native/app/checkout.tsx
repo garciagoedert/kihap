@@ -13,7 +13,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../src/services/firebase';
 
 export default function CheckoutScreen() {
-  const { total, items, clearCart } = useCart();
+  const { total, items, clearCart, subtotal, discount, coupon } = useCart();
   const { userData } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -186,7 +186,21 @@ export default function CheckoutScreen() {
               </View>
             ))}
             <View className="h-[1px] bg-gray-100 dark:bg-white/5 my-4" />
-            <View className="flex-row justify-between items-center">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-[10px] font-black text-gray-400 uppercase">Subtotal</Text>
+              <Text className="text-sm font-black text-gray-500">
+                {(subtotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </Text>
+            </View>
+            {discount > 0 && (
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-[10px] font-black text-green-500 uppercase">Desconto {coupon ? `(${coupon.code})` : ''}</Text>
+                <Text className="text-sm font-black text-green-500">
+                  - {(discount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </Text>
+              </View>
+            )}
+            <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-white/5">
               <Text className="text-sm font-black text-gray-900 dark:text-white uppercase">Total</Text>
               <Text className="text-xl font-black text-yellow-600 dark:text-yellow-500">
                 {(total / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
