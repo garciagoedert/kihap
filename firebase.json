@@ -5,7 +5,13 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "android/**",
+      "ios/**",
+      "native/**",
+      "functions/**",
+      "www_legacy/**",
+      "desenvolvimento/**"
     ],
     "rewrites": [
       {
