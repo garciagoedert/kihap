@@ -8,6 +8,13 @@ const deptsCol = collection(db, 'trello_departments');
 const demandsCol = collection(db, 'trello_demands');
 const auth = getAuth();
 
+const DEFAULT_COLUMNS = [
+    { id: 'backlog', title: 'Backlog', color: 'gray' },
+    { id: 'todo', title: 'To do', color: 'blue' },
+    { id: 'pendente', title: 'Pendente', color: 'yellow' },
+    { id: 'concluido', title: 'Concluído', color: 'green' }
+];
+
 let departments = [];
 let demands = [];
 let activeFilters = new Set();
@@ -233,18 +240,13 @@ function renderDepartments() {
         deptSelect.appendChild(opt);
 
         const li = document.createElement('li');
-        li.className = 'bg-gray-700/50 p-4 rounded-lg border border-gray-600 space-y-3';
-        const cols = dept.columns || [
-            { id: 'backlog', title: 'Backlog', color: 'gray' },
-            { id: 'todo', title: 'To do', color: 'blue' },
-            { id: 'pendente', title: 'Pendente', color: 'yellow' },
-            { id: 'concluido', title: 'Concluído', color: 'green' }
-        ];
+        li.className = 'bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-205 dark:border-gray-700 space-y-3';
+        const cols = dept.columns || DEFAULT_COLUMNS;
 
         let colsHtml = cols.map((c, i) => `
             <div class="flex gap-2 items-center">
-                <input type="text" value="${c.title}" data-index="${i}" data-deptid="${dept.id}" class="flex-1 bg-gray-800 border border-gray-700 rounded p-1 text-xs col-title-input">
-                <select data-index="${i}" data-deptid="${dept.id}" class="bg-gray-800 border border-gray-700 rounded p-1 text-xs col-color-select">
+                <input type="text" value="${c.title}" data-index="${i}" data-deptid="${dept.id}" class="flex-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-650 rounded p-1 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none col-title-input">
+                <select data-index="${i}" data-deptid="${dept.id}" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-650 rounded p-1 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 outline-none col-color-select">
                     <option value="gray" ${c.color === 'gray' ? 'selected' : ''}>Cinza</option>
                     <option value="blue" ${c.color === 'blue' ? 'selected' : ''}>Azul</option>
                     <option value="yellow" ${c.color === 'yellow' ? 'selected' : ''}>Amarelo</option>
@@ -259,14 +261,14 @@ function renderDepartments() {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 rounded-full" style="background-color: ${dept.color}"></div>
-                    <span class="text-sm text-gray-200 font-bold">${dept.name}</span>
+                    <span class="text-sm text-gray-900 dark:text-gray-200 font-bold">${dept.name}</span>
                 </div>
-                <button class="delete-dept text-red-400 hover:text-red-300 transition-colors" data-id="${dept.id}"><i class="fas fa-trash"></i></button>
+                <button class="delete-dept text-red-500 hover:text-red-400 transition-colors" data-id="${dept.id}"><i class="fas fa-trash"></i></button>
             </div>
-            <div class="space-y-2 pt-2 border-t border-gray-600">
-                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Colunas do Kanban</p>
+            <div class="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">Colunas do Kanban</p>
                 ${colsHtml}
-                <button class="add-col-btn text-blue-400 hover:text-blue-300 text-[10px] font-bold uppercase tracking-wider" data-id="${dept.id}">+ Adicionar Coluna</button>
+                <button class="add-col-btn text-blue-600 hover:text-blue-500 text-[10px] font-bold uppercase tracking-wider" data-id="${dept.id}">+ Adicionar Coluna</button>
             </div>
         `;
         deptList.appendChild(li);
@@ -277,7 +279,8 @@ function renderDepartments() {
         btn.addEventListener('click', async (e) => {
             const deptId = e.currentTarget.dataset.id;
             const dept = departments.find(d => d.id === deptId);
-            const newCols = [...(dept.columns || []), { id: `col_${Date.now()}`, title: 'Nova Coluna', color: 'gray' }];
+            const currentCols = dept.columns || DEFAULT_COLUMNS;
+            const newCols = [...currentCols, { id: `col_${Date.now()}`, title: 'Nova Coluna', color: 'gray' }];
             await updateDoc(doc(deptsCol, deptId), { columns: newCols });
         });
     });
@@ -287,9 +290,9 @@ function renderDepartments() {
             const deptId = e.target.dataset.deptid;
             const index = parseInt(e.target.dataset.index);
             const dept = departments.find(d => d.id === deptId);
-            const newCols = [...(dept.columns || [])];
-            newCols[index].title = e.target.value;
-            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+            const currentCols = [...(dept.columns || DEFAULT_COLUMNS)];
+            currentCols[index].title = e.target.value;
+            await updateDoc(doc(deptsCol, deptId), { columns: currentCols });
         });
     });
 
@@ -298,9 +301,9 @@ function renderDepartments() {
             const deptId = e.target.dataset.deptid;
             const index = parseInt(e.target.dataset.index);
             const dept = departments.find(d => d.id === deptId);
-            const newCols = [...(dept.columns || [])];
-            newCols[index].color = e.target.value;
-            await updateDoc(doc(deptsCol, deptId), { columns: newCols });
+            const currentCols = [...(dept.columns || DEFAULT_COLUMNS)];
+            currentCols[index].color = e.target.value;
+            await updateDoc(doc(deptsCol, deptId), { columns: currentCols });
         });
     });
 
@@ -309,7 +312,12 @@ function renderDepartments() {
             const deptId = e.currentTarget.dataset.deptid;
             const index = parseInt(e.currentTarget.dataset.index);
             const dept = departments.find(d => d.id === deptId);
-            const newCols = dept.columns.filter((_, i) => i !== index);
+            const currentCols = dept.columns || DEFAULT_COLUMNS;
+            if (currentCols.length <= 1) {
+                alert("O Kanban deve ter pelo menos uma coluna.");
+                return;
+            }
+            const newCols = currentCols.filter((_, i) => i !== index);
             await updateDoc(doc(deptsCol, deptId), { columns: newCols });
         });
     });
@@ -356,26 +364,91 @@ function renderCards() {
     
     // Get current department columns or use defaults
     const currentDept = departments.find(d => d.id === currentDeptId);
-    let boardColumns = currentDept?.columns || [
-        { id: 'backlog', title: 'Backlog', color: 'gray' },
-        { id: 'todo', title: 'To do', color: 'blue' },
-        { id: 'pendente', title: 'Pendente', color: 'yellow' },
-        { id: 'concluido', title: 'Concluído', color: 'green' }
-    ];
+    let boardColumns = currentDept?.columns || DEFAULT_COLUMNS;
 
     // Create column structure
     boardColumns.forEach(col => {
         const colHtml = `
             <div class="bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-sm dark:shadow-lg border border-gray-200 dark:border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0 transition-all" data-column="${col.id}">
-                <h2 class="font-bold mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center" style="color: ${getColorHex(col.color)}">
-                    <span>${col.title}</span>
-                    <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-1 px-2 rounded-full count shadow-inner" id="count-${col.id}">0</span>
+                <h2 class="font-bold mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center group/colheader w-full" style="color: ${getColorHex(col.color)}">
+                    <!-- View State -->
+                    <div class="flex items-center justify-between w-full col-header-view-state" data-column-id="${col.id}">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="truncate col-title-display-text" title="${col.title}">${col.title}</span>
+                            <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-1 px-2 rounded-full count shadow-inner shrink-0" id="count-${col.id}">0</span>
+                        </div>
+                        <button type="button" class="edit-col-title-btn text-gray-400 hover:text-blue-500 transition-colors p-1 opacity-0 group-hover/colheader:opacity-100 focus:opacity-100" data-column-id="${col.id}" title="Editar Coluna">
+                            <i class="fas fa-pen text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <!-- Edit State (Hidden initially) -->
+                    <div class="col-header-edit-state hidden flex flex-col gap-2 w-full pt-1">
+                        <div class="flex items-center gap-1">
+                            <input type="text" value="${col.title}" class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-750 rounded px-2 py-0.5 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 col-edit-title-input" data-column-id="${col.id}">
+                            <button type="button" class="save-col-edit-btn bg-blue-600 hover:bg-blue-700 text-white rounded p-1 text-xs transition-colors shrink-0" data-column-id="${col.id}" title="Salvar">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button type="button" class="cancel-col-edit-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white rounded p-1 text-xs transition-colors shrink-0" data-column-id="${col.id}" title="Cancelar">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Cor:</span>
+                                <select class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-750 rounded px-1 py-0.5 text-[10px] text-gray-900 dark:text-white col-edit-color-select focus:outline-none" data-column-id="${col.id}">
+                                    <option value="gray" ${col.color === 'gray' ? 'selected' : ''}>Cinza</option>
+                                    <option value="blue" ${col.color === 'blue' ? 'selected' : ''}>Azul</option>
+                                    <option value="yellow" ${col.color === 'yellow' ? 'selected' : ''}>Amarelo</option>
+                                    <option value="green" ${col.color === 'green' ? 'selected' : ''}>Verde</option>
+                                    <option value="red" ${col.color === 'red' ? 'selected' : ''}>Vermelho</option>
+                                </select>
+                            </div>
+                            <button type="button" class="delete-col-btn text-red-500 hover:text-red-400 text-[10px] flex items-center gap-1 font-bold py-0.5 px-1.5 rounded hover:bg-red-500/10 transition-colors" data-column-id="${col.id}" title="Excluir Coluna">
+                                <i class="fas fa-trash-alt text-[9px]"></i> Excluir
+                            </button>
+                        </div>
+                    </div>
                 </h2>
                 <div class="flex-1 overflow-y-auto custom-scrollbar column-body space-y-3" id="col-${col.id}"></div>
             </div>
         `;
         kanbanBoard.insertAdjacentHTML('beforeend', colHtml);
     });
+
+    // Render "+ Adicionar Coluna" button if department is selected
+    if (currentDeptId) {
+        const addColHtml = `
+            <div class="bg-gray-100/50 dark:bg-[#1a1a1a]/40 rounded-lg p-4 flex flex-col shadow-sm dark:shadow-md border-2 border-dashed border-gray-300 dark:border-gray-800 shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] h-[120px] transition-all hover:bg-gray-150 dark:hover:bg-[#1a1a1a]/60 hover:border-blue-500 dark:hover:border-blue-700 justify-center">
+                <!-- Add Column Button State -->
+                <button id="add-board-column-btn" class="w-full h-full flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all text-sm uppercase tracking-wider">
+                    <i class="fas fa-plus-circle text-lg"></i> Adicionar Coluna
+                </button>
+
+                <!-- Add Column Form State (Hidden initially) -->
+                <div id="add-board-column-form" class="hidden flex flex-col gap-2.5 w-full">
+                    <input type="text" id="new-column-title" placeholder="Nome da coluna..." class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-medium">
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Cor:</span>
+                            <select id="new-column-color" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-1.5 py-0.5 text-xs text-gray-900 dark:text-white">
+                                <option value="gray" selected>Cinza</option>
+                                <option value="blue">Azul</option>
+                                <option value="yellow">Amarelo</option>
+                                <option value="green">Verde</option>
+                                <option value="red">Vermelho</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button id="save-new-column-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg shadow-sm transition-all">Adicionar</button>
+                            <button id="cancel-new-column-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white text-xs font-semibold py-1 px-3 rounded-lg transition-all">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        kanbanBoard.insertAdjacentHTML('beforeend', addColHtml);
+    }
 
     // Re-setup drag & drop for dynamic columns
     setupDragAndDrop();
@@ -472,6 +545,166 @@ function renderCards() {
         const countSpan = document.getElementById(`count-${col.id}`);
         if (countSpan) countSpan.textContent = counts[col.id];
     });
+
+    // Bind inline column editing listeners
+    document.querySelectorAll('.edit-col-title-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const h2 = e.currentTarget.closest('h2');
+            h2.querySelector('.col-header-view-state').classList.add('hidden');
+            h2.querySelector('.col-header-edit-state').classList.remove('hidden');
+            h2.querySelector('.col-edit-title-input').focus();
+        });
+    });
+
+    document.querySelectorAll('.cancel-col-edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const h2 = e.currentTarget.closest('h2');
+            h2.querySelector('.col-header-view-state').classList.remove('hidden');
+            h2.querySelector('.col-header-edit-state').classList.add('hidden');
+        });
+    });
+
+    document.querySelectorAll('.save-col-edit-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const colId = e.currentTarget.dataset.columnId;
+            const h2 = e.currentTarget.closest('h2');
+            const newTitle = h2.querySelector('.col-edit-title-input').value.trim();
+            const newColor = h2.querySelector('.col-edit-color-select').value;
+            if (!newTitle) {
+                alert("O título da coluna não pode ser vazio.");
+                return;
+            }
+            await updateColumnDetails(colId, newTitle, newColor);
+        });
+    });
+
+    document.querySelectorAll('.col-edit-title-input').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.closest('.col-header-edit-state').querySelector('.save-col-edit-btn').click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.currentTarget.closest('.col-header-edit-state').querySelector('.cancel-col-edit-btn').click();
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-col-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const colId = e.currentTarget.dataset.columnId;
+            await deleteColumn(colId);
+        });
+    });
+
+    // Bind Add Column listeners
+    const addColBtn = document.getElementById('add-board-column-btn');
+    const addColForm = document.getElementById('add-board-column-form');
+    const cancelNewColBtn = document.getElementById('cancel-new-column-btn');
+    const saveNewColBtn = document.getElementById('save-new-column-btn');
+    const newColTitleInput = document.getElementById('new-column-title');
+    const newColColorSelect = document.getElementById('new-column-color');
+
+    if (addColBtn && addColForm) {
+        addColBtn.addEventListener('click', () => {
+            addColBtn.classList.add('hidden');
+            addColForm.classList.remove('hidden');
+            newColTitleInput.focus();
+        });
+
+        cancelNewColBtn.addEventListener('click', () => {
+            addColBtn.classList.remove('hidden');
+            addColForm.classList.add('hidden');
+            newColTitleInput.value = '';
+        });
+
+        newColTitleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveNewColBtn.click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelNewColBtn.click();
+            }
+        });
+
+        saveNewColBtn.addEventListener('click', async () => {
+            const title = newColTitleInput.value.trim();
+            const color = newColColorSelect.value;
+            if (!title) {
+                alert("O título da coluna não pode ser vazio.");
+                return;
+            }
+            await addNewColumn(title, color);
+        });
+    }
+}
+
+async function updateColumnDetails(colId, newTitle, newColor) {
+    const dept = departments.find(d => d.id === currentDeptId);
+    if (!dept) return;
+    const currentCols = [...(dept.columns || DEFAULT_COLUMNS)];
+    const colIndex = currentCols.findIndex(c => c.id === colId);
+    if (colIndex !== -1) {
+        currentCols[colIndex].title = newTitle;
+        currentCols[colIndex].color = newColor;
+        try {
+            await updateDoc(doc(deptsCol, currentDeptId), { columns: currentCols });
+        } catch (err) {
+            console.error("Error updating column details", err);
+            alert("Erro ao atualizar coluna: " + err.message);
+        }
+    }
+}
+
+async function deleteColumn(colId) {
+    const dept = departments.find(d => d.id === currentDeptId);
+    if (!dept) return;
+    const currentCols = dept.columns || DEFAULT_COLUMNS;
+    if (currentCols.length <= 1) {
+        alert("O Kanban deve ter pelo menos uma coluna.");
+        return;
+    }
+    
+    // Count demands in this column
+    const demandsInCol = demands.filter(d => d.departamentoId === currentDeptId && d.status === colId);
+    let warningMsg = `Tem certeza que deseja excluir a coluna?`;
+    if (demandsInCol.length > 0) {
+        warningMsg = `Esta coluna contém ${demandsInCol.length} demanda(s). Elas serão movidas para a primeira coluna. Deseja continuar?`;
+    }
+    
+    if (confirm(warningMsg)) {
+        const newCols = currentCols.filter(c => c.id !== colId);
+        const firstColId = newCols[0].id;
+        
+        try {
+            if (demandsInCol.length > 0) {
+                const q = query(demandsCol, where("departamentoId", "==", currentDeptId), where("status", "==", colId));
+                const snap = await getDocs(q);
+                const batchPromises = snap.docs.map(d => updateDoc(d.ref, { status: firstColId }));
+                await Promise.all(batchPromises);
+            }
+            await updateDoc(doc(deptsCol, currentDeptId), { columns: newCols });
+        } catch (err) {
+            console.error("Error deleting column", err);
+            alert("Erro ao excluir coluna: " + err.message);
+        }
+    }
+}
+
+async function addNewColumn(title, color) {
+    const dept = departments.find(d => d.id === currentDeptId);
+    if (!dept) return;
+    const currentCols = [...(dept.columns || DEFAULT_COLUMNS)];
+    const newColId = `col_${Date.now()}`;
+    currentCols.push({ id: newColId, title, color });
+    
+    try {
+        await updateDoc(doc(deptsCol, currentDeptId), { columns: currentCols });
+    } catch (err) {
+        console.error("Error adding new column", err);
+        alert("Erro ao adicionar coluna: " + err.message);
+    }
 }
 
 function getColorHex(color) {
@@ -580,9 +813,13 @@ document.getElementById('submitDemandaBtn').addEventListener('click', async () =
                 anexoUrl = await getDownloadURL(fileRef);
                 anexoNome = file.name;
             }
+            const targetDept = departments.find(d => d.id === departamentoId);
+            const targetCols = targetDept?.columns || DEFAULT_COLUMNS;
+            const firstColId = targetCols.length > 0 ? targetCols[0].id : 'todo';
+            
             data.nome = nome;
             data.email = email;
-            data.status = 'todo';
+            data.status = firstColId;
             data.createdAt = serverTimestamp();
             data.createdBy = currentUserId;
             data.anexoUrl = anexoUrl;
