@@ -15,11 +15,11 @@ export default function ProfileScreen() {
   const displayName = userData?.name || userData?.nome || userData?.displayName || 'Aluno';
   
   let rawPhoto = userData?.photoURL || userData?.profilePicture || userData?.photoUrl || userData?.avatar;
-  // Handle relative paths from portal
   if (rawPhoto && rawPhoto.startsWith('/')) {
     rawPhoto = `https://kihap.com.br${rawPhoto}`;
   }
-  const displayPhoto = rawPhoto || 'https://kihap.com.br/intranet/default-profile.svg';
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+  const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
   
   const displayEmail = userData?.email || 'carregando...';
 
@@ -36,7 +36,7 @@ export default function ProfileScreen() {
                 <View className="relative group">
                   <View className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-500/20">
                     <Image 
-                      source={{ uri: displayPhoto }} 
+                      source={displayPhoto} 
                       className="w-full h-full object-cover"
                     />
                   </View>

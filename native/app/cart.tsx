@@ -69,7 +69,15 @@ export default function CartScreen() {
       />
       <View className="flex-1 ml-4">
         <Text className="text-sm font-black text-gray-900 dark:text-white" numberOfLines={2}>{item.name}</Text>
-        <Text className="text-xs text-gray-400 mt-1">Qtd: {item.quantity}</Text>
+        <Text className="text-xs text-gray-400 mt-1 mb-1">Qtd: {item.quantity}</Text>
+        {item.formDataList && item.formDataList.map((form: any, idx: number) => {
+          const variantStr = form.priceData?.variantName ? ` (${form.priceData.variantName})` : '';
+          return (
+            <Text key={idx} className="text-[10px] text-gray-400 mt-0.5" numberOfLines={1}>
+              • {form.userName || 'Participante'}{variantStr}
+            </Text>
+          );
+        })}
         <Text className="text-sm font-black text-yellow-600 dark:text-yellow-500 mt-2">
           {(item.totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
         </Text>

@@ -173,11 +173,14 @@ export default function CheckoutScreen() {
                 <View className="flex-row justify-between items-start">
                   <View className="flex-1 mr-4">
                     <Text className="text-gray-900 dark:text-white text-sm font-bold" numberOfLines={1}>{item.productName}</Text>
-                    {item.formDataList && item.formDataList.map((form: any, idx: number) => (
-                      <Text key={idx} className="text-[10px] text-gray-400 mt-0.5">
-                        {form.userName || 'Participante'} {form.userSize ? `| Tam: ${form.userSize}` : ''}
-                      </Text>
-                    ))}
+                    {item.formDataList && item.formDataList.map((form: any, idx: number) => {
+                      const variantStr = form.priceData?.variantName ? ` | Opção: ${form.priceData.variantName}` : '';
+                      return (
+                        <Text key={idx} className="text-[10px] text-gray-400 mt-0.5">
+                          {form.userName || 'Participante'} {form.userSize ? `| Tam: ${form.userSize}` : ''}{variantStr}
+                        </Text>
+                      );
+                    })}
                   </View>
                   <Text className="text-gray-900 dark:text-white text-sm font-black">
                     {(item.totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

@@ -74,15 +74,18 @@ export default function BuscaScreen() {
     setFilteredUsers(filtered);
   };
 
-  const normalizePhoto = (photo: string) => {
-    if (!photo) return 'https://kihap.com.br/intranet/default-profile.svg';
-    if (photo.startsWith('/')) return `https://kihap.com.br${photo}`;
-    return photo;
-  };
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
 
   const renderItem = ({ item }: { item: any }) => {
     const isStaff = item.isInstructor === true || item.isAdmin === true;
-    const photo = normalizePhoto(item.photoURL || item.profilePicture || item.photoUrl);
+    const photoURL = item.photoURL || item.profilePicture || item.photoUrl;
+    let photoSource;
+    if (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png')) {
+      photoSource = defaultProfileImg;
+    } else {
+      const uri = photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL;
+      photoSource = { uri };
+    }
 
     return (
       <TouchableOpacity 
@@ -92,7 +95,7 @@ export default function BuscaScreen() {
         <View className="flex-row items-center flex-1">
           <View className="relative">
             <Image 
-              source={{ uri: photo }} 
+              source={photoSource} 
               className="w-12 h-12 rounded-full border border-gray-200 dark:border-white/10 object-cover"
             />
             <View className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full" />

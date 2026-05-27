@@ -9,6 +9,19 @@ import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 
+const getYoutubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getYoutubeEmbedUrl = (url: string): string | null => {
+  const videoId = getYoutubeVideoId(url);
+  if (!videoId) return null;
+  return `https://www.youtube.com/embed/${videoId}?rel=0&origin=https://kihap.com.br&playsinline=1`;
+};
+
 interface FeedCardProps {
   post: {
     id: string;
@@ -123,6 +136,12 @@ export default function FeedCard({ post }: FeedCardProps) {
     if (extractedUrl.startsWith('//')) {
       extractedUrl = 'https:' + extractedUrl;
     }
+    if (extractedUrl.includes('youtube.com') || extractedUrl.includes('youtu.be')) {
+      const embedUrl = getYoutubeEmbedUrl(extractedUrl);
+      if (embedUrl) {
+        extractedUrl = embedUrl;
+      }
+    }
     finalContent = finalContent.replace(match[0], ''); // remove iframe do HTML
   }
 
@@ -135,6 +154,12 @@ export default function FeedCard({ post }: FeedCardProps) {
     .replace(/margin:[^;]+;/g, '')
     .replace(/padding:[^;]+;/g, '');
 
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+  const photoURL = post.authorPhotoURL;
+  const photoSource = (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png'))
+    ? defaultProfileImg
+    : { uri: photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL };
+
   return (
     <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm mb-6 overflow-hidden mx-4">
       {/* Header */}
@@ -142,7 +167,7 @@ export default function FeedCard({ post }: FeedCardProps) {
         <View className="flex-row items-center">
           <View className="relative">
             <Image 
-              source={{ uri: post.authorPhotoURL || 'https://kihap.com.br/intranet/default-profile.svg' }} 
+              source={photoSource} 
               className="w-10 h-10 rounded-full border border-gray-100 dark:border-white/10 object-cover"
             />
             <View className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full" />
@@ -173,7 +198,12 @@ export default function FeedCard({ post }: FeedCardProps) {
         {extractedUrl && (
           <View className="mt-4 rounded-xl overflow-hidden bg-black" style={{ width: '100%', height: Math.floor((width - 64) * 9 / 16) }}>
             <WebView
-              source={{ uri: extractedUrl }}
+              source={{ 
+                uri: extractedUrl,
+                headers: {
+                  'Referer': 'https://kihap.com.br'
+                }
+              }}
               javaScriptEnabled={true}
               domStorageEnabled={true}
               allowsFullscreenVideo={true}
@@ -191,11 +221,10 @@ export default function FeedCard({ post }: FeedCardProps) {
             <View style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: '#000' }}>
               <WebView
                 source={{ 
-                  uri: `https://www.youtube.com/embed/${
-                    post.mediaUrl.includes('v=') 
-                      ? post.mediaUrl.split('v=')[1].split('&')[0] 
-                      : post.mediaUrl.split('/').pop()
-                  }?rel=0`
+                  uri: getYoutubeEmbedUrl(post.mediaUrl) || post.mediaUrl,
+                  headers: {
+                    'Referer': 'https://kihap.com.br'
+                  }
                 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}

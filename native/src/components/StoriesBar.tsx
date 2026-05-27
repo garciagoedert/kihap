@@ -18,6 +18,7 @@ interface StoriesBarProps {
 export default function StoriesBar({ groups, onPress }: StoriesBarProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
 
   return (
     <View className="mb-4">
@@ -26,28 +27,34 @@ export default function StoriesBar({ groups, onPress }: StoriesBarProps) {
         showsHorizontalScrollIndicator={false} 
         contentContainerStyle={{ paddingHorizontal: 16 }}
       >
-        {groups.map((group) => (
-          <TouchableOpacity 
-            key={group.authorId} 
-            onPress={() => onPress(group)}
-            className="items-center mr-4 w-20"
-          >
-            <View className="p-[2px] rounded-full border-2 border-[#ff9800]">
-               <View className="p-[2px] bg-white dark:bg-[#050505] rounded-full">
-                  <Image 
-                    source={{ uri: group.authorPhotoURL || 'https://kihap.com.br/intranet/default-profile.svg' }} 
-                    className="w-16 h-16 rounded-full border-2 border-transparent object-cover"
-                  />
-               </View>
-            </View>
-            <Text 
-              className="text-gray-600 dark:text-gray-400 text-[10px] font-bold mt-2 text-center"
-              numberOfLines={1}
+        {groups.map((group) => {
+          const photoURL = group.authorPhotoURL;
+          const photoSource = (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png'))
+            ? defaultProfileImg
+            : { uri: photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL };
+          return (
+            <TouchableOpacity 
+              key={group.authorId} 
+              onPress={() => onPress(group)}
+              className="items-center mr-4 w-20"
             >
-              {group.authorName.split(' ')[0]}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <View className="p-[2px] rounded-full border-2 border-[#ff9800]">
+                 <View className="p-[2px] bg-white dark:bg-[#050505] rounded-full">
+                    <Image 
+                      source={photoSource} 
+                      className="w-16 h-16 rounded-full border-2 border-transparent object-cover"
+                    />
+                 </View>
+              </View>
+              <Text 
+                className="text-gray-600 dark:text-gray-400 text-[10px] font-bold mt-2 text-center"
+                numberOfLines={1}
+              >
+                {group.authorName.split(' ')[0]}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );

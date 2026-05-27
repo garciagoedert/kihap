@@ -341,6 +341,29 @@
         }
         loadProfessors();
 
+        // Pre-fill from URL parameters
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('name')) {
+                document.getElementById('user-name').value = params.get('name');
+            }
+            if (params.has('contact')) {
+                document.getElementById('user-contact').value = params.get('contact');
+            }
+            if (params.has('unit')) {
+                const unitVal = params.get('unit').toLowerCase().trim();
+                const select = document.getElementById('user-unit');
+                for (let i = 0; i < select.options.length; i++) {
+                    const optText = select.options[i].text.toLowerCase();
+                    const optVal = select.options[i].value.toLowerCase();
+                    if (optVal === unitVal || optText.includes(unitVal) || unitVal.includes(optVal)) {
+                        select.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+
         // Form Submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();

@@ -31,7 +31,8 @@ export default function FeedScreen() {
   if (rawPhoto && rawPhoto.startsWith('/')) {
     rawPhoto = `https://kihap.com.br${rawPhoto}`;
   }
-  const displayPhoto = rawPhoto || 'https://kihap.com.br/intranet/default-profile.svg';
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+  const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
   
   const displayUnit = userData?.unidade || userData?.unit || 'Kihap Member';
 
@@ -200,7 +201,7 @@ export default function FeedScreen() {
               <View style={{ paddingTop: insets.top }}>
                 <View className="p-6 border-b border-gray-100 dark:border-white/5 flex-row items-center justify-between">
                   <View className="flex-row items-center">
-                    <Image source={{ uri: displayPhoto }} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
+                    <Image source={displayPhoto} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
                     <View className="ml-3">
                       <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{firstName}</Text>
                       <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
@@ -226,19 +227,15 @@ export default function FeedScreen() {
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
                 <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => { setSidebarOpen(false); router.push('/pedidos'); }} />
                 <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => { setSidebarOpen(false); router.push('/assinatura'); }} />
-
-                <TouchableOpacity className="mt-8 mx-2 bg-yellow-400/10 py-4 rounded-2xl flex-row items-center justify-center border border-yellow-400/20">
-                  <Star size={16} color="#eab308" fill="#eab308" />
-                  <Text className="ml-2 text-[#eab308] font-black text-xs uppercase">Avaliar Experiência</Text>
-                </TouchableOpacity>
               </ScrollView>
 
               <View className="p-6 border-t border-gray-100 dark:border-white/5">
                 <TouchableOpacity 
                   onPress={() => { setSidebarOpen(false); signOut?.(); }}
-                  className="flex-row items-center space-x-3 p-4 bg-red-500/10 rounded-2xl"
+                  className="flex-row items-center p-4 bg-red-500/10 rounded-2xl"
                 >
                   <LogOut size={20} color="#ef4444" />
+                  <View style={{ width: 12 }} />
                   <Text className="text-red-500 font-bold uppercase tracking-widest text-[10px]">Sair da Conta</Text>
                 </TouchableOpacity>
               </View>

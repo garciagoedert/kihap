@@ -19,6 +19,17 @@ export default function ChatRoomScreen() {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+
+  const getOtherUserPhotoSource = () => {
+    const photoURL = otherUser?.profilePicture || otherUser?.photoURL;
+    if (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png')) {
+      return defaultProfileImg;
+    }
+    const uri = photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL;
+    return { uri };
+  };
+
   useEffect(() => {
     if (!id || !user) return;
 
@@ -79,7 +90,7 @@ export default function ChatRoomScreen() {
       <View className={`mb-4 flex-row ${isMe ? 'justify-end' : 'justify-start'} px-4`}>
         {!isMe && (
           <Image 
-            source={{ uri: otherUser?.profilePicture || otherUser?.photoURL || 'https://kihap.com.br/intranet/default-profile.svg' }} 
+            source={getOtherUserPhotoSource()} 
             className="w-8 h-8 rounded-full mr-2 self-end"
           />
         )}
@@ -109,7 +120,7 @@ export default function ChatRoomScreen() {
             <ArrowLeft size={24} color={isDark ? '#fff' : '#333'} />
           </TouchableOpacity>
           <Image 
-            source={{ uri: otherUser?.profilePicture || otherUser?.photoURL || 'https://kihap.com.br/intranet/default-profile.svg' }} 
+            source={getOtherUserPhotoSource()} 
             className="w-10 h-10 rounded-full ml-2 border border-gray-50 dark:border-white/5"
           />
           <View className="ml-3 flex-1">

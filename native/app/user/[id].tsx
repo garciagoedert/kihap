@@ -36,11 +36,7 @@ export default function PublicProfileScreen() {
     }
   };
 
-  const normalizePhoto = (photo: string) => {
-    if (!photo) return 'https://kihap.com.br/intranet/default-profile.svg';
-    if (photo.startsWith('/')) return `https://kihap.com.br${photo}`;
-    return photo;
-  };
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
 
   if (loading) {
     return (
@@ -61,7 +57,14 @@ export default function PublicProfileScreen() {
     );
   }
 
-  const photo = normalizePhoto(userData.photoURL || userData.profilePicture || userData.photoUrl);
+  const photoURL = userData.photoURL || userData.profilePicture || userData.photoUrl;
+  let photoSource;
+  if (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png')) {
+    photoSource = defaultProfileImg;
+  } else {
+    const uri = photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL;
+    photoSource = { uri };
+  }
 
   return (
     <View className="flex-1 bg-gray-50 dark:bg-[#0a0a0a]">
@@ -90,7 +93,7 @@ export default function PublicProfileScreen() {
             <View className="items-center">
               <View className="relative">
                 <View className="w-36 h-36 rounded-full border-[6px] border-white dark:border-[#1a1a1a] overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-2xl">
-                  <Image source={{ uri: photo }} className="w-full h-full object-cover" />
+                  <Image source={photoSource} className="w-full h-full object-cover" />
                 </View>
                 <View className="absolute -bottom-1 self-center bg-yellow-500 px-5 py-1.5 rounded-full shadow-xl border-2 border-white dark:border-[#1a1a1a]">
                   <Text className="text-[10px] font-black text-black uppercase tracking-[2px]">

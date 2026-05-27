@@ -9,6 +9,20 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../src/services/firebase';
 import RenderHtml from 'react-native-render-html';
 import { WebView } from 'react-native-webview';
+
+const getYoutubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getYoutubeEmbedUrl = (url: string): string | null => {
+  const videoId = getYoutubeVideoId(url);
+  if (!videoId) return null;
+  return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&playsinline=1&enablejsapi=1&origin=https://www.youtube-nocookie.com`;
+};
+
 export default function PlayerScreen() {
   const { courseId } = useLocalSearchParams();
   const router = useRouter();
@@ -72,9 +86,10 @@ export default function PlayerScreen() {
 
   const renderVideo = (url: string) => {
     let embedUrl = url;
-    if (url.includes('youtube.com/watch?v=')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}?playsinline=1`;
+    const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+    
+    if (isYoutube) {
+      embedUrl = getYoutubeEmbedUrl(url) || url;
     } else if (url.includes('vimeo.com/')) {
       const videoId = url.split('/').pop();
       embedUrl = `https://player.vimeo.com/video/${videoId}?playsinline=1`;
@@ -83,7 +98,12 @@ export default function PlayerScreen() {
     return (
       <View className="bg-black w-full aspect-video">
         <WebView 
-          source={{ uri: embedUrl }} 
+          source={{ 
+            uri: embedUrl,
+            headers: isYoutube ? {
+              'Referer': 'https://www.youtube-nocookie.com'
+            } : undefined
+          }} 
           style={{ width: '100%', height: '100%', backgroundColor: 'black' }}
           allowsFullscreenVideo={true}
           allowsInlineMediaPlayback={true}

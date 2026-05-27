@@ -65,6 +65,8 @@ export default function ChatScreen() {
     return () => unsubscribe();
   }, [user]);
 
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+
   const renderChatItem = ({ item }: { item: any }) => {
     const safeUserKey = user?.uid.replace(/\./g, '_');
     const unreadCount = item.unreadCount?.[safeUserKey || ''] || 0;
@@ -73,6 +75,9 @@ export default function ChatScreen() {
       ? new Date(item.lastMessage.timestamp.toMillis()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
 
+    const hasPhoto = item.displayPhoto && !item.displayPhoto.includes('default-profile.svg') && !item.displayPhoto.includes('default-profile.png');
+    const photoSource = hasPhoto ? { uri: item.displayPhoto.startsWith('/') ? `https://kihap.com.br${item.displayPhoto}` : item.displayPhoto } : defaultProfileImg;
+
     return (
       <TouchableOpacity 
         onPress={() => router.push(`/chat/${item.id}`)}
@@ -80,7 +85,7 @@ export default function ChatScreen() {
       >
         <View className="relative">
           <Image 
-            source={{ uri: item.displayPhoto }} 
+            source={photoSource} 
             className="w-14 h-14 rounded-full border border-gray-100 dark:border-white/10" 
           />
           <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#050505] rounded-full" />

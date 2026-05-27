@@ -29,6 +29,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="log.css">
     <style>
         body {
@@ -37,66 +38,78 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 profile-page">
-    <div class="flex h-screen">
+    <div class="flex h-screen overflow-hidden">
         <div id="sidebar-container"></div>
         
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
-        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out overflow-hidden">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
-                <h1 class="text-2xl font-bold mb-6">Meu Perfil</h1>
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <h1 class="text-2xl font-bold mb-6 tracking-tight">Meu Perfil</h1>
                 
-                <!-- Profile Info -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-6">
-                    <div class="flex items-center space-x-6">
-                        <img id="user-avatar" src="default-profile.svg" alt="User Avatar" class="w-24 h-24 rounded-full">
-                        <div>
-                            <h2 id="user-name-display" class="text-2xl font-bold"></h2>
-                            <p id="user-email-display" class="text-gray-400"></p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Column 1: Profile Preview Card -->
+                    <div class="lg:col-span-1 flex flex-col gap-6">
+                        <div class="glass-panel p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+                            <!-- Background Accent Banner -->
+                            <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-yellow-400 to-amber-500 opacity-80 dark:opacity-50"></div>
+                            
+                            <!-- Profile Picture Container -->
+                            <div class="relative mt-8 z-10">
+                                <img id="user-avatar" src="default-profile.svg" alt="User Avatar" class="w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1a] shadow-lg object-cover bg-white dark:bg-[#111111]">
+                            </div>
+                            
+                            <!-- Display Name and Email -->
+                            <h2 id="user-name-display" class="text-xl font-bold text-gray-900 dark:text-white mt-4 truncate max-w-full"></h2>
+                            <p id="user-email-display" class="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-full"></p>
+                            
+                            <div class="w-full border-t border-gray-100 dark:border-gray-800 my-6"></div>
+                            
+                            <!-- Logout button inside card -->
+                            <button id="logout-btn" class="w-full py-3 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-500/20 active:scale-95 text-sm uppercase tracking-wider">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Sair da Conta</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Column 2 & 3: Edit Profile Form Card -->
+                    <div class="lg:col-span-2">
+                        <div class="glass-panel p-6 md:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Editar Informações</h2>
+                            <form id="edit-profile-form" class="space-y-6">
+                                <div>
+                                    <label for="name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome Completo</label>
+                                    <input type="text" id="name" required class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                                </div>
+                                <div>
+                                    <label for="password" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nova Senha</label>
+                                    <input type="password" id="password" placeholder="Deixe em branco para não alterar" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Foto de Perfil</label>
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                                        <label class="px-4 py-3 bg-primary/10 text-primary border border-primary/20 hover:border-primary/40 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Escolher arquivo</span>
+                                            <input type="file" id="profile-picture-input" accept="image/*" class="hidden">
+                                        </label>
+                                        <span id="file-name" class="text-sm text-gray-500 dark:text-gray-400 truncate">Nenhum arquivo selecionado</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="pt-4 flex justify-end">
+                                    <button type="submit" class="bg-primary hover:bg-primary-dark text-black font-bold py-3.5 px-8 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 active:scale-95 uppercase tracking-widest text-xs">
+                                        <i class="fas fa-save"></i>
+                                        <span>Salvar Alterações</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
-
-                <!-- Edit Profile Form -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4">Editar Informações</h2>
-                    <form id="edit-profile-form" class="space-y-6">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nome</label>
-                            <input type="text" id="name" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Nova Senha</label>
-                            <input type="password" id="password" placeholder="Deixe em branco para não alterar" class="form-input">
-                        </div>
-                        <div>
-                            <label for="profile-picture-input" class="block text-sm font-medium text-gray-300 mb-1">Foto de Perfil</label>
-                            <div class="flex items-center">
-                                <label class="btn-secondary cursor-pointer">
-                                    <i class="fas fa-upload mr-2"></i>
-                                    <span>Escolher arquivo</span>
-                                    <input type="file" id="profile-picture-input" accept="image/*" class="hidden">
-                                </label>
-                                <span id="file-name" class="ml-4 text-gray-400">Nenhum arquivo selecionado</span>
-                            </div>
-                        </div>
-                        <div class="pt-2 flex items-center gap-4">
-                            <button type="submit" class="btn-primary">
-                                <i class="fas fa-save mr-2"></i>Salvar Alterações
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Actions -->
-                <div class="mt-auto pt-6 flex justify-end">
-                    <button id="logout-btn" class="btn-danger">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Sair
-                    </button>
-                </div>
-
             </div>
         </main>
     </div>

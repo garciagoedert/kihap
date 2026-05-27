@@ -13,6 +13,21 @@ const { width } = Dimensions.get('window');
 import { useCart } from '../../src/context/CartContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
+const GRADUACOES: { [key: string]: string[] } = {
+  tradicional: [
+    'Branca', 'Laranja recomendada', 'Laranja decidida', 'Amarela recomendada', 'Amarela decidida',
+    'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida',
+    'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida',
+    'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida',
+    'Vermelha e preta', '1º Dan Preta', '2º Dan Preta', '3º Dan Preta', '4º Dan Preta',
+    '5º Dan Preta', '6º Dan Preta', '7º Dan Preta', '8º Dan Preta', '9º Dan Preta'
+  ],
+  littles: [
+    'Littles Branca', 'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta',
+    'Littles Jacaré', 'Littles Coruja', 'Littles Arara', 'Littles Macaco', 'Littles Fênix'
+  ]
+};
+
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const [product, setProduct] = useState<any>(null);
@@ -37,14 +52,19 @@ export default function ProductDetailScreen() {
           const data = docSnap.id ? { id: docSnap.id, ...docSnap.data() } : docSnap.data();
           setProduct(data);
           
+          const defaultVariant = data.priceType === 'variable' && data.priceVariants && data.priceVariants.length > 0
+            ? data.priceVariants[0]
+            : null;
+
           // Initial participants list
-          setParticipants(Array(1).fill({ 
+          setParticipants([{ 
             userName: '', 
             userPrograma: '', 
             userGraduacao: '', 
             userProfessor: '',
-            userSize: ''
-          }));
+            userSize: '',
+            selectedVariant: defaultVariant
+          }]);
         }
 
         // Fetch instructors for professor selection
@@ -64,31 +84,60 @@ export default function ProductDetailScreen() {
   }, [id]);
 
   useEffect(() => {
+    if (!product) return;
+    const defaultVariant = product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0
+      ? product.priceVariants[0]
+      : null;
+
     // Update participants array when quantity changes
     setParticipants(prev => {
       const newList = [...prev];
       if (quantity > newList.length) {
         for (let i = newList.length; i < quantity; i++) {
-          newList.push({ userName: '', userPrograma: '', userGraduacao: '', userProfessor: '', userSize: '' });
+          newList.push({ 
+            userName: '', 
+            userPrograma: '', 
+            userGraduacao: '', 
+            userProfessor: '', 
+            userSize: '',
+            selectedVariant: defaultVariant
+          });
         }
       } else {
         return newList.slice(0, quantity);
       }
       return newList;
     });
-  }, [quantity]);
+  }, [quantity, product]);
 
-  const updateParticipant = (index: number, field: string, value: string) => {
-    const newList = [...participants];
-    newList[index] = { ...newList[index], [field]: value };
-    setParticipants(newList);
+  const updateParticipant = (index: number, updates: { [key: string]: any }) => {
+    setParticipants(prev => {
+      const newList = [...prev];
+      newList[index] = { ...newList[index], ...updates };
+      return newList;
+    });
+  };
+
+  const calculateTotal = () => {
+    if (!product) return 0;
+    if (product.priceType === 'variable') {
+      return participants.reduce((sum, p) => {
+        const pPrice = p.selectedVariant ? p.selectedVariant.price : (product.priceVariants?.[0]?.price || product.price || 0);
+        return sum + pPrice;
+      }, 0);
+    }
+    return product.price * quantity;
   };
 
   const handleAddToCart = () => {
     // Basic validation
     const incomplete = participants.some(p => 
+      !p.userName?.trim() ||
+      !p.userPrograma ||
+      ((p.userPrograma === 'tradicional' || p.userPrograma === 'littles') && !p.userGraduacao) ||
       (product.askProfessor && !p.userProfessor) || 
-      (product.hasSizes && !p.userSize)
+      (product.hasSizes && !p.userSize) ||
+      (product.priceType === 'variable' && !p.selectedVariant)
     );
 
     if (incomplete) {
@@ -96,17 +145,33 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    const formDataList = participants.map(p => ({
-      ...p,
-      priceData: { amount: product.price }
-    }));
+    const formDataList = participants.map(p => {
+      const selectedAmount = product.priceType === 'variable' && p.selectedVariant ? p.selectedVariant.price : product.price;
+      const selectedVariantName = product.priceType === 'variable' && p.selectedVariant ? p.selectedVariant.name : undefined;
+      
+      const priceData = {
+        amount: selectedAmount,
+        ...(selectedVariantName ? { variantName: selectedVariantName } : {})
+      };
+
+      const { selectedVariant, ...rest } = p;
+      return {
+        ...rest,
+        priceData
+      };
+    });
+
+    const totalAmount = calculateTotal();
 
     addItem({
+      id: product.id,
       productId: product.id,
+      name: product.name,
       productName: product.name,
       imageUrl: product.imageUrl,
       priceType: product.priceType || 'fixed',
-      totalAmount: product.price * quantity,
+      price: product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0 ? product.priceVariants[0].price : product.price,
+      totalAmount,
       formDataList
     }, quantity);
 
@@ -135,10 +200,19 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const price = (product.price / 100).toLocaleString('pt-BR', { 
-    style: 'currency', 
-    currency: 'BRL' 
-  });
+  let priceText = '';
+  if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
+    const prices = product.priceVariants.map((v: any) => v.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    if (minPrice === maxPrice) {
+      priceText = (minPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    } else {
+      priceText = `A partir de ${(minPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    }
+  } else {
+    priceText = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
 
   return (
     <View className="flex-1 bg-white dark:bg-[#050505]">
@@ -183,7 +257,7 @@ export default function ProductDetailScreen() {
           </View>
 
           <Text className="text-2xl font-black text-yellow-600 dark:text-yellow-500 mb-6">
-            {price}
+            {priceText}
           </Text>
 
           <View className="h-[1px] bg-gray-100 dark:bg-white/5 w-full mb-6" />
@@ -205,12 +279,79 @@ export default function ProductDetailScreen() {
                   <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nome do Aluno</Text>
                   <TextInput 
                     value={participant.userName}
-                    onChangeText={(v) => updateParticipant(index, 'userName', v)}
+                    onChangeText={(v) => updateParticipant(index, { userName: v })}
                     placeholder="Nome completo"
                     placeholderTextColor="#999"
                     className="bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white"
                   />
                 </View>
+
+                {product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0 && (
+                  <View>
+                    <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
+                      {product.variantsLabel || 'Opção'}
+                    </Text>
+                    <View className="flex-row flex-wrap">
+                      {product.priceVariants.map((variant: any) => {
+                        const isSelected = participant.selectedVariant?.name === variant.name;
+                        const variantPriceFormatted = (variant.price / 100).toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        });
+                        return (
+                          <TouchableOpacity 
+                            key={variant.name}
+                            onPress={() => updateParticipant(index, { selectedVariant: variant })}
+                            className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${isSelected ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
+                          >
+                            <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>
+                              {variant.name} ({variantPriceFormatted})
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+
+                <View>
+                  <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Programa</Text>
+                  <View className="flex-row flex-wrap">
+                    {[
+                      { label: 'Tradicional', value: 'tradicional' },
+                      { label: 'Littles', value: 'littles' },
+                      { label: 'Não Aluno', value: 'não aluno' }
+                    ].map((prog) => (
+                      <TouchableOpacity 
+                        key={prog.value}
+                        onPress={() => {
+                          console.log(`[DEBUG] Button clicked: ${prog.value}`);
+                          updateParticipant(index, { userPrograma: prog.value, userGraduacao: '' });
+                        }}
+                        className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${participant.userPrograma === prog.value ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
+                      >
+                        <Text className={`text-xs font-bold ${participant.userPrograma === prog.value ? 'text-white' : 'text-gray-500'}`}>{prog.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {(participant.userPrograma === 'tradicional' || participant.userPrograma === 'littles') && (
+                  <View>
+                    <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Graduação</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
+                      {GRADUACOES[participant.userPrograma].map((grad) => (
+                        <TouchableOpacity 
+                          key={grad}
+                          onPress={() => updateParticipant(index, { userGraduacao: grad })}
+                          className={`mr-2 px-4 py-2 rounded-xl border ${participant.userGraduacao === grad ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
+                        >
+                          <Text className={`text-xs font-bold ${participant.userGraduacao === grad ? 'text-white' : 'text-gray-500'}`}>{grad}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
 
                 {product.hasSizes && product.sizes && (
                   <View>
@@ -219,7 +360,7 @@ export default function ProductDetailScreen() {
                       {product.sizes.map((size: string) => (
                         <TouchableOpacity 
                           key={size}
-                          onPress={() => updateParticipant(index, 'userSize', size)}
+                          onPress={() => updateParticipant(index, { userSize: size })}
                           className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${participant.userSize === size ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
                         >
                           <Text className={`text-xs font-bold ${participant.userSize === size ? 'text-white' : 'text-gray-500'}`}>{size}</Text>
@@ -237,7 +378,7 @@ export default function ProductDetailScreen() {
                         product.availableProfessors.map((profName: string, i: number) => (
                           <TouchableOpacity 
                             key={`prof-${i}`}
-                            onPress={() => updateParticipant(index, 'userProfessor', profName)}
+                            onPress={() => updateParticipant(index, { userProfessor: profName })}
                             className={`mr-2 px-4 py-2 rounded-xl border ${participant.userProfessor === profName ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
                           >
                             <Text className={`text-xs font-bold ${participant.userProfessor === profName ? 'text-white' : 'text-gray-500'}`}>{profName}</Text>
@@ -247,7 +388,7 @@ export default function ProductDetailScreen() {
                         instructors.map((inst) => (
                           <TouchableOpacity 
                             key={inst.id}
-                            onPress={() => updateParticipant(index, 'userProfessor', inst.name)}
+                            onPress={() => updateParticipant(index, { userProfessor: inst.name })}
                             className={`mr-2 px-4 py-2 rounded-xl border ${participant.userProfessor === inst.name ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
                           >
                             <Text className={`text-xs font-bold ${participant.userProfessor === inst.name ? 'text-white' : 'text-gray-500'}`}>{inst.name}</Text>
@@ -304,7 +445,7 @@ export default function ProductDetailScreen() {
           <View className="items-end">
             <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total</Text>
             <Text className="text-xl font-black text-gray-900 dark:text-white">
-              {(product.price * quantity / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(calculateTotal() / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </Text>
           </View>
         </View>

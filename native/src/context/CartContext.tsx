@@ -9,6 +9,10 @@ interface CartItem {
   quantity: number;
   imageUrl: string;
   totalAmount: number;
+  productId?: string;
+  productName?: string;
+  priceType?: string;
+  formDataList?: any[];
 }
 
 export interface Coupon {

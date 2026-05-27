@@ -214,10 +214,10 @@ service cloud.firestore {
       }
     }
 
-    // Regras para o Feed de Conteúdo
+    // Regra para o Feed de Conteúdo
     match /feed/{postId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null && (
+      allow create, delete: if request.auth != null && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true ||
@@ -225,6 +225,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isFinanceiro == true ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAcademy == true
+      );
+      allow update: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRH == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isFinanceiro == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAcademy == true ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
       );
     }
 

@@ -17,7 +17,8 @@ export default function TabLayout() {
   if (rawPhoto && rawPhoto.startsWith('/')) {
     rawPhoto = `https://kihap.com.br${rawPhoto}`;
   }
-  const displayPhoto = rawPhoto || 'https://kihap.com.br/intranet/default-profile.svg';
+  const defaultProfileImg = require('../../assets/images/default-profile.png');
+  const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
 
   return (
     <Tabs
@@ -72,7 +73,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <View className={`w-8 h-8 rounded-full overflow-hidden border-2 ${focused ? 'border-[#eab308]' : 'border-transparent'}`}>
               <Image 
-                source={{ uri: displayPhoto }} 
+                source={displayPhoto} 
                 className="w-full h-full object-cover"
               />
             </View>
