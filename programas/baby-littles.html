@@ -8,144 +8,366 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FFC107',
+                        'primary-dark': '#FF9800',
+                    }
+                }
+            }
+        }
+    </script>
     
-    <!-- Swiper.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
-
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="../css/style.css">
+    
+    <style>
+        /* CSS resets for native details-marker */
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary i {
+            transform: rotate(180deg);
+        }
+        .text-glow {
+            text-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+
+        /* Mobile fixes for hero aspect ratio stretch */
+        @media (max-width: 768px) {
+            .program-hero {
+                height: auto !important;
+                aspect-ratio: auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding-top: 8rem !important;
+                padding-bottom: 6rem !important;
+            }
+        }
+    </style>
 </head>
 <body class="antialiased bg-[#f8f7f4] text-[#111111]">
 
-    <!-- Header -->
+    <!-- Header (Carregado dinamicamente via script.js) -->
     <div id="header-container"></div>
 
     <!-- Main Content -->
-    <main>
+    <main class="overflow-x-hidden">
+        
         <!-- Hero Section -->
-        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
-            <!-- Background Image Overlay -->
+        <section class="program-hero hero-baby-littles relative py-32 md:py-48 flex items-center justify-center text-center overflow-hidden">
+            <!-- Background Image and Overlay -->
             <div class="absolute inset-0 z-0">
-                <img src="https://images.unsplash.com/photo-1595152230353-8686e088a8f1?q=80&w=1600&auto=format&fit=crop" 
-                     class="w-full h-full object-cover opacity-30" alt="Baby Littles Background">
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                <img src="../imgs/littlesheader.png" 
+                     class="w-full h-full object-cover opacity-50 scale-105" alt="Baby Littles Background">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[#f8f7f4] via-black/50 to-transparent"></div>
             </div>
 
-            <div class="relative z-10 container mx-auto px-6">
-                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90 opacity-0 animate-fadeInUp">
-                    <span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+            <div class="relative z-10 container mx-auto px-6 max-w-5xl">
+                <!-- Age Indicator Badge -->
+                <div class="inline-flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-5 py-2 text-xs font-bold text-yellow-400 uppercase tracking-widest animate-fadeInUp">
+                    <span class="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse"></span>
                     1.5 a 3 Anos
                 </div>
-                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                
+                <!-- Main Catchy Title -->
+                <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase leading-tight tracking-tight font-title text-white animate-fadeInUp delay-100 text-glow">
                     Baby <span class="text-yellow-400">Littles</span>
                 </h1>
-                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/80 leading-relaxed opacity-0 animate-fadeInUp delay-200">
-                    O primeiro passo na jornada do seu pequeno guerreiro. Desenvolvimento motor, social e diversão em um ambiente seguro.
+                
+                <!-- Compelling Subheadline -->
+                <p class="mt-6 text-base md:text-xl lg:text-2xl max-w-3xl mx-auto text-gray-200 leading-relaxed font-light animate-fadeInUp delay-200">
+                    O primeiro grande passo na jornada do seu pequeno guerreiro. Desenvolvimento psicomotor, cognição e socialização através de aulas lúdicas e divertidas.
                 </p>
+                
+                <!-- CTA Action Buttons -->
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fadeInUp delay-300">
+                    <a href="#booking-section" class="px-8 py-4 w-full sm:w-auto font-black text-black bg-yellow-400 rounded-xl hover:bg-white transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-yellow-400/20 uppercase tracking-wider text-xs">
+                        Agendar Aula Grátis
+                    </a>
+                    <a href="#beneficios" class="px-8 py-4 w-full sm:w-auto font-bold text-white bg-white/10 backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 transition-all duration-300 uppercase tracking-wider text-xs">
+                        Conhecer Benefícios
+                    </a>
+                </div>
             </div>
         </section>
 
-        <section class="py-24 bg-white relative overflow-hidden">
-            <div class="container mx-auto px-6 lg:px-8 relative z-10 max-w-7xl">
-                <!-- Main Header / Glass Panel & Video -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                    <div class="glass-card p-10 border-gray-100 shadow-2xl">
-                        <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-4 block">Foco no Crescimento</span>
-                        <h2 class="text-3xl md:text-4xl lg:text-5xl font-title uppercase mb-8 text-gray-900 leading-tight">
-                            Desenvolvimento<br><span class="text-yellow-500 italic">com Diversão</span>
-                        </h2>
-                        <div class="text-gray-600 space-y-6 text-lg leading-relaxed font-light">
-                            <p>Nosso programa <strong class="text-gray-900 font-bold italic underline decoration-yellow-400 underline-offset-4">Baby Littles</strong> é projetado para introduzir os conceitos mais básicos das artes marciais de uma forma lúdica e segura.</p>
-                            <p>O foco está no desenvolvimento da coordenação motora, equilíbrio e habilidades sociais essenciais, tudo sob a supervisão de instrutores especializados e apaixonados pelo que fazem.</p>
-                        </div>
-                    </div>
+        <!-- Pillars / Benefits Section -->
+        <section id="beneficios" class="py-24 bg-white relative">
+            <div class="container mx-auto px-6 max-w-7xl relative z-10">
+                
+                <!-- Section Header -->
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-3 block">Base para o Futuro</span>
+                    <h2 class="text-3xl md:text-5xl font-black uppercase font-title text-gray-900 leading-tight">
+                        O que desenvolvemos no <span class="text-yellow-500 italic">tatame</span>
+                    </h2>
+                    <p class="text-gray-500 mt-4 text-base md:text-lg font-light">
+                        Através de brincadeiras e rotinas esportivas planejadas, ajudamos os bebês a alcançarem marcos importantes do desenvolvimento infantil de forma natural e muito divertida.
+                    </p>
+                </div>
+
+                <!-- Grid of Benefits -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     
-                    <div class="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-video">
-                        <iframe class="w-full h-full" src="https://www.youtube.com/embed/fX_ERRYVUBA?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <!-- Motor Development -->
+                    <div class="glass-card p-8 flex flex-col items-center text-center hover:bg-yellow-50/20">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 flex items-center justify-center mb-6">
+                            <i class="fas fa-running text-2xl text-yellow-600"></i>
+                        </div>
+                        <h3 class="text-xl font-black font-title text-gray-900 mb-3 uppercase italic">Desenvolvimento Motor</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed font-light">
+                            Estímulo à marcha, equilíbrio estático e dinâmico, lateralidade e coordenação ampla por meio de circuitos físicos divertidos.
+                        </p>
                     </div>
-                </div>
 
-                <!-- Benefícios / Features -->
-                <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
-                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
-                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <!-- Socioemotional -->
+                    <div class="glass-card p-8 flex flex-col items-center text-center hover:bg-yellow-50/20">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 flex items-center justify-center mb-6">
+                            <i class="fas fa-people-carry text-2xl text-yellow-600"></i>
                         </div>
-                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Diversão Garantida</h3>
-                        <p class="text-gray-600 leading-relaxed">Atividades dinâmicas e lúdicas desenhadas para capturar a atenção total dos pequenos.</p>
+                        <h3 class="text-xl font-black font-title text-gray-900 mb-3 uppercase italic">Socialização</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed font-light">
+                            Desenvolvemos a escuta ativa, a partilha de espaços e objetos, e a adaptação em pequenos grupos com outras crianças.
+                        </p>
                     </div>
-                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
-                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
-                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                        </div>
-                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Coordenação</h3>
-                        <p class="text-gray-600 leading-relaxed">Desenvolvimento motor direcionado para aperfeiçoar os reflexos e equilíbrio no dia a dia.</p>
-                    </div>
-                    <div class="glass-card p-10 flex flex-col items-center text-center group hover:bg-yellow-50/30 transition-colors">
-                        <div class="w-16 h-16 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6">
-                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </div>
-                        <h3 class="text-2xl font-black font-title text-gray-900 mb-4 uppercase italic">Sociabilidade</h3>
-                        <p class="text-gray-600 leading-relaxed">Aprendizado valioso sobre disciplina, foco e respeito através da interação saudável.</p>
-                    </div>
-                </div>
 
-                <!-- Biblioteca Kihap Section -->
-                <div class="mt-32 w-full glass-card !p-0 rounded-3xl overflow-hidden relative border-none group bg-gray-900">
+                    <!-- Focus & Discipline -->
+                    <div class="glass-card p-8 flex flex-col items-center text-center hover:bg-yellow-50/20">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 flex items-center justify-center mb-6">
+                            <i class="fas fa-brain text-2xl text-yellow-600"></i>
+                        </div>
+                        <h3 class="text-xl font-black font-title text-gray-900 mb-3 uppercase italic">Foco & Atenção</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed font-light">
+                            Introduzimos conceitos primários de disciplina, foco nas instruções visuais e auditivas simples de maneira leve e estimulante.
+                        </p>
+                    </div>
+
+                    <!-- Family Connection -->
+                    <div class="glass-card p-8 flex flex-col items-center text-center hover:bg-yellow-50/20">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-400/10 flex items-center justify-center mb-6">
+                            <i class="fas fa-heart text-2xl text-yellow-600"></i>
+                        </div>
+                        <h3 class="text-xl font-black font-title text-gray-900 mb-3 uppercase italic">Conexão Familiar</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed font-light">
+                            A presença ativa dos pais na aula garante a segurança emocional da criança e gera memórias afetivas inestimáveis.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Biblioteca Kihap Section -->
+        <section class="py-24 bg-white">
+            <div class="container mx-auto px-6 max-w-6xl">
+                <div class="glass-card !p-0 rounded-3xl overflow-hidden relative border border-gray-150 shadow-xl bg-gray-900">
                     <div class="grid grid-cols-1 md:grid-cols-2 items-center h-full">
                         <div class="p-8 lg:p-14 z-10 relative">
-                            <span class="px-4 py-1 bg-yellow-400 text-black text-xs font-black rounded-full uppercase tracking-widest mb-6 inline-block shadow-lg">Novidade</span>
+                            <span class="px-4 py-1.5 bg-yellow-400 text-black text-[10px] font-black rounded-full uppercase tracking-widest mb-6 inline-block shadow-lg">Biblioteca Kihap</span>
                             <h2 class="text-4xl md:text-5xl font-black font-title uppercase mb-6 text-white leading-tight italic">
-                                <span class="text-yellow-400">Biblioteca</span><br> Kihap
+                                Ler e Aprender<br><span class="text-yellow-400">no Tatame</span>
                             </h2>
-                            <p class="text-gray-300 text-lg mb-10 leading-relaxed font-light">
-                                Criamos um espaço mágico cheio de historinhas exclusivas para você ler e aprender junto com seu pequeno guerreiro.
+                            <p class="text-gray-300 text-base mb-10 leading-relaxed font-light">
+                                O desenvolvimento intelectual caminha lado a lado com o motor. Criamos historinhas lúdicas e exclusivas com personagens carismáticos que representam os valores das artes marciais (respeito, coragem e foco) para ler e discutir junto com os pequenos.
                             </p>
-                            <a href="livrinhos.html" class="inline-flex items-center justify-center px-10 py-4 text-lg font-black text-black bg-yellow-400 rounded-xl hover:bg-white transition-all duration-300 hover:scale-[1.03] shadow-2xl uppercase tracking-wider">
-                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                            <a href="livrinhos.html" class="inline-flex items-center justify-center px-8 py-3.5 text-xs font-black text-black bg-yellow-400 rounded-xl hover:bg-white transition-all duration-300 hover:scale-[1.03] shadow-2xl uppercase tracking-wider">
+                                <i class="fas fa-book-open mr-2 text-base"></i>
                                 Acessar Biblioteca
                             </a>
                         </div>
-                        <div class="relative h-full min-h-[400px] overflow-hidden">
-                            <img src="../imgs/littles/story001/001.jpg" class="absolute inset-0 w-full h-full object-cover object-left md:object-center opacity-80 group-hover:scale-110 transition-transform duration-1000" alt="Capa da História Babys">
+                        <div class="relative h-full min-h-[400px] overflow-hidden group">
+                            <img src="../imgs/littles/story001/001.jpg" class="absolute inset-0 w-full h-full object-cover object-left md:object-center opacity-85 group-hover:scale-105 transition-transform duration-700" alt="Capa da História Babys">
                             <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent hidden md:block"></div>
                             <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent md:hidden"></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Vídeos Momentos -->
-                <div class="mt-32 text-center">
-                    <h2 class="text-4xl md:text-5xl font-black font-title uppercase mb-16 inline-block relative text-gray-900 italic">
-                        Momentos <span class="text-yellow-500">Kihap</span>
-                        <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-yellow-500 rounded-full"></div>
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-                        <div class="rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.03] transition-all duration-500 aspect-[9/16] ring-1 ring-black/5">
-                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                        <div class="rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.03] transition-all duration-500 aspect-[9/16] ring-1 ring-black/5">
-                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    </div>
-                </div>
             </div>
-            
-            <!-- Decorative elements -->
-            <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-yellow-500/5 to-transparent pointer-events-none"></div>
         </section>
 
-        <!-- Testimonials -->
+        <!-- Video Showcase (Momentos Kihap) -->
+        <section class="py-24 bg-[#fbfbfa] border-y border-gray-100">
+            <div class="container mx-auto px-6 max-w-6xl text-center">
+                <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-3 block">Nossos Pequenos Guerreiros</span>
+                <h2 class="text-3xl md:text-5xl font-black font-title uppercase mb-16 inline-block relative text-gray-900 italic">
+                    Momentos <span class="text-yellow-500">Kihap</span>
+                    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-yellow-500 rounded-full"></div>
+                </h2>
+                
+                <!-- Videos Grid with Mobile Phone Mockup Border -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-4xl mx-auto">
+                    
+                    <!-- Video 1 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-full max-w-[280px] rounded-[36px] border-[10px] border-gray-900 bg-gray-900 shadow-2xl overflow-hidden aspect-[9/16] relative transition-transform duration-300 hover:scale-[1.02]">
+                            <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/B1zxpoaiCrQ?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <h4 class="mt-6 font-black font-title text-gray-900 uppercase text-lg">Alegria nas Conquistas</h4>
+                        <p class="text-gray-500 text-sm font-light mt-1 max-w-[280px]">Assista a um trecho de nossa aula lúdica com foco no desenvolvimento e no sorriso.</p>
+                    </div>
+
+                    <!-- Video 2 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-full max-w-[280px] rounded-[36px] border-[10px] border-gray-900 bg-gray-900 shadow-2xl overflow-hidden aspect-[9/16] relative transition-transform duration-300 hover:scale-[1.02]">
+                            <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/GvPELDdVkL0?autoplay=0&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <h4 class="mt-6 font-black font-title text-gray-900 uppercase text-lg">Superação de Obstáculos</h4>
+                        <p class="text-gray-500 text-sm font-light mt-1 max-w-[280px]">Veja o circuito motor e os pequenos guerreiros avançando com foco e equilíbrio.</p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Conversional Booking Form (CTA) -->
+        <section id="booking-section" class="py-24 bg-yellow-500 relative">
+            <div class="container mx-auto px-6 max-w-5xl relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    
+                    <!-- CTA Copy -->
+                    <div class="text-black text-center lg:text-left">
+                        <span class="bg-black/10 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest inline-block mb-4">Inscrição de Aulas</span>
+                        <h2 class="text-4xl md:text-5xl font-black uppercase font-title leading-tight">
+                            Agende uma Aula<br>Experimental <span class="underline decoration-black decoration-4 underline-offset-4">Grátis</span>.
+                        </h2>
+                        <p class="mt-6 text-black/80 font-light text-lg leading-relaxed">
+                            Traga seu filho para vivenciar na prática as nossas atividades lúdicas de tatame. É rápido, sem compromisso e uma excelente forma de conhecer nossa equipe de especialistas!
+                        </p>
+                    </div>
+
+                    <!-- Conversional Form Card -->
+                    <div class="bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-yellow-400/20">
+                        <form id="lead-form" class="space-y-4">
+                            <div>
+                                <label for="nome" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Nome do Responsável</label>
+                                <input type="text" id="nome" placeholder="Digite seu nome completo"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all font-light"
+                                    required>
+                            </div>
+                            <div>
+                                <label for="email" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Seu melhor E-mail</label>
+                                <input type="email" id="email" placeholder="Ex: exemplo@email.com"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all font-light"
+                                    required>
+                            </div>
+                            <div>
+                                <label for="telefone" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Telefone (WhatsApp)</label>
+                                <input type="tel" id="telefone" placeholder="Ex: (61) 98765-4321"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all font-light"
+                                    required>
+                            </div>
+                            <div>
+                                <label for="unidade" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Selecione a Unidade</label>
+                                <select id="unidade" title="Unidade de Interesse"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all font-bold text-sm"
+                                    required>
+                                    <option value="" disabled selected>Carregando unidades...</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit"
+                                class="w-full bg-black text-white hover:bg-gray-900 active:scale-95 font-black py-4 rounded-xl shadow-lg transition-all uppercase tracking-widest text-xs mt-6">
+                                AGENDAR AULA EXPERIMENTAL
+                            </button>
+                        </form>
+                        <p id="form-status" class="mt-4 text-sm text-center font-bold"></p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive FAQ Accordion -->
+        <section class="py-24 bg-white">
+            <div class="container mx-auto px-6 max-w-4xl">
+                
+                <!-- Section Header -->
+                <div class="text-center max-w-xl mx-auto mb-16">
+                    <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-3 block">Dúvidas Frequentes</span>
+                    <h2 class="text-3xl md:text-5xl font-black uppercase font-title text-gray-900 leading-none">
+                        Perguntas <span class="text-yellow-500 italic">Frequentes</span>
+                    </h2>
+                </div>
+
+                <!-- Accordion Items -->
+                <div class="space-y-4">
+                    
+                    <!-- FAQ 1 -->
+                    <details class="group bg-gray-50 border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-sm [&_summary::-webkit-details-marker]:hidden cursor-pointer" open>
+                        <summary class="flex justify-between items-center font-black font-title text-gray-900 text-base md:text-lg">
+                            <span>Os pais precisam participar da aula?</span>
+                            <span class="transition-transform duration-300 text-yellow-500">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-4 text-gray-500 text-sm md:text-base leading-relaxed font-light">
+                            Sim! Na faixa etária de 1.5 a 3 anos (Baby Littles), a presença e a participação de um responsável (pai, mãe ou cuidador) são fundamentais. Isso garante a segurança emocional do bebê e torna as atividades ainda mais integrativas e prazerosas para a família.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 2 -->
+                    <details class="group bg-gray-50 border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-sm [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+                        <summary class="flex justify-between items-center font-black font-title text-gray-900 text-base md:text-lg">
+                            <span>Qual é a frequência e duração das aulas?</span>
+                            <span class="transition-transform duration-300 text-yellow-500">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-4 text-gray-500 text-sm md:text-base leading-relaxed font-light">
+                            As aulas de Baby Littles são estruturadas com duração de 30 a 40 minutos para respeitar a curva de atenção típica da faixa etária. Geralmente ocorrem 1 a 2 vezes por semana, o que é ideal para o estímulo motor contínuo e fixação da rotina.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 3 -->
+                    <details class="group bg-gray-50 border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-sm [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+                        <summary class="flex justify-between items-center font-black font-title text-gray-900 text-base md:text-lg">
+                            <span>Os bebês usam uniforme (dobok) nas aulas?</span>
+                            <span class="transition-transform duration-300 text-yellow-500">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-4 text-gray-500 text-sm md:text-base leading-relaxed font-light">
+                            Sim, eles usam um mini-dobok (o uniforme tradicional de artes marciais) super confortável e desenhado especialmente para eles! O uniforme ajuda a criar um senso de pertencimento e faz com que eles se sintam parte oficial da nossa comunidade de pequenos guerreiros.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 4 -->
+                    <details class="group bg-gray-50 border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-sm [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+                        <summary class="flex justify-between items-center font-black font-title text-gray-900 text-base md:text-lg">
+                            <span>Como funciona a segurança no tatame?</span>
+                            <span class="transition-transform duration-300 text-yellow-500">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-4 text-gray-500 text-sm md:text-base leading-relaxed font-light">
+                            A segurança é nossa prioridade número um. Nossos tatames possuem alta densidade e absorção de impacto, todas as quinas do ambiente são acolchoadas, e os acessórios de aula são feitos de materiais ultra macios. Além disso, as atividades ocorrem sob a tutela de professores certificados e em grupos reduzidos.
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials (Carregados dinamicamente via script.js) -->
         <div id="testimonials-container"></div>
 
-        <!-- CTA Section -->
-        <div id="cta-container"></div>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer (Carregado dinamicamente via script.js) -->
     <div id="footer-container"></div>
 
+    <!-- Global scripts and handlers -->
     <script src="../js/script.js"></script>
+    <script type="module" src="../js/form-handler.js"></script>
 </body>
 </html>
