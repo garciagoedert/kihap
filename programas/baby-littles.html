@@ -52,6 +52,18 @@
                 padding-bottom: 6rem !important;
             }
         }
+
+        /* Biblioteca Card Styles */
+        .biblioteca-card {
+            background-color: #111827 !important; /* bg-gray-900 */
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .biblioteca-card:hover {
+            background-color: #1f2937 !important; /* bg-gray-800 */
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
     </style>
 </head>
 <body class="antialiased bg-[#f8f7f4] text-[#111111]">
@@ -170,7 +182,7 @@
         <!-- Biblioteca Kihap Section -->
         <section class="py-24 bg-white">
             <div class="container mx-auto px-6 max-w-6xl">
-                <div class="glass-card-dark !p-0 rounded-3xl overflow-hidden relative border border-white/10 shadow-xl bg-gray-900">
+                <div class="biblioteca-card !p-0 rounded-3xl overflow-hidden relative border border-white/10 shadow-xl">
                     <div class="grid grid-cols-1 md:grid-cols-2 items-center h-full">
                         <div class="p-8 lg:p-14 z-10 relative">
                             <span class="px-4 py-1.5 bg-yellow-400 text-black text-[10px] font-black rounded-full uppercase tracking-widest mb-6 inline-block shadow-lg">Biblioteca Kihap</span>
