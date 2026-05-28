@@ -165,112 +165,162 @@
 
 
         <!-- Programs Section -->
-        <section id="programas" class="py-20 overflow-hidden">
+        <section id="programas" class="py-24 bg-gradient-to-b from-white via-gray-50/30 to-white overflow-hidden relative">
             <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title">Programas para <br> <span class="text-yellow-500">Todas
-                        as Idades</span></h2>
+                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-3 block">Nossos Programas</span>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
+                    Programas para <br> <span class="text-yellow-500 italic">Todas as Idades</span>
+                </h2>
+                <p class="mt-4 max-w-xl mx-auto text-gray-500 text-sm md:text-base font-light">
+                    Metodologias exclusivas desenhadas para o desenvolvimento físico, mental e emocional de cada etapa da vida. Encontre o grupo ideal e agende uma aula.
+                </p>
             </div>
-            <div class="mt-12">
-                <!-- Swiper -->
-                <div class="swiper-container program-swiper">
-                    <div class="swiper-wrapper">
-                        <!-- Slide 1: Baby Littles -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/baby-littles.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/baby.png" alt="Baby Littles" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">BABY LITTLES</h3>
-                                    <p class="text-sm">1.5 a 3 anos</p>
-                                </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">BABY LITTLES</h3>
-                                    <p>Desenvolvimento e Segurança para os Pequenos</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Slide 2: Littles -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/littles.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/littles.png" alt="Littles" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">LITTLES</h3>
-                                    <p class="text-sm">3 a 6 anos</p>
-                                </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">LITTLES</h3>
-                                    <p>Desenvolvimento e Diversão para os Pequenos</p>
+            
+            <div class="mt-16 container mx-auto px-6 relative max-w-7xl">
+                <div class="relative px-0 md:px-12">
+                    <!-- Swiper -->
+                    <div class="swiper program-swiper">
+                        <div class="swiper-wrapper">
+                            <!-- Slide 1: Baby Littles -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/baby-littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Baby Littles"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        1.5 a 3 anos
+                                    </div>
+                                    <img src="imgs/baby.png" alt="Baby Littles" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">BABY LITTLES</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">BABY LITTLES</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Desenvolvimento psicomotor, cognição e socialização em tatame.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Slide 3: Kids -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/kids.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/kids.png" alt="Kids" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">KIDS</h3>
-                                    <p class="text-sm">7 a 12 anos</p>
-                                </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">KIDS</h3>
-                                    <p>Crescimento Pessoal e Técnico para Crianças</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Slide 4: Adolescentes -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/adolescentes.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/adolescentes.png" alt="Adolescentes" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">ADOLESCENTES</h3>
-                                    <p class="text-sm">12 a 17 anos</p>
-                                </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">ADOLESCENTES</h3>
-                                    <p>Fortaleça Corpo e Habilidades Socioemocionais</p>
+                            <!-- Slide 2: Littles -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Littles"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        3 a 6 anos
+                                    </div>
+                                    <img src="imgs/littles.png" alt="Littles" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">LITTLES</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">LITTLES</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Canalização de energia, disciplina positiva e coordenação motora.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Slide 5: Adultos -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/adultos.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/adultos.png" alt="Adultos" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">ADULTOS</h3>
-                                    <p class="text-sm">18 anos acima</p>
-                                </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">ADULTOS</h3>
-                                    <p>Fortaleça Corpo e Mente</p>
+                            <!-- Slide 3: Kids -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/kids.html" class="absolute inset-0 z-10" aria-label="Ver programa Kids"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        7 a 12 anos
+                                    </div>
+                                    <img src="imgs/kids.png" alt="Kids" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">KIDS</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">KIDS</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Artes marciais, autodefesa, foco escolar e liderança para crianças.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Slide 6: Família -->
-                        <div class="swiper-slide">
-                            <div class="program-card">
-                                <a href="programas/familia.html" class="absolute inset-0 z-10"></a>
-                                <img src="imgs/familia.png" alt="Família" class="program-card-img">
-                                <div class="program-card-content">
-                                    <h3 class="font-title text-yellow-500">FAMÍLIA</h3>
-                                    <p class="text-sm">Todas as idades</p>
+                            <!-- Slide 4: Adolescentes -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/adolescentes.html" class="absolute inset-0 z-10" aria-label="Ver programa Adolescentes"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        12 a 17 anos
+                                    </div>
+                                    <img src="imgs/adolescentes.png" alt="Adolescentes" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">ADOLESCENTES</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">ADOLESCENTES</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Condicionamento físico, superação e inteligência socioemocional.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="program-card-overlay">
-                                    <h3 class="font-title text-yellow-500">FAMÍLIA</h3>
-                                    <p>Unindo Famílias Através das Artes Marciais</p>
+                            </div>
+                            <!-- Slide 5: Adultos -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/adultos.html" class="absolute inset-0 z-10" aria-label="Ver programa Adultos"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        18 anos acima
+                                    </div>
+                                    <img src="imgs/adultos.png" alt="Adultos" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">ADULTOS</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">ADULTOS</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Defesa pessoal, redução de estresse, foco e alta performance física.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Slide 6: Família -->
+                            <div class="swiper-slide group">
+                                <div class="program-card">
+                                    <a href="programas/familia.html" class="absolute inset-0 z-10" aria-label="Ver programa Família"></a>
+                                    <div class="absolute top-4 right-4 z-20 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-3.5 py-1.5 text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">
+                                        Todas as idades
+                                    </div>
+                                    <img src="imgs/familia.png" alt="Família" class="program-card-img">
+                                    <div class="program-card-content">
+                                        <h3 class="font-title text-yellow-500 text-lg md:text-xl font-black uppercase tracking-tight leading-none">FAMÍLIA</h3>
+                                    </div>
+                                    <div class="program-card-overlay">
+                                        <h3 class="font-title text-yellow-500 text-lg uppercase font-black tracking-tight mb-2">FAMÍLIA</h3>
+                                        <p class="text-xs text-gray-300 leading-relaxed font-light mb-5">Integração familiar e fortalecimento de laços através do esporte.</p>
+                                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-yellow-400 uppercase tracking-widest">
+                                            Conhecer Programa
+                                            <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- Add Pagination -->
-                    <div class="swiper-pagination"></div>
-                    <!-- Add Navigation -->
-                    <div class="swiper-button-next"></div>
-                    <div class="swiper-button-prev"></div>
+                    
+                    <!-- Circular Floating Navigation Controls (Hidden on mobile) -->
+                    <button class="swiper-button-prev !hidden md:!flex custom-swiper-btn left-0" aria-label="Anterior">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button class="swiper-button-next !hidden md:!flex custom-swiper-btn right-0" aria-label="Próximo">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
+                
+                <!-- Swiper Pagination indicator dots -->
+                <div class="swiper-pagination !bottom-0 mt-8"></div>
             </div>
         </section>
 
