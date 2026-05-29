@@ -271,7 +271,7 @@ function setupModalCloseListeners(handlers = {}) {
 }
 
 import { db } from './firebase-config.js';
-import { doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
 import { getCurrentUser, ensureAdmin } from './auth.js';
 import { notificationsManager } from './notifications-manager.js';
@@ -800,6 +800,192 @@ function initGlobalKobeChatbot() {
     setupKobeChatbotLogic();
 }
 
+const kobeTools = [{
+    functionDeclarations: [
+        {
+            name: "getProspectsSummary",
+            description: "Retorna o total de prospects cadastrados na base de dados da Kihap e as quantidades em cada status/fase do funil.",
+            parameters: {
+                type: "OBJECT",
+                properties: {}
+            }
+        },
+        {
+            name: "searchStudent",
+            description: "Busca informações de alunos ou usuários cadastrados na base da Kihap por nome ou e-mail.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    name: {
+                        type: "STRING",
+                        description: "Nome ou e-mail do aluno a ser pesquisado (busca parcial, ex: 'João')."
+                    }
+                },
+                required: ["name"]
+            }
+        },
+        {
+            name: "getTasksSummary",
+            description: "Retorna o resumo de planos e tarefas cadastrados na base de dados da intranet.",
+            parameters: {
+                type: "OBJECT",
+                properties: {}
+            }
+        },
+        {
+            name: "getDepartmentDemands",
+            description: "Busca as demandas/tarefas em aberto do Trello da intranet, opcionalmente filtrando por setor/departamento (como 'rh', 'financeiro', 'comercial', 'juridico', etc.).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    department: {
+                        type: "STRING",
+                        description: "Nome do setor/departamento para filtrar as demandas (opcional)."
+                    }
+                }
+            }
+        }
+    ]
+}];
+
+async function getProspectsSummary() {
+    try {
+        const prospectsRef = collection(db, 'prospects');
+        const q = query(prospectsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const count = snapshot.size;
+        
+        const stats = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const phase = data.phase || data.status || 'Não Definido';
+            stats[phase] = (stats[phase] || 0) + 1;
+        });
+
+        return {
+            total: count,
+            fases: stats,
+            message: `Temos um total de ${count} prospects cadastrados na base (amostra de 150).`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar resumo de prospects:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStudent(args) {
+    const { name } = args;
+    if (!name) return { error: "Nome não fornecido para busca." };
+    try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const userName = (data.name || data.displayName || '').toLowerCase();
+            const userEmail = (data.email || '').toLowerCase();
+            if (userName.includes(name.toLowerCase()) || userEmail.includes(name.toLowerCase())) {
+                results.push({
+                    name: data.name || data.displayName || 'Sem Nome',
+                    email: data.email || 'Sem Email',
+                    unit: data.unit || data.unidade || 'Kihap',
+                    isInstructor: data.isInstructor || false,
+                    isAdmin: data.isAdmin || false,
+                    isRH: data.isRH || false,
+                    isJuridico: data.isJuridico || false
+                });
+            }
+        });
+        
+        return {
+            query: name,
+            results: results.slice(0, 10),
+            countFound: results.length,
+            message: `Busca finalizada. Encontramos ${results.length} correspondentes.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar estudante:", e);
+        return { error: e.message };
+    }
+}
+
+async function getTasksSummary() {
+    try {
+        const plansRef = collection(db, 'plans');
+        const snapshot = await getDocs(plansRef);
+        const count = snapshot.size;
+        const stats = {};
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const status = data.status || 'Pendente';
+            stats[status] = (stats[status] || 0) + 1;
+        });
+
+        return {
+            totalPlans: count,
+            statusDistribution: stats,
+            message: `Encontramos ${count} planos cadastrados na base.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar resumo de planos/tarefas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getDepartmentDemands(args) {
+    const { department } = args;
+    try {
+        const demandsRef = collection(db, 'trello_demands');
+        const q = query(demandsRef, limit(100));
+        const snapshot = await getDocs(q);
+        const results = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const dept = (data.department || data.setor || '').toLowerCase();
+            if (!department || dept.includes(department.toLowerCase())) {
+                results.push({
+                    title: data.title || data.titulo || 'Sem Título',
+                    status: data.status || 'Pendente',
+                    department: data.department || data.setor || 'Geral',
+                    description: data.description || data.descricao || ''
+                });
+            }
+        });
+
+        return {
+            departmentRequested: department || 'Todos',
+            totalDemands: results.length,
+            demands: results.slice(0, 10),
+            message: `Busca por demandas finalizada. ${results.length} encontradas.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar demandas:", e);
+        return { error: e.message };
+    }
+}
+
+async function callGemini(history, systemInstruction, apiKey) {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: history,
+            systemInstruction: {
+                parts: [{ text: systemInstruction }]
+            },
+            tools: kobeTools
+        })
+    });
+    
+    const json = await response.json();
+    if (json.error) throw new Error(json.error.message);
+    return json;
+}
+
 function setupKobeChatbotLogic() {
     const aiChatToggle = document.getElementById('aiChatToggle');
     const aiChatWindow = document.getElementById('aiChatWindow');
@@ -1032,29 +1218,72 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                 throw new Error("Chave da API do Gemini não configurada.");
             }
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: chatHistory,
-                    systemInstruction: {
-                        parts: [{ text: systemInstruction }]
+            let responseJson = await callGemini(chatHistory, systemInstruction, apiKey);
+            
+            let loops = 0;
+            const maxLoops = 5;
+            
+            while (loops < maxLoops) {
+                const candidate = responseJson.candidates?.[0];
+                const parts = candidate?.content?.parts || [];
+                const functionCalls = parts.filter(p => p.functionCall);
+                
+                if (functionCalls.length === 0) {
+                    const aiText = parts[0]?.text || "Desculpe, não consegui obter uma resposta.";
+                    chatHistory.push({
+                        role: 'model',
+                        parts: [{ text: aiText }]
+                    });
+                    saveHistory();
+                    appendMessage('model', aiText);
+                    break;
+                }
+                
+                chatHistory.push({
+                    role: 'model',
+                    parts: parts
+                });
+                saveHistory();
+                
+                const responseParts = [];
+                for (const call of functionCalls) {
+                    const funcName = call.functionCall.name;
+                    const args = call.functionCall.args || {};
+                    
+                    let result = {};
+                    if (funcName === "getProspectsSummary") {
+                        result = await getProspectsSummary();
+                    } else if (funcName === "searchStudent") {
+                        result = await searchStudent(args);
+                    } else if (funcName === "getTasksSummary") {
+                        result = await getTasksSummary();
+                    } else if (funcName === "getDepartmentDemands") {
+                        result = await getDepartmentDemands(args);
+                    } else {
+                        result = { error: "Função desconhecida." };
                     }
-                })
-            });
-
-            const json = await response.json();
-            if (json.error) throw new Error(json.error.message);
-
-            const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui obter uma resposta.";
-
-            chatHistory.push({
-                role: 'model',
-                parts: [{ text: aiText }]
-            });
-            saveHistory();
-
-            appendMessage('model', aiText);
+                    
+                    responseParts.push({
+                        functionResponse: {
+                            name: funcName,
+                            response: result
+                        }
+                    });
+                }
+                
+                chatHistory.push({
+                    role: 'user',
+                    parts: responseParts
+                });
+                saveHistory();
+                
+                responseJson = await callGemini(chatHistory, systemInstruction, apiKey);
+                loops++;
+            }
+            
+            if (loops >= maxLoops) {
+                appendMessage('model', "Erro: Limite de chamadas de ferramentas excedido.");
+            }
 
         } catch (e) {
             console.error("Erro ao enviar mensagem para a IA:", e);
