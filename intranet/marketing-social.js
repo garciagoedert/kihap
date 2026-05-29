@@ -1,5 +1,40 @@
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { socialConfig } from './social-config.js';
+import { db } from './firebase-config.js';
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Local cache for configuration
+let activeConfig = { ...socialConfig };
+
+async function loadConfig() {
+    // 1. Fallback 1: hardcoded config (already in activeConfig)
+    
+    // 2. Fallback 2: localStorage (client-specific/developer override)
+    const local = localStorage.getItem('meta_ads_config');
+    if (local) {
+        try {
+            const parsed = JSON.parse(local);
+            activeConfig = { ...activeConfig, ...parsed };
+        } catch (e) {
+            console.error("Erro ao ler config do localStorage:", e);
+        }
+    }
+
+    // 3. Fallback 3: Firestore config (shared admin config)
+    try {
+        const docRef = doc(db, "config", "meta_ads");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const firestoreData = docSnap.data();
+            activeConfig = { ...activeConfig, ...firestoreData };
+            console.log("Configurações do Meta Ads carregadas do Firestore.");
+        } else {
+            console.log("Nenhum documento de configuração encontrado no Firestore. Usando defaults.");
+        }
+    } catch (e) {
+        console.warn("Não foi possível carregar configurações do Firestore (pode requerer permissões):", e);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Carregar componentes padrão (sidebar, header)
@@ -41,14 +76,76 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // AI Listener
     document.getElementById('analyzeBtn')?.addEventListener('click', generateAIAnalysis);
+
+    // 4. Modal de Configurações do Meta
+    const configModal = document.getElementById('meta-config-modal');
+    const configForm = document.getElementById('meta-config-form');
+
+    document.getElementById('connectMetaBtn')?.addEventListener('click', () => {
+        // Preencher os campos com os valores atuais da activeConfig
+        document.getElementById('meta-token').value = activeConfig.accessToken || '';
+        document.getElementById('meta-account').value = activeConfig.adAccountId || '';
+        document.getElementById('meta-version').value = activeConfig.apiVersion || 'v19.0';
+        document.getElementById('meta-gemini').value = activeConfig.geminiKey || '';
+
+        configModal.classList.remove('hidden');
+    });
+
+    document.getElementById('cancel-meta-btn')?.addEventListener('click', () => {
+        configModal.classList.add('hidden');
+    });
+
+    configForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const saveBtn = configForm.querySelector('button[type="submit"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
+
+        const newConfig = {
+            accessToken: document.getElementById('meta-token').value.trim(),
+            adAccountId: document.getElementById('meta-account').value.trim(),
+            apiVersion: document.getElementById('meta-version').value.trim(),
+            geminiKey: document.getElementById('meta-gemini').value.trim()
+        };
+
+        try {
+            // Salvar no localStorage
+            localStorage.setItem('meta_ads_config', JSON.stringify(newConfig));
+
+            // Salvar no Firestore
+            const docRef = doc(db, "config", "meta_ads");
+            await setDoc(docRef, newConfig, { merge: true });
+
+            console.log("Configurações atualizadas com sucesso!");
+            configModal.classList.add('hidden');
+            
+            // Recarregar dashboard
+            await initDashboard();
+
+        } catch (err) {
+            console.error("Erro ao salvar configurações:", err);
+            alert("Erro ao salvar no Firestore (suas alterações foram salvas localmente): " + err.message);
+            // Fecha mesmo assim para usar a config local
+            configModal.classList.add('hidden');
+            await initDashboard();
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    });
 });
 
 // Global state to hold data for AI
 let currentDashboardData = null;
 
 async function initDashboard() {
+    // Carregar configurações dinâmicas
+    await loadConfig();
+
     // Verificar se temos credenciais configuradas
-    if (!socialConfig.accessToken || socialConfig.accessToken === "SEU_ACCESS_TOKEN_AQUI") {
+    if (!activeConfig.accessToken || activeConfig.accessToken === "SEU_ACCESS_TOKEN_AQUI") {
         console.warn("Meta Access Token não configurado. Usando Mock Data.");
         const data = getMockData();
         updateOverviewCards(data.overview);
@@ -60,7 +157,7 @@ async function initDashboard() {
             const warning = document.createElement('div');
             warning.id = 'configWarning';
             warning.className = 'bg-yellow-600/20 border border-yellow-600 text-yellow-500 p-3 rounded mb-4 text-sm';
-            warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Modo Demonstração. Configure <code>intranet/social-config.js</code> para ver dados reais.';
+            warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Modo Demonstração. Configure clicando em <strong>Conectar Meta</strong> para ver dados reais.';
             document.querySelector('#main-content > div').prepend(warning);
         }
         return;
@@ -84,7 +181,7 @@ async function initDashboard() {
 
 // --- META API INTEGRATION ---
 async function fetchMetaAdsData() {
-    const { accessToken, adAccountId, apiVersion } = socialConfig;
+    const { accessToken, adAccountId, apiVersion } = activeConfig;
     const baseUrl = `https://graph.facebook.com/${apiVersion}/act_${adAccountId}`;
 
     // Date Logic
@@ -346,7 +443,7 @@ async function generateAIAnalysis() {
         `;
 
         // Detected Models: gemini-2.5-flash, gemini-2.5-pro
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${socialConfig.geminiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeConfig.geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -417,11 +514,10 @@ function updateOverviewCards(overview) {
 
     // Update Folowers (List)
     const igEl = document.getElementById('igFollowers');
-    // const igUserEl = document.getElementById('igUsername'); // Removed single user el usage
 
     if (igEl && overview.igAccounts) {
         igEl.innerHTML = '';
-        igEl.className = 'text-sm text-gray-300 space-y-1 mt-2'; // Reset style
+        igEl.className = 'text-sm text-gray-700 dark:text-gray-300 space-y-1.5 mt-2'; // Reset style
 
         overview.igAccounts.forEach(acc => {
             const div = document.createElement('div');
@@ -439,31 +535,33 @@ function renderCampaignsTable(campaigns) {
 
     campaigns.forEach(camp => {
         const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-700/50 transition-colors border-b border-gray-800 last:border-0';
+        row.className = 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0';
 
         let statusBadge = '';
         if (camp.status === 'active') {
-            statusBadge = `<span class="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold">Ativa</span>`;
+            statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">Ativa</span>`;
         } else {
-            statusBadge = `<span class="px-2 py-0.5 rounded-full bg-gray-600/50 text-gray-400 text-xs font-semibold">Pausada</span>`;
+            statusBadge = `<span class="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs font-bold">Pausada</span>`;
         }
 
         row.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap">${statusBadge}</td>
-            <td class="px-4 py-3 font-medium text-white truncate max-w-xs" title="${camp.name}">${camp.name}</td>
-            <td class="px-4 py-3 font-bold text-blue-400">${formatNumber(camp.msgs)}</td>
-            <td class="px-4 py-3">${formatNumber(camp.clicks)}</td>
-            <td class="px-4 py-3 text-gray-400">${camp.ctr.toFixed(2)}%</td>
-            <td class="px-4 py-3 text-gray-400">${formatCurrency(camp.cpc)}</td>
-            <td class="px-4 py-3">${formatNumber(camp.reach)}</td>
-            <td class="px-4 py-3">${formatNumber(camp.visits)}</td>
-            <td class="px-4 py-3 text-white font-semibold">${formatCurrency(camp.spend)}</td>
+            <td class="px-4 py-3 font-bold text-gray-900 dark:text-white truncate max-w-xs" title="${camp.name}">${camp.name}</td>
+            <td class="px-4 py-3 font-bold text-blue-600 dark:text-blue-400">${formatNumber(camp.msgs)}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${formatNumber(camp.clicks)}</td>
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400">${camp.ctr.toFixed(2)}%</td>
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400">${formatCurrency(camp.cpc)}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${formatNumber(camp.reach)}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${formatNumber(camp.visits)}</td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white font-bold">${formatCurrency(camp.spend)}</td>
         `;
         tbody.appendChild(row);
     });
 }
 
 function renderCharts(chartData) {
+    const isDark = document.documentElement.classList.contains('dark');
+    
     // 1. Performance Chart (Line/Bar combo)
     const ctxPerf = document.getElementById('performanceChart').getContext('2d');
 
@@ -503,23 +601,23 @@ function renderCharts(chartData) {
                 intersect: false,
             },
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#9ca3af' } }
+                legend: { position: 'bottom', labels: { color: isDark ? '#9ca3af' : '#4b5563' } }
             },
             scales: {
-                x: { ticks: { color: '#6b7280' }, grid: { color: '#374151' } },
+                x: { ticks: { color: isDark ? '#9ca3af' : '#4b5563' }, grid: { color: isDark ? '#374151' : '#e5e7eb' } },
                 y: {
                     type: 'linear',
                     display: true,
                     position: 'left',
-                    ticks: { color: '#6b7280' },
-                    grid: { color: '#374151' }
+                    ticks: { color: isDark ? '#9ca3af' : '#4b5563' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
                     grid: { drawOnChartArea: false }, // only want the grid lines for one axis to show up
-                    ticks: { color: '#6b7280', callback: (val) => 'R$ ' + val }
+                    ticks: { color: isDark ? '#9ca3af' : '#4b5563', callback: (val) => 'R$ ' + val }
                 },
             }
         }
@@ -545,7 +643,7 @@ function renderCharts(chartData) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 20 } }
+                legend: { position: 'bottom', labels: { color: isDark ? '#9ca3af' : '#4b5563', padding: 20 } }
             },
             cutout: '70%'
         }
