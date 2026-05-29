@@ -96,34 +96,61 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Inicializar o Swiper
-    if (document.querySelector('.program-swiper')) {
-        var swiper = new Swiper('.program-swiper', {
-            loop: true,
-            slidesPerView: 'auto',
-            spaceBetween: 15,
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            },
-            navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            },
-            breakpoints: {
-                640: {
-                    slidesPerView: 2,
-                    spaceBetween: 20,
-                },
-                768: {
-                    slidesPerView: 3,
-                    spaceBetween: 30,
-                },
-                1024: {
-                    slidesPerView: 4,
-                    spaceBetween: 40,
-                },
-            }
+    // Lógica de Filtragem dos Programas por Abas (Tabs)
+    const filterButtons = document.querySelectorAll('.filter-tab-btn');
+    const programCards = document.querySelectorAll('.program-card-clean');
+
+    if (filterButtons.length > 0 && programCards.length > 0) {
+        // Inicialmente definimos a aba 'Todos' como ativa visualmente
+        const initialActiveTab = document.querySelector('.filter-tab-btn[data-filter="all"]');
+        if (initialActiveTab) {
+            initialActiveTab.classList.add('bg-yellow-500', 'text-black', 'border-yellow-500', 'shadow-lg', 'shadow-yellow-500/20');
+            initialActiveTab.classList.remove('bg-white', 'text-gray-700', 'border-amber-200/40');
+        }
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Resetar estados ativos de todas as abas
+                filterButtons.forEach(b => {
+                    b.classList.remove('active', 'bg-yellow-500', 'text-black', 'border-yellow-500', 'shadow-lg', 'shadow-yellow-500/20');
+                    b.classList.add('bg-white', 'text-gray-700', 'border-amber-200/40');
+                });
+
+                // Definir estado ativo para a aba clicada
+                btn.classList.add('active', 'bg-yellow-500', 'text-black', 'border-yellow-500', 'shadow-lg', 'shadow-yellow-500/20');
+                btn.classList.remove('bg-white', 'text-gray-700', 'border-amber-200/40');
+
+                const filterValue = btn.getAttribute('data-filter');
+
+                programCards.forEach(card => {
+                    const cardCategory = card.getAttribute('data-category');
+                    
+                    if (filterValue === 'all' || cardCategory === filterValue) {
+                        // Mostrar card
+                        card.classList.remove('filtered-out');
+                        
+                        // Fade in suave
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'scale(1)';
+                        }, 50);
+                    } else {
+                        // Fade out suave
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.95)';
+                        
+                        // Colapso físico após fade out
+                        setTimeout(() => {
+                            // Verifica se o filtro ainda é o mesmo (evita bugs de clique rápido)
+                            const currentActiveTab = document.querySelector('.filter-tab-btn.active');
+                            const currentActiveFilter = currentActiveTab ? currentActiveTab.getAttribute('data-filter') : 'all';
+                            if (currentActiveFilter !== 'all' && cardCategory !== currentActiveFilter) {
+                                card.classList.add('filtered-out');
+                            }
+                        }, 450); // Combina com os 0.5s de transição de CSS
+                    }
+                });
+            });
         });
     }
 
