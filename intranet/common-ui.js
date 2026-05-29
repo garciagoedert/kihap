@@ -270,8 +270,9 @@ function setupModalCloseListeners(handlers = {}) {
     }
 }
 
-import { db } from './firebase-config.js';
+import { db, functions } from './firebase-config.js';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
 import { getCurrentUser, ensureAdmin } from './auth.js';
 import { notificationsManager } from './notifications-manager.js';
@@ -731,7 +732,12 @@ Aqui estão algumas seções principais da intranet que você pode guiar os usu�
 - **Cursos / Tatame**: Treinamentos e aulas (/intranet/cursos.html).
 - **Feed**: Comunicados internos (/intranet/feed.html).
 
-Se o usuário estiver em uma página específica e fizer perguntas sobre ela, forneça respostas contextualizadas. Por exemplo, na página de Redes Sociais, você pode ajudar a analisar as métricas de Meta Ads (como CPR, CTR, CPC, cliques e impressões) se ele fornecer os dados ou pedir insights.
+Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem acesso a ferramentas integradas ao banco de dados:
+- Alunos: você pode pesquisar alunos (\`searchStudents\`) e ver a ficha completa de um aluno (\`getStudentProfile\`), incluindo informações financeiras do Mercado Pago, histórico de testes físicos, cursos liberados e emblemas conquistados.
+- Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
+- CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups (\`contactLog\`) e as observações.
+
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas ou prospects/leads.
 
 Mantenha sempre o tom prestativo, confiante, enérgico, focado na filosofia das artes marciais (respeito, disciplina, foco e superação) e amigável. Sempre se apresente e responda como o Kobe, usando referências de forma sutil à sua identidade de mascote macaco quando apropriado (sem ser bobo demais, mas mantendo a simpatia). Lembre-se sempre de que você nunca deve se referir a si mesmo como "mestre" ou "macaco-mestre".
 Mantenha suas respostas diretas, organizadas (use negritos como **texto** para destacar caminhos e termos importantes) e evite textos excessivamente longos.`;
@@ -811,17 +817,63 @@ const kobeTools = [{
             }
         },
         {
-            name: "searchStudent",
-            description: "Busca informações de alunos ou usuários cadastrados na base da Kihap por nome ou e-mail.",
+            name: "searchProspects",
+            description: "Busca leads/prospects cadastrados no CRM do funil de marketing/vendas por termo parcial (responsável, empresa, e-mail, telefone, setor).",
             parameters: {
                 type: "OBJECT",
                 properties: {
-                    name: {
+                    query: {
                         type: "STRING",
-                        description: "Nome ou e-mail do aluno a ser pesquisado (busca parcial, ex: 'João')."
+                        description: "Termo de busca (nome do responsável, empresa, e-mail, telefone, setor)."
                     }
                 },
-                required: ["name"]
+                required: ["query"]
+            }
+        },
+        {
+            name: "getProspectDetails",
+            description: "Retorna todos os dados detalhados de um lead/prospect específico por ID, incluindo o histórico completo de contatos (contactLog) e observações.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    prospectId: {
+                        type: "STRING",
+                        description: "O ID do documento do prospect."
+                    }
+                },
+                required: ["prospectId"]
+            }
+        },
+        {
+            name: "searchStudents",
+            description: "Busca estudantes/alunos cadastrados no sistema por nome, e-mail ou ID. Retorna uma lista resumida.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome, e-mail ou ID parcial) para encontrar os alunos."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStudentProfile",
+            description: "Retorna o perfil detalhado de um aluno específico pelo seu ID (idMember), incluindo dados cadastrais, histórico de testes físicos, cursos permitidos, emblemas e informações financeiras do Mercado Pago.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    studentId: {
+                        type: "INTEGER",
+                        description: "O ID numérico do aluno (idMember) para obter os detalhes."
+                    },
+                    unitId: {
+                        type: "STRING",
+                        description: "O ID da unidade do aluno (ex: 'centro', 'coqueiros', etc.). Opcional."
+                    }
+                },
+                required: ["studentId"]
             }
         },
         {
@@ -843,6 +895,34 @@ const kobeTools = [{
                         description: "Nome do setor/departamento para filtrar as demandas (opcional)."
                     }
                 }
+            }
+        },
+        {
+            name: "searchDemands",
+            description: "Busca demandas (tarefas do painel/Trello da intranet) por palavra-chave no título ou descrição.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar demandas no título ou descrição."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getDemandDetails",
+            description: "Busca os detalhes completos de uma demanda específica por seu ID do documento, incluindo o histórico completo de comentários e notas internas.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    demandId: {
+                        type: "STRING",
+                        description: "O ID do documento da demanda."
+                    }
+                },
+                required: ["demandId"]
             }
         }
     ]
@@ -873,40 +953,225 @@ async function getProspectsSummary() {
     }
 }
 
-async function searchStudent(args) {
-    const { name } = args;
-    if (!name) return { error: "Nome não fornecido para busca." };
+async function searchProspects(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
     try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, limit(150));
+        const prospectsRef = collection(db, 'prospects');
+        const q = query(prospectsRef, limit(150));
         const snapshot = await getDocs(q);
         const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
         
         snapshot.forEach(doc => {
             const data = doc.data();
-            const userName = (data.name || data.displayName || '').toLowerCase();
-            const userEmail = (data.email || '').toLowerCase();
-            if (userName.includes(name.toLowerCase()) || userEmail.includes(name.toLowerCase())) {
+            const company = (data.empresa || '').toLowerCase();
+            const resp = (data.responsavel || '').toLowerCase();
+            const email = (data.email || '').toLowerCase();
+            const phone = (data.telefone || '').toLowerCase();
+            const sector = (data.setor || '').toLowerCase();
+            
+            if (company.includes(lowerQuery) || resp.includes(lowerQuery) || email.includes(lowerQuery) || phone.includes(lowerQuery) || sector.includes(lowerQuery)) {
                 results.push({
-                    name: data.name || data.displayName || 'Sem Nome',
-                    email: data.email || 'Sem Email',
-                    unit: data.unit || data.unidade || 'Kihap',
-                    isInstructor: data.isInstructor || false,
-                    isAdmin: data.isAdmin || false,
-                    isRH: data.isRH || false,
-                    isJuridico: data.isJuridico || false
+                    id: doc.id,
+                    empresa: data.empresa || 'Sem Empresa',
+                    responsavel: data.responsavel || 'Sem Responsável',
+                    email: data.email || '',
+                    telefone: data.telefone || '',
+                    fase: data.phase || data.status || 'Contato Inicial',
+                    prioridade: data.prioridade || 'Média'
                 });
             }
         });
         
         return {
-            query: name,
-            results: results.slice(0, 10),
+            query: searchQuery,
+            results: results.slice(0, 15),
             countFound: results.length,
-            message: `Busca finalizada. Encontramos ${results.length} correspondentes.`
+            message: `Busca concluída. Encontramos ${results.length} prospects.`
         };
     } catch (e) {
-        console.error("Erro ao buscar estudante:", e);
+        console.error("Erro ao buscar prospects:", e);
+        return { error: e.message };
+    }
+}
+
+async function getProspectDetails(args) {
+    const { prospectId } = args;
+    if (!prospectId) return { error: "prospectId não fornecido." };
+    try {
+        const docRef = doc(db, 'prospects', prospectId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Prospect com ID ${prospectId} não encontrado.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const logs = (data.contactLog || []).map(log => ({
+            author: log.author || 'Usuário',
+            description: log.description || '',
+            timestamp: log.timestamp || ''
+        }));
+        
+        return {
+            id: docSnap.id,
+            empresa: data.empresa || 'Sem Empresa',
+            responsavel: data.responsavel || 'Sem Responsável',
+            setor: data.setor || '',
+            telefone: data.telefone || '',
+            email: data.email || '',
+            prioridade: data.prioridade || 'Média',
+            ticketEstimado: data.ticketEstimado || '',
+            origemLead: data.origemLead || '',
+            cpf: data.cpf || '',
+            cnpj: data.cnpj || '',
+            endereco: data.endereco || '',
+            redesSociais: data.redesSociais || '',
+            siteAtual: data.siteAtual || '',
+            observacoes: data.observacoes || '',
+            contactLog: logs,
+            fase: data.phase || data.status || 'Contato Inicial'
+        };
+    } catch (e) {
+        console.error("Erro ao buscar detalhes do prospect:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStudents(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
+        const result = await listAlunosLocais({ unitId: 'all' });
+        const students = result.data || [];
+        
+        const lowerQuery = searchQuery.toLowerCase();
+        let matchedStudents = students.filter(s => {
+            const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
+            const idStr = String(s.idMember || '');
+            return fullName.includes(lowerQuery) || idStr.includes(lowerQuery);
+        });
+
+        const results = matchedStudents.slice(0, 15).map(s => ({
+            idMember: s.idMember,
+            name: `${s.firstName || ''} ${s.lastName || ''}`,
+            email: s.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || 'Sem e-mail',
+            phone: s.contacts?.find(c => c.contactType === 'Telefone' || c.idContactType === 1)?.description || 'Sem telefone',
+            branchName: s.branchName || 'Centro',
+            belt: s.belt || 'N/A',
+            tuitionStatus: s.tuitionStatus || 'N/A'
+        }));
+
+        return {
+            query: searchQuery,
+            results: results,
+            countFound: matchedStudents.length,
+            message: `Busca finalizada. Encontramos ${matchedStudents.length} correspondentes.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar alunos:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStudentProfile(args) {
+    const { studentId, unitId } = args;
+    if (!studentId) return { error: "studentId não fornecido." };
+    
+    try {
+        const idNum = parseInt(studentId, 10);
+        const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
+        const listResult = await listAlunosLocais({ unitId: 'all' });
+        const students = listResult.data || [];
+        const student = students.find(s => s.idMember === idNum);
+        
+        if (!student) {
+            return { error: `Aluno com ID ${studentId} não encontrado.` };
+        }
+
+        const resolvedUnitId = unitId || student.unitId || 'all';
+
+        let userDoc = null;
+        try {
+            const usersRef = collection(db, "users");
+            const uQuery = query(usersRef, where("evoMemberId", "==", idNum));
+            const uSnap = await getDocs(uQuery);
+            if (!uSnap.empty) {
+                const docData = uSnap.docs[0].data();
+                userDoc = {
+                    id: uSnap.docs[0].id,
+                    isAdmin: docData.isAdmin || false,
+                    isInstructor: docData.isInstructor || false,
+                    earnedBadges: docData.earnedBadges || [],
+                    accessibleContent: docData.accessibleContent || []
+                };
+            }
+        } catch (err) {
+            console.warn("Erro ao buscar usuário no Firestore:", err);
+        }
+
+        let physicalTests = [];
+        try {
+            const testsRef = collection(db, "physicalTests");
+            const tQuery = query(testsRef, where("evoMemberId", "==", idNum), orderBy("date", "desc"));
+            const tSnap = await getDocs(tQuery);
+            tSnap.forEach(d => {
+                const data = d.data();
+                physicalTests.push({
+                    date: data.date?.toDate?.()?.toLocaleDateString('pt-BR') || data.date || '',
+                    score: data.score
+                });
+            });
+        } catch (err) {
+            console.warn("Erro ao buscar testes físicos:", err);
+        }
+
+        let financeInfo = null;
+        try {
+            const getStudentFinancialHub = httpsCallable(functions, 'getStudentFinancialHub');
+            const finResult = await getStudentFinancialHub({
+                idMember: idNum,
+                unitId: resolvedUnitId
+            });
+            financeInfo = finResult.data || {};
+        } catch (err) {
+            console.warn("Erro ao buscar hub financeiro:", err);
+        }
+
+        return {
+            student: {
+                idMember: student.idMember,
+                name: `${student.firstName || ''} ${student.lastName || ''}`,
+                email: student.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || student.email || '',
+                phone: student.phone || student.contacts?.find(c => c.contactType === 'Telefone' || c.idContactType === 1)?.description || '',
+                cpf: student.cpf || student.document || '',
+                birthDate: student.birthDate || '',
+                registerDate: student.registerDate || '',
+                address: student.address || '',
+                responsible: student.responsible || '',
+                origin: student.origin || '',
+                branchName: student.branchName || '',
+                rankType: student.rankType || '',
+                belt: student.belt || '',
+                membershipStatus: student.membershipStatus || student.tuitionStatus || 'N/A'
+            },
+            userDoc,
+            physicalTests,
+            financialHub: financeInfo ? {
+                tuitionStatus: financeInfo.tuitionStatus || 'N/A',
+                registeredAt: financeInfo.registeredAt || '',
+                mpDetails: financeInfo.mpDetails ? {
+                    reason: financeInfo.mpDetails.reason || '',
+                    status: financeInfo.mpDetails.status || '',
+                    next_payment_date: financeInfo.mpDetails.next_payment_date || '',
+                    charged_quantity: financeInfo.mpDetails.summarized?.charged_quantity || 0
+                } : null
+            } : null
+        };
+    } catch (e) {
+        console.error("Erro ao montar perfil do estudante:", e);
         return { error: e.message };
     }
 }
@@ -964,6 +1229,91 @@ async function getDepartmentDemands(args) {
         };
     } catch (e) {
         console.error("Erro ao buscar demandas:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchDemands(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const demandsRef = collection(db, 'trello_demands');
+        const q = query(demandsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const title = (data.title || data.titulo || '').toLowerCase();
+            const desc = (data.description || data.demanda || '').toLowerCase();
+            const dept = (data.department || data.setor || '').toLowerCase();
+            
+            if (title.includes(lowerQuery) || desc.includes(lowerQuery) || dept.includes(lowerQuery)) {
+                results.push({
+                    id: doc.id,
+                    title: data.title || data.titulo || 'Sem Título',
+                    status: data.status || 'Pendente',
+                    priority: data.priority || 'Média',
+                    department: data.department || data.setor || 'Geral',
+                    nomeSolicitante: data.nome || 'Sem Nome'
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca finalizada. Encontramos ${results.length} demandas.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar demandas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getDemandDetails(args) {
+    const { demandId } = args;
+    if (!demandId) return { error: "demandId não fornecido." };
+    try {
+        const docRef = doc(db, 'trello_demands', demandId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Demanda com ID ${demandId} não encontrada.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const commentsCol = collection(db, `trello_demands/${demandId}/comments`);
+        const cSnap = await getDocs(query(commentsCol, orderBy('createdAt', 'asc')));
+        const comments = [];
+        cSnap.forEach(d => {
+            const c = d.data();
+            comments.push({
+                author: c.authorName || 'Usuário',
+                text: c.text || '',
+                createdAt: c.createdAt?.toDate?.()?.toLocaleString('pt-BR') || c.createdAt || ''
+            });
+        });
+        
+        return {
+            id: docSnap.id,
+            title: data.title || data.titulo || 'Sem Título',
+            description: data.description || data.demanda || '',
+            status: data.status || 'Pendente',
+            priority: data.priority || 'Média',
+            department: data.department || data.setor || 'Geral',
+            createdBy: data.nome || 'Sem Nome',
+            email: data.email || '',
+            unidade: data.unidade || '',
+            createdAt: data.createdAt?.toDate?.()?.toLocaleString('pt-BR') || data.createdAt || '',
+            dataMaxima: data.dataMaxima || '',
+            links: data.linkRefs || [],
+            comments: comments
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes da demanda:", e);
         return { error: e.message };
     }
 }
@@ -1097,10 +1447,14 @@ function setupKobeChatbotLogic() {
         const isMetaAdsPage = window.location.pathname.includes('marketing-social.html');
         let prompt = '';
 
+        const currentUserStr = localStorage.getItem('currentUser');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
+        const userName = currentUser.name || currentUser.displayName || '';
+
         if (isMetaAdsPage) {
             const metrics = getMetaAdsMetricsFromDOM();
             prompt = `
-Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o macaco-mascote e assistente virtual da Intranet da Kihap. Como o usuário está na página de Redes Sociais (Meta Ads), dê as boas-vindas e comente brevemente sobre os dados atuais do dashboard:
+Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o macaco-mascote e assistente virtual da Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma calorosa e pessoal pelo nome. Como o usuário está na página de Redes Sociais (Meta Ads), dê as boas-vindas e comente brevemente sobre os dados atuais do dashboard:
 - Investimento Total: ${metrics.spend}
 - Custo por Resultado: ${metrics.cpr}
 - Cliques: ${metrics.clicks}
@@ -1115,7 +1469,7 @@ Por favor, faça uma saudação muito amigável como Kobe e forneça um resumo r
         } else {
             const pageTitle = document.title || 'Intranet Kihap';
             prompt = `
-Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o macaco-mascote e assistente virtual oficial de toda a Intranet da Kihap. Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos ou qualquer suporte. Mantenha a saudação curta, amigável e direta.
+Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o macaco-mascote e assistente virtual oficial de toda a Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma muito calorosa e pessoal pelo nome (ex: "Olá, Mr. Garcia!" ou "Que energia boa ver você por aqui, Mr. Garcia!"). Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos ou qualquer suporte. Mantenha a saudação curta, amigável e direta.
 
 Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre'). Nunca use essas nomenclaturas para si mesmo. Você é o mascote e assistente virtual da intranet.
 `;
@@ -1253,12 +1607,22 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                     let result = {};
                     if (funcName === "getProspectsSummary") {
                         result = await getProspectsSummary();
-                    } else if (funcName === "searchStudent") {
-                        result = await searchStudent(args);
+                    } else if (funcName === "searchProspects") {
+                        result = await searchProspects(args);
+                    } else if (funcName === "getProspectDetails") {
+                        result = await getProspectDetails(args);
+                    } else if (funcName === "searchStudents") {
+                        result = await searchStudents(args);
+                    } else if (funcName === "getStudentProfile") {
+                        result = await getStudentProfile(args);
                     } else if (funcName === "getTasksSummary") {
                         result = await getTasksSummary();
                     } else if (funcName === "getDepartmentDemands") {
                         result = await getDepartmentDemands(args);
+                    } else if (funcName === "searchDemands") {
+                        result = await searchDemands(args);
+                    } else if (funcName === "getDemandDetails") {
+                        result = await getDemandDetails(args);
                     } else {
                         result = { error: "Função desconhecida." };
                     }
