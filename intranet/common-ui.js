@@ -1048,22 +1048,60 @@ async function searchProspects(args) {
     if (!searchQuery) return { error: "Query não fornecida para busca." };
     try {
         const prospectsRef = collection(db, 'prospects');
-        const q = query(prospectsRef, limit(150));
-        const snapshot = await getDocs(q);
-        const results = [];
-        const lowerQuery = searchQuery.toLowerCase();
+        const lowerQuery = searchQuery.trim().toLowerCase();
+        const cleanQuery = searchQuery.replace(/\D/g, '');
         
-        snapshot.forEach(doc => {
-            const data = doc.data();
+        const queryPromises = [];
+        
+        // 1. Busca por CPF exato ou formatado
+        if (cleanQuery.length === 11 || cleanQuery.length === 14) {
+            queryPromises.push(getDocs(query(prospectsRef, where('cpf', '==', cleanQuery))));
+            if (cleanQuery.length === 11) {
+                const formattedCpf = `${cleanQuery.slice(0,3)}.${cleanQuery.slice(3,6)}.${cleanQuery.slice(6,9)}-${cleanQuery.slice(9)}`;
+                queryPromises.push(getDocs(query(prospectsRef, where('cpf', '==', formattedCpf))));
+            }
+        }
+        
+        // 2. Busca por e-mail exato
+        if (lowerQuery.includes('@')) {
+            queryPromises.push(getDocs(query(prospectsRef, where('email', '==', searchQuery.trim()))));
+            queryPromises.push(getDocs(query(prospectsRef, where('email', '==', lowerQuery))));
+        }
+        
+        // 3. Busca geral com limite maior (ex: 1000)
+        queryPromises.push(getDocs(query(prospectsRef, limit(1000))));
+        
+        const snapshots = await Promise.all(queryPromises);
+        const resultsMap = new Map();
+        
+        snapshots.forEach(snapshot => {
+            snapshot.forEach(doc => {
+                resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+        });
+        
+        const results = [];
+        resultsMap.forEach((data, id) => {
             const company = (data.empresa || '').toLowerCase();
             const resp = (data.responsavel || '').toLowerCase();
             const email = (data.email || '').toLowerCase();
             const phone = (data.telefone || '').toLowerCase();
             const sector = (data.setor || '').toLowerCase();
+            const cpf = (data.cpf || '').toLowerCase();
             
-            if (company.includes(lowerQuery) || resp.includes(lowerQuery) || email.includes(lowerQuery) || phone.includes(lowerQuery) || sector.includes(lowerQuery)) {
+            const cleanCpfInDb = cpf.replace(/\D/g, '');
+            const cleanPhoneInDb = phone.replace(/\D/g, '');
+            
+            const matchesCompany = company.includes(lowerQuery);
+            const matchesResp = resp.includes(lowerQuery);
+            const matchesEmail = email.includes(lowerQuery);
+            const matchesSector = sector.includes(lowerQuery);
+            const matchesCpf = cpf.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanCpfInDb.includes(cleanQuery));
+            const matchesPhone = phone.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanPhoneInDb.includes(cleanQuery));
+            
+            if (matchesCompany || matchesResp || matchesEmail || matchesSector || matchesCpf || matchesPhone) {
                 results.push({
-                    id: doc.id,
+                    id: id,
                     empresa: data.empresa || 'Sem Empresa',
                     responsavel: data.responsavel || 'Sem Responsável',
                     email: data.email || '',
@@ -1494,13 +1532,40 @@ async function searchStoreSales(args) {
     if (!searchQuery) return { error: "Query não fornecida para busca de vendas." };
     try {
         const salesRef = collection(db, 'inscricoesFaixaPreta');
-        const q = query(salesRef, limit(150));
-        const snapshot = await getDocs(q);
-        const results = [];
-        const lowerQuery = searchQuery.toLowerCase();
+        const lowerQuery = searchQuery.trim().toLowerCase();
+        const cleanQuery = searchQuery.replace(/\D/g, '');
         
-        snapshot.forEach(doc => {
-            const data = doc.data();
+        const queryPromises = [];
+        
+        // 1. Busca por CPF exato ou formatado
+        if (cleanQuery.length === 11 || cleanQuery.length === 14) {
+            queryPromises.push(getDocs(query(salesRef, where('userCpf', '==', cleanQuery))));
+            if (cleanQuery.length === 11) {
+                const formattedCpf = `${cleanQuery.slice(0,3)}.${cleanQuery.slice(3,6)}.${cleanQuery.slice(6,9)}-${cleanQuery.slice(9)}`;
+                queryPromises.push(getDocs(query(salesRef, where('userCpf', '==', formattedCpf))));
+            }
+        }
+        
+        // 2. Busca por e-mail exato
+        if (lowerQuery.includes('@')) {
+            queryPromises.push(getDocs(query(salesRef, where('userEmail', '==', searchQuery.trim()))));
+            queryPromises.push(getDocs(query(salesRef, where('userEmail', '==', lowerQuery))));
+        }
+        
+        // 3. Busca geral ordenada pelas últimas 1000 vendas (evita retornar lixo ou omitir registros novos)
+        queryPromises.push(getDocs(query(salesRef, orderBy('created', 'desc'), limit(1000))));
+        
+        const snapshots = await Promise.all(queryPromises);
+        const resultsMap = new Map();
+        
+        snapshots.forEach(snapshot => {
+            snapshot.forEach(doc => {
+                resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+        });
+        
+        const results = [];
+        resultsMap.forEach((data, id) => {
             const clientName = (data.userName || '').toLowerCase();
             const payerName = (data.payerName || '').toLowerCase();
             const email = (data.userEmail || '').toLowerCase();
@@ -1509,9 +1574,19 @@ async function searchStoreSales(args) {
             const prodName = (data.productName || '').toLowerCase();
             const unit = (data.userUnit || '').toLowerCase();
             
-            if (clientName.includes(lowerQuery) || payerName.includes(lowerQuery) || email.includes(lowerQuery) || phone.includes(lowerQuery) || cpf.includes(lowerQuery) || prodName.includes(lowerQuery) || unit.includes(lowerQuery)) {
+            const cleanCpfInDb = cpf.replace(/\D/g, '');
+            const cleanPhoneInDb = phone.replace(/\D/g, '');
+            
+            const matchesName = clientName.includes(lowerQuery) || payerName.includes(lowerQuery);
+            const matchesEmail = email.includes(lowerQuery);
+            const matchesProd = prodName.includes(lowerQuery);
+            const matchesUnit = unit.includes(lowerQuery);
+            const matchesCpf = cpf.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanCpfInDb.includes(cleanQuery));
+            const matchesPhone = phone.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanPhoneInDb.includes(cleanQuery));
+            
+            if (matchesName || matchesEmail || matchesProd || matchesUnit || matchesCpf || matchesPhone) {
                 results.push({
-                    id: doc.id,
+                    id: id,
                     userName: data.userName || 'N/A',
                     userEmail: data.userEmail || '',
                     productName: data.productName || '',
