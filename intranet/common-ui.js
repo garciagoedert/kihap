@@ -736,8 +736,9 @@ Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem
 - Alunos: você pode pesquisar alunos (\`searchStudents\`) e ver a ficha completa de um aluno (\`getStudentProfile\`), incluindo informações financeiras do Mercado Pago, histórico de testes físicos, cursos liberados e emblemas conquistados.
 - Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
 - CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups (\`contactLog\`) e as observações.
+- Loja e Pedidos: você pode pesquisar produtos (\`searchStoreProducts\`) e ver seus detalhes de preço/estoque (\`getStoreProductDetails\`). Também pode pesquisar transações de venda (\`searchStoreSales\`) e ver detalhes de uma venda específica (\`getStoreSaleDetails\`), assim como pesquisar pedidos de faixas/doboks (\`searchStoreOrders\`) e ver detalhes de um pedido específico (\`getStoreOrderDetails\`).
 
-Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas ou prospects/leads.
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads ou produtos, vendas e pedidos da loja.
 
 Mantenha sempre o tom prestativo, confiante, enérgico, focado na filosofia das artes marciais (respeito, disciplina, foco e superação) e amigável. Sempre se apresente e responda como o Kobe, usando referências de forma sutil à sua identidade de mascote macaco quando apropriado (sem ser bobo demais, mas mantendo a simpatia). Lembre-se sempre de que você nunca deve se referir a si mesmo como "mestre" ou "macaco-mestre".
 Mantenha suas respostas diretas, organizadas (use negritos como **texto** para destacar caminhos e termos importantes) e evite textos excessivamente longos.`;
@@ -923,6 +924,95 @@ const kobeTools = [{
                     }
                 },
                 required: ["demandId"]
+            }
+        },
+        {
+            name: "searchStoreProducts",
+            description: "Busca produtos cadastrados no catálogo da loja por termo parcial (nome, categoria ou descrição).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar produtos no catálogo (ex: 'dobok', 'camiseta')."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreProductDetails",
+            description: "Retorna os detalhes completos de um produto específico da loja pelo seu ID.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    productId: {
+                        type: "STRING",
+                        description: "O ID do documento do produto."
+                    }
+                },
+                required: ["productId"]
+            }
+        },
+        {
+            name: "searchStoreSales",
+            description: "Busca no log de transações/vendas realizadas na loja por termo parcial (nome do comprador, e-mail, CPF, unidade ou nome do produto).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome, e-mail, CPF, unidade ou produto)."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreSaleDetails",
+            description: "Retorna o detalhamento completo de uma transação/venda específica pelo ID da venda, incluindo dados do pagador, itens e status do pedido.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    saleId: {
+                        type: "STRING",
+                        description: "O ID do documento da venda/inscrição."
+                    }
+                },
+                required: ["saleId"]
+            }
+        },
+        {
+            name: "searchStoreOrders",
+            description: "Busca pedidos de uniformes e graduações (faixas coloridas, faixas pretas e doboks) nas coleções correspondentes por aluno, unidade ou status.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome do aluno, unidade ou status do pedido como 'Pendente', 'Entregue')."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreOrderDetails",
+            description: "Retorna a ficha detalhada de um pedido específico por ID e tipo do pedido.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    orderId: {
+                        type: "STRING",
+                        description: "O ID do documento do pedido."
+                    },
+                    orderType: {
+                        type: "STRING",
+                        description: "O tipo do pedido: 'faixa' (para faixas coloridas), 'faixapreta' (para faixas pretas) ou 'dobok' (para doboks).",
+                        enum: ["faixa", "faixapreta", "dobok"]
+                    }
+                },
+                required: ["orderId", "orderType"]
             }
         }
     ]
@@ -1318,6 +1408,325 @@ async function getDemandDetails(args) {
     }
 }
 
+async function searchStoreProducts(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const productsRef = collection(db, 'products');
+        const q = query(productsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const name = (data.name || '').toLowerCase();
+            const cat = (data.category || '').toLowerCase();
+            const desc = (data.description || '').toLowerCase();
+            
+            if (name.includes(lowerQuery) || cat.includes(lowerQuery) || desc.includes(lowerQuery)) {
+                results.push({
+                    id: doc.id,
+                    name: data.name || 'Sem Nome',
+                    category: data.category || 'Geral',
+                    price: data.price ? data.price / 100 : 0,
+                    visible: data.visible !== false,
+                    available: data.available !== false,
+                    stockQuantity: data.stockQuantity || 0
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca no catálogo concluída. ${results.length} produtos correspondentes encontrados.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar produtos da loja:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreProductDetails(args) {
+    const { productId } = args;
+    if (!productId) return { error: "productId não fornecido." };
+    try {
+        const docRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Produto com ID ${productId} não encontrado.` };
+        }
+        
+        const data = docSnap.data();
+        
+        return {
+            id: docSnap.id,
+            name: data.name || '',
+            category: data.category || 'Geral',
+            description: data.description || '',
+            imageUrl: data.imageUrl || null,
+            priceType: data.priceType || 'fixed',
+            price: data.price ? data.price / 100 : 0,
+            priceVariants: (data.priceVariants || []).map(v => ({ name: v.name, price: v.price / 100 })),
+            lotes: (data.lotes || []).map(l => ({ name: l.name, price: l.price / 100, startDate: l.startDate || '' })),
+            kitItems: data.kitItems || [],
+            visible: data.visible !== false,
+            available: data.available !== false,
+            controlStock: data.controlStock || false,
+            stockQuantity: data.stockQuantity || 0,
+            sizeStock: data.sizeStock || {},
+            isSubscription: data.isSubscription || false,
+            isEvent: data.isEvent || false,
+            eventAddress: data.eventAddress || '',
+            eventConfig: data.eventConfig || null,
+            addons: (data.addons || []).map(a => ({ name: a.name, price: a.price / 100 }))
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes do produto:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStoreSales(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca de vendas." };
+    try {
+        const salesRef = collection(db, 'inscricoesFaixaPreta');
+        const q = query(salesRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const clientName = (data.userName || '').toLowerCase();
+            const payerName = (data.payerName || '').toLowerCase();
+            const email = (data.userEmail || '').toLowerCase();
+            const phone = (data.userPhone || '').toLowerCase();
+            const cpf = (data.userCpf || '').toLowerCase();
+            const prodName = (data.productName || '').toLowerCase();
+            const unit = (data.userUnit || '').toLowerCase();
+            
+            if (clientName.includes(lowerQuery) || payerName.includes(lowerQuery) || email.includes(lowerQuery) || phone.includes(lowerQuery) || cpf.includes(lowerQuery) || prodName.includes(lowerQuery) || unit.includes(lowerQuery)) {
+                results.push({
+                    id: doc.id,
+                    userName: data.userName || 'N/A',
+                    userEmail: data.userEmail || '',
+                    productName: data.productName || '',
+                    amountTotal: data.amountTotal ? data.amountTotal / 100 : 0,
+                    paymentStatus: data.paymentStatus || 'pending',
+                    fulfillmentStatus: data.fulfillmentStatus || 'pending',
+                    created: data.created?.toDate?.()?.toLocaleString('pt-BR') || data.created || '',
+                    saleType: data.saleType || 'online'
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca de vendas concluída. Encontramos ${results.length} transações.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar transações de vendas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreSaleDetails(args) {
+    const { saleId } = args;
+    if (!saleId) return { error: "saleId não fornecido." };
+    try {
+        const docRef = doc(db, 'inscricoesFaixaPreta', saleId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Venda com ID ${saleId} não encontrada.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const logsRef = collection(db, 'inscricoesFaixaPreta', saleId, 'emailLogs');
+        const logsSnap = await getDocs(query(logsRef, limit(50)));
+        const emailLogs = [];
+        logsSnap.forEach(d => {
+            const log = d.data();
+            emailLogs.push({
+                type: log.type || '',
+                sentAt: log.sentAt?.toDate?.()?.toLocaleString('pt-BR') || log.sentAt || '',
+                status: log.status || 'success'
+            });
+        });
+        
+        return {
+            id: docSnap.id,
+            saleType: data.saleType || 'online',
+            userName: data.userName || '',
+            payerName: data.payerName || '',
+            userEmail: data.userEmail || '',
+            userPhone: data.userPhone || '',
+            userCpf: data.userCpf || '',
+            userUnit: data.userUnit || '',
+            productName: data.productName || '',
+            amountTotal: data.amountTotal ? data.amountTotal / 100 : 0,
+            paymentStatus: data.paymentStatus || 'pending',
+            fulfillmentStatus: data.fulfillmentStatus || 'pending',
+            created: data.created?.toDate?.()?.toLocaleString('pt-BR') || data.created || '',
+            details: data.details || '',
+            paymentDetails: data.paymentDetails || {},
+            items: data.items || [],
+            recommendedItems: data.recommendedItems || [],
+            emailLogs: emailLogs
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes da venda:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStoreOrders(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const lowerQuery = searchQuery.toLowerCase();
+        const results = [];
+        
+        // 1. pedidosFaixas
+        try {
+            const snap = await getDocs(collection(db, "pedidosFaixas"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const sol = (data.solicitante?.nome || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                const itemsSummary = (data.itens || []).map(i => `${i.quantidade}x ${i.faixa}`).join(', ').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || sol.includes(lowerQuery) || status.includes(lowerQuery) || itemsSummary.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'faixa',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: 'Diversos (Coloridas)',
+                        itensResumo: (data.itens || []).map(i => `${i.quantidade}x ${i.faixa} (${i.tamanho})`).join(', '),
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosFaixas:", err);
+        }
+        
+        // 2. pedidosFaixasPretas
+        try {
+            const snap = await getDocs(collection(db, "pedidosFaixasPretas"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const aluno = (data.aluno || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                const faixa = (data.faixa || '').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || aluno.includes(lowerQuery) || status.includes(lowerQuery) || faixa.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'faixapreta',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: data.aluno || '',
+                        itensResumo: `${data.faixa || 'Faixa Preta'} (${data.tamanho || ''})`,
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosFaixasPretas:", err);
+        }
+        
+        // 3. pedidosDoboks
+        try {
+            const snap = await getDocs(collection(db, "pedidosDoboks"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const aluno = (data.aluno || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || aluno.includes(lowerQuery) || status.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'dobok',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: data.aluno || '',
+                        itensResumo: `Dobok ${data.isFaixaPreta ? 'Faixa Preta' : 'Comum'} (Tam: ${data.tamanho || ''}, Colarinho: ${data.colarinho || ''})`,
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosDoboks:", err);
+        }
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 20),
+            countFound: results.length,
+            message: `Busca finalizada. Encontramos ${results.length} pedidos correspondentes.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar pedidos:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreOrderDetails(args) {
+    const { orderId, orderType } = args;
+    if (!orderId || !orderType) return { error: "orderId e orderType são obrigatórios." };
+    
+    try {
+        let collectionName = '';
+        if (orderType === 'faixa') collectionName = 'pedidosFaixas';
+        else if (orderType === 'faixapreta') collectionName = 'pedidosFaixasPretas';
+        else if (orderType === 'dobok') collectionName = 'pedidosDoboks';
+        else return { error: `Tipo de pedido inválido: ${orderType}` };
+        
+        const docRef = doc(db, collectionName, orderId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Pedido com ID ${orderId} não encontrado na coleção ${collectionName}.` };
+        }
+        
+        const data = docSnap.data();
+        
+        return {
+            id: docSnap.id,
+            orderType: orderType,
+            unidade: data.unidade || '',
+            status: data.status || 'Pendente',
+            justificativa: data.justificativa || null,
+            data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || '',
+            solicitante: data.solicitante || null,
+            lastUpdatedBy: data.lastUpdatedBy || null,
+            lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toLocaleString('pt-BR') || data.lastUpdatedAt || '',
+            itens: data.itens || null,
+            aluno: data.aluno || null,
+            faixa: data.faixa || null,
+            tamanho: data.tamanho || null,
+            colarinho: data.colarinho || null,
+            isFaixaPreta: data.isFaixaPreta || null
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes do pedido:", e);
+        return { error: e.message };
+    }
+}
+
 async function callGemini(history, systemInstruction, apiKey) {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -1623,6 +2032,18 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                         result = await searchDemands(args);
                     } else if (funcName === "getDemandDetails") {
                         result = await getDemandDetails(args);
+                    } else if (funcName === "searchStoreProducts") {
+                        result = await searchStoreProducts(args);
+                    } else if (funcName === "getStoreProductDetails") {
+                        result = await getStoreProductDetails(args);
+                    } else if (funcName === "searchStoreSales") {
+                        result = await searchStoreSales(args);
+                    } else if (funcName === "getStoreSaleDetails") {
+                        result = await getStoreSaleDetails(args);
+                    } else if (funcName === "searchStoreOrders") {
+                        result = await searchStoreOrders(args);
+                    } else if (funcName === "getStoreOrderDetails") {
+                        result = await getStoreOrderDetails(args);
                     } else {
                         result = { error: "Função desconhecida." };
                     }
