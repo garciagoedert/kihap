@@ -374,60 +374,7 @@
                 </div>
             </form>
         </div>
-    </div>
-
-    <!-- Botão Flutuante do Chat IA -->
-    <button id="aiChatToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-tr from-[#6366F1] via-[#A855F7] to-[#EC4899] text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 shadow-purple-500/30 hover:shadow-purple-500/50 border border-white/10">
-        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 1.5C12 7.3 16.7 12 22.5 12C16.7 12 12 16.7 12 22.5C12 16.7 7.3 12 1.5 12C7.3 12 12 7.3 12 1.5Z"/>
-        </svg>
-    </button>
-
-    <!-- Janela do Chat IA -->
-    <div id="aiChatWindow" class="fixed bottom-24 right-6 w-96 h-[550px] z-50 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
-        <!-- Header -->
-        <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 rounded-t-3xl">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-white">
-                    <img src="../imgs/personagens/perfilpersonagens/avatar_03.png" alt="Kobe" class="w-full h-full object-cover">
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                        Kobe (Meta Ads)
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
-                    </h3>
-                    <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Mascote & Especialista IA</p>
-                </div>
-            </div>
-            <button id="closeChatBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg transition-colors">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Messages Body -->
-        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-sm text-gray-700 dark:text-gray-300">
-            <!-- Messages bubble -->
-        </div>
-
-        <!-- Typing Indicator -->
-        <div id="chatTypingIndicator" class="px-4 py-2 flex justify-start hidden">
-            <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none shadow-sm border border-gray-150 dark:border-gray-700/50 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-                <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
-            </div>
-        </div>
-
-        <!-- Input Area -->
-        <form id="chatForm" class="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-b-3xl">
-            <input type="text" id="chatInput" required placeholder="Faça uma pergunta sobre o tráfego..." autocomplete="off"
-                class="flex-grow px-4 py-2.5 text-sm bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-white">
-            <button type="submit" id="sendChatBtn" class="w-10 h-10 bg-gradient-to-tr from-[#6366F1] to-[#A855F7] hover:from-[#4F46E5] hover:to-[#9333EA] text-white rounded-2xl flex items-center justify-center shadow-md transition-all active:scale-95 disabled:opacity-50">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </form>
-    </div>
-
+    </div>    <!-- Chatbot do Kobe agora é injetado dinamicamente de forma global pelo common-ui.js -->
 
     <!-- Contêiner de Impressão do Relatório PDF -->
     <div id="printableReport" class="hidden"></div>

@@ -700,12 +700,368 @@ async function loadComponents(pageSpecificSetup) {
         // Inicia o listener de notificações de chat
         listenForChatNotifications();
 
+        // Inicializa o chatbot global do Kobe
+        initGlobalKobeChatbot();
+
     } catch (error) {
         console.error('Error loading components:', error);
         headerContainer.innerHTML = '<p class="text-red-500 p-4">Error loading header.</p>';
         sidebarContainer.innerHTML = '<p class="text-red-500 p-4">Error loading sidebar.</p>';
     }
 }
+
+const systemInstruction = `Você é o Kobe, o simpático, inteligente e ativo macaco-mascote e assistente virtual oficial de toda a Intranet da Kihap, uma renomada escola de artes marciais.
+Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores e administradores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte e muito mais.
+
+Aqui estão algumas seções principais da intranet que você pode guiar os usuários a encontrar:
+- **Início/Painel**: Tela inicial com visão geral.
+- **Alunos**: Cadastro e acompanhamento de alunos (/intranet/alunos.html).
+- **Marketing**:
+  - **Prospecção**: Funil de vendas / CRM (/intranet/prospeccao.html).
+  - **Redes Sociais (Meta Ads)**: Dashboard de campanhas e métricas (/intranet/marketing-social.html).
+  - **Google Ads**: Métricas de Google Ads (/intranet/marketing-google.html).
+- **Administrativo**:
+  - **Projetos**: Gerenciador de tarefas e projetos (/intranet/projetos.html).
+  - **Processos**: Biblioteca de manuais e POPs (/intranet/processos.html).
+  - **Pedidos**: Pedidos de doboks, faixas, etc. (/intranet/pedidos.html).
+- **RH**: Setor de recursos humanos, recrutamento e seleção (/intranet/rh.html).
+- **Chat**: Comunicação interna em tempo real (/intranet/chat.html).
+- **Cursos / Tatame**: Treinamentos e aulas (/intranet/cursos.html).
+- **Feed**: Comunicados internos (/intranet/feed.html).
+
+Se o usuário estiver em uma página específica e fizer perguntas sobre ela, forneça respostas contextualizadas. Por exemplo, na página de Redes Sociais, você pode ajudar a analisar as métricas de Meta Ads (como CPR, CTR, CPC, cliques e impressões) se ele fornecer os dados ou pedir insights.
+
+Mantenha sempre o tom prestativo, confiante, enérgico, focado na filosofia das artes marciais (respeito, disciplina, foco e superação) e amigável. Sempre se apresente e responda como o Kobe, usando referências de forma sutil à sua identidade de mascote macaco quando apropriado (sem ser bobo demais, mas mantendo a simpatia).
+Mantenha suas respostas diretas, organizadas (use negritos como **texto** para destacar caminhos e termos importantes) e evite textos excessivamente longos.`;
+
+function initGlobalKobeChatbot() {
+    if (document.getElementById('aiChatToggle')) return; // Já injetado
+
+    // Injeta o CSS/HTML
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'global-kobe-chatbot';
+    chatContainer.innerHTML = `
+        <!-- Botão Flutuante do Chat IA -->
+        <button id="aiChatToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-tr from-[#6366F1] via-[#A855F7] to-[#EC4899] text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 shadow-purple-500/30 hover:shadow-purple-500/50 border border-white/10">
+            <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1.5C12 7.3 16.7 12 22.5 12C16.7 12 12 16.7 12 22.5C12 16.7 7.3 12 1.5 12C7.3 12 12 7.3 12 1.5Z"/>
+            </svg>
+        </button>
+
+        <!-- Janela do Chat IA -->
+        <div id="aiChatWindow" class="fixed bottom-24 right-6 w-96 h-[550px] z-50 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 rounded-t-3xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-white">
+                        <img src="/imgs/personagens/perfilpersonagens/avatar_03.png" alt="Kobe" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                            Kobe
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
+                        </h3>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Assistente IA da Intranet</p>
+                    </div>
+                </div>
+                <button id="closeChatBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Messages Body -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-sm text-gray-700 dark:text-gray-300">
+                <!-- Messages bubble -->
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="chatTypingIndicator" class="px-4 py-2 flex justify-start hidden">
+                <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none shadow-sm border border-gray-150 dark:border-gray-700/50 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <form id="chatForm" class="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-b-3xl">
+                <input type="text" id="chatInput" required placeholder="Faça uma pergunta ou peça ajuda..." autocomplete="off"
+                    class="flex-grow px-4 py-2.5 text-sm bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-white">
+                <button type="submit" id="sendChatBtn" class="w-10 h-10 bg-gradient-to-tr from-[#6366F1] to-[#A855F7] hover:from-[#4F46E5] hover:to-[#9333EA] text-white rounded-2xl flex items-center justify-center shadow-md transition-all active:scale-95 disabled:opacity-50">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(chatContainer);
+
+    setupKobeChatbotLogic();
+}
+
+function setupKobeChatbotLogic() {
+    const aiChatToggle = document.getElementById('aiChatToggle');
+    const aiChatWindow = document.getElementById('aiChatWindow');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatTypingIndicator = document.getElementById('chatTypingIndicator');
+
+    let chatHistory = [];
+    try {
+        const savedHistory = sessionStorage.getItem('kobe_chat_history');
+        if (savedHistory) {
+            chatHistory = JSON.parse(savedHistory);
+        }
+    } catch (e) {
+        console.error("Erro ao carregar histórico do Kobe:", e);
+    }
+
+    function saveHistory() {
+        try {
+            sessionStorage.setItem('kobe_chat_history', JSON.stringify(chatHistory));
+        } catch (e) {
+            console.error("Erro ao salvar histórico do Kobe:", e);
+        }
+    }
+
+    function formatMessageText(text) {
+        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        formatted = formatted.replace(/\n/g, '<br>');
+        return formatted;
+    }
+
+    function appendMessage(role, text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+
+        const innerDiv = document.createElement('div');
+        if (role === 'user') {
+            innerDiv.className = 'bg-primary text-black font-semibold px-4 py-2.5 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm';
+        } else {
+            innerDiv.className = 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2.5 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-200 dark:border-gray-700/50 shadow-sm';
+        }
+
+        innerDiv.innerHTML = formatMessageText(text);
+        messageDiv.appendChild(innerDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function renderHistory() {
+        chatMessages.innerHTML = '';
+        chatHistory.forEach(msg => {
+            const text = msg.parts?.[0]?.text;
+            if (text && !text.includes('systemInstruction') && !text.includes('Faça uma análise inicial') && !text.includes('Analise o desempenho recente') && !text.includes('Boas-vindas à página')) {
+                appendMessage(msg.role, text);
+            }
+        });
+    }
+
+    async function loadGeminiKey() {
+        try {
+            const local = localStorage.getItem('meta_ads_config');
+            if (local) {
+                const parsed = JSON.parse(local);
+                if (parsed.geminiKey) return parsed.geminiKey;
+            }
+            const docRef = doc(db, "config", "meta_ads");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return docSnap.data().geminiKey;
+            }
+        } catch (e) {
+            console.warn("Erro ao carregar chave do Gemini:", e);
+        }
+        return null;
+    }
+
+    function getMetaAdsMetricsFromDOM() {
+        const spend = document.getElementById('totalSpend')?.textContent || 'R$ 0,00';
+        const cpr = document.getElementById('avgCpr')?.textContent || 'R$ 0,00';
+        const clicks = document.getElementById('totalClicks')?.textContent || '0';
+        const msgs = document.getElementById('totalMsgs')?.textContent || '0';
+        const likes = document.getElementById('totalLikes')?.textContent || '0';
+
+        const campaigns = [];
+        const rows = document.querySelectorAll('#campaignsTableBody tr');
+        rows.forEach((row, idx) => {
+            if (idx < 3) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 9) {
+                    const name = cells[1]?.textContent || '';
+                    const msgsVal = cells[2]?.textContent || '0';
+                    const clicksVal = cells[3]?.textContent || '0';
+                    const spendVal = cells[8]?.textContent || 'R$ 0,00';
+                    campaigns.push(`${name} (Gasto: ${spendVal}, Conversas: ${msgsVal}, Cliques: ${clicksVal})`);
+                }
+            }
+        });
+
+        return { spend, cpr, clicks, msgs, likes, campaigns };
+    }
+
+    async function triggerWelcomeMessage() {
+        chatTypingIndicator.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const isMetaAdsPage = window.location.pathname.includes('marketing-social.html');
+        let prompt = '';
+
+        if (isMetaAdsPage) {
+            const metrics = getMetaAdsMetricsFromDOM();
+            prompt = `
+Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o macaco-mascote e especialista da Intranet da Kihap. Como o usuário está na página de Redes Sociais (Meta Ads), dê as boas-vindas e comente brevemente sobre os dados atuais do dashboard:
+- Investimento Total: ${metrics.spend}
+- Custo por Resultado: ${metrics.cpr}
+- Cliques: ${metrics.clicks}
+- Mensagens Iniciadas: ${metrics.msgs}
+- Novos Seguidores (Ads): ${metrics.likes}
+- Top Campanhas: ${JSON.stringify(metrics.campaigns)}
+
+Por favor, faça uma saudação muito amigável como Kobe e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
+`;
+        } else {
+            const pageTitle = document.title || 'Intranet Kihap';
+            prompt = `
+Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o macaco-mascote e assistente virtual oficial de toda a Intranet da Kihap. Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos ou qualquer suporte. Mantenha a saudação curta, amigável e direta.
+`;
+        }
+
+        try {
+            const apiKey = await loadGeminiKey();
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não encontrada. Configure-a no painel do Meta Ads.");
+            }
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemInstruction }]
+                    }
+                })
+            });
+
+            const json = await response.json();
+            if (json.error) throw new Error(json.error.message);
+
+            const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Olá! Como posso te ajudar hoje?";
+
+            chatHistory.push({
+                role: 'user',
+                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : `Boas-vindas à página ${document.title || 'Intranet'}` }]
+            });
+            chatHistory.push({
+                role: 'model',
+                parts: [{ text: aiText }]
+            });
+            saveHistory();
+
+            appendMessage('model', aiText);
+
+        } catch (e) {
+            console.error("Erro na saudação inicial do Kobe:", e);
+            appendMessage('model', `<span class="text-red-500 font-medium">Erro ao carregar saudação do Kobe: ${e.message}</span><br><br>Certifique-se de configurar uma chave válida do Gemini nas configurações da página de Meta Ads.`);
+        } finally {
+            chatTypingIndicator.classList.add('hidden');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    aiChatToggle?.addEventListener('click', () => {
+        const isHidden = aiChatWindow.classList.contains('hidden');
+        if (isHidden) {
+            aiChatWindow.classList.remove('hidden');
+            setTimeout(() => {
+                aiChatWindow.classList.remove('scale-95', 'opacity-0');
+                aiChatWindow.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            if (chatHistory.length === 0) {
+                triggerWelcomeMessage();
+            } else {
+                renderHistory();
+            }
+        } else {
+            aiChatWindow.classList.remove('scale-100', 'opacity-100');
+            aiChatWindow.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                aiChatWindow.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    closeChatBtn?.addEventListener('click', () => {
+        aiChatWindow.classList.remove('scale-100', 'opacity-100');
+        aiChatWindow.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            aiChatWindow.classList.add('hidden');
+        }, 300);
+    });
+
+    chatForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        chatInput.value = '';
+        appendMessage('user', text);
+
+        chatHistory.push({
+            role: 'user',
+            parts: [{ text: text }]
+        });
+        saveHistory();
+
+        chatTypingIndicator.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            const apiKey = await loadGeminiKey();
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não configurada.");
+            }
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: chatHistory,
+                    systemInstruction: {
+                        parts: [{ text: systemInstruction }]
+                    }
+                })
+            });
+
+            const json = await response.json();
+            if (json.error) throw new Error(json.error.message);
+
+            const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui obter uma resposta.";
+
+            chatHistory.push({
+                role: 'model',
+                parts: [{ text: aiText }]
+            });
+            saveHistory();
+
+            appendMessage('model', aiText);
+
+        } catch (e) {
+            console.error("Erro ao enviar mensagem para a IA:", e);
+            appendMessage('model', `<span class="text-red-500 font-medium">Erro na comunicação com a IA: ${e.message}</span>`);
+            chatHistory.pop();
+            saveHistory();
+        } finally {
+            chatTypingIndicator.classList.add('hidden');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+}
+
 
 function showAlert(message, title = "Aviso") {
     const alertModal = document.getElementById('alertModal');
