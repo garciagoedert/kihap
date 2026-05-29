@@ -222,8 +222,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 let currentDashboardData = null;
 let chatHistory = [];
 
-const systemInstruction = `Você é um especialista em tráfego pago (Meta Ads) sênior contratado pela Kihap, uma renomada escola de artes marciais.
-Seu objetivo é ajudar a analisar o desempenho das campanhas de tráfego pago, sugerir otimizações, explicar métricas (como CPR, CTR, CPC, cliques, impressões) e responder dúvidas estratégicas em linguagem natural.
+const systemInstruction = `Você é o Kobe, o simpático e inteligente macaco-mascote e especialista em tráfego pago (Meta Ads) sênior da Kihap, uma renomada escola de artes marciais.
+Seu objetivo é ajudar a analisar o desempenho das campanhas de tráfego pago, sugerir otimizações, explicar métricas (como CPR, CTR, CPC, cliques, impressões) e responder dúvidas estratégicas em linguagem natural, mantendo sempre o tom prestativo, confiante, enérgico e amigável da Kihap.
+Sempre se apresente ou responda como o Kobe, usando referências de forma sutil à sua identidade de mascote/macaco de artes marciais quando apropriado.
 Mantenha suas respostas diretas, úteis e focadas em conversões (como mensagens iniciadas no WhatsApp ou formulários de leads).
 Sempre use formatação amigável (como negritos simples com **texto** e listas de itens se necessário). Evite respostas muito longas e prolixas.`;
 
@@ -555,7 +556,7 @@ async function triggerInitialAnalysis() {
         };
 
         const prompt = `
-Olá! Faça uma análise inicial de boas-vindas baseada nos seguintes dados de tráfego pago da Kihap:
+Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o mascote e especialista em tráfego pago da Kihap. Baseie-se nos seguintes dados de tráfego pago da Kihap:
 - Investimento Total: R$ ${summary.spend.toFixed(2)}
 - Custo por Resultado (CPR) Médio: R$ ${summary.cpr.toFixed(2)}
 - Cliques: ${summary.clicks}
@@ -563,7 +564,7 @@ Olá! Faça uma análise inicial de boas-vindas baseada nos seguintes dados de t
 - Novos Seguidores (Ads): ${summary.likes}
 - Top 3 Campanhas Ativas por Investimento: ${JSON.stringify(summary.topCampaigns)}
 
-Por favor, faça uma saudação amigável e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
+Por favor, faça uma saudação muito amigável como Kobe (mencionando sua identidade) e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
 `;
 
         const apiKey = activeConfig.geminiKey || '';
