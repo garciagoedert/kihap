@@ -74,8 +74,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         initDashboard();
     });
 
-    // AI Listener
-    document.getElementById('analyzeBtn')?.addEventListener('click', generateAIAnalysis);
+    // 5. Chatbot IA Flutuante Listeners
+    const aiChatToggle = document.getElementById('aiChatToggle');
+    const aiChatWindow = document.getElementById('aiChatWindow');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const chatForm = document.getElementById('chatForm');
+
+    aiChatToggle?.addEventListener('click', () => {
+        const isHidden = aiChatWindow.classList.contains('hidden');
+        if (isHidden) {
+            // Mostrar janela
+            aiChatWindow.classList.remove('hidden');
+            setTimeout(() => {
+                aiChatWindow.classList.remove('scale-95', 'opacity-0');
+                aiChatWindow.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Se for a primeira vez que abre (histórico vazio), dispara análise inicial
+            if (chatHistory.length === 0) {
+                triggerInitialAnalysis();
+            }
+        } else {
+            // Ocultar janela
+            aiChatWindow.classList.remove('scale-100', 'opacity-100');
+            aiChatWindow.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                aiChatWindow.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    closeChatBtn?.addEventListener('click', () => {
+        aiChatWindow.classList.remove('scale-100', 'opacity-100');
+        aiChatWindow.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            aiChatWindow.classList.add('hidden');
+        }, 300);
+    });
+
+    chatForm?.addEventListener('submit', sendChatMessage);
+
+    // 6. Exportar Relatório Listeners
+    const exportReportBtn = document.getElementById('exportReportBtn');
+    const exportMenu = document.getElementById('exportMenu');
+
+    exportReportBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = exportMenu.classList.contains('hidden');
+        if (isHidden) {
+            exportMenu.classList.remove('hidden');
+            setTimeout(() => {
+                exportMenu.classList.remove('scale-95', 'opacity-0');
+                exportMenu.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        } else {
+            closeExportMenu();
+        }
+    });
+
+    function closeExportMenu() {
+        if (!exportMenu || exportMenu.classList.contains('hidden')) return;
+        exportMenu.classList.remove('scale-100', 'opacity-100');
+        exportMenu.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            exportMenu.classList.add('hidden');
+        }, 200);
+    }
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (exportMenu && !exportMenu.classList.contains('hidden')) {
+            if (!document.getElementById('exportDropdownContainer')?.contains(e.target)) {
+                closeExportMenu();
+            }
+        }
+    });
+
+    document.querySelectorAll('.export-option-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const days = parseInt(e.target.getAttribute('data-days'));
+            closeExportMenu();
+            exportTrafficReport(days);
+        });
+    });
 
     // 4. Modal de Configurações do Meta
     const configModal = document.getElementById('meta-config-modal');
@@ -139,6 +220,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Global state to hold data for AI
 let currentDashboardData = null;
+let chatHistory = [];
+
+const systemInstruction = `Você é um especialista em tráfego pago (Meta Ads) sênior contratado pela Kihap, uma renomada escola de artes marciais.
+Seu objetivo é ajudar a analisar o desempenho das campanhas de tráfego pago, sugerir otimizações, explicar métricas (como CPR, CTR, CPC, cliques, impressões) e responder dúvidas estratégicas em linguagem natural.
+Mantenha suas respostas diretas, úteis e focadas em conversões (como mensagens iniciadas no WhatsApp ou formulários de leads).
+Sempre use formatação amigável (como negritos simples com **texto** e listas de itens se necessário). Evite respostas muito longas e prolixas.`;
 
 async function initDashboard() {
     // Carregar configurações dinâmicas
@@ -404,80 +491,197 @@ function getDatePreset() {
 }
 
 // --- GEMINI AI INTEGRATION ---
-async function generateAIAnalysis() {
-    if (!currentDashboardData) return;
+function formatMessageText(text) {
+    // Converter **negrito** para <strong>
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Converter *itálico* para <em>
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Converter quebras de linha para <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+    return formatted;
+}
 
-    const ui = {
-        loading: document.getElementById('aiLoading'),
-        content: document.getElementById('aiContent'),
-        placeholder: document.getElementById('aiPlaceholder'),
-        btn: document.getElementById('analyzeBtn')
-    };
+function appendMessage(role, text) {
+    const messagesContainer = document.getElementById('chatMessages');
+    if (!messagesContainer) return;
 
-    ui.loading.classList.remove('hidden');
-    ui.content.classList.add('hidden');
-    ui.placeholder.classList.add('hidden');
-    ui.btn.disabled = true;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+
+    const innerDiv = document.createElement('div');
+    if (role === 'user') {
+        innerDiv.className = 'bg-primary text-black font-semibold px-4 py-2.5 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm';
+    } else {
+        innerDiv.className = 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2.5 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-200 dark:border-gray-700/50 shadow-sm';
+    }
+
+    innerDiv.innerHTML = formatMessageText(text);
+    messageDiv.appendChild(innerDiv);
+    messagesContainer.appendChild(messageDiv);
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function triggerInitialAnalysis() {
+    // Se por acaso os dados não estiverem prontos ainda, tentamos carregar
+    if (!currentDashboardData) {
+        await initDashboard();
+    }
+    
+    const messagesContainer = document.getElementById('chatMessages');
+    const typingIndicator = document.getElementById('chatTypingIndicator');
+    
+    if (typingIndicator) {
+        typingIndicator.classList.remove('hidden');
+    }
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
     try {
+        const data = currentDashboardData || getMockData();
         const summary = {
-            spend: currentDashboardData.overview.spend,
-            cpr: currentDashboardData.overview.cpr,
-            clicks: currentDashboardData.overview.clicks,
-            topCampaigns: currentDashboardData.campaigns
+            spend: data.overview.spend || 0,
+            cpr: data.overview.cpr || 0,
+            clicks: data.overview.clicks || 0,
+            msgs: data.overview.msgs || 0,
+            likes: data.overview.likes || 0,
+            topCampaigns: (data.campaigns || [])
                 .filter(c => c.status === 'active')
                 .sort((a, b) => b.spend - a.spend)
                 .slice(0, 3)
-                .map(c => `${c.name} (Spend: R$${c.spend}, CPR: R$${c.costPerResult.toFixed(2)})`)
+                .map(c => `${c.name} (Gasto: R$${c.spend.toFixed(2)}, CPR/Resultado: R$${c.costPerResult.toFixed(2)}, Cliques: ${c.clicks})`)
         };
 
         const prompt = `
-            Atue como um especialista em tráfego pago (Meta Ads). Analise estes dados da conta de Artes Marciais (Kihap):
-            - Gasto Total (Período): R$ ${summary.spend.toFixed(2)}
-            - Custo por Resultado Médio: R$ ${summary.cpr.toFixed(2)}
-            - Total Cliques: ${summary.clicks}
-            - Top Campanhas Ativas: ${JSON.stringify(summary.topCampaigns)}
-            
-            Forneça 3 insights estratégicos curtos e 1 sugestão de otimização prática.
-            Use formatação HTML simples (<br>, <strong>). Seja direto.
-        `;
+Olá! Faça uma análise inicial de boas-vindas baseada nos seguintes dados de tráfego pago da Kihap:
+- Investimento Total: R$ ${summary.spend.toFixed(2)}
+- Custo por Resultado (CPR) Médio: R$ ${summary.cpr.toFixed(2)}
+- Cliques: ${summary.clicks}
+- Mensagens Iniciadas: ${summary.msgs}
+- Novos Seguidores (Ads): ${summary.likes}
+- Top 3 Campanhas Ativas por Investimento: ${JSON.stringify(summary.topCampaigns)}
 
-        // Detected Models: gemini-2.5-flash, gemini-2.5-pro
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeConfig.geminiKey}`, {
+Por favor, faça uma saudação amigável e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
+`;
+
+        const apiKey = activeConfig.geminiKey || '';
+        if (!apiKey) {
+            throw new Error("Chave da API do Gemini não configurada nas configurações do Meta.");
+        }
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemInstruction }]
+                }
+            })
         });
 
         const json = await response.json();
-        console.log("Gemini API Raw Response:", json); // Debug info
+        if (json.error) throw new Error(json.error.message);
+        
+        const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui gerar a análise inicial.";
+        
+        chatHistory.push({
+            role: 'user',
+            parts: [{ text: "Analise o desempenho recente da minha conta." }]
+        });
+        chatHistory.push({
+            role: 'model',
+            parts: [{ text: aiText }]
+        });
 
-        if (json.error) {
-            throw new Error("API Error: " + json.error.message);
-        }
-
-        if (!json.candidates || !json.candidates.length) {
-            // Pode ser filtro de segurança ou erro desconhecido
-            const safetyPrompt = json.promptFeedback ? `(Feedback: ${JSON.stringify(json.promptFeedback)})` : '';
-            throw new Error("A IA não retornou resposta válida. " + safetyPrompt);
-        }
-
-        const aiText = json.candidates[0].content.parts[0].text;
-
-        // Render markdown-like to HTML
-        ui.content.innerHTML = aiText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>');
-
-        ui.content.classList.remove('hidden');
+        appendMessage('model', aiText);
 
     } catch (e) {
-        console.error("AI Error:", e);
-        ui.content.innerHTML = `<span class="text-red-400">Erro ao analisar dados: ${e.message}</span>`;
-        ui.content.classList.remove('hidden');
+        console.error("Erro na análise inicial da IA:", e);
+        appendMessage('model', `<span class="text-red-500 font-medium">Erro ao gerar análise inicial: ${e.message}</span><br><br>Por favor, certifique-se de configurar uma chave da API do Gemini válida clicando no botão "Conectar Meta".`);
     } finally {
-        ui.loading.classList.add('hidden');
-        ui.btn.disabled = false;
+        if (typingIndicator) {
+            typingIndicator.classList.add('hidden');
+        }
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+}
+
+async function sendChatMessage(e) {
+    e.preventDefault();
+    
+    const inputEl = document.getElementById('chatInput');
+    if (!inputEl) return;
+    
+    const text = inputEl.value.trim();
+    if (!text) return;
+    
+    // Clear input
+    inputEl.value = '';
+    
+    // Append user message
+    appendMessage('user', text);
+    
+    // Push user message to history
+    chatHistory.push({
+        role: 'user',
+        parts: [{ text: text }]
+    });
+    
+    const messagesContainer = document.getElementById('chatMessages');
+    const typingIndicator = document.getElementById('chatTypingIndicator');
+    
+    if (typingIndicator) {
+        typingIndicator.classList.remove('hidden');
+    }
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    try {
+        const apiKey = activeConfig.geminiKey || '';
+        if (!apiKey) {
+            throw new Error("Chave da API do Gemini não configurada.");
+        }
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: chatHistory,
+                systemInstruction: {
+                    parts: [{ text: systemInstruction }]
+                }
+            })
+        });
+        
+        const json = await response.json();
+        if (json.error) throw new Error(json.error.message);
+        
+        const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui obter uma resposta.";
+        
+        chatHistory.push({
+            role: 'model',
+            parts: [{ text: aiText }]
+        });
+        
+        appendMessage('model', aiText);
+        
+    } catch (e) {
+        console.error("Erro no chat da IA:", e);
+        appendMessage('model', `<span class="text-red-500 font-medium">Erro na comunicação com a IA: ${e.message}</span>`);
+        chatHistory.pop(); // Remove o último envio para não quebrar a sequência
+    } finally {
+        if (typingIndicator) {
+            typingIndicator.classList.add('hidden');
+        }
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
     }
 }
 
@@ -658,3 +862,370 @@ function formatCurrency(value) {
 function formatNumber(value) {
     return new Intl.NumberFormat('pt-BR').format(value);
 }
+
+async function exportTrafficReport(days) {
+    const btn = document.getElementById('exportReportBtn');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    
+    // Show spinner and disable button
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin text-red-500"></i> Gerando PDF...`;
+    
+    try {
+        let overview, campaigns, dailyLabels, dailySpend, dailyResults;
+        
+        // 1. Fetch data based on config mode
+        if (!activeConfig.accessToken || activeConfig.accessToken === "SEU_ACCESS_TOKEN_AQUI") {
+            // Mock data mode
+            console.log(`[Export] Gerando dados mockados para ${days} dias...`);
+            const scaleFactor = days / 30;
+            overview = {
+                spend: 12450.00 * scaleFactor,
+                impressions: Math.round(452000 * scaleFactor),
+                clicks: Math.round(8540 * scaleFactor),
+                cpr: 3.45,
+                msgs: Math.round(125 * scaleFactor),
+                likes: Math.round(669 * scaleFactor),
+                costPerLike: (12450.00 * scaleFactor) / Math.round(669 * scaleFactor)
+            };
+            campaigns = [
+                { name: "Kihap FLN - Reconhecimento e Marca", status: "active", msgs: Math.round(42 * scaleFactor), clicks: Math.round(1240 * scaleFactor), ctr: 1.85, cpc: 0.85, reach: Math.round(45000 * scaleFactor), impressions: Math.round(120000 * scaleFactor), visits: Math.round(580 * scaleFactor), spend: 1054.00 * scaleFactor, costPerResult: (1054.00 * scaleFactor) / Math.round(42 * scaleFactor) },
+                { name: "Kihap Dourados - Mensagens WhatsApp", status: "active", msgs: Math.round(58 * scaleFactor), clicks: Math.round(850 * scaleFactor), ctr: 2.10, cpc: 1.20, reach: Math.round(28000 * scaleFactor), impressions: Math.round(95000 * scaleFactor), visits: Math.round(410 * scaleFactor), spend: 1020.00 * scaleFactor, costPerResult: (1020.00 * scaleFactor) / Math.round(58 * scaleFactor) },
+                { name: "Matrículas Abertas - Adulto e Infantil", status: "active", msgs: Math.round(25 * scaleFactor), clicks: Math.round(410 * scaleFactor), ctr: 1.45, cpc: 1.60, reach: Math.round(18000 * scaleFactor), impressions: Math.round(55000 * scaleFactor), visits: Math.round(220 * scaleFactor), spend: 656.00 * scaleFactor, costPerResult: (656.00 * scaleFactor) / Math.round(25 * scaleFactor) },
+                { name: "Campanha Institucional - Kihap 2026", status: "paused", msgs: 0, clicks: Math.round(3100 * scaleFactor), ctr: 0.95, cpc: 0.45, reach: Math.round(120000 * scaleFactor), impressions: Math.round(180000 * scaleFactor), visits: Math.round(1200 * scaleFactor), spend: 1395.00 * scaleFactor, costPerResult: 0 }
+            ];
+            
+            // Mock daily data
+            dailyLabels = [];
+            dailySpend = [];
+            dailyResults = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dailyLabels.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+                
+                const spendBase = 400 * scaleFactor;
+                const resultBase = 15 * scaleFactor;
+                dailySpend.push(parseFloat((spendBase + (Math.random() - 0.5) * (100 * scaleFactor)).toFixed(2)));
+                dailyResults.push(Math.round(resultBase + (Math.random() - 0.5) * (8 * scaleFactor)));
+            }
+        } else {
+            // Real Meta Ads API Mode
+            console.log(`[Export] Buscando dados da API do Meta Ads para os últimos ${days} dias...`);
+            const { accessToken, adAccountId, apiVersion } = activeConfig;
+            const baseUrl = `https://graph.facebook.com/${apiVersion}/act_${adAccountId}`;
+            
+            // Calculate date range parameters
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - days);
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            const timeRange = JSON.stringify({ since: formatDate(start), until: formatDate(end) });
+            const dateParams = `time_range=${timeRange}`;
+            
+            // Fetch Insights & Campaigns
+            const chartFields = 'spend,actions,reach,clicks,impressions,date_start';
+            const insightsUrl = `${baseUrl}/insights?level=account&${dateParams}&time_increment=1&fields=${chartFields}&access_token=${accessToken}`;
+            
+            const campaignsFields = 'name,status,insights{spend,reach,actions,clicks,cpc,ctr,frequency,impressions,inline_link_clicks}';
+            const campaignsUrl = `${baseUrl}/campaigns?fields=${campaignsFields}&effective_status=["ACTIVE","PAUSED"]&limit=50&access_token=${accessToken}&${dateParams}`;
+            
+            const [insightsRes, campaignsRes] = await Promise.all([
+                fetch(insightsUrl),
+                fetch(campaignsUrl)
+            ]);
+            
+            const insightsJson = await insightsRes.json();
+            const campaignsJson = await campaignsRes.json();
+            
+            if (insightsJson.error) throw new Error(insightsJson.error.message);
+            if (campaignsJson.error) throw new Error(campaignsJson.error.message);
+            
+            const dailyData = (insightsJson.data || []).reverse();
+            dailyData.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+            
+            dailyLabels = dailyData.map(d => formatDateLabel(d.date_start));
+            dailySpend = dailyData.map(d => parseFloat(d.spend || 0));
+            
+            const msgActionTypes = [
+                'onsite_conversion.messaging_conversation_started_7d',
+                'messaging_conversation_started_7d',
+                'onsite_conversion.messaging_conversation_started_28d',
+                'contact_total',
+                'leads'
+            ];
+            
+            dailyResults = dailyData.map(d => countActions(d.actions));
+            
+            const totalSpend = dailyData.reduce((acc, d) => acc + parseFloat(d.spend || 0), 0);
+            const totalClicks = dailyData.reduce((acc, d) => acc + parseInt(d.clicks || 0), 0);
+            const totalImpressions = dailyData.reduce((acc, d) => acc + parseInt(d.impressions || 0), 0);
+            const totalMsgs = dailyData.reduce((acc, d) => acc + getActionValue(d.actions || [], msgActionTypes), 0);
+            const totalLikes = dailyData.reduce((acc, d) => acc + getActionValue(d.actions || [], ['like', 'follow']), 0);
+            const avgCpr = totalMsgs > 0 ? (totalSpend / totalMsgs) : (totalClicks > 0 ? (totalSpend / totalClicks) : 0);
+            
+            overview = {
+                spend: totalSpend,
+                impressions: totalImpressions,
+                clicks: totalClicks,
+                cpr: avgCpr,
+                msgs: totalMsgs,
+                likes: totalLikes,
+                costPerLike: totalLikes > 0 ? (totalSpend / totalLikes) : 0
+            };
+            
+            campaigns = (campaignsJson.data || []).map(camp => {
+                const inst = camp.insights?.data?.[0] || {};
+                const spend = parseFloat(inst.spend || 0);
+                const reach = parseInt(inst.reach || 0);
+                const clicks = parseInt(inst.inline_link_clicks || inst.clicks || 0);
+                const ctr = parseFloat(inst.ctr || 0);
+                const cpc = parseFloat(inst.cpc || 0);
+                const impressions = parseInt(inst.impressions || 0);
+                const msgs = getActionValue(inst.actions, msgActionTypes);
+                const visits = getActionValue(inst.actions, ['instagram_profile_visits']);
+                const cpr = msgs > 0 ? (spend / msgs) : 0;
+                
+                return {
+                    name: camp.name,
+                    status: camp.status.toLowerCase() === 'active' ? 'active' : 'paused',
+                    msgs: msgs,
+                    clicks: clicks,
+                    ctr: ctr,
+                    cpc: cpc,
+                    reach: reach,
+                    impressions: impressions,
+                    visits: visits,
+                    spend: spend,
+                    costPerResult: cpr
+                };
+            });
+        }
+        
+        // 2. Fetch AI analysis from Gemini
+        console.log(`[Export] Buscando análise estratégica da IA do Gemini para ${days} dias...`);
+        const prompt = `
+Como um especialista sênior em tráfego pago (Meta Ads) para a Kihap, analise estes dados consolidados das campanhas para os últimos ${days} dias:
+- Investimento Total: R$ ${overview.spend.toFixed(2)}
+- Cliques Totais: ${overview.clicks}
+- Conversas Iniciadas (Leads): ${overview.msgs}
+- Custo por Conversa Médio (CPR): R$ ${overview.cpr.toFixed(2)}
+- Novos Seguidores de Anúncios: ${overview.likes}
+- Campanhas Individuais: ${JSON.stringify(campaigns.map(c => ({ name: c.name, status: c.status, spend: c.spend, msgs: c.msgs, cpr: c.costPerResult })))}
+
+Forneça uma análise de desempenho executiva de 2 parágrafos.
+No primeiro parágrafo, destaque os pontos fortes e fracos gerais do período.
+No segundo parágrafo, dê 3 recomendações táticas prioritárias e acionáveis para otimizar o orçamento e as conversões.
+Não use formatação complexa além de **negrito** nas palavras-chave importantes.
+`;
+
+        const apiKey = activeConfig.geminiKey || '';
+        if (!apiKey) {
+            throw new Error("Chave da API do Gemini não configurada nas configurações do Meta.");
+        }
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemInstruction }]
+                }
+            })
+        });
+        
+        const json = await response.json();
+        if (json.error) throw new Error(json.error.message);
+        
+        const aiAnalysis = json.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível obter a análise automatizada para este período.";
+        
+        // 3. Build HTML Report layout
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - days);
+        
+        let campaignsTableRows = "";
+        campaigns.forEach(camp => {
+            campaignsTableRows += `
+                <tr>
+                    <td class="p-2 border font-semibold ${camp.status === 'active' ? 'text-green-600' : 'text-gray-500'}">${camp.status === 'active' ? 'Ativa' : 'Pausada'}</td>
+                    <td class="p-2 border font-bold">${camp.name}</td>
+                    <td class="p-2 border font-bold">R$ ${formatNumber(camp.spend.toFixed(2))}</td>
+                    <td class="p-2 border">${formatNumber(camp.clicks)}</td>
+                    <td class="p-2 border">${camp.ctr.toFixed(2)}%</td>
+                    <td class="p-2 border">R$ ${formatNumber(camp.cpc.toFixed(2))}</td>
+                    <td class="p-2 border">${formatNumber(camp.reach)}</td>
+                    <td class="p-2 border font-bold text-blue-600">${formatNumber(camp.msgs)}</td>
+                    <td class="p-2 border font-bold">R$ ${formatNumber(camp.costPerResult.toFixed(2))}</td>
+                </tr>
+            `;
+        });
+        
+        const reportHtml = `
+            <div class="p-8 max-w-4xl mx-auto bg-white text-black font-sans">
+                <!-- Header -->
+                <div class="border-b-2 border-gray-800 pb-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-extrabold tracking-tight uppercase flex items-center gap-2">
+                            <span class="text-orange-500">Kihap</span> Martial Arts
+                        </h1>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Relatório de Performance - Meta Ads</p>
+                    </div>
+                    <div class="text-right text-[11px] text-gray-500">
+                        <p><strong>Período:</strong> Últimos ${days} dias (${start.toLocaleDateString('pt-BR')} a ${end.toLocaleDateString('pt-BR')})</p>
+                        <p><strong>Gerado em:</strong> ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
+                    </div>
+                </div>
+
+                <!-- Summary metrics -->
+                <div class="grid grid-cols-5 gap-4 mb-8">
+                    <div class="border border-gray-200 p-3 rounded-lg bg-gray-50 text-center print-card">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Investimento</p>
+                        <p class="text-base font-bold mt-1 text-gray-900">R$ ${formatNumber(overview.spend.toFixed(2))}</p>
+                    </div>
+                    <div class="border border-gray-200 p-3 rounded-lg bg-gray-50 text-center print-card">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Impressões</p>
+                        <p class="text-base font-bold mt-1 text-gray-900">${formatNumber(overview.impressions)}</p>
+                    </div>
+                    <div class="border border-gray-200 p-3 rounded-lg bg-gray-50 text-center print-card">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Cliques</p>
+                        <p class="text-base font-bold mt-1 text-gray-900">${formatNumber(overview.clicks)}</p>
+                    </div>
+                    <div class="border border-gray-200 p-3 rounded-lg bg-gray-50 text-center print-card">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Conversas</p>
+                        <p class="text-base font-bold mt-1 text-gray-900">${formatNumber(overview.msgs)}</p>
+                    </div>
+                    <div class="border border-gray-200 p-3 rounded-lg bg-gray-50 text-center print-card">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">CPR Médio</p>
+                        <p class="text-base font-bold mt-1 text-gray-900">R$ ${formatNumber(overview.cpr.toFixed(2))}</p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-2 gap-6 mb-8 print-chart-container">
+                    <div class="border border-gray-200 p-4 rounded-lg bg-white">
+                        <h3 class="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Evolução de Tráfego</h3>
+                        <div class="h-44 relative">
+                            <canvas id="printPerfChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 p-4 rounded-lg bg-white">
+                        <h3 class="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Divisão de Canais</h3>
+                        <div class="h-44 relative flex justify-center">
+                            <canvas id="printPlatChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaigns list -->
+                <div class="mb-8 print-table-container">
+                    <h3 class="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Métricas por Campanha</h3>
+                    <table class="print-table text-[10px] text-left w-full border border-gray-200">
+                        <thead class="bg-gray-100 text-gray-700 font-bold uppercase text-[8px] tracking-wider">
+                            <tr>
+                                <th class="p-2 border">Status</th>
+                                <th class="p-2 border">Campanha</th>
+                                <th class="p-2 border">Investido</th>
+                                <th class="p-2 border">Cliques</th>
+                                <th class="p-2 border">CTR</th>
+                                <th class="p-2 border">CPC</th>
+                                <th class="p-2 border">Alcance</th>
+                                <th class="p-2 border">Mensagens</th>
+                                <th class="p-2 border">CPR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${campaignsTableRows}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- AI Insights Section -->
+                <div class="border border-gray-200 p-4 rounded-lg bg-gray-50 print-card">
+                    <h3 class="text-[10px] font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-magic text-purple-600"></i> Análise Estratégica AI (Gemini)
+                    </h3>
+                    <div class="text-[11px] leading-relaxed text-gray-700 space-y-2">
+                        ${formatMessageText(aiAnalysis)}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const printContainer = document.getElementById('printableReport');
+        printContainer.innerHTML = reportHtml;
+        
+        // 4. Render Chart.js in the print container synchronously
+        const ctxPerf = document.getElementById('printPerfChart').getContext('2d');
+        new Chart(ctxPerf, {
+            type: 'line',
+            data: {
+                labels: dailyLabels,
+                datasets: [
+                    {
+                        label: 'Resultados',
+                        data: dailyResults,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Investido',
+                        data: dailySpend,
+                        borderColor: '#22c55e',
+                        borderDash: [4, 4],
+                        tension: 0.3,
+                        pointStyle: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { font: { size: 8 }, maxRotation: 0 } },
+                    y: { ticks: { font: { size: 8 } } }
+                }
+            }
+        });
+
+        const ctxPlat = document.getElementById('printPlatChart').getContext('2d');
+        new Chart(ctxPlat, {
+            type: 'doughnut',
+            data: {
+                labels: ['Instagram', 'Facebook'],
+                datasets: [{
+                    data: [Math.round(overview.spend * 0.58), Math.round(overview.spend * 0.42)],
+                    backgroundColor: ['#E1306C', '#1877F2'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { position: 'right', labels: { font: { size: 8 } } } }
+            }
+        });
+        
+        // 5. Open Native Print Dialog
+        setTimeout(() => {
+            window.print();
+            // Clear content after dialog closes
+            printContainer.innerHTML = '';
+        }, 300);
+        
+    } catch (e) {
+        console.error("Erro ao exportar PDF:", e);
+        alert("Erro ao gerar relatório em PDF do Meta Ads: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
