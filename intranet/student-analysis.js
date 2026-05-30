@@ -126,7 +126,7 @@ function renderSnapshotLog(searchTerm = '') {
     }
 
     if (filteredSnapshots.length === 0) {
-        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-5">Nenhum snapshot encontrado para "${searchTerm}".</div>`;
+        logBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 dark:text-gray-400">Nenhum snapshot encontrado para "${searchTerm}".</td></tr>`;
         return;
     }
 
@@ -136,12 +136,12 @@ function renderSnapshotLog(searchTerm = '') {
         const storeRevenue = (item.storeTotalRevenue || 0) / 100;
 
         return `
-            <tr class="log-item cursor-pointer hover:bg-[#2a2a2a]" data-id="${item.id}">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">${displayDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalContracts || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalDailyActives || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.storeTotalSales || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <tr class="log-item cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition duration-150 border-b border-gray-100 dark:border-gray-800/50 last:border-0" data-id="${item.id}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">${displayDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.totalContracts || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.totalDailyActives || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.storeTotalSales || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }).join('');
