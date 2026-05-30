@@ -1,6 +1,6 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { getFirestore, collection, getDocs, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
 // Initialize using global modules or re-import if needed.
@@ -48,7 +48,7 @@ window.refreshCampaigns = () => loadDashboard();
 
 async function loadDashboard() {
     const tableBody = document.getElementById('campaigns-table-body');
-    tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
 
     try {
         // Stats (Approximation/Count)
@@ -64,7 +64,7 @@ async function loadDashboard() {
 
         tableBody.innerHTML = '';
         if (querySnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Nenhuma campanha encontrada.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Nenhuma campanha encontrada.</td></tr>';
             return;
         }
 
@@ -78,6 +78,27 @@ async function loadDashboard() {
             if (camp.status === 'sending') badgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25';
             if (camp.status === 'draft') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/25';
 
+            let actionsHtml = '';
+            if (camp.status === 'draft') {
+                actionsHtml = `
+                    <button onclick="window.editCampaign('${doc.id}')" title="Editar Rascunho" class="p-1.5 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-500/10 rounded-lg transition active:scale-90 inline-flex items-center justify-center">
+                        <i class="fas fa-edit text-sm"></i>
+                    </button>
+                    <button onclick="window.deleteCampaign('${doc.id}')" title="Excluir Rascunho" class="p-1.5 text-red-650 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition active:scale-90 inline-flex items-center justify-center">
+                        <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                `;
+            } else {
+                actionsHtml = `
+                    <button onclick="window.reuseCampaign('${doc.id}')" title="Reutilizar como Cópia" class="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition active:scale-90 inline-flex items-center justify-center">
+                        <i class="fas fa-copy text-sm"></i>
+                    </button>
+                    <button onclick="window.deleteCampaign('${doc.id}')" title="Excluir Histórico" class="p-1.5 text-red-650 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition active:scale-90 inline-flex items-center justify-center">
+                        <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                `;
+            }
+
             const row = `
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition border-b border-gray-100 dark:border-gray-800">
                     <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">${camp.subject || '(Sem Assunto)'}</td>
@@ -88,6 +109,7 @@ async function loadDashboard() {
                     </td>
                     <td class="px-6 py-4 text-gray-650 dark:text-gray-400 text-xs">${date}</td>
                     <td class="px-6 py-4 text-right font-mono text-xs text-gray-650 dark:text-gray-400">${stats}</td>
+                    <td class="px-6 py-4 text-right space-x-1 whitespace-nowrap">${actionsHtml}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
@@ -95,7 +117,7 @@ async function loadDashboard() {
 
     } catch (error) {
         console.error("Erro ao carregar dashboard:", error);
-        tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
     }
 }
 
@@ -281,6 +303,72 @@ window.executeBroadcast = async () => {
         alert('Erro no envio massivo: ' + e.message);
         document.getElementById('editorStatus').innerText = 'Erro no envio';
     }
+};
+
+
+window.editCampaign = async (id) => {
+    try {
+        const docRef = doc(db, 'campaigns', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const camp = docSnap.data();
+            document.getElementById('campaignSubject').value = camp.subject || '';
+            document.getElementById('campaignContent').value = camp.content_html || '';
+            editorCampaignId = id;
+            document.getElementById('editorStatus').innerText = 'Editando Rascunho';
+            switchTab('editor');
+        } else {
+            alert('Campanha não encontrada.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao carregar rascunho: ' + e.message);
+    }
+};
+
+window.reuseCampaign = async (id) => {
+    try {
+        const docRef = doc(db, 'campaigns', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const camp = docSnap.data();
+            document.getElementById('campaignSubject').value = `${camp.subject || ''} (Cópia)`;
+            document.getElementById('campaignContent').value = camp.content_html || '';
+            editorCampaignId = null; // Clear so it saves as a new draft
+            document.getElementById('editorStatus').innerText = 'Novo Rascunho (Cópia)';
+            switchTab('editor');
+        } else {
+            alert('Campanha não encontrada.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao reutilizar campanha: ' + e.message);
+    }
+};
+
+window.deleteCampaign = async (id) => {
+    if (!confirm('Deseja realmente excluir esta campanha da lista? Esta ação não pode ser desfeita.')) return;
+    try {
+        await deleteDoc(doc(db, 'campaigns', id));
+        if (editorCampaignId === id) {
+            document.getElementById('campaignSubject').value = '';
+            document.getElementById('campaignContent').value = '';
+            editorCampaignId = null;
+            document.getElementById('editorStatus').innerText = 'Rascunho';
+        }
+        loadDashboard();
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao excluir campanha: ' + e.message);
+    }
+};
+
+window.clearEditor = () => {
+    if (!confirm('Deseja limpar os campos do editor para criar uma nova campanha? Qualquer alteração não salva será perdida.')) return;
+    document.getElementById('campaignSubject').value = '';
+    document.getElementById('campaignContent').value = '';
+    editorCampaignId = null;
+    document.getElementById('editorStatus').innerText = 'Rascunho';
 };
 
 

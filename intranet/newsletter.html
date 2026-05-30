@@ -142,12 +142,13 @@
                                     <th class="px-6 py-3">Status</th>
                                     <th class="px-6 py-3">Enviado Em</th>
                                     <th class="px-6 py-3 text-right font-semibold">Stats</th>
+                                    <th class="px-6 py-3 text-right font-semibold">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="campaigns-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                 <!-- JS Populated -->
                                 <tr>
-                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">Carregando...</td>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">Carregando...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -243,6 +244,10 @@
                             placeholder="&lt;h1&gt;Olá, [Nome]!&lt;/h1&gt;&#10;&lt;p&gt;Escreva seu conteúdo aqui...&lt;/p&gt;"></textarea>
 
                         <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-150 dark:border-gray-800">
+                            <button onclick="window.clearEditor()"
+                                class="mr-auto px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-650 dark:text-gray-400 font-semibold transition-all duration-200 flex items-center gap-2 active:scale-95">
+                                <i class="fas fa-eraser"></i> Limpar / Novo
+                            </button>
                             <button onclick="window.sendTest()"
                                 class="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold transition-all duration-200 flex items-center gap-2 active:scale-95">
                                 <i class="fas fa-flask"></i> Enviar Teste
