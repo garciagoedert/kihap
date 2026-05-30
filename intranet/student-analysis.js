@@ -189,21 +189,21 @@ function showWeeklySummary() {
 
     const summaryBody = document.getElementById('weekly-summary-modal-body');
     summaryBody.innerHTML = `
-        <div class="p-3 bg-[#2a2a2a] rounded-lg">
-            <p class="text-sm text-gray-400">Contratos Ativos (Total)</p>
-            <p class="text-xl font-bold text-white">
+        <div class="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contratos Ativos (Total)</p>
+            <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-1">
                 ${latestSnapshot.totalContracts.toLocaleString('pt-BR')}
                 ${calculateDifference(latestSnapshot.totalContracts, seventhDaySnapshot.totalContracts)}
             </p>
         </div>
-        <div class="p-3 bg-[#2a2a2a] rounded-lg">
-            <p class="text-sm text-gray-400">Alunos Ativos (Total)</p>
-            <p class="text-xl font-bold text-white">
+        <div class="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Alunos Ativos (Total)</p>
+            <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-1">
                 ${latestSnapshot.totalDailyActives.toLocaleString('pt-BR')}
                 ${calculateDifference(latestSnapshot.totalDailyActives, seventhDaySnapshot.totalDailyActives)}
             </p>
         </div>
-        <p class="text-xs text-center text-gray-500 pt-2">
+        <p class="text-xs text-center text-gray-500 dark:text-gray-400 pt-2">
             Comparativo entre ${snapshots[6].timestamp.toDate().toLocaleDateString('pt-BR')} e ${snapshots[0].timestamp.toDate().toLocaleDateString('pt-BR')}.
         </p>
     `;
@@ -259,9 +259,9 @@ function handleViewSnapshot(event) {
     }
 
     let tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-400">
-                <thead class="text-xs text-gray-300 uppercase bg-[#2a2a2a]">
+        <div class="overflow-hidden rounded-xl border border-gray-150 dark:border-gray-800 shadow-inner">
+            <table class="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-100 dark:bg-gray-800/80 border-b border-gray-150 dark:border-gray-850">
                     <tr>
                         <th scope="col" class="px-6 py-3">Unidade</th>
                         <th scope="col" class="px-6 py-3">Contratos Ativos</th>
@@ -269,7 +269,7 @@ function handleViewSnapshot(event) {
                         <th scope="col" class="px-6 py-3">Receita (Loja)</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800/50 bg-white dark:bg-transparent">
     `;
 
     const sortedUnitIds = Object.keys(snapshot.units).sort();
@@ -280,11 +280,11 @@ function handleViewSnapshot(event) {
         const storeRevenue = (unitData.storeRevenue || 0) / 100;
         
         tableHtml += `
-            <tr class="border-b border-gray-700">
-                <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">${displayName}</th>
-                <td class="px-6 py-4">${unitData.contracts || 0}</td>
-                <td class="px-6 py-4">${unitData.dailyActives || 0}</td>
-                <td class="px-6 py-4">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition duration-150">
+                <th scope="row" class="px-6 py-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">${displayName}</th>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${unitData.contracts || 0}</td>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${unitData.dailyActives || 0}</td>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }
@@ -292,12 +292,12 @@ function handleViewSnapshot(event) {
     const totalRevenue = (snapshot.storeTotalRevenue || 0) / 100;
     tableHtml += `
                 </tbody>
-                <tfoot class="bg-[#2a2a2a]">
-                    <tr class="font-semibold text-white">
-                        <th scope="row" class="px-6 py-3 text-base">Total</th>
-                        <td class="px-6 py-3">${snapshot.totalContracts || 0}</td>
-                        <td class="px-6 py-3">${snapshot.totalDailyActives || 0}</td>
-                        <td class="px-6 py-3">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <tfoot class="bg-gray-50 dark:bg-gray-800/40 border-t border-gray-250 dark:border-gray-750">
+                    <tr class="font-bold text-gray-900 dark:text-white">
+                        <th scope="row" class="px-6 py-4 text-sm font-extrabold">Total</th>
+                        <td class="px-6 py-4 text-sm font-extrabold">${snapshot.totalContracts || 0}</td>
+                        <td class="px-6 py-4 text-sm font-extrabold">${snapshot.totalDailyActives || 0}</td>
+                        <td class="px-6 py-4 text-sm font-extrabold">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     </tr>
                 </tfoot>
             </table>
