@@ -76,7 +76,7 @@ function renderUnitDistribution(data, currentFilter) {
     if (!list) return;
 
     if (currentFilter !== 'all') {
-        list.innerHTML = `<div class="p-4 bg-gray-800/30 rounded-lg text-sm text-gray-500 text-center italic">Filtrado por unidade específica</div>`;
+        list.innerHTML = `<div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl text-sm text-gray-500 dark:text-gray-400 text-center italic border border-gray-150 dark:border-gray-800">Filtrado por unidade específica</div>`;
         return;
     }
 
@@ -91,13 +91,13 @@ function renderUnitDistribution(data, currentFilter) {
     list.innerHTML = sorted.map(([unit, count]) => {
         const percentage = Math.round((count / data.length) * 100);
         return `
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="text-gray-300 font-medium">${unit}</span>
-                    <span class="text-gray-400">${count} alunos (${percentage}%)</span>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm items-center">
+                    <span class="text-gray-900 dark:text-white font-semibold text-sm tracking-tight">${unit}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-semibold bg-gray-50 dark:bg-gray-800/80 px-2.5 py-0.5 rounded-lg border border-gray-100 dark:border-gray-700/50 shadow-sm">${count} alunos (${percentage}%)</span>
                 </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-yellow-500 h-full rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
+                <div class="w-full bg-gray-100 dark:bg-gray-800/40 rounded-full h-2.5 overflow-hidden shadow-inner">
+                    <div class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
                 </div>
             </div>
         `;
@@ -109,29 +109,35 @@ function renderRecentOverdue(overdueList) {
     if (!tbody) return;
 
     if (overdueList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="py-10 text-center text-gray-600">Nenhum aluno inadimplente encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-gray-500 dark:text-gray-400">Nenhum aluno inadimplente encontrado.</td></tr>`;
         return;
     }
 
     // Show first 10 for performance/ui
     const recent = overdueList.slice(0, 10);
 
-    tbody.innerHTML = recent.map(s => `
-        <tr class="hover:bg-gray-800/30 transition-colors">
-            <td class="py-3 px-2">
-                <div class="flex flex-col">
-                    <span class="text-sm font-medium text-white">${s.firstName} ${s.lastName || ''}</span>
-                    <span class="text-xs text-gray-500">${s.email || 'Sem email'}</span>
-                </div>
-            </td>
-            <td class="py-3 px-2">
-                <span class="text-xs px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-gray-400">${s.branchName || s.unitId}</span>
-            </td>
-            <td class="py-3 px-2">
-                <button onclick="window.location.href='alunos.html?search=${encodeURIComponent(s.firstName)}'" class="text-blue-400 hover:text-blue-300 text-sm">
-                    <i class="fas fa-search"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = recent.map(s => {
+        const fullName = `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || 'Sem nome';
+        const email = s.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || s.email || 'Sem email';
+        const unitName = s.branchName || s.unitId || 'N/A';
+        
+        return `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-all duration-200 border-b border-gray-100 dark:border-gray-850 last:border-0 group">
+                <td class="py-3 px-4">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-yellow-500 transition-colors duration-150">${fullName}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">${email}</span>
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="text-xs font-semibold px-2.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200/50 dark:border-gray-750 uppercase tracking-wider">${unitName}</span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" class="inline-flex text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition duration-150 justify-center items-center w-8 h-8 mx-auto" title="Abrir Ficha">
+                        <i class="fas fa-external-link-alt text-xs"></i>
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
