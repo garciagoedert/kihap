@@ -74,9 +74,9 @@ async function loadDashboard() {
             const stats = camp.stats ? `Enviado: ${camp.stats.sent}, Falhas: ${camp.stats.failed}` : '-';
 
             let badgeClass = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
-            if (camp.status === 'sent') badgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-555/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/25';
-            if (camp.status === 'sending') badgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-555/10 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25';
-            if (camp.status === 'draft') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-555/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/25';
+            if (camp.status === 'sent') badgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/25';
+            if (camp.status === 'sending') badgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25';
+            if (camp.status === 'draft') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/25';
 
             const row = `
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition border-b border-gray-100 dark:border-gray-800">
@@ -131,8 +131,8 @@ async function loadSubscribers() {
                             ${sub.status}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">${sub.source || 'N/A'}</td>
-                    <td class="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">${date}</td>
+                    <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-400">${sub.source || 'N/A'}</td>
+                    <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-400">${date}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;

@@ -30,7 +30,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="log.css">    <style>
+    <link rel="stylesheet" href="theme.css?v=2.2">
+    <link rel="stylesheet" href="log.css?v=2.2">    <style>
         body {
             font-family: 'Inter', sans-serif;
             transition: background-color 0.3s ease, color 0.3s ease;
@@ -288,9 +289,9 @@
         // Export to window so main script can use them if not using module imports consistently
         window.firebaseModules = { getAuth, onAuthStateChanged, getFunctions, httpsCallable, getFirestore, collection, getDocs, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit, where, initializeApp };
     </script>
-    <script src="firebase-config.js" type="module"></script>
-    <script src="common-ui.js" type="module"></script>
-    <script src="newsletter.js" type="module"></script>
+    <script src="firebase-config.js?v=2.2" type="module"></script>
+    <script src="common-ui.js?v=2.2" type="module"></script>
+    <script src="newsletter.js?v=2.2" type="module"></script>
 </body>
 
 </html>
