@@ -25,15 +25,17 @@ let editorCampaignId = null;
 window.switchTab = (tabName) => {
     // Hide all
     ['dashboard', 'subscribers', 'editor'].forEach(t => {
+        const tabBtn = document.getElementById(`tab-${t}`);
         document.getElementById(`content-${t}`).classList.add('hidden');
-        document.getElementById(`tab-${t}`).classList.remove('border-yellow-500', 'text-yellow-500');
-        document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-gray-400');
+        tabBtn.classList.remove('border-yellow-500', 'text-yellow-600', 'dark:text-yellow-500', 'font-semibold');
+        tabBtn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'font-medium');
     });
 
     // Show active
+    const activeTabBtn = document.getElementById(`tab-${tabName}`);
     document.getElementById(`content-${tabName}`).classList.remove('hidden');
-    document.getElementById(`tab-${tabName}`).classList.add('border-yellow-500', 'text-yellow-500');
-    document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-400');
+    activeTabBtn.classList.add('border-yellow-500', 'text-yellow-600', 'dark:text-yellow-500', 'font-semibold');
+    activeTabBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'font-medium');
 
     currentTab = tabName;
 
@@ -46,7 +48,7 @@ window.refreshCampaigns = () => loadDashboard();
 
 async function loadDashboard() {
     const tableBody = document.getElementById('campaigns-table-body');
-    tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center">Carregando...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
 
     try {
         // Stats (Approximation/Count)
@@ -62,7 +64,7 @@ async function loadDashboard() {
 
         tableBody.innerHTML = '';
         if (querySnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhuma campanha encontrada.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Nenhuma campanha encontrada.</td></tr>';
             return;
         }
 
@@ -71,16 +73,21 @@ async function loadDashboard() {
             const date = camp.sent_at ? new Date(camp.sent_at.toDate()).toLocaleDateString('pt-BR') : '-';
             const stats = camp.stats ? `Enviado: ${camp.stats.sent}, Falhas: ${camp.stats.failed}` : '-';
 
-            let statusColor = 'text-gray-500';
-            if (camp.status === 'sent') statusColor = 'text-green-500';
-            if (camp.status === 'sending') statusColor = 'text-yellow-500';
+            let badgeClass = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+            if (camp.status === 'sent') badgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-555/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/25';
+            if (camp.status === 'sending') badgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-555/10 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25';
+            if (camp.status === 'draft') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-555/10 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/25';
 
             const row = `
-                <tr class="hover:bg-gray-800/50 transition">
-                    <td class="px-6 py-4 font-medium text-white">${camp.subject || '(Sem Assunto)'}</td>
-                    <td class="px-6 py-4 ${statusColor} font-bold uppercase text-xs">${camp.status}</td>
-                    <td class="px-6 py-4">${date}</td>
-                    <td class="px-6 py-4 text-right font-mono text-xs">${stats}</td>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition border-b border-gray-100 dark:border-gray-800">
+                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">${camp.subject || '(Sem Assunto)'}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-lg text-2xs font-extrabold uppercase tracking-wider ${badgeClass}">
+                            ${camp.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-650 dark:text-gray-400 text-xs">${date}</td>
+                    <td class="px-6 py-4 text-right font-mono text-xs text-gray-650 dark:text-gray-400">${stats}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
@@ -102,22 +109,37 @@ async function loadSubscribers() {
         const querySnapshot = await getDocs(q);
         tableBody.innerHTML = '';
 
+        if (querySnapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhum inscrito encontrado.</td></tr>';
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const sub = doc.data();
             const date = sub.created_at ? new Date(sub.created_at.toDate()).toLocaleDateString('pt-BR') : '-';
+            
+            const statusBadge = sub.status === 'active' 
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20' 
+                : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400 border border-red-200/50 dark:border-red-500/20';
+
             const row = `
-                <tr class="hover:bg-gray-800/50 transition border-b border-gray-800">
-                    <td class="px-6 py-4 text-white">${sub.email}</td>
-                    <td class="px-6 py-4">${sub.name}</td>
-                    <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs ${sub.status === 'active' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">${sub.status}</span></td>
-                    <td class="px-6 py-4 text-xs">${sub.source}</td>
-                    <td class="px-6 py-4 text-xs">${date}</td>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-850/50 transition border-b border-gray-150 dark:border-gray-800">
+                    <td class="px-6 py-4 text-gray-900 dark:text-white font-medium">${sub.email}</td>
+                    <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${sub.name}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-0.5 rounded-md text-2xs font-bold uppercase tracking-wider ${statusBadge}">
+                            ${sub.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">${sub.source || 'N/A'}</td>
+                    <td class="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">${date}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
     } catch (e) {
         console.error('Erro subscribers', e);
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
     }
 }
 
