@@ -160,16 +160,13 @@ const sendCampaign = functions.https.onCall(async (data, context) => {
         // --- Template Processing ---
         const wrapContent = (content, unsubLink) => {
             return `
-                <div style="font-family: Arial, sans-serif; color: #333;">
-                    <div style="text-align: center; padding: 20px; background-color: #000;">
-                        <img src="https://kihap.com.br/imgs/logo-kihap-white.png" alt="Kihap Martial Arts" style="height: 50px;">
-                    </div>
-                    <div style="padding: 20px; background-color: #fff;">
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; background-color: #fff;">
+                    <div style="padding: 0 10px;">
                         ${content}
                     </div>
-                    <div style="text-align: center; padding: 20px; font-size: 12px; color: #777; background-color: #f4f4f4;">
-                        <p>Kihap Martial Arts - Todos os direitos reservados.</p>
-                        <p><a href="${unsubLink}">Clique aqui para cancelar o recebimento</a></p>
+                    <div style="text-align: center; padding: 30px 20px; font-size: 12px; color: #888; background-color: #f9f9f9; border-top: 1px solid #eee; margin-top: 30px; border-radius: 0 0 8px 8px;">
+                        <p style="margin: 0 0 10px 0;">Kihap Martial Arts - Todos os direitos reservados.</p>
+                        <p style="margin: 0;"><a href="${unsubLink}" style="color: #FF9800; text-decoration: underline;">Clique aqui para cancelar o recebimento</a></p>
                     </div>
                 </div>
             `;
