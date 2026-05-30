@@ -72,7 +72,7 @@
     </style>
 </head>
 
-<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 font-sans antialiased selection:bg-yellow-500/30 selection:text-yellow-200">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 font-sans antialiased selection:bg-primary/30 selection:text-black">
     <div id="app-container" class="flex h-screen overflow-hidden">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden backdrop-blur-sm transition-opacity">
@@ -88,51 +88,51 @@
                 <div
                     class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 flex-shrink-0">
                     <div>
-                        <h1 class="text-3xl font-bold text-white tracking-tight">Grade de Horários</h1>
-                        <p class="text-gray-400 text-sm mt-1">Gerencie a programação de aulas e eventos.</p>
+                        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Grade de Horários</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Gerencie a programação de aulas e eventos.</p>
                     </div>
 
                     <div
-                        class="flex flex-wrap items-center gap-3 w-full xl:w-auto bg-[#1a1a1a] p-2 rounded-xl border border-gray-800 shadow-lg">
+                        class="flex flex-wrap items-center gap-3 w-full xl:w-auto bg-white/80 dark:bg-[#1a1a1a]/80 p-2 rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-md backdrop-blur-xl">
                         <div class="relative group flex-grow xl:flex-grow-0">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i
-                                    class="fas fa-map-marker-alt text-gray-500 group-focus-within:text-yellow-500 transition-colors"></i>
+                                    class="fas fa-map-marker-alt text-gray-400 group-focus-within:text-primary transition-colors text-sm"></i>
                             </div>
                             <select id="unit-filter" aria-label="Filtrar por unidade"
-                                class="w-full xl:w-48 bg-[#222] border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent block pl-10 p-2.5 transition-all hover:border-gray-600 appearance-none cursor-pointer"></select>
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                                class="w-full xl:w-52 appearance-none bg-white/90 dark:bg-[#1e1e1e]/90 border border-gray-200/80 dark:border-gray-800/80 text-gray-850 dark:text-white pl-10 pr-10 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 cursor-pointer shadow-sm text-sm font-semibold"></select>
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                             </div>
                         </div>
 
-                        <div class="h-8 w-px bg-gray-700 hidden xl:block"></div>
+                        <div class="h-8 w-px bg-gray-200 dark:bg-gray-700 hidden xl:block"></div>
 
-                        <div class="flex items-center bg-[#222] rounded-lg border border-gray-700 p-1">
+                        <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
                             <button id="prev-week-btn"
-                                class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors"
+                                class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
                                 aria-label="Semana anterior">
-                                <i class="fas fa-chevron-left"></i>
+                                <i class="fas fa-chevron-left text-xs"></i>
                             </button>
                             <span id="date-range-display"
-                                class="px-4 py-1 text-sm font-medium text-gray-200 min-w-[140px] text-center"></span>
+                                class="px-4 py-1 text-sm font-bold text-gray-700 dark:text-gray-200 min-w-[140px] text-center tracking-tight"></span>
                             <button id="next-week-btn"
-                                class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors"
+                                class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
                                 aria-label="Próxima semana">
-                                <i class="fas fa-chevron-right"></i>
+                                <i class="fas fa-chevron-right text-xs"></i>
                             </button>
                         </div>
 
-                        <div class="flex items-center bg-[#222] rounded-lg border border-gray-700 p-1">
+                        <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
                             <button id="view-week-btn"
-                                class="px-3 py-1.5 text-sm font-medium rounded-md bg-gray-700 text-white shadow-sm transition-all">Semana</button>
+                                class="px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300">Semana</button>
                             <button id="view-day-btn"
-                                class="px-3 py-1.5 text-sm font-medium rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all">Dia</button>
+                                class="px-4 py-1.5 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300">Dia</button>
                         </div>
 
                         <button id="add-class-btn"
-                            class="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold py-2.5 px-5 rounded-lg shadow-lg shadow-yellow-900/20 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 ml-auto xl:ml-0">
-                            <i class="fas fa-plus"></i>
+                            class="bg-primary hover:bg-primary-dark text-black px-5 py-2.5 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-95 text-sm ml-auto xl:ml-0">
+                            <i class="fas fa-plus text-xs"></i>
                             <span>Agendar</span>
                         </button>
                     </div>
@@ -140,11 +140,11 @@
 
                 <!-- Grade de Horários -->
                 <div id="schedule-grid"
-                    class="flex-grow overflow-auto custom-scrollbar bg-[#161616] rounded-xl border border-gray-800 shadow-inner relative">
+                    class="flex-grow overflow-auto custom-scrollbar bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm relative">
                     <!-- A grade será gerada dinamicamente aqui -->
-                    <div class="flex items-center justify-center h-full text-gray-500 flex-col gap-3">
+                    <div class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 flex-col gap-3">
                         <i class="fas fa-calendar-day text-4xl opacity-50"></i>
-                        <p>Selecione uma unidade para visualizar a grade.</p>
+                        <p class="font-medium text-sm">Selecione uma unidade para visualizar a grade.</p>
                     </div>
                 </div>
             </div>
@@ -153,44 +153,41 @@
 
     <!-- Modal de Presença -->
     <div id="attendance-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" id="attendance-modal-backdrop">
-        </div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="attendance-modal-backdrop"></div>
         <div
-            class="bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col border border-gray-800 relative z-10 transform transition-all scale-100">
-            <div class="p-5 border-b border-gray-800 flex justify-between items-start bg-[#222] rounded-t-2xl">
+            class="bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col border border-gray-150 dark:border-gray-800/80 relative z-10 overflow-hidden transform transition-all">
+            <div class="p-6 border-b border-gray-150 dark:border-gray-800/80 flex justify-between items-start bg-white dark:bg-[#1a1a1a]">
                 <div>
-                    <h2 id="modal-class-title" class="text-xl font-bold text-white tracking-tight"></h2>
-                    <div class="flex items-center gap-2 mt-1 text-sm text-gray-400">
-                        <i class="far fa-clock"></i>
+                    <h2 id="modal-class-title" class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight"></h2>
+                    <div class="flex items-center gap-2 mt-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500">
+                        <i class="far fa-clock text-xs"></i>
                         <p id="modal-class-time"></p>
                     </div>
                 </div>
-                <button id="close-attendance-modal-btn" class="text-gray-500 hover:text-white transition-colors p-1">
-                    <i class="fas fa-times text-xl"></i>
+                <button id="close-attendance-modal-btn" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl">
+                    <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
 
-            <div class="px-5 py-3 bg-[#222]/50 border-b border-gray-800 flex justify-between text-sm">
+            <div class="px-6 py-3.5 bg-gray-50 dark:bg-[#222]/30 border-b border-gray-150 dark:border-gray-800/80 flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400">
                 <div class="flex items-center gap-2">
-                    <i class="fas fa-users text-gray-500"></i>
-                    <span class="text-gray-300">Ocupação: <span id="modal-class-occupation"
-                            class="font-semibold text-white"></span></span>
+                    <i class="fas fa-users text-sm opacity-70"></i>
+                    <span>Ocupação: <span id="modal-class-occupation" class="text-gray-900 dark:text-white font-extrabold"></span></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <i class="fas fa-chalkboard-teacher text-gray-500"></i>
-                    <span class="text-gray-300">Professor: <span id="modal-class-teacher"
-                            class="font-semibold text-white"></span></span>
+                    <i class="fas fa-chalkboard-teacher text-sm opacity-70"></i>
+                    <span>Professor: <span id="modal-class-teacher" class="text-gray-900 dark:text-white font-extrabold"></span></span>
                 </div>
             </div>
 
-            <div id="student-list" class="p-5 overflow-y-auto custom-scrollbar space-y-3 flex-grow bg-[#1a1a1a]">
+            <div id="student-list" class="p-6 overflow-y-auto custom-scrollbar space-y-3 flex-grow bg-white dark:bg-[#1a1a1a]">
                 <!-- Lista de alunos será preenchida dinamicamente -->
             </div>
 
-            <div class="p-5 border-t border-gray-800 bg-[#222] rounded-b-2xl flex justify-end">
+            <div class="p-6 border-t border-gray-150 dark:border-gray-800/80 bg-gray-50 dark:bg-[#222]/20 flex justify-end">
                 <button id="reopen-class-btn"
-                    class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg shadow-green-900/20 transition-all flex items-center gap-2">
-                    <i class="fas fa-door-open"></i> Reabrir Aula
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg shadow-emerald-500/10 hover:scale-[1.02] active:scale-95 transition-all text-sm flex items-center gap-2">
+                    <i class="fas fa-door-open text-xs"></i> Reabrir Aula
                 </button>
             </div>
         </div>
@@ -198,122 +195,118 @@
 
     <!-- Modal de Adicionar/Editar Aula -->
     <div id="class-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" id="class-modal-backdrop"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="class-modal-backdrop"></div>
         <div
-            class="bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-800 relative z-10">
-            <div class="flex justify-between items-center p-5 border-b border-gray-800 bg-[#222] rounded-t-2xl">
-                <h2 id="class-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-calendar-plus text-yellow-500"></i>
+            class="bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-150 dark:border-gray-800/80 relative z-10 overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-150 dark:border-gray-800/80 bg-white dark:bg-[#1a1a1a]">
+                <h2 id="class-modal-title" class="text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-plus text-primary"></i>
                     Agendar Nova Aula
                 </h2>
-                <button id="close-class-modal-btn" class="text-gray-500 hover:text-white transition-colors p-1">
-                    <i class="fas fa-times text-xl"></i>
+                <button id="close-class-modal-btn" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl">
+                    <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
 
-            <form id="class-form" class="p-6 overflow-y-auto custom-scrollbar space-y-5 bg-[#1a1a1a]">
+            <form id="class-form" class="p-6 overflow-y-auto custom-scrollbar space-y-5 bg-white dark:bg-[#1a1a1a]">
                 <input type="hidden" id="class-id">
 
                 <div>
-                    <label for="class-name" class="block text-sm font-medium text-gray-300 mb-1.5">Nome da Turma</label>
+                    <label for="class-name" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Nome da Turma</label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-tag text-gray-500"></i>
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-tag text-gray-400"></i>
                         </div>
                         <input type="text" id="class-name" name="class-name" required
-                            class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all placeholder-gray-600"
+                            class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2.5 pl-10 pr-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 placeholder-gray-450 text-sm font-semibold"
                             placeholder="Ex: Jiu-Jitsu Iniciante">
                     </div>
                 </div>
 
                 <div>
-                    <label for="class-teacher" class="block text-sm font-medium text-gray-300 mb-1.5">Professor</label>
+                    <label for="class-teacher" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Professor</label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-user-tie text-gray-500"></i>
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user-tie text-gray-400"></i>
                         </div>
                         <select id="class-teacher" name="class-teacher" required
-                            class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all appearance-none cursor-pointer"></select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                            class="w-full appearance-none bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2.5 pl-10 pr-10 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 cursor-pointer text-sm font-semibold"></select>
+                        <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Dias da Semana</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Dias da Semana</label>
                     <div id="class-days-of-week" class="flex flex-wrap gap-2">
                         <button type="button" data-day="1"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Seg</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Seg</button>
                         <button type="button" data-day="2"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Ter</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Ter</button>
                         <button type="button" data-day="3"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Qua</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Qua</button>
                         <button type="button" data-day="4"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Qui</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Qui</button>
                         <button type="button" data-day="5"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Sex</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Sex</button>
                         <button type="button" data-day="6"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Sáb</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Sáb</button>
                         <button type="button" data-day="0"
-                            class="day-toggle flex-1 min-w-[3rem] bg-[#2a2a2a] hover:bg-[#333] text-gray-400 py-2 rounded-lg text-sm font-medium transition-all border border-gray-700 hover:border-gray-600">Dom</button>
+                            class="day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white">Dom</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="class-time" class="block text-sm font-medium text-gray-300 mb-1.5">Horário</label>
+                        <label for="class-time" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Horário</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="far fa-clock text-gray-500"></i>
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="far fa-clock text-gray-400"></i>
                             </div>
                             <input type="time" id="class-time" name="class-time" required
-                                class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all [color-scheme:dark]">
+                                class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2.5 pl-10 pr-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold [color-scheme:light] dark:[color-scheme:dark]">
                         </div>
                     </div>
                     <div>
-                        <label for="class-duration" class="block text-sm font-medium text-gray-300 mb-1.5">Duração
-                            (min)</label>
+                        <label for="class-duration" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Duração (min)</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-hourglass-half text-gray-500"></i>
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-hourglass-half text-gray-400"></i>
                             </div>
                             <input type="number" id="class-duration" name="class-duration" min="15" step="15" value="60"
                                 required
-                                class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all">
+                                class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2.5 pl-10 pr-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold">
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label for="class-capacity"
-                        class="block text-sm font-medium text-gray-300 mb-1.5">Capacidade</label>
+                    <label for="class-capacity" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Capacidade</label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-users text-gray-500"></i>
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-users text-gray-400"></i>
                         </div>
                         <input type="number" id="class-capacity" name="class-capacity" min="1" value="10" required
-                            class="w-full bg-[#222] border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all">
+                            class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2.5 pl-10 pr-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold">
                     </div>
                 </div>
 
                 <div>
-                    <label for="class-students" class="block text-sm font-medium text-gray-300 mb-1.5">Alunos
-                        Inscritos</label>
+                    <label for="class-students" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Alunos Inscritos</label>
                     <select id="class-students" name="class-students" multiple
-                        class="w-full h-32 bg-[#222] border border-gray-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all custom-scrollbar"></select>
-                    <p class="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                        <i class="fas fa-info-circle"></i> Segure Ctrl (ou Cmd) para selecionar múltiplos.
+                        class="w-full h-36 bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 custom-scrollbar text-gray-800 dark:text-gray-200 font-semibold"></select>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-info-circle text-[11px]"></i> Segure Ctrl (ou Cmd) para selecionar múltiplos.
                     </p>
                 </div>
             </form>
 
-            <div class="flex justify-end p-5 border-t border-gray-800 bg-[#222] rounded-b-2xl gap-3">
+            <div class="flex justify-end p-6 border-t border-gray-150 dark:border-gray-800/80 bg-gray-50 dark:bg-[#222]/20 rounded-b-3xl gap-3">
                 <button type="button" id="cancel-class-btn"
-                    class="px-5 py-2.5 rounded-lg text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition-all">Cancelar</button>
+                    class="px-5 py-2.5 rounded-2xl text-gray-500 dark:text-gray-400 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-850 dark:hover:text-white transition-all text-sm">Cancelar</button>
                 <button type="submit" form="class-form"
-                    class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-yellow-900/20 transform hover:-translate-y-0.5 transition-all">Salvar
-                    Aula</button>
+                    class="bg-primary hover:bg-primary-dark text-black font-bold py-2.5 px-6 rounded-2xl shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-95 transition-all text-sm">Salvar Aula</button>
             </div>
         </div>
     </div>

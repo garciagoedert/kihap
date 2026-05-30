@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const classStudentsSelect = document.getElementById('class-students');
 
     let currentClassId = null; // Armazena o ID da instância da aula (templateId_data)
+    let currentClassData = null; // Armazena a referência para os dados completos da aula aberta
     let currentWeekStartDate = getStartOfWeek(new Date());
     let selectedUnitId = null;
 
@@ -50,9 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderGrid() {
         if (!selectedUnitId) {
             scheduleGrid.innerHTML = `
-                <div class="flex items-center justify-center h-full text-gray-500 flex-col gap-3">
+                <div class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 flex-col gap-3">
                     <i class="fas fa-calendar-day text-4xl opacity-50"></i>
-                    <p>Selecione uma unidade para visualizar a grade.</p>
+                    <p class="font-medium text-sm">Selecione uma unidade para visualizar a grade.</p>
                 </div>`;
             return;
         }
@@ -67,38 +68,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const header = document.createElement('div');
-        header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-[#161616] z-20 border-b border-gray-800';
-        header.innerHTML = '<div class="p-2 bg-[#222]"></div>' + days.map(d => {
+        header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-gray-100 dark:bg-[#1a1a1a] z-20 border-b border-gray-200 dark:border-gray-800/80';
+        header.innerHTML = '<div class="p-2 bg-gray-50 dark:bg-[#161616]"></div>' + days.map(d => {
             const isToday = d.toDateString() === new Date().toDateString();
             return `
-            <div class="text-center p-3 bg-[#222] ${isToday ? 'bg-yellow-900/20' : ''}">
-                <div class="font-bold text-xs tracking-wider text-gray-400 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
-                <div class="text-lg font-bold ${isToday ? 'text-yellow-500' : 'text-white'}">${d.getDate()}</div>
+            <div class="text-center p-3 bg-white dark:bg-[#1a1a1a] transition-colors ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}">
+                <div class="font-bold text-[10px] tracking-wider text-gray-400 dark:text-gray-500 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
+                <div class="text-base font-extrabold ${isToday ? 'text-primary' : 'text-gray-800 dark:text-gray-200'}">${d.getDate()}</div>
             </div>
         `}).join('');
         scheduleGrid.appendChild(header);
 
         const body = document.createElement('div');
-        body.className = 'grid grid-cols-8 gap-px bg-gray-800 relative'; // Gap creates the grid lines
+        body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
 
         const timeColumn = document.createElement('div');
-        timeColumn.className = 'bg-[#1a1a1a]';
+        timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
         for (let hour = 7; hour < 22; hour++) {
             timeColumn.innerHTML += `
-                <div class="hour-label flex items-start justify-center pt-2 text-xs font-medium text-gray-500 border-b border-gray-800/50 relative">
-                    <span class="-mt-2.5 bg-[#1a1a1a] px-1">${String(hour).padStart(2, '0')}:00</span>
+                <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
+                    <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
                 </div>`;
         }
         body.appendChild(timeColumn);
 
         for (let i = 0; i < 7; i++) {
             const dayColumn = document.createElement('div');
-            dayColumn.className = 'relative bg-[#161616] hover:bg-[#1c1c1c] transition-colors';
+            dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
             dayColumn.dataset.date = days[i].toISOString().split('T')[0];
             for (let hour = 7; hour < 22; hour++) {
                 dayColumn.innerHTML += `
-                    <div class="time-slot border-b border-gray-800/30"></div>
-                    <div class="time-slot border-b border-gray-800"></div>
+                    <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
+                    <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
                 `;
             }
             body.appendChild(dayColumn);
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const card = document.createElement('div');
         // Premium Card Styling
-        card.className = 'class-card absolute w-[94%] left-[3%] bg-gradient-to-br from-yellow-900/80 to-yellow-900/40 border-l-[3px] border-yellow-500 p-2 rounded-r-md cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:shadow-yellow-900/20 hover:brightness-110 transition-all group z-10 backdrop-blur-sm';
+        card.className = 'class-card absolute w-[94%] left-[3%] bg-yellow-500/10 dark:bg-yellow-500/15 border-l-4 border-primary p-2.5 rounded-r-xl cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md hover:bg-yellow-500/20 dark:hover:bg-yellow-500/25';
         card.style.top = `${top}px`;
         card.style.height = `${height - 2}px`;
         card.dataset.classId = classData.id;
@@ -188,24 +189,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const occupation = classData.presentStudents.length;
         const capacity = classData.students.length; // Or capacity if available
         const occupationPercentage = Math.min((occupation / capacity) * 100, 100);
-        let occupationColor = 'bg-green-500';
-        if (occupationPercentage > 80) occupationColor = 'bg-red-500';
-        else if (occupationPercentage > 50) occupationColor = 'bg-yellow-500';
+        let occupationColor = 'bg-emerald-500';
+        if (occupationPercentage > 80) occupationColor = 'bg-rose-500';
+        else if (occupationPercentage > 50) occupationColor = 'bg-amber-500';
 
         card.innerHTML = `
             <div class="flex flex-col h-full justify-between">
                 <div>
-                    <div class="font-bold text-xs text-white leading-tight group-hover:text-yellow-200 transition-colors line-clamp-2">${classData.name}</div>
-                    <div class="text-[10px] text-gray-300 mt-0.5 flex items-center gap-1">
-                        <i class="fas fa-user-tie text-[8px] opacity-70"></i> ${classData.teacherName.split(' ')[0]}
+                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2">${classData.name}</div>
+                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
+                        <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${classData.teacherName.split(' ')[0]}</span>
                     </div>
                 </div>
                 <div class="mt-1">
-                    <div class="flex justify-between items-center text-[10px] text-gray-400 mb-0.5">
+                    <div class="flex justify-between items-center text-[9px] text-gray-550 dark:text-gray-400 mb-0.5 font-bold">
                         <span>${occupation}/${capacity}</span>
+                        <span>${Math.round(occupationPercentage)}%</span>
                     </div>
-                    <div class="w-full bg-black/30 rounded-full h-1">
-                        <div class="${occupationColor} h-1 rounded-full" style="width: ${occupationPercentage}%"></div>
+                    <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1 overflow-hidden">
+                        <div class="${occupationColor} h-1 rounded-full transition-all duration-500" style="width: ${occupationPercentage}%"></div>
                     </div>
                 </div>
             </div>
@@ -217,7 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function openClassModal() {
         classForm.reset();
-        classModalTitle.innerHTML = '<i class="fas fa-calendar-plus text-yellow-500 mr-2"></i> Agendar Nova Aula';
+        classModalTitle.innerHTML = '<i class="fas fa-calendar-plus text-primary mr-2"></i> Agendar Nova Aula';
+
+        // Reset day buttons to inactive state
+        document.querySelectorAll('#class-days-of-week .day-toggle').forEach(btn => {
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+        });
 
         if (selectedUnitId) {
             await populateTeacherAndStudentSelectors(selectedUnitId);
@@ -278,13 +285,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const selectedDays = Array.from(document.querySelectorAll('#class-days-of-week .day-toggle.bg-[#333]')).map(btn => parseInt(btn.dataset.day)); // Updated selector for active state check if needed, but logic below relies on class check
-        // Actually, let's fix the day toggle logic selector in the event listener and here
-        // The event listener toggles classes. Let's check what classes are toggled.
-        // In HTML we set: bg-[#2a2a2a] hover:bg-[#333] text-gray-400
-        // Active state should be: bg-yellow-600 text-white border-yellow-500
-
-        const activeDays = Array.from(document.querySelectorAll('#class-days-of-week .day-toggle')).filter(btn => btn.classList.contains('bg-yellow-600')).map(btn => parseInt(btn.dataset.day));
+        const activeDays = Array.from(document.querySelectorAll('#class-days-of-week .day-toggle'))
+            .filter(btn => btn.classList.contains('bg-primary'))
+            .map(btn => parseInt(btn.dataset.day));
 
         if (activeDays.length === 0) {
             alert("Selecione pelo menos um dia da semana.");
@@ -318,7 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function openAttendanceModal(classData) {
         currentClassId = classData.id;
-        studentList.innerHTML = '<div class="flex justify-center p-4"><i class="fas fa-spinner fa-spin text-yellow-500 text-2xl"></i></div>';
+        currentClassData = classData;
+        studentList.innerHTML = '<div class="flex justify-center p-8"><i class="fas fa-spinner fa-spin text-primary text-3xl"></i></div>';
         attendanceModal.classList.remove('hidden');
 
         try {
@@ -330,13 +334,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const instanceRef = doc(db, 'classInstances', classData.id);
             const instanceSnap = await getDoc(instanceRef);
-            const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
+            const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
 
             modalClassOccupation.textContent = `${presentStudents.length}/${classData.students.length}`;
 
             studentList.innerHTML = '';
             if (!classData.students || classData.students.length === 0) {
-                studentList.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum aluno inscrito nesta turma.</p>';
+                studentList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-6 text-sm font-medium">Nenhum aluno inscrito nesta turma.</p>';
                 return;
             }
 
@@ -348,22 +352,22 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const studentId of classData.students) {
                 const studentData = membersMap.get(studentId.toString());
                 if (studentData) {
-                    const isPresent = presentStudents.includes(studentId);
+                    const isPresent = presentStudents.includes(studentId.toString()) || presentStudents.includes(Number(studentId));
                     const studentElement = document.createElement('div');
-                    studentElement.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${isPresent ? 'bg-green-900/20 border-green-900/50' : 'bg-[#222] border-gray-800 hover:border-gray-700'}`;
+                    studentElement.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${isPresent ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-[#1a1a1a]/50 border-gray-150 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`;
                     studentElement.innerHTML = `
                         <div class="flex items-center gap-3">
                             <div class="relative">
-                                <img src="${studentData.photoUrl || 'default-profile.svg'}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-700">
-                                ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-green-500 text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full"><i class="fas fa-check"></i></div>' : ''}
+                                <img src="${studentData.photoUrl || 'default-profile.svg'}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                                ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-md"><i class="fas fa-check"></i></div>' : ''}
                             </div>
                             <div>
-                                <div class="font-medium text-white text-sm">${studentData.firstName} ${studentData.lastName || ''}</div>
-                                <div class="text-xs ${isPresent ? 'text-green-400' : 'text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
+                                <div class="font-bold text-gray-850 dark:text-white text-sm">${studentData.firstName} ${studentData.lastName || ''}</div>
+                                <div class="text-xs font-semibold ${isPresent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
                             </div>
                         </div>
-                        <button data-student-id="${studentId}" class="toggle-presence-btn w-9 h-9 rounded-lg flex items-center justify-center transition-all ${isPresent ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'}">
-                            <i class="fas ${isPresent ? 'fa-times' : 'fa-check'}"></i>
+                        <button data-student-id="${studentId}" data-present="${isPresent}" class="toggle-presence-btn w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isPresent ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}">
+                            <i class="fas ${isPresent ? 'fa-times' : 'fa-check'} pointer-events-none"></i>
                         </button>
                     `;
                     studentList.appendChild(studentElement);
@@ -371,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Erro ao abrir modal de presença:", error);
-            studentList.innerHTML = '<p class="text-red-400 text-center">Erro ao carregar dados.</p>';
+            studentList.innerHTML = '<p class="text-red-500 dark:text-red-400 text-center py-4 font-semibold text-sm">Erro ao carregar dados.</p>';
         }
     }
 
@@ -381,19 +385,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handlePresenceToggle(e) {
-        if (!e.target.classList.contains('toggle-presence-btn')) return;
-        const button = e.target;
+        const button = e.target.closest('.toggle-presence-btn');
+        if (!button) return;
         const studentId = button.dataset.studentId;
         if (!studentId || !currentClassId) return;
 
         const instanceRef = doc(db, 'classInstances', currentClassId);
         try {
             const instanceSnap = await getDoc(instanceRef);
-            const isPresent = button.textContent.trim() === 'Marcar Ausência';
+            const isPresent = button.dataset.present === 'true';
+
+            const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
+            const isExistingNumber = presentStudents.some(x => typeof x === 'number');
+            const studentIdToSave = isExistingNumber ? Number(studentId) : studentId;
 
             if (instanceSnap.exists()) {
                 await updateDoc(instanceRef, {
-                    presentStudents: isPresent ? arrayRemove(studentId) : arrayUnion(studentId)
+                    presentStudents: isPresent ? arrayRemove(studentIdToSave) : arrayUnion(studentIdToSave)
                 });
             } else if (!isPresent) {
                 const [templateId, date] = currentClassId.split('_');
@@ -401,25 +409,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     templateId: templateId,
                     date: date,
                     unitId: selectedUnitId,
-                    presentStudents: [studentId]
+                    presentStudents: [studentIdToSave]
                 });
             }
 
-            const statusDiv = button.closest('.flex').querySelector('.text-sm');
-            button.textContent = isPresent ? 'Marcar Presença' : 'Marcar Ausência';
-            button.classList.toggle('bg-red-600');
-            button.classList.toggle('hover:bg-red-700');
-            button.classList.toggle('bg-green-600');
-            button.classList.toggle('hover:bg-green-700');
-            statusDiv.textContent = isPresent ? 'Ausente' : 'Presente';
-            statusDiv.classList.toggle('text-green-400');
-            statusDiv.classList.toggle('text-gray-400');
-
-            const updatedSnap = await getDoc(instanceRef);
-            const presentStudents = updatedSnap.exists() ? updatedSnap.data().presentStudents : [];
-            const totalStudents = classStudentsSelect.length;
-            modalClassOccupation.textContent = `${presentStudents.length}/${totalStudents}`;
-
+            if (currentClassData) {
+                await openAttendanceModal(currentClassData);
+            }
             renderGrid();
         } catch (error) {
             console.error("Erro ao atualizar presença:", error);
@@ -468,9 +464,14 @@ document.addEventListener('DOMContentLoaded', () => {
     classForm.addEventListener('submit', handleClassFormSubmit);
 
     document.getElementById('class-days-of-week').addEventListener('click', (e) => {
-        if (e.target.classList.contains('day-toggle')) {
-            e.target.classList.toggle('bg-gray-600');
-            e.target.classList.toggle('bg-blue-600');
+        const btn = e.target.closest('.day-toggle');
+        if (!btn) return;
+        
+        const isActive = btn.classList.contains('bg-primary');
+        if (isActive) {
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+        } else {
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold transition-all border bg-primary border-primary text-black shadow-md shadow-yellow-500/10 scale-[1.03]';
         }
     });
 
