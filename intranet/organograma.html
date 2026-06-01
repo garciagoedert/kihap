@@ -42,32 +42,57 @@
         .node circle {
             cursor: pointer;
             stroke-width: 2px;
-            transition: all 0.3s;
+            transition: fill 0.3s, stroke 0.3s, stroke-width 0.2s, r 0.3s;
         }
 
         .node circle:hover {
             stroke-width: 4px;
         }
 
+        /* Expanded circles get the background color of the page */
+        .node-circle.expanded {
+            fill: #ffffff !important;
+        }
+
+        .dark .node-circle.expanded {
+            fill: #111111 !important;
+        }
+
         .node text {
-            font: 12px sans-serif;
-            fill: #ccc;
-            text-shadow: 0 1px 0 #000, 1px 0 0 #000, 0 -1px 0 #000, -1px 0 0 #000;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
             pointer-events: none;
+            fill: #374151; /* gray-700 */
+            stroke: #f9fafb; /* light page bg */
+            stroke-width: 3px;
+            paint-order: stroke;
+            stroke-linejoin: round;
+            transition: fill 0.3s, stroke 0.3s;
+        }
+
+        .dark .node text {
+            fill: #f3f4f6; /* gray-100 */
+            stroke: #111111; /* dark page bg */
         }
 
         .link {
             fill: none;
-            stroke: #444;
+            stroke: #e5e7eb; /* gray-200 */
             stroke-width: 2px;
+            stroke-opacity: 0.8;
+            transition: stroke 0.3s;
+        }
+
+        .dark .link {
+            stroke: #374151; /* gray-700 */
             stroke-opacity: 0.6;
-            transition: all 0.3s;
         }
 
         #organogram-container {
             width: 100%;
             height: calc(100vh - 64px);
-            background-color: #111;
+            background-color: transparent;
             cursor: grab;
             overflow: auto;
         }
@@ -78,7 +103,7 @@
 
         .controls {
             position: absolute;
-            bottom: 2rem;
+            bottom: 6rem;
             right: 2rem;
             display: flex;
             flex-direction: column;
@@ -87,21 +112,32 @@
         }
 
         .control-btn {
-            background: #1a1a1a;
-            color: white;
-            border: 1px solid #374151;
-            /* gray-700 */
+            background: rgba(255, 255, 255, 0.9);
+            color: #1f2937;
+            border: 1px solid rgba(229, 231, 235, 0.8);
             width: 40px;
             height: 40px;
-            border-radius: 8px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s;
         }
 
         .control-btn:hover {
+            background: #ffffff;
+            transform: scale(1.05);
+        }
+
+        .dark .control-btn {
+            background: rgba(26, 26, 26, 0.9);
+            color: #f3f4f6;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dark .control-btn:hover {
             background: #2a2a2a;
         }
     </style>
@@ -131,14 +167,54 @@
                     </button>
                 </div>
 
-                <!-- Info Panel (Optional) -->
+                <!-- Node Info Panel -->
                 <div id="node-info"
-                    class="hidden absolute top-4 right-4 bg-[#1a1a1a] p-4 rounded-xl shadow-lg border border-gray-700 max-w-xs transition-opacity duration-300 pointer-events-none">
-                    <h3 id="node-name" class="text-white font-bold text-lg mb-1"></h3>
-                    <p id="node-desc" class="text-gray-400 text-sm"></p>
+                    class="hidden absolute top-6 right-6 glass-card bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-gray-200/50 dark:border-white/5 w-64 transition-all duration-300 z-20">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <h3 id="node-name" class="text-gray-900 dark:text-white font-extrabold text-sm tracking-tight leading-tight"></h3>
+                        <button id="node-edit-btn" class="hidden shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all flex items-center justify-center" title="Atribuir pessoas">
+                            <i class="fas fa-user-plus text-[10px]"></i>
+                        </button>
+                    </div>
+                    <p id="node-desc" class="text-gray-400 dark:text-gray-500 text-[10px] font-semibold uppercase tracking-wider"></p>
+                    <div id="node-people" class="mt-1 max-h-48 overflow-y-auto"></div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Assignment Modal (Admin only) -->
+    <div id="assign-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="assign-modal-backdrop"></div>
+        <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl border border-gray-200/50 dark:border-white/5 w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white" id="assign-modal-title">Atribuir Pessoas</h3>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Selecione os funcionários para este cargo</p>
+                </div>
+                <button id="assign-cancel-btn" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <!-- Search -->
+            <div class="p-4 shrink-0">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" id="assign-search" placeholder="Buscar funcionário..."
+                        class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-yellow-400/50 transition-all">
+                </div>
+            </div>
+            <!-- Users List -->
+            <div id="assign-users-list" class="overflow-y-auto flex-1 px-3 pb-3"></div>
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-100 dark:border-white/5 flex justify-end gap-3 shrink-0">
+                <button id="assign-save-btn"
+                    class="px-6 py-2.5 rounded-xl text-sm font-bold bg-[#FFC107] text-gray-900 hover:bg-yellow-400 transition-colors shadow-sm">
+                    <i class="fas fa-check mr-1.5"></i>Salvar
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="organograma.js"></script>
