@@ -39,7 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
     loadComponent('video-container', 'video.html');
     loadComponent('cta-container', 'form-cta.html');
     
-    // Injeta container do banner de app e carrega se for mobile
+    // O banner do app foi removido para priorizar a experiência e visibilidade do chatbot Miles
+    /*
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
     const isApp = navigator.userAgent.includes('KihapApp') || window.location.search.includes('isApp=true');
     const bannerClosed = localStorage.getItem('appBannerClosed');
@@ -59,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }, 100);
     }
+    */
 
     // A lógica do menu será adicionada após o carregamento do header
     document.addEventListener('headerLoaded', setupMobileMenu);
