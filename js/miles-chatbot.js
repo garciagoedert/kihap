@@ -281,24 +281,6 @@ function injectMilesStyles() {
         }
         #miles-chat-toggle:active { transform: scale(0.95); }
 
-        /* Notificação no botão */
-        #miles-chat-toggle .miles-badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 14px;
-            height: 14px;
-            background: #EF4444;
-            border-radius: 50%;
-            border: 2px solid white;
-            z-index: 10;
-            animation: miles-pulse-badge 2s infinite;
-        }
-        @keyframes miles-pulse-badge {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-
         /* Janela do chat */
         #miles-chat-window {
             position: fixed;
@@ -546,7 +528,6 @@ function buildMilesHTML() {
     container.innerHTML = `
         <!-- Botão Flutuante Miles -->
         <button id="miles-chat-toggle" aria-label="Falar com o Miles - Assistente Virtual Kihap">
-            <span class="miles-badge" aria-hidden="true"></span>
             <img src="/imgs/personagens/perfilpersonagens/avatar_05.png"
                  alt="Miles"
                  style="width: 100%; height: 100%; object-fit: cover; display: block;"
@@ -630,7 +611,6 @@ function setupMilesChatbot() {
     const messages   = document.getElementById('miles-messages');
     const typing     = document.getElementById('miles-typing');
     const sendBtn    = document.getElementById('miles-send-btn');
-    const badge      = toggle.querySelector('.miles-badge');
 
     let chatHistory = [];
     let isOpen = false;
@@ -812,7 +792,6 @@ Seja curto e convidativo — máximo 3 frases.`;
         isOpen = !isOpen;
         if (isOpen) {
             chatWindow.classList.remove('miles-hidden');
-            if (badge) badge.style.display = 'none';
             if (!hasShownWelcome) {
                 hasShownWelcome = true;
                 triggerWelcomeMessage();
@@ -833,13 +812,6 @@ Seja curto e convidativo — máximo 3 frases.`;
         const text = input.value.trim();
         if (text) handleSend(text);
     });
-
-    // Mostra badge de notificação após 8s para captar atenção
-    setTimeout(() => {
-        if (!isOpen && badge) {
-            badge.style.display = 'block';
-        }
-    }, 8000);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
