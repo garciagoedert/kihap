@@ -200,6 +200,10 @@ async function updateUserProfileUI() {
             const isAdmin = currentUser.isAdmin === true;
             localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
             
+            if (isAdmin) {
+                syncMilesPublicKey();
+            }
+            
             document.querySelectorAll('#profile-dropdown .admin-only').forEach(el => {
                 if (isAdmin) {
                     el.classList.remove('hidden');
@@ -210,6 +214,32 @@ async function updateUserProfileUI() {
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
+    }
+}
+
+async function syncMilesPublicKey() {
+    try {
+        const metaDocRef = doc(db, "config", "meta_ads");
+        const metaSnap = await getDoc(metaDocRef);
+        if (metaSnap.exists()) {
+            const geminiKey = metaSnap.data().geminiKey;
+            if (geminiKey) {
+                const publicDocRef = doc(db, "public_config", "miles");
+                const publicSnap = await getDoc(publicDocRef);
+                const currentPublic = publicSnap.exists() ? publicSnap.data().geminiKey : null;
+
+                if (currentPublic !== geminiKey) {
+                    console.log("[Miles Sync] Sincronizando chave do Gemini pública...");
+                    await setDoc(publicDocRef, {
+                        geminiKey: geminiKey,
+                        updatedAt: serverTimestamp()
+                    });
+                    console.log("[Miles Sync] Chave pública do Miles sincronizada com sucesso!");
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[Miles Sync] Erro na sincronização da chave pública:", e);
     }
 }
 
@@ -271,7 +301,7 @@ function setupModalCloseListeners(handlers = {}) {
 }
 
 import { db, functions } from './firebase-config.js';
-import { doc, getDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
 import { getCurrentUser, ensureAdmin } from './auth.js';

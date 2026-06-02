@@ -219,7 +219,41 @@ async function initDashboard() {
 
     } catch (error) {
         console.error("Erro ao carregar dados do Meta:", error);
-        alert("Falha ao carregar dados do Facebook Ads: " + error.message);
+
+        // Determinar se é erro de token expirado/inválido
+        const isTokenError = error.message && (
+            error.message.includes('access token') ||
+            error.message.includes('logged out') ||
+            error.message.includes('OAuthException') ||
+            error.message.includes('session')
+        );
+
+        // Mostrar banner de erro inline (sem alert bloqueante)
+        const existingError = document.getElementById('metaErrorBanner');
+        if (existingError) existingError.remove();
+
+        const banner = document.createElement('div');
+        banner.id = 'metaErrorBanner';
+        banner.className = 'flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 text-sm';
+        banner.innerHTML = `
+            <i class="fas fa-exclamation-circle mt-0.5 flex-shrink-0 text-base"></i>
+            <div class="flex-1">
+                <p class="font-bold mb-0.5">${isTokenError ? 'Token do Facebook Ads expirado' : 'Falha ao carregar dados do Facebook Ads'}</p>
+                <p class="text-red-500/80 dark:text-red-400/70 text-xs">${isTokenError ? 'A sessão do Facebook foi encerrada. Clique em <strong>Conectar Meta</strong> para atualizar o token de acesso.' : error.message}</p>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 transition-colors flex-shrink-0 ml-1">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        `;
+
+        const mainContent = document.querySelector('#main-content > div');
+        if (mainContent) mainContent.prepend(banner);
+
+        // Fallback para mock data para o dashboard não ficar em branco
+        const mockData = getMockData();
+        updateOverviewCards(mockData.overview);
+        renderCharts(mockData.charts);
+        renderCampaignsTable(mockData.campaigns);
     }
 }
 
