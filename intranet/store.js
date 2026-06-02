@@ -2116,7 +2116,7 @@ export async function setupStorePage() {
     const initialLoad = async () => {
         await fetchMpAccounts(); // Fetch MP Accounts for product forms
         await fetchProducts(); // Fetch products first to populate filter
-        fetchSales();   // Fetch sales
+        await fetchSales();   // Fetch sales (must await so allSales is ready)
         populateFilters();    // Then populate filters with data from both
         populateEventFilter(); // Populate the events tab filter as well
         await fetchBanners();
