@@ -1,5 +1,5 @@
 // Importa as funções necessárias do SDK do Firebase
-import { db, functions } from '../intranet/firebase-config.js';
+import { db, functions } from './firebase-config.js';
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 

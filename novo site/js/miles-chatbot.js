@@ -3,7 +3,7 @@
  * Primeiro atendimento e captação de leads para o CRM.
  */
 
-import { db } from '../intranet/firebase-config.js';
+import { db } from './firebase-config.js';
 import {
     collection,
     addDoc,
@@ -269,15 +269,13 @@ function injectMilesStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 2px 10px rgba(0,0,0,0.15);
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
             outline: none;
             overflow: hidden;
             padding: 0;
         }
         #miles-chat-toggle:hover {
             transform: scale(1.08);
-            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0,0,0,0.2);
         }
         #miles-chat-toggle:active { transform: scale(0.95); }
 

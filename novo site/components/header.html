@@ -1,35 +1,37 @@
 <!-- Header -->
-<header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 pointer-events-auto py-6">
-    <nav class="container mx-auto px-6 flex justify-between items-center">
-        <!-- Logo -->
-        <div>
-            <a href="/" class="flex items-center">
-                <img src="/imgs/logo.png" alt="Kihap Logo" class="h-8 transition-all duration-300" id="header-logo">
-            </a>
-        </div>
+<header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 pointer-events-none py-6">
+    <nav class="container mx-auto px-4 sm:px-6 lg:max-w-6xl">
+        <div id="header-island" class="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-6 py-3 flex justify-between items-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300">
+            <!-- Logo -->
+            <div>
+                <a href="/" class="flex items-center">
+                    <img src="/imgs/logo.png" alt="Kihap Logo" class="h-8 transition-all duration-300" id="header-logo">
+                </a>
+            </div>
 
-        <!-- Desktop Nav -->
-        <div class="hidden lg:flex items-center space-x-6">
-            <a href="/sobre.html" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Sobre</a>
-            <a href="/programas/" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Programas</a>
-            <a href="/#unidades" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Unidades</a>
-            <a href="/store.html" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Loja</a>
-            <a href="/intranet/login.html" class="text-white/80 hover:text-white font-semibold text-sm transition">Área do Aluno</a>
-            
-            <a href="#cta" class="bg-yellow-500 text-black hover:bg-yellow-400 font-bold py-2.5 px-6 rounded-full text-sm uppercase tracking-wider transition-transform hover:scale-105 shadow-[0_0_15px_rgba(234,179,8,0.4)]">
-                Agende sua Aula Experimental
-            </a>
-        </div>
+            <!-- Desktop Nav -->
+            <div class="hidden lg:flex items-center space-x-6">
+                <a href="/sobre.html" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Sobre</a>
+                <a href="/programas/" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Programas</a>
+                <a href="/#unidades" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Unidades</a>
+                <a href="/store.html" class="text-white hover:text-yellow-400 font-semibold text-sm transition">Loja</a>
+                <a href="/intranet/login.html" class="text-white/80 hover:text-white font-semibold text-sm transition">Área do Aluno</a>
+                
+                <a href="#cta" class="bg-yellow-500 text-black hover:bg-yellow-400 font-bold py-2.5 px-6 rounded-full text-sm uppercase tracking-wider transition-transform hover:scale-105 shadow-[0_0_15px_rgba(234,179,8,0.4)]">
+                    Agende sua Aula Experimental
+                </a>
+            </div>
 
-        <!-- Mobile Menu Button -->
-        <div class="lg:hidden flex items-center space-x-4">
-            <a href="#cta" class="md:hidden bg-yellow-500 text-black hover:bg-yellow-400 font-bold py-2 px-4 rounded-full text-[10px] uppercase tracking-wider">Agendar</a>
-            <button id="mobile-menu-button" class="text-white" aria-label="Abrir menu">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
-            </button>
+            <!-- Mobile Menu Button -->
+            <div class="lg:hidden flex items-center space-x-4">
+                <a href="#cta" class="md:hidden bg-yellow-500 text-black hover:bg-yellow-400 font-bold py-2 px-4 rounded-full text-[10px] uppercase tracking-wider">Agendar</a>
+                <button id="mobile-menu-button" class="text-white" aria-label="Abrir menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </nav>
 </header>

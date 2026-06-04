@@ -74,29 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setupWhatsAppButton();
 
-    function setupStickyHeader() {
-        const header = document.getElementById('main-header');
-        const logo = document.getElementById('header-logo');
-        if (!header) return;
 
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.classList.add('bg-black/90', 'backdrop-blur-md', 'shadow-lg', 'py-4');
-                header.classList.remove('py-6');
-                if (logo) {
-                    logo.classList.add('h-6');
-                    logo.classList.remove('h-8');
-                }
-            } else {
-                header.classList.remove('bg-black/90', 'backdrop-blur-md', 'shadow-lg', 'py-4');
-                header.classList.add('py-6');
-                if (logo) {
-                    logo.classList.remove('h-6');
-                    logo.classList.add('h-8');
-                }
-            }
-        });
-    }
 
     function setupWhatsAppButton() {
         const waButton = document.createElement('a');
@@ -128,20 +106,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function setupStickyHeader() {
         const header = document.getElementById('main-header');
+        const island = document.getElementById('header-island');
         const logo = document.getElementById('header-logo');
         if (!header) return;
 
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                header.classList.add('bg-black/90', 'backdrop-blur-md', 'shadow-lg', 'py-4');
+                header.classList.add('py-2');
                 header.classList.remove('py-6');
+                if (island) {
+                    island.classList.remove('bg-black/40');
+                    island.classList.add('bg-black/90', 'border-white/20');
+                }
                 if (logo) {
                     logo.classList.add('h-6');
                     logo.classList.remove('h-8');
                 }
             } else {
-                header.classList.remove('bg-black/90', 'backdrop-blur-md', 'shadow-lg', 'py-4');
+                header.classList.remove('py-2');
                 header.classList.add('py-6');
+                if (island) {
+                    island.classList.add('bg-black/40');
+                    island.classList.remove('bg-black/90', 'border-white/20');
+                }
                 if (logo) {
                     logo.classList.remove('h-6');
                     logo.classList.add('h-8');
@@ -250,6 +237,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initialize Swipers
     if (typeof Swiper !== 'undefined') {
+        if (document.querySelector('.hero-swiper')) {
+            new Swiper('.hero-swiper', {
+                loop: true,
+                effect: 'slide',
+                autoplay: {
+                    delay: 6000,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                pagination: {
+                    el: '.hero-pagination',
+                    clickable: true,
+                },
+            });
+        }
+
         window.programsSwiper = new Swiper('.programs-swiper', {
             slidesPerView: 1,
             spaceBetween: 24,
