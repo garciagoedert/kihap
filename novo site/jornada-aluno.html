@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <title>Jornada do Aluno - Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative py-32 h-[80vh] flex items-center justify-center text-center text-white" style="background-image: url('imgs/fundograd.JPG'); background-size: cover; background-position: center;">
+            <div class="absolute inset-0 bg-black/70"></div>
+            <div class="relative z-10 px-6 container mx-auto">
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white mb-6 mt-16">
+                    Sua Jornada na <span class="text-yellow-500">Kihap</span>
+                </h1>
+                <p class="text-lg md:text-xl max-w-3xl mx-auto text-gray-300">
+                    O caminho das artes marciais é pavimentado com disciplina, superação e conquistas. Conheça as etapas da sua evolução.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="#graduacao" class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-full hover:bg-yellow-400 transition transform hover:scale-105">
+                        Cerimônia de Graduação
+                    </a>
+                    <a href="#faixa-preta" class="bg-transparent border border-yellow-500 text-yellow-500 font-bold py-3 px-8 rounded-full hover:bg-yellow-500 hover:text-black transition transform hover:scale-105">
+                        Exame de Faixa Preta
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Graduação Section -->
+        <section id="graduacao" class="py-24 bg-gray-900 border-b border-gray-800">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="text-yellow-500 font-bold uppercase tracking-widest text-sm mb-2 block">O Próximo Nível</span>
+                        <h2 class="text-4xl md:text-5xl font-black uppercase font-title text-white mb-6">Cerimônia de <span class="text-yellow-500">Graduação</span></h2>
+                        <p class="text-gray-400 text-lg mb-6 leading-relaxed">
+                            A Cerimônia Tradicional de Graduação Kihap é o grande momento de celebração da jornada dos nossos alunos. É um evento para toda a família, onde cada aluno demonstra sua evolução e celebra suas conquistas.
+                        </p>
+                        <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+                            Será um dia inesquecível, repleto de apresentações marciais, superação e a energia contagiante da nossa comunidade.
+                        </p>
+                        <button data-open-modal class="bg-white text-black font-bold py-4 px-10 rounded-full hover:bg-gray-200 transition shadow-lg shadow-white/10 uppercase tracking-wide text-sm">
+                            Informações e Ingressos
+                        </button>
+                    </div>
+                    <div class="relative w-full rounded-2xl overflow-hidden shadow-2xl" style="padding-bottom: 56.25%;">
+                        <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/D3DK_zv8lf8" title="Cerimônia de Graduação" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Faixa Preta Section -->
+        <section id="faixa-preta" class="py-24 bg-black relative">
+            <div class="absolute inset-0 bg-[url('imgs/fxpretas.JPG')] bg-cover bg-center opacity-20"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black"></div>
+            
+            <div class="relative z-10 container mx-auto px-6 text-center">
+                <span class="text-yellow-500 font-bold uppercase tracking-widest text-sm mb-2 block">A Consagração</span>
+                <h2 class="text-4xl md:text-5xl font-black uppercase font-title text-white mb-6">Exame para <span class="text-yellow-500">Faixa Preta</span></h2>
+                <div class="max-w-3xl mx-auto mb-12">
+                    <p class="text-gray-300 text-lg mb-6 leading-relaxed">
+                        O Exame de Graduação para Faixa Preta é o momento mais esperado na jornada de um aluno Kihap. É quando toda a dedicação, disciplina e superação se transformam em conquista — a consagração de anos de treino, suor e crescimento pessoal.
+                    </p>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        Durante o exame, o aluno será desafiado física e mentalmente, demonstrando não apenas suas técnicas, mas também valores que definem o espírito Kihap — respeito, humildade, coragem e determinação.
+                    </p>
+                </div>
+
+                <!-- Timer Preto -->
+                <div class="glass-bubble p-8 rounded-3xl max-w-4xl mx-auto inline-block border border-gray-800">
+                    <h3 class="text-xl font-bold text-white mb-6">Próximo Exame: 29 de Novembro de 2025</h3>
+                    <div id="countdown-preta" class="flex flex-wrap justify-center gap-4">
+                        <div class="bg-gray-800 rounded-xl p-4 min-w-[90px] border border-gray-700">
+                            <div class="text-4xl font-bold text-yellow-500" id="days">00</div>
+                            <div class="text-xs text-gray-400 uppercase tracking-wider mt-1">Dias</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-xl p-4 min-w-[90px] border border-gray-700">
+                            <div class="text-4xl font-bold text-yellow-500" id="hours">00</div>
+                            <div class="text-xs text-gray-400 uppercase tracking-wider mt-1">Horas</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-xl p-4 min-w-[90px] border border-gray-700">
+                            <div class="text-4xl font-bold text-yellow-500" id="minutes">00</div>
+                            <div class="text-xs text-gray-400 uppercase tracking-wider mt-1">Minutos</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-xl p-4 min-w-[90px] border border-gray-700">
+                            <div class="text-4xl font-bold text-yellow-500" id="seconds">00</div>
+                            <div class="text-xs text-gray-400 uppercase tracking-wider mt-1">Segundos</div>
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <a href="https://www.kihap.com.br/produto.html?id=Ijt1jwe72IELKKQp24QI" class="btn-gradient text-black font-bold py-4 px-10 rounded-full shadow-lg hover:scale-105 transition-all inline-block uppercase tracking-wide text-sm">
+                            Garanta sua Vaga no Exame
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- City Selection Modal para Graduação Convencional -->
+    <div id="city-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 transition-opacity">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center relative transform scale-100 transition-transform">
+            <button data-close-modal class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl p-2">&times;</button>
+            <h3 class="text-2xl font-black uppercase font-title text-white mb-2">Graduação</h3>
+            <p class="text-gray-400 text-sm mb-6">Selecione a sua cidade para inscrições:</p>
+            <div class="space-y-4">
+                <a href="https://www.kihap.com.br/produto.html?id=bMYSWFpufXyPBzdL5QP8" class="block w-full bg-gray-800 border border-gray-700 text-white font-bold py-4 px-6 rounded-xl hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition-all uppercase text-sm tracking-wider">
+                    Brasília
+                </a>
+                <a href="https://www.kihap.com.br/produto.html?id=ItWMoKj89BEMSX7iLneI" class="block w-full bg-gray-800 border border-gray-700 text-white font-bold py-4 px-6 rounded-xl hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition-all uppercase text-sm tracking-wider">
+                    Florianópolis
+                </a>
+                <a href="https://www.kihap.com.br/produto.html?id=VLJYzUptz23iG5qC5yjB" class="block w-full bg-gray-800 border border-gray-700 text-white font-bold py-4 px-6 rounded-xl hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition-all uppercase text-sm tracking-wider">
+                    Dourados
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+
+    <script>
+        // Modal Logic
+        const modal = document.getElementById('city-modal');
+        const openModalButtons = document.querySelectorAll('[data-open-modal]');
+        const closeModalButton = document.querySelector('[data-close-modal]');
+
+        openModalButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Timer Faixa Preta
+        const countDownDate = new Date("Nov 23, 2025 23:59:59").getTime();
+
+        const countdownFunction = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+
+            if (distance < 0) {
+                clearInterval(countdownFunction);
+                document.getElementById("countdown-preta").innerHTML = '<div class="text-2xl font-bold text-yellow-500 mb-6">Inscrições Encerradas!</div>';
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById("days").innerText = String(days).padStart(2, '0');
+            document.getElementById("hours").innerText = String(hours).padStart(2, '0');
+            document.getElementById("minutes").innerText = String(minutes).padStart(2, '0');
+            document.getElementById("seconds").innerText = String(seconds).padStart(2, '0');
+        }, 1000);
+    </script>
+</body>
+</html>

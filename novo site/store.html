@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+    
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Kihap - Loja</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <!-- ============================================================
+         STORE UNAVAILABLE OVERLAY
+         Para reativar a loja web, remova este bloco inteiro.
+         Os produtos continuam visíveis e funcionais no app.
+    ============================================================ -->
+    <div id="store-unavailable-overlay" style="
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: linear-gradient(135deg, rgba(0,0,0,0.97) 0%, rgba(15,15,25,0.98) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    ">
+        <!-- Animated background glow -->
+        <div style="
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,193,7,0.08) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: pulse-glow 4s ease-in-out infinite;
+        "></div>
+
+        <div style="
+            position: relative;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            padding: 48px 40px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,193,7,0.2);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 80px rgba(0,0,0,0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        ">
+            <!-- Kihap Logo -->
+            <img src="imgs/logo.png" alt="KIHAP" style="height: 36px; margin: 0 auto 32px; display: block; opacity: 0.9;">
+
+            <!-- Icon -->
+            <div style="
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #FFC107, #FF9800);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 28px;
+                box-shadow: 0 0 40px rgba(255,193,7,0.35);
+            ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h2 style="
+                font-family: 'Neue Machina', sans-serif;
+                font-weight: 900;
+                font-size: clamp(1.5rem, 4vw, 2rem);
+                color: #ffffff;
+                margin: 0 0 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                line-height: 1.2;
+            ">Compras pelo App</h2>
+
+            <!-- Subtitle -->
+            <p style="
+                font-family: 'Neue Machina', sans-serif;
+                font-size: 0.9rem;
+                color: rgba(255,255,255,0.55);
+                margin: 0 0 36px;
+                line-height: 1.6;
+            ">As compras da Kihap Store estão disponíveis<br>exclusivamente pelo aplicativo.</p>
+
+            <!-- Divider -->
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 28px;
+            ">
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></div>
+                <span style="font-family: 'Neue Machina', sans-serif; font-size: 0.7rem; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.15em;">Baixe o app</span>
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></div>
+            </div>
+
+            <!-- Store Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <a href="https://apps.apple.com/br/app/kihap/id6737208660" target="_blank" style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    padding: 16px 24px;
+                    border-radius: 14px;
+                    background: #ffffff;
+                    color: #000000;
+                    text-decoration: none;
+                    font-family: 'Neue Machina', sans-serif;
+                    font-weight: 900;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.4)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.3)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                    </svg>
+                    App Store — iOS
+                </a>
+
+                <a href="https://play.google.com/store/apps/details?id=br.com.kihap.app" target="_blank" style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    padding: 16px 24px;
+                    border-radius: 14px;
+                    background: linear-gradient(135deg, #FFC107, #FF9800);
+                    color: #000000;
+                    text-decoration: none;
+                    font-family: 'Neue Machina', sans-serif;
+                    font-weight: 900;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    box-shadow: 0 4px 20px rgba(255,193,7,0.3);
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(255,193,7,0.5)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(255,193,7,0.3)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3.18 23.76a1.67 1.67 0 0 1-.59-.12 1.78 1.78 0 0 1-1.09-1.64V1.99c0-.71.41-1.33 1.09-1.64a1.75 1.75 0 0 1 1.9.38l11.49 9.85-3.08 2.64-9.72-8.33v15.24l9.72-8.33 3.08 2.64L4.49 23.44a1.74 1.74 0 0 1-1.31.32zm17.48-9.96l-2.45-1.41-2.56 2.2 2.56 2.2 2.48-1.43c.71-.41.71-1.15-.03-1.56zm-5.01-2.87l-11.9-10.2 3.08 2.64 10.69 9.17-1.87-1.61z"/>
+                    </svg>
+                    Google Play — Android
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        }
+        /* Prevent body scroll while overlay is shown */
+        body:has(#store-unavailable-overlay) { overflow: hidden; }
+    </style>
+    <!-- ============================================================
+         FIM DO OVERLAY DE INDISPONIBILIDADE
+    ============================================================ -->
+
+    <main class="py-12">
+        <section class="container mx-auto px-6">
+            <div id="banner-container" class="mb-12 hidden md:block"></div>
+
+            <h1 class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-12">Nossos Produtos</h1>
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Products will be loaded here by JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/cart.js"></script>
+    <script type="module" src="js/store.js"></script>
+</body>
+</html>
