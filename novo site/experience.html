@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+    
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <title>Kihap Experience - Brasília</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .highlight-animated {
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-animated::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            /* Adjust vertical position */
+            left: 0;
+            height: 0.4em;
+            /* Thickness of the highlight */
+            width: 100%;
+            background: rgba(252, 211, 77, 0.6);
+            /* Tailwind yellow-400 with opacity */
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .highlight-animated.is-visible::after {
+            transform: scaleX(1);
+        }
+    </style>
+</head>
+
+<body class="antialiased bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section
+            class="relative h-screen flex items-center justify-center text-center text-white hero-faixa-preta overflow-hidden"
+            style="background-image: url('/imgs/mestres.jpg'); background-size: cover; background-position: center;">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black/60"></div>
+            <div class="relative z-10 px-4">
+                <h1 class="text-4xl md:text-6xl font-black uppercase font-title mb-8">
+                    Kihap Experience
+                </h1>
+                <p class="mb-6 text-xl text-yellow-100">22 e 23 de Maio • Brasília</p>
+                <a href="/produto.html?id=lSTsI4TF2mz84su6LHXt"
+                    class="inline-block bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition text-lg">
+                    Mais informações e Inscrição
+                </a>
+            </div>
+        </section>
+
+
+
+        <!-- Saiba Mais Section (Shorts) -->
+        <section id="saiba-mais" class="bg-gray-800 py-16">
+            <style>
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            </style>
+            <div class="text-center w-full">
+                <h2 class="text-3xl md:text-4xl font-bold mb-10 text-white px-6">Saiba Mais sobre o Evento</h2>
+                
+                <div class="flex overflow-x-auto hide-scrollbar gap-4 snap-x snap-mandatory px-6 md:grid md:grid-cols-3 lg:grid-cols-5 md:gap-6 max-w-7xl mx-auto pb-4">
+                    <!-- Short 1 -->
+                    <div class="relative flex-none w-[75vw] sm:w-[45vw] md:w-full snap-center aspect-[9/16]">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/wb9yWJcJBAA" title="YouTube Shorts 1"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <!-- Short 2 -->
+                    <div class="relative flex-none w-[75vw] sm:w-[45vw] md:w-full snap-center aspect-[9/16]">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/c-xQMNBpi4M" title="YouTube Shorts 2"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <!-- Short 3 -->
+                    <div class="relative flex-none w-[75vw] sm:w-[45vw] md:w-full snap-center aspect-[9/16]">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/eW7bih-wEyI" title="YouTube Shorts 3"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <!-- Short 4 -->
+                    <div class="relative flex-none w-[75vw] sm:w-[45vw] md:w-full snap-center aspect-[9/16]">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/SEnO6aOqhY8" title="YouTube Shorts 4"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <!-- Short 5 -->
+                    <div class="relative flex-none w-[75vw] sm:w-[45vw] md:w-full snap-center aspect-[9/16]">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/y7s4wVA1wOQ" title="YouTube Shorts 5"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-10">O que é o Kihap Experience</h2>
+                <div class="max-w-3xl mx-auto">
+                    <p class="text-gray-300 text-lg mb-4">
+                        O Kihap Experience é um evento transformador que reúne a comunidade de artes marciais para um final de semana de aprendizado intenso, superação e conexões profundas.
+                    </p>
+                    <p class="text-gray-300 text-lg">
+                        Venha viver esta experiência inesquecível na AABB Brasília, um espaço amplo e preparado para receber este grande encontro da família Kihap.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Date and Location Section -->
+        <section class="bg-gray-800 py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Data e Local</h2>
+
+                <div class="max-w-3xl mx-auto text-center">
+                    <h3 class="text-4xl font-bold text-yellow-500 uppercase tracking-widest mb-6">22 e 23 de Maio</h3>
+                    <p class="text-gray-300 text-2xl mb-4"><strong>Local:</strong> AABB Brasília</p>
+                    <p class="text-gray-400 text-lg">Prepare-se para dois dias de imersão total.</p>
+                </div>
+
+                <!-- Google Maps Embed -->
+                <div class="mt-12 w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3838.7150791663366!2d-47.859893724869536!3d-15.818970584824788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x935a24b433d2ee6f%3A0x4d1426ec8fd2a329!2sAABB%20BRAS%C3%8DLIA!5e0!3m2!1spt-BR!2sbr!4v1774119091911!5m2!1spt-BR!2sbr" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cronograma Section -->
+        <section id="cronograma" class="bg-yellow-500 py-16">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-black">Cronograma</h2>
+                <div class="max-w-4xl mx-auto space-y-8">
+
+                    <!-- DIA 1: SEXTA 22/05 -->
+                    <div>
+                        <div class="bg-[#1a1a1a] text-yellow-400 text-center font-black text-xl md:text-2xl uppercase tracking-widest py-3 mb-3 rounded-sm">
+                            ⚡ Sexta-feira — 22 de Maio
+                        </div>
+                        <div class="space-y-2">
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    9H — 10H
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Boas-vindas HYO
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    10H — 11H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Conteúdos Nível 1 e 2
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    13H30 — 14H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Fórmula Master Botton (1BD)
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    15H — 16H
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    SJB com Master Scalei
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    16H30 — 17H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Revisão de Exame Pretas
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    18H — 20H
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Exame Nacional Faixas Pretas
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- DIA 2: SÁBADO 23/05 -->
+                    <div>
+                        <div class="bg-[#1a1a1a] text-yellow-400 text-center font-black text-xl md:text-2xl uppercase tracking-widest py-3 mb-3 rounded-sm">
+                            🏆 Sábado — 23 de Maio
+                        </div>
+                        <div class="space-y-2">
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    7H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Check In
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    8H00
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Categorias de Mestres
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    9H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex flex-col justify-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    <span>Faixas Pretas 3BD / 4BD / 5BD</span>
+                                    <span class="text-sm font-normal text-gray-600 normal-case mt-1">Níveis 3 (marrons, vermelhas e V/P)</span>
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    11H00
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Faixas Pretas 1BD / 2BD
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    13H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex items-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    Níveis 1 (laranja, amarela e camuflada)
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    15H00
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex flex-col justify-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    <span>Faixas Brancas</span>
+                                    <span class="text-sm font-normal text-gray-600 normal-case mt-1">Níveis 2 (verdes, roxas e azuis)</span>
+                                </div>
+                            </div>
+
+                            <!-- Item -->
+                            <div class="flex flex-col md:flex-row shadow-lg">
+                                <div class="bg-[#1a1a1a] text-white md:w-44 py-4 flex items-center justify-center font-bold text-xl md:text-2xl tracking-wider shrink-0">
+                                    16H30
+                                </div>
+                                <div class="bg-[#e6dace] text-gray-900 flex-1 px-4 md:px-6 py-4 flex flex-col justify-center font-semibold text-lg uppercase tracking-wide leading-tight">
+                                    <span>Littles (4 a 7 anos)</span>
+                                    <span class="text-sm font-normal text-gray-600 normal-case mt-1">Baby Littles (1 a 3 anos)</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Video Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-10">Confira nossos eventos anteriores</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                    <!-- Video 1 -->
+                    <div class="relative w-full" style="padding-bottom: 56.25%;">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/ttHQfiRZnQU" title="YouTube video player 1"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <!-- Video 2 -->
+                    <div class="relative w-full" style="padding-bottom: 56.25%;">
+                        <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/lN8CSjfbIiM" title="YouTube video player 2"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="bg-yellow-500 py-16 text-center">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-black mb-6">Pronto para o Desafio?</h2>
+                <p class="text-gray-800 text-lg mb-8 max-w-2xl mx-auto">
+                    Não perca a oportunidade de participar desta imersão incrível ao lado de grandes referências. Garanta a sua vaga agora mesmo!
+                </p>
+                <a href="/produto.html?id=lSTsI4TF2mz84su6LHXt"
+                    class="inline-block bg-gray-900 text-white font-bold py-4 px-10 rounded-lg hover:bg-black transition text-xl">
+                    Garantir Inscrição
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="/js/script.js"></script>
+    <script>
+        // Intersection Observer for highlight animation
+        const highlightObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    highlightObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const highlightElement = document.querySelector('.highlight-animated');
+        if (highlightElement) {
+            highlightObserver.observe(highlightElement);
+        }
+    </script>
+</body>
+
+</html>

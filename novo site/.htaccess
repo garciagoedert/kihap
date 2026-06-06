@@ -1,0 +1,22 @@
+RewriteEngine On
+
+
+# 2. To manually remove the .html extension from the URL if someone types it in
+RewriteCond %{THE_REQUEST} /([^.]+)\.html [NC]
+RewriteRule ^ /%1 [NC,L,R]
+
+# New: Remove trailing slash from non-directories
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+
+# 2. To treat the URL without .html as the file with .html
+# Special case: prioritize experience.html over the experience/ directory
+RewriteRule ^experience/?$ experience.html [NC,L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.*)$ $1.html [NC,L]
+
+# Optional: Handle 404s
+ErrorDocument 404 /404.html

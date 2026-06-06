@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <title>Nossos Programas & Metodologia - Kihap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .filtered-out {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="antialiased bg-[#f8f7f4] text-[#111111]">
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative py-32 overflow-hidden bg-black flex items-center justify-center text-center">
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1555597673-b21d5c935865?q=80&w=1600&auto=format&fit=crop" 
+                     class="w-full h-full object-cover opacity-40" alt="Metodologia Kihap">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 container mx-auto px-6 mt-16">
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title text-white">
+                    Nossa <span class="text-yellow-400">Metodologia</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-white/80 leading-relaxed">
+                    Unimos a técnica milenar das artes marciais ao desenvolvimento humano para formar pessoas mais fortes no tatame e na vida.
+                </p>
+            </div>
+        </section>
+
+        <!-- Filtros (Abas) -->
+        <section class="py-8 bg-white sticky top-[88px] z-40 border-b border-gray-200 shadow-sm">
+            <div class="container mx-auto px-6 text-center flex flex-wrap justify-center gap-4">
+                <button class="filter-tab-btn active px-6 py-2 rounded-full border border-yellow-500 bg-yellow-500 text-black font-bold text-sm uppercase tracking-wider shadow-lg shadow-yellow-500/20" data-filter="all">Todos</button>
+                <button class="filter-tab-btn px-6 py-2 rounded-full border border-gray-300 text-gray-700 bg-white hover:border-yellow-500 hover:text-yellow-600 font-bold text-sm uppercase tracking-wider transition" data-filter="artes-marciais">Artes Marciais</button>
+                <button class="filter-tab-btn px-6 py-2 rounded-full border border-gray-300 text-gray-700 bg-white hover:border-yellow-500 hover:text-yellow-600 font-bold text-sm uppercase tracking-wider transition" data-filter="desenvolvimento">Desenvolvimento Pessoal</button>
+            </div>
+        </section>
+
+        <!-- Programas Section -->
+        <section class="py-24 bg-gray-50 min-h-[50vh]">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch" id="programs-grid">
+                    
+                    <!-- LITTLES -->
+                    <a href="littles.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="artes-marciais">
+                        <div class="overflow-hidden h-56">
+                            <img src="../imgs/littles.png" alt="KIHAP LITTLES" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">2 a 7 anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">KIHAP LITTLES</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Desenvolvemos as habilidades motoras das crianças e aumentamos a capacidade de foco e disciplina desde cedo.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- KIDS -->
+                    <a href="kids.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="artes-marciais">
+                        <div class="overflow-hidden h-56">
+                            <img src="../imgs/kids.png" alt="KIHAP KIDS" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">7 a 12 anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">KIHAP KIDS</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Base sólida em lições de vida como cortesia e respeito, em um ambiente seguro e motivador.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- ADULTOS -->
+                    <a href="adultos.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="artes-marciais">
+                        <div class="overflow-hidden h-56">
+                            <img src="../imgs/adultos.png" alt="ADOLESCENTES & ADULTOS" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">13+ anos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Adolescentes & Adultos</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Fortalecimento integral, defesa pessoal e condicionamento físico em um ambiente familiar.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- FAMÍLIA -->
+                    <a href="familia.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="artes-marciais">
+                        <div class="overflow-hidden h-56">
+                            <img src="../imgs/familia.png" alt="FAMÍLIA" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Para todos</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">FAMÍLIA</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>O pilar que estreita os vínculos através de uma atividade saudável e transformadora.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- MULHERES -->
+                    <a href="mulheres.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="artes-marciais">
+                        <div class="overflow-hidden h-56">
+                            <img src="../imgs/kihap-mulheres.png" alt="MULHERES" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Exclusivo</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">MULHERES</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Defesa pessoal, agilidade e bem-estar, promovendo autoconfiança e segurança.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Mente Faixa Preta -->
+                    <a href="../desenvolvimento/mente-faixa-preta.html" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="desenvolvimento">
+                        <div class="overflow-hidden h-56 bg-gray-900 flex items-center justify-center text-center p-6 relative">
+                            <div class="absolute inset-0 bg-cover bg-center opacity-40" style="background-image: url('https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1600&auto=format&fit=crop');"></div>
+                            <span class="text-yellow-500 font-title text-3xl italic relative z-10 leading-snug">Mente<br>Faixa Preta</span>
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Desenvolvimento Pessoal</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Mente Faixa Preta</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Focado em 3 pilares fundamentais: clareza, planejamento e ação. Só conseguimos mudar aquilo que entendemos de forma sólida.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Kihap Do -->
+                    <a href="#" class="program-card-clean bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl" data-category="desenvolvimento">
+                        <div class="overflow-hidden h-56 bg-gray-800 flex items-center justify-center text-center p-6 relative">
+                            <span class="text-white font-title text-3xl italic relative z-10 leading-snug">Kihap Do</span>
+                        </div>
+                        <div class="p-8 flex-grow flex flex-col">
+                            <span class="text-yellow-600 font-bold text-xs uppercase tracking-widest mb-2">Mentoria Exclusiva</span>
+                            <h2 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Kihap Do</h2>
+                            <div class="text-gray-600 text-sm leading-relaxed space-y-4">
+                                <p>Acompanhamento ativo aplicando elementos da disciplina positiva para atingir metas concretas.</p>
+                            </div>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <script src="../js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-itunes-app" content="app-id=6761770657">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    
+    
+    
+    
+    
+        
+    
+    
+    <script>
+        // Redireciona para o login se estiver rodando no App Mobile (detecção via UserAgent customizado)
+        // Ignora o redirecionamento se estiver em localhost para facilitar o desenvolvimento
+        if ((navigator.userAgent.includes('KihapApp') || window.location.search.includes('isApp=true')) && window.location.hostname !== 'localhost') {
+            window.location.href = 'intranet/login.html';
+        }
+    </script>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-PWJDG6C9');</script>
+    <!-- End Google Tag Manager -->
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1640366680293228');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1640366680293228&ev=PageView&noscript=1" /></noscript>
+    <!-- End Meta Pixel Code -->
+    <link rel="icon" href="/imgs/favicon.png" type="image/png">
+    <title>Kihap Martial Arts - A Força Para a Mudança</title>
+
+    <link rel="preload" href="https://kihap.com.br/wp-content/uploads/2025/07/header-1-scaled-e1753296220846.jpg"
+        as="image">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="tailwind" href="/css/tailwind.css" /> <!-- CSS SE NECESSÁRIO -->
+
+    <!-- Swiper.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="antialiased">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWJDG6C9" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="relative h-[100svh] w-full overflow-hidden hero-swiper-section">
+            <div class="swiper hero-swiper h-full w-full">
+                <div class="swiper-wrapper">
+                    <!-- Slide 1: Isca Principal (Littles/Kids) -->
+                    <div class="swiper-slide relative flex flex-col justify-end text-left text-white bg-cover bg-center" style="background-image: url('imgs/littlesheader.png');">
+                        <!-- Mobile-first gradient overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent"></div>
+                        <div class="relative z-10 px-6 md:px-24 pb-24 pt-28 w-full max-w-5xl">
+                            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title animate-fadeInUp">
+                                Disciplina, Foco e <br class="hidden sm:block"><span class="text-yellow-400">Muita Diversão.</span>
+                            </h1>
+                            <p class="mt-4 md:mt-6 text-base md:text-xl max-w-xl text-white/90 leading-relaxed animate-fadeInUp delay-200">
+                                O programa ideal para gastar energia e desenvolver as habilidades motoras e socioemocionais do seu filho.
+                            </p>
+                            <div class="mt-6 md:mt-8 animate-fadeInUp delay-300">
+                                <a href="programas/littles.html" class="inline-flex items-center gap-2 btn-gradient text-black font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl text-sm md:text-base uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105">
+                                    Conhecer o Programa Infantil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slide 2: O Diferencial (Família) -->
+                    <div class="swiper-slide relative flex flex-col justify-end text-left text-white bg-cover bg-center" style="background-image: url('imgs/familia.png');">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent"></div>
+                        <div class="relative z-10 px-6 md:px-24 pb-24 pt-28 w-full max-w-5xl">
+                            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title animate-fadeInUp">
+                                Fortaleça os Laços Fora e <br class="hidden sm:block"><span class="text-yellow-400">Dentro do Tatame.</span>
+                            </h1>
+                            <p class="mt-4 md:mt-6 text-base md:text-xl max-w-xl text-white/90 leading-relaxed animate-fadeInUp delay-200">
+                                Mais do que um treino, um momento de conexão real com quem você mais ama. Descubra os benefícios de treinar em família.
+                            </p>
+                            <div class="mt-6 md:mt-8 animate-fadeInUp delay-300">
+                                <a href="programas/familia.html" class="inline-flex items-center gap-2 btn-gradient text-black font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl text-sm md:text-base uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105">
+                                    Treine em Família
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slide 3: Institucional e Alta Performance (Adolescentes/Adultos) -->
+                    <div class="swiper-slide relative flex flex-col justify-end text-left text-white bg-cover bg-center" style="background-image: url('imgs/adultos.png');">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent sm:bg-gradient-to-r sm:from-black/80 sm:via-black/40 sm:to-transparent"></div>
+                        <div class="relative z-10 px-6 md:px-24 pb-24 pt-28 w-full max-w-5xl">
+                            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title animate-fadeInUp">
+                                A Força para a <br class="hidden sm:block"><span class="text-yellow-400">Sua Mudança.</span>
+                            </h1>
+                            <p class="mt-4 md:mt-6 text-base md:text-xl max-w-xl text-white/90 leading-relaxed animate-fadeInUp delay-200">
+                                Autodefesa, alívio do estresse e condicionamento físico com uma metodologia exclusiva.
+                            </p>
+                            <div class="mt-6 md:mt-8 animate-fadeInUp delay-300">
+                                <a href="#cta" class="inline-flex items-center gap-2 btn-gradient text-black font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl text-sm md:text-base uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105">
+                                    Agendar Aula Experimental
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Swiper Navigation -->
+                <div class="swiper-button-next !text-yellow-500 drop-shadow-md hidden md:flex"></div>
+                <div class="swiper-button-prev !text-yellow-500 drop-shadow-md hidden md:flex"></div>
+                
+                <!-- Swiper Pagination -->
+                <div class="swiper-pagination hero-pagination !bottom-8"></div>
+            </div>
+            
+            <!-- Inline Stats Overlay (Oculto no mobile) -->
+            <div class="absolute bottom-8 right-12 z-20 hidden md:flex flex-wrap gap-8 animate-fadeInUp delay-400 pointer-events-none">
+                <div class="flex flex-col text-right">
+                    <span class="text-3xl font-black text-yellow-400 font-title drop-shadow-md">+1000</span>
+                    <span class="text-xs uppercase tracking-widest text-white mt-1 drop-shadow-md">Alunos Formados</span>
+                </div>
+                <div class="w-px bg-white/40 self-stretch drop-shadow-md"></div>
+                <div class="flex flex-col text-center">
+                    <span class="text-3xl font-black text-yellow-400 font-title drop-shadow-md">10</span>
+                    <span class="text-xs uppercase tracking-widest text-white mt-1 drop-shadow-md">Unidades</span>
+                </div>
+                <div class="w-px bg-white/40 self-stretch drop-shadow-md"></div>
+                <div class="flex flex-col text-left">
+                    <span class="text-3xl font-black text-yellow-400 font-title drop-shadow-md">3</span>
+                    <span class="text-xs uppercase tracking-widest text-white mt-1 drop-shadow-md">Estados</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section (hidden on desktop since stats are now in hero) -->
+        <section class="bg-gray-50 py-8 md:hidden">
+            <div class="container mx-auto grid grid-cols-3 gap-2 text-center px-4">
+                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">+1000</p>
+                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Alunos</p>
+                </div>
+                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">03</p>
+                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Estados</p>
+                </div>
+                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">10</p>
+                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Unidades</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Programs Section -->
+        <section id="programas" class="py-24 bg-gradient-to-b from-white via-[#FAF7F2] to-white overflow-hidden relative">
+            <div class="container mx-auto px-6 text-center">
+                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-3 block">Nossos Programas</span>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
+                    Programas para <br> <span class="text-yellow-500 italic">Todas as Idades</span>
+                </h2>
+                <p class="mt-4 max-w-xl mx-auto text-gray-500 text-sm md:text-base font-light">
+                    Metodologias exclusivas desenhadas para o desenvolvimento físico, mental e emocional de cada etapa da vida. Encontre o grupo ideal e agende uma aula.
+                </p>
+
+                <!-- Age Filter Tabs -->
+                <div class="mt-10 flex flex-wrap justify-center gap-3">
+                    <button class="filter-tab-btn px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider border border-amber-200/40 text-gray-700 bg-white hover:bg-amber-50/50 active" data-filter="all">Todos</button>
+                    <button class="filter-tab-btn px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider border border-amber-200/40 text-gray-700 bg-white hover:bg-amber-50/50" data-filter="infantil">Infantil (1.5 a 6)</button>
+                    <button class="filter-tab-btn px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider border border-amber-200/40 text-gray-700 bg-white hover:bg-amber-50/50" data-filter="juvenil">Juvenil (7 a 17)</button>
+                    <button class="filter-tab-btn px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider border border-amber-200/40 text-gray-700 bg-white hover:bg-amber-50/50" data-filter="adulto">Adulto & Família (18+)</button>
+                </div>
+            </div>
+            
+            <div class="mt-16 container mx-auto px-6 max-w-7xl relative">
+                <!-- Swiper -->
+                <div class="swiper programs-swiper !pb-12">
+                    <div class="swiper-wrapper" id="programs-grid-container">
+                    
+                    <!-- Card 1: Baby Littles (Infantil) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="infantil">
+                        <a href="programas/baby-littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Baby Littles"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/baby.png" alt="Baby Littles" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">BABY LITTLES</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">1.5 A 3 ANOS</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Desenvolvimento psicomotor, cognição e socialização em tatame.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 2: Littles (Infantil) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="infantil">
+                        <a href="programas/littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Littles"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/littles.png" alt="Littles" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">LITTLES</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">3 A 6 ANOS</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Canalização de energia, disciplina positiva e coordenação motora.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 3: Kids (Juvenil) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="juvenil">
+                        <a href="programas/kids.html" class="absolute inset-0 z-10" aria-label="Ver programa Kids"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/kids.png" alt="Kids" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">KIDS</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">7 A 12 ANOS</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Artes marciais, autodefesa, foco escolar e liderança para crianças.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 4: Adolescentes (Juvenil) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="juvenil">
+                        <a href="programas/adolescentes.html" class="absolute inset-0 z-10" aria-label="Ver programa Adolescentes"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/adolescentes.png" alt="Adolescentes" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">ADOLESCENTES</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">12 A 17 ANOS</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Condicionamento físico, superação e inteligência socioemocional.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 5: Adultos (Adulto) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="adulto">
+                        <a href="programas/adultos.html" class="absolute inset-0 z-10" aria-label="Ver programa Adultos"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/adultos.png" alt="Adultos" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">ADULTOS</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">18+ ANOS</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Defesa pessoal, redução de estresse, foco e alta performance física.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 6: Família (Adulto) -->
+                    <div class="swiper-slide program-card-clean w-auto group" data-category="adulto">
+                        <a href="programas/familia.html" class="absolute inset-0 z-10" aria-label="Ver programa Família"></a>
+                        <div class="program-card-clean-img-container">
+                            <img src="imgs/familia.png" alt="Família" class="program-card-clean-img">
+                        </div>
+                        <div class="program-card-clean-panel">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">FAMÍLIA</h3>
+                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">TODAS AS IDADES</span>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Integração familiar e fortalecimento de laços através do esporte.</p>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
+                                Saber Mais
+                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    </div>
+                    <!-- Swiper Pagination -->
+                    <div class="swiper-pagination programs-pagination"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Journey Section -->
+        <section class="py-20 bg-gradient-to-br from-gray-50 to-amber-50/40">
+            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+                <div class="aspect-video rounded-2xl overflow-hidden ring-2 ring-yellow-400/30 shadow-xl">
+                    <iframe src="https://www.youtube.com/embed/tzFSjF5h-zA" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen class="w-full h-full"></iframe>
+                </div>
+                <div>
+                    <h2 class="section-title uppercase font-title text-gray-900">Embarque nessa <br><span
+                            class="text-yellow-500">Jornada Conosco</span></h2>
+                    <p class="mt-4 text-gray-600 text-lg">
+                        Nossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os
+                        desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente,
+                        há um lugar para você em nossa comunidade.
+                    </p>
+                    <div class="mt-8 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#cta"
+                            class="btn-gradient text-black font-bold py-3 px-8 rounded-lg w-full sm:w-auto text-center">
+                            Agende Sua Aula
+                        </a>
+                        <a href="sobre.html"
+                            class="border border-yellow-500 text-yellow-600 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition w-full sm:w-auto text-center">
+                            Saiba Mais
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guiding Principles Section -->
+        <section id="principios" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title uppercase font-title text-gray-900">O Que <span class="text-yellow-500">Nos Guia</span></h2>
+                <p class="mt-4 max-w-3xl mx-auto text-gray-500">Estes princípios constituem a base de tudo o que fazemos
+                    na Kihap, orientando nossos alunos em sua jornada de transformação pessoal.</p>
+                <div class="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <div class="bg-yellow-400/10 p-5 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Comunidade</h3>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <div class="bg-yellow-400/10 p-5 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Excelência</h3>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <div class="bg-yellow-400/10 p-5 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Integridade</h3>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <div class="bg-yellow-400/10 p-5 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Respeito</h3>
+                    </div>
+                    <div class="hidden lg:flex glass-card p-6 flex-col items-center">
+                        <div class="bg-yellow-400/10 p-5 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Foco</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Locations Section -->
+        <section id="unidades" class="relative overflow-hidden py-20 bg-white">
+            <img src="imgs/icons/unidades.svg" alt=""
+                class="absolute top-0 right-0 w-2/3 md:w-1/2 lg:w-1/3 h-auto opacity-5 -translate-y-1/4 translate-x-1/4 pointer-events-none">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title uppercase font-title text-gray-900">Nossas <span class="text-yellow-500">Unidades</span></h2>
+                <p class="mt-4 max-w-3xl mx-auto text-gray-500">Com unidades estrategicamente localizadas, oferecemos um
+                    ambiente seguro e motivador para a prática das artes marciais.</p>
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div class="glass-card p-8 text-left"
+                        data-bg-image="https://images.unsplash.com/photo-1593854524137-81418f3563a2?q=80&w=800&auto=format&fit=crop">
+                        <div>
+                            <h3 class="text-3xl font-bold font-title text-gray-900">BRASÍLIA</h3>
+                            <p class="mt-2 text-gray-600">Encontre a unidade mais próxima na capital federal.</p>
+                        </div>
+                        <a href="unidades/brasilia.html"
+                            class="mt-4 inline-block text-yellow-600 font-semibold hover:text-yellow-500">Ver Unidades
+                            &rarr;</a>
+                    </div>
+                    <div class="glass-card p-8 text-left"
+                        data-bg-image="https://images.unsplash.com/photo-1595835018349-19846a133435?q=80&w=800&auto=format&fit=crop">
+                        <div>
+                            <h3 class="text-3xl font-bold font-title text-gray-900">FLORIANÓPOLIS</h3>
+                            <p class="mt-2 text-gray-600">Treine conosco na ilha da magia.</p>
+                        </div>
+                        <a href="unidades/florianopolis.html"
+                            class="mt-4 inline-block text-yellow-600 font-semibold hover:text-yellow-500">Ver Unidades
+                            &rarr;</a>
+                    </div>
+                    <div class="glass-card p-8 text-left"
+                        data-bg-image="https://images.unsplash.com/photo-1543251699-043b2a442a42?q=80&w=800&auto=format&fit=crop">
+                        <div>
+                            <h3 class="text-3xl font-bold font-title text-gray-900">DOURADOS</h3>
+                            <p class="mt-2 text-gray-600">Conheça nossa unidade no coração do MS.</p>
+                        </div>
+                        <a href="unidades/dourados.html"
+                            class="mt-4 inline-block text-yellow-600 font-semibold hover:text-yellow-500">Ver Unidades
+                            &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-5xl uppercase text-center font-title text-gray-900 break-words">Histórias de <span
+                        class="text-yellow-500">Transformação</span></h2>
+                <div class="mt-12 relative">
+                    <div class="swiper testimonials-swiper !pb-12">
+                        <div class="swiper-wrapper">
+                    <!-- Testimonial 1 -->
+                    <div class="swiper-slide glass-card p-8 h-auto">
+                        <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
+                        <p class="text-gray-600 break-words">A Kihap mudou não só o meu corpo, mas
+                            minha mente. Ganhei
+                            confiança e disciplina que levo para todas as áreas da minha vida.</p>
+                        <div class="mt-6 flex items-center">
+                            <img src="https://placehold.co/50x50/FFC107/111111?text=J" class="w-12 h-12 rounded-full"
+                                alt="Foto do aluno João Silva">
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-900">João Silva</p>
+                                <p class="text-sm text-gray-500">Aluno há 2 anos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 2 -->
+                    <div class="swiper-slide glass-card p-8 h-auto">
+                        <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
+                        <p class="text-gray-600 break-words">Meu filho era tímido e hoje é muito
+                            mais sociável e focado
+                            nos estudos. Sou muito grata a toda a equipe da Kihap.</p>
+                        <div class="mt-6 flex items-center">
+                            <img src="https://placehold.co/50x50/FFC107/111111?text=M" class="w-12 h-12 rounded-full"
+                                alt="Foto da aluna Maria Costa">
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-900">Maria Costa</p>
+                                <p class="text-sm text-gray-500">Mãe de aluno</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 3 -->
+                    <div class="swiper-slide glass-card p-8 h-auto">
+                        <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
+                        <p class="text-gray-600 break-words">Encontrei na Kihap uma verdadeira
+                            família. O ambiente é
+                            acolhedor e os professores são excepcionais. Recomendo para todos.</p>
+                        <div class="mt-6 flex items-center">
+                            <img src="https://placehold.co/50x50/FFC107/111111?text=A" class="w-12 h-12 rounded-full"
+                                alt="Foto do aluno Ana Souza">
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-900">Ana Souza</p>
+                                <p class="text-sm text-gray-500">Aluna há 3 anos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-pagination testimonials-pagination"></div>
+            </div>
+        </div>
+    </section>
+
+
+        <!-- Final CTA Section -->
+        <div id="cta-container"></div>
+    </main>
+
+
+    <!-- Newsletter Section -->
+    <section class="py-20 text-center bg-gradient-to-r from-amber-50 to-yellow-50">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title uppercase font-title text-gray-900">Fique por <span class="text-yellow-500">Dentro</span></h2>
+            <p class="mt-4 max-w-2xl mx-auto text-gray-600">
+                Assine nossa newsletter para receber as últimas novidades, dicas de treino e ofertas especiais
+                diretamente no seu e-mail.
+            </p>
+            <form id="newsletter-form" class="mt-8 max-w-lg mx-auto flex flex-col sm:flex-row gap-4">
+                <input type="email" id="newsletter-email" placeholder="Seu melhor e-mail"
+                    class="flex-1 px-6 py-3 rounded-lg bg-white border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required>
+                <button type="submit"
+                    class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition whitespace-nowrap">
+                    INSCREVER-SE
+                </button>
+            </form>
+            <p id="newsletter-status" class="mt-4 text-sm text-gray-500"></p>
+        </div>
+    </section>
+
+    <!-- Kihapcast Section -->
+    <section class="py-20 bg-gray-50 text-center">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title uppercase font-title text-gray-900">Ouça nosso <span class="text-yellow-500">Kihapcast</span>
+            </h2>
+            <p class="mt-4 max-w-2xl mx-auto text-gray-500">
+                Mantenha-se inspirado e informado com o Kihapcast. Entrevistas, dicas e discussões sobre o universo das
+                artes marciais.
+            </p>
+            <div class="mt-8 max-w-3xl mx-auto flex justify-center">
+                <iframe data-testid="embed-iframe" style="border-radius:12px"
+                    src="https://open.spotify.com/embed/show/3KJ4q5Qx604Cbm782yMyqB/video?utm_source=generator"
+                    width="100%" height="351" frameBorder="0" allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Promotion Section -->
+    <section class="relative py-24 bg-yellow-500 overflow-hidden border-t border-black/10 text-center text-black">
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="max-w-3xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-black uppercase font-title leading-tight">
+                    O Kihap na <br> <span class="text-white">Palma da Sua Mão</span>
+                </h2>
+                <p class="mt-6 text-black/80 text-lg leading-relaxed mx-auto">
+                    Acompanhe sua evolução, acesse conteúdos exclusivos do Tatame, gerencie suas aulas e compre produtos oficiais diretamente pelo celular. Baixe agora o app oficial da Kihap.
+                </p>
+                
+                <!-- App Store Buttons -->
+                <div class="mt-10 flex flex-wrap justify-center gap-4">
+                    <!-- Apple Store -->
+                    <a href="https://apps.apple.com/br/app/kihap/id6761770657" target="_blank" class="transition-transform hover:scale-105">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Baixar na App Store" class="h-12">
+                    </a>
+                    <!-- Google Play -->
+                    <a href="https://play.google.com/store/apps/details?id=com.kihap.app" target="_blank" class="transition-transform hover:scale-105">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Baixar na Google Play" class="h-12">
+                    </a>
+                </div>
+
+                <div class="mt-8">
+                    <div class="text-sm text-black/60 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <span>Prefere usar o computador?</span>
+                        <a href="intranet/login.html" class="text-white hover:underline font-semibold bg-black px-4 py-2 rounded-lg transition-transform hover:scale-105">Acesse a versão web &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Swiper.js JS -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+    <script src="js/script.js"></script>
+    <script type="module" src="js/form-handler.js"></script>
+    <script type="module" src="js/miles-chatbot.js"></script>
+
+    <!-- Academy Form Modal -->
+    <div id="academy-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="glass-card p-8 w-full max-w-lg relative mx-4">
+            <button id="close-academy-modal" title="Fechar modal"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold text-center text-gray-900 mb-6 uppercase font-title">Interesse na <span
+                    class="text-yellow-500">Kihap Academy</span></h2>
+            <form id="academy-lead-form" class="grid grid-cols-1 gap-4">
+                <input type="text" id="academy-nome" placeholder="Nome Completo"
+                    class="w-full px-6 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required>
+                <input type="email" id="academy-email" placeholder="Seu melhor e-mail"
+                    class="w-full px-6 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required>
+                <input type="tel" id="academy-telefone" placeholder="Telefone (WhatsApp)"
+                    class="w-full px-6 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required>
+                <button type="submit"
+                    class="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition w-full">
+                    ENVIAR INTERESSE
+                </button>
+            </form>
+            <p id="academy-form-status" class="mt-4 text-lg text-center text-gray-700"></p>
+        </div>
+    </div>
+</body>
+
+</html>
