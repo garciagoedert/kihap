@@ -96,11 +96,17 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
 
     } else {
         // Fluxo normal de Compra Avulsa (Checkout Pro)
+        let subtotalCents = 0;
+        formDataList.forEach(formData => {
+            subtotalCents += formData.priceData.amount;
+        });
+        const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+
         const items = formDataList.map(formData => {
             return {
                 id: product.id,
                 title: product.name,
-                unit_price: formData.priceData.amount / 100,
+                unit_price: (formData.priceData.amount * discountRatio) / 100,
                 quantity: 1,
                 currency_id: 'BRL',
                 description: formData.variantName || 'Item da Loja'
@@ -164,6 +170,22 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
 
     const client = getMPClient(clientToken); 
     
+    let subtotalCents = 0;
+    cartItems.forEach(cartItem => {
+        if(cartItem.formDataList) {
+            cartItem.formDataList.forEach(formData => {
+                subtotalCents += formData.priceData.amount;
+            });
+        }
+        if (cartItem.recommendedItems) {
+            cartItem.recommendedItems.forEach(rec => {
+                subtotalCents += rec.amount;
+            });
+        }
+    });
+
+    const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+
     const items = [];
     
     cartItems.forEach(cartItem => {
@@ -172,7 +194,7 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
                 items.push({
                     id: cartItem.productId,
                     title: cartItem.productName,
-                    unit_price: formData.priceData.amount / 100,
+                    unit_price: (formData.priceData.amount * discountRatio) / 100,
                     quantity: 1,
                     currency_id: 'BRL',
                     description: (formData.priceData && formData.priceData.variantName) ? formData.priceData.variantName : 'Item da Loja'
@@ -185,7 +207,7 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
                 items.push({
                     id: rec.productId,
                     title: rec.productName,
-                    unit_price: (rec.amount / rec.quantity) / 100,
+                    unit_price: ((rec.amount / rec.quantity) * discountRatio) / 100,
                     quantity: rec.quantity,
                     currency_id: 'BRL',
                     description: 'Comprado Junto'

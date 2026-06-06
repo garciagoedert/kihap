@@ -607,6 +607,21 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     }
 
     try {
+        let subtotalCents = 0;
+        for (const cartItem of cartItems) {
+            if (cartItem.formDataList) {
+                for (const itemFormData of cartItem.formDataList) {
+                    subtotalCents += itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
+                }
+            }
+            if (cartItem.recommendedItems) {
+                for (const item of cartItem.recommendedItems) {
+                    subtotalCents += item.amount;
+                }
+            }
+        }
+        const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+
         const saleDocIds = [];
         let mpAccountId = 'default';
         
@@ -628,7 +643,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     payerName: globalUserData.userName || null, // Guarda explicitamente o nome do pagador
                     productId: cartItem.productId,
                     productName: cartItem.productName,
-                    amountTotal: itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length),
+                    amountTotal: Math.round((itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length)) * discountRatio),
                     currency: 'brl',
                     paymentStatus: 'pending',
                     couponCode: couponCode || null,
@@ -649,7 +664,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                             userGraduacao: globalUserData.userGraduacao || null,
                             productId: item.productId,
                             productName: item.productName,
-                            amountTotal: Math.floor(item.amount / item.quantity),
+                            amountTotal: Math.round(Math.floor(item.amount / item.quantity) * discountRatio),
                             currency: 'brl',
                             paymentStatus: 'pending',
                             couponCode: couponCode || null,
@@ -828,13 +843,24 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         const useMercadoPago = true;
         console.log(`[createCheckoutSession] Gateway para o produto ${productId}: Mercado Pago (forçado)`);
 
+        let subtotalCents = 0;
+        for (const formData of formDataList) {
+            subtotalCents += formData.priceData.amount;
+        }
+        if (recommendedItems) {
+            for (const item of recommendedItems) {
+                subtotalCents += item.amount;
+            }
+        }
+        const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+
         const saleDocIds = [];
         for (const formData of formDataList) {
             const saleData = {
                 ...formData,
                 productId: productId,
                 productName: product.name,
-                amountTotal: formData.priceData.amount,
+                amountTotal: Math.round(formData.priceData.amount * discountRatio),
                 currency: currency,
                 paymentStatus: 'pending',
                 couponCode: couponCode || null,
@@ -866,7 +892,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                         userGraduacao: null,
                         productId: item.productId,
                         productName: recommendedProductName,
-                        amountTotal: item.amount / item.quantity,
+                        amountTotal: Math.round((item.amount / item.quantity) * discountRatio),
                         currency: currency,
                         paymentStatus: 'pending',
                         couponCode: couponCode || null,

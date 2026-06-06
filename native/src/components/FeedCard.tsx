@@ -8,6 +8,7 @@ import { WebView } from 'react-native-webview';
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'expo-router';
 
 const getYoutubeVideoId = (url: string): string | null => {
   if (!url) return null;
@@ -48,6 +49,7 @@ export default function FeedCard({ post }: FeedCardProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { width } = useWindowDimensions();
+  const router = useRouter();
 
   const [isLiked, setIsLiked] = useState(
     Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false
@@ -55,12 +57,33 @@ export default function FeedCard({ post }: FeedCardProps) {
   const [likesCount, setLikesCount] = useState(
     Array.isArray(post.likes) ? post.likes.length : 0
   );
+  const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   // Sync state when post prop changes (real-time updates)
   useEffect(() => {
     setIsLiked(Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false);
     setLikesCount(Array.isArray(post.likes) ? post.likes.length : 0);
   }, [post.likes, user?.uid]);
+
+  // Dynamically calculate image aspect ratio for edge-to-edge Instagram style
+  useEffect(() => {
+    if (post.mediaUrl && (!post.mediaType || post.mediaType === 'image')) {
+      Image.getSize(
+        post.mediaUrl,
+        (w, h) => {
+          if (w && h) {
+            const ratio = w / h;
+            // Cap aspect ratio between 0.8 (4:5 vertical) and 1.91 (Instagram landscape cap)
+            const cappedRatio = Math.max(0.8, Math.min(1.91, ratio));
+            setAspectRatio(cappedRatio);
+          }
+        },
+        (error) => {
+          console.warn("Failed to get image size:", error);
+        }
+      );
+    }
+  }, [post.mediaUrl, post.mediaType]);
 
   const handleLike = async () => {
     if (!user) return;
@@ -92,9 +115,39 @@ export default function FeedCard({ post }: FeedCardProps) {
     : 'Recentemente';
 
   const handleCTA = () => {
-    if (post.ctaButton?.url) {
-      Linking.openURL(post.ctaButton.url);
+    if (!post.ctaButton?.url) return;
+
+    const url = post.ctaButton.url.trim();
+
+    // 1. Check if it's a web URL for a product details page:
+    // e.g., https://kihap.com.br/produto.html?id=PRODUCT_ID or /produto.html?id=PRODUCT_ID
+    if (url.includes('produto.html')) {
+      const match = url.match(/[?&]id=([^&]+)/);
+      if (match && match[1]) {
+        router.push(`/store/${match[1]}`);
+        return;
+      }
     }
+
+    // 2. Check if it's a deep link or direct app route:
+    // e.g., app://store/PRODUCT_ID or app://cursos or /store/PRODUCT_ID or /atividades
+    if (url.startsWith('app://') || url.startsWith('/')) {
+      // Remove app:// prefix if exists
+      const cleanPath = url.startsWith('app://') ? url.substring(6) : url;
+      
+      // Ensure it starts with a /
+      const routePath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+      
+      try {
+        router.push(routePath as any);
+        return;
+      } catch (err) {
+        console.error("Failed to navigate to local route:", routePath, err);
+      }
+    }
+
+    // 3. Fallback: Open externally
+    Linking.openURL(url).catch(err => console.error("Failed to open URL:", url, err));
   };
 
   const tagsStyles = {
@@ -254,8 +307,8 @@ export default function FeedCard({ post }: FeedCardProps) {
           ) : (
             <Image 
               source={{ uri: post.mediaUrl }} 
-              className="w-full aspect-video"
-              resizeMode="contain" 
+              style={{ width: '100%', aspectRatio: aspectRatio }}
+              resizeMode="cover" 
             />
           )}
         </View>

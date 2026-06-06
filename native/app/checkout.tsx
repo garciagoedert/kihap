@@ -76,7 +76,8 @@ export default function CheckoutScreen() {
         body: JSON.stringify({
           cartItems: items,
           globalUserData: globalUserData,
-          totalAmount: total
+          totalAmount: total,
+          couponCode: coupon ? coupon.code : null
         }),
       });
 

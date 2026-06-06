@@ -115,8 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const q = query(collection(db, 'coupons'), where('code', '==', code));
-            const querySnapshot = await getDocs(q);
+            const qUpper = query(collection(db, 'coupons'), where('code', '==', code.toUpperCase()));
+            const qLower = query(collection(db, 'coupons'), where('code', '==', code.toLowerCase()));
+            const [snapUpper, snapLower] = await Promise.all([getDocs(qUpper), getDocs(qLower)]);
+            
+            const querySnapshot = !snapUpper.empty ? snapUpper : snapLower;
 
             if (querySnapshot.empty) {
                 couponStatus.textContent = 'Cupom inválido.';

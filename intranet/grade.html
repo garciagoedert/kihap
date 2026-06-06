@@ -106,36 +106,49 @@
                             </div>
                         </div>
 
-                        <div class="h-8 w-px bg-gray-200 dark:bg-gray-700 hidden xl:block"></div>
+                        <!-- Calendar Specific Controls Wrapper -->
+                        <div id="calendar-controls-wrapper" class="flex items-center gap-3">
+                            <div class="h-8 w-px bg-gray-200 dark:bg-gray-700 hidden xl:block"></div>
 
-                        <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
-                            <button id="prev-week-btn"
-                                class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-                                aria-label="Semana anterior">
-                                <i class="fas fa-chevron-left text-xs"></i>
-                            </button>
-                            <span id="date-range-display"
-                                class="px-4 py-1 text-sm font-bold text-gray-700 dark:text-gray-200 min-w-[140px] text-center tracking-tight"></span>
-                            <button id="next-week-btn"
-                                class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-                                aria-label="Próxima semana">
-                                <i class="fas fa-chevron-right text-xs"></i>
+                            <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
+                                <button id="prev-week-btn"
+                                    class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                                    aria-label="Semana anterior">
+                                    <i class="fas fa-chevron-left text-xs"></i>
+                                </button>
+                                <span id="date-range-display"
+                                    class="px-4 py-1 text-sm font-bold text-gray-700 dark:text-gray-200 min-w-[140px] text-center tracking-tight"></span>
+                                <button id="next-week-btn"
+                                    class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+                                    aria-label="Próxima semana">
+                                    <i class="fas fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
+                                <button id="view-week-btn"
+                                    class="px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300">Semana</button>
+                                <button id="view-day-btn"
+                                    class="px-4 py-1.5 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300">Dia</button>
+                            </div>
+
+                            <button id="add-class-btn"
+                                class="bg-primary hover:bg-primary-dark text-black px-5 py-2.5 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-95 text-sm ml-auto xl:ml-0">
+                                <i class="fas fa-plus text-xs"></i>
+                                <span>Agendar</span>
                             </button>
                         </div>
-
-                        <div class="flex items-center bg-white/90 dark:bg-[#1e1e1e]/90 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 p-1 shadow-sm">
-                            <button id="view-week-btn"
-                                class="px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300">Semana</button>
-                            <button id="view-day-btn"
-                                class="px-4 py-1.5 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300">Dia</button>
-                        </div>
-
-                        <button id="add-class-btn"
-                            class="bg-primary hover:bg-primary-dark text-black px-5 py-2.5 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-95 text-sm ml-auto xl:ml-0">
-                            <i class="fas fa-plus text-xs"></i>
-                            <span>Agendar</span>
-                        </button>
                     </div>
+                </div>
+
+                <!-- Tabs Selector -->
+                <div class="flex border-b border-gray-200 dark:border-gray-800 mb-6 flex-shrink-0">
+                    <button id="tab-grade-btn" class="px-6 py-3 border-b-2 border-primary text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-all">
+                        <i class="fas fa-calendar-alt"></i> Grade de Horários
+                    </button>
+                    <button id="tab-ranking-btn" class="px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all">
+                        <i class="fas fa-trophy"></i> Ranking de Ofensivas
+                    </button>
                 </div>
 
                 <!-- Grade de Horários -->
@@ -145,6 +158,44 @@
                     <div class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 flex-col gap-3">
                         <i class="fas fa-calendar-day text-4xl opacity-50"></i>
                         <p class="font-medium text-sm">Selecione uma unidade para visualizar a grade.</p>
+                    </div>
+                </div>
+
+                <!-- Seção de Ranking de Ofensivas (Oculta por padrão) -->
+                <div id="ranking-view-container" class="hidden flex-grow flex flex-col overflow-hidden bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm p-6">
+                    <!-- Filtros do Ranking -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 flex-shrink-0">
+                        <div class="flex items-center bg-gray-100 dark:bg-[#111] p-1 rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm">
+                            <button id="rank-filter-current" type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-black transition-all">
+                                Ofensiva Atual
+                            </button>
+                            <button id="rank-filter-longest" type="button" class="px-5 py-2 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all ml-1">
+                                Recorde Histórico
+                            </button>
+                        </div>
+                        <div class="relative w-full sm:w-80 group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400 group-focus-within:text-primary transition-colors text-sm"></i>
+                            </div>
+                            <input type="text" id="search-ranking-input" placeholder="Buscar aluno pelo nome..." class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200/80 dark:border-gray-800/80 text-gray-850 dark:text-white pl-10 pr-4 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold shadow-sm">
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Líderes -->
+                    <div class="flex-grow overflow-auto custom-scrollbar">
+                        <table class="w-full border-collapse text-left">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
+                                    <th class="py-3 px-4 w-20 text-center">Posição</th>
+                                    <th class="py-3 px-4">Aluno</th>
+                                    <th class="py-3 px-4">Unidade</th>
+                                    <th class="py-3 px-4 text-right pr-6">Ofensiva</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ranking-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -184,7 +235,11 @@
                 <!-- Lista de alunos será preenchida dinamicamente -->
             </div>
 
-            <div class="p-6 border-t border-gray-150 dark:border-gray-800/80 bg-gray-50 dark:bg-[#222]/20 flex justify-end">
+            <div class="p-6 border-t border-gray-150 dark:border-gray-800/80 bg-gray-50 dark:bg-[#222]/20 flex justify-between items-center gap-3">
+                <button id="delete-class-btn"
+                    class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg shadow-rose-500/10 hover:scale-[1.02] active:scale-95 transition-all text-sm flex items-center gap-2">
+                    <i class="fas fa-trash-alt text-xs"></i> Excluir Aula
+                </button>
                 <button id="reopen-class-btn"
                     class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg shadow-emerald-500/10 hover:scale-[1.02] active:scale-95 transition-all text-sm flex items-center gap-2">
                     <i class="fas fa-door-open text-xs"></i> Reabrir Aula
@@ -294,6 +349,8 @@
 
                 <div>
                     <label for="class-students" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Alunos Inscritos</label>
+                    <input type="text" id="search-students" placeholder="🔍 Buscar aluno pelo nome..."
+                        class="w-full mb-2 bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2 px-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold placeholder-gray-400">
                     <select id="class-students" name="class-students" multiple
                         class="w-full h-36 bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 custom-scrollbar text-gray-800 dark:text-gray-200 font-semibold"></select>
                     <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">

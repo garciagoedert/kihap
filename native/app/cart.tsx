@@ -26,8 +26,12 @@ export default function CartScreen() {
     setCouponError('');
     
     try {
-      const q = query(collection(db, 'coupons'), where('code', '==', couponCode.trim().toUpperCase()));
-      const snap = await getDocs(q);
+      const trimmedCode = couponCode.trim();
+      const qUpper = query(collection(db, 'coupons'), where('code', '==', trimmedCode.toUpperCase()));
+      const qLower = query(collection(db, 'coupons'), where('code', '==', trimmedCode.toLowerCase()));
+      const [snapUpper, snapLower] = await Promise.all([getDocs(qUpper), getDocs(qLower)]);
+      
+      const snap = !snapUpper.empty ? snapUpper : snapLower;
       
       if (snap.empty) {
         setCouponError('Cupom inválido ou não encontrado.');
@@ -138,7 +142,7 @@ export default function CartScreen() {
             keyExtractor={item => item.cartId}
             contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
-            ListFooterComponent={() => (
+            ListFooterComponent={
               <View className="mt-4">
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Cupom de Desconto</Text>
                 
@@ -182,7 +186,7 @@ export default function CartScreen() {
                 )}
                 {couponError ? <Text className="text-red-500 text-xs font-bold mt-2 ml-1">{couponError}</Text> : null}
               </View>
-            )}
+            }
           />
 
           {/* Footer Summary */}

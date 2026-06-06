@@ -1,7 +1,7 @@
 import { db, functions } from './firebase-config.js';
 import { onAuthReady } from './auth.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc, deleteDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elementos da Grade
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalClassOccupation = document.getElementById('modal-class-occupation');
     const modalClassTeacher = document.getElementById('modal-class-teacher');
     const studentList = document.getElementById('student-list');
+    const deleteClassBtn = document.getElementById('delete-class-btn');
 
     // Elementos do Modal de Aula
     const classModal = document.getElementById('class-modal');
@@ -29,11 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const classModalTitle = document.getElementById('class-modal-title');
     const classTeacherSelect = document.getElementById('class-teacher');
     const classStudentsSelect = document.getElementById('class-students');
+    const searchStudentsInput = document.getElementById('search-students');
 
     let currentClassId = null; // Armazena o ID da instância da aula (templateId_data)
     let currentClassData = null; // Armazena a referência para os dados completos da aula aberta
     let currentWeekStartDate = getStartOfWeek(new Date());
     let selectedUnitId = null;
+    let currentStudents = [];
+    let selectedStudentIds = new Set();
 
     // --- Funções de Data ---
     function getStartOfWeek(date) {
@@ -219,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function openClassModal() {
         classForm.reset();
+        if (searchStudentsInput) searchStudentsInput.value = '';
+        selectedStudentIds.clear();
         classModalTitle.innerHTML = '<i class="fas fa-calendar-plus text-primary mr-2"></i> Agendar Nova Aula';
 
         // Reset day buttons to inactive state
@@ -260,21 +266,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await listAllMembers({ unitId });
             const members = result.data;
 
-            classStudentsSelect.innerHTML = '';
-            const studentsOfUnit = members.filter(m => !m.isInstructor);
-            if (studentsOfUnit.length > 0) {
-                studentsOfUnit.forEach(student => {
-                    const option = new Option(`${student.firstName} ${student.lastName || ''}`, student.idMember);
-                    classStudentsSelect.add(option);
-                });
-            } else {
-                classStudentsSelect.innerHTML = '<option value="">Nenhum aluno encontrado</option>';
-            }
+            currentStudents = members.filter(m => !m.isInstructor);
+            selectedStudentIds.clear();
+            renderStudentsList();
 
         } catch (error) {
             console.error("Erro ao carregar dados para o modal:", error);
             classTeacherSelect.innerHTML = '<option value="">Erro ao carregar</option>';
             classStudentsSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
+    }
+
+    function renderStudentsList(filterText = '') {
+        classStudentsSelect.innerHTML = '';
+        const filtered = currentStudents.filter(student => {
+            const fullName = `${student.firstName} ${student.lastName || ''}`.toLowerCase();
+            return fullName.includes(filterText.toLowerCase());
+        });
+
+        if (filtered.length > 0) {
+            filtered.forEach(student => {
+                const isSelected = selectedStudentIds.has(student.idMember.toString());
+                const option = new Option(`${student.firstName} ${student.lastName || ''}`, student.idMember);
+                option.selected = isSelected;
+                classStudentsSelect.add(option);
+            });
+        } else {
+            classStudentsSelect.innerHTML = '<option value="" disabled>Nenhum aluno encontrado</option>';
         }
     }
 
@@ -295,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formData = new FormData(classForm);
-        const selectedStudents = Array.from(classStudentsSelect.selectedOptions).map(opt => opt.value);
+        const selectedStudents = Array.from(selectedStudentIds);
 
         const classTemplate = {
             name: formData.get('class-name'),
@@ -349,29 +367,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const allUnitMembers = result.data;
             const membersMap = new Map(allUnitMembers.map(m => [m.idMember.toString(), m]));
 
-            for (const studentId of classData.students) {
-                const studentData = membersMap.get(studentId.toString());
-                if (studentData) {
-                    const isPresent = presentStudents.includes(studentId.toString()) || presentStudents.includes(Number(studentId));
-                    const studentElement = document.createElement('div');
-                    studentElement.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${isPresent ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-[#1a1a1a]/50 border-gray-150 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`;
-                    studentElement.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="relative">
-                                <img src="${studentData.photoUrl || 'default-profile.svg'}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700">
-                                ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-md"><i class="fas fa-check"></i></div>' : ''}
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-850 dark:text-white text-sm">${studentData.firstName} ${studentData.lastName || ''}</div>
-                                <div class="text-xs font-semibold ${isPresent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
-                            </div>
+            const presentStudentIds = presentStudents.map(id => id.toString());
+            const enrolledStudentIds = (classData.students || []).map(id => id.toString());
+            const unionStudentIds = Array.from(new Set([...enrolledStudentIds, ...presentStudentIds]));
+
+            for (const studentId of unionStudentIds) {
+                const studentData = membersMap.get(studentId);
+                const isPresent = presentStudents.includes(studentId) || presentStudents.includes(Number(studentId));
+                
+                const studentElement = document.createElement('div');
+                studentElement.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${isPresent ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-[#1a1a1a]/50 border-gray-150 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`;
+                
+                const photoUrl = studentData?.photoUrl || 'default-profile.svg';
+                const nameText = studentData ? `${studentData.firstName} ${studentData.lastName || ''}` : `Aluno #${studentId}`;
+                
+                studentElement.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <img src="${photoUrl}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                            ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-md"><i class="fas fa-check"></i></div>' : ''}
                         </div>
-                        <button data-student-id="${studentId}" data-present="${isPresent}" class="toggle-presence-btn w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isPresent ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}">
-                            <i class="fas ${isPresent ? 'fa-times' : 'fa-check'} pointer-events-none"></i>
-                        </button>
-                    `;
-                    studentList.appendChild(studentElement);
-                }
+                        <div>
+                            <div class="font-bold text-gray-850 dark:text-white text-sm">${nameText}</div>
+                            <div class="text-xs font-semibold ${isPresent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
+                        </div>
+                    </div>
+                    <button data-student-id="${studentId}" data-present="${isPresent}" class="toggle-presence-btn w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isPresent ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}">
+                        <i class="fas ${isPresent ? 'fa-times' : 'fa-check'} pointer-events-none"></i>
+                    </button>
+                `;
+                studentList.appendChild(studentElement);
             }
         } catch (error) {
             console.error("Erro ao abrir modal de presença:", error);
@@ -413,12 +438,91 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // Sync streak to user document if marking as present
+            if (!isPresent) {
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, where('evoMemberId', '==', Number(studentId)));
+                    let querySnapshot = await getDocs(q);
+                    let userDocRef = null;
+                    let userData = null;
+
+                    if (!querySnapshot.empty) {
+                        userDocRef = querySnapshot.docs[0].ref;
+                        userData = querySnapshot.docs[0].data();
+                    } else {
+                        const q2 = query(usersRef, where('evoMemberId', '==', studentId.toString()));
+                        querySnapshot = await getDocs(q2);
+                        if (!querySnapshot.empty) {
+                            userDocRef = querySnapshot.docs[0].ref;
+                            userData = querySnapshot.docs[0].data();
+                        }
+                    }
+
+                    if (userDocRef && userData) {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const lastDateStr = userData.lastAttendanceDate;
+                        let currentStreak = userData.currentStreak || 0;
+                        let longestStreak = userData.longestStreak || 0;
+
+                        if (lastDateStr !== todayStr) {
+                            if (!lastDateStr) {
+                                currentStreak = 1;
+                            } else {
+                                const lastDate = new Date(lastDateStr + 'T12:00:00');
+                                const todayDate = new Date(todayStr + 'T12:00:00');
+                                const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                if (diffDays <= 5) {
+                                    currentStreak += 1;
+                                } else {
+                                    currentStreak = 1;
+                                }
+                            }
+
+                            if (currentStreak > longestStreak) {
+                                longestStreak = currentStreak;
+                            }
+
+                            await updateDoc(userDocRef, {
+                                currentStreak,
+                                longestStreak,
+                                lastAttendanceDate: todayStr
+                            });
+                            console.log(`Streak updated on intranet for user: ${userDocRef.id}`);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Erro ao sincronizar streak do aluno na intranet:", err);
+                }
+            }
+
             if (currentClassData) {
                 await openAttendanceModal(currentClassData);
             }
             renderGrid();
         } catch (error) {
             console.error("Erro ao atualizar presença:", error);
+        }
+    }
+
+    async function handleDeleteClass() {
+        if (!currentClassData || !currentClassData.templateId) return;
+
+        const confirmDelete = confirm(`Tem certeza que deseja excluir a aula "${currentClassData.name}" de forma permanente de toda a grade de horários da unidade?`);
+        if (!confirmDelete) return;
+
+        try {
+            const templateRef = doc(db, 'classTemplates', currentClassData.templateId);
+            await deleteDoc(templateRef);
+            
+            alert("Aula excluída com sucesso!");
+            closeAttendanceModal();
+            renderGrid();
+        } catch (error) {
+            console.error("Erro ao excluir aula:", error);
+            alert("Não foi possível excluir a aula.");
         }
     }
 
@@ -442,10 +546,178 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGrid();
     }
 
+    // --- Ranking de Ofensivas Logic ---
+    let activeTab = 'grade'; // 'grade' | 'ranking'
+    let rankingFilter = 'current'; // 'current' | 'longest'
+    let rankingSearchQuery = '';
+
+    const tabGradeBtn = document.getElementById('tab-grade-btn');
+    const tabRankingBtn = document.getElementById('tab-ranking-btn');
+    const rankingViewContainer = document.getElementById('ranking-view-container');
+    const rankingTableBody = document.getElementById('ranking-table-body');
+    const calendarControlsWrapper = document.getElementById('calendar-controls-wrapper');
+    const rankFilterCurrent = document.getElementById('rank-filter-current');
+    const rankFilterLongest = document.getElementById('rank-filter-longest');
+    const searchRankingInput = document.getElementById('search-ranking-input');
+
+    async function renderRanking() {
+        rankingTableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-primary text-3xl mb-3"></i>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 font-medium">Carregando placar de líderes...</p>
+                </td>
+            </tr>`;
+
+        try {
+            const orderField = rankingFilter === 'current' ? 'currentStreak' : 'longestStreak';
+            
+            // Query top 150 users with active streaks
+            const q = query(
+                collection(db, 'users'),
+                where(orderField, '>', 0),
+                orderBy(orderField, 'desc'),
+                limit(150)
+            );
+            
+            const snapshot = await getDocs(q);
+            let usersList = [];
+            snapshot.forEach(docSnap => {
+                usersList.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            // Filter by selected unit (selectedUnitId) in JavaScript
+            if (selectedUnitId) {
+                usersList = usersList.filter(u => {
+                    const uUnit = (u.unitId || u.unidadeId || u.unit || u.unidade || '').toLowerCase();
+                    return uUnit === selectedUnitId.toLowerCase();
+                });
+            }
+
+            // Filter by search query in JavaScript
+            if (rankingSearchQuery) {
+                const s = rankingSearchQuery.toLowerCase();
+                usersList = usersList.filter(u => {
+                    const name = (u.name || u.nome || '').toLowerCase();
+                    return name.includes(s);
+                });
+            }
+
+            rankingTableBody.innerHTML = '';
+            if (usersList.length === 0) {
+                rankingTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-12 text-gray-400 dark:text-gray-500 font-medium">
+                            <i class="fas fa-trophy text-3xl mb-3 opacity-30"></i>
+                            <p class="text-sm">Nenhum aluno encontrado com ofensiva.</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            usersList.forEach((user, index) => {
+                let rankBadge = '';
+                if (index === 0) rankBadge = '🥇';
+                else if (index === 1) rankBadge = '🥈';
+                else if (index === 2) rankBadge = '🥉';
+                else rankBadge = `#${index + 1}`;
+
+                let photoUrl = user.photoURL || user.profilePicture || user.photoUrl || user.avatar || 'default-profile.svg';
+                if (photoUrl && photoUrl.startsWith('/')) {
+                    photoUrl = `https://kihap.com.br${photoUrl}`;
+                }
+
+                const displayUnit = user.unitId || user.unidadeId || user.unit || user.unidade || 'KIHAP';
+                const capitalizedUnit = displayUnit.charAt(0).toUpperCase() + displayUnit.slice(1).replace(/-/g, ' ');
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors border-b border-gray-150/40 dark:border-gray-800/30';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 text-center font-extrabold ${index < 3 ? 'text-2xl' : 'text-xs text-gray-400 dark:text-gray-500'}">${rankBadge}</td>
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center gap-3">
+                            <img src="${photoUrl}" alt="Foto" class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                            <span class="font-bold text-gray-800 dark:text-gray-200 text-sm">${user.name || user.nome || 'Aluno'}</span>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">${capitalizedUnit}</span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right font-black text-orange-500 pr-6 text-sm">
+                        <i class="fas fa-fire text-xs mr-1"></i> ${user[orderField] || 0}
+                    </td>
+                `;
+                rankingTableBody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error("Erro ao renderizar ranking:", error);
+            rankingTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-12 text-rose-500 dark:text-rose-400 font-semibold">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                        <p class="text-sm">Erro ao carregar o ranking. Verifique o console.</p>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    // Tab switching event listeners
+    tabGradeBtn.addEventListener('click', () => {
+        tabGradeBtn.classList.remove('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+        tabGradeBtn.classList.add('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
+
+        tabRankingBtn.classList.remove('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
+        tabRankingBtn.classList.add('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+
+        calendarControlsWrapper.classList.remove('hidden');
+        scheduleGrid.classList.remove('hidden');
+        rankingViewContainer.classList.add('hidden');
+        activeTab = 'grade';
+    });
+
+    tabRankingBtn.addEventListener('click', () => {
+        tabRankingBtn.classList.remove('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+        tabRankingBtn.classList.add('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
+
+        tabGradeBtn.classList.remove('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
+        tabGradeBtn.classList.add('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+
+        calendarControlsWrapper.classList.add('hidden');
+        scheduleGrid.classList.add('hidden');
+        rankingViewContainer.classList.remove('hidden');
+        activeTab = 'ranking';
+        
+        renderRanking();
+    });
+
+    // Ranking filter event listeners
+    rankFilterCurrent.addEventListener('click', () => {
+        rankFilterCurrent.className = 'px-5 py-2 text-xs font-bold rounded-xl bg-primary text-black transition-all';
+        rankFilterLongest.className = 'px-5 py-2 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all ml-1';
+        rankingFilter = 'current';
+        renderRanking();
+    });
+
+    rankFilterLongest.addEventListener('click', () => {
+        rankFilterLongest.className = 'px-5 py-2 text-xs font-bold rounded-xl bg-primary text-black transition-all ml-1';
+        rankFilterCurrent.className = 'px-5 py-2 text-xs font-bold rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all';
+        rankingFilter = 'longest';
+        renderRanking();
+    });
+
+    searchRankingInput.addEventListener('input', (e) => {
+        rankingSearchQuery = e.target.value;
+        renderRanking();
+    });
+
     unitFilter.addEventListener('change', (e) => {
         selectedUnitId = e.target.value;
         renderGrid();
+        if (activeTab === 'ranking') {
+            renderRanking();
+        }
     });
+
     prevWeekBtn.addEventListener('click', () => {
         currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
         renderGrid();
@@ -457,11 +729,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeAttendanceModalBtn.addEventListener('click', closeAttendanceModal);
     studentList.addEventListener('click', handlePresenceToggle);
+    deleteClassBtn.addEventListener('click', handleDeleteClass);
 
     addClassBtn.addEventListener('click', openClassModal);
     closeClassModalBtn.addEventListener('click', closeClassModal);
     cancelClassBtn.addEventListener('click', closeClassModal);
     classForm.addEventListener('submit', handleClassFormSubmit);
+
+    if (searchStudentsInput) {
+        searchStudentsInput.addEventListener('input', (e) => {
+            renderStudentsList(e.target.value);
+        });
+    }
+
+    classStudentsSelect.addEventListener('change', () => {
+        Array.from(classStudentsSelect.options).forEach(opt => {
+            if (opt.value) {
+                if (opt.selected) {
+                    selectedStudentIds.add(opt.value.toString());
+                } else {
+                    selectedStudentIds.delete(opt.value.toString());
+                }
+            }
+        });
+    });
 
     document.getElementById('class-days-of-week').addEventListener('click', (e) => {
         const btn = e.target.closest('.day-toggle');
