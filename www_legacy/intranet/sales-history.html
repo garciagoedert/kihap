@@ -206,6 +206,10 @@
                     <label class="block text-sm font-medium text-gray-400 mb-3">Colunas para Exportar</label>
                     <div id="export-columns-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-black/20 p-4 rounded-lg border border-gray-800">
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="id" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            ID da Venda
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="date" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
                             Data
                         </label>
@@ -222,12 +226,24 @@
                             Cliente
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="payerName" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Responsável/Pagador
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="userEmail" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
                             E-mail
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="userPhone" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
                             Telefone
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userCpf" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            CPF
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userAge" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Idade
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="userUnit" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
@@ -247,7 +263,23 @@
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="paymentStatus" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
-                            Pagamento
+                            Status Pagamento
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="paymentMethod" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Método Pagamento
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="cardLast4" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Cartão (Final)
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="cardBrand" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Bandeira
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="installments" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Parcelas
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="fulfillmentStatus" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">

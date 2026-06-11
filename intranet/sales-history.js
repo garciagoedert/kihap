@@ -188,20 +188,40 @@ const handleExport = (e) => {
         return;
     }
 
+    const methodMap = {
+        'credit_card': 'Cartão de Crédito',
+        'debit_card': 'Cartão de Débito',
+        'ticket': 'Boleto',
+        'bank_transfer': 'Pix/Transferência',
+        'account_money': 'Saldo Mercado Pago',
+        'pix': 'PIX',
+        'card': 'Cartão',
+        'cash': 'Dinheiro',
+        'manual_update': 'Manual (Admin)'
+    };
+
     const worksheetData = filtered.map(sale => {
         const allPossibleColumns = {
+            id: { header: 'ID da Venda', value: sale.id || 'N/A' },
             date: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' },
             productName: { header: 'Produto', value: sale.productName || 'N/A' },
             userSize: { header: 'Tamanho', value: sale.userSize || 'N/A' },
             userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
+            payerName: { header: 'Responsável/Pagador', value: sale.payerName || 'N/A' },
             userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
             userPhone: { header: 'Telefone', value: sale.userPhone || 'N/A' },
+            userCpf: { header: 'CPF', value: sale.userCpf || 'N/A' },
+            userAge: { header: 'Idade', value: sale.userAge || 'N/A' },
             userUnit: { header: 'Unidade', value: sale.userUnit || 'N/A' },
             userPrograma: { header: 'Programa', value: sale.userPrograma || 'N/A' },
             userGraduacao: { header: 'Graduação', value: sale.userGraduacao || 'N/A' },
             userProfessor: { header: 'Professor', value: sale.userProfessor || 'N/A' },
             amountTotal: { header: 'Valor Unitário', value: (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
             paymentStatus: { header: 'Status do Pagamento', value: sale.paymentStatus === 'paid' ? 'Pago' : 'Pendente' },
+            paymentMethod: { header: 'Método de Pagamento', value: methodMap[sale.paymentMethod || (sale.paymentDetails && sale.paymentDetails.method)] || sale.paymentMethod || (sale.paymentDetails && sale.paymentDetails.method) || 'N/A' },
+            cardLast4: { header: 'Cartão (Final)', value: (sale.paymentDetails && sale.paymentDetails.cardLast4) ? `**** **** **** ${sale.paymentDetails.cardLast4}` : 'N/A' },
+            cardBrand: { header: 'Bandeira', value: (sale.paymentDetails && (sale.paymentDetails.cardBrand || sale.paymentDetails.paymentMethodId)) ? (sale.paymentDetails.cardBrand || sale.paymentDetails.paymentMethodId).toUpperCase() : 'N/A' },
+            installments: { header: 'Parcelas', value: (sale.paymentDetails && sale.paymentDetails.installments) ? `${sale.paymentDetails.installments}x` : 'N/A' },
             fulfillmentStatus: { header: 'Status de Entrega', value: getFulfillmentStatusLabel(sale.fulfillmentStatus) }
         };
 
