@@ -90,8 +90,10 @@ async function initializeHistory() {
 const openExportModal = () => {
     const exportModal = document.getElementById('export-modal');
     const unitFilter = document.getElementById('filter-unit');
+    const productFilter = document.getElementById('filter-product');
     const fulfillmentFilter = document.getElementById('filter-fulfillment');
     const exportFilterUnit = document.getElementById('export-filter-unit');
+    const exportFilterProduct = document.getElementById('export-filter-product');
     const exportFilterStatus = document.getElementById('export-filter-status');
     const exportFilterFulfillment = document.getElementById('export-filter-fulfillment');
     const exportFilterStartDate = document.getElementById('export-start-date');
@@ -104,6 +106,8 @@ const openExportModal = () => {
     
     if (unitFilter && exportFilterUnit) exportFilterUnit.innerHTML = unitFilter.innerHTML;
     if (exportFilterUnit) exportFilterUnit.value = unitFilter.value;
+    if (productFilter && exportFilterProduct) exportFilterProduct.innerHTML = productFilter.innerHTML;
+    if (exportFilterProduct) exportFilterProduct.value = productFilter.value;
     if (exportFilterStatus) exportFilterStatus.value = '';
     if (exportFilterFulfillment) exportFilterFulfillment.value = fulfillmentFilter.value;
     if (exportFilterStartDate) exportFilterStartDate.value = '';
@@ -123,12 +127,14 @@ const handleExport = (e) => {
     const exportFilterStartDate = document.getElementById('export-start-date');
     const exportFilterEndDate = document.getElementById('export-end-date');
     const exportFilterUnit = document.getElementById('export-filter-unit');
+    const exportFilterProduct = document.getElementById('export-filter-product');
     const exportFilterStatus = document.getElementById('export-filter-status');
     const exportFilterFulfillment = document.getElementById('export-filter-fulfillment');
     
     const selectedStartDate = exportFilterStartDate.value;
     const selectedEndDate = exportFilterEndDate.value;
     const selectedUnit = exportFilterUnit.value;
+    const selectedProduct = exportFilterProduct ? exportFilterProduct.value : '';
     const selectedStatus = exportFilterStatus.value;
     const selectedFulfillment = exportFilterFulfillment.value;
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -139,6 +145,7 @@ const handleExport = (e) => {
         const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
         const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
         const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
+        const productMatch = !selectedProduct || sale.productId === selectedProduct;
         const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
         const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
 
@@ -164,7 +171,7 @@ const handleExport = (e) => {
             dateMatch = false;
         }
 
-        return (nameMatch || emailMatch) && unitMatch && dateMatch && statusMatch && fulfillmentMatch;
+        return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch && fulfillmentMatch;
     });
 
     const checkboxes = document.querySelectorAll('#export-columns-container input[type="checkbox"]:checked');
@@ -184,6 +191,7 @@ const handleExport = (e) => {
         const allPossibleColumns = {
             date: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' },
             productName: { header: 'Produto', value: sale.productName || 'N/A' },
+            userSize: { header: 'Tamanho', value: sale.userSize || 'N/A' },
             userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
             userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
             userPhone: { header: 'Telefone', value: sale.userPhone || 'N/A' },

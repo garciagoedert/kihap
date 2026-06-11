@@ -162,12 +162,19 @@
                 </div>
 
                 <!-- Collection Filters Group -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-400 mb-2">Filtro de Unidade</label>
                         <select id="export-filter-unit"
                             class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
                             <option value="">Todas as Unidades</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Filtro de Produto</label>
+                        <select id="export-filter-product"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                            <option value="">Todos os Produtos</option>
                         </select>
                     </div>
                     <div>
@@ -205,6 +212,10 @@
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="productName" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
                             Produto
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                            <input type="checkbox" data-column="userSize" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
+                            Tamanho
                         </label>
                         <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" data-column="userName" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500">
