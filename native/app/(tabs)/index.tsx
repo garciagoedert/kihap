@@ -199,17 +199,12 @@ export default function FeedScreen() {
             <View className="w-72 bg-white dark:bg-[#1a1a1a] h-full shadow-2xl">
             <View className="flex-1">
               <View style={{ paddingTop: insets.top }}>
-                <View className="p-6 border-b border-gray-100 dark:border-white/5 flex-row items-center justify-between">
-                  <View className="flex-row items-center">
-                    <Image source={displayPhoto} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
-                    <View className="ml-3">
-                      <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{firstName}</Text>
-                      <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
-                    </View>
+                <View className="p-6 border-b border-gray-100 dark:border-white/5 flex-row items-center">
+                  <Image source={displayPhoto} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
+                  <View className="ml-3">
+                    <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{firstName}</Text>
+                    <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setSidebarOpen(false)} className="p-2 -mr-2">
-                    <X size={20} color={isDark ? '#fff' : '#333'} />
-                  </TouchableOpacity>
                 </View>
               </View>
 
