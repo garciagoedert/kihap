@@ -1,6 +1,6 @@
 import { onAuthReady } from './auth.js';
 import { db, storage } from './firebase-config.js';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy, deleteDoc, doc, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, addDoc, updateDoc, serverTimestamp, query, orderBy, deleteDoc, doc, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // Map to store product names for fast lookups
@@ -10,6 +10,10 @@ let checkinsUnsubscribe = null;
 // State for search filtering in the modal
 let allRegistered = [];
 let allCheckins = [];
+
+// State for editing events
+let editingEventId = null;
+let currentEventCoverUrl = '';
 
 function filterAndRenderRegistered() {
     const queryStr = document.getElementById('search-registered').value.toLowerCase().trim();
@@ -45,6 +49,37 @@ function filterAndRenderCheckins() {
     }
 }
 
+function startEditEvent(eventId, data) {
+    editingEventId = eventId;
+    currentEventCoverUrl = data.coverUrl;
+
+    document.getElementById('event-form-title').textContent = 'Editar Evento';
+    document.getElementById('submit-event-btn').textContent = 'Salvar Alterações';
+    document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+    document.getElementById('event-title').value = data.title;
+    document.getElementById('event-date').value = data.date;
+    document.getElementById('event-time').value = data.time;
+    document.getElementById('event-location').value = data.location;
+    document.getElementById('event-product').value = data.productId || '';
+    document.getElementById('event-description').value = data.description;
+
+    document.getElementById('event-image').required = false;
+    document.getElementById('event-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditEvent() {
+    editingEventId = null;
+    currentEventCoverUrl = '';
+
+    document.getElementById('event-form-title').textContent = 'Adicionar Novo Evento';
+    document.getElementById('submit-event-btn').textContent = 'Salvar Evento';
+    document.getElementById('cancel-edit-btn').classList.add('hidden');
+
+    document.getElementById('event-form').reset();
+    document.getElementById('event-image').required = true;
+}
+
 export function setupCalendarioPage() {
     onAuthReady(user => {
         if (user) {
@@ -52,7 +87,7 @@ export function setupCalendarioPage() {
             const eventForm = document.getElementById('event-form');
             eventForm.addEventListener('submit', handleAddEvent);
 
-            // Setup List Interactions (Delete and Control buttons)
+            // Setup List Interactions (Delete, Control and Edit buttons)
             const listContainer = document.getElementById('events-list-container');
             listContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
@@ -67,6 +102,18 @@ export function setupCalendarioPage() {
                     const productId = btn.dataset.productId;
                     const title = btn.dataset.title;
                     openControlModal(eventId, productId, title);
+                } else if (btn.classList.contains('edit-event-btn')) {
+                    const eventId = btn.dataset.id;
+                    const eventData = {
+                        title: btn.dataset.title,
+                        date: btn.dataset.date,
+                        time: btn.dataset.time,
+                        location: btn.dataset.location,
+                        productId: btn.dataset.productId,
+                        description: btn.dataset.description,
+                        coverUrl: btn.dataset.coverUrl
+                    };
+                    startEditEvent(eventId, eventData);
                 }
             });
 
@@ -86,6 +133,10 @@ export function setupCalendarioPage() {
             const searchCheckins = document.getElementById('search-checkins');
             searchRegistered.addEventListener('input', filterAndRenderRegistered);
             searchCheckins.addEventListener('input', filterAndRenderCheckins);
+
+            // Setup Cancel Edit Listener
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            cancelEditBtn.addEventListener('click', cancelEditEvent);
 
             // Fetch products first, then load events list
             loadProductsAndEvents();
@@ -149,6 +200,11 @@ async function loadEvents() {
             // Resolve linked product name
             const linkedProductName = event.productId ? (productsMap.get(event.productId) || 'Produto não encontrado') : 'Nenhum';
 
+            // Escape special chars for HTML attributes
+            const escapedTitle = (event.title || '').replace(/"/g, '&quot;');
+            const escapedLocation = (event.location || '').replace(/"/g, '&quot;');
+            const escapedDescription = (event.description || '').replace(/"/g, '&quot;');
+
             eventsHtml += `
                 <div class="bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl overflow-hidden event-card flex flex-col">
                     <div class="h-44 w-full relative bg-gray-200 dark:bg-gray-800">
@@ -171,8 +227,11 @@ async function loadEvents() {
                         </p>
 
                         <div class="flex gap-2">
-                            <button data-id="${eventId}" data-product-id="${event.productId || ''}" data-title="${event.title}" class="control-event-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
+                            <button data-id="${eventId}" data-product-id="${event.productId || ''}" data-title="${escapedTitle}" class="control-event-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
                                 <i class="fas fa-chart-line"></i> Controle
+                            </button>
+                            <button data-id="${eventId}" data-title="${escapedTitle}" data-date="${event.date || ''}" data-time="${event.time || ''}" data-location="${escapedLocation}" data-product-id="${event.productId || ''}" data-description="${escapedDescription}" data-cover-url="${event.coverUrl || ''}" class="edit-event-btn bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-white font-bold p-2 px-3.5 rounded-xl text-xs transition active:scale-95">
+                                <i class="fas fa-edit"></i>
                             </button>
                             <button data-id="${eventId}" data-image-url="${event.coverUrl || ''}" class="delete-event-btn bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white font-bold p-2 px-3.5 rounded-xl text-xs transition active:scale-95">
                                 <i class="fas fa-trash-alt"></i>
@@ -203,43 +262,68 @@ async function handleAddEvent(e) {
     const description = document.getElementById('event-description').value.trim();
     const imageFile = document.getElementById('event-image').files[0];
 
-    if (!title || !date || !time || !location || !description || !imageFile) {
-        alert("Por favor, preencha todos os campos obrigatórios e envie uma foto de capa.");
+    if (!title || !date || !time || !location || !description) {
+        alert("Por favor, preencha todos os campos obrigatórios.");
+        return;
+    }
+
+    if (!editingEventId && !imageFile) {
+        alert("Por favor, envie uma foto de capa.");
         return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Salvando...';
+    submitBtn.textContent = editingEventId ? 'Salvando Alterações...' : 'Salvando...';
 
     try {
-        // 1. Upload cover image to Firebase Storage
-        const fileExtension = imageFile.name.split('.').pop();
-        const storageRef = ref(storage, `events/${Date.now()}_cover.${fileExtension}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
-        const coverUrl = await getDownloadURL(snapshot.ref);
+        let coverUrl = currentEventCoverUrl;
 
-        // 2. Save event document to Firestore
-        await addDoc(collection(db, "events"), {
+        // Upload new image if chosen
+        if (imageFile) {
+            const fileExtension = imageFile.name.split('.').pop();
+            const storageRef = ref(storage, `events/${Date.now()}_cover.${fileExtension}`);
+            const snapshot = await uploadBytes(storageRef, imageFile);
+            coverUrl = await getDownloadURL(snapshot.ref);
+
+            // Delete old storage image if editing and there was one
+            if (editingEventId && currentEventCoverUrl) {
+                const oldImageRef = ref(storage, currentEventCoverUrl);
+                await deleteObject(oldImageRef).catch(err => console.warn("Storage deletion warning (old cover):", err));
+            }
+        }
+
+        const eventData = {
             title,
             date,
             time,
             location,
             productId: productId || null,
             description,
-            coverUrl,
-            createdAt: serverTimestamp()
-        });
+            coverUrl
+        };
 
-        alert("Evento adicionado com sucesso!");
-        form.reset();
+        if (editingEventId) {
+            // Edit existing
+            await updateDoc(doc(db, "events", editingEventId), eventData);
+            alert("Evento atualizado com sucesso!");
+        } else {
+            // Add new
+            await addDoc(collection(db, "events"), {
+                ...eventData,
+                createdAt: serverTimestamp()
+            });
+            alert("Evento adicionado com success!");
+        }
+
+        cancelEditEvent();
         loadEvents();
 
     } catch (error) {
-        console.error("Erro ao adicionar evento: ", error);
+        console.error("Erro ao salvar evento: ", error);
         alert(`Ocorreu um erro ao salvar o evento: ${error.message}`);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Salvar Evento';
+        submitBtn.textContent = editingEventId ? 'Salvar Alterações' : 'Salvar Evento';
     }
 }
 
