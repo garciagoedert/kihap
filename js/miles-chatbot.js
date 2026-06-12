@@ -436,16 +436,20 @@ async function bookTrialClass(args) {
                 const dataFormatada = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
                     weekday: 'short', day: 'numeric', month: 'numeric'
                 });
-                await addDoc(collection(db, 'notifications'), {
-                    userId: t.teacherId,
-                    type: 'trial',
-                    title: 'Aula Experimental Agendada',
-                    message: `${nome} agendou uma experimental em ${t.name} — ${dataFormatada} às ${h}:${m}.`,
-                    link: '/intranet/grade.html',
-                    icon: '/imgs/miles-chatbot.png',
-                    read: false,
-                    createdAt: serverTimestamp()
-                });
+                try {
+                    await addDoc(collection(db, 'notifications'), {
+                        userId: t.teacherId,
+                        type: 'trial',
+                        title: 'Aula Experimental Agendada',
+                        message: `${nome} agendou uma experimental em ${t.name} — ${dataFormatada} às ${h}:${m}.`,
+                        link: '/intranet/grade.html',
+                        icon: '/imgs/miles-chatbot.png',
+                        read: false,
+                        createdAt: serverTimestamp()
+                    });
+                } catch (notifErr) {
+                    console.error('[Miles] Não foi possível criar a notificação para o professor:', notifErr);
+                }
             }
         }
 
