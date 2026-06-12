@@ -8,7 +8,11 @@ import {
     collection,
     addDoc,
     getDoc,
+    getDocs,
     doc,
+    query,
+    where,
+    updateDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -71,14 +75,20 @@ FLUXO DE ATENDIMENTO OBRIGATÓRIO:
 2. Identificar o programa mais adequado e apresentá-lo brevemente com entusiasmo
 3. Convidar para conhecer pessoalmente com uma aula experimental 100% gratuita
 4. Coletar o **nome completo** e **telefone (WhatsApp)** do visitante, e a **unidade de preferência**
-5. Quando tiver nome + telefone + unidade, chamar a ferramenta saveLead() imediatamente
-6. Após salvar o lead, informar que a equipe entrará em contato e oferecer o link do WhatsApp
+5. Quando tiver nome + telefone + unidade, chamar a ferramenta saveLead() imediatamente para registrar o interesse
+6. Após salvar o lead, OFERECER verificar a grade de horários: chame getSchedule(unidadeKey, categoria) para mostrar as aulas disponíveis com vagas
+7. Se o visitante escolher um horário específico e confirmar, chame bookTrialClass() para agendar a aula experimental diretamente
+8. Após o agendamento, confirmar o horário e informar que a equipe entrará em contato
 
 IMPORTANTE:
 - Só chame saveLead() quando tiver coletado nome, telefone E unidade.
+- Só chame getSchedule() após salvar o lead (ou se o visitante pedir para ver os horários).
+- Só chame bookTrialClass() quando o visitante confirmar explicitamente que quer agendar naquele horário.
 - Para listar as unidades disponíveis, chame getAvailableUnits().
 - Seja proativo: se o visitante estiver em dúvida sobre qual unidade, pergunte a cidade ou bairro.
-- Mantenha respostas curtas e diretas — máximo 3 parágrafos por mensagem.`;
+- Mantenha respostas curtas e diretas — máximo 3 parágrafos por mensagem.
+- Ao exibir a grade de horários, mostre os dias e horários de forma organizada. NÃO mostre turmas sem vagas disponíveis.`;
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOOLS (Function Declarations para o Gemini)
@@ -123,9 +133,70 @@ const MILES_TOOLS = [{
                 },
                 required: ["nome", "telefone", "unidade"]
             }
+        },
+        {
+            name: "getSchedule",
+            description: "Busca a grade de horários da unidade para os próximos 7 dias, filtrando pela categoria/programa de interesse. Retorna as aulas com vagas disponíveis para aulas experimentais.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    unidadeKey: {
+                        type: "STRING",
+                        description: "Chave interna da unidade (ex: asa-sul, centro, dourados)."
+                    },
+                    categoria: {
+                        type: "STRING",
+                        description: "Categoria do programa de interesse para filtrar as turmas (ex: Kids, Adultos, Baby Littles). Opcional — se não informado, retorna todas."
+                    }
+                },
+                required: ["unidadeKey"]
+            }
+        },
+        {
+            name: "bookTrialClass",
+            description: "Agenda uma aula experimental para o visitante em uma turma específica com vaga disponível. Chamar SOMENTE quando o visitante confirmar explicitamente que deseja agendar naquele horário.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    instanceId: {
+                        type: "STRING",
+                        description: "ID da instância da aula (templateId_YYYY-MM-DD) retornado pelo getSchedule."
+                    },
+                    templateId: {
+                        type: "STRING",
+                        description: "ID do template da aula, retornado pelo getSchedule."
+                    },
+                    data: {
+                        type: "STRING",
+                        description: "Data da aula no formato YYYY-MM-DD."
+                    },
+                    unitId: {
+                        type: "STRING",
+                        description: "ID da unidade (ex: asa-sul)."
+                    },
+                    nome: {
+                        type: "STRING",
+                        description: "Nome completo do visitante que será agendado."
+                    },
+                    telefone: {
+                        type: "STRING",
+                        description: "Telefone do visitante."
+                    },
+                    programa: {
+                        type: "STRING",
+                        description: "Programa de interesse (categoria da turma)."
+                    },
+                    leadId: {
+                        type: "STRING",
+                        description: "ID do lead salvo anteriormente (retornado pelo saveLead). Opcional."
+                    }
+                },
+                required: ["instanceId", "templateId", "data", "unitId", "nome", "telefone"]
+            }
         }
     ]
 }];
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNÇÕES DE TOOL EXECUTION
@@ -176,21 +247,232 @@ async function saveLead(args) {
             }
         }
 
-        // Guarda o WhatsApp para usar na UI após o Gemini responder
+        // Resolve unidadeKey caso não tenha sido passado
+        const resolvedKey = unidadeKey || Object.keys(UNIDADES).find(k => {
+            const infoNorm = UNIDADES[k].nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return unidadeNorm.includes(k.replace(/-/g, ' ')) || infoNorm.includes(unidadeNorm);
+        });
+
+        // Guarda estado global para uso no agendamento e botão WhatsApp
         window._milesLeadWhatsapp = whatsappUrl;
         window._milesLeadSaved = true;
+        window._milesLeadId = docRef.id;
+        window._milesLeadNome = nome;
+        window._milesLeadTelefone = telefone;
+        window._milesLeadUnidadeKey = resolvedKey;
 
         return {
             success: true,
             leadId: docRef.id,
             whatsappUrl: whatsappUrl,
-            message: `Lead de ${nome} salvo com sucesso! ${whatsappUrl ? 'Link do WhatsApp disponível.' : 'Nossa equipe entrará em contato em breve.'}`
+            message: `Lead de ${nome} salvo com sucesso! Agora ofereça a grade de horários chamando getSchedule().`
         };
     } catch (e) {
         console.error("[Miles] Erro ao salvar lead:", e);
         return { success: false, error: e.message };
     }
 }
+
+/**
+ * Busca a grade de horários da unidade para os próximos 7 dias.
+ * Leitura pública habilitada nas Firestore Rules.
+ */
+async function getSchedule(args) {
+    const { unidadeKey, categoria } = args;
+    if (!unidadeKey) return { error: 'unidadeKey é obrigatório.' };
+
+    try {
+        const templatesQuery = query(
+            collection(db, 'classTemplates'),
+            where('unitId', '==', unidadeKey)
+        );
+        const templatesSnap = await getDocs(templatesQuery);
+        const templates = [];
+        templatesSnap.forEach(d => templates.push({ id: d.id, ...d.data() }));
+
+        // Filtra por categoria se fornecida
+        const filtered = categoria
+            ? templates.filter(t => (t.category || '').toLowerCase() === categoria.toLowerCase())
+            : templates;
+
+        if (filtered.length === 0) {
+            return {
+                success: true,
+                aulasDisponiveis: [],
+                message: categoria
+                    ? `Nenhuma turma de "${categoria}" encontrada na unidade ${unidadeKey}. Mostrando todas as turmas disponíveis.`
+                    : `Nenhuma turma cadastrada para a unidade ${unidadeKey}.`
+            };
+        }
+
+        // Próximos 7 dias
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            days.push(d);
+        }
+
+        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const aulasDisponiveis = [];
+
+        for (const day of days) {
+            const dayOfWeek = day.getDay();
+            const dateStr = day.toISOString().split('T')[0];
+
+            for (const template of filtered) {
+                if (!template.daysOfWeek || !template.daysOfWeek.includes(dayOfWeek)) continue;
+
+                const instanceId = `${template.id}_${dateStr}`;
+                const instanceRef = doc(db, 'classInstances', instanceId);
+                const instanceSnap = await getDoc(instanceRef);
+
+                const studentsMatriculados = (template.students || []).length;
+                const trialStudents = instanceSnap.exists() ? (instanceSnap.data().trialStudents || []) : [];
+                const capacity = template.capacity || 10;
+                const vagasUsadas = studentsMatriculados + trialStudents.length;
+                const vagasDisponiveis = capacity - vagasUsadas;
+
+                if (vagasDisponiveis <= 0) continue; // Sem vagas, não exibe
+
+                const [h, m] = (template.time || '08:00').split(':');
+                const startDate = new Date(day);
+                startDate.setHours(parseInt(h), parseInt(m), 0, 0);
+                const endDate = new Date(startDate.getTime() + (template.duration || 60) * 60000);
+                const horaFim = endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                aulasDisponiveis.push({
+                    instanceId,
+                    templateId: template.id,
+                    nome: template.name,
+                    categoria: template.category || '',
+                    professor: template.teacherName,
+                    professorId: template.teacherId,
+                    data: dateStr,
+                    diaSemana: diasSemana[dayOfWeek],
+                    horario: `${template.time} - ${horaFim}`,
+                    vagasDisponiveis,
+                    capacidade: capacity,
+                    unitId: unidadeKey
+                });
+            }
+        }
+
+        if (aulasDisponiveis.length === 0) {
+            return {
+                success: true,
+                aulasDisponiveis: [],
+                message: 'Nenhuma aula com vagas disponíveis nos próximos 7 dias. Oriente o visitante a entrar em contato pelo WhatsApp.'
+            };
+        }
+
+        return {
+            success: true,
+            aulasDisponiveis,
+            message: `Encontradas ${aulasDisponiveis.length} aulas com vagas. Apresente de forma organizada por dia e pergunte qual horário o visitante prefere.`
+        };
+
+    } catch (e) {
+        console.error('[Miles] Erro ao buscar grade:', e);
+        return { error: e.message };
+    }
+}
+
+/**
+ * Agenda uma aula experimental para o visitante.
+ * Escreve em trialStudents[] e cria notificação para o professor.
+ */
+async function bookTrialClass(args) {
+    const { instanceId, templateId, data, unitId, nome, telefone, programa, leadId } = args;
+    if (!instanceId || !nome || !telefone) {
+        return { error: 'Dados insuficientes para o agendamento.' };
+    }
+
+    try {
+        const instanceRef = doc(db, 'classInstances', instanceId);
+        const instanceSnap = await getDoc(instanceRef);
+
+        const trialEntry = {
+            nome,
+            telefone,
+            programa: programa || '',
+            compareceu: false,
+            agendadoEm: serverTimestamp()
+        };
+
+        if (instanceSnap.exists()) {
+            // Verifica vagas antes de escrever (anti-race condition simples)
+            const existingTrials = instanceSnap.data().trialStudents || [];
+            const templateSnap = await getDoc(doc(db, 'classTemplates', templateId));
+            if (templateSnap.exists()) {
+                const t = templateSnap.data();
+                const vagasUsadas = (t.students || []).length + existingTrials.length;
+                if (vagasUsadas >= (t.capacity || 10)) {
+                    return { success: false, error: 'Esta aula não possui mais vagas disponíveis. Por favor, escolha outro horário.' };
+                }
+            }
+            await updateDoc(instanceRef, {
+                trialStudents: [...existingTrials, trialEntry]
+            });
+        } else {
+            // Cria a instância com os campos mínimos permitidos pelas Firestore Rules
+            const { setDoc: firestoreSetDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+            await firestoreSetDoc(instanceRef, {
+                templateId,
+                date: data,
+                unitId,
+                trialStudents: [trialEntry]
+            });
+        }
+
+        // Notifica o professor responsável
+        const templateSnap = await getDoc(doc(db, 'classTemplates', templateId));
+        if (templateSnap.exists()) {
+            const t = templateSnap.data();
+            if (t.teacherId) {
+                const [h, m] = (t.time || '00:00').split(':');
+                const dataFormatada = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                    weekday: 'short', day: 'numeric', month: 'numeric'
+                });
+                await addDoc(collection(db, 'notifications'), {
+                    userId: t.teacherId,
+                    type: 'trial',
+                    title: 'Aula Experimental Agendada',
+                    message: `${nome} agendou uma experimental em ${t.name} — ${dataFormatada} às ${h}:${m}.`,
+                    link: '/intranet/grade.html',
+                    icon: '/imgs/miles-chatbot.png',
+                    read: false,
+                    createdAt: serverTimestamp()
+                });
+            }
+        }
+
+        // Atualiza status do lead para "Agendado"
+        const resolvedLeadId = leadId || window._milesLeadId;
+        if (resolvedLeadId) {
+            try {
+                await updateDoc(doc(db, 'leads', resolvedLeadId), { status: 'Agendado' });
+            } catch (_) { /* Silencia — não bloqueia o agendamento */ }
+        }
+
+        const dataExibicao = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
+            weekday: 'long', day: 'numeric', month: 'long'
+        });
+
+        return {
+            success: true,
+            message: `Aula experimental de ${nome} agendada com sucesso para ${dataExibicao}! O professor foi notificado.`
+        };
+
+    } catch (e) {
+        console.error('[Miles] Erro no agendamento:', e);
+        return { success: false, error: e.message };
+    }
+}
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GEMINI API
@@ -762,6 +1044,10 @@ Seja curto e convidativo — máximo 3 frases.`;
                         result = getAvailableUnits();
                     } else if (fnName === 'saveLead') {
                         result = await saveLead(args);
+                    } else if (fnName === 'getSchedule') {
+                        result = await getSchedule(args);
+                    } else if (fnName === 'bookTrialClass') {
+                        result = await bookTrialClass(args);
                     } else {
                         result = { error: 'Função desconhecida.' };
                     }

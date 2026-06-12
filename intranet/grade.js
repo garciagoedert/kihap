@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalClassTime = document.getElementById('modal-class-time');
     const modalClassOccupation = document.getElementById('modal-class-occupation');
     const modalClassTeacher = document.getElementById('modal-class-teacher');
+    const modalClassCategoryRow = document.getElementById('modal-class-category-row');
+    const modalClassCategory = document.getElementById('modal-class-category');
     const studentList = document.getElementById('student-list');
     const deleteClassBtn = document.getElementById('delete-class-btn');
 
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const classTeacherSelect = document.getElementById('class-teacher');
     const classStudentsSelect = document.getElementById('class-students');
     const searchStudentsInput = document.getElementById('search-students');
+    const classCategorySelect = document.getElementById('class-category');
 
     let currentClassId = null; // Armazena o ID da instância da aula (templateId_data)
     let currentClassData = null; // Armazena a referência para os dados completos da aula aberta
@@ -38,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedUnitId = null;
     let currentStudents = [];
     let selectedStudentIds = new Set();
+    let isEditingClass = false; // flag para modo edição de turma
+    let editingTemplateId = null; // template sendo editado
 
     // --- Funções de Data ---
     function getStartOfWeek(date) {
@@ -145,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const instanceRef = doc(db, 'classInstances', instanceId);
                         const instanceSnap = await getDoc(instanceRef);
                         const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
+                        const trialStudents = instanceSnap.exists() ? (instanceSnap.data().trialStudents || []) : [];
 
                         const classInstanceData = {
                             ...template,
@@ -152,7 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             id: instanceId,
                             startTime: startTime,
                             endTime: endTime,
-                            presentStudents: presentStudents
+                            presentStudents: presentStudents,
+                            trialStudents: trialStudents
                         };
                         renderClassCard(classInstanceData);
                     }
@@ -190,24 +197,38 @@ document.addEventListener('DOMContentLoaded', () => {
         card.dataset.classId = classData.id;
         card.dataset.templateId = classData.templateId;
 
-        const occupation = classData.presentStudents.length;
-        const capacity = classData.students.length; // Or capacity if available
+        // Contadores SEPARADOS: regulares e experimentais
+        const occupation = (classData.presentStudents || []).length; // só regulares presentes
+        const capacity = classData.capacity || (classData.students || []).length || 1;
+        const trialCount = (classData.trialStudents || []).length;
         const occupationPercentage = Math.min((occupation / capacity) * 100, 100);
         let occupationColor = 'bg-emerald-500';
         if (occupationPercentage > 80) occupationColor = 'bg-rose-500';
         else if (occupationPercentage > 50) occupationColor = 'bg-amber-500';
 
+        const trialBadge = trialCount > 0
+            ? `<span class="absolute top-1.5 right-1.5 bg-amber-500 text-black text-[8px] font-extrabold px-1.5 py-0.5 rounded-md leading-tight tracking-wide z-20">EXP</span>`
+            : '';
+
+        const categoryBadge = classData.category
+            ? `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
+            : '';
+
         card.innerHTML = `
+            ${trialBadge}
             <div class="flex flex-col h-full justify-between">
                 <div>
-                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2">${classData.name}</div>
-                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
-                        <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${classData.teacherName.split(' ')[0]}</span>
+                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
+                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center gap-1.5">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${classData.teacherName.split(' ')[0]}</span>
+                        </span>
+                        ${categoryBadge}
                     </div>
                 </div>
                 <div class="mt-1">
                     <div class="flex justify-between items-center text-[9px] text-gray-550 dark:text-gray-400 mb-0.5 font-bold">
-                        <span>${occupation}/${capacity}</span>
+                        <span>${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
                         <span>${Math.round(occupationPercentage)}%</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1 overflow-hidden">
@@ -225,6 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
         classForm.reset();
         if (searchStudentsInput) searchStudentsInput.value = '';
         selectedStudentIds.clear();
+        isEditingClass = false;
+        editingTemplateId = null;
         classModalTitle.innerHTML = '<i class="fas fa-calendar-plus text-primary mr-2"></i> Agendar Nova Aula';
 
         // Reset day buttons to inactive state
@@ -238,6 +261,55 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             alert("Por favor, selecione uma unidade primeiro.");
         }
+    }
+
+    async function openEditClassModal(classData) {
+        classForm.reset();
+        if (searchStudentsInput) searchStudentsInput.value = '';
+        selectedStudentIds.clear();
+        isEditingClass = true;
+        editingTemplateId = classData.templateId;
+        classModalTitle.innerHTML = '<i class="fas fa-pen text-primary mr-2"></i> Editar Turma';
+
+        // Carrega o template completo do Firestore
+        const templateRef = doc(db, 'classTemplates', classData.templateId);
+        const templateSnap = await getDoc(templateRef);
+        if (!templateSnap.exists()) {
+            alert('Template de aula não encontrado.');
+            return;
+        }
+        const template = templateSnap.data();
+
+        await populateTeacherAndStudentSelectors(selectedUnitId);
+
+        // Pré-preenche o formulário
+        document.getElementById('class-name').value = template.name || '';
+        if (classCategorySelect) classCategorySelect.value = template.category || '';
+        document.getElementById('class-time').value = template.time || '';
+        document.getElementById('class-duration').value = template.duration || 60;
+        document.getElementById('class-capacity').value = template.capacity || 10;
+
+        // Seleciona o professor
+        for (const opt of classTeacherSelect.options) {
+            if (opt.value === template.teacherId) { opt.selected = true; break; }
+        }
+
+        // Seleciona os dias da semana
+        document.querySelectorAll('#class-days-of-week .day-toggle').forEach(btn => {
+            const day = parseInt(btn.dataset.day);
+            if (template.daysOfWeek && template.daysOfWeek.includes(day)) {
+                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold transition-all border bg-primary border-primary text-black shadow-md shadow-yellow-500/10 scale-[1.03]';
+            } else {
+                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+            }
+        });
+
+        // Seleciona os alunos
+        selectedStudentIds = new Set((template.students || []).map(s => s.toString()));
+        renderStudentsList();
+
+        closeAttendanceModal();
+        classModal.classList.remove('hidden');
     }
 
     function closeClassModal() {
@@ -317,6 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const classTemplate = {
             name: formData.get('class-name'),
+            category: formData.get('class-category') || '',
             teacherId: formData.get('class-teacher'),
             teacherName: classTeacherSelect.options[classTeacherSelect.selectedIndex].text,
             daysOfWeek: activeDays,
@@ -328,7 +401,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            await addDoc(collection(db, 'classTemplates'), classTemplate);
+            if (isEditingClass && editingTemplateId) {
+                // MODO EDIÇÃO: atualiza o template existente
+                const templateRef = doc(db, 'classTemplates', editingTemplateId);
+                await updateDoc(templateRef, classTemplate);
+            } else {
+                // MODO CRIAÇÃO: adiciona novo template
+                await addDoc(collection(db, 'classTemplates'), classTemplate);
+            }
             closeClassModal();
             renderGrid();
         } catch (error) {
@@ -350,54 +430,116 @@ document.addEventListener('DOMContentLoaded', () => {
             modalClassTime.textContent = `${startTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })} • ${startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
             modalClassTeacher.textContent = classData.teacherName;
 
+            if (modalClassCategory && modalClassCategoryRow) {
+                if (classData.category) {
+                    modalClassCategory.textContent = classData.category;
+                    modalClassCategoryRow.classList.remove('hidden');
+                } else {
+                    modalClassCategoryRow.classList.add('hidden');
+                }
+            }
+
             const instanceRef = doc(db, 'classInstances', classData.id);
             const instanceSnap = await getDoc(instanceRef);
             const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
+            const trialStudents = instanceSnap.exists() ? instanceSnap.data().trialStudents || [] : [];
 
-            modalClassOccupation.textContent = `${presentStudents.length}/${classData.students.length}`;
+            modalClassOccupation.textContent = `${presentStudents.length}/${classData.students ? classData.students.length : 0}`;
 
             studentList.innerHTML = '';
+
+            // ─── Seção 1: Alunos Regulares ────────────────────────────────────
             if (!classData.students || classData.students.length === 0) {
-                studentList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-6 text-sm font-medium">Nenhum aluno inscrito nesta turma.</p>';
-                return;
+                studentList.innerHTML += '<p class="text-gray-500 dark:text-gray-400 text-center py-6 text-sm font-medium">Nenhum aluno inscrito nesta turma.</p>';
+            } else {
+                const listAllMembers = httpsCallable(functions, 'listAllMembers');
+                const result = await listAllMembers({ unitId: classData.unitId });
+                const allUnitMembers = result.data;
+                const membersMap = new Map(allUnitMembers.map(m => [m.idMember.toString(), m]));
+
+                const presentStudentIds = presentStudents.map(id => id.toString());
+                const enrolledStudentIds = (classData.students || []).map(id => id.toString());
+                const unionStudentIds = Array.from(new Set([...enrolledStudentIds, ...presentStudentIds]));
+
+                for (const studentId of unionStudentIds) {
+                    const studentData = membersMap.get(studentId);
+                    const isPresent = presentStudents.includes(studentId) || presentStudents.includes(Number(studentId));
+
+                    const studentElement = document.createElement('div');
+                    studentElement.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${isPresent ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-[#1a1a1a]/50 border-gray-150 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`;
+
+                    const photoUrl = studentData?.photoUrl || 'default-profile.svg';
+                    const nameText = studentData ? `${studentData.firstName} ${studentData.lastName || ''}` : `Aluno #${studentId}`;
+
+                    studentElement.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <img src="${photoUrl}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                                ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-md"><i class="fas fa-check"></i></div>' : ''}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-850 dark:text-white text-sm">${nameText}</div>
+                                <div class="text-xs font-semibold ${isPresent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
+                            </div>
+                        </div>
+                        <button data-student-id="${studentId}" data-present="${isPresent}" class="toggle-presence-btn w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isPresent ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}">
+                            <i class="fas ${isPresent ? 'fa-times' : 'fa-check'} pointer-events-none"></i>
+                        </button>
+                    `;
+                    studentList.appendChild(studentElement);
+                }
             }
 
-            const listAllMembers = httpsCallable(functions, 'listAllMembers');
-            const result = await listAllMembers({ unitId: classData.unitId });
-            const allUnitMembers = result.data;
-            const membersMap = new Map(allUnitMembers.map(m => [m.idMember.toString(), m]));
-
-            const presentStudentIds = presentStudents.map(id => id.toString());
-            const enrolledStudentIds = (classData.students || []).map(id => id.toString());
-            const unionStudentIds = Array.from(new Set([...enrolledStudentIds, ...presentStudentIds]));
-
-            for (const studentId of unionStudentIds) {
-                const studentData = membersMap.get(studentId);
-                const isPresent = presentStudents.includes(studentId) || presentStudents.includes(Number(studentId));
-                
-                const studentElement = document.createElement('div');
-                studentElement.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${isPresent ? 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-[#1a1a1a]/50 border-gray-150 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`;
-                
-                const photoUrl = studentData?.photoUrl || 'default-profile.svg';
-                const nameText = studentData ? `${studentData.firstName} ${studentData.lastName || ''}` : `Aluno #${studentId}`;
-                
-                studentElement.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="relative">
-                            <img src="${photoUrl}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700">
-                            ${isPresent ? '<div class="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-md"><i class="fas fa-check"></i></div>' : ''}
-                        </div>
-                        <div>
-                            <div class="font-bold text-gray-850 dark:text-white text-sm">${nameText}</div>
-                            <div class="text-xs font-semibold ${isPresent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'} status-text">${isPresent ? 'Presente' : 'Ausente'}</div>
-                        </div>
-                    </div>
-                    <button data-student-id="${studentId}" data-present="${isPresent}" class="toggle-presence-btn w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isPresent ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}">
-                        <i class="fas ${isPresent ? 'fa-times' : 'fa-check'} pointer-events-none"></i>
-                    </button>
+            // ─── Seção 2: Alunos Experimentais ────────────────────────────────
+            if (trialStudents.length > 0) {
+                const divider = document.createElement('div');
+                divider.className = 'mt-4 mb-3 flex items-center gap-3';
+                divider.innerHTML = `
+                    <div class="flex-grow h-px bg-amber-200 dark:bg-amber-800/40"></div>
+                    <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-star text-[10px]"></i> Aulas Experimentais (${trialStudents.length})
+                    </span>
+                    <div class="flex-grow h-px bg-amber-200 dark:bg-amber-800/40"></div>
                 `;
-                studentList.appendChild(studentElement);
+                studentList.appendChild(divider);
+
+                trialStudents.forEach((trial, idx) => {
+                    const trialEl = document.createElement('div');
+                    trialEl.className = `flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${
+                        trial.compareceu
+                            ? 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/50'
+                            : 'bg-amber-50/40 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-800/30'
+                    }`;
+
+                    const agendadoEm = trial.agendadoEm?.toDate ? trial.agendadoEm.toDate().toLocaleDateString('pt-BR') : '';
+                    const whatsappLink = trial.telefone ? `https://wa.me/55${trial.telefone.replace(/\D/g, '')}` : null;
+
+                    trialEl.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-600 flex items-center justify-center text-amber-600 dark:text-amber-400 font-extrabold text-sm flex-shrink-0">
+                                ${(trial.nome || '?')[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-850 dark:text-white text-sm">${trial.nome || 'Visitante'}</div>
+                                <div class="text-[10px] font-semibold text-amber-600 dark:text-amber-400">${trial.programa || ''} ${trial.telefone ? '· ' + trial.telefone : ''}</div>
+                                ${agendadoEm ? `<div class="text-[9px] text-gray-400">Agendado em ${agendadoEm}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${whatsappLink ? `<a href="${whatsappLink}" target="_blank" class="w-8 h-8 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all" title="Contato WhatsApp"><i class="fab fa-whatsapp text-sm"></i></a>` : ''}
+                            <button data-trial-idx="${idx}" data-compareceu="${trial.compareceu ? 'true' : 'false'}" class="toggle-trial-btn w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                trial.compareceu
+                                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-rose-500/20 hover:text-rose-500'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-amber-500/20 hover:text-amber-600'
+                            }" title="${trial.compareceu ? 'Marcar como ausente' : 'Confirmar comparecimento'}">
+                                <i class="fas ${trial.compareceu ? 'fa-star' : 'fa-star'} text-xs pointer-events-none"></i>
+                            </button>
+                        </div>
+                    `;
+                    studentList.appendChild(trialEl);
+                });
             }
+
         } catch (error) {
             console.error("Erro ao abrir modal de presença:", error);
             studentList.innerHTML = '<p class="text-red-500 dark:text-red-400 text-center py-4 font-semibold text-sm">Erro ao carregar dados.</p>';
@@ -410,6 +552,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handlePresenceToggle(e) {
+        // Trial student toggle
+        const trialBtn = e.target.closest('.toggle-trial-btn');
+        if (trialBtn && currentClassId) {
+            const idx = parseInt(trialBtn.dataset.trialIdx);
+            const compareceu = trialBtn.dataset.compareceu === 'true';
+            const instanceRef = doc(db, 'classInstances', currentClassId);
+            try {
+                const snap = await getDoc(instanceRef);
+                if (snap.exists()) {
+                    const trials = snap.data().trialStudents || [];
+                    if (trials[idx]) {
+                        trials[idx] = { ...trials[idx], compareceu: !compareceu };
+                        await updateDoc(instanceRef, { trialStudents: trials });
+                    }
+                }
+                if (currentClassData) await openAttendanceModal(currentClassData);
+            } catch (err) {
+                console.error('Erro ao atualizar experimental:', err);
+            }
+            return;
+        }
+
+        // Regular student toggle
         const button = e.target.closest('.toggle-presence-btn');
         if (!button) return;
         const studentId = button.dataset.studentId;
@@ -746,6 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             document.getElementById('kpi-total-classes').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
             document.getElementById('kpi-total-presences').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+            document.getElementById('kpi-unique-students').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
             document.getElementById('kpi-avg-occupation').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
             document.getElementById('kpi-avg-students').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
 
@@ -880,9 +1046,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: inst.id,
                         startTime: new Date(inst.date + 'T' + (template.time || '12:00')),
                         endTime: new Date(new Date(inst.date + 'T' + (template.time || '12:00')).getTime() + template.duration * 60000),
-                        presentStudents: inst.presentStudents || []
+                        presentStudents: inst.presentStudents || [],
+                        trialStudents: inst.trialStudents || []
                     } : null
                 });
+            });
+
+            // Calcula KPIs de experimentais (separado, não afeta regulares)
+            let trialsScheduled = 0;
+            let trialsAttended = 0;
+            instancesSnap.forEach(docSnap => {
+                const inst = { id: docSnap.id, ...docSnap.data() };
+                if (selectedUnit !== 'all' && inst.unitId !== selectedUnit) return;
+                const trials = inst.trialStudents || [];
+                trialsScheduled += trials.length;
+                trialsAttended += trials.filter(t => t.compareceu).length;
             });
 
             // 3. Carrega nomes dos alunos sob demanda apenas para os IDs que têm presenças no período
@@ -902,7 +1080,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 avgStudents,
                 timelineMap,
                 distributionMap,
-                selectedUnit
+                selectedUnit,
+                trialsScheduled,
+                trialsAttended
             };
 
             renderReportDashboard();
@@ -924,13 +1104,29 @@ document.addEventListener('DOMContentLoaded', () => {
             avgStudents,
             timelineMap,
             distributionMap,
-            selectedUnit
+            selectedUnit,
+            studentPresencesCount,
+            trialsScheduled = 0,
+            trialsAttended = 0
         } = cachedReportsData;
 
         document.getElementById('kpi-total-classes').textContent = totalClasses;
         document.getElementById('kpi-total-presences').textContent = totalPresences;
+        document.getElementById('kpi-unique-students').textContent = studentPresencesCount.size;
         document.getElementById('kpi-avg-occupation').textContent = `${avgOccupation}%`;
         document.getElementById('kpi-avg-students').textContent = avgStudents;
+
+        // KPIs de experimentais (separados, nunca afetam os regulares acima)
+        const trialsScheduledEl = document.getElementById('kpi-trials-scheduled');
+        const trialsAttendedEl = document.getElementById('kpi-trials-attended');
+        const trialsConversionEl = document.getElementById('kpi-trials-conversion');
+        if (trialsScheduledEl) trialsScheduledEl.textContent = trialsScheduled;
+        if (trialsAttendedEl) trialsAttendedEl.textContent = trialsAttended;
+        if (trialsConversionEl) {
+            trialsConversionEl.textContent = trialsScheduled > 0
+                ? `${Math.round((trialsAttended / trialsScheduled) * 100)}%`
+                : '-%';
+        }
 
         renderTimelineChart(timelineMap);
         renderDistributionChart(distributionMap, selectedUnit);
@@ -1275,6 +1471,13 @@ document.addEventListener('DOMContentLoaded', () => {
     closeAttendanceModalBtn.addEventListener('click', closeAttendanceModal);
     studentList.addEventListener('click', handlePresenceToggle);
     deleteClassBtn.addEventListener('click', handleDeleteClass);
+
+    const editClassBtn = document.getElementById('edit-class-btn');
+    if (editClassBtn) {
+        editClassBtn.addEventListener('click', () => {
+            if (currentClassData) openEditClassModal(currentClassData);
+        });
+    }
 
     addClassBtn.addEventListener('click', openClassModal);
     closeClassModalBtn.addEventListener('click', closeClassModal);
