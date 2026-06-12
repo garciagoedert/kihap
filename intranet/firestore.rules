@@ -58,6 +58,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Regra para a coleção de Eventos do Calendário
+    match /events/{eventId} {
+      allow read, write: if request.auth != null;
+      
+      // Regra para a subcoleção de check-ins do evento
+      match /checkins/{checkinId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
     // Regra para a coleção de Testes Físicos (alunos sem conta)
     match /physicalTests/{testId} {
       allow read, write: if request.auth != null && (

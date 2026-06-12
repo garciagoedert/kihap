@@ -128,7 +128,7 @@ export default function ChatRoomScreen() {
               {otherUser?.nome || otherUser?.name || 'Conversa'}
             </Text>
             <View className="flex-row items-center">
-              <div className="w-2 h-2 rounded-full bg-green-500 mr-1.5" />
+              <View className="w-2 h-2 rounded-full bg-green-500 mr-1.5" />
               <Text className="text-[10px] text-green-500 font-black uppercase tracking-widest">Online agora</Text>
             </View>
           </View>

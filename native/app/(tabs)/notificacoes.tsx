@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
-import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User } from 'lucide-react-native';
+import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock } from 'lucide-react-native';
+
 
 export default function NotificacoesScreen() {
   const { user, userData } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
-  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'ranking' | 'notificacoes'>('ofensivas');
+  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'ranking' | 'emblemas'>('ofensivas');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -177,6 +178,28 @@ export default function NotificacoesScreen() {
     return () => unsubscribe();
   }, [user]);
 
+  // Fetch all badges
+  const [allBadges, setAllBadges] = useState<any[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(true);
+
+  useEffect(() => {
+    const badgesCol = collection(db, 'badges');
+    const unsubscribe = onSnapshot(badgesCol, (snapshot) => {
+      const list = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setAllBadges(list);
+      setBadgesLoading(false);
+    }, (error) => {
+      console.error("Error fetching badges:", error);
+      setBadgesLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'chat': return MessageCircle;
@@ -261,13 +284,15 @@ export default function NotificacoesScreen() {
       <View className="px-6 pt-8 pb-2">
         <View className="flex-row items-center justify-between mb-6">
           <Text className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Atividade</Text>
-          {activeSubTab === 'notificacoes' && (
-            <TouchableOpacity className="flex-row items-center bg-blue-500/5 px-4 py-2 rounded-full active:bg-blue-500/10">
-              <CheckCheck size={14} color="#3b82f6" />
-              <Text className="text-[10px] font-black text-[#3b82f6] ml-2 uppercase">Lidas</Text>
-            </TouchableOpacity>
+          {activeSubTab === 'emblemas' && (
+            <View className="bg-yellow-500/10 px-3.5 py-1.5 rounded-full border border-yellow-500/20">
+              <Text className="text-yellow-605 dark:text-yellow-500 text-[10px] font-black uppercase tracking-wider">
+                {(userData?.earnedBadges || []).length} Conquistados
+              </Text>
+            </View>
           )}
         </View>
+
 
         {/* Sub-tab Selectors (Three-way toggle) */}
         <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1.5 rounded-2xl mb-4">
@@ -314,8 +339,8 @@ export default function NotificacoesScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => setActiveSubTab('notificacoes')}
-            style={activeSubTab === 'notificacoes' ? {
+            onPress={() => setActiveSubTab('emblemas')}
+            style={activeSubTab === 'emblemas' ? {
               backgroundColor: isDark ? '#2b2b2b' : '#fff',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
@@ -325,15 +350,16 @@ export default function NotificacoesScreen() {
             } : null}
             className="flex-1 py-3 rounded-xl items-center justify-center flex-row"
           >
-            <Bell size={16} color={activeSubTab === 'notificacoes' ? '#3b82f6' : '#888'} style={{ marginRight: 4 }} />
+            <Award size={16} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
             <Text 
-              style={{ color: activeSubTab === 'notificacoes' ? (isDark ? '#fff' : '#111') : '#999' }}
+              style={{ color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#999' }}
               className="text-[10px] font-black uppercase tracking-wider text-center"
             >
-              Avisos
+              Emblemas
             </Text>
           </TouchableOpacity>
         </View>
+
 
         {/* Category Filters for Notifications */}
         {activeSubTab === 'notificacoes' && (
@@ -716,55 +742,77 @@ export default function NotificacoesScreen() {
           )}
         </View>
       ) : (
-        loading ? (
+        badgesLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#eab308" />
           </View>
         ) : (
           <FlatList
-            data={filteredNotifs}
+            data={allBadges}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            renderItem={({ item }) => {
-              const IconComp = getIcon(item.type);
-              const color = getColor(item.type);
+            numColumns={3}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+            columnWrapperStyle={{ justifyContent: 'flex-start' }}
+            renderItem={({ item: badge }) => {
+              const isEarned = (userData?.earnedBadges || []).includes(badge.id);
               
+              let imageUri = badge.imageUrl || '';
+              if (imageUri && imageUri.startsWith('/')) {
+                imageUri = `https://kihap.com.br${imageUri}`;
+              }
+
               return (
-                <TouchableOpacity 
-                  style={!item.read ? {
-                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 246, 255, 0.2)'
-                  } : null}
-                  className="flex-row items-start px-6 py-4 active:bg-gray-50 dark:active:bg-white/5"
+                <TouchableOpacity
+                  onPress={() => {
+                    Alert.alert(
+                      badge.name || "Emblema",
+                      badge.description || "Sem descrição disponível para este emblema.",
+                      [{ text: "Entendido", style: "default" }]
+                    );
+                  }}
+                  style={{
+                    width: '30.33%',
+                    margin: '1.5%',
+                  }}
+                  className={`bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl items-center justify-center border ${
+                    isEarned
+                      ? 'border-yellow-500/30 dark:border-yellow-500/20 shadow-sm shadow-black/5'
+                      : 'border-gray-100 dark:border-white/5 opacity-40'
+                  }`}
                 >
-                  <View className="relative">
-                    <View 
-                      style={{ backgroundColor: `${color}15` }}
-                      className="w-12 h-12 rounded-full items-center justify-center bg-gray-50 dark:bg-white/10"
-                    >
-                      <IconComp size={22} color={color} />
-                    </View>
-                    {!item.read && (
-                      <View className="absolute top-0 right-0 w-3 h-3 bg-blue-500 rounded-full border-2 border-white dark:border-[#0a0a0a]" />
+                  <View className="relative w-14 h-14 items-center justify-center mb-2.5">
+                    {imageUri ? (
+                      <Image
+                        source={{ uri: imageUri }}
+                        className="w-full h-full object-contain"
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Award size={36} color={isEarned ? "#eab308" : "#888"} />
+                    )}
+                    
+                    {!isEarned && (
+                      <View className="absolute bottom-0 right-0 bg-black/60 dark:bg-black/80 p-1 rounded-full border border-white/20">
+                        <Lock size={10} color="#fff" />
+                      </View>
                     )}
                   </View>
-                  <View className="flex-1 ml-4 border-b border-gray-50 dark:border-white/5 pb-4">
-                    <View className="flex-row justify-between items-start mb-1">
-                      <Text 
-                        style={!item.read ? { fontWeight: '900' } : { fontWeight: '700' }}
-                        className="text-[15px] text-gray-900 dark:text-white flex-1"
-                      >
-                        {item.title}
-                      </Text>
-                      <Text className="text-[11px] text-gray-400 font-bold ml-2">Agora</Text>
-                    </View>
-                    <Text className="text-[14px] text-gray-500 dark:text-gray-400 leading-snug" numberOfLines={2}>{item.message}</Text>
-                  </View>
+                  
+                  <Text
+                    numberOfLines={1}
+                    className={`text-[10px] text-center font-black uppercase tracking-wider ${
+                      isEarned ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    {badge.name || "Emblema"}
+                  </Text>
                 </TouchableOpacity>
               );
             }}
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center pt-20 px-8">
-                <Text className="text-gray-400 text-center font-medium">Nenhuma atividade nesta categoria.</Text>
+                <Award size={48} color={isDark ? '#333' : '#ddd'} style={{ marginBottom: 12 }} />
+                <Text className="text-gray-400 text-center font-bold">Nenhum emblema cadastrado no sistema.</Text>
               </View>
             }
           />

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Home, Send, Heart, Search } from 'lucide-react-native';
+import { Home, Send, Heart, Search, Flame } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { View, Image } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
@@ -56,7 +56,7 @@ export default function TabLayout() {
         name="notificacoes"
         options={{
           title: 'Notificações',
-          tabBarIcon: ({ color, focused }) => <Heart size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
+          tabBarIcon: ({ color, focused }) => <Flame size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen

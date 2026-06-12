@@ -8,7 +8,7 @@ import FeedCard from '../../src/components/FeedCard';
 import StoriesBar from '../../src/components/StoriesBar';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut } from 'lucide-react-native';
+import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function FeedScreen() {
@@ -215,13 +215,12 @@ export default function FeedScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => setSidebarOpen(false)} />
-                <SidebarItem icon={Layout} label="Painel" onPress={() => {}} />
-                <SidebarItem icon={MessageSquare} label="Chat" onPress={() => router.push('/(tabs)/chat')} />
                 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Evolução</Text>
-                <SidebarItem icon={BookOpen} label="Meus Cursos" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/cursos'); }} />
+                <SidebarItem icon={BookOpen} label="Área do Aluno" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/cursos'); }} />
                 <SidebarItem icon={UserCheck} label="Tatame" onPress={() => { setSidebarOpen(false); router.push('/tatame'); }} />
-                <SidebarItem icon={Activity} label="Atividades" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
+                <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
+                <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />

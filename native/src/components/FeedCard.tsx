@@ -73,8 +73,8 @@ export default function FeedCard({ post }: FeedCardProps) {
         (w, h) => {
           if (w && h) {
             const ratio = w / h;
-            // Cap aspect ratio between 0.8 (4:5 vertical) and 1.91 (Instagram landscape cap)
-            const cappedRatio = Math.max(0.8, Math.min(1.91, ratio));
+            // Allow a wider range of aspect ratios (0.6 to 2.5) to prevent cropping
+            const cappedRatio = Math.max(0.6, Math.min(2.5, ratio));
             setAspectRatio(cappedRatio);
           }
         },
@@ -158,7 +158,7 @@ export default function FeedCard({ post }: FeedCardProps) {
     },
     p: {
       marginVertical: 0,
-      marginBottom: 4,
+      marginBottom: 6,
       backgroundColor: 'transparent',
     },
     span: {
@@ -199,8 +199,6 @@ export default function FeedCard({ post }: FeedCardProps) {
   }
 
   const cleanContent = finalContent
-    .replace(/<p><br><\/p>/g, '') // Remove empty lines with breaks
-    .replace(/<p>&nbsp;<\/p>/g, '') // Remove empty lines with spaces
     .replace(/background-color:[^;]+;/g, '')
     .replace(/background:[^;]+;/g, '')
     .replace(/font-family:[^;]+;/g, '')
@@ -307,8 +305,16 @@ export default function FeedCard({ post }: FeedCardProps) {
           ) : (
             <Image 
               source={{ uri: post.mediaUrl }} 
-              style={{ width: '100%', aspectRatio: aspectRatio }}
-              resizeMode="cover" 
+              style={{ width: '100%', aspectRatio: aspectRatio, backgroundColor: isDark ? '#1a1a1a' : '#fff' }}
+              resizeMode="contain" 
+              onLoad={(evt) => {
+                const source = evt.nativeEvent?.source;
+                if (source && source.width && source.height) {
+                  const ratio = source.width / source.height;
+                  const cappedRatio = Math.max(0.6, Math.min(2.5, ratio));
+                  setAspectRatio(cappedRatio);
+                }
+              }}
             />
           )}
         </View>

@@ -140,7 +140,6 @@ export default function CursosScreen() {
   return (
     <View className="flex-1 bg-gray-50 dark:bg-[#050505]">
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack.Screen options={{ headerShown: false }} />
       
       {/* Header */}
       <View 
@@ -148,7 +147,7 @@ export default function CursosScreen() {
         className="bg-white dark:bg-[#0a0a0a] border-b border-gray-100 dark:border-white/5"
       >
         <View className="px-6 pb-4 pt-2">
-          <Text className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Meus Cursos</Text>
+          <Text className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Área do Aluno</Text>
         </View>
       </View>
 

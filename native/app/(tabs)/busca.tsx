@@ -130,29 +130,30 @@ export default function BuscaScreen() {
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white dark:bg-[#0a0a0a]">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-gray-50 dark:bg-[#0a0a0a]">
       <View className="px-6 pt-6 pb-2">
         <Text className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1 uppercase tracking-tighter">Descobrir</Text>
         <Text className="text-gray-500 text-sm font-medium mb-6">Encontre instrutores e membros da Kihap.</Text>
 
         <View className="mb-6">
-          <View className="flex-row items-center bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-2xl py-4 px-5 shadow-sm">
-            <Search size={20} color={isDark ? '#666' : '#999'} />
+          <View className="flex-row items-center bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 px-4 py-2.5 rounded-2xl shadow-sm">
+            <Search size={18} color="#999" />
             <TextInput 
               placeholder="Buscar por nome, unidade ou faixa..." 
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 ml-3 text-[16px] font-medium text-gray-900 dark:text-white"
+              className="flex-1 ml-3 text-[15px] font-medium text-gray-950 dark:text-white p-0"
             />
           </View>
         </View>
 
-        <View className="flex-row mb-6 space-x-2">
+        <View className="flex-row mb-6">
           {filters.map((filter) => (
             <TouchableOpacity 
               key={filter.id}
               onPress={() => setActiveFilter(filter.id)}
+              style={{ marginRight: 8 }}
               className={`px-5 py-2.5 rounded-full border ${
                 activeFilter === filter.id 
                   ? 'bg-[#014fa4] border-[#014fa4]' 

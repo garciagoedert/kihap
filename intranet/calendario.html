@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- CSP Perms -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <title>Kihap - Calendário de Eventos</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .event-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Calendário de Eventos</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Gerencie e acompanhe as inscrições e check-ins dos eventos anuais.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Formulário para Criar/Editar Evento (1/3 da tela) -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm">
+                            <h2 class="text-lg font-black text-gray-900 dark:text-white mb-4">Adicionar Novo Evento</h2>
+                            <form id="event-form" class="space-y-4">
+                                <div>
+                                    <label for="event-title" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Título do Evento</label>
+                                    <input type="text" id="event-title" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="event-date" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Data</label>
+                                        <input type="date" id="event-date" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    </div>
+                                    <div>
+                                        <label for="event-time" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário</label>
+                                        <input type="text" id="event-time" placeholder="ex: 19:00" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="event-location" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Local</label>
+                                    <input type="text" id="event-location" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                </div>
+                                <div>
+                                    <label for="event-product" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Produto da Loja (Opcional)</label>
+                                    <select id="event-product" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                        <option value="">Nenhum produto vinculado</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="event-description" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Descrição</label>
+                                    <textarea id="event-description" rows="4" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                                </div>
+                                <div>
+                                    <label for="event-image" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Foto de Capa</label>
+                                    <input type="file" id="event-image" accept="image/*" required class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-yellow-500 file:text-black hover:file:bg-yellow-600 cursor-pointer">
+                                </div>
+                                <button type="submit" id="submit-event-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-black uppercase tracking-widest text-xs py-4 rounded-xl transition duration-200 active:scale-95 shadow-lg shadow-yellow-500/10">
+                                    Salvar Evento
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Eventos (2/3 da tela) -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm flex flex-col min-h-[500px]">
+                            <h2 class="text-lg font-black text-gray-900 dark:text-white mb-6">Eventos Cadastrados</h2>
+                            <div id="events-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <p class="col-span-full text-center text-gray-500 py-12">Carregando eventos...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Controle de Evento -->
+    <div id="control-modal" class="fixed inset-0 z-50 flex justify-center items-center bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/5 shadow-2xl p-6 w-full max-w-4xl m-4 transform scale-95 transition-all duration-300 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                <div>
+                    <h2 id="modal-event-title" class="text-xl font-black text-gray-900 dark:text-white">Controle de Evento</h2>
+                    <p id="modal-event-details" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Status e controle de presenças.</p>
+                </div>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition active:scale-90">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Resumos rápidos -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Inscritos</p>
+                    <p id="modal-stat-registered" class="text-2xl font-black text-blue-600">0</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Presenças (Check-ins)</p>
+                    <p id="modal-stat-checkins" class="text-2xl font-black text-emerald-500">0</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center col-span-2">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Taxa de Presença</p>
+                    <p id="modal-stat-rate" class="text-2xl font-black text-yellow-500">0%</p>
+                </div>
+            </div>
+
+            <!-- Listas lado a lado -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-hidden min-h-[300px]">
+                <!-- Coluna de Inscritos (Compras Aprovadas) -->
+                <div class="flex flex-col bg-gray-50 dark:bg-[#111111]/50 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 overflow-hidden">
+                    <h3 class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                        <i class="fas fa-shopping-bag text-blue-500"></i> Alunos Inscritos
+                    </h3>
+                    <div class="mb-3 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400 text-xs"></i>
+                        </span>
+                        <input type="text" id="search-registered" placeholder="Buscar aluno..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="overflow-y-auto flex-grow custom-scrollbar">
+                        <table class="min-w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                    <th class="pb-2">Nome</th>
+                                    <th class="pb-2 text-right">Data Compra</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-registered-list" class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+                                <tr>
+                                    <td colspan="2" class="text-center py-8 text-gray-500">Carregando inscritos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Coluna de Presenças (Check-ins) -->
+                <div class="flex flex-col bg-gray-50 dark:bg-[#111111]/50 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 overflow-hidden">
+                    <h3 class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                        <i class="fas fa-check-circle text-emerald-500"></i> Presenças (Check-in)
+                    </h3>
+                    <div class="mb-3 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400 text-xs"></i>
+                        </span>
+                        <input type="text" id="search-checkins" placeholder="Buscar aluno..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="overflow-y-auto flex-grow custom-scrollbar">
+                        <table class="min-w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                    <th class="pb-2">Nome</th>
+                                    <th class="pb-2 text-right">Data Check-in</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-checkins-list" class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+                                <tr>
+                                    <td colspan="2" class="text-center py-8 text-gray-500">Nenhum check-in realizado ainda.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupCalendarioPage } from './calendario.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupCalendarioPage();
+            });
+        });
+    </script>
+</body>
+</html>
