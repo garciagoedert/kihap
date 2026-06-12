@@ -1,7 +1,7 @@
 import { db, functions } from './firebase-config.js';
 import { onAuthReady } from './auth.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc, deleteDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc, deleteDoc, orderBy, limit, documentId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elementos da Grade
@@ -539,6 +539,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 unitFilter.appendChild(option);
             });
+
+            // Popula também o filtro de unidades do relatório
+            const reportUnitFilterEl = document.getElementById('report-unit-filter');
+            if (reportUnitFilterEl) {
+                reportUnitFilterEl.innerHTML = '<option value="all">Todas as Unidades</option>';
+                units.forEach(unitId => {
+                    const option = document.createElement('option');
+                    option.value = unitId;
+                    option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    reportUnitFilterEl.appendChild(option);
+                });
+            }
         } catch (error) {
             console.error("Erro ao carregar unidades do EVO:", error);
             unitFilter.innerHTML = '<option value="">Erro ao carregar</option>';
@@ -547,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Ranking de Ofensivas Logic ---
-    let activeTab = 'grade'; // 'grade' | 'ranking'
+    let activeTab = 'grade'; // 'grade' | 'ranking' | 'reports'
     let rankingFilter = 'current'; // 'current' | 'longest'
     let rankingSearchQuery = '';
 
@@ -661,33 +673,566 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Relatórios de Presenças Logic ---
+    let timelineChart = null;
+    let distributionChart = null;
+    let cachedReportsData = null;
+
+    const tabReportsBtn = document.getElementById('tab-reports-btn');
+    const reportsViewContainer = document.getElementById('reports-view-container');
+    const reportPeriodFilter = document.getElementById('report-period-filter');
+    const reportCustomDates = document.getElementById('report-custom-dates');
+    const reportStartDate = document.getElementById('report-start-date');
+    const reportEndDate = document.getElementById('report-end-date');
+    const reportUnitFilter = document.getElementById('report-unit-filter');
+    const generateReportBtn = document.getElementById('generate-report-btn');
+    const searchReportsRankingInput = document.getElementById('search-reports-ranking-input');
+    const reportsRankingTableBody = document.getElementById('reports-ranking-table-body');
+    const reportsClassesTableBody = document.getElementById('reports-classes-table-body');
+
+    function formatLocalDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getReportPeriodDates(period) {
+        const now = new Date();
+        let start = new Date();
+        let end = new Date();
+
+        if (period === 'today') {
+            start = now;
+            end = now;
+        } else if (period === 'week') {
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            start = new Date(now.setDate(diff));
+            end = new Date(start);
+            end.setDate(end.getDate() + 6);
+        } else if (period === 'month') {
+            start = new Date(now.getFullYear(), now.getMonth(), 1);
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        } else if (period === 'last30') {
+            start = new Date();
+            start.setDate(now.getDate() - 30);
+            end = now;
+        } else if (period === 'last90') {
+            start = new Date();
+            start.setDate(now.getDate() - 90);
+            end = now;
+        } else if (period === 'custom') {
+            let startVal = reportStartDate.value;
+            let endVal = reportEndDate.value;
+            if (!startVal) {
+                const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                reportStartDate.value = formatLocalDate(defaultStart);
+                startVal = reportStartDate.value;
+            }
+            if (!endVal) {
+                const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                reportEndDate.value = formatLocalDate(defaultEnd);
+                endVal = reportEndDate.value;
+            }
+            start = new Date(startVal + 'T12:00:00');
+            end = new Date(endVal + 'T12:00:00');
+        }
+
+        return { startStr: formatLocalDate(start), endStr: formatLocalDate(end) };
+    }
+
+    function setReportsLoading(isLoading) {
+        if (isLoading) {
+            document.getElementById('kpi-total-classes').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+            document.getElementById('kpi-total-presences').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+            document.getElementById('kpi-avg-occupation').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+            document.getElementById('kpi-avg-students').innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+
+            reportsRankingTableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 font-semibold">Carregando alunos...</p>
+                    </td>
+                </tr>`;
+            reportsClassesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 font-semibold">Processando histórico de aulas...</p>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    async function resolveStudentNames(studentIds) {
+        const membersMap = new Map();
+        if (!studentIds || studentIds.length === 0) return membersMap;
+
+        // Limita a busca em lotes de 30 devido ao limite do operador 'in' do Firestore
+        const chunks = [];
+        for (let i = 0; i < studentIds.length; i += 30) {
+            chunks.push(studentIds.slice(i, i + 30));
+        }
+
+        const promises = chunks.map(async (chunk) => {
+            const stringIds = chunk.map(id => id.toString());
+            const q = query(
+                collection(db, 'evo_students'),
+                where(documentId(), 'in', stringIds)
+            );
+            const snap = await getDocs(q);
+            snap.forEach(docSnap => {
+                membersMap.set(docSnap.id, docSnap.data());
+            });
+        });
+
+        await Promise.all(promises);
+        return membersMap;
+    }
+
+    async function loadReports() {
+        setReportsLoading(true);
+
+        const period = reportPeriodFilter.value;
+        const { startStr, endStr } = getReportPeriodDates(period);
+        const selectedUnit = reportUnitFilter.value;
+
+        try {
+            // 1. Carrega todos os templates de aula
+            const templatesQuery = query(collection(db, 'classTemplates'));
+            const templatesSnap = await getDocs(templatesQuery);
+            const templatesMap = new Map();
+            templatesSnap.forEach(docSnap => {
+                templatesMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+            });
+
+            // 2. Consulta instâncias de aulas no período
+            const instancesQuery = query(
+                collection(db, 'classInstances'),
+                where('date', '>=', startStr),
+                where('date', '<=', endStr)
+            );
+            const instancesSnap = await getDocs(instancesQuery);
+            let instances = [];
+            instancesSnap.forEach(docSnap => {
+                instances.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            // Filtragem local por unidade
+            if (selectedUnit !== 'all') {
+                instances = instances.filter(inst => inst.unitId === selectedUnit);
+            }
+
+            let totalClasses = instances.length;
+            let totalPresences = 0;
+            let totalCapacitySum = 0;
+
+            const timelineMap = new Map();
+            const distributionMap = new Map();
+            const studentPresencesCount = new Map();
+            const detailedClasses = [];
+
+            // Ordenar por data crescente para o gráfico de linha
+            instances.sort((a, b) => a.date.localeCompare(b.date));
+
+            instances.forEach(inst => {
+                const template = templatesMap.get(inst.templateId);
+                const className = template ? template.name : 'Aula Removida';
+                const teacherName = template ? template.teacherName : 'Desconhecido';
+                const capacity = template ? template.capacity : 10;
+
+                const presences = inst.presentStudents ? inst.presentStudents.length : 0;
+                totalPresences += presences;
+                totalCapacitySum += capacity;
+
+                // Gráfico 1: Timeline
+                timelineMap.set(inst.date, (timelineMap.get(inst.date) || 0) + presences);
+
+                // Gráfico 2: Distribuição por Unidade ou por Instrutor
+                if (selectedUnit === 'all') {
+                    const label = inst.unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    distributionMap.set(label, (distributionMap.get(label) || 0) + presences);
+                } else {
+                    distributionMap.set(teacherName, (distributionMap.get(teacherName) || 0) + presences);
+                }
+
+                // Ranking de Frequência de Alunos
+                if (inst.presentStudents) {
+                    inst.presentStudents.forEach(sid => {
+                        const sidStr = sid.toString();
+                        studentPresencesCount.set(sidStr, (studentPresencesCount.get(sidStr) || 0) + 1);
+                    });
+                }
+
+                detailedClasses.push({
+                    id: inst.id,
+                    date: inst.date,
+                    name: className,
+                    teacherName: teacherName,
+                    unitId: inst.unitId,
+                    presences: presences,
+                    capacity: capacity,
+                    classData: template ? {
+                        ...template,
+                        templateId: template.id,
+                        id: inst.id,
+                        startTime: new Date(inst.date + 'T' + (template.time || '12:00')),
+                        endTime: new Date(new Date(inst.date + 'T' + (template.time || '12:00')).getTime() + template.duration * 60000),
+                        presentStudents: inst.presentStudents || []
+                    } : null
+                });
+            });
+
+            // 3. Carrega nomes dos alunos sob demanda apenas para os IDs que têm presenças no período
+            const studentIds = Array.from(studentPresencesCount.keys());
+            const membersMap = await resolveStudentNames(studentIds);
+
+            const avgOccupation = totalCapacitySum > 0 ? Math.round((totalPresences / totalCapacitySum) * 100) : 0;
+            const avgStudents = totalClasses > 0 ? (totalPresences / totalClasses).toFixed(1) : '0.0';
+
+            cachedReportsData = {
+                studentPresencesCount,
+                membersMap,
+                detailedClasses,
+                totalClasses,
+                totalPresences,
+                avgOccupation,
+                avgStudents,
+                timelineMap,
+                distributionMap,
+                selectedUnit
+            };
+
+            renderReportDashboard();
+
+        } catch (err) {
+            console.error("Erro ao carregar relatórios:", err);
+            alert("Não foi possível processar o relatório de presenças.");
+            setReportsLoading(false);
+        }
+    }
+
+    function renderReportDashboard() {
+        if (!cachedReportsData) return;
+
+        const {
+            totalClasses,
+            totalPresences,
+            avgOccupation,
+            avgStudents,
+            timelineMap,
+            distributionMap,
+            selectedUnit
+        } = cachedReportsData;
+
+        document.getElementById('kpi-total-classes').textContent = totalClasses;
+        document.getElementById('kpi-total-presences').textContent = totalPresences;
+        document.getElementById('kpi-avg-occupation').textContent = `${avgOccupation}%`;
+        document.getElementById('kpi-avg-students').textContent = avgStudents;
+
+        renderTimelineChart(timelineMap);
+        renderDistributionChart(distributionMap, selectedUnit);
+        renderReportsRanking();
+        renderDetailedClasses();
+    }
+
+    function renderTimelineChart(timelineMap) {
+        const ctx = document.getElementById('chart-attendance-timeline').getContext('2d');
+        if (timelineChart) {
+            timelineChart.destroy();
+        }
+
+        const sortedDates = Array.from(timelineMap.keys()).sort();
+        const labels = sortedDates.map(dateStr => {
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}`;
+        });
+        const data = sortedDates.map(dateStr => timelineMap.get(dateStr));
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#9ca3af' : '#4b5563';
+        const gridColor = isDark ? '#27272a' : '#e4e4e7';
+
+        timelineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['Sem dados'],
+                datasets: [{
+                    label: 'Presenças',
+                    data: data.length > 0 ? data : [0],
+                    borderColor: '#eab308',
+                    backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#eab308',
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        titleColor: isDark ? '#ffffff' : '#18181b',
+                        bodyColor: isDark ? '#a1a1aa' : '#71717a',
+                        borderColor: isDark ? '#27272a' : '#e4e4e7',
+                        borderWidth: 1,
+                        titleFont: { family: 'Inter', weight: 'bold' },
+                        bodyFont: { family: 'Inter' }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: textColor, font: { family: 'Inter', size: 10, weight: '500' } }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, stepSize: 1, font: { family: 'Inter', size: 10, weight: '505' } },
+                        min: 0
+                    }
+                }
+            }
+        });
+    }
+
+    function renderDistributionChart(distributionMap, selectedUnit) {
+        const titleEl = document.getElementById('distribution-chart-title');
+        if (selectedUnit === 'all') {
+            titleEl.innerHTML = '<i class="fas fa-chart-pie text-primary"></i> Distribuição por Unidade';
+        } else {
+            titleEl.innerHTML = '<i class="fas fa-user-tie text-primary"></i> Distribuição por Professor';
+        }
+
+        const ctx = document.getElementById('chart-attendance-distribution').getContext('2d');
+        if (distributionChart) {
+            distributionChart.destroy();
+        }
+
+        const labels = Array.from(distributionMap.keys());
+        const data = Array.from(distributionMap.values());
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#9ca3af' : '#4b5563';
+
+        const palette = [
+            '#eab308', // Amarelo
+            '#10b981', // Verde
+            '#3b82f6', // Azul
+            '#8b5cf6', // Roxo
+            '#ec4899', // Rosa
+            '#f97316', // Laranja
+            '#06b6d4'  // Ciano
+        ];
+
+        distributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.length > 0 ? labels : ['Sem dados'],
+                datasets: [{
+                    data: data.length > 0 ? data : [0],
+                    backgroundColor: data.length > 0 ? palette.slice(0, data.length) : ['#e4e4e7'],
+                    borderWidth: isDark ? 2 : 1,
+                    borderColor: isDark ? '#1a1a1a' : '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: textColor,
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            boxWidth: 10,
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        titleColor: isDark ? '#ffffff' : '#18181b',
+                        bodyColor: isDark ? '#a1a1aa' : '#71717a',
+                        borderColor: isDark ? '#27272a' : '#e4e4e7',
+                        borderWidth: 1
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    function renderReportsRanking() {
+        if (!cachedReportsData) return;
+
+        const { studentPresencesCount, membersMap } = cachedReportsData;
+        const searchQuery = searchReportsRankingInput.value.toLowerCase().trim();
+
+        const rankList = [];
+        studentPresencesCount.forEach((count, sid) => {
+            const member = membersMap.get(sid);
+            const name = member ? `${member.firstName} ${member.lastName || ''}`.trim() : `Aluno #${sid}`;
+            const photoUrl = member?.photoUrl || 'default-profile.svg';
+            const unit = member?.branchName || member?.unitId || 'KIHAP';
+
+            if (!searchQuery || name.toLowerCase().includes(searchQuery)) {
+                rankList.push({ sid, name, count, photoUrl, unit });
+            }
+        });
+
+        rankList.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+        reportsRankingTableBody.innerHTML = '';
+        if (rankList.length === 0) {
+            reportsRankingTableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-8 text-gray-400 dark:text-gray-500 font-medium">
+                        <i class="fas fa-users-slash text-2xl mb-1.5 opacity-30"></i>
+                        <p class="text-xs">Nenhum aluno com presenças encontrado.</p>
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        rankList.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors border-b border-gray-150/40 dark:border-gray-800/30';
+
+            let posBadge = '';
+            if (index === 0) posBadge = '🥇';
+            else if (index === 1) posBadge = '🥈';
+            else if (index === 2) posBadge = '🥉';
+            else posBadge = `#${index + 1}`;
+
+            const displayUnit = item.unit.charAt(0).toUpperCase() + item.unit.slice(1).replace(/-/g, ' ');
+
+            tr.innerHTML = `
+                <td class="py-2.5 px-2 text-center font-extrabold ${index < 3 ? 'text-lg' : 'text-xs text-gray-400 dark:text-gray-500'}">${posBadge}</td>
+                <td class="py-2.5 px-2">
+                    <div class="flex items-center gap-2">
+                        <img src="${item.photoUrl}" alt="Foto" class="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                        <div>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 text-xs">${item.name}</span>
+                            <span class="block text-[9px] font-bold text-gray-400 uppercase tracking-wider">${displayUnit}</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-2.5 px-2 text-right font-black text-orange-500 pr-4 text-xs">
+                    <i class="fas fa-fire-alt text-[10px] mr-0.5"></i> ${item.count}
+                </td>
+            `;
+            reportsRankingTableBody.appendChild(tr);
+        });
+    }
+
+    function renderDetailedClasses() {
+        if (!cachedReportsData) return;
+
+        const { detailedClasses } = cachedReportsData;
+
+        const sortedClasses = [...detailedClasses].sort((a, b) => b.date.localeCompare(a.date));
+
+        reportsClassesTableBody.innerHTML = '';
+        if (sortedClasses.length === 0) {
+            reportsClassesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-400 dark:text-gray-500 font-medium">
+                        <i class="fas fa-calendar-times text-2xl mb-1.5 opacity-30"></i>
+                        <p class="text-xs">Nenhuma aula realizada no período.</p>
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        sortedClasses.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors border-b border-gray-150/40 dark:border-gray-800/30 text-xs font-semibold';
+
+            const [y, m, d] = item.date.split('-');
+            const dateStr = `${d}/${m}/${y}`;
+
+            const unitLabel = item.unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const percent = item.capacity > 0 ? Math.round((item.presences / item.capacity) * 100) : 0;
+            let barColor = 'bg-emerald-500';
+            if (percent > 80) barColor = 'bg-rose-500';
+            else if (percent > 50) barColor = 'bg-amber-500';
+
+            tr.innerHTML = `
+                <td class="py-3 px-3 text-gray-550 dark:text-gray-450">${dateStr}</td>
+                <td class="py-3 px-3 font-bold text-gray-800 dark:text-white">${item.name}</td>
+                <td class="py-3 px-3 text-gray-550 dark:text-gray-400">${item.teacherName.split(' ')[0]}</td>
+                <td class="py-3 px-3 text-gray-550 dark:text-gray-400">${unitLabel}</td>
+                <td class="py-3 px-3 w-28">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 font-bold">${item.presences}/${item.capacity}</span>
+                        <div class="flex-grow bg-gray-200 dark:bg-black/35 rounded-full h-1.5 overflow-hidden">
+                            <div class="${barColor} h-1.5 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <button class="open-class-attendance-btn bg-primary hover:bg-primary-dark text-black font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1 mx-auto shadow-sm" data-idx="${item.id}">
+                        <i class="fas fa-clipboard-list"></i> Presença
+                    </button>
+                </td>
+            `;
+
+            tr.querySelector('.open-class-attendance-btn').addEventListener('click', () => {
+                if (item.classData) {
+                    openAttendanceModal(item.classData);
+                } else {
+                    alert("Dados desta aula não disponíveis.");
+                }
+            });
+
+            reportsClassesTableBody.appendChild(tr);
+        });
+    }
+
     // Tab switching event listeners
     tabGradeBtn.addEventListener('click', () => {
-        tabGradeBtn.classList.remove('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
-        tabGradeBtn.classList.add('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
-
-        tabRankingBtn.classList.remove('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
-        tabRankingBtn.classList.add('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+        tabGradeBtn.className = 'px-6 py-3 border-b-2 border-primary text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-all';
+        tabRankingBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
+        tabReportsBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
 
         calendarControlsWrapper.classList.remove('hidden');
         scheduleGrid.classList.remove('hidden');
         rankingViewContainer.classList.add('hidden');
+        reportsViewContainer.classList.add('hidden');
         activeTab = 'grade';
     });
 
     tabRankingBtn.addEventListener('click', () => {
-        tabRankingBtn.classList.remove('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
-        tabRankingBtn.classList.add('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
-
-        tabGradeBtn.classList.remove('border-primary', 'text-gray-900', 'dark:text-white', 'font-bold');
-        tabGradeBtn.classList.add('border-transparent', 'text-gray-400', 'dark:text-gray-500', 'font-semibold');
+        tabRankingBtn.className = 'px-6 py-3 border-b-2 border-primary text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-all';
+        tabGradeBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
+        tabReportsBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
 
         calendarControlsWrapper.classList.add('hidden');
         scheduleGrid.classList.add('hidden');
         rankingViewContainer.classList.remove('hidden');
+        reportsViewContainer.classList.add('hidden');
         activeTab = 'ranking';
         
         renderRanking();
+    });
+
+    tabReportsBtn.addEventListener('click', () => {
+        tabReportsBtn.className = 'px-6 py-3 border-b-2 border-primary text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-all';
+        tabGradeBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
+        tabRankingBtn.className = 'px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all';
+
+        calendarControlsWrapper.classList.add('hidden');
+        scheduleGrid.classList.add('hidden');
+        rankingViewContainer.classList.add('hidden');
+        reportsViewContainer.classList.remove('hidden');
+        activeTab = 'reports';
+
+        loadReports();
     });
 
     // Ranking filter event listeners
@@ -765,6 +1310,36 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold transition-all border bg-primary border-primary text-black shadow-md shadow-yellow-500/10 scale-[1.03]';
         }
     });
+
+    // Event listeners para relatórios
+    if (reportPeriodFilter) {
+        reportPeriodFilter.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                reportCustomDates.classList.remove('hidden');
+            } else {
+                reportCustomDates.classList.add('hidden');
+                loadReports();
+            }
+        });
+    }
+
+    if (reportUnitFilter) {
+        reportUnitFilter.addEventListener('change', () => {
+            loadReports();
+        });
+    }
+
+    if (generateReportBtn) {
+        generateReportBtn.addEventListener('click', () => {
+            loadReports();
+        });
+    }
+
+    if (searchReportsRankingInput) {
+        searchReportsRankingInput.addEventListener('input', () => {
+            renderReportsRanking();
+        });
+    }
 
     onAuthReady(user => {
         if (user) {

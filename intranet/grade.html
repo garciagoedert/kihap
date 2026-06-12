@@ -16,6 +16,7 @@
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     
     
@@ -149,6 +150,9 @@
                     <button id="tab-ranking-btn" class="px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all">
                         <i class="fas fa-trophy"></i> Ranking de Ofensivas
                     </button>
+                    <button id="tab-reports-btn" class="px-6 py-3 border-b-2 border-transparent text-sm font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:text-gray-700 dark:hover:text-gray-300 transition-all">
+                        <i class="fas fa-chart-line"></i> Relatório de Presenças
+                    </button>
                 </div>
 
                 <!-- Grade de Horários -->
@@ -196,6 +200,184 @@
                                 <!-- Preenchido dinamicamente -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Seção de Relatórios (Oculta por padrão) -->
+                <div id="reports-view-container" class="hidden flex-grow flex flex-col overflow-y-auto custom-scrollbar bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm p-6 space-y-6">
+                    <!-- Filtros de Relatórios -->
+                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-gray-50/50 dark:bg-[#222]/10 p-4 rounded-2xl border border-gray-150 dark:border-gray-800/30 flex-shrink-0">
+                        <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                            <!-- Seletor de Período -->
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="far fa-calendar-alt text-gray-400 group-focus-within:text-primary transition-colors text-sm"></i>
+                                </div>
+                                <select id="report-period-filter" aria-label="Período do Relatório"
+                                    class="appearance-none bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white pl-10 pr-10 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 cursor-pointer shadow-sm text-sm font-semibold">
+                                    <option value="today">Hoje</option>
+                                    <option value="week">Esta Semana</option>
+                                    <option value="month" selected>Este Mês</option>
+                                    <option value="last30">Últimos 30 Dias</option>
+                                    <option value="last90">Últimos 90 Dias</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+
+                            <!-- Inputs de Data Personalizada (Oculto por padrão) -->
+                            <div id="report-custom-dates" class="hidden flex items-center gap-2">
+                                <input type="date" id="report-start-date" aria-label="Data Inicial"
+                                    class="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white px-4 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm font-semibold [color-scheme:light] dark:[color-scheme:dark]">
+                                <span class="text-gray-400 text-sm font-bold">até</span>
+                                <input type="date" id="report-end-date" aria-label="Data Final"
+                                    class="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white px-4 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm font-semibold [color-scheme:light] dark:[color-scheme:dark]">
+                            </div>
+
+                            <!-- Seletor de Unidade do Relatório -->
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fas fa-map-marker-alt text-gray-400 group-focus-within:text-primary transition-colors text-sm"></i>
+                                </div>
+                                <select id="report-unit-filter" aria-label="Unidade do Relatório"
+                                    class="appearance-none bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white pl-10 pr-10 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 cursor-pointer shadow-sm text-sm font-semibold">
+                                    <option value="all">Todas as Unidades</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="generate-report-btn"
+                            class="bg-primary hover:bg-primary-dark text-black px-5 py-2.5 rounded-2xl font-bold transition-all duration-300 flex items-center gap-2 shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-95 text-sm w-full xl:w-auto justify-center">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Atualizar Relatório</span>
+                        </button>
+                    </div>
+
+                    <!-- Cards de KPIs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- KPI 1 -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Aulas Realizadas</p>
+                                <h3 id="kpi-total-classes" class="text-2xl font-black text-gray-800 dark:text-white mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/15 text-primary flex items-center justify-center text-lg">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                        </div>
+                        <!-- KPI 2 -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Total de Presenças</p>
+                                <h3 id="kpi-total-presences" class="text-2xl font-black text-gray-800 dark:text-white mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-lg">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                        </div>
+                        <!-- KPI 3 -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Ocupação Média</p>
+                                <h3 id="kpi-avg-occupation" class="text-2xl font-black text-gray-800 dark:text-white mt-1">0%</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-500 flex items-center justify-center text-lg">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                        <!-- KPI 4 -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Alunos por Aula</p>
+                                <h3 id="kpi-avg-students" class="text-2xl font-black text-gray-800 dark:text-white mt-1">0.0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-500 flex items-center justify-center text-lg">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Evolução Temporal -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex flex-col min-h-[300px]">
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-history text-primary"></i> Evolução das Presenças
+                            </h4>
+                            <div class="flex-grow relative h-64">
+                                <canvas id="chart-attendance-timeline"></canvas>
+                            </div>
+                        </div>
+                        <!-- Distribuição -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex flex-col min-h-[300px]">
+                            <h4 id="distribution-chart-title" class="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-chart-pie text-primary"></i> Distribuição de Presenças
+                            </h4>
+                            <div class="flex-grow relative h-64 flex justify-center items-center">
+                                <canvas id="chart-attendance-distribution"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ranking e Detalhes Grid -->
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <!-- Ranking de Presenças de Alunos (1/3 width) -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex flex-col xl:col-span-1 min-h-[400px]">
+                            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                                <h4 class="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    <i class="fas fa-trophy text-primary"></i> Frequência de Alunos
+                                </h4>
+                                <div class="relative w-full sm:w-auto">
+                                    <input type="text" id="search-reports-ranking-input" placeholder="Buscar aluno..." class="w-full bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 text-gray-850 dark:text-white pl-8 pr-3 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400 text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-grow overflow-y-auto max-h-[400px] custom-scrollbar">
+                                <table class="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
+                                            <th class="py-2 px-2 text-center w-12">Pos</th>
+                                            <th class="py-2 px-2">Aluno</th>
+                                            <th class="py-2 px-2 text-right pr-4">Presenças</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reports-ranking-table-body" class="divide-y divide-gray-100 dark:divide-gray-850/40">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Detalhamento de Aulas (2/3 width) -->
+                        <div class="bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800/40 shadow-sm flex flex-col xl:col-span-2 min-h-[400px]">
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-list-ul text-primary"></i> Histórico Detalhado de Aulas
+                            </h4>
+                            <div class="flex-grow overflow-auto max-h-[400px] custom-scrollbar">
+                                <table class="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
+                                            <th class="py-2 px-3">Data</th>
+                                            <th class="py-2 px-3">Aula</th>
+                                            <th class="py-2 px-3">Professor</th>
+                                            <th class="py-2 px-3">Unidade</th>
+                                            <th class="py-2 px-3">Presença</th>
+                                            <th class="py-2 px-3 text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reports-classes-table-body" class="divide-y divide-gray-100 dark:divide-gray-850/40">
+                                        <!-- Preenchido dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
