@@ -10,6 +10,7 @@ import {
     getDoc,
     getDocs,
     doc,
+    setDoc,
     query,
     where,
     updateDoc,
@@ -399,7 +400,7 @@ async function bookTrialClass(args) {
             telefone,
             programa: programa || '',
             compareceu: false,
-            agendadoEm: serverTimestamp()
+            agendadoEm: new Date()
         };
 
         if (instanceSnap.exists()) {
@@ -418,8 +419,7 @@ async function bookTrialClass(args) {
             });
         } else {
             // Cria a instância com os campos mínimos permitidos pelas Firestore Rules
-            const { setDoc: firestoreSetDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-            await firestoreSetDoc(instanceRef, {
+            await setDoc(instanceRef, {
                 templateId,
                 date: data,
                 unitId,
