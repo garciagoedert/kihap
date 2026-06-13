@@ -274,6 +274,13 @@ async function saveLead(args) {
     }
 }
 
+function getLocalDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 /**
  * Busca a grade de horários da unidade para os próximos 7 dias.
  * Leitura pública habilitada nas Firestore Rules.
@@ -321,7 +328,7 @@ async function getSchedule(args) {
 
         for (const day of days) {
             const dayOfWeek = day.getDay();
-            const dateStr = day.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(day);
 
             for (const template of filtered) {
                 if (!template.daysOfWeek || !template.daysOfWeek.includes(dayOfWeek)) continue;

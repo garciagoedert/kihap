@@ -52,6 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(d.setDate(diff));
     }
 
+    function getLocalDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function formatDate(date) {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
@@ -104,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 7; i++) {
             const dayColumn = document.createElement('div');
             dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
-            dayColumn.dataset.date = days[i].toISOString().split('T')[0];
+            dayColumn.dataset.date = getLocalDateString(days[i]);
             for (let hour = 7; hour < 22; hour++) {
                 dayColumn.innerHTML += `
                     <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
@@ -145,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         startTime.setHours(hour, minute, 0, 0);
 
                         const endTime = new Date(startTime.getTime() + template.duration * 60000);
-                        const instanceId = `${template.id}_${day.toISOString().split('T')[0]}`;
+                        const instanceId = `${template.id}_${getLocalDateString(day)}`;
 
                         const instanceRef = doc(db, 'classInstances', instanceId);
                         const instanceSnap = await getDoc(instanceRef);
@@ -174,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderClassCard(classData) {
         const startTime = classData.startTime;
         const endTime = classData.endTime;
-        const dayDateStr = startTime.toISOString().split('T')[0];
+        const dayDateStr = getLocalDateString(startTime);
 
         const dayColumn = scheduleGrid.querySelector(`[data-date="${dayDateStr}"]`);
         if (!dayColumn) return;
@@ -534,6 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             }" title="${trial.compareceu ? 'Marcar como ausente' : 'Confirmar comparecimento'}">
                                 <i class="fas ${trial.compareceu ? 'fa-star' : 'fa-star'} text-xs pointer-events-none"></i>
                             </button>
+                            <button data-trial-idx="${idx}" class="delete-trial-btn w-8 h-8 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all duration-300" title="Excluir aula experimental">
+                                <i class="fas fa-trash-alt text-xs pointer-events-none"></i>
+                            </button>
                         </div>
                     `;
                     studentList.appendChild(trialEl);
@@ -552,6 +562,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handlePresenceToggle(e) {
+        // Trial student delete
+        const deleteTrialBtn = e.target.closest('.delete-trial-btn');
+        if (deleteTrialBtn && currentClassId) {
+            const idx = parseInt(deleteTrialBtn.dataset.trialIdx);
+            if (confirm('Tem certeza de que deseja excluir esta aula experimental?')) {
+                const instanceRef = doc(db, 'classInstances', currentClassId);
+                try {
+                    const snap = await getDoc(instanceRef);
+                    if (snap.exists()) {
+                        const trials = snap.data().trialStudents || [];
+                        trials.splice(idx, 1);
+                        await updateDoc(instanceRef, { trialStudents: trials });
+                    }
+                    if (currentClassData) await openAttendanceModal(currentClassData);
+                    renderGrid();
+                } catch (err) {
+                    console.error('Erro ao excluir experimental:', err);
+                }
+            }
+            return;
+        }
+
         // Trial student toggle
         const trialBtn = e.target.closest('.toggle-trial-btn');
         if (trialBtn && currentClassId) {
@@ -568,6 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (currentClassData) await openAttendanceModal(currentClassData);
+                renderGrid();
             } catch (err) {
                 console.error('Erro ao atualizar experimental:', err);
             }
@@ -625,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (userDocRef && userData) {
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const todayStr = getLocalDateString(new Date());
                         const lastDateStr = userData.lastAttendanceDate;
                         let currentStreak = userData.currentStreak || 0;
                         let longestStreak = userData.longestStreak || 0;

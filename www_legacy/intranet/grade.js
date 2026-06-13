@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(d.setDate(diff));
     }
 
+    function getLocalDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function formatDate(date) {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
@@ -94,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 7; i++) {
             const dayColumn = document.createElement('div');
             dayColumn.className = 'relative bg-[#161616] hover:bg-[#1c1c1c] transition-colors';
-            dayColumn.dataset.date = days[i].toISOString().split('T')[0];
+            dayColumn.dataset.date = getLocalDateString(days[i]);
             for (let hour = 7; hour < 22; hour++) {
                 dayColumn.innerHTML += `
                     <div class="time-slot border-b border-gray-800/30"></div>
@@ -135,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         startTime.setHours(hour, minute, 0, 0);
 
                         const endTime = new Date(startTime.getTime() + template.duration * 60000);
-                        const instanceId = `${template.id}_${day.toISOString().split('T')[0]}`;
+                        const instanceId = `${template.id}_${getLocalDateString(day)}`;
 
                         const instanceRef = doc(db, 'classInstances', instanceId);
                         const instanceSnap = await getDoc(instanceRef);
@@ -162,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderClassCard(classData) {
         const startTime = classData.startTime;
         const endTime = classData.endTime;
-        const dayDateStr = startTime.toISOString().split('T')[0];
+        const dayDateStr = getLocalDateString(startTime);
 
         const dayColumn = scheduleGrid.querySelector(`[data-date="${dayDateStr}"]`);
         if (!dayColumn) return;
