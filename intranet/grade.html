@@ -458,6 +458,21 @@
                 </div>
             </div>
 
+            <!-- Check-in avulso (Quick check-in) -->
+            <div class="px-6 py-3 border-b border-gray-150 dark:border-gray-800/80 bg-white dark:bg-[#1a1a1a] flex flex-col gap-2 relative">
+                <div class="relative">
+                    <input type="text" id="quick-checkin-search" placeholder="Check-in avulso (buscar aluno)..."
+                        class="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-[10px] text-gray-400"></i>
+                    <button id="clear-quick-checkin-btn" class="hidden absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+                <div id="quick-checkin-results" class="hidden max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-[#1a1a1a] shadow-xl absolute left-6 right-6 z-30 mt-9 custom-scrollbar">
+                    <!-- Matching students list -->
+                </div>
+            </div>
+
             <div id="student-list" class="p-6 overflow-y-auto custom-scrollbar space-y-3 flex-grow bg-white dark:bg-[#1a1a1a]">
                 <!-- Lista de alunos será preenchida dinamicamente -->
             </div>

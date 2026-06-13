@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedStudentIds = new Set();
     let isEditingClass = false; // flag para modo edição de turma
     let editingTemplateId = null; // template sendo editado
+    let currentUser = null;
+    let allSchoolMembers = [];
+    let isLoadingSchoolMembers = false;
 
     // --- Funções de Data ---
     function getStartOfWeek(date) {
@@ -196,9 +199,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const top = startMinutes * pixelsPerMinute;
         const height = durationMinutes * pixelsPerMinute;
 
+        const category = (classData.category || '').toLowerCase();
+        let colorClasses = {
+            card: 'bg-yellow-500/10 dark:bg-yellow-500/15 border-primary hover:bg-yellow-500/20 dark:hover:bg-yellow-500/25',
+            badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+        };
+
+        if (category.includes('baby')) {
+            colorClasses = {
+                card: 'bg-sky-500/10 dark:bg-sky-500/15 border-sky-400 hover:bg-sky-500/20 dark:hover:bg-sky-500/25',
+                badge: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+            };
+        } else if (category.includes('little')) {
+            colorClasses = {
+                card: 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500 hover:bg-blue-500/20 dark:hover:bg-blue-500/25',
+                badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+            };
+        } else if (category.includes('kid')) {
+            colorClasses = {
+                card: 'bg-orange-500/10 dark:bg-orange-500/15 border-orange-500 hover:bg-orange-500/20 dark:hover:bg-orange-500/25',
+                badge: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+            };
+        } else if (category.includes('adult')) {
+            colorClasses = {
+                card: 'bg-red-500/10 dark:bg-red-500/15 border-red-500 hover:bg-red-500/20 dark:hover:bg-red-500/25',
+                badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            };
+        } else if (category.includes('famil') || category.includes('família')) {
+            colorClasses = {
+                card: 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500 hover:bg-purple-500/20 dark:hover:bg-purple-500/25',
+                badge: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+            };
+        }
+
         const card = document.createElement('div');
         // Premium Card Styling
-        card.className = 'class-card absolute w-[94%] left-[3%] bg-yellow-500/10 dark:bg-yellow-500/15 border-l-4 border-primary p-2.5 rounded-r-xl cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md hover:bg-yellow-500/20 dark:hover:bg-yellow-500/25';
+        card.className = `class-card absolute w-[94%] left-[3%] border-l-4 p-2.5 rounded-r-xl cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md ${colorClasses.card}`;
         card.style.top = `${top}px`;
         card.style.height = `${height - 2}px`;
         card.dataset.classId = classData.id;
@@ -218,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : '';
 
         const categoryBadge = classData.category
-            ? `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
+            ? `<span class="${colorClasses.badge} px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
             : '';
 
         card.innerHTML = `
@@ -363,10 +399,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return fullName.includes(filterText.toLowerCase());
         });
 
+        // Float selected students to the top
+        filtered.sort((a, b) => {
+            const aSelected = selectedStudentIds.has(a.idMember.toString());
+            const bSelected = selectedStudentIds.has(b.idMember.toString());
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
+            const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
+            return aName.localeCompare(bName);
+        });
+
         if (filtered.length > 0) {
             filtered.forEach(student => {
                 const isSelected = selectedStudentIds.has(student.idMember.toString());
-                const option = new Option(`${student.firstName} ${student.lastName || ''}`, student.idMember);
+                const prefix = isSelected ? '✓ ' : '';
+                const option = new Option(`${prefix}${student.firstName} ${student.lastName || ''}`, student.idMember);
                 option.selected = isSelected;
                 classStudentsSelect.add(option);
             });
@@ -431,6 +479,13 @@ document.addEventListener('DOMContentLoaded', () => {
         attendanceModal.classList.remove('hidden');
 
         try {
+            // Apenas administradores podem excluir turmas
+            if (currentUser && currentUser.isAdmin) {
+                deleteClassBtn.classList.remove('hidden');
+            } else {
+                deleteClassBtn.classList.add('hidden');
+            }
+
             const startTime = classData.startTime;
             const endTime = classData.endTime;
             modalClassTitle.textContent = classData.name;
@@ -559,6 +614,183 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeAttendanceModal() {
         attendanceModal.classList.add('hidden');
         currentClassId = null;
+        // Limpar busca e resultados do check-in avulso
+        const searchInput = document.getElementById('quick-checkin-search');
+        if (searchInput) searchInput.value = '';
+        const resultsContainer = document.getElementById('quick-checkin-results');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        const clearBtn = document.getElementById('clear-quick-checkin-btn');
+        if (clearBtn) clearBtn.classList.add('hidden');
+    }
+
+    async function syncStudentStreak(studentId) {
+        try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('evoMemberId', '==', Number(studentId)));
+            let querySnapshot = await getDocs(q);
+            let userDocRef = null;
+            let userData = null;
+
+            if (!querySnapshot.empty) {
+                userDocRef = querySnapshot.docs[0].ref;
+                userData = querySnapshot.docs[0].data();
+            } else {
+                const q2 = query(usersRef, where('evoMemberId', '==', studentId.toString()));
+                querySnapshot = await getDocs(q2);
+                if (!querySnapshot.empty) {
+                    userDocRef = querySnapshot.docs[0].ref;
+                    userData = querySnapshot.docs[0].data();
+                }
+            }
+
+            if (userDocRef && userData) {
+                const todayStr = getLocalDateString(new Date());
+                const lastDateStr = userData.lastAttendanceDate;
+                let currentStreak = userData.currentStreak || 0;
+                let longestStreak = userData.longestStreak || 0;
+
+                if (lastDateStr !== todayStr) {
+                    if (!lastDateStr) {
+                        currentStreak = 1;
+                    } else {
+                        const lastDate = new Date(lastDateStr + 'T12:00:00');
+                        const todayDate = new Date(todayStr + 'T12:00:00');
+                        const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays <= 5) {
+                            currentStreak += 1;
+                        } else {
+                            currentStreak = 1;
+                        }
+                    }
+
+                    if (currentStreak > longestStreak) {
+                        longestStreak = currentStreak;
+                    }
+
+                    await updateDoc(userDocRef, {
+                        currentStreak,
+                        longestStreak,
+                        lastAttendanceDate: todayStr
+                    });
+                    console.log(`Streak updated on intranet for user: ${userDocRef.id}`);
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao sincronizar streak do aluno na intranet:", err);
+        }
+    }
+
+    async function ensureAllSchoolMembersLoaded() {
+        if (allSchoolMembers.length > 0 || isLoadingSchoolMembers) return;
+        isLoadingSchoolMembers = true;
+        try {
+            const resultsDiv = document.getElementById('quick-checkin-results');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando alunos do sistema...</div>';
+                resultsDiv.classList.remove('hidden');
+            }
+
+            const listAllMembers = httpsCallable(functions, 'listAllMembers');
+            const result = await listAllMembers({ unitId: 'all' });
+            allSchoolMembers = (result.data || []).filter(m => !m.isInstructor);
+        } catch (err) {
+            console.error("Erro ao carregar alunos de todas as unidades:", err);
+            const resultsDiv = document.getElementById('quick-checkin-results');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = '<div class="p-3 text-xs text-red-500 text-center">Erro ao carregar alunos. Recarregue a página.</div>';
+            }
+        } finally {
+            isLoadingSchoolMembers = false;
+        }
+    }
+
+    async function performQuickCheckin(studentId) {
+        if (!currentClassId) return;
+        const instanceRef = doc(db, 'classInstances', currentClassId);
+        const studentIdToSave = typeof studentId === 'string' ? studentId : studentId.toString();
+
+        try {
+            const instanceSnap = await getDoc(instanceRef);
+            if (instanceSnap.exists()) {
+                await updateDoc(instanceRef, {
+                    presentStudents: arrayUnion(studentIdToSave)
+                });
+            } else {
+                const [templateId, date] = currentClassId.split('_');
+                await setDoc(instanceRef, {
+                    templateId: templateId,
+                    date: date,
+                    unitId: selectedUnitId,
+                    presentStudents: [studentIdToSave]
+                });
+            }
+
+            // Sync streak
+            await syncStudentStreak(studentIdToSave);
+
+            // Limpa a busca
+            const searchInput = document.getElementById('quick-checkin-search');
+            if (searchInput) searchInput.value = '';
+            const resultsDiv = document.getElementById('quick-checkin-results');
+            if (resultsDiv) resultsDiv.classList.add('hidden');
+            const clearBtn = document.getElementById('clear-quick-checkin-btn');
+            if (clearBtn) clearBtn.classList.add('hidden');
+
+            // Recarrega modal e grade
+            if (currentClassData) await openAttendanceModal(currentClassData);
+            renderGrid();
+        } catch (err) {
+            console.error("Erro ao realizar checkin avulso:", err);
+        }
+    }
+
+    function handleQuickCheckinSearch(e) {
+        const queryText = e.target.value.toLowerCase().trim();
+        const resultsContainer = document.getElementById('quick-checkin-results');
+        const clearBtn = document.getElementById('clear-quick-checkin-btn');
+
+        if (queryText.length === 0) {
+            if (clearBtn) clearBtn.classList.add('hidden');
+        } else {
+            if (clearBtn) clearBtn.classList.remove('hidden');
+        }
+
+        if (queryText.length < 2) {
+            if (resultsContainer) {
+                resultsContainer.classList.add('hidden');
+                resultsContainer.innerHTML = '';
+            }
+            return;
+        }
+
+        ensureAllSchoolMembersLoaded().then(() => {
+            const matches = allSchoolMembers.filter(m => {
+                const fullName = `${m.firstName || ''} ${m.lastName || ''}`.toLowerCase();
+                return fullName.includes(queryText);
+            }).slice(0, 15);
+
+            if (resultsContainer) {
+                if (matches.length === 0) {
+                    resultsContainer.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center">Nenhum aluno encontrado</div>';
+                } else {
+                    resultsContainer.innerHTML = matches.map(student => {
+                        const unitNameText = student.branchName || student.unitId || '';
+                        return `
+                            <div class="quick-checkin-item flex justify-between items-center p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer border-b border-gray-100 dark:border-gray-800/40 text-xs font-semibold" data-student-id="${student.idMember}">
+                                <div class="flex flex-col">
+                                    <span class="text-gray-900 dark:text-white font-bold">${student.firstName} ${student.lastName || ''}</span>
+                                    <span class="text-[9px] text-gray-400 uppercase font-extrabold">${unitNameText}</span>
+                                </div>
+                                <button class="bg-primary text-black font-extrabold px-2.5 py-1 rounded-lg text-[10px] uppercase shadow-sm pointer-events-none">Check-in</button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                resultsContainer.classList.remove('hidden');
+            }
+        });
     }
 
     async function handlePresenceToggle(e) {
@@ -638,62 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Sync streak to user document if marking as present
             if (!isPresent) {
-                try {
-                    const usersRef = collection(db, 'users');
-                    const q = query(usersRef, where('evoMemberId', '==', Number(studentId)));
-                    let querySnapshot = await getDocs(q);
-                    let userDocRef = null;
-                    let userData = null;
-
-                    if (!querySnapshot.empty) {
-                        userDocRef = querySnapshot.docs[0].ref;
-                        userData = querySnapshot.docs[0].data();
-                    } else {
-                        const q2 = query(usersRef, where('evoMemberId', '==', studentId.toString()));
-                        querySnapshot = await getDocs(q2);
-                        if (!querySnapshot.empty) {
-                            userDocRef = querySnapshot.docs[0].ref;
-                            userData = querySnapshot.docs[0].data();
-                        }
-                    }
-
-                    if (userDocRef && userData) {
-                        const todayStr = getLocalDateString(new Date());
-                        const lastDateStr = userData.lastAttendanceDate;
-                        let currentStreak = userData.currentStreak || 0;
-                        let longestStreak = userData.longestStreak || 0;
-
-                        if (lastDateStr !== todayStr) {
-                            if (!lastDateStr) {
-                                currentStreak = 1;
-                            } else {
-                                const lastDate = new Date(lastDateStr + 'T12:00:00');
-                                const todayDate = new Date(todayStr + 'T12:00:00');
-                                const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                                if (diffDays <= 5) {
-                                    currentStreak += 1;
-                                } else {
-                                    currentStreak = 1;
-                                }
-                            }
-
-                            if (currentStreak > longestStreak) {
-                                longestStreak = currentStreak;
-                            }
-
-                            await updateDoc(userDocRef, {
-                                currentStreak,
-                                longestStreak,
-                                lastAttendanceDate: todayStr
-                            });
-                            console.log(`Streak updated on intranet for user: ${userDocRef.id}`);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro ao sincronizar streak do aluno na intranet:", err);
-                }
+                await syncStudentStreak(studentIdToSave);
             }
 
             if (currentClassData) {
@@ -1503,6 +1680,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeAttendanceModalBtn.addEventListener('click', closeAttendanceModal);
     studentList.addEventListener('click', handlePresenceToggle);
+
+    // Listeners do Check-in Avulso
+    const quickSearchInput = document.getElementById('quick-checkin-search');
+    const quickResultsContainer = document.getElementById('quick-checkin-results');
+    const quickClearBtn = document.getElementById('clear-quick-checkin-btn');
+
+    if (quickSearchInput) {
+        quickSearchInput.addEventListener('focus', ensureAllSchoolMembersLoaded);
+        quickSearchInput.addEventListener('click', ensureAllSchoolMembersLoaded);
+        quickSearchInput.addEventListener('input', handleQuickCheckinSearch);
+    }
+
+    if (quickClearBtn && quickSearchInput && quickResultsContainer) {
+        quickClearBtn.addEventListener('click', () => {
+            quickSearchInput.value = '';
+            quickResultsContainer.classList.add('hidden');
+            quickResultsContainer.innerHTML = '';
+            quickClearBtn.classList.add('hidden');
+        });
+    }
+
+    if (quickResultsContainer) {
+        quickResultsContainer.addEventListener('click', (e) => {
+            const item = e.target.closest('.quick-checkin-item');
+            if (item) {
+                const studentId = item.dataset.studentId;
+                if (studentId) performQuickCheckin(studentId);
+            }
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (quickResultsContainer && quickSearchInput) {
+            if (!quickResultsContainer.contains(e.target) && e.target !== quickSearchInput) {
+                quickResultsContainer.classList.add('hidden');
+            }
+        }
+    });
+
     deleteClassBtn.addEventListener('click', handleDeleteClass);
 
     const editClassBtn = document.getElementById('edit-class-btn');
@@ -1533,6 +1749,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        renderStudentsList(searchStudentsInput ? searchStudentsInput.value : '');
     });
 
     document.getElementById('class-days-of-week').addEventListener('click', (e) => {
@@ -1579,6 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     onAuthReady(user => {
         if (user) {
+            currentUser = user;
             initialize();
         } else {
             console.log("Usuário não autenticado.");
