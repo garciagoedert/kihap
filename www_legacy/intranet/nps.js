@@ -31,7 +31,7 @@ async function fetchResponses() {
         allResponses = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-        }));
+        })).filter(r => !r.isExperienceEvent);
 
         console.log(`✅ ${allResponses.length} respostas carregadas.`);
     } catch (error) {

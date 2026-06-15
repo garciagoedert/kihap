@@ -365,6 +365,21 @@ service cloud.firestore {
       );
       allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
+    // Regras para NPS do Experience
+    match /experience_nps_responses/{responseId} {
+      allow create: if true;
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true
+      );
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Regras para Campanhas de NPS
+    match /nps_campaigns/{campaignId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
     // Regras Temporárias para Seguidores (Teste de Conectividade)
     match /follows/{followId} {
       allow read, write: if request.auth != null; 

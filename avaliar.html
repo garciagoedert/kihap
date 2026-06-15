@@ -14,231 +14,129 @@
     
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #000; color: #fff; }
+        
+        .step { 
+            display: none; 
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+        .step.active { 
+            display: block; 
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Premium glassmorphism effects */
+        .glass-card {
+            background: rgba(10, 10, 10, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Star rating hover styling */
+        .star-rating i {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.15s ease;
+        }
+        .star-rating i:hover {
+            transform: scale(1.25);
+        }
+
+        /* Option cards */
+        .option-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-card:hover {
+            background-color: rgba(234, 179, 8, 0.08);
+            border-color: rgba(234, 179, 8, 0.3);
+            transform: translateY(-2px);
+        }
+        .option-card.selected {
+            background-color: rgba(234, 179, 8, 0.15);
+            border-color: #eab308;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.15);
+        }
+
+        /* NPS btn */
         .nps-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .nps-btn:hover { transform: translateY(-2px); }
-        .nps-btn.active { background-color: #eab308; color: #000; border-color: #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        
-        .step { display: none; }
-        .step.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+        .nps-btn.selected { background-color: #eab308; color: #000; border-color: #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
 
+        /* Custom inputs */
         input, select, textarea {
-            background-color: #1a1a1a !important;
-            border-color: #333 !important;
+            background-color: #121212 !important;
+            border-color: #262626 !important;
             color: white !important;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         input:focus, select:focus, textarea:focus {
             border-color: #eab308 !important;
-            ring-color: #eab308 !important;
+            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2) !important;
+            outline: none !important;
         }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
     </style>
 </head>
-<body class="bg-black min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-black min-h-screen flex flex-col items-center justify-center p-4 relative overflow-x-hidden">
 
-    <div class="w-full max-w-2xl bg-[#0a0a0a] border border-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+    <!-- Background glow design -->
+    <div class="absolute w-[400px] h-[400px] bg-yellow-500/10 rounded-full blur-[120px] top-1/4 -left-1/4 pointer-events-none"></div>
+    <div class="absolute w-[350px] h-[350px] bg-yellow-600/5 rounded-full blur-[100px] bottom-1/4 -right-1/4 pointer-events-none"></div>
+
+    <!-- Progress bar at top -->
+    <div class="fixed top-0 left-0 w-full h-1.5 bg-gray-950 z-50">
+        <div id="progress-bar" class="h-full bg-yellow-500 transition-all duration-500 ease-out" style="width: 0%;"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="form-card" class="w-full max-w-xl glass-card rounded-[32px] shadow-2xl relative overflow-hidden z-10 flex flex-col my-8">
+        
         <!-- Header -->
-        <div class="p-8 text-center border-b border-gray-900 bg-gradient-to-b from-gray-900 to-transparent">
-            <img src="/imgs/favicon.png" alt="Kihap Logo" class="h-12 mx-auto mb-4">
-            <h1 class="text-2xl font-black text-white uppercase tracking-tight">Sua opinião importa!</h1>
-            <p class="text-gray-400 text-sm mt-1">Ajude-nos a construir a melhor experiência em artes marciais.</p>
+        <div class="p-8 text-center border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent">
+            <img src="/imgs/favicon.png" alt="Kihap Logo" class="h-10 mx-auto mb-4 drop-shadow-md">
+            <h1 id="campaign-title-heading" class="text-xl font-black text-white uppercase tracking-wider">Carregando...</h1>
+            <p id="campaign-desc-heading" class="text-gray-400 text-xs mt-1">Carregando perguntas da pesquisa de satisfação...</p>
         </div>
 
         <!-- Form Content -->
-        <div class="p-8">
-            <form id="nps-external-form" class="space-y-8">
-                
-                <!-- Step 1: Identification -->
-                <div id="step-1" class="step active space-y-6">
-                    <div class="space-y-4">
-                        <h2 class="text-lg font-bold text-yellow-500 mb-2">Quem está falando?</h2>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Nome Completo</label>
-                            <input type="text" id="user-name" required placeholder="Digite seu nome" 
-                                class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">WhatsApp ou E-mail</label>
-                            <input type="text" id="user-contact" required placeholder="(00) 00000-0000 ou email@exemplo.com" 
-                                class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sua Unidade</label>
-                            <select id="user-unit" required class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
-                                <option value="">Selecione a unidade</option>
-                                <option value="centro">Unidade Centro</option>
-                                <option value="coqueiros">Unidade Coqueiros</option>
-                                <option value="asa-sul">Unidade Asa Sul</option>
-                                <option value="sudoeste">Unidade Sudoeste</option>
-                                <option value="lago-sul">Unidade Lago Sul</option>
-                                <option value="noroeste">Unidade Noroeste</option>
-                                <option value="dourados">Unidade Dourados</option>
-                                <option value="santa-monica">Unidade Santa Mônica</option>
-                                <option value="jardim-botanico">Unidade Jardim Botânico</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Professor(a)</label>
-                            <select id="user-professor" required class="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
-                                <option value="">Carregando professores...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="button" onclick="nextStep(2)" class="w-full bg-white text-black font-black uppercase tracking-widest py-5 rounded-2xl hover:bg-yellow-500 transition-all shadow-xl">
-                        Começar Avaliação
-                    </button>
-                </div>
+        <div class="p-8 flex-grow flex flex-col justify-center">
+            <div id="loading-spinner" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
+                <p class="text-gray-400 text-sm">Carregando formulário...</p>
+            </div>
 
-                <!-- Step 2: Main NPS -->
-                <div id="step-2" class="step space-y-6">
-                    <div class="text-center">
-                        <label class="block text-lg font-bold text-white mb-6">
-                            Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?
-                        </label>
-                        <div class="grid grid-cols-6 sm:grid-cols-11 gap-2">
-                            <button type="button" data-score="0" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">0</button>
-                            <button type="button" data-score="1" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">1</button>
-                            <button type="button" data-score="2" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">2</button>
-                            <button type="button" data-score="3" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">3</button>
-                            <button type="button" data-score="4" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">4</button>
-                            <button type="button" data-score="5" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">5</button>
-                            <button type="button" data-score="6" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">6</button>
-                            <button type="button" data-score="7" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">7</button>
-                            <button type="button" data-score="8" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">8</button>
-                            <button type="button" data-score="9" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">9</button>
-                            <button type="button" data-score="10" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-bold hover:border-yellow-500">10</button>
-                        </div>
-                        <input type="hidden" id="nps-score" required>
-                    </div>
-                    <div class="flex gap-4">
-                        <button type="button" onclick="nextStep(1)" class="flex-1 bg-gray-900 text-gray-400 py-4 rounded-2xl hover:bg-gray-800">Voltar</button>
-                        <button type="button" onclick="validateStep2()" class="flex-[2] bg-yellow-500 text-black font-bold py-4 rounded-2xl shadow-lg">Continuar</button>
-                    </div>
-                </div>
-
-                <!-- Step 3: Detailed Scores -->
-                <div id="step-3" class="step space-y-6">
-                    <h2 class="text-xl font-bold text-white text-center mb-4">Avalie os detalhes (0 a 10)</h2>
-                    
-                    <div class="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        <!-- Categoria: Estrutura -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Estrutura da Unidade</label>
-                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
-                                <button type="button" data-cat="estrutura" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
-                                <button type="button" data-cat="estrutura" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
-                                <button type="button" data-cat="estrutura" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
-                                <button type="button" data-cat="estrutura" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
-                                <button type="button" data-cat="estrutura" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
-                                <button type="button" data-cat="estrutura" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
-                                <button type="button" data-cat="estrutura" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
-                                <button type="button" data-cat="estrutura" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
-                                <button type="button" data-cat="estrutura" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
-                                <button type="button" data-cat="estrutura" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
-                                <button type="button" data-cat="estrutura" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
-                            </div>
-                            <input type="hidden" id="score-estrutura" required>
-                        </div>
-                        <!-- Categoria: Limpeza -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Limpeza e Higiene</label>
-                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
-                                <button type="button" data-cat="limpeza" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
-                                <button type="button" data-cat="limpeza" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
-                                <button type="button" data-cat="limpeza" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
-                                <button type="button" data-cat="limpeza" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
-                                <button type="button" data-cat="limpeza" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
-                                <button type="button" data-cat="limpeza" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
-                                <button type="button" data-cat="limpeza" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
-                                <button type="button" data-cat="limpeza" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
-                                <button type="button" data-cat="limpeza" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
-                                <button type="button" data-cat="limpeza" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
-                                <button type="button" data-cat="limpeza" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
-                            </div>
-                            <input type="hidden" id="score-limpeza" required>
-                        </div>
-                        <!-- Categoria: Materiais -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Qualidade dos Materiais</label>
-                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
-                                <button type="button" data-cat="materiais" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
-                                <button type="button" data-cat="materiais" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
-                                <button type="button" data-cat="materiais" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
-                                <button type="button" data-cat="materiais" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
-                                <button type="button" data-cat="materiais" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
-                                <button type="button" data-cat="materiais" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
-                                <button type="button" data-cat="materiais" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
-                                <button type="button" data-cat="materiais" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
-                                <button type="button" data-cat="materiais" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
-                                <button type="button" data-cat="materiais" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
-                                <button type="button" data-cat="materiais" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
-                            </div>
-                            <input type="hidden" id="score-materiais" required>
-                        </div>
-                        <!-- Categoria: Atendimento -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Atendimento na Recepção</label>
-                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
-                                <button type="button" data-cat="atendimento" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
-                                <button type="button" data-cat="atendimento" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
-                                <button type="button" data-cat="atendimento" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
-                                <button type="button" data-cat="atendimento" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
-                                <button type="button" data-cat="atendimento" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
-                                <button type="button" data-cat="atendimento" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
-                                <button type="button" data-cat="atendimento" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
-                                <button type="button" data-cat="atendimento" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
-                                <button type="button" data-cat="atendimento" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
-                                <button type="button" data-cat="atendimento" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
-                                <button type="button" data-cat="atendimento" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
-                            </div>
-                            <input type="hidden" id="score-atendimento" required>
-                        </div>
-                        <!-- Categoria: Professor -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-widest text-center">Performance do Instrutor / Aula</label>
-                            <div class="flex flex-wrap sm:flex-nowrap justify-between items-center bg-gray-900/50 p-2 sm:p-3 rounded-2xl gap-1">
-                                <button type="button" data-cat="instructor" data-val="0" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">0</button>
-                                <button type="button" data-cat="instructor" data-val="1" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">1</button>
-                                <button type="button" data-cat="instructor" data-val="2" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">2</button>
-                                <button type="button" data-cat="instructor" data-val="3" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">3</button>
-                                <button type="button" data-cat="instructor" data-val="4" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">4</button>
-                                <button type="button" data-cat="instructor" data-val="5" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">5</button>
-                                <button type="button" data-cat="instructor" data-val="6" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">6</button>
-                                <button type="button" data-cat="instructor" data-val="7" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">7</button>
-                                <button type="button" data-cat="instructor" data-val="8" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">8</button>
-                                <button type="button" data-cat="instructor" data-val="9" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">9</button>
-                                <button type="button" data-cat="instructor" data-val="10" class="cat-btn flex-1 h-9 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold border border-gray-800 text-gray-500 hover:border-yellow-500">10</button>
-                            </div>
-                            <input type="hidden" id="score-instructor" required>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 space-y-4">
-                        <label class="block text-sm font-semibold text-gray-400 mb-2">Comentários Adicionais (Opcional)</label>
-                        <textarea id="user-comment" rows="3" class="w-full bg-[#1a1a1a] border border-gray-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all resize-none" placeholder="Conte-nos um pouco mais sobre sua nota..."></textarea>
-                        <div class="flex gap-4">
-                            <button type="button" onclick="nextStep(2)" class="flex-1 bg-gray-900 text-gray-400 py-4 rounded-2xl hover:bg-gray-800">Voltar</button>
-                            <button type="submit" id="submit-btn" class="flex-[3] bg-yellow-500 text-black font-black uppercase py-4 rounded-2xl shadow-lg hover:bg-yellow-400 transition-all">Enviar Avaliação</button>
-                        </div>
-                    </div>
-                </div>
-
+            <form id="nps-dynamic-form" onsubmit="return false;" class="space-y-6 hidden">
+                <!-- Steps will be generated here -->
             </form>
+        </div>
+    </div>
+
+    <!-- Success Message Container -->
+    <div id="success-card" class="w-full max-w-xl glass-card rounded-[32px] shadow-2xl p-12 text-center relative overflow-hidden z-10 hidden my-8 animate-fade-in">
+        <div class="w-20 h-20 bg-green-500/10 border border-green-500/35 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/5">
+            <i class="fas fa-check text-green-500 text-4xl"></i>
+        </div>
+        <h3 class="text-3xl font-bold text-white mb-3 tracking-tight">Obrigado!</h3>
+        <p class="text-neutral-400 max-w-sm mx-auto leading-relaxed">Sua avaliação foi enviada com sucesso. Agradecemos muito por compartilhar a sua opinião!</p>
+        <div class="mt-8">
+            <a href="https://kihap.com.br" class="inline-block px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest rounded-xl transition-all shadow-lg hover:shadow-yellow-500/10 text-sm">
+                Voltar ao site
+            </a>
         </div>
     </div>
 
     <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config (Must match intranet/firebase-config.js)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD1WKwAsAicGdRz9cRA2Nvv3LEZve1vZe0",
             authDomain: "intranet-kihap.firebaseapp.com",
@@ -252,66 +150,239 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // UI State
-        let currentStep = 1;
-        const form = document.getElementById('nps-external-form');
+        const params = new URLSearchParams(window.location.search);
+        const campaignId = params.get('id') || 'regular';
 
-        // Step Navigation
-        window.nextStep = (step) => {
-            if (step === 2) {
-                if (!document.getElementById('user-name').value || !document.getElementById('user-contact').value || !document.getElementById('user-unit').value || !document.getElementById('user-professor').value) {
-                    alert('Por favor, preencha todos os campos de identificação.');
-                    return;
+        let campaign = null;
+        let stepsMap = {};
+        let sortedStepNumbers = [];
+        let activeStep = 1;
+        let totalSteps = 0;
+
+        async function initNpsForm() {
+            try {
+                const docSnap = await getDoc(doc(db, "public_config", `nps_campaign_${campaignId}`));
+                if (docSnap.exists()) {
+                    campaign = docSnap.data();
+                }
+            } catch (err) {
+                console.error("Error fetching campaign:", err);
+            }
+
+            // Fallback configurations if Firestore campaign doesn't exist yet
+            if (!campaign) {
+                if (campaignId === 'experience') {
+                    campaign = {
+                        id: 'experience',
+                        title: 'KIHAP Experience',
+                        description: 'Avaliação dos eventos de Graduação, Competições e Seminários.',
+                        questions: [
+                            { id: "studentName", label: "Qual o seu nome?", type: "text", required: true, step: 1, placeholder: "Escreva seu nome aqui..." },
+                            { id: "unitName", label: "Em qual unidade você frequentou o último ciclo de desenvolvimento?", type: "radio", required: true, step: 2, options: ["Asa Sul", "Sudoeste", "Lago Sul", "Online", "Eleva", "Outra"] },
+                            { id: "score_pontualidade", label: "Qual nota você atribui a pontualidade do evento?", type: "rating-5", required: true, step: 3 },
+                            { id: "score_inscricao", label: "Dê uma nota ao método de inscrições do Experience.", type: "rating-10", required: true, step: 4 },
+                            { id: "score_ambiente", label: "De 0 a 10, como você avalia a sua experiência no ambiente físico (Royal Tulip)?", type: "rating-11", required: true, step: 5 },
+                            { id: "comment", label: "Quer deixar algum comentário ou sugestão adicional?", type: "text-area", required: false, step: 6, placeholder: "Escreva sua mensagem aqui..." }
+                        ]
+                    };
+                } else {
+                    campaign = {
+                        id: 'regular',
+                        title: 'Pesquisa Regular (Alunos)',
+                        description: 'Net Promoter Score para satisfação regular dos alunos das unidades.',
+                        questions: [
+                            { id: "studentName", label: "Nome Completo", type: "text", required: true, step: 1, placeholder: "Digite seu nome" },
+                            { id: "contact", label: "WhatsApp ou E-mail", type: "text", required: true, step: 1, placeholder: "(00) 00000-0000 ou email@exemplo.com" },
+                            { id: "unitId", label: "Sua Unidade", type: "select-unit", required: true, step: 1 },
+                            { id: "professorId", label: "Professor(a)", type: "select-professor", required: true, step: 1 },
+                            { id: "score", label: "Em uma escala de 0 a 10, o quanto você recomendaria a Kihap para um amigo ou familiar?", type: "rating-11", required: true, step: 2 },
+                            { id: "score_estrutura", label: "Estrutura da Unidade", type: "rating-11", required: true, step: 3 },
+                            { id: "score_limpeza", label: "Limpeza e Higiene", type: "rating-11", required: true, step: 3 },
+                            { id: "score_materiais", label: "Qualidade dos Materiais", type: "rating-11", required: true, step: 3 },
+                            { id: "score_atendimento", label: "Atendimento na Recepção", type: "rating-11", required: true, step: 3 },
+                            { id: "score_instructor", label: "Performance do Instrutor / Aula", type: "rating-11", required: true, step: 3 },
+                            { id: "comment", label: "Comentários Adicionais (Opcional)", type: "text-area", required: false, step: 3, placeholder: "Conte-nos um pouco mais sobre sua nota..." }
+                        ]
+                    };
                 }
             }
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('step-' + step).classList.add('active');
-            currentStep = step;
-        };
 
-        window.validateStep2 = () => {
-            if (!document.getElementById('nps-score').value) {
-                alert('Por favor, selecione uma nota de 0 a 10.');
-                return;
-            }
-            nextStep(3);
-        };
+            document.getElementById('campaign-title-heading').textContent = campaign.title;
+            document.getElementById('campaign-desc-heading').textContent = campaign.description || '';
 
-        // NPS Multi-Score Selection Logic
-        document.querySelectorAll('.nps-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.nps-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('nps-score').value = btn.dataset.score;
+            // Group questions by step
+            stepsMap = {};
+            campaign.questions.forEach(q => {
+                const sNum = q.step || 1;
+                if (!stepsMap[sNum]) stepsMap[sNum] = [];
+                stepsMap[sNum].push(q);
             });
-        });
+            sortedStepNumbers = Object.keys(stepsMap).map(Number).sort((a, b) => a - b);
+            totalSteps = sortedStepNumbers.length;
 
-        // Category Selection Logic
-        document.querySelectorAll('.cat-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const cat = btn.dataset.cat;
-                document.querySelectorAll(`.cat-btn[data-cat="${cat}"]`).forEach(b => {
-                    b.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-500');
-                    b.classList.add('border-gray-800', 'text-gray-500');
+            compileForm();
+            prefillFromURL();
+
+            document.getElementById('loading-spinner').classList.add('hidden');
+            document.getElementById('nps-dynamic-form').classList.remove('hidden');
+
+            updateProgressBar();
+        }
+
+        function compileForm() {
+            const form = document.getElementById('nps-dynamic-form');
+            form.innerHTML = '';
+            
+            sortedStepNumbers.forEach((stepNum, idx) => {
+                const stepQuestions = stepsMap[stepNum];
+                const stepDiv = document.createElement('div');
+                stepDiv.id = `step-${idx + 1}`;
+                stepDiv.className = `step ${idx === 0 ? 'active' : ''} space-y-6`;
+                
+                let questionsHtml = '';
+                stepQuestions.forEach(q => {
+                    questionsHtml += renderQuestion(q);
                 });
-                btn.classList.remove('border-gray-800', 'text-gray-500');
-                btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-500');
-                document.getElementById('score-' + cat).value = btn.dataset.val;
+                
+                const isFirst = idx === 0;
+                const isLast = idx === sortedStepNumbers.length - 1;
+                
+                const buttonsHtml = `
+                    <div class="flex gap-4 pt-4">
+                        ${!isFirst ? `<button type="button" onclick="prevStep(${idx + 1})" class="flex-1 bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white py-4 rounded-2xl transition-all flex items-center justify-center gap-2"><i class="fas fa-arrow-left"></i> Voltar</button>` : ''}
+                        ${isLast ? 
+                            `<button type="button" id="submit-btn" onclick="submitForm()" class="flex-[3] bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">Finalizar e Enviar</button>` : 
+                            `<button type="button" onclick="nextStep(${idx + 1})" class="flex-[3] bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">Continuar <i class="fas fa-arrow-right text-xs"></i></button>`
+                        }
+                    </div>
+                `;
+                
+                stepDiv.innerHTML = `
+                    <div class="space-y-6">
+                        ${questionsHtml}
+                    </div>
+                    ${buttonsHtml}
+                `;
+                form.appendChild(stepDiv);
             });
-        });
+        }
 
-        // Load Professors
-        async function loadProfessors() {
-            const select = document.getElementById('user-professor');
+        function renderQuestion(q) {
+            const reqStar = q.required ? '<span class="text-yellow-500 ml-1">*</span>' : '';
+            let bodyHtml = '';
+
+            if (q.type === 'text') {
+                bodyHtml = `
+                    <input type="text" id="q-${q.id}" ${q.required ? 'required' : ''} placeholder="${q.placeholder || 'Digite aqui...'}" 
+                        class="w-full bg-[#121212] border border-neutral-800 rounded-2xl px-5 py-4 text-white focus:outline-none transition-all placeholder-neutral-600 text-base">
+                `;
+            } else if (q.type === 'text-area') {
+                bodyHtml = `
+                    <textarea id="q-${q.id}" ${q.required ? 'required' : ''} rows="3" placeholder="${q.placeholder || 'Escreva aqui...'}" 
+                        class="w-full bg-[#121212] border border-neutral-800 rounded-2xl px-5 py-4 text-white focus:outline-none transition-all placeholder-neutral-600 text-base resize-none"></textarea>
+                `;
+            } else if (q.type === 'select-unit') {
+                bodyHtml = `
+                    <select id="q-${q.id}" ${q.required ? 'required' : ''} class="w-full bg-[#121212] border border-neutral-800 rounded-2xl px-5 py-4 text-white focus:outline-none transition-all">
+                        <option value="">Selecione a unidade</option>
+                        <option value="centro">Unidade Centro</option>
+                        <option value="coqueiros">Unidade Coqueiros</option>
+                        <option value="asa-sul">Unidade Asa Sul</option>
+                        <option value="sudoeste">Unidade Sudoeste</option>
+                        <option value="lago-sul">Unidade Lago Sul</option>
+                        <option value="noroeste">Unidade Noroeste</option>
+                        <option value="dourados">Unidade Dourados</option>
+                        <option value="santa-monica">Unidade Santa Mônica</option>
+                        <option value="jardim-botanico">Unidade Jardim Botânico</option>
+                    </select>
+                `;
+            } else if (q.type === 'select-professor') {
+                bodyHtml = `
+                    <select id="q-${q.id}" ${q.required ? 'required' : ''} class="w-full bg-[#121212] border border-neutral-800 rounded-2xl px-5 py-4 text-white focus:outline-none transition-all">
+                        <option value="">Carregando professores...</option>
+                    </select>
+                `;
+                setTimeout(() => loadProfessorsForSelect(`q-${q.id}`), 0);
+            } else if (q.type === 'rating-5') {
+                bodyHtml = `
+                    <div class="flex justify-center py-2">
+                        <div class="flex gap-4 star-rating" data-stars="5" id="stars-${q.id}">
+                            <i class="far fa-star text-4xl text-neutral-600 cursor-pointer" data-val="1"></i>
+                            <i class="far fa-star text-4xl text-neutral-600 cursor-pointer" data-val="2"></i>
+                            <i class="far fa-star text-4xl text-neutral-600 cursor-pointer" data-val="3"></i>
+                            <i class="far fa-star text-4xl text-neutral-600 cursor-pointer" data-val="4"></i>
+                            <i class="far fa-star text-4xl text-neutral-600 cursor-pointer" data-val="5"></i>
+                        </div>
+                    </div>
+                    <input type="hidden" id="q-${q.id}" ${q.required ? 'required' : ''}>
+                `;
+                setTimeout(() => setupStarRating(`stars-${q.id}`, `q-${q.id}`), 0);
+            } else if (q.type === 'rating-10') {
+                bodyHtml = `
+                    <div class="flex flex-wrap justify-center gap-2 py-2 star-rating" data-stars="10" id="stars-${q.id}">
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="1"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="2"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="3"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="4"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="5"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="6"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="7"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="8"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="9"></i>
+                        <i class="far fa-star text-3xl text-neutral-600 cursor-pointer" data-val="10"></i>
+                    </div>
+                    <input type="hidden" id="q-${q.id}" ${q.required ? 'required' : ''}>
+                `;
+                setTimeout(() => setupStarRating(`stars-${q.id}`, `q-${q.id}`), 0);
+            } else if (q.type === 'rating-11') {
+                bodyHtml = `
+                    <div class="grid grid-cols-6 sm:grid-cols-11 gap-1.5 py-2" id="nps-group-${q.id}">
+                        ${Array.from({ length: 11 }).map((_, i) => `
+                            <button type="button" data-score="${i}" class="nps-btn h-12 flex items-center justify-center rounded-xl bg-gray-900 border border-neutral-800 text-neutral-400 font-bold hover:border-yellow-500">${i}</button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="q-${q.id}" ${q.required ? 'required' : ''}>
+                `;
+                setTimeout(() => setupNpsButtons(`nps-group-${q.id}`, `q-${q.id}`), 0);
+            } else if (q.type === 'radio') {
+                const options = q.options || [];
+                bodyHtml = `
+                    <div class="grid grid-cols-2 gap-3" id="radio-group-${q.id}">
+                        ${options.map(opt => `
+                            <button type="button" data-val="${opt}" class="option-card border border-neutral-800 bg-[#0d0d0d] p-4 rounded-xl text-left font-semibold text-neutral-300 hover:text-white flex items-center gap-3">
+                                <span class="w-5 h-5 rounded-full border border-neutral-700 flex items-center justify-center shrink-0"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500 hidden"></span></span>
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="custom-container-${q.id}" class="hidden mt-3">
+                        <input type="text" id="custom-val-${q.id}" placeholder="Especifique aqui..." 
+                            class="w-full bg-[#121212] border border-neutral-800 rounded-2xl px-5 py-4 text-white focus:outline-none transition-all placeholder-neutral-600">
+                    </div>
+                    <input type="hidden" id="q-${q.id}" ${q.required ? 'required' : ''}>
+                `;
+                setTimeout(() => setupRadioGroup(`radio-group-${q.id}`, `q-${q.id}`, `custom-container-${q.id}`, `custom-val-${q.id}`), 0);
+            }
+
+            return `
+                <div class="space-y-3">
+                    <label class="block text-md font-bold text-white leading-snug">${q.label}${reqStar}</label>
+                    ${q.description ? `<p class="text-neutral-400 text-xs">${q.description}</p>` : ''}
+                    <div class="mt-1">${bodyHtml}</div>
+                </div>
+            `;
+        }
+
+        async function loadProfessorsForSelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
             try {
                 const q = query(collection(db, 'users'), where('isInstructor', '==', true), orderBy('name'));
                 const snap = await getDocs(q);
                 
                 select.innerHTML = '<option value="">Selecione o professor</option>';
                 
-                // Blacklist keywords (always excluded)
                 const blacklist = ['Admin', 'Financeiro', 'Suporte', 'Teste', 'Kihap', 'Unidade', 'Store'];
-                // Allowed titles (strictly required for non-whitelisted names)
                 const titles = ['Mr.', 'Mrs.', 'Ms.', 'Sra.', 'Srta.', 'Prof.', 'Professor', 'Master', 'Guro'];
                 
                 snap.forEach(doc => {
@@ -319,14 +390,9 @@
                     const name = data.name || '';
                     const lowerName = name.toLowerCase();
                     
-                    // 1. Check blacklist
                     if (blacklist.some(u => lowerName.includes(u.toLowerCase()))) return;
-                    
-                    // 2. Check if name contains a title
                     const hasTitle = titles.some(t => name.includes(t));
                     
-                    // 3. For names without titles, we apply extra caution to avoid students appearing
-                    // Only allow if it has a title or if it's a known exception (none currently)
                     if (hasTitle) {
                         const opt = document.createElement('option');
                         opt.value = doc.id;
@@ -339,43 +405,186 @@
                 select.innerHTML = '<option value="">Erro ao carregar</option>';
             }
         }
-        loadProfessors();
 
-        // Pre-fill from URL parameters
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('name')) {
-                document.getElementById('user-name').value = params.get('name');
-            }
-            if (params.has('contact')) {
-                document.getElementById('user-contact').value = params.get('contact');
-            }
-            if (params.has('unit')) {
-                const unitVal = params.get('unit').toLowerCase().trim();
-                const select = document.getElementById('user-unit');
-                for (let i = 0; i < select.options.length; i++) {
-                    const optText = select.options[i].text.toLowerCase();
-                    const optVal = select.options[i].value.toLowerCase();
-                    if (optVal === unitVal || optText.includes(unitVal) || unitVal.includes(optVal)) {
-                        select.selectedIndex = i;
-                        break;
+        function setupStarRating(containerId, inputId) {
+            const container = document.getElementById(containerId);
+            const input = document.getElementById(inputId);
+            if (!container || !input) return;
+            const stars = container.querySelectorAll('i');
+
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', () => {
+                    const val = parseInt(star.dataset.val);
+                    stars.forEach(s => {
+                        const sVal = parseInt(s.dataset.val);
+                        if (sVal <= val) {
+                            s.classList.remove('far', 'text-neutral-600');
+                            s.classList.add('fas', 'text-yellow-500');
+                        } else {
+                            s.classList.remove('fas', 'text-yellow-500');
+                            s.classList.add('far', 'text-neutral-600');
+                        }
+                    });
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    const activeVal = input.value !== '' ? parseInt(input.value) : -1;
+                    stars.forEach(s => {
+                        const sVal = parseInt(s.dataset.val);
+                        if (sVal <= activeVal) {
+                            s.classList.remove('far', 'text-neutral-600');
+                            s.classList.add('fas', 'text-yellow-500');
+                        } else {
+                            s.classList.remove('fas', 'text-yellow-500');
+                            s.classList.add('far', 'text-neutral-600');
+                        }
+                    });
+                });
+
+                star.addEventListener('click', () => {
+                    const val = parseInt(star.dataset.val);
+                    input.value = val;
+                    stars.forEach(s => {
+                        const sVal = parseInt(s.dataset.val);
+                        if (sVal <= val) {
+                            s.classList.remove('far', 'text-neutral-600');
+                            s.classList.add('fas', 'text-yellow-500');
+                        } else {
+                            s.classList.remove('fas', 'text-yellow-500');
+                            s.classList.add('far', 'text-neutral-600');
+                        }
+                    });
+                });
+            });
+        }
+
+        function setupNpsButtons(groupId, inputId) {
+            const container = document.getElementById(groupId);
+            const input = document.getElementById(inputId);
+            if (!container || !input) return;
+            const buttons = container.querySelectorAll('.nps-btn');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    input.value = btn.dataset.score;
+                });
+            });
+        }
+
+        function setupRadioGroup(groupId, inputId, customContainerId, customInputId) {
+            const container = document.getElementById(groupId);
+            const input = document.getElementById(inputId);
+            const customContainer = document.getElementById(customContainerId);
+            const customInput = document.getElementById(customInputId);
+            if (!container || !input) return;
+            const buttons = container.querySelectorAll('button');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    buttons.forEach(b => {
+                        b.classList.remove('selected');
+                        b.querySelector('span span').classList.add('hidden');
+                    });
+                    
+                    button.classList.add('selected');
+                    button.querySelector('span span').classList.remove('hidden');
+
+                    const val = button.dataset.val;
+                    input.value = val;
+
+                    if (val === 'Outra' || val === 'Outro' || val.endsWith('...')) {
+                        customContainer.classList.remove('hidden');
+                        customInput.focus();
+                    } else {
+                        customContainer.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        function prefillFromURL() {
+            campaign.questions.forEach(q => {
+                const input = document.getElementById(`q-${q.id}`);
+                if (!input) return;
+
+                if (params.has(q.id)) {
+                    input.value = params.get(q.id);
+                } else if (q.id === 'studentName' && params.has('name')) {
+                    input.value = params.get('name');
+                } else if (q.id === 'contact' && params.has('contact')) {
+                    input.value = params.get('contact');
+                } else if (q.id === 'unitId' && params.has('unit')) {
+                    const unitVal = params.get('unit').toLowerCase().trim();
+                    for (let i = 0; i < input.options.length; i++) {
+                        const optText = input.options[i].text.toLowerCase();
+                        const optVal = input.options[i].value.toLowerCase();
+                        if (optVal === unitVal || optText.includes(unitVal) || unitVal.includes(optVal)) {
+                            input.selectedIndex = i;
+                            break;
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
-        // Form Submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
+        function updateProgressBar() {
+            const percentage = ((activeStep - 1) / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = percentage + '%';
+        }
+
+        window.nextStep = (stepIdx) => {
+            const stepQuestions = stepsMap[sortedStepNumbers[stepIdx - 1]];
+            for (const q of stepQuestions) {
+                const input = document.getElementById(`q-${q.id}`);
+                if (!input) continue;
+                
+                let val = input.value.trim();
+                if (q.type === 'radio' && val === 'Outra') {
+                    const customInput = document.getElementById(`custom-val-${q.id}`);
+                    if (customInput) val = customInput.value.trim();
+                }
+                
+                if (q.required && !val) {
+                    alert(`Por favor, preencha a pergunta: "${q.label}"`);
+                    if (q.type === 'text' || q.type === 'text-area') {
+                        input.focus();
+                    }
+                    return;
+                }
+            }
+
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${stepIdx + 1}`).classList.add('active');
+            activeStep = stepIdx + 1;
+            updateProgressBar();
+        };
+
+        window.prevStep = (stepIdx) => {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${stepIdx - 1}`).classList.add('active');
+            activeStep = stepIdx - 1;
+            updateProgressBar();
+        };
+
+        window.submitForm = async () => {
             const submitBtn = document.getElementById('submit-btn');
-            const originalText = submitBtn.textContent;
-            
-            // Validate categories
-            const cats = ['estrutura', 'limpeza', 'materiais', 'atendimento', 'instructor'];
-            for (const cat of cats) {
-                if (!document.getElementById('score-' + cat).value) {
-                    alert('Por favor, avalie todas as categorias do Passo 3.');
+            const originalText = submitBtn.innerHTML;
+
+            const stepQuestions = stepsMap[sortedStepNumbers[activeStep - 1]];
+            for (const q of stepQuestions) {
+                const input = document.getElementById(`q-${q.id}`);
+                if (!input) continue;
+                
+                let val = input.value.trim();
+                if (q.type === 'radio' && val === 'Outra') {
+                    const customInput = document.getElementById(`custom-val-${q.id}`);
+                    if (customInput) val = customInput.value.trim();
+                }
+
+                if (q.required && !val) {
+                    alert(`Por favor, preencha a pergunta: "${q.label}"`);
                     return;
                 }
             }
@@ -383,47 +592,80 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enviando...';
 
-            const payload = {
-                studentName: document.getElementById('user-name').value,
-                contact: document.getElementById('user-contact').value,
-                unitId: document.getElementById('user-unit').value,
-                unitName: document.getElementById('user-unit').options[document.getElementById('user-unit').selectedIndex].text,
-                professorId: document.getElementById('user-professor').value,
-                professorName: document.getElementById('user-professor').options[document.getElementById('user-professor').selectedIndex].text,
-                score: parseInt(document.getElementById('nps-score').value),
-                score_estrutura: parseInt(document.getElementById('score-estrutura').value),
-                score_limpeza: parseInt(document.getElementById('score-limpeza').value),
-                score_materiais: parseInt(document.getElementById('score-materiais').value),
-                score_atendimento: parseInt(document.getElementById('score-atendimento').value),
-                score_instructor: parseInt(document.getElementById('score-instructor').value),
-                comment: document.getElementById('user-comment').value.trim(),
+            const docPayload = {
+                campaignId: campaign.id,
                 timestamp: serverTimestamp(),
                 isExternal: true
             };
 
-            try {
-                await addDoc(collection(db, "nps_responses"), payload);
-                
-                // Success UI
-                document.querySelector('.p-8').innerHTML = `
-                    <div class="text-center py-12 animate-fade-in">
-                        <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fas fa-check text-green-500 text-4xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-bold text-white mb-2">Obrigado!</h3>
-                        <p class="text-gray-400">Sua avaliação foi enviada com sucesso. Valorizamos muito o seu feedback!</p>
-                        <div class="mt-8 flex justify-center gap-4">
-                            <a href="https://kihap.com.br" class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors">Voltar ao site</a>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error("Submission error:", error);
-                alert('Erro ao enviar avaliação. Por favor, tente novamente.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+            if (campaign.id === 'experience') {
+                docPayload.isExperienceEvent = true;
             }
-        });
+
+            campaign.questions.forEach(q => {
+                const input = document.getElementById(`q-${q.id}`);
+                if (!input) return;
+                
+                let val = input.value.trim();
+                
+                if (q.type.startsWith('rating-')) {
+                    val = parseInt(val);
+                }
+
+                if (q.type === 'radio') {
+                    if (val === 'Outra' || val === 'Outro' || val.endsWith('...')) {
+                        const customInput = document.getElementById(`custom-val-${q.id}`);
+                        if (customInput && customInput.value.trim()) {
+                            val = customInput.value.trim();
+                        }
+                    }
+                }
+
+                if (!isNaN(val) && q.type.startsWith('rating-')) {
+                    docPayload[q.id] = val;
+                } else {
+                    docPayload[q.id] = val;
+                }
+
+                if (q.id === 'studentName') docPayload.studentName = val;
+                if (q.id === 'contact') docPayload.contact = val;
+                if (q.id === 'comment') docPayload.comment = val;
+                if (q.id === 'score') docPayload.score = val;
+
+                if (q.type === 'select-unit') {
+                    docPayload.unitId = val;
+                    if (input.selectedIndex > 0) {
+                        docPayload.unitName = input.options[input.selectedIndex].text;
+                    }
+                }
+                if (q.id === 'unitName') {
+                    docPayload.unitName = val;
+                }
+
+                if (q.type === 'select-professor') {
+                    docPayload.professorId = val;
+                    if (input.selectedIndex > 0) {
+                        docPayload.professorName = input.options[input.selectedIndex].text;
+                    }
+                }
+            });
+
+            try {
+                await addDoc(collection(db, "nps_responses"), docPayload);
+                
+                document.getElementById('progress-bar').style.width = '100%';
+                document.getElementById('form-card').classList.add('hidden');
+                document.getElementById('success-card').classList.remove('hidden');
+            } catch (err) {
+                console.error("Error writing feedback to Firestore:", err);
+                alert("Ocorreu um erro ao enviar sua avaliação. Por favor, tente novamente.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        };
+
+        // Initialize form
+        initNpsForm();
     </script>
 </body>
 </html>
