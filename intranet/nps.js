@@ -497,14 +497,14 @@ function setupTabListeners() {
 
     tabDashboard.addEventListener('click', () => {
         tabDashboard.className = "pb-4 text-sm font-black uppercase tracking-wider text-yellow-500 border-b-2 border-yellow-500 outline-none transition-all";
-        tabCampaigns.className = "pb-4 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-white border-b-2 border-transparent hover:border-gray-700 outline-none transition-all";
+        tabCampaigns.className = "pb-4 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 outline-none transition-all";
         dashboardView.classList.remove('hidden');
         campaignsView.classList.add('hidden');
     });
 
     tabCampaigns.addEventListener('click', () => {
         tabCampaigns.className = "pb-4 text-sm font-black uppercase tracking-wider text-yellow-500 border-b-2 border-yellow-500 outline-none transition-all";
-        tabDashboard.className = "pb-4 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-white border-b-2 border-transparent hover:border-gray-700 outline-none transition-all";
+        tabDashboard.className = "pb-4 text-sm font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 outline-none transition-all";
         dashboardView.classList.add('hidden');
         campaignsView.classList.remove('hidden');
         renderCampaignsTable();
