@@ -3994,3 +3994,6 @@ exports.onNotificationCreated = functions.firestore
             console.error(`[onNotificationCreated] Erro crítico ao processar tokens para o usuário ${userId}:`, error);
         }
     });
+
+exports.whatsappWebhook = require('./whatsapp.js').whatsappWebhook;
+

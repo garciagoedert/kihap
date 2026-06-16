@@ -1,5 +1,5 @@
 import { db, storage, functions, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { EmojiButton } from 'https://cdn.skypack.dev/@joeattardi/emoji-button@4.6.4';
@@ -7,7 +7,7 @@ import { getAllUsers, getUserData } from './auth.js';
 
 export const initFeedPage = () => {
     const postForm = document.getElementById('post-form');
-    const targetUnitSelect = document.getElementById('target-unit');
+    const unitsCheckboxesContainer = document.getElementById('units-checkboxes-container');
     const feedList = document.getElementById('feed-list');
 
     // UI state for targeting
@@ -157,17 +157,36 @@ export const initFeedPage = () => {
         }
     });
 
+    // Event listener for "Todas as Unidades" checkbox
+    const allCheckbox = document.getElementById('unit-checkbox-all');
+    if (allCheckbox) {
+        allCheckbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const unitCheckboxes = document.querySelectorAll('input[name="target-unit"]');
+            unitCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+                cb.disabled = isChecked;
+            });
+        });
+    }
+
     // Carregar unidades do EVO
     const loadUnitsList = async () => {
         try {
             const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
             const result = await getEvoUnits();
             const units = result.data || [];
+            
+            const isAllChecked = allCheckbox ? allCheckbox.checked : true;
+
             units.forEach(unitId => {
-                const option = document.createElement('option');
-                option.value = unitId;
-                option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                targetUnitSelect.appendChild(option);
+                const label = document.createElement('label');
+                label.className = 'flex items-center cursor-pointer text-sm text-gray-900 dark:text-white font-medium hover:text-black dark:hover:text-white transition-colors';
+                label.innerHTML = `
+                    <input type="checkbox" name="target-unit" value="${unitId}" ${isAllChecked ? 'checked disabled' : ''} class="form-checkbox text-primary rounded border-gray-300 dark:border-gray-600 mr-2 focus:ring-0 focus:ring-offset-0">
+                    <span>${unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                `;
+                unitsCheckboxesContainer.appendChild(label);
             });
         } catch (error) {
             console.error("Erro ao carregar unidades:", error);
@@ -280,7 +299,22 @@ export const initFeedPage = () => {
             if (delBtn) {
                 delBtn.onclick = async () => {
                     if (confirm('Deseja apagar esta postagem?')) {
-                        await deleteDoc(doc(db, 'feed', docRef.id));
+                        if (post.batchId) {
+                            try {
+                                const qDel = query(collection(db, 'feed'), where('batchId', '==', post.batchId));
+                                const snapDel = await getDocs(qDel);
+                                const delPromises = [];
+                                snapDel.forEach(docDel => {
+                                    delPromises.push(deleteDoc(doc(db, 'feed', docDel.id)));
+                                });
+                                await Promise.all(delPromises);
+                            } catch (e) {
+                                console.error("Erro ao apagar lote de posts:", e);
+                                await deleteDoc(doc(db, 'feed', docRef.id));
+                            }
+                        } else {
+                            await deleteDoc(doc(db, 'feed', docRef.id));
+                        }
                         loadPosts();
                     }
                 };
@@ -297,10 +331,24 @@ export const initFeedPage = () => {
         const content = quill.root.innerHTML;
         const plainText = quill.getText().trim();
         const targetType = document.querySelector('input[name="target-type"]:checked').value;
-        const targetUnit = document.getElementById('target-unit').value;
         const targetStudentsIds = selectedStudents.map(s => s.id);
         const ctaText = document.getElementById('cta-text').value.trim();
         const ctaUrl = document.getElementById('cta-url').value.trim();
+
+        let targetUnits = [];
+        if (targetType === 'unit') {
+            if (allCheckbox && allCheckbox.checked) {
+                targetUnits = ['all'];
+            } else {
+                const checkedCheckboxes = document.querySelectorAll('input[name="target-unit"]:checked');
+                targetUnits = Array.from(checkedCheckboxes).map(cb => cb.value);
+            }
+
+            if (targetUnits.length === 0) {
+                alert('Selecione pelo menos uma unidade!');
+                return;
+            }
+        }
 
         if (!plainText && !document.getElementById('post-media').files[0] && content === '<p><br></p>') {
             alert('Adicione algum conteúdo!');
@@ -341,35 +389,56 @@ export const initFeedPage = () => {
             const uDoc = await getDoc(doc(db, 'users', user.uid));
             const uData = uDoc.exists() ? uDoc.data() : {};
 
-            if (isStory) {
-                await addDoc(collection(db, 'stories'), {
-                    authorId: user.uid,
-                    authorName: uData.name || user.displayName || 'Usuário',
-                    authorPhotoURL: uData.profilePicture || user.photoURL || '',
-                    mediaUrl,
-                    mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
-                    targetUnit: targetType === 'unit' ? targetUnit : null,
-                    targetStudents: targetType === 'students' ? targetStudentsIds : [],
-                    createdAt: serverTimestamp(),
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-                });
-            } else {
-                await addDoc(collection(db, 'feed'), {
-                    authorId: user.uid,
-                    authorName: uData.name || user.displayName || 'Usuário',
-                    authorPhotoURL: uData.profilePicture || user.photoURL || '',
-                    content,
-                    isHtml: true,
-                    mediaUrl,
-                    mediaType,
-                    ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
-                    targetUnit: targetType === 'unit' ? targetUnit : null,
-                    targetStudents: targetType === 'students' ? targetStudentsIds : [],
-                    createdAt: serverTimestamp()
-                });
+            const batchId = targetType === 'unit' && targetUnits.length > 1 ? `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : null;
+            const targetList = targetType === 'unit' ? targetUnits : [null];
+            const writePromises = [];
+
+            for (const unit of targetList) {
+                if (isStory) {
+                    const storyData = {
+                        authorId: user.uid,
+                        authorName: uData.name || user.displayName || 'Usuário',
+                        authorPhotoURL: uData.profilePicture || user.photoURL || '',
+                        mediaUrl,
+                        mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
+                        targetUnit: unit,
+                        targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                        createdAt: serverTimestamp(),
+                        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+                    };
+                    if (batchId) storyData.batchId = batchId;
+                    writePromises.push(addDoc(collection(db, 'stories'), storyData));
+                } else {
+                    const feedData = {
+                        authorId: user.uid,
+                        authorName: uData.name || user.displayName || 'Usuário',
+                        authorPhotoURL: uData.profilePicture || user.photoURL || '',
+                        content,
+                        isHtml: true,
+                        mediaUrl,
+                        mediaType,
+                        ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
+                        targetUnit: unit,
+                        targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                        createdAt: serverTimestamp()
+                    };
+                    if (batchId) feedData.batchId = batchId;
+                    writePromises.push(addDoc(collection(db, 'feed'), feedData));
+                }
             }
 
+            await Promise.all(writePromises);
+
             postForm.reset();
+            // Reset checkboxes state
+            if (allCheckbox) {
+                allCheckbox.checked = true;
+                const unitCheckboxes = document.querySelectorAll('input[name="target-unit"]');
+                unitCheckboxes.forEach(cb => {
+                    cb.checked = true;
+                    cb.disabled = true;
+                });
+            }
             quill.setContents([]);
             selectedStudents = [];
             updateTags();

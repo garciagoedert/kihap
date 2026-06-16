@@ -53,6 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
 
+    function getShortTeacherName(teacherName) {
+        if (!teacherName) return 'Desconhecido';
+        const parts = teacherName.trim().split(/\s+/);
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0];
+        
+        const firstWordClean = parts[0].toLowerCase().replace(/\.$/, '');
+        const prefixes = ['mr', 'mrs', 'ms', 'sr', 'sra', 'dr', 'dra', 'prof', 'professor', 'professora', 'mestre', 'instrutor', 'instrutora', 'sabonim', 'kyosanim'];
+        
+        if (prefixes.includes(firstWordClean)) {
+            return `${parts[0]} ${parts[1]}`;
+        }
+        return parts[0];
+    }
+
     // --- Funções de Renderização ---
     async function renderGrid() {
         if (!selectedUnitId) {
@@ -204,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                     <div class="font-bold text-xs text-white leading-tight group-hover:text-yellow-200 transition-colors line-clamp-2">${classData.name}</div>
                     <div class="text-[10px] text-gray-300 mt-0.5 flex items-center gap-1">
-                        <i class="fas fa-user-tie text-[8px] opacity-70"></i> ${classData.teacherName.split(' ')[0]}
+                        <i class="fas fa-user-tie text-[8px] opacity-70"></i> ${getShortTeacherName(classData.teacherName)}
                     </div>
                 </div>
                 <div class="mt-1">

@@ -185,15 +185,12 @@
                             </div>
 
                             <div id="unit-target-container" class="md:col-span-12">
-                                <label for="target-unit" class="block text-gray-400 text-xs font-medium mb-2 text-left">Selecione a Unidade</label>
-                                <div class="relative max-w-md">
-                                    <select id="target-unit" class="w-full bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer pr-10 transition-all">
-                                        <option value="all">Todas as Unidades</option>
-                                        <!-- Outras unidades serão carregadas aqui -->
-                                    </select>
-                                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                        <i class="fas fa-chevron-down text-xs"></i>
-                                    </div>
+                                <label class="block text-gray-400 text-xs font-medium mb-2 text-left">Selecione as Unidades</label>
+                                <div id="units-checkboxes-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-xl max-w-xl">
+                                    <label class="flex items-center cursor-pointer text-sm text-gray-900 dark:text-white font-medium hover:text-black dark:hover:text-white transition-colors">
+                                        <input type="checkbox" id="unit-checkbox-all" value="all" checked class="form-checkbox text-primary rounded border-gray-300 dark:border-gray-600 mr-2 focus:ring-0 focus:ring-offset-0">
+                                        Todas as Unidades
+                                    </label>
                                 </div>
                             </div>
 

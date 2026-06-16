@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let allSchoolMembers = [];
     let isLoadingSchoolMembers = false;
 
+    let currentViewMode = 'week'; // 'week' ou 'day'
+    let currentSelectedDate = new Date();
+
+    const viewWeekBtn = document.getElementById('view-week-btn');
+    const viewDayBtn = document.getElementById('view-day-btn');
+
     // --- Funções de Data ---
     function getStartOfWeek(date) {
         const d = new Date(date);
@@ -66,6 +72,127 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     }
 
+    function getShortTeacherName(teacherName) {
+        if (!teacherName) return 'Desconhecido';
+        const parts = teacherName.trim().split(/\s+/);
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0];
+        
+        const firstWordClean = parts[0].toLowerCase().replace(/\.$/, '');
+        const prefixes = ['mr', 'mrs', 'ms', 'sr', 'sra', 'dr', 'dra', 'prof', 'professor', 'professora', 'mestre', 'instrutor', 'instrutora', 'sabonim', 'kyosanim'];
+        
+        if (prefixes.includes(firstWordClean)) {
+            return `${parts[0]} ${parts[1]}`;
+        }
+        return parts[0];
+    }
+
+    function updateViewButtons() {
+        if (!viewWeekBtn || !viewDayBtn) return;
+        if (currentViewMode === 'week') {
+            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300';
+            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300';
+        } else {
+            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300';
+            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300';
+        }
+    }
+
+    function renderDayViewCard(classData, container) {
+        const startTime = classData.startTime;
+        const endTime = classData.endTime;
+        const startStr = startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const endStr = endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        const category = (classData.category || '').toLowerCase();
+        let colorClasses = {
+            card: 'bg-yellow-500/10 dark:bg-yellow-500/15 border-primary hover:bg-yellow-500/20 dark:hover:bg-yellow-500/25',
+            badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+        };
+
+        if (category.includes('baby')) {
+            colorClasses = {
+                card: 'bg-sky-500/10 dark:bg-sky-500/15 border-sky-400 hover:bg-sky-500/20 dark:hover:bg-sky-500/25',
+                badge: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+            };
+        } else if (category.includes('little')) {
+            colorClasses = {
+                card: 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500 hover:bg-blue-500/20 dark:hover:bg-blue-500/25',
+                badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+            };
+        } else if (category.includes('kid')) {
+            colorClasses = {
+                card: 'bg-orange-500/10 dark:bg-orange-500/15 border-orange-500 hover:bg-orange-500/20 dark:hover:bg-orange-500/25',
+                badge: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+            };
+        } else if (category.includes('adult')) {
+            colorClasses = {
+                card: 'bg-red-500/10 dark:bg-red-500/15 border-red-500 hover:bg-red-500/20 dark:hover:bg-red-500/25',
+                badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            };
+        } else if (category.includes('famil') || category.includes('família')) {
+            colorClasses = {
+                card: 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500 hover:bg-purple-500/20 dark:hover:bg-purple-500/25',
+                badge: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+            };
+        }
+
+        const card = document.createElement('div');
+        card.className = `flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 p-4 rounded-r-2xl cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md ${colorClasses.card}`;
+        card.dataset.classId = classData.id;
+        card.dataset.templateId = classData.templateId;
+
+        const occupation = (classData.presentStudents || []).length;
+        const capacity = classData.capacity || (classData.students || []).length || 1;
+        const trialCount = (classData.trialStudents || []).length;
+        const occupationPercentage = Math.min((occupation / capacity) * 100, 100);
+        let occupationColor = 'bg-emerald-500';
+        if (occupationPercentage > 80) occupationColor = 'bg-rose-500';
+        else if (occupationPercentage > 50) occupationColor = 'bg-amber-500';
+
+        const trialBadge = trialCount > 0
+            ? `<span class="bg-amber-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-md leading-tight tracking-wide shadow-sm">EXP</span>`
+            : '';
+
+        const categoryBadge = classData.category
+            ? `<span class="${colorClasses.badge} px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
+            : '';
+
+        card.innerHTML = `
+            <div class="flex items-center gap-4 w-full sm:w-auto">
+                <div class="flex flex-col items-center justify-center bg-gray-100 dark:bg-black/30 px-3 py-2 rounded-xl text-center min-w-[70px]">
+                    <span class="text-xs font-extrabold text-gray-800 dark:text-gray-200">${startStr}</span>
+                    <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">${endStr}</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="font-extrabold text-sm text-gray-850 dark:text-white leading-tight group-hover:text-primary transition-colors">${classData.name}</h4>
+                        ${categoryBadge}
+                        ${trialBadge}
+                    </div>
+                    <div class="text-[10px] text-gray-550 dark:text-gray-400 mt-1.5 flex items-center gap-2">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-user-tie text-[9px] opacity-75"></i> <span class="font-semibold">${getShortTeacherName(classData.teacherName)}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-3 sm:mt-0 w-full sm:w-48 flex flex-col justify-end">
+                <div class="flex justify-between items-center text-[10px] text-gray-550 dark:text-gray-400 mb-1 font-bold">
+                    <span>Ocupação: ${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
+                    <span>${Math.round(occupationPercentage)}%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1.5 overflow-hidden">
+                    <div class="${occupationColor} h-1.5 rounded-full transition-all duration-500" style="width: ${occupationPercentage}%"></div>
+                </div>
+            </div>
+        `;
+
+        card.addEventListener('click', () => openAttendanceModal(classData));
+        container.appendChild(card);
+    }
+
     // --- Funções de Renderização ---
     async function renderGrid() {
         if (!selectedUnitId) {
@@ -80,59 +207,87 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDateRangeDisplay();
         scheduleGrid.innerHTML = '';
 
-        const days = Array.from({ length: 7 }).map((_, i) => {
-            const date = new Date(currentWeekStartDate);
-            date.setDate(date.getDate() + i);
-            return date;
-        });
+        if (currentViewMode === 'week') {
+            const days = Array.from({ length: 7 }).map((_, i) => {
+                const date = new Date(currentWeekStartDate);
+                date.setDate(date.getDate() + i);
+                return date;
+            });
 
-        const header = document.createElement('div');
-        header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-gray-100 dark:bg-[#1a1a1a] z-20 border-b border-gray-200 dark:border-gray-800/80';
-        header.innerHTML = '<div class="p-2 bg-gray-50 dark:bg-[#161616]"></div>' + days.map(d => {
-            const isToday = d.toDateString() === new Date().toDateString();
-            return `
-            <div class="text-center p-3 bg-white dark:bg-[#1a1a1a] transition-colors ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}">
-                <div class="font-bold text-[10px] tracking-wider text-gray-400 dark:text-gray-500 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
-                <div class="text-base font-extrabold ${isToday ? 'text-primary' : 'text-gray-800 dark:text-gray-200'}">${d.getDate()}</div>
-            </div>
-        `}).join('');
-        scheduleGrid.appendChild(header);
+            const header = document.createElement('div');
+            header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-gray-100 dark:bg-[#1a1a1a] z-20 border-b border-gray-200 dark:border-gray-800/80';
+            header.innerHTML = '<div class="p-2 bg-gray-50 dark:bg-[#161616]"></div>' + days.map(d => {
+                const isToday = d.toDateString() === new Date().toDateString();
+                return `
+                <div class="text-center p-3 bg-white dark:bg-[#1a1a1a] transition-colors hover:bg-gray-50 dark:hover:bg-[#222]/30 cursor-pointer ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}" data-header-date="${getLocalDateString(d)}">
+                    <div class="font-bold text-[10px] tracking-wider text-gray-400 dark:text-gray-500 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
+                    <div class="text-base font-extrabold ${isToday ? 'text-primary' : 'text-gray-800 dark:text-gray-200'}">${d.getDate()}</div>
+                </div>
+            `}).join('');
 
-        const body = document.createElement('div');
-        body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
+            header.addEventListener('click', (e) => {
+                const dayDiv = e.target.closest('[data-header-date]');
+                if (dayDiv) {
+                    const dateStr = dayDiv.dataset.headerDate;
+                    const [y, m, d] = dateStr.split('-').map(Number);
+                    currentSelectedDate = new Date(y, m - 1, d);
+                    currentViewMode = 'day';
+                    updateViewButtons();
+                    renderGrid();
+                }
+            });
+            scheduleGrid.appendChild(header);
 
-        const timeColumn = document.createElement('div');
-        timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
-        for (let hour = 7; hour < 22; hour++) {
-            timeColumn.innerHTML += `
-                <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
-                    <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
-                </div>`;
-        }
-        body.appendChild(timeColumn);
+            const body = document.createElement('div');
+            body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
 
-        for (let i = 0; i < 7; i++) {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
-            dayColumn.dataset.date = getLocalDateString(days[i]);
+            const timeColumn = document.createElement('div');
+            timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
             for (let hour = 7; hour < 22; hour++) {
-                dayColumn.innerHTML += `
-                    <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
-                    <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
-                `;
+                timeColumn.innerHTML += `
+                    <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
+                        <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
+                    </div>`;
             }
-            body.appendChild(dayColumn);
-        }
-        scheduleGrid.appendChild(body);
+            body.appendChild(timeColumn);
 
-        await fetchAndRenderClasses(days);
+            for (let i = 0; i < 7; i++) {
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
+                dayColumn.dataset.date = getLocalDateString(days[i]);
+                for (let hour = 7; hour < 22; hour++) {
+                    dayColumn.innerHTML += `
+                        <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
+                        <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
+                    `;
+                }
+                body.appendChild(dayColumn);
+            }
+            scheduleGrid.appendChild(body);
+
+            await fetchAndRenderClasses(days);
+        } else {
+            // Day View
+            const listContainer = document.createElement('div');
+            listContainer.className = 'p-6 max-w-3xl mx-auto space-y-4';
+            listContainer.id = 'day-view-list';
+            scheduleGrid.appendChild(listContainer);
+
+            await fetchAndRenderClasses([currentSelectedDate]);
+        }
     }
 
     function updateDateRangeDisplay() {
-        const endDate = new Date(currentWeekStartDate);
-        endDate.setDate(endDate.getDate() + 6);
-        const options = { day: 'numeric', month: 'short' };
-        dateRangeDisplay.textContent = `${currentWeekStartDate.toLocaleDateString('pt-BR', options)} - ${endDate.toLocaleDateString('pt-BR', options)}`;
+        if (currentViewMode === 'week') {
+            const endDate = new Date(currentWeekStartDate);
+            endDate.setDate(endDate.getDate() + 6);
+            const options = { day: 'numeric', month: 'short' };
+            dateRangeDisplay.textContent = `${currentWeekStartDate.toLocaleDateString('pt-BR', options)} - ${endDate.toLocaleDateString('pt-BR', options)}`;
+        } else {
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const formatted = currentSelectedDate.toLocaleDateString('pt-BR', options);
+            dateRangeDisplay.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        }
     }
 
     async function fetchAndRenderClasses(days) {
@@ -145,6 +300,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 templates.push({ id: doc.id, ...doc.data() });
             });
             console.log(`Encontrados ${templates.length} templates de aula.`);
+
+            const classInstancesToRender = [];
 
             for (const day of days) {
                 const dayOfWeek = day.getDay();
@@ -162,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
                         const trialStudents = instanceSnap.exists() ? (instanceSnap.data().trialStudents || []) : [];
 
-                        const classInstanceData = {
+                        classInstancesToRender.push({
                             ...template,
                             templateId: template.id,
                             id: instanceId,
@@ -170,10 +327,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             endTime: endTime,
                             presentStudents: presentStudents,
                             trialStudents: trialStudents
-                        };
-                        renderClassCard(classInstanceData);
+                        });
                     }
                 }
+            }
+
+            // Ordena cronologicamente por horário de início
+            classInstancesToRender.sort((a, b) => a.startTime - b.startTime);
+
+            if (currentViewMode === 'day' && classInstancesToRender.length === 0) {
+                const dayViewList = scheduleGrid.querySelector('#day-view-list');
+                if (dayViewList) {
+                    dayViewList.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500 gap-3">
+                            <i class="far fa-calendar-times text-5xl opacity-40"></i>
+                            <p class="font-medium text-sm">Nenhuma aula agendada para este dia.</p>
+                        </div>`;
+                }
+                return;
+            }
+
+            for (const classInstanceData of classInstancesToRender) {
+                renderClassCard(classInstanceData);
             }
 
         } catch (error) {
@@ -182,6 +357,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderClassCard(classData) {
+        if (currentViewMode === 'day') {
+            const dayViewList = scheduleGrid.querySelector('#day-view-list');
+            if (dayViewList) {
+                renderDayViewCard(classData, dayViewList);
+            }
+            return;
+        }
+
         const startTime = classData.startTime;
         const endTime = classData.endTime;
         const dayDateStr = getLocalDateString(startTime);
@@ -264,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
                     <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center gap-1.5">
                         <span class="flex items-center gap-1">
-                            <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${classData.teacherName.split(' ')[0]}</span>
+                            <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${getShortTeacherName(classData.teacherName)}</span>
                         </span>
                         ${categoryBadge}
                     </div>
@@ -930,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Erro ao carregar unidades do EVO:", error);
             unitFilter.innerHTML = '<option value="">Erro ao carregar</option>';
         }
+        updateViewButtons();
         renderGrid();
     }
 
@@ -1571,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td class="py-3 px-3 text-gray-550 dark:text-gray-450">${dateStr}</td>
                 <td class="py-3 px-3 font-bold text-gray-800 dark:text-white">${item.name}</td>
-                <td class="py-3 px-3 text-gray-550 dark:text-gray-400">${item.teacherName.split(' ')[0]}</td>
+                <td class="py-3 px-3 text-gray-550 dark:text-gray-400">${getShortTeacherName(item.teacherName)}</td>
                 <td class="py-3 px-3 text-gray-550 dark:text-gray-400">${unitLabel}</td>
                 <td class="py-3 px-3 w-28">
                     <div class="flex items-center gap-2">
@@ -1670,13 +1854,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     prevWeekBtn.addEventListener('click', () => {
-        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
+        if (currentViewMode === 'week') {
+            currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
+        } else {
+            currentSelectedDate.setDate(currentSelectedDate.getDate() - 1);
+            currentWeekStartDate = getStartOfWeek(currentSelectedDate);
+        }
         renderGrid();
     });
     nextWeekBtn.addEventListener('click', () => {
-        currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7);
+        if (currentViewMode === 'week') {
+            currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7);
+        } else {
+            currentSelectedDate.setDate(currentSelectedDate.getDate() + 1);
+            currentWeekStartDate = getStartOfWeek(currentSelectedDate);
+        }
         renderGrid();
     });
+
+    if (viewWeekBtn) {
+        viewWeekBtn.addEventListener('click', () => {
+            currentViewMode = 'week';
+            updateViewButtons();
+            renderGrid();
+        });
+    }
+
+    if (viewDayBtn) {
+        viewDayBtn.addEventListener('click', () => {
+            currentViewMode = 'day';
+            updateViewButtons();
+            renderGrid();
+        });
+    }
 
     closeAttendanceModalBtn.addEventListener('click', closeAttendanceModal);
     studentList.addEventListener('click', handlePresenceToggle);
