@@ -8,7 +8,7 @@ const stripe = require('stripe');
 let stripeClient; // Lazily initialize
 const nodemailer = require('nodemailer');
 const qrcode = require('qrcode');
-const { createMercadoPagoPreference, createCartMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, searchMercadoPagoPayments, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval, searchMercadoPagoPaymentsByPreference } = require('./mercadopago.js');
+const { createMercadoPagoPreference, createCartMercadoPagoPreference, getMercadoPagoPreference, getMercadoPagoPayment, searchMercadoPagoPayments, exchangeOAuthCode, getPreapprovalStatus, cancelPreapproval, createCoursePreapproval, createCourseOneTimePreference, searchMercadoPagoPaymentsByPreference } = require('./mercadopago.js');
 const { createPagarmeOrder, getPagarmeOrder, syncPagarmeSalesStatus, createPagarmeSubscription, cancelPagarmeSubscription } = require('./pagarme.js');
 const { syncEvoToOlist, syncEvoToOlistScheduled, getStudentPurchases } = require('./olist.js');
 const { getActiveStudentsFromUnit, getProspectsFromUnit } = require('./evo.js');
@@ -682,15 +682,33 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
-        const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
-        const mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId);
+        const subscriptionItem = cartItems.find(item => item.isSubscription);
+        let mpPreference;
+
+        if (subscriptionItem) {
+            console.log(`[createCartCheckoutSession] Assinatura detectada no carrinho (Produto: ${subscriptionItem.productId}). Carregando detalhes do produto...`);
+            const productRef = db.collection('products').doc(subscriptionItem.productId);
+            const productSnap = await productRef.get();
+            if (!productSnap.exists) {
+                return res.status(404).json({ error: 'Produto de assinatura não encontrado.' });
+            }
+            const productData = { id: productSnap.id, ...productSnap.data() };
+            // Para assinaturas, usamos mpWebhook para receber os eventos de status da assinatura (preapproval)
+            const notificationUrl = getNotificationUrl('mpWebhook', productData.mpAccountId);
+            console.log(`[createCartCheckoutSession] Roteando para createMercadoPagoPreference com Preapproval. Notification URL: ${notificationUrl}`);
+            mpPreference = await createMercadoPagoPreference(productData, subscriptionItem.formDataList, totalAmount, saleDocIds, notificationUrl);
+        } else {
+            console.log('[createCartCheckoutSession] Nenhum produto de assinatura. Criando preferência de carrinho normal.');
+            const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
+            mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId);
+        }
 
         for (const docId of saleDocIds) {
             await db.collection('inscricoesFaixaPreta').doc(docId).update({ mercadoPagoPreferenceId: mpPreference.id });
         }
         
         const isSandbox = process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.MERCADOPAGO_ACCESS_TOKEN.startsWith('TEST-');
-        const checkoutUrl = isSandbox ? mpPreference.sandbox_init_point : mpPreference.init_point;
+        const checkoutUrl = isSandbox ? (mpPreference.sandbox_init_point || mpPreference.init_point) : mpPreference.init_point;
 
         res.status(200).json({ checkoutUrl: checkoutUrl, provider: 'mercadopago', preferenceId: mpPreference.id });
     } catch (error) {
@@ -1043,54 +1061,91 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
     }
 });
 
-// Função para criar assinatura no Pagar.me
+// Função para criar assinatura no Mercado Pago (Preapproval)
 exports.createSubscription = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para assinar.');
     }
 
-    const { planId, cardData, paymentMethod, courseId } = data;
+    const { planId, courseId } = data;
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;
 
-    if (!planId || !courseId) {
-        throw new functions.https.HttpsError('invalid-argument', 'Plan ID e Course ID são obrigatórios.');
+    if (!courseId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Course ID é obrigatório.');
     }
 
     try {
-        // 1. Buscar dados do usuário
-        const userRef = db.collection('users').doc(userId);
-        const userSnap = await userRef.get();
-        const userData = userSnap.data() || {};
+        // 1. Buscar dados do curso
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseSnap = await courseRef.get();
+        if (!courseSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Curso não encontrado.');
+        }
+        const course = courseSnap.data();
 
-        // 2. Montar dados do cliente
-        const customerData = {
-            name: userData.name || userEmail,
-            email: userEmail,
-            document: userData.cpf || '00000000000', // Fallback ou exigir CPF no frontend
-            phone: userData.phone || '5511999999999' // Fallback
+        if (!course.isSubscription) {
+            throw new functions.https.HttpsError('failed-precondition', 'Este curso não é por assinatura.');
+        }
+
+        const courseTitle = course.title || 'Curso';
+        const price = course.subscriptionPrice || 0;
+        const interval = course.subscriptionInterval || 'month';
+        
+        // Mapear intervalo
+        const frequencyType = interval === 'year' ? 'years' : 'months';
+
+        // 2. Obter URL do Webhook do Mercado Pago
+        const notificationUrl = getNotificationUrl('mpWebhook');
+
+        // 3. Criar assinatura no Mercado Pago
+        console.log(`[createSubscription] Criando assinatura MP para curso ${courseId}, usuário ${userId}`);
+        const preapproval = await createCoursePreapproval(
+            courseTitle,
+            price,
+            userEmail,
+            userId,
+            courseId,
+            planId,
+            1,
+            frequencyType,
+            notificationUrl
+        );
+
+        // 4. Salvar ou atualizar assinatura no Firestore
+        const subsRef = db.collection('users').doc(userId).collection('subscriptions');
+        const existingQuery = await subsRef.where('courseId', '==', courseId).limit(1).get();
+        
+        const subDocData = {
+            courseId: courseId,
+            mpPreapprovalId: preapproval.id,
+            status: 'pending',
+            planId: planId || null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            paymentMethod: 'mercadopago'
         };
 
-        // 3. Criar assinatura no Pagar.me
-        const subscription = await createPagarmeSubscription(customerData, paymentMethod, planId, cardData);
+        let subscriptionId;
+        if (existingQuery.empty) {
+            const addedDoc = await subsRef.add(subDocData);
+            subscriptionId = addedDoc.id;
+        } else {
+            const docToUpdate = existingQuery.docs[0];
+            await docToUpdate.ref.update(subDocData);
+            subscriptionId = docToUpdate.id;
+        }
 
-        // 4. Salvar no Firestore
-        await userRef.collection('subscriptions').add({
-            courseId: courseId,
-            pagarmeSubscriptionId: subscription.id,
-            status: subscription.status,
-            planId: planId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            paymentMethod: paymentMethod
-        });
-
-        // Atualizar status do usuário se necessário (ex: acesso global) ou apenas registrar a assinatura específica
-        // Aqui vamos focar na assinatura específica por curso.
-
-        return { success: true, subscriptionId: subscription.id, status: subscription.status };
+        return { 
+            success: true, 
+            subscriptionId: subscriptionId, 
+            mpPreapprovalId: preapproval.id,
+            status: 'pending',
+            initPoint: preapproval.init_point
+        };
 
     } catch (error) {
-        console.error("Erro ao criar assinatura:", error);
+        console.error("Erro ao criar assinatura no Mercado Pago:", error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
@@ -1110,7 +1165,7 @@ exports.cancelSubscription = functions.https.onCall(async (data, context) => {
     try {
         // 1. Buscar assinatura ativa para este curso
         const subsRef = db.collection('users').doc(userId).collection('subscriptions');
-        const q = subsRef.where('courseId', '==', courseId).where('status', '==', 'active').limit(1);
+        const q = subsRef.where('courseId', '==', courseId).where('status', 'in', ['active', 'authorized']).limit(1);
         const snapshot = await q.get();
 
         if (snapshot.empty) {
@@ -1120,19 +1175,109 @@ exports.cancelSubscription = functions.https.onCall(async (data, context) => {
         const subDoc = snapshot.docs[0];
         const subData = subDoc.data();
 
-        // 2. Cancelar no Pagar.me
-        await cancelPagarmeSubscription(subData.pagarmeSubscriptionId);
+        // 2. Cancelar no gateway correspondente
+        if (subData.paymentMethod === 'mercadopago' || subData.mpPreapprovalId) {
+            console.log(`[cancelSubscription] Cancelando assinatura Mercado Pago: ${subData.mpPreapprovalId}`);
+            await cancelPreapproval(subData.mpPreapprovalId, null);
+        } else {
+            console.log(`[cancelSubscription] Cancelando assinatura Pagar.me: ${subData.pagarmeSubscriptionId}`);
+            await cancelPagarmeSubscription(subData.pagarmeSubscriptionId);
+        }
 
         // 3. Atualizar no Firestore
         await subDoc.ref.update({
             status: 'canceled',
-            canceledAt: admin.firestore.FieldValue.serverTimestamp()
+            canceledAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
         return { success: true, message: 'Assinatura cancelada com sucesso.' };
 
     } catch (error) {
         console.error("Erro ao cancelar assinatura:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.createCourseOneTimeCheckout = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Você precisa estar logado para comprar.');
+    }
+
+    const { courseId } = data;
+    const userId = context.auth.uid;
+    const userEmail = context.auth.token.email;
+
+    if (!courseId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Course ID é obrigatório.');
+    }
+
+    try {
+        // 1. Buscar dados do curso
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseSnap = await courseRef.get();
+        if (!courseSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Curso não encontrado.');
+        }
+        const course = courseSnap.data();
+
+        if (!course.isOneTimePurchase) {
+            throw new functions.https.HttpsError('failed-precondition', 'Este curso não está disponível para compra única.');
+        }
+
+        const courseTitle = course.title || 'Curso';
+        const price = course.subscriptionPrice || 0; // Usamos o mesmo campo de preço do painel
+
+        // 2. Obter URL do Webhook do Mercado Pago
+        const notificationUrl = getNotificationUrl('mercadopagoWebhook');
+
+        // 3. Criar preferência de pagamento único no Mercado Pago
+        console.log(`[createCourseOneTimeCheckout] Criando preferência MP para compra do curso ${courseId}, usuário ${userId}`);
+        const preference = await createCourseOneTimePreference(
+            courseTitle,
+            price,
+            userEmail,
+            userId,
+            courseId,
+            notificationUrl
+        );
+
+        // 4. Salvar ou atualizar intenção de compra no Firestore
+        const subsRef = db.collection('users').doc(userId).collection('subscriptions');
+        const existingQuery = await subsRef.where('courseId', '==', courseId).limit(1).get();
+        
+        const subDocData = {
+            courseId: courseId,
+            mercadoPagoPreferenceId: preference.id,
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            paymentMethod: 'mercadopago_one_time'
+        };
+
+        let subscriptionId;
+        if (existingQuery.empty) {
+            const addedDoc = await subsRef.add(subDocData);
+            subscriptionId = addedDoc.id;
+        } else {
+            const docToUpdate = existingQuery.docs[0];
+            await docToUpdate.ref.update(subDocData);
+            subscriptionId = docToUpdate.id;
+        }
+
+        const isSandbox = process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.MERCADOPAGO_ACCESS_TOKEN.startsWith('TEST-');
+        const checkoutUrl = isSandbox ? preference.sandbox_init_point : preference.init_point;
+
+        return { 
+            success: true, 
+            subscriptionId: subscriptionId, 
+            preferenceId: preference.id,
+            status: 'pending',
+            initPoint: checkoutUrl
+        };
+
+    } catch (error) {
+        console.error("Erro ao criar preferência de compra única no Mercado Pago:", error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
@@ -1812,23 +1957,51 @@ exports.mercadopagoWebhook = functions.https.onRequest(async (req, res) => {
             const externalReference = payment.external_reference;
 
             if (status === 'approved' && externalReference) {
-                const firestoreDocIds = externalReference.split(',');
-                console.log(`[Mercado Pago Webhook] Pagamento aprovado! Atualizando ${firestoreDocIds.length} documento(s) no Firestore.`);
-
-                for (const docId of firestoreDocIds) {
-                    const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
-                    const saleSnap = await docRef.get();
-
-                    if (!saleSnap.exists) {
-                        console.warn(`[Mercado Pago Webhook] Documento de venda ${docId} não encontrado.`);
-                        continue;
+                if (externalReference.startsWith('course_buy:')) {
+                    console.log(`[Mercado Pago Webhook] Compra única de curso aprovada! Referência: ${externalReference}`);
+                    const parts = externalReference.split(':');
+                    const userId = parts[1];
+                    const courseId = parts[2];
+                    
+                    if (userId && courseId) {
+                        const subRef = db.collection('users').doc(userId).collection('subscriptions');
+                        const subSnap = await subRef.where('courseId', '==', courseId).limit(1).get();
+                        
+                        const subData = {
+                            courseId: courseId,
+                            status: 'active',
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                            paymentMethod: 'mercadopago_one_time',
+                            mercadoPagoPaymentId: resourceId
+                        };
+                        
+                        if (!subSnap.empty) {
+                            await subSnap.docs[0].ref.update(subData);
+                        } else {
+                            subData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+                            await subRef.add(subData);
+                        }
+                        console.log(`[Mercado Pago Webhook] Compra única de curso registrada no Firestore para o usuário ${userId}`);
                     }
+                } else {
+                    const firestoreDocIds = externalReference.split(',');
+                    console.log(`[Mercado Pago Webhook] Pagamento aprovado! Atualizando ${firestoreDocIds.length} documento(s) no Firestore.`);
 
-                    const saleData = saleSnap.data();
+                    for (const docId of firestoreDocIds) {
+                        const docRef = db.collection('inscricoesFaixaPreta').doc(docId);
+                        const saleSnap = await docRef.get();
 
-                    // Atualiza a venda usando o helper
-                    const paymentDetails = extractPaymentDetails(payment);
-                    await updateSaleToPaid(docId, saleData, resourceId, paymentDetails);
+                        if (!saleSnap.exists) {
+                            console.warn(`[Mercado Pago Webhook] Documento de venda ${docId} não encontrado.`);
+                            continue;
+                        }
+
+                        const saleData = saleSnap.data();
+
+                        // Atualiza a venda usando o helper
+                        const paymentDetails = extractPaymentDetails(payment);
+                        await updateSaleToPaid(docId, saleData, resourceId, paymentDetails);
+                    }
                 }
             } else {
                 console.log(`[Mercado Pago Webhook] Pagamento ${resourceId} status: ${status}. Nenhuma ação tomada.`);

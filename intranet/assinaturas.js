@@ -193,7 +193,6 @@ export async function setupAssinaturasPage() {
                 </div>
             </div>
         `;
-    `;
 
         // Show/Hide Cancel Button
         if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {

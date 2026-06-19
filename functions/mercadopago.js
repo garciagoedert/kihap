@@ -369,6 +369,75 @@ const createTuitionPreapproval = async (planName, amountCentavos, userEmail, cus
     }
 };
 
+const createCoursePreapproval = async (courseName, amountCentavos, userEmail, userId, courseId, planId = null, frequency = 1, frequencyType = 'months', notificationUrl = null) => {
+    const client = getMPClient(null); // Usamos o token Matriz padrão
+    
+    const preapprovalData = {
+        reason: `Assinatura de Curso: ${courseName}`,
+        external_reference: `course_sub:${userId}:${courseId}`,
+        payer_email: userEmail,
+        back_url: "https://www.kihap.com.br/members/cursos.html",
+        status: "pending"
+    };
+
+    if (planId && planId.trim() !== '') {
+        preapprovalData.preapproval_plan_id = planId;
+    } else {
+        preapprovalData.auto_recurring = {
+            frequency: frequency,
+            frequency_type: frequencyType,
+            transaction_amount: amountCentavos / 100, // Preço convertido de centavos
+            currency_id: 'BRL'
+        };
+    }
+
+    if (notificationUrl) preapprovalData.notification_url = notificationUrl;
+
+    try {
+        const response = await client.post('/preapproval', preapprovalData);
+        console.log('[createCoursePreapproval] Assinatura de curso criada com sucesso:', response.data.id);
+        return response.data; // contém o init_point
+    } catch (error) {
+        console.error('[createCoursePreapproval] Erro:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+const createCourseOneTimePreference = async (courseName, amountCentavos, userEmail, userId, courseId, notificationUrl = null) => {
+    const client = getMPClient(null); // Usamos o token Matriz padrão
+    const preferenceData = {
+        items: [{
+            id: courseId,
+            title: `Compra de Curso: ${courseName}`,
+            unit_price: amountCentavos / 100,
+            quantity: 1,
+            currency_id: 'BRL',
+            description: 'Acesso vitalício ao curso'
+        }],
+        payer: {
+            email: userEmail
+        },
+        external_reference: `course_buy:${userId}:${courseId}`,
+        back_urls: {
+            success: "https://www.kihap.com.br/members/cursos.html?payment=success",
+            failure: "https://www.kihap.com.br/members/cursos.html?payment=failure",
+            pending: "https://www.kihap.com.br/members/cursos.html?payment=pending"
+        },
+        auto_return: "approved"
+    };
+
+    if (notificationUrl) preferenceData.notification_url = notificationUrl;
+
+    try {
+        const response = await client.post('/checkout/preferences', preferenceData);
+        console.log('[createCourseOneTimePreference] Preferência criada com sucesso:', response.data.id);
+        return response.data; // contém o init_point
+    } catch (error) {
+        console.error('[createCourseOneTimePreference] Erro:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     createMercadoPagoPreference,
     createCartMercadoPagoPreference,
@@ -379,5 +448,7 @@ module.exports = {
     cancelPreapproval,
     getPreapprovalStatus,
     createTuitionPreapproval,
+    createCoursePreapproval,
+    createCourseOneTimePreference,
     searchMercadoPagoPaymentsByPreference
 };

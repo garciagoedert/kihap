@@ -421,6 +421,50 @@ exports.mpWebhook = functions.https.onRequest(async (req, res) => {
         if ((type === 'subscription_preapproval' || type === 'preapproval') && preapprovalId) {
             console.log(`[mpWebhook] Processando evento de assinatura: ${preapprovalId}`);
             
+            // 1. Tentar buscar usando o token Matriz/Default para verificar se é um curso
+            let mpData = null;
+            try {
+                mpData = await getPreapprovalStatus(preapprovalId, null);
+            } catch (err) {
+                console.log(`[mpWebhook] Não foi possível buscar assinatura com o token Matriz. Tentando busca por aluno.`);
+            }
+
+            if (mpData && mpData.external_reference && mpData.external_reference.startsWith('course_sub:')) {
+                console.log(`[mpWebhook] Assinatura detectada como Assinatura de Curso: ${mpData.external_reference}`);
+                const parts = mpData.external_reference.split(':');
+                const userId = parts[1];
+                const courseId = parts[2];
+
+                if (userId && courseId) {
+                    let newStatus = mpData.status === 'authorized' ? 'active' : mpData.status;
+                    if (action === 'deleted') newStatus = 'canceled';
+                    if (newStatus === 'cancelled') newStatus = 'canceled'; // padroniza status
+
+                    const subRef = db.collection('users').doc(userId).collection('subscriptions');
+                    const subSnap = await subRef.where('courseId', '==', courseId).limit(1).get();
+
+                    if (!subSnap.empty) {
+                        const docRef = subSnap.docs[0].ref;
+                        await docRef.update({
+                            status: newStatus,
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log(`[mpWebhook] Assinatura de curso atualizada. Usuário: ${userId}, Curso: ${courseId}, Novo Status: ${newStatus}`);
+                    } else {
+                        await subRef.add({
+                            courseId: courseId,
+                            mpPreapprovalId: preapprovalId,
+                            status: newStatus,
+                            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                            paymentMethod: 'mercadopago'
+                        });
+                        console.log(`[mpWebhook] Assinatura de curso criada via Webhook. Usuário: ${userId}, Curso: ${courseId}, Status: ${newStatus}`);
+                    }
+                }
+                return res.status(200).send('OK');
+            }
+
             // Busca o aluno com base neste preapprovalId
             const membersSnap = await db.collection('evo_students').where('mpPreapprovalId', '==', preapprovalId).get();
             
@@ -459,7 +503,52 @@ exports.mpWebhook = functions.https.onRequest(async (req, res) => {
                     console.error(`[mpWebhook] Erro ao validar assinatura no MP:`, mpError.message);
                 }
             } else {
-                console.warn(`[mpWebhook] Nenhum aluno encontrado com preapprovalId: ${preapprovalId}`);
+                console.log(`[mpWebhook] Nenhum aluno encontrado em evo_students com preapprovalId ${preapprovalId}. Buscando em inscricoesFaixaPreta...`);
+                // Tenta buscar na coleção inscricoesFaixaPreta
+                const salesSnap = await db.collection('inscricoesFaixaPreta').where('mercadoPagoPreferenceId', '==', preapprovalId).get();
+                if (!salesSnap.empty) {
+                    // Resolve token de um dos registros se possível
+                    let customToken = null;
+                    const sampleSale = salesSnap.docs[0].data();
+                    if (sampleSale.productId) {
+                        try {
+                            const prodSnap = await db.collection('products').doc(sampleSale.productId).get();
+                            if (prodSnap.exists) {
+                                const prodData = prodSnap.data();
+                                if (prodData.mpAccountId && prodData.mpAccountId !== 'default') {
+                                    const accSnap = await db.collection('mercadopagoAccounts').doc(prodData.mpAccountId).get();
+                                    if (accSnap.exists) customToken = accSnap.data().accessToken;
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`[mpWebhook] Erro ao buscar token para atualizar inscricao`, e);
+                        }
+                    }
+
+                    try {
+                        const mpData = await getPreapprovalStatus(preapprovalId, customToken);
+                        if (mpData) {
+                            let newStatus = mpData.status === 'authorized' ? 'active' : mpData.status;
+                            if (action === 'deleted') newStatus = 'cancelled';
+
+                            const batch = db.batch();
+                            salesSnap.docs.forEach(doc => {
+                                if (doc.data().paymentStatus !== newStatus) {
+                                    batch.update(doc.ref, {
+                                        paymentStatus: newStatus,
+                                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                                    });
+                                }
+                            });
+                            await batch.commit();
+                            console.log(`[mpWebhook] Status de ${salesSnap.size} inscricoes com preapprovalId ${preapprovalId} atualizado para ${newStatus}.`);
+                        }
+                    } catch (mpError) {
+                        console.error(`[mpWebhook] Erro ao buscar status da assinatura no MP para atualizar inscricao:`, mpError.message);
+                    }
+                } else {
+                    console.warn(`[mpWebhook] Nenhum aluno ou inscricao encontrado com preapprovalId: ${preapprovalId}`);
+                }
             }
         }
 

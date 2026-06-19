@@ -31,13 +31,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('add-module-btn').addEventListener('click', () => addModule());
     document.getElementById('course-form').addEventListener('submit', saveCourse);
 
-    const subCheckbox = document.getElementById('subscription-enabled');
-    const subFields = document.getElementById('subscription-fields');
-    subCheckbox.addEventListener('change', () => {
-        if (subCheckbox.checked) {
-            subFields.classList.remove('hidden');
-        } else {
-            subFields.classList.add('hidden');
+    const accessTypeSelect = document.getElementById('access-type');
+    const billingFields = document.getElementById('billing-fields');
+    const priceField = document.getElementById('price-field');
+    const planIdField = document.getElementById('plan-id-field');
+    const intervalField = document.getElementById('interval-field');
+
+    accessTypeSelect.addEventListener('change', () => {
+        const value = accessTypeSelect.value;
+        if (value === 'free') {
+            billingFields.classList.add('hidden');
+        } else if (value === 'subscription') {
+            billingFields.classList.remove('hidden');
+            priceField.classList.remove('hidden');
+            planIdField.classList.remove('hidden');
+            intervalField.classList.remove('hidden');
+        } else if (value === 'one_time') {
+            billingFields.classList.remove('hidden');
+            priceField.classList.remove('hidden');
+            planIdField.classList.add('hidden');
+            intervalField.classList.add('hidden');
         }
     });
 });
@@ -46,17 +59,22 @@ function addModule(module = { title: '', lessons: [] }) {
     const container = document.getElementById('modules-container');
     const moduleId = `module-${Date.now()}`;
     const moduleDiv = document.createElement('div');
-    moduleDiv.className = 'bg-gray-700 p-4 rounded-lg border border-gray-600';
+    moduleDiv.className = 'bg-gray-50/50 dark:bg-[#202020]/30 p-6 rounded-3xl border border-gray-150 dark:border-white/5 shadow-sm mb-6';
     moduleDiv.id = moduleId;
     moduleDiv.innerHTML = `
-        <div class="flex justify-between items-center mb-3">
-            <input type="text" value="${module.title}" class="module-title w-full bg-gray-600 border border-gray-500 rounded-lg p-2 text-lg font-semibold" placeholder="Título do Módulo" required>
-            <button type="button" class="remove-module-btn text-red-500 hover:text-red-400 ml-4"><i class="fas fa-trash"></i></button>
+        <div class="flex justify-between items-center mb-4 gap-4">
+            <div class="flex-grow">
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Título do Módulo</label>
+                <input type="text" value="${module.title}" class="module-title w-full bg-white dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3 text-lg font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 transition-all" placeholder="Título do Módulo" required>
+            </div>
+            <button type="button" class="remove-module-btn text-red-500 hover:text-red-600 dark:hover:text-red-400 p-3 mt-6 rounded-xl hover:bg-red-500/10 transition-all duration-200 flex items-center justify-center self-end" title="Remover Módulo"><i class="fas fa-trash text-lg"></i></button>
         </div>
-        <div class="lessons-container space-y-2 pl-4">
+        <div class="lessons-container space-y-4 pl-0 md:pl-6 border-l-2 border-gray-100 dark:border-white/5 mt-4">
             <!-- Lessons will be here -->
         </div>
-        <button type="button" class="add-lesson-btn mt-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-1 px-3 rounded-lg">Adicionar Aula</button>
+        <button type="button" class="add-lesson-btn mt-4 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-800 dark:text-white text-xs font-black uppercase tracking-widest py-3 px-6 rounded-2xl transition-all active:scale-95 flex items-center gap-2">
+            <i class="fas fa-plus"></i> Adicionar Aula
+        </button>
     `;
     container.appendChild(moduleDiv);
 
@@ -71,20 +89,39 @@ function addLesson(moduleId, lesson = { title: '', type: 'video', content: '', d
     const lessonId = `lesson-${Date.now()}`;
     const editorId = `editor-${Date.now()}`;
     const lessonDiv = document.createElement('div');
-    lessonDiv.className = 'p-2 bg-gray-600 rounded';
+    lessonDiv.className = 'p-5 bg-white dark:bg-[#252525]/40 border border-gray-150 dark:border-white/5 rounded-2xl mb-4 relative';
     lessonDiv.id = lessonId;
     lessonDiv.innerHTML = `
-        <div class="flex items-center gap-2 w-full">
-            <input type="text" value="${lesson.title}" class="lesson-title flex-grow bg-gray-500 border border-gray-400 rounded p-1 text-sm" placeholder="Título da Aula" required>
-            <select class="lesson-type bg-gray-500 border border-gray-400 rounded p-1 text-sm">
-                <option value="video" ${lesson.type === 'video' ? 'selected' : ''}>Vídeo</option>
-                <option value="text" ${lesson.type === 'text' ? 'selected' : ''}>Texto</option>
-                <option value="quiz" ${lesson.type === 'quiz' ? 'selected' : ''}>Quiz</option>
-            </select>
-            <input type="text" value="${lesson.content}" class="lesson-content flex-grow bg-gray-500 border border-gray-400 rounded p-1 text-sm" placeholder="URL do Vídeo / Conteúdo" required>
-            <button type="button" class="remove-lesson-btn text-red-400 hover:text-red-300"><i class="fas fa-times"></i></button>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end w-full">
+            <div class="md:col-span-4">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Título da Aula</label>
+                <input type="text" value="${lesson.title}" class="lesson-title w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500" placeholder="Título da Aula" required>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Tipo de Aula</label>
+                <div class="relative">
+                    <select class="lesson-type w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 appearance-none">
+                        <option value="video" ${lesson.type === 'video' ? 'selected' : ''}>Vídeo</option>
+                        <option value="text" ${lesson.type === 'text' ? 'selected' : ''}>Texto</option>
+                        <option value="quiz" ${lesson.type === 'quiz' ? 'selected' : ''}>Quiz</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">URL / Conteúdo</label>
+                <input type="text" value="${lesson.content}" class="lesson-content w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500" placeholder="URL do Vídeo / Conteúdo" required>
+            </div>
+            <div class="md:col-span-1 flex justify-end">
+                <button type="button" class="remove-lesson-btn text-red-500 hover:text-red-600 dark:hover:text-red-400 p-2.5 rounded-xl hover:bg-red-500/10 transition-all duration-200" title="Remover Aula"><i class="fas fa-times text-lg"></i></button>
+            </div>
         </div>
-        <div id="${editorId}" class="lesson-description mt-2"></div>
+        <div class="mt-4">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Descrição / Notas de Aula</label>
+            <div id="${editorId}" class="lesson-description bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-white"></div>
+        </div>
     `;
     lessonsContainer.appendChild(lessonDiv);
 
@@ -118,12 +155,31 @@ async function loadCourseData(id) {
         document.getElementById('course-thumbnail').value = course.thumbnailURL || '';
 
         // Subscription fields
+        const accessTypeSelect = document.getElementById('access-type');
+        const billingFields = document.getElementById('billing-fields');
+        const priceField = document.getElementById('price-field');
+        const planIdField = document.getElementById('plan-id-field');
+        const intervalField = document.getElementById('interval-field');
+
         if (course.isSubscription) {
-            document.getElementById('subscription-enabled').checked = true;
-            document.getElementById('subscription-fields').classList.remove('hidden');
+            accessTypeSelect.value = 'subscription';
+            billingFields.classList.remove('hidden');
+            priceField.classList.remove('hidden');
+            planIdField.classList.remove('hidden');
+            intervalField.classList.remove('hidden');
             document.getElementById('subscription-plan-id').value = course.subscriptionPlanId || '';
             document.getElementById('subscription-price').value = course.subscriptionPrice || '';
             document.getElementById('subscription-interval').value = course.subscriptionInterval || 'month';
+        } else if (course.isOneTimePurchase) {
+            accessTypeSelect.value = 'one_time';
+            billingFields.classList.remove('hidden');
+            priceField.classList.remove('hidden');
+            planIdField.classList.add('hidden');
+            intervalField.classList.add('hidden');
+            document.getElementById('subscription-price').value = course.subscriptionPrice || '';
+        } else {
+            accessTypeSelect.value = 'free';
+            billingFields.classList.add('hidden');
         }
 
         if (course.modules) {
@@ -143,7 +199,9 @@ async function saveCourse(event) {
     saveButton.textContent = 'Salvando...';
 
     const user = JSON.parse(localStorage.getItem('currentUser'));
-    const isSubscription = document.getElementById('subscription-enabled').checked;
+    const accessType = document.getElementById('access-type').value;
+    const isSubscription = accessType === 'subscription';
+    const isOneTimePurchase = accessType === 'one_time';
 
     const courseData = {
         title: document.getElementById('course-title').value,
@@ -154,8 +212,9 @@ async function saveCourse(event) {
         ownerId: user.uid,
         modules: [],
         isSubscription: isSubscription,
+        isOneTimePurchase: isOneTimePurchase,
         subscriptionPlanId: isSubscription ? document.getElementById('subscription-plan-id').value : null,
-        subscriptionPrice: isSubscription ? parseInt(document.getElementById('subscription-price').value) : null,
+        subscriptionPrice: (isSubscription || isOneTimePurchase) ? parseInt(document.getElementById('subscription-price').value) : null,
         subscriptionInterval: isSubscription ? document.getElementById('subscription-interval').value : null
     };
 

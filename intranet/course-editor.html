@@ -28,9 +28,99 @@
     <title id="editor-title">Criar Novo Curso - Intranet Kihap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="log.css">
     <!-- Quill.js CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        /* Modern styling for Quill editor */
+        .ql-toolbar {
+            background-color: #f9fafb !important;
+            border-color: #e5e7eb !important;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        .ql-container {
+            background-color: #ffffff !important;
+            border-color: #e5e7eb !important;
+            border-radius: 0 0 12px 12px !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .ql-editor, .ql-editor * {
+            color: #1f2937 !important;
+        }
+        .ql-editor {
+            min-height: 120px;
+        }
+        .ql-snow .ql-stroke {
+            stroke: #4b5563 !important;
+        }
+        .ql-snow .ql-fill {
+            fill: #4b5563 !important;
+        }
+        .ql-snow .ql-picker-label {
+            color: #4b5563 !important;
+        }
+        .ql-snow .ql-picker-item {
+            color: #4b5563 !important;
+        }
+        
+        /* Placeholders */
+        .ql-snow .ql-editor.ql-blank::before {
+            color: rgba(0, 0, 0, 0.4) !important;
+        }
+        .dark .ql-snow .ql-editor.ql-blank::before {
+            color: rgba(255, 255, 255, 0.4) !important;
+        }
+        
+        /* Select Dropdowns */
+        select option {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+        .dark select option {
+            background-color: #252525 !important;
+            color: #f3f4f6 !important;
+        }
+        
+        /* Override inline colors from older database edits */
+        html:not(.dark) .ql-editor [style*="color"] {
+            color: #1f2937 !important;
+        }
+        
+        .dark .ql-toolbar {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .dark .ql-container {
+            background-color: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .dark .ql-editor, .dark .ql-editor * {
+            color: #f3f4f6 !important;
+        }
+        
+        .dark .ql-stroke {
+            stroke: #9ca3af !important;
+        }
+        .dark .ql-fill {
+            fill: #9ca3af !important;
+        }
+        .dark .ql-snow .ql-picker-label {
+            color: #9ca3af !important;
+        }
+        .dark .ql-snow .ql-picker-options {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .dark .ql-snow .ql-picker-item {
+            color: #9ca3af !important;
+        }
+        .dark .ql-snow .ql-picker-item:hover,
+        .dark .ql-snow .ql-picker-item.ql-selected {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
@@ -40,103 +130,150 @@
         <main id="main-content"
             class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
-            <div class="p-6 flex-1 overflow-y-auto">
-                <h1 class="text-3xl font-bold mb-6" id="editor-title-h1">Criar Novo Curso</h1>
-                <form id="course-form" class="space-y-6">
+            <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto custom-scrollbar">
+                
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-150/80 dark:border-white/5 shadow-sm">
+                    <div>
+                        <h1 class="text-3xl font-black uppercase tracking-tighter text-gray-900 dark:text-white" id="editor-title-h1">Criar Novo Curso</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Configure e gerencie as aulas, módulos e cobrança do seu curso</p>
+                    </div>
+                </div>
+
+                <form id="course-form" class="space-y-8 w-full">
                     <!-- Detalhes do Curso -->
-                    <div class="bg-gray-800 p-6 rounded-lg">
-                        <h2 class="text-2xl font-semibold mb-4">Detalhes do Curso</h2>
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 md:p-8 rounded-[28px] border border-gray-150/80 dark:border-white/5 shadow-sm space-y-6">
+                        <div class="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-white/5">
+                            <div class="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                                <i class="fas fa-graduation-cap text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">Detalhes do Curso</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Informações básicas de identificação</p>
+                            </div>
+                        </div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label for="course-title" class="block text-sm font-medium text-gray-300 mb-1">Título do
-                                    Curso</label>
+                                <label for="course-title" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Título do Curso</label>
                                 <input type="text" id="course-title"
-                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white"
-                                    required>
+                                    class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
+                                    placeholder="Ex: Mente Faixa Preta" required>
                             </div>
                             <div>
                                 <label for="course-author"
-                                    class="block text-sm font-medium text-gray-300 mb-1">Autor</label>
+                                    class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Autor</label>
                                 <input type="text" id="course-author"
-                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white"
-                                    required>
+                                    class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
+                                    placeholder="Ex: Master Cavenatti" required>
                             </div>
                             <div class="md:col-span-2">
                                 <label for="course-description"
-                                    class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                                    class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Descrição</label>
                                 <textarea id="course-description" rows="4"
-                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white"></textarea>
+                                    class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
+                                    placeholder="Descreva o que os alunos irão aprender..."></textarea>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="course-thumbnail" class="block text-sm font-medium text-gray-300 mb-1">URL
-                                    da Thumbnail</label>
+                                <label for="course-thumbnail" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">URL da Thumbnail</label>
                                 <input type="url" id="course-thumbnail"
-                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white">
+                                    class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
+                                    placeholder="https://exemplo.com/imagem.png">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Configurações de Assinatura -->
-                    <div class="bg-gray-800 p-6 rounded-lg">
-                        <h2 class="text-2xl font-semibold mb-4">Configurações de Assinatura</h2>
-                        <div class="space-y-4">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="subscription-enabled"
-                                    class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
-                                <label for="subscription-enabled"
-                                    class="ml-2 text-sm font-medium text-gray-300">Habilitar Assinatura para este
-                                    Curso</label>
+                    <!-- Configurações de Acesso e Cobrança -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 md:p-8 rounded-[28px] border border-gray-150/80 dark:border-white/5 shadow-sm space-y-6">
+                        <div class="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-white/5">
+                            <div class="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                                <i class="fas fa-credit-card text-lg"></i>
                             </div>
-                            <div id="subscription-fields" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
-                                <div>
-                                    <label for="subscription-plan-id"
-                                        class="block text-sm font-medium text-gray-300 mb-1">ID do Plano
-                                        (Pagar.me)</label>
-                                    <input type="text" id="subscription-plan-id"
-                                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white"
-                                        placeholder="plan_xxxxxxxx">
-                                    <p class="text-xs text-gray-400 mt-1">Crie o plano no dashboard do Pagar.me e cole o
-                                        ID aqui.</p>
+                            <div>
+                                <h2 class="text-xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">Configurações de Acesso e Cobrança</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Defina se o curso é grátis, pago ou por assinatura</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-5">
+                            <div>
+                                <label for="access-type" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Tipo de Acesso</label>
+                                <div class="relative">
+                                    <select id="access-type" class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium appearance-none">
+                                        <option value="free">Gratuito</option>
+                                        <option value="subscription">Assinatura Recorrente</option>
+                                        <option value="one_time">Compra Única</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400">
+                                        <i class="fas fa-chevron-down text-xs"></i>
+                                    </div>
                                 </div>
-                                <div>
+                            </div>
+                            
+                            <div id="billing-fields" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                                <div id="price-field">
                                     <label for="subscription-price"
-                                        class="block text-sm font-medium text-gray-300 mb-1">Preço (Centavos)</label>
+                                        class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Preço (Centavos)</label>
                                     <input type="number" id="subscription-price"
-                                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white"
+                                        class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
                                         placeholder="Ex: 2990 para R$ 29,90">
                                 </div>
-                                <div>
+                                <div id="plan-id-field">
+                                    <label for="subscription-plan-id"
+                                        class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">ID do Plano (Mercado Pago - Opcional)</label>
+                                    <input type="text" id="subscription-plan-id"
+                                        class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium"
+                                        placeholder="preapproval_plan_id">
+                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 font-medium">Opcional. Se não informado, a assinatura será criada de forma dinâmica.</p>
+                                </div>
+                                <div id="interval-field">
                                     <label for="subscription-interval"
-                                        class="block text-sm font-medium text-gray-300 mb-1">Intervalo</label>
-                                    <select id="subscription-interval"
-                                        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white">
-                                        <option value="month">Mensal</option>
-                                        <option value="year">Anual</option>
-                                    </select>
+                                        class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Intervalo</label>
+                                    <div class="relative">
+                                        <select id="subscription-interval"
+                                            class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500/50 dark:focus:ring-yellow-500/30 focus:border-yellow-500 outline-none transition-all duration-200 text-sm font-medium appearance-none">
+                                            <option value="month">Mensal</option>
+                                            <option value="year">Anual</option>
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Conteúdo do Curso -->
-                    <div class="bg-gray-800 p-6 rounded-lg">
-                        <h2 class="text-2xl font-semibold mb-4">Conteúdo do Curso</h2>
-                        <div id="modules-container" class="space-y-4">
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 md:p-8 rounded-[28px] border border-gray-150/80 dark:border-white/5 shadow-sm space-y-6">
+                        <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                                    <i class="fas fa-cubes text-lg"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">Conteúdo do Curso</h2>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Estruture o curso em módulos e aulas</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="modules-container" class="space-y-6">
                             <!-- Módulos serão adicionados aqui -->
                         </div>
+                        
                         <button type="button" id="add-module-btn"
-                            class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-                            Adicionar Módulo
+                            class="bg-[#014fa4] hover:bg-[#014fa4]/90 text-white font-black py-4 px-6 rounded-2xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 w-full md:w-auto">
+                            <i class="fas fa-plus"></i> Adicionar Módulo
                         </button>
                     </div>
 
                     <!-- Ações -->
-                    <div class="flex justify-end gap-4">
+                    <div class="flex justify-end gap-4 pt-4">
                         <a href="cursos.html"
-                            class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancelar</a>
+                            class="bg-gray-150 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-white font-black py-4 px-8 rounded-2xl text-xs uppercase tracking-widest transition-all active:scale-95 text-center flex items-center justify-center">Cancelar</a>
                         <button type="submit" id="save-course-btn"
-                            class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">Salvar
-                            Curso</button>
+                            class="bg-primary hover:brightness-110 text-black font-black py-4 px-10 rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95">Salvar Curso</button>
                     </div>
                 </form>
             </div>

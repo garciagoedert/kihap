@@ -17,7 +17,9 @@ export function loadStudentCourses() {
                 // 1. Fetch user subscriptions
                 const subQuery = query(collection(db, `users/${user.uid}/subscriptions`));
                 const subSnapshot = await getDocs(subQuery);
-                userSubscriptions = subSnapshot.docs.map(doc => doc.data().courseId);
+                userSubscriptions = subSnapshot.docs
+                    .filter(doc => doc.data().status === 'active' || doc.data().status === 'authorized')
+                    .map(doc => doc.data().courseId);
 
                 // 2. Fetch all courses
                 const q = query(collection(db, "courses"));
@@ -79,9 +81,18 @@ function createCourseCard(course, courseId) {
         const interval = course.subscriptionInterval === 'year' ? '/ano' : '/mês';
 
         actionButton = `
-            <button onclick="openSubscriptionModal('${courseId}', '${course.title.replace(/'/g, "\\'")}', '${course.subscriptionPlanId}', '${price}${interval}')" 
+            <button onclick="openSubscriptionModal('${courseId}', '${course.title.replace(/'/g, "\\'")}', '${course.subscriptionPlanId || ''}', '${price}${interval}', 'subscription')" 
                 class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
                 Assinar por ${price}${interval}
+            </button>
+        `;
+    } else if (course.isOneTimePurchase) {
+        const price = course.subscriptionPrice ? (course.subscriptionPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Comprar';
+
+        actionButton = `
+            <button onclick="openSubscriptionModal('${courseId}', '${course.title.replace(/'/g, "\\'")}', '', '${price}', 'one_time')" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                Comprar por ${price}
             </button>
         `;
     } else {
@@ -100,7 +111,7 @@ function createCourseCard(course, courseId) {
     card.innerHTML = `
         <div class="relative">
             <img src="${thumbnailUrl}" alt="${course.title}" class="w-full h-48 object-cover">
-            ${!hasAccess && isSubscription ? '<div class="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded">Premium</div>' : ''}
+            ${!hasAccess && (isSubscription || course.isOneTimePurchase) ? '<div class="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded">Premium</div>' : ''}
         </div>
         <div class="p-4 flex-1 flex flex-col justify-between">
             <div>
@@ -129,55 +140,54 @@ function setupModalListeners() {
         e.preventDefault();
         const btn = document.getElementById('confirm-subscription-btn');
         btn.disabled = true;
-        btn.textContent = 'Processando...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Redirecionando...';
 
         const courseId = document.getElementById('modal-course-id').value;
         const planId = document.getElementById('modal-plan-id').value;
-
-        // Basic card data collection (In production, use Pagar.me Elements/Encryption)
-        const cardData = {
-            number: document.getElementById('card-number').value.replace(/\s/g, ''),
-            holder_name: document.getElementById('card-holder').value,
-            exp_month: document.getElementById('card-expiry').value.split('/')[0],
-            exp_year: '20' + document.getElementById('card-expiry').value.split('/')[1],
-            cvv: document.getElementById('card-cvv').value
-        };
+        const purchaseType = document.getElementById('modal-purchase-type').value;
 
         try {
             const functions = getFunctions();
-            const createSubscription = httpsCallable(functions, 'createSubscription');
-
-            const result = await createSubscription({
-                planId: planId,
-                courseId: courseId,
-                paymentMethod: 'credit_card',
-                cardData: cardData
-            });
-
-            if (result.data.success) {
-                alert('Assinatura realizada com sucesso!');
-                modal.classList.add('hidden');
-                loadStudentCourses(); // Reload to update UI
+            let result;
+            if (purchaseType === 'one_time') {
+                const createCourseOneTimeCheckout = httpsCallable(functions, 'createCourseOneTimeCheckout');
+                result = await createCourseOneTimeCheckout({ courseId: courseId });
             } else {
-                throw new Error('Falha na assinatura');
+                const createSubscription = httpsCallable(functions, 'createSubscription');
+                result = await createSubscription({
+                    planId: planId,
+                    courseId: courseId
+                });
+            }
+
+            if (result.data.success && result.data.initPoint) {
+                window.location.href = result.data.initPoint;
+            } else {
+                throw new Error(result.data.message || 'Falha ao gerar o link de pagamento');
             }
 
         } catch (error) {
-            console.error("Erro na assinatura:", error);
-            alert('Erro ao processar assinatura: ' + error.message);
-        } finally {
+            console.error("Erro no processamento da compra/assinatura:", error);
+            alert('Erro ao processar: ' + error.message);
             btn.disabled = false;
-            btn.textContent = 'Confirmar Assinatura';
+            btn.textContent = 'Confirmar e Ir para Pagamento';
         }
     });
 }
 
 // Expose to window for onclick
-window.openSubscriptionModal = (courseId, title, planId, priceLabel) => {
+window.openSubscriptionModal = (courseId, title, planId, priceLabel, type = 'subscription') => {
     document.getElementById('modal-course-title').textContent = title;
     document.getElementById('modal-course-price').textContent = priceLabel;
     document.getElementById('modal-course-id').value = courseId;
-    document.getElementById('modal-plan-id').value = planId;
+    document.getElementById('modal-plan-id').value = planId || '';
+    document.getElementById('modal-purchase-type').value = type;
+    
+    const modalTitle = document.getElementById('modal-title');
+    if (modalTitle) {
+        modalTitle.textContent = type === 'one_time' ? 'Comprar Curso' : 'Assinar Curso';
+    }
+    
     document.getElementById('subscription-modal').classList.remove('hidden');
 };
 
