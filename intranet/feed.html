@@ -35,17 +35,17 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="log.css">
     <style>
-        .ql-editor { font-size: 16px; min-height: 150px; background: transparent; color: #111827; border-radius: 0 0 1rem 1rem; border: 1px solid rgba(229, 231, 235, 0.5); border-top: none; }
-        .dark .ql-editor { background: transparent; color: #e5e7eb; border-color: rgba(75, 85, 99, 0.3) !important; }
+        .ql-container { background: #ffffff; border-radius: 0 0 1rem 1rem; border-color: rgba(229, 231, 235, 0.5) !important; }
+        .dark .ql-container { background: #252525; border-color: rgba(75, 85, 99, 0.3) !important; }
+        
+        .ql-editor { font-size: 16px; min-height: 150px; color: #111827; }
+        .dark .ql-editor { color: #e5e7eb; }
         
         .ql-toolbar { background: rgba(249, 250, 251, 0.5); border-color: rgba(229, 231, 235, 0.5) !important; border-radius: 1rem 1rem 0 0; }
         .dark .ql-toolbar { background: rgba(0, 0, 0, 0.2); border-color: rgba(75, 85, 99, 0.3) !important; }
 
         /* Remove estilos hardcoded vindos do editor rico para não quebrar o layout no modo claro */
         .prose * { background-color: transparent !important; color: inherit !important; }
-        
-        .ql-container { border-color: rgba(229, 231, 235, 0.5) !important; }
-        .dark .ql-container { border-color: rgba(75, 85, 99, 0.3) !important; }
         
         .ql-stroke { stroke: #4b5563 !important; }
         .dark .ql-stroke { stroke: #9ca3af !important; }
@@ -226,6 +226,28 @@
                     <!-- Postagens serão carregadas aqui -->
                 </div>
                 </div> <!-- End of max-w-5xl -->
+            </div>
+
+            <!-- Modal de Edição -->
+            <div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="edit-modal-backdrop"></div>
+                <div class="relative bg-white dark:bg-[#1a1a1a] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-fade-in border border-gray-200 dark:border-gray-800 m-4 flex flex-col max-h-[90vh]">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Editar Postagem</h3>
+                        <button id="close-edit-modal" class="text-gray-400 hover:text-red-500 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-4 flex-1 overflow-y-auto relative">
+                        <div id="edit-post-editor" class="min-h-[200px] w-full"></div>
+                    </div>
+                    <div class="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-[#111]">
+                        <button id="cancel-edit-btn" class="px-5 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 font-medium transition-colors">Cancelar</button>
+                        <button id="save-edit-btn" class="px-5 py-2 bg-primary text-black font-bold rounded-lg hover:scale-105 transition-transform flex items-center">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>

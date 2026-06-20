@@ -1,5 +1,5 @@
 import { db, storage, functions, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { EmojiButton } from 'https://cdn.skypack.dev/@joeattardi/emoji-button@4.6.4';
@@ -28,6 +28,74 @@ export const initFeedPage = () => {
         }
     });
 
+    // Inicializar Quill para Edição
+    const editQuill = new Quill('#edit-post-editor', {
+        theme: 'snow',
+        placeholder: 'Altere o conteúdo da postagem...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'image']
+            ]
+        }
+    });
+
+    let currentEditingPost = null;
+
+    const editModal = document.getElementById('edit-modal');
+    const closeEditModalBtn = document.getElementById('close-edit-modal');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    
+    const closeEditModal = () => {
+        editModal.classList.add('hidden');
+        currentEditingPost = null;
+    };
+    
+    closeEditModalBtn?.addEventListener('click', closeEditModal);
+    cancelEditBtn?.addEventListener('click', closeEditModal);
+
+    saveEditBtn?.addEventListener('click', async () => {
+        if (!currentEditingPost) return;
+        
+        const newContent = editQuill.root.innerHTML;
+        const plainText = editQuill.getText().trim();
+        
+        if (!plainText && newContent === '<p><br></p>') {
+            alert('O conteúdo não pode ficar vazio!');
+            return;
+        }
+
+        saveEditBtn.disabled = true;
+        saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            if (currentEditingPost.batchId) {
+                const qUpdate = query(collection(db, 'feed'), where('batchId', '==', currentEditingPost.batchId));
+                const snapUpdate = await getDocs(qUpdate);
+                const updatePromises = [];
+                snapUpdate.forEach(docUpdate => {
+                    updatePromises.push(updateDoc(doc(db, 'feed', docUpdate.id), {
+                        content: newContent
+                    }));
+                });
+                await Promise.all(updatePromises);
+            } else {
+                await updateDoc(doc(db, 'feed', currentEditingPost.id), {
+                    content: newContent
+                });
+            }
+            closeEditModal();
+            loadPosts();
+        } catch (e) {
+            console.error("Erro ao salvar edição:", e);
+            alert("Erro ao salvar as alterações.");
+        } finally {
+            saveEditBtn.disabled = false;
+            saveEditBtn.innerHTML = 'Salvar Alterações';
+        }
+    });
     // Inicializar Emoji Picker
     const picker = new EmojiButton({ theme: 'dark' });
     const trigger = document.querySelector('#emoji-trigger');
@@ -276,7 +344,10 @@ export const initFeedPage = () => {
                         <div class="flex items-center space-x-2">
                              ${post.targetStudents?.length > 0 ? '<span class="text-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0.5 px-2 rounded-full border border-blue-500/20 font-bold uppercase tracking-widest">Privado</span>' : ''}
                              <span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200 dark:border-gray-700/50 font-bold uppercase tracking-widest">${post.targetUnit === 'all' ? 'Público' : (post.targetUnit || 'Unidade')}</span>
-                             ${(isAdmin || post.authorId === user.uid) ? `<button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>` : ''}
+                             ${(isAdmin || post.authorId === user.uid) ? `
+                                 <button class="edit-btn p-2 text-gray-400 hover:text-blue-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-edit text-xs"></i></button>
+                                 <button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>
+                             ` : ''}
                         </div>
                     </div>
                     <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-6">
@@ -317,6 +388,15 @@ export const initFeedPage = () => {
                         }
                         loadPosts();
                     }
+                };
+            }
+
+            const editBtn = postElement.querySelector('.edit-btn');
+            if (editBtn) {
+                editBtn.onclick = () => {
+                    currentEditingPost = { id: docRef.id, batchId: post.batchId };
+                    editQuill.clipboard.dangerouslyPasteHTML(post.content || '');
+                    editModal.classList.remove('hidden');
                 };
             }
         });

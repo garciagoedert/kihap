@@ -474,7 +474,10 @@ function shadeColor(color, percent) {
 async function loadComponents(pageSpecificSetup) {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    let currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    if (currentPage && !currentPage.endsWith('.html')) {
+        currentPage += '.html';
+    }
 
     // Configurações de Cache
     const CACHE_VERSION = '1.0.7'; 
