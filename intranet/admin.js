@@ -33,6 +33,7 @@ function continueSetup() {
     const isStoreInput = document.getElementById('isStore');
     const isAcademyInput = document.getElementById('isAcademy');
     const isJuridicoInput = document.getElementById('isJuridico');
+    const isSuporteInput = document.getElementById('isSuporte');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
@@ -92,6 +93,7 @@ function continueSetup() {
             if (user.isStore) roles.push('<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">Store</span>');
             if (user.isAcademy) roles.push('<span class="badge-soft bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">Academy</span>');
             if (user.isJuridico) roles.push('<span class="badge-soft bg-teal-500/10 text-teal-600 dark:text-teal-400">Jurídico</span>');
+            if (user.isSuporte) roles.push('<span class="badge-soft bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">Suporte</span>');
 
             const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             
@@ -188,7 +190,8 @@ function continueSetup() {
             isAdministrativo: isAdministrativoInput.checked,
             isStore: isStoreInput.checked,
             isAcademy: isAcademyInput.checked,
-            isJuridico: isJuridicoInput.checked
+            isJuridico: isJuridicoInput.checked,
+            isSuporte: isSuporteInput.checked
         };
 
         const userId = hiddenEmailInput.value;
@@ -248,6 +251,7 @@ function continueSetup() {
                 isStoreInput.checked = user.isStore || false;
                 isAcademyInput.checked = user.isAcademy || false;
                 isJuridicoInput.checked = user.isJuridico || false;
+                isSuporteInput.checked = user.isSuporte || false;
                 hiddenEmailInput.value = user.id;
                 passwordInput.placeholder = "Não editável aqui";
                 passwordInput.disabled = true;

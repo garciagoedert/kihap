@@ -578,6 +578,7 @@ async function loadComponents(pageSpecificSetup) {
         const isMarketing = userData.isMarketing === true;
         const isInstructor = userData.isInstructor === true;
         const isAdministrativo = userData.isAdministrativo === true;
+        const isSuporte = userData.isSuporte === true;
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {
@@ -631,6 +632,11 @@ async function loadComponents(pageSpecificSetup) {
         const adminLink = document.getElementById('admin-link');
         if (isAdmin && adminLink) {
             adminLink.classList.remove('hidden');
+        }
+
+        const gestaoSuporteLink = document.getElementById('gestao-suporte-link');
+        if ((isAdmin || isSuporte) && gestaoSuporteLink) {
+            gestaoSuporteLink.classList.remove('hidden');
         }
 
 
@@ -1055,6 +1061,28 @@ const kobeTools = [{
                 },
                 required: ["orderId", "orderType"]
             }
+        },
+        {
+            name: "createSupportTicket",
+            description: "Cria um ticket de suporte na intranet quando o usuário relata um problema, dúvida, ou solicita ajuda técnica.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    title: {
+                        type: "STRING",
+                        description: "Resumo curto do problema ou solicitação."
+                    },
+                    description: {
+                        type: "STRING",
+                        description: "Descrição detalhada do problema."
+                    },
+                    priority: {
+                        type: "STRING",
+                        description: "Prioridade do ticket: 'Baixa', 'Média', 'Alta', ou 'Urgente'."
+                    }
+                },
+                required: ["title", "description", "priority"]
+            }
         }
     ]
 }];
@@ -1080,6 +1108,61 @@ async function getProspectsSummary() {
         };
     } catch (e) {
         console.error("Erro ao buscar resumo de prospects:", e);
+        return { error: e.message };
+    }
+}
+
+async function createSupportTicket(args) {
+    const { title, description, priority } = args;
+    if (!title || !description || !priority) return { error: "Parâmetros incompletos." };
+    try {
+        const user = auth.currentUser;
+        if (!user) return { error: "Usuário não autenticado." };
+        
+        let solicitanteNome = user.displayName || user.email;
+        try {
+            const localUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (localUser && localUser.name) solicitanteNome = localUser.name;
+        } catch(e) {}
+
+        // Get or create Suporte department
+        const deptsRef = collection(db, 'trello_departments');
+        const qDepts = query(deptsRef, where('name', '==', 'Suporte'));
+        const snap = await getDocs(qDepts);
+        let deptId = null;
+        if (!snap.empty) {
+            deptId = snap.docs[0].id;
+        } else {
+            const newDeptRef = await addDoc(deptsRef, {
+                name: 'Suporte',
+                color: '#06b6d4',
+                columns: [
+                    { id: 'todo', title: 'Novos / Pendentes', color: 'gray' },
+                    { id: 'doing', title: 'Em Análise', color: 'blue' },
+                    { id: 'done', title: 'Resolvidos', color: 'green' }
+                ]
+            });
+            deptId = newDeptRef.id;
+        }
+
+        const docRef = await addDoc(collection(db, 'trello_demands'), {
+            titulo: `[${priority}] ${title}`,
+            demanda: `${description}\n\n**Solicitado via Kobe (IA) por:** ${solicitanteNome} (${user.email})\n**Prioridade:** ${priority}`,
+            nome: solicitanteNome,
+            unidade: 'N/A',
+            departamentoId: deptId,
+            status: 'todo',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            priority: priority,
+            tags: ['Suporte', 'Kobe IA'],
+            solicitanteEmail: user.email,
+            solicitanteUid: user.uid
+        });
+
+        return { success: true, message: "Ticket criado com sucesso no departamento de Suporte.", ticketId: docRef.id };
+    } catch (e) {
+        console.error("Erro ao criar ticket de suporte via Kobe:", e);
         return { error: e.message };
     }
 }
@@ -1273,6 +1356,7 @@ async function getStudentProfile(args) {
                     id: uSnap.docs[0].id,
                     isAdmin: docData.isAdmin || false,
                     isInstructor: docData.isInstructor || false,
+                    isSuporte: docData.isSuporte || false,
                     earnedBadges: docData.earnedBadges || [],
                     accessibleContent: docData.accessibleContent || []
                 };
@@ -2160,6 +2244,8 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                         result = await searchStoreOrders(args);
                     } else if (funcName === "getStoreOrderDetails") {
                         result = await getStoreOrderDetails(args);
+                    } else if (funcName === "createSupportTicket") {
+                        result = await createSupportTicket(args);
                     } else {
                         result = { error: "Função desconhecida." };
                     }

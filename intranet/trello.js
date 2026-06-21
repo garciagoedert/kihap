@@ -159,9 +159,51 @@ function renderAssigneeOptions(filter = '') {
     }
 }
 
+let hasAutoEntered = false;
+
 function observeDepartments() {
-    onSnapshot(deptsCol, (snapshot) => {
+    onSnapshot(deptsCol, async (snapshot) => {
         departments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (!hasAutoEntered) {
+            const params = new URLSearchParams(window.location.search);
+            const deptNameParam = params.get('dept');
+            if (deptNameParam) {
+                let targetDept = departments.find(d => d.name.toLowerCase() === deptNameParam.toLowerCase());
+                if (!targetDept && deptNameParam.toLowerCase() === 'suporte') {
+                    try {
+                        const newDeptRef = await addDoc(deptsCol, {
+                            name: 'Suporte',
+                            color: '#06b6d4',
+                            columns: [
+                                { id: 'todo', title: 'Novos / Pendentes', color: 'gray' },
+                                { id: 'doing', title: 'Em Análise', color: 'blue' },
+                                { id: 'done', title: 'Resolvidos', color: 'green' }
+                            ]
+                        });
+                        targetDept = {
+                            id: newDeptRef.id, 
+                            name: 'Suporte', 
+                            color: '#06b6d4',
+                            columns: [
+                                { id: 'todo', title: 'Novos / Pendentes', color: 'gray' },
+                                { id: 'doing', title: 'Em Análise', color: 'blue' },
+                                { id: 'done', title: 'Resolvidos', color: 'green' }
+                            ]
+                        };
+                        departments.push(targetDept);
+                    } catch (e) {
+                        console.error('Failed to auto-create Suporte department', e);
+                    }
+                }
+                
+                if (targetDept) {
+                    enterDepartment(targetDept);
+                }
+            }
+            hasAutoEntered = true;
+        }
+
         renderDepartments();
         renderDepartmentFilters();
         renderCards();

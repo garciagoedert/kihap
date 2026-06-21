@@ -75,9 +75,14 @@
             <div id="header-container"></div>
 
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
-                <div class="flex justify-between items-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Central de Suporte</h1>
-                    <span class="text-sm text-gray-400">v2.0</span>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Central de Suporte</h1>
+                        <span class="text-sm text-gray-400">v2.0</span>
+                    </div>
+                    <button id="btn-acionar-suporte" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-5 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                        <i class="fas fa-headset"></i> Acionar Suporte
+                    </button>
                 </div>
 
                 <!-- Novidades Section -->
@@ -813,12 +818,57 @@
                     <p>&copy; <span id="current-year"></span> Kihap. Todos os direitos reservados.</p>
                 </footer>
             </div>
+
+            <!-- Modal Acionar Suporte -->
+            <div id="suporte-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md px-4">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 md:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-lg relative">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                <i class="fas fa-headset text-lg"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Novo Ticket de Suporte</h2>
+                        </div>
+                        <button id="close-suporte-modal" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <form id="suporte-form" class="space-y-4">
+                        <div>
+                            <label for="ticket-title" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Assunto / Título</label>
+                            <input type="text" id="ticket-title" required class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Resumo do problema">
+                        </div>
+                        <div>
+                            <label for="ticket-priority" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Prioridade</label>
+                            <select id="ticket-priority" class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-700 dark:text-gray-300">
+                                <option value="Baixa">Baixa</option>
+                                <option value="Média" selected>Média</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Urgente">Urgente</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="ticket-desc" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Descrição Detalhada</label>
+                            <textarea id="ticket-desc" required rows="4" class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none" placeholder="Descreva o que está acontecendo..."></textarea>
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" id="submit-ticket-btn" class="w-full py-3.5 font-black text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane"></i> Enviar Ticket
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </main>
     </div>
 
     <script src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
+
+        import { auth, db } from './firebase-init.js';
+        import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents();
@@ -857,6 +907,104 @@
                         item.style.display = 'none';
                     }
                 });
+            });
+
+            // Modal Suporte Logic
+            const modal = document.getElementById('suporte-modal');
+            const btnOpen = document.getElementById('btn-acionar-suporte');
+            const btnClose = document.getElementById('close-suporte-modal');
+            const form = document.getElementById('suporte-form');
+            const submitBtn = document.getElementById('submit-ticket-btn');
+
+            btnOpen.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                document.getElementById('ticket-title').focus();
+            });
+
+            btnClose.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.add('hidden');
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = auth.currentUser;
+                if (!user) {
+                    alert("Você precisa estar logado.");
+                    return;
+                }
+
+                const titulo = document.getElementById('ticket-title').value.trim();
+                const prioridade = document.getElementById('ticket-priority').value;
+                const descricao = document.getElementById('ticket-desc').value.trim();
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+                try {
+                    // Pega o nome do usuário logado se existir, senão usa o email
+                    let solicitanteNome = user.displayName || user.email;
+                    try {
+                        const localUser = JSON.parse(localStorage.getItem('currentUser'));
+                        if (localUser && localUser.name) solicitanteNome = localUser.name;
+                    } catch(e) {}
+
+                    // Get or create Suporte department
+                    const deptsRef = collection(db, 'trello_departments');
+                    const qDepts = query(deptsRef, where('name', '==', 'Suporte'));
+                    const snap = await getDocs(qDepts);
+                    let deptId = null;
+                    if (!snap.empty) {
+                        deptId = snap.docs[0].id;
+                    } else {
+                        const newDeptRef = await addDoc(deptsRef, {
+                            name: 'Suporte',
+                            color: '#06b6d4',
+                            columns: [
+                                { id: 'todo', title: 'Novos / Pendentes', color: 'gray' },
+                                { id: 'doing', title: 'Em Análise', color: 'blue' },
+                                { id: 'done', title: 'Resolvidos', color: 'green' }
+                            ]
+                        });
+                        deptId = newDeptRef.id;
+                    }
+
+                    // Salva na coleção "trello_demands" sob o departamento Suporte
+                    await addDoc(collection(db, 'trello_demands'), {
+                        titulo: `[${prioridade}] ${titulo}`,
+                        demanda: `${descricao}\n\n**Solicitado por:** ${solicitanteNome} (${user.email})\n**Prioridade:** ${prioridade}`,
+                        nome: solicitanteNome,
+                        unidade: 'N/A',
+                        departamentoId: deptId,
+                        status: 'todo',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        priority: prioridade,
+                        tags: ['Suporte'],
+                        solicitanteEmail: user.email,
+                        solicitanteUid: user.uid
+                    });
+
+                    form.reset();
+                    modal.classList.add('hidden');
+                    
+                    // Exibir aviso de sucesso visual (toast)
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl z-50 flex items-center gap-3 font-medium animate-fade-in-up';
+                    toast.innerHTML = '<i class="fas fa-check-circle text-lg"></i> Ticket de suporte enviado com sucesso!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 4000);
+
+                } catch (error) {
+                    console.error("Erro ao criar ticket:", error);
+                    alert("Ocorreu um erro ao enviar seu ticket. Tente novamente.");
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Ticket';
+                }
             });
         });
     </script>
