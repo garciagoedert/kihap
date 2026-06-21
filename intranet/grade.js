@@ -827,38 +827,77 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (userDocRef && userData) {
-                const todayStr = getLocalDateString(new Date());
-                const lastDateStr = userData.lastAttendanceDate;
-                let currentStreak = userData.currentStreak || 0;
-                let longestStreak = userData.longestStreak || 0;
-
-                if (lastDateStr !== todayStr) {
-                    if (!lastDateStr) {
-                        currentStreak = 1;
-                    } else {
-                        const lastDate = new Date(lastDateStr + 'T12:00:00');
-                        const todayDate = new Date(todayStr + 'T12:00:00');
-                        const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                        if (diffDays <= 5) {
-                            currentStreak += 1;
+                const instancesCol = collection(db, 'classInstances');
+                const qNum = query(instancesCol, where('presentStudents', 'array-contains', Number(studentId)));
+                const qStr = query(instancesCol, where('presentStudents', 'array-contains', studentId.toString()));
+                
+                const [snapNum, snapStr] = await Promise.all([getDocs(qNum), getDocs(qStr)]);
+                
+                const uniqueDates = new Set();
+                snapNum.forEach(docSnap => {
+                    const d = docSnap.data().date;
+                    if (d) uniqueDates.add(d);
+                });
+                snapStr.forEach(docSnap => {
+                    const d = docSnap.data().date;
+                    if (d) uniqueDates.add(d);
+                });
+                
+                const sortedDates = Array.from(uniqueDates).sort();
+                
+                let currentStreak = 0;
+                let longestStreak = 0;
+                let lastAttendanceDate = null;
+                
+                if (sortedDates.length > 0) {
+                    let current = 0;
+                    let longest = 0;
+                    let prevDateStr = null;
+                    
+                    for (const dateStr of sortedDates) {
+                        if (!prevDateStr) {
+                            current = 1;
                         } else {
-                            currentStreak = 1;
+                            const prev = new Date(prevDateStr + 'T12:00:00');
+                            const curr = new Date(dateStr + 'T12:00:00');
+                            const diffTime = Math.abs(curr.getTime() - prev.getTime());
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            if (diffDays <= 5) {
+                                current += 1;
+                            } else {
+                                current = 1;
+                            }
                         }
+                        
+                        if (current > longest) {
+                            longest = current;
+                        }
+                        
+                        prevDateStr = dateStr;
                     }
-
-                    if (currentStreak > longestStreak) {
-                        longestStreak = currentStreak;
+                    
+                    const lastDateStr = sortedDates[sortedDates.length - 1];
+                    const lastDate = new Date(lastDateStr + 'T12:00:00');
+                    const todayStr = getLocalDateString(new Date());
+                    const todayDate = new Date(todayStr + 'T12:00:00');
+                    const diffTimeToday = todayDate.getTime() - lastDate.getTime();
+                    const diffDaysToday = Math.floor(diffTimeToday / (1000 * 60 * 60 * 24));
+                    
+                    currentStreak = current;
+                    if (diffDaysToday > 5) {
+                        currentStreak = 0;
                     }
-
-                    await updateDoc(userDocRef, {
-                        currentStreak,
-                        longestStreak,
-                        lastAttendanceDate: todayStr
-                    });
-                    console.log(`Streak updated on intranet for user: ${userDocRef.id}`);
+                    longestStreak = longest;
+                    lastAttendanceDate = lastDateStr;
                 }
+                
+                await updateDoc(userDocRef, {
+                    currentStreak,
+                    longestStreak,
+                    lastAttendanceDate
+                });
+                console.log(`Streak recalculado na intranet para o usuário: ${userDocRef.id}, atual: ${currentStreak}, recorde: ${longestStreak}`);
             }
         } catch (err) {
             console.error("Erro ao sincronizar streak do aluno na intranet:", err);
@@ -1051,10 +1090,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Sync streak to user document if marking as present
-            if (!isPresent) {
-                await syncStudentStreak(studentIdToSave);
-            }
+            // Sync streak to user document (recalculation)
+            await syncStudentStreak(studentIdToSave);
 
             if (currentClassData) {
                 await openAttendanceModal(currentClassData);

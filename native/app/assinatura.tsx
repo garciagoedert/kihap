@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
+import { WebView } from 'react-native-webview';
 
 export default function AssinaturaScreen() {
   const router = useRouter();
@@ -30,17 +31,17 @@ export default function AssinaturaScreen() {
         </View>
       </View>
 
-      <View style={{ flex: 1 }}>
-        <iframe 
-          src="https://kihap.com.br/members/assinatura.html" 
-          style={{ 
-            width: '100%', 
-            height: '100%', 
-            border: 'none' 
-          }} 
-          title="Assinatura"
-        />
-      </View>
+      <WebView 
+        source={{ uri: "https://kihap.com.br/members/assinatura.html" }} 
+        style={{ flex: 1, backgroundColor: isDark ? '#050505' : '#ffffff' }}
+        startInLoadingState={true}
+        renderLoading={() => (
+          <View className="absolute inset-0 items-center justify-center bg-white dark:bg-[#050505]">
+            <ActivityIndicator size="large" color="#014fa4" />
+          </View>
+        )}
+      />
     </View>
   );
 }
+

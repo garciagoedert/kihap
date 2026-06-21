@@ -42,6 +42,10 @@ export default function NotificacoesScreen() {
     { id: 'asa-sul', label: 'Asa Sul' },
     { id: 'sudoeste', label: 'Sudoeste' },
     { id: 'lago-sul', label: 'Lago Sul' },
+    { id: 'pontos-de-ensino', label: 'Pontos de Ensino' },
+    { id: 'jardim-botanico', label: 'Jardim Botânico' },
+    { id: 'dourados', label: 'Dourados' },
+    { id: 'noroeste', label: 'Noroeste' },
   ];
 
   // Generate week days (Monday to Sunday)

@@ -608,6 +608,20 @@ async function loadComponents(pageSpecificSetup) {
                 link.classList.remove('bg-white', 'dark:bg-gray-700', 'hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-white', 'border-gray-200');
                 link.classList.add('text-black', 'border-transparent');
 
+                // Expand parent submenu if link is inside one
+                const parentSubmenu = link.closest('[id$="-submenu"]');
+                if (parentSubmenu) {
+                    parentSubmenu.classList.remove('hidden');
+                    const baseName = parentSubmenu.id.replace('-submenu', '');
+                    const toggleBtn = document.getElementById(`${baseName}-menu-btn`);
+                    if (toggleBtn) {
+                        const icon = toggleBtn.querySelector('i.fa-chevron-down');
+                        if (icon) {
+                            icon.classList.add('rotate-180');
+                        }
+                    }
+                }
+
                 if (linkPage === 'index.html') {
                     const prospectActions = document.getElementById('prospect-actions');
                     if (prospectActions) {

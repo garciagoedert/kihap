@@ -7,7 +7,7 @@ import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../src/context/AuthContext';
 import { db } from '../src/services/firebase';
-import { collection, query, where, doc, getDoc, updateDoc, setDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, updateDoc, setDoc, arrayUnion, onSnapshot, getDocs } from 'firebase/firestore';
 
 export default function AtividadesScreen() {
   const router = useRouter();
@@ -76,50 +76,84 @@ export default function AtividadesScreen() {
     setCurrentDate(next);
   };
 
-  const updateStreak = async () => {
+  const updateStreak = async (studentId: string | number) => {
     if (!user) return;
     
     const userRef = doc(db, 'users', user.uid);
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) return;
-    
-    const data = userDoc.data();
-    
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    const lastDateStr = data.lastAttendanceDate;
-    let currentStreak = data.currentStreak || 0;
-    let longestStreak = data.longestStreak || 0;
-    
-    if (lastDateStr === todayStr) {
-      return; // Already checked in today
-    }
-    
-    if (!lastDateStr) {
-      currentStreak = 1;
-    } else {
-      const lastDate = new Date(lastDateStr + 'T12:00:00');
-      const todayDate = new Date(todayStr + 'T12:00:00');
-      const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    try {
+      const instancesCol = collection(db, 'classInstances');
+      const qNum = query(instancesCol, where('presentStudents', 'array-contains', Number(studentId)));
+      const qStr = query(instancesCol, where('presentStudents', 'array-contains', studentId.toString()));
       
-      if (diffDays <= 5) {
-        currentStreak += 1;
-      } else {
-        currentStreak = 1;
+      const [snapNum, snapStr] = await Promise.all([getDocs(qNum), getDocs(qStr)]);
+      
+      const uniqueDates = new Set<string>();
+      snapNum.forEach(docSnap => {
+        const d = docSnap.data().date;
+        if (d) uniqueDates.add(d);
+      });
+      snapStr.forEach(docSnap => {
+        const d = docSnap.data().date;
+        if (d) uniqueDates.add(d);
+      });
+      
+      const sortedDates = Array.from(uniqueDates).sort();
+      
+      let currentStreak = 0;
+      let longestStreak = 0;
+      let lastAttendanceDate = null;
+      
+      if (sortedDates.length > 0) {
+        let current = 0;
+        let longest = 0;
+        let prevDateStr = null;
+        
+        for (const dateStr of sortedDates) {
+          if (!prevDateStr) {
+            current = 1;
+          } else {
+            const prev = new Date(prevDateStr + 'T12:00:00');
+            const curr = new Date(dateStr + 'T12:00:00');
+            const diffTime = Math.abs(curr.getTime() - prev.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays <= 5) {
+              current += 1;
+            } else {
+              current = 1;
+            }
+          }
+          
+          if (current > longest) {
+            longest = current;
+          }
+          
+          prevDateStr = dateStr;
+        }
+        
+        const lastDateStr = sortedDates[sortedDates.length - 1];
+        const lastDate = new Date(lastDateStr + 'T12:00:00');
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayDate = new Date(todayStr + 'T12:00:00');
+        const diffTimeToday = todayDate.getTime() - lastDate.getTime();
+        const diffDaysToday = Math.floor(diffTimeToday / (1000 * 60 * 60 * 24));
+        
+        currentStreak = current;
+        if (diffDaysToday > 5) {
+          currentStreak = 0;
+        }
+        longestStreak = longest;
+        lastAttendanceDate = lastDateStr;
       }
+      
+      await updateDoc(userRef, {
+        currentStreak,
+        longestStreak,
+        lastAttendanceDate
+      });
+    } catch (err) {
+      console.error("Error updating streak:", err);
     }
-    
-    if (currentStreak > longestStreak) {
-      longestStreak = currentStreak;
-    }
-    
-    await updateDoc(userRef, {
-      currentStreak,
-      longestStreak,
-      lastAttendanceDate: todayStr
-    });
   };
 
   const handleConfirmPresence = async (activity: any) => {
@@ -151,7 +185,7 @@ export default function AtividadesScreen() {
         });
       }
       
-      await updateStreak();
+      await updateStreak(studentId);
       
       Alert.alert('Sucesso', 'Presença confirmada com sucesso! 🔥');
     } catch (err) {

@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Image, Modal, ScrollView } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { BookOpen, Play, Clock, Star, Menu, X, Home, Layout, MessageSquare, UserCheck, Activity, ShoppingBag, CreditCard, LogOut, Calendar } from 'lucide-react-native';
+import { BookOpen, Play, Clock, Star, Menu, X, Home, Layout, MessageSquare, UserCheck, Activity, ShoppingBag, CreditCard, LogOut, Calendar, Lock, Sparkles } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import { collection, query, getDocs, where } from 'firebase/firestore';
-import { db } from '../../src/services/firebase';
+import { db, functions } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
+import { httpsCallable } from 'firebase/functions';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
 
 export default function CursosScreen() {
   const router = useRouter();
@@ -20,6 +24,54 @@ export default function CursosScreen() {
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
+
+  // Purchase Flow States
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [buying, setBuying] = useState(false);
+
+  const handlePurchase = async () => {
+    if (!selectedCourse || !user) {
+      console.log('handlePurchase: Return early due to selectedCourse or user missing.', { selectedCourse: !!selectedCourse, user: !!user });
+      return;
+    }
+    
+    setBuying(true);
+    try {
+      const isSubscription = selectedCourse.isSubscription === true;
+      const functionName = isSubscription ? 'createSubscription' : 'createCourseOneTimeCheckout';
+      
+      console.log('handlePurchase: Fetching user ID token manually...');
+      const token = await user.getIdToken(true).catch(e => {
+        console.error('handlePurchase: Failed to get token manually:', e);
+        throw e;
+      });
+      console.log('handlePurchase: Manual token fetched successfully:', token.substring(0, 15) + '...');
+
+      const purchaseFunction = httpsCallable(functions, functionName);
+      
+      console.log(`handlePurchase: Starting flow via "${functionName}" for course:`, selectedCourse.id);
+      
+      const result: any = await purchaseFunction({ courseId: selectedCourse.id });
+      console.log('handlePurchase: Cloud Function responded successfully:', result);
+      
+      if (result.data && result.data.success && result.data.initPoint) {
+        const checkoutUrl = result.data.initPoint;
+        setShowBuyModal(false);
+        setSelectedCourse(null);
+        
+        console.log('handlePurchase: Redirecting user to browser using Linking.openURL...', checkoutUrl);
+        await Linking.openURL(checkoutUrl);
+      } else {
+        throw new Error('Não foi possível obter o link de pagamento do servidor.');
+      }
+    } catch (error: any) {
+      console.error('Erro na compra (handlePurchase catch):', error);
+      alert(error.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
+    } finally {
+      setBuying(false);
+    }
+  };
 
   // Mapping real data with robust fallbacks and URL normalization
   const displayName = userData?.name || userData?.nome || userData?.displayName || 'Aluno';
@@ -119,7 +171,8 @@ export default function CursosScreen() {
         if (item.hasAccess) {
           router.push(`/player?courseId=${item.id}`);
         } else {
-          alert("Este é um curso Premium. Adquira ou assine na plataforma para liberar.");
+          setSelectedCourse(item);
+          setShowBuyModal(true);
         }
       }}
       className={`bg-white dark:bg-[#1a1a1a] rounded-3xl mb-6 overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm active:opacity-90 ${!item.hasAccess ? 'opacity-60' : ''}`}
@@ -216,6 +269,113 @@ export default function CursosScreen() {
           }
         />
       )}
+
+      {/* Course Purchase Modal */}
+      <Modal
+        visible={showBuyModal && !!selectedCourse}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          if (!buying) {
+            setShowBuyModal(false);
+            setSelectedCourse(null);
+          }
+        }}
+      >
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="bg-white dark:bg-[#121212] rounded-t-[40px] px-6 pt-8 pb-10 shadow-2xl border-t border-gray-100 dark:border-white/5">
+            {/* Header / Top Indicator */}
+            <View className="w-12 h-1.5 bg-gray-200 dark:bg-white/10 rounded-full mb-6 mx-auto" />
+            
+            <View className="flex-row items-center justify-between mb-6">
+              <View className="flex-row items-center bg-yellow-500/10 px-3 py-1.5 rounded-full">
+                <Sparkles size={14} color="#eab308" />
+                <Text className="text-yellow-600 dark:text-yellow-500 text-[10px] font-black uppercase tracking-wider ml-1">Curso Premium</Text>
+              </View>
+              <TouchableOpacity 
+                disabled={buying} 
+                onPress={() => { setShowBuyModal(false); setSelectedCourse(null); }}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 items-center justify-center"
+              >
+                <X size={16} color={isDark ? '#fff' : '#333'} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedCourse && (
+              <ScrollView showsVerticalScrollIndicator={false} className="max-h-[75vh]">
+                {/* Course Details */}
+                <Image 
+                  source={{ uri: selectedCourse.thumbnailURL || selectedCourse.thumbnail || 'https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png' }} 
+                  className="w-full h-40 bg-gray-100 dark:bg-[#050505] rounded-3xl mb-5"
+                  resizeMode="cover"
+                />
+
+                <Text className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-2">
+                  {selectedCourse.title}
+                </Text>
+                
+                <Text className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
+                  {selectedCourse.description || 'Aprenda as técnicas mais avançadas com os nossos mestres.'}
+                </Text>
+
+                {/* Price section */}
+                <View className="bg-gray-50 dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-100 dark:border-white/5 mb-6">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1 mr-4">
+                      <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                        {selectedCourse.isSubscription ? 'Assinatura Recorrente' : 'Acesso Vitalício'}
+                      </Text>
+                      <Text className="text-gray-500 dark:text-gray-400 text-xs">
+                        {selectedCourse.isSubscription 
+                          ? `Cobrança automática a cada ${selectedCourse.subscriptionInterval === 'year' ? 'ano' : 'mês'}` 
+                          : 'Pague uma vez e assista para sempre'}
+                      </Text>
+                    </View>
+                    <View className="items-end">
+                      <Text className="text-3xl font-black text-yellow-600 dark:text-yellow-500">
+                        {selectedCourse.subscriptionPrice 
+                          ? (selectedCourse.subscriptionPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                          : 'R$ 0,00'}
+                      </Text>
+                      {selectedCourse.isSubscription && (
+                        <Text className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
+                          /{selectedCourse.subscriptionInterval === 'year' ? 'ano' : 'mês'}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Security info */}
+                <View className="flex-row items-center bg-blue-500/5 dark:bg-blue-500/10 px-4 py-3 rounded-2xl mb-8 border border-blue-500/10">
+                  <Lock size={16} color="#014fa4" />
+                  <Text className="ml-3 text-[11px] font-medium text-blue-800 dark:text-blue-300 flex-1 leading-relaxed">
+                    Pagamento 100% seguro via Mercado Pago. Ao avançar, você será redirecionado para concluir a transação.
+                  </Text>
+                </View>
+
+                {/* Purchase Button */}
+                <TouchableOpacity
+                  onPress={handlePurchase}
+                  disabled={buying}
+                  className={`py-5 rounded-2xl items-center justify-center flex-row shadow-lg ${buying ? 'bg-gray-400' : 'bg-[#014fa4] shadow-blue-500/20'}`}
+                  activeOpacity={0.8}
+                >
+                  {buying ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Text className="text-white font-black uppercase tracking-widest text-base">
+                        {selectedCourse.isSubscription ? 'Assinar Agora' : 'Comprar Agora'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Navigation Sidebar Modal */}
       <Modal
