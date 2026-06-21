@@ -4075,17 +4075,41 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
         let recipientIds = [];
 
         if (target === 'individual') {
-            // targetValue deve ser o UID ou Email
+            // targetValue pode ser UID, Email ou Nome
             if (targetValue.includes('@')) {
                 const q = await admin.firestore().collection('users').where('email', '==', targetValue).limit(1).get();
-                if (q.empty) throw new functions.https.HttpsError('not-found', 'Aluno não encontrado');
+                if (q.empty) throw new functions.https.HttpsError('not-found', 'Aluno não encontrado pelo e-mail informado');
                 recipientIds.push(q.docs[0].id);
             } else {
-                recipientIds.push(targetValue);
+                // Tenta buscar por UID diretamente
+                const userDoc = await admin.firestore().collection('users').doc(targetValue).get();
+                if (userDoc.exists) {
+                    recipientIds.push(targetValue);
+                } else {
+                    // Tenta correspondência exata por name
+                    let q = await admin.firestore().collection('users').where('name', '==', targetValue).limit(1).get();
+                    if (q.empty) {
+                        // Tenta por displayName
+                        q = await admin.firestore().collection('users').where('displayName', '==', targetValue).limit(1).get();
+                    }
+                    
+                    if (!q.empty) {
+                        recipientIds.push(q.docs[0].id);
+                    } else {
+                        throw new functions.https.HttpsError('not-found', 'Aluno não encontrado. Certifique-se de digitar o e-mail ou nome exato.');
+                    }
+                }
             }
         } else if (target === 'unit') {
-            const q = await admin.firestore().collection('users').where('unidade', '==', targetValue).get();
+            // Busca por unitId (campo correto na coleção users)
+            const q = await admin.firestore().collection('users').where('unitId', '==', targetValue).get();
             recipientIds = q.docs.map(d => d.id);
+            
+            // Fallback para unidade
+            if (recipientIds.length === 0) {
+                const qUnidade = await admin.firestore().collection('users').where('unidade', '==', targetValue).get();
+                recipientIds = qUnidade.docs.map(d => d.id);
+            }
         } else if (target === 'all') {
             const q = await admin.firestore().collection('users').get();
             recipientIds = q.docs.map(d => d.id);
