@@ -300,8 +300,8 @@ function setupModalCloseListeners(handlers = {}) {
     }
 }
 
-import { db, functions } from './firebase-config.js';
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { db, functions, auth } from './firebase-config.js';
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { showNotification as showChatMessageNotification } from './notification.js';
 import { getCurrentUser, ensureAdmin } from './auth.js';
