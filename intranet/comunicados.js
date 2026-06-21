@@ -122,8 +122,13 @@ function initEventListeners() {
 async function loadUnits() {
     const unitSelect = document.getElementById('target-unit');
     try {
-        const querySnapshot = await getDocs(collection(db, 'units'));
-        unitSelect.innerHTML = querySnapshot.docs.map(doc => `<option value="${doc.id}">${doc.data().name}</option>`).join('');
+        const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+        const result = await getEvoUnits();
+        const units = result.data || [];
+        unitSelect.innerHTML = units.map(unitId => {
+            const name = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `<option value="${unitId}">${name}</option>`;
+        }).join('');
     } catch (error) {
         console.error("Error loading units:", error);
     }
