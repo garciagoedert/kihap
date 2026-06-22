@@ -796,8 +796,61 @@ function injectMilesStyles() {
         #miles-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         #miles-send-btn svg { width: 18px; height: 18px; fill: #111; }
 
+        /* Bolha de Chamada (Callout) do Miles */
+        #miles-callout-bubble {
+            position: fixed;
+            bottom: 32px;
+            right: 100px;
+            z-index: 9997;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            border-radius: 18px 18px 4px 18px;
+            padding: 12px 32px 12px 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            font-size: 13px;
+            color: #111;
+            font-weight: 500;
+            max-width: 250px;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: miles-pulse-bubble 3s infinite alternate;
+        }
+        #miles-callout-bubble.miles-callout-hidden {
+            opacity: 0;
+            transform: scale(0.8) translateX(20px);
+            pointer-events: none;
+        }
+        #miles-callout-bubble:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+        #miles-callout-close {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+            transition: color 0.15s;
+        }
+        #miles-callout-close:hover {
+            color: #111;
+        }
+
+        @keyframes miles-pulse-bubble {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-4px); }
+        }
+
         /* Mobile */
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
             #miles-chat-window {
                 right: 0;
                 left: 0;
@@ -813,6 +866,13 @@ function injectMilesStyles() {
                 bottom: 16px;
                 right: 16px;
             }
+            #miles-callout-bubble {
+                bottom: 90px;
+                right: 16px;
+                left: auto;
+                max-width: 220px;
+                border-radius: 18px 18px 18px 4px;
+            }
             #miles-form {
                 padding-bottom: calc(10px + env(safe-area-inset-bottom));
             }
@@ -825,6 +885,12 @@ function buildMilesHTML() {
     const container = document.createElement('div');
     container.id = 'miles-chatbot-container';
     container.innerHTML = `
+        <!-- Bolha de Chamada do Miles -->
+        <div id="miles-callout-bubble" class="miles-callout-hidden">
+            <span>Oi! Posso ajudar você a encontrar a aula ideal e agendar sua aula gratuita? 🥋</span>
+            <button id="miles-callout-close" aria-label="Fechar chamada">&times;</button>
+        </div>
+
         <!-- Botão Flutuante Miles -->
         <button id="miles-chat-toggle" aria-label="Falar com o Miles - Assistente Virtual Kihap">
             <img src="/imgs/personagens/perfilpersonagens/avatar_05.png"
@@ -910,11 +976,27 @@ function setupMilesChatbot() {
     const messages   = document.getElementById('miles-messages');
     const typing     = document.getElementById('miles-typing');
     const sendBtn    = document.getElementById('miles-send-btn');
+    const callout    = document.getElementById('miles-callout-bubble');
+    const calloutClose = document.getElementById('miles-callout-close');
 
     let chatHistory = [];
     let isOpen = false;
     let hasShownWelcome = false;
     let apiKey = null;
+
+    // Mostrar a bolha de chamada após 4 segundos, se o chat ainda não foi aberto
+    let calloutTimeout = setTimeout(() => {
+        if (!isOpen && callout) {
+            callout.classList.remove('miles-callout-hidden');
+            
+            // Auto-ocultar após 8 segundos para não obstruir o conteúdo
+            setTimeout(() => {
+                if (callout) {
+                    callout.classList.add('miles-callout-hidden');
+                }
+            }, 8000);
+        }
+    }, 4000);
 
     // Carrega chave Gemini antecipadamente
     loadGeminiKey().then(key => { apiKey = key; });
@@ -1095,6 +1177,9 @@ Seja curto e convidativo — máximo 3 frases.`;
         isOpen = !isOpen;
         if (isOpen) {
             chatWindow.classList.remove('miles-hidden');
+            if (callout) {
+                callout.classList.add('miles-callout-hidden');
+            }
             if (!hasShownWelcome) {
                 hasShownWelcome = true;
                 triggerWelcomeMessage();
@@ -1109,6 +1194,29 @@ Seja curto e convidativo — máximo 3 frases.`;
         isOpen = false;
         chatWindow.classList.add('miles-hidden');
     });
+
+    if (callout) {
+        callout.addEventListener('click', (e) => {
+            if (e.target.closest('#miles-callout-close')) return;
+            isOpen = true;
+            chatWindow.classList.remove('miles-hidden');
+            callout.classList.add('miles-callout-hidden');
+            if (!hasShownWelcome) {
+                hasShownWelcome = true;
+                triggerWelcomeMessage();
+            }
+            setTimeout(() => input.focus(), 300);
+        });
+    }
+
+    if (calloutClose) {
+        calloutClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (callout) {
+                callout.classList.add('miles-callout-hidden');
+            }
+        });
+    }
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();

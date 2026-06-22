@@ -51,7 +51,7 @@ body {
 }
 
 .hero-section {
-    background-image: url('../imgs/fundogero.jpg');
+    background-image: url('../imgs/novofundoheroback.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -59,7 +59,7 @@ body {
 
 @media (max-width: 768px) {
     .hero-section {
-        background-position: 65% center;
+        background-position: center;
     }
 }
 
