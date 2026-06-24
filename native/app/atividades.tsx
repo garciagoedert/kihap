@@ -157,7 +157,7 @@ export default function AtividadesScreen() {
   };
 
   const handleConfirmPresence = async (activity: any) => {
-    const studentId = userData?.evoMemberId;
+    const studentId = userData?.evoMemberId || user?.uid;
     if (!studentId) {
       Alert.alert('Erro', 'Cadastro do aluno incompleto (ID do membro não encontrado).');
       return;
@@ -197,7 +197,7 @@ export default function AtividadesScreen() {
   };
   
   const handleEnrollClass = async (activityId: string) => {
-    const studentId = userData?.evoMemberId;
+    const studentId = userData?.evoMemberId || user?.uid;
     if (!studentId) {
       Alert.alert('Erro', 'Cadastro do aluno incompleto (ID do membro não encontrado).');
       return;
@@ -217,7 +217,7 @@ export default function AtividadesScreen() {
       setLoadingSubmit(prev => ({ ...prev, [activityId]: false }));
     }
   };
-
+  
   const formattedDate = currentDate.toLocaleDateString('pt-BR', { 
     weekday: 'long', 
     day: 'numeric', 
@@ -276,7 +276,7 @@ export default function AtividadesScreen() {
             const occupation = presentStudents.length;
             const capacity = activity.capacity || (activity.students ? activity.students.length : 20);
             
-            const studentId = userData?.evoMemberId;
+            const studentId = userData?.evoMemberId || user?.uid;
             const isPresent = studentId && (presentStudents.includes(studentId.toString()) || presentStudents.includes(Number(studentId)));
             const isEnrolled = studentId && activity.students && (activity.students.includes(studentId.toString()) || activity.students.includes(Number(studentId)));
             
