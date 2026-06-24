@@ -15,9 +15,9 @@
                         brand: {
                             gold: '#FFC107',
                             darkGold: '#E5A900',
-                            charcoal: '#121212',
-                            cardBg: '#1C1C1E',
-                            borderDark: '#2C2C2E'
+                            charcoal: '#0F172A',
+                            cardBg: '#FFFFFF',
+                            borderDark: '#E2E8F0'
                         }
                     }
                 }
@@ -36,24 +36,25 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 50%, #1A1A1C 0%, #0E0E10 100%);
+            background-color: #F8FAFC;
+            background-image: radial-gradient(at 50% 0%, #FFFFFF 0px, transparent 50%), radial-gradient(at 0% 100%, #F1F5F9 0px, transparent 50%);
             background-attachment: fixed;
         }
         .font-title {
             font-family: 'Outfit', sans-serif;
         }
         
-        /* Glassmorphism custom classes */
+        /* Glassmorphism custom classes for light mode */
         .glass-card {
-            background: rgba(28, 28, 30, 0.7);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
         }
         
         .glass-glow-yellow:hover {
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
-            border-color: rgba(255, 193, 7, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(255, 193, 7, 0.25);
+            border-color: rgba(255, 193, 7, 0.6);
         }
 
         /* Custom scrollbar */
@@ -62,10 +63,10 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #0E0E10;
+            background: #F1F5F9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #2C2C2E;
+            background: #CBD5E1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
@@ -73,16 +74,16 @@
         }
     </style>
 </head>
-<body class="text-gray-200 antialiased min-h-screen flex flex-col">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
     <!-- Navbar/Header -->
-    <header class="border-b border-white/5 py-4 px-6 sticky top-0 bg-[#0E0E10]/80 backdrop-blur-md z-30 flex items-center justify-between">
+    <header class="border-b border-slate-100 py-4 px-6 sticky top-0 bg-white/85 backdrop-blur-md z-30 flex items-center justify-between shadow-sm">
         <a href="/" class="flex items-center gap-3">
-            <img src="imgs/favicon.png" alt="Logo Kihap" class="w-10 h-10 rounded-full border border-brand-gold/30">
-            <span class="font-title font-extrabold tracking-wider text-white text-lg">KIHAP</span>
+            <img src="imgs/favicon.png" alt="Logo Kihap" class="w-10 h-10 rounded-full border border-brand-gold/50 shadow-sm">
+            <span class="font-title font-extrabold tracking-wider text-slate-900 text-lg">KIHAP</span>
         </a>
         <div id="nav-actions" class="hidden">
-            <button id="change-unit-btn" class="flex items-center gap-2 text-xs font-bold bg-white/5 border border-white/10 hover:border-brand-gold/50 text-gray-300 hover:text-white px-4 py-2 rounded-xl transition-all duration-300">
+            <button id="change-unit-btn" class="flex items-center gap-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 px-4 py-2 rounded-xl transition-all duration-300 shadow-sm">
                 <i class="fas fa-exchange-alt text-brand-gold"></i> Trocar Unidade
             </button>
         </div>
@@ -92,10 +93,10 @@
         <!-- SELECT UNIT STATE -->
         <section id="select-unit-section" class="py-10">
             <div class="text-center max-w-2xl mx-auto mb-12">
-                <h1 class="font-title text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
-                    Grade de <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-yellow-300">Horários</span>
+                <h1 class="font-title text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight mb-4">
+                    Grade de <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-amber-500">Horários</span>
                 </h1>
-                <p class="text-gray-400 text-sm md:text-base">
+                <p class="text-slate-500 text-sm md:text-base">
                     Selecione a sua unidade abaixo para visualizar as turmas e horários de treino disponíveis nesta semana.
                 </p>
             </div>
@@ -103,7 +104,7 @@
             <!-- Unit Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto" id="unit-grid">
                 <!-- Javascript will render cards here -->
-                <div class="col-span-full text-center py-10 text-gray-500">
+                <div class="col-span-full text-center py-10 text-slate-400">
                     <i class="fas fa-spinner fa-spin text-3xl text-brand-gold mb-3"></i>
                     <p>Carregando unidades disponíveis...</p>
                 </div>
@@ -113,44 +114,44 @@
         <!-- SCHEDULE GRID STATE -->
         <section id="schedule-section" class="hidden flex-col gap-6 py-6 animate-fadeIn">
             <!-- Header Unidade -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
                 <div>
-                    <h2 class="font-title text-3xl font-extrabold text-white" id="selected-unit-title">Carregando...</h2>
-                    <p class="text-gray-400 text-xs md:text-sm mt-1" id="selected-unit-city">Cidade</p>
+                    <h2 class="font-title text-3xl font-extrabold text-slate-900" id="selected-unit-title">Carregando...</h2>
+                    <p class="text-slate-500 text-xs md:text-sm mt-1" id="selected-unit-city">Cidade</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
-                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Baby
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 shadow-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Baby
                     </div>
-                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
-                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Littles
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 shadow-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Littles
                     </div>
-                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 shadow-sm">
                         <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Kids
                     </div>
-                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
-                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Adultos
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 shadow-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Adultos
                     </div>
-                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
-                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Família
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 shadow-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Família
                     </div>
                 </div>
             </div>
 
             <!-- Loader -->
-            <div id="schedule-loader" class="flex flex-col items-center justify-center py-20 text-gray-500">
+            <div id="schedule-loader" class="flex flex-col items-center justify-center py-20 text-slate-400">
                 <i class="fas fa-circle-notch fa-spin text-4xl text-brand-gold mb-4"></i>
-                <p class="font-medium text-sm text-gray-400">Consultando a grade da unidade no banco de dados...</p>
+                <p class="font-medium text-sm text-slate-500">Consultando a grade da unidade no banco de dados...</p>
             </div>
 
             <!-- Empty State -->
             <div id="schedule-empty" class="hidden flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
-                <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
                     <i class="far fa-calendar-times text-2xl text-brand-gold"></i>
                 </div>
-                <h3 class="font-title text-lg font-bold text-white mb-1">Nenhuma turma cadastrada</h3>
-                <p class="text-gray-400 text-sm mb-6">Esta unidade ainda não possui turmas ou horários semanais cadastrados na grade.</p>
-                <button class="bg-brand-gold hover:bg-brand-darkGold text-black font-extrabold px-6 py-2.5 rounded-xl transition-all duration-300 text-xs" onclick="window.location.search = ''">
+                <h3 class="font-title text-lg font-bold text-slate-800 mb-1">Nenhuma turma cadastrada</h3>
+                <p class="text-slate-500 text-sm mb-6">Esta unidade ainda não possui turmas ou horários semanais cadastrados na grade.</p>
+                <button class="bg-brand-gold hover:bg-brand-darkGold text-black font-extrabold px-6 py-2.5 rounded-xl transition-all duration-300 text-xs shadow-sm" onclick="window.location.search = ''">
                     Escolher Outra Unidade
                 </button>
             </div>
@@ -172,7 +173,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="py-8 border-t border-white/5 text-center text-xs text-gray-600 bg-black/40">
+    <footer class="py-8 border-t border-slate-200/50 text-center text-xs text-slate-400 bg-white shadow-sm mt-auto">
         <p>&copy; 2026 Kihap Martial Arts. Todos os direitos reservados.</p>
     </footer>
 
@@ -273,14 +274,14 @@
                     const meta = UNIT_METADATA[key] || { name: key.replace(/-/g, ' '), phone: '556183007146', city: 'Kihap' };
                     
                     const card = document.createElement('div');
-                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 glass-glow-yellow group';
+                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg glass-glow-yellow group bg-white shadow-sm';
                     card.innerHTML = `
                         <div>
                             <div class="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center mb-4 group-hover:bg-brand-gold/20 transition-colors">
                                 <i class="fas fa-map-marker-alt text-brand-gold text-lg"></i>
                             </div>
-                            <h3 class="font-title text-xl font-bold text-white mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
-                            <p class="text-gray-400 text-xs flex items-center gap-1.5">
+                            <h3 class="font-title text-xl font-bold text-slate-800 mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
+                            <p class="text-slate-500 text-xs flex items-center gap-1.5">
                                 <i class="fas fa-city opacity-70"></i> ${meta.city}
                             </p>
                         </div>
@@ -302,14 +303,14 @@
                 Object.keys(UNIT_METADATA).forEach(key => {
                     const meta = UNIT_METADATA[key];
                     const card = document.createElement('div');
-                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 glass-glow-yellow group';
+                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg glass-glow-yellow group bg-white shadow-sm';
                     card.innerHTML = `
                         <div>
                             <div class="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center mb-4 group-hover:bg-brand-gold/20 transition-colors">
                                 <i class="fas fa-map-marker-alt text-brand-gold text-lg"></i>
                             </div>
-                            <h3 class="font-title text-xl font-bold text-white mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
-                            <p class="text-gray-400 text-xs flex items-center gap-1.5">
+                            <h3 class="font-title text-xl font-bold text-slate-800 mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
+                            <p class="text-slate-500 text-xs flex items-center gap-1.5">
                                 <i class="fas fa-city opacity-70"></i> ${meta.city}
                             </p>
                         </div>
@@ -396,8 +397,8 @@
                 const btn = document.createElement('button');
                 btn.className = `flex-1 py-3 text-center rounded-2xl font-bold transition-all duration-300 text-xs shrink-0 snap-align-center min-w-[70px] ${
                     activeMobileDay == dayNum 
-                        ? 'bg-brand-gold text-black shadow-lg shadow-brand-gold/10 scale-105' 
-                        : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                        ? 'bg-brand-gold text-black shadow-md scale-105' 
+                        : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-200/50 shadow-sm'
                 }`;
                 btn.textContent = day.short;
                 btn.onclick = () => {
@@ -434,22 +435,22 @@
                 const classes = classesByDay[dayNum] || [];
 
                 const col = document.createElement('div');
-                col.className = 'day-column-container flex-col gap-4 border border-white/5 rounded-3xl p-4 bg-white/[0.02] transition-colors hover:bg-white/[0.03]';
+                col.className = 'day-column-container flex-col gap-4 border border-slate-100 rounded-3xl p-4 bg-white shadow-sm transition-shadow hover:shadow-md';
                 col.dataset.day = dayNum;
 
                 // Day Title Header
                 col.innerHTML = `
-                    <div class="border-b border-white/5 pb-3 mb-2 flex items-center justify-between">
-                        <span class="font-title font-extrabold text-sm text-white">${day.name}</span>
-                        <span class="text-[10px] font-bold text-gray-500">${classes.length} ${classes.length === 1 ? 'aula' : 'aulas'}</span>
+                    <div class="border-b border-slate-100 pb-3 mb-2 flex items-center justify-between">
+                        <span class="font-title font-extrabold text-sm text-slate-800">${day.name}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${classes.length} ${classes.length === 1 ? 'aula' : 'aulas'}</span>
                     </div>
                 `;
 
                 if (classes.length === 0) {
                     col.innerHTML += `
-                        <div class="flex flex-col items-center justify-center py-10 text-gray-600 text-center gap-2">
-                            <i class="far fa-clock text-xl opacity-40"></i>
-                            <span class="text-[10px] font-medium">Sem treinos</span>
+                        <div class="flex flex-col items-center justify-center py-12 text-slate-300 text-center gap-2">
+                            <i class="far fa-clock text-2xl opacity-55"></i>
+                            <span class="text-[10px] font-semibold text-slate-400">Sem treinos</span>
                         </div>
                     `;
                 } else {
@@ -459,7 +460,7 @@
                     classes.forEach(cls => {
                         const style = getCategoryStyle(cls.category);
                         const card = document.createElement('div');
-                        card.className = `glass-card border border-white/5 ${style.border} p-4 rounded-2xl flex flex-col gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-md`;
+                        card.className = `glass-card border ${style.border} ${style.bg} p-4 rounded-2xl flex flex-col gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm`;
                         
                         // Prefilled WhatsApp message
                         const waMsg = `Olá! Vi a grade de horários da unidade ${unitMeta.name} e gostaria de agendar uma aula experimental de *${cls.name}* na *${day.name}* às *${cls.time}*!`;
@@ -469,20 +470,20 @@
                         card.innerHTML = `
                             <div>
                                 <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                                    <span class="font-title font-black text-white text-sm tracking-tight flex items-center gap-1.5">
+                                    <span class="font-title font-black text-slate-800 text-sm tracking-tight flex items-center gap-1.5">
                                         <i class="far fa-clock text-[10px] text-brand-gold"></i> ${cls.time}
                                     </span>
                                     ${cls.category ? `<span class="${style.badge} px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wide leading-none">${cls.category}</span>` : ''}
                                 </div>
-                                <h4 class="font-title font-bold text-xs text-white leading-snug group-hover:text-brand-gold transition-colors">${cls.name}</h4>
+                                <h4 class="font-title font-bold text-xs text-slate-800 leading-snug group-hover:text-brand-gold transition-colors">${cls.name}</h4>
                             </div>
                             
-                            <div class="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
-                                <div class="text-[9px] text-gray-400">
-                                    <span class="block text-gray-500 font-medium">Instrutor:</span>
-                                    <span class="font-bold text-white">${cls.teacherName || 'Prof. Kihap'}</span>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3 mt-1">
+                                <div class="text-[9px] text-slate-500">
+                                    <span class="block text-slate-400 font-medium">Instrutor:</span>
+                                    <span class="font-bold text-slate-700">${cls.teacherName || 'Prof. Kihap'}</span>
                                 </div>
-                                <a href="${waLink}" target="_blank" rel="noopener" class="w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-300 text-xs shadow-sm hover:scale-105" title="Agendar pelo WhatsApp">
+                                <a href="${waLink}" target="_blank" rel="noopener" class="w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-300 text-xs shadow-md hover:scale-105" title="Agendar pelo WhatsApp">
                                     <i class="fab fa-whatsapp font-bold"></i>
                                 </a>
                             </div>
@@ -504,37 +505,43 @@
             const cat = (categoryName || '').toLowerCase();
             if (cat.includes('baby')) {
                 return {
-                    border: 'border-sky-500/10 hover:border-sky-500/30',
-                    badge: 'bg-sky-500/10 text-sky-300'
+                    border: 'border-sky-200/50 hover:border-sky-400/40',
+                    bg: 'bg-sky-50/30 hover:bg-sky-50/60',
+                    badge: 'bg-sky-100 text-sky-700'
                 };
             }
             if (cat.includes('little')) {
                 return {
-                    border: 'border-blue-500/10 hover:border-blue-500/30',
-                    badge: 'bg-blue-500/10 text-blue-300'
+                    border: 'border-blue-200/50 hover:border-blue-400/40',
+                    bg: 'bg-blue-50/30 hover:bg-blue-50/60',
+                    badge: 'bg-blue-100 text-blue-700'
                 };
             }
             if (cat.includes('kid')) {
                 return {
-                    border: 'border-orange-500/10 hover:border-orange-500/30',
-                    badge: 'bg-orange-500/10 text-orange-300'
+                    border: 'border-orange-200/50 hover:border-orange-400/40',
+                    bg: 'bg-orange-50/30 hover:bg-orange-50/60',
+                    badge: 'bg-orange-100 text-orange-700'
                 };
             }
             if (cat.includes('adult')) {
                 return {
-                    border: 'border-red-500/10 hover:border-red-500/30',
-                    badge: 'bg-red-500/10 text-red-300'
+                    border: 'border-red-200/50 hover:border-red-400/40',
+                    bg: 'bg-red-50/30 hover:bg-red-50/60',
+                    badge: 'bg-red-100 text-red-700'
                 };
             }
             if (cat.includes('famil') || cat.includes('família')) {
                 return {
-                    border: 'border-purple-500/10 hover:border-purple-500/30',
-                    badge: 'bg-purple-500/10 text-purple-300'
+                    border: 'border-purple-200/50 hover:border-purple-400/40',
+                    bg: 'bg-purple-50/30 hover:bg-purple-50/60',
+                    badge: 'bg-purple-100 text-purple-700'
                 };
             }
             return {
-                border: 'border-yellow-500/10 hover:border-yellow-500/30',
-                badge: 'bg-yellow-500/10 text-yellow-300'
+                border: 'border-amber-200/50 hover:border-amber-400/40',
+                bg: 'bg-amber-50/30 hover:bg-amber-50/60',
+                badge: 'bg-amber-100 text-amber-700'
             };
         }
     </script>
