@@ -2410,47 +2410,85 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: prospectId, phone, message.');
     }
 
-    const token = process.env.WHAPI_TOKEN;
-    if (!token) {
-        console.error('WHAPI_TOKEN not found in environment variables.');
-        throw new functions.https.HttpsError('failed-precondition', 'WHAPI_TOKEN checksum failed (not configured).');
-    }
-
     try {
-        // Prepare phone number (remove non-digits)
+        // Clean phone number
         const cleanPhone = phone.replace(/\D/g, '');
-
         let targetPhone = cleanPhone;
-        // Basic formatting for BR numbers if they come without country code
+        // Basic formatting for BR numbers
         if (targetPhone.length >= 10 && targetPhone.length <= 11) {
             targetPhone = '55' + targetPhone;
         }
 
-        console.log(`[sendWhatsAppMessage] Sending to ${targetPhone} for prospect ${prospectId}`);
+        console.log(`[sendWhatsAppMessage] Sending Meta message to ${targetPhone} for prospect ${prospectId}`);
 
-        // Call Whapi
-        const whapiResponse = await axios.post('https://gate.whapi.cloud/messages/text', {
+        // Fetch Meta credentials
+        const configSnap = await db.collection('public_config').doc('miles').get();
+        if (!configSnap.exists) {
+            throw new Error("Chave do Gemini (public_config/miles) não encontrada no Firestore.");
+        }
+        const configData = configSnap.data();
+        const whatsappToken = configData.whatsappToken;
+        const phoneNumberId = configData.phoneNumberId;
+
+        if (!whatsappToken || !phoneNumberId) {
+            throw new Error("Credenciais do WhatsApp (whatsappToken/phoneNumberId) ausentes no Firestore.");
+        }
+
+        // Send via Meta Cloud API
+        const metaResponse = await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+            messaging_product: "whatsapp",
             to: targetPhone,
-            body: message
+            type: "text",
+            text: { body: message }
         }, {
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${whatsappToken}`,
                 'Content-Type': 'application/json'
             }
         });
 
-        console.log('[sendWhatsAppMessage] Whapi response:', whapiResponse.data);
+        console.log('[sendWhatsAppMessage] Meta Cloud API response:', metaResponse.data);
+        const wamid = metaResponse.data?.messages?.[0]?.id || 'unknown';
 
-        // Log to Firestore
+        // Update the WhatsApp chat history in Firestore so chatbot knows we replied
+        const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
+        const chatSnap = await chatRef.get();
+        let history = [];
+        let lastLeadId = prospectId; // fall back to prospectId if not in doc
+
+        if (chatSnap.exists) {
+            const dataDoc = chatSnap.data();
+            history = dataDoc.history || [];
+            if (dataDoc.lastLeadId) {
+                lastLeadId = dataDoc.lastLeadId;
+            }
+        }
+
+        // Append the manual message as a model role message
+        history.push({ role: 'model', parts: [{ text: message }] });
+
+        // Slice history to max 20 to prevent excessive tokens
+        if (history.length > 20) {
+            history = history.slice(-20);
+        }
+
+        await chatRef.set({
+            history,
+            lastLeadId,
+            reminderSent: false,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // Log to Firestore prospect/lead contactLog
         const userEmail = context.auth.token.email || 'unknown';
         const logEntry = {
             author: userEmail,
             description: message,
-            timestamp: new Date(), // Using Client-side timestamp because ArrayUnion doesn't support serverTimestamp
+            timestamp: new Date(),
             type: 'whatsapp-sent',
             metadata: {
                 destination: targetPhone,
-                whapi_id: whapiResponse.data?.messages?.[0]?.id || 'unknown'
+                wamid: wamid
             }
         };
 
@@ -2473,15 +2511,15 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
             console.warn(`[sendWhatsAppMessage] Prospect/Lead ${prospectId} not found to log message.`);
         }
 
-        return { success: true, data: whapiResponse.data };
+        return { success: true, data: metaResponse.data };
 
     } catch (error) {
-        console.error('Error sending WhatsApp message:', error);
+        console.error('Error sending Meta WhatsApp message:', error);
         if (error.response) {
-            console.error('Whapi Error Details:', error.response.data);
+            console.error('Meta Cloud API Error Details:', error.response.data);
         }
-        const errorMessage = error.response?.data?.message || error.message;
-        throw new functions.https.HttpsError('internal', `Failed to send message: ${errorMessage}`);
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        throw new functions.https.HttpsError('internal', `Failed to send WhatsApp message via Meta: ${errorMessage}`);
     }
 });
 
@@ -2491,16 +2529,10 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
     }
 
-    const { phone, limit = 20 } = data;
+    const { phone, limit = 40 } = data;
 
     if (!phone) {
         throw new functions.https.HttpsError('invalid-argument', 'Phone number is required.');
-    }
-
-    const token = process.env.WHAPI_TOKEN;
-    if (!token) {
-        console.error('WHAPI_TOKEN is missing in environment variables.');
-        throw new functions.https.HttpsError('failed-precondition', 'WHAPI_TOKEN not configured.');
     }
 
     try {
@@ -2511,60 +2543,64 @@ exports.getWhatsAppHistory = functions.https.onCall(async (data, context) => {
             targetPhone = '55' + targetPhone;
         }
 
-        // Whapi expects chatId like '554899999999@s.whatsapp.net' for private chats
-        const chatId = `${targetPhone}@s.whatsapp.net`;
-        console.log(`[getWhatsAppHistory] Fetching history from Whapi for chatId: ${chatId}`);
+        console.log(`[getWhatsAppHistory] Fetching history from Firestore for phone: ${targetPhone}`);
 
-        const response = await axios.get(`https://gate.whapi.cloud/messages/list/${chatId}`, {
-            params: {
-                count: limit
-            },
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            },
-            timeout: 15000 // 15s timeout to prevent hanging
-        });
+        const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
+        const chatSnap = await chatRef.get();
 
-        console.log(`[getWhatsAppHistory] Whapi response status: ${response.status}`);
-
-        // Transform data to a simpler format for frontend
-        const messages = response.data.messages.map(msg => {
-            const mediaTypes = ['image', 'video', 'audio', 'voice', 'document', 'sticker'];
-            const isMedia = mediaTypes.includes(msg.type);
-            const mediaData = isMedia ? msg[msg.type] : null;
-
-            return {
-                id: msg.id,
-                from_me: msg.from_me,
-                type: msg.type,
-                // Use explicit text, or caption, or empty string if it's just media (frontend handles media tag)
-                text: msg.text?.body || msg.caption || '',
-                media_url: mediaData?.link || null,
-                media_type: msg.type,
-                timestamp: msg.timestamp,
-                status: msg.status,
-                mime_type: mediaData?.mime_type // Useful for audio/video players
-            };
-
-            // DEBUG MEDIA
-            if (isMedia) {
-                console.log(`[getWhatsAppHistory] Media Message Debug (${msg.id}):`, JSON.stringify(msg[msg.type], null, 2));
-            }
-
-            return mappedMsg;
-        });
-
-        return { success: true, messages: messages };
-
-    } catch (error) {
-        console.error('Error fetching WhatsApp history details:', error.response?.data || error.message);
-        // Return a clean error to the client even if internal
-        if (error.response?.status === 404 || error.response?.status === 400) {
-            // Treat 404 as empty history
+        if (!chatSnap.exists) {
             return { success: true, messages: [] };
         }
-        throw new functions.https.HttpsError('internal', `Whapi Error: ${error.message}`);
+
+        const chatData = chatSnap.data();
+        const history = chatData.history || [];
+        const updatedAt = chatData.updatedAt;
+
+        // Base timestamp in seconds
+        const baseTime = updatedAt
+            ? (updatedAt.seconds || Math.floor(updatedAt.toDate().getTime() / 1000))
+            : Math.floor(Date.now() / 1000);
+
+        const messages = [];
+
+        // Traverse history chronologically
+        history.forEach((msg, idx) => {
+            const role = msg.role;
+            const parts = msg.parts || [];
+            
+            // Extract text parts
+            const textParts = parts.filter(p => p.text && p.text.trim());
+            if (textParts.length > 0) {
+                const textContent = textParts.map(p => p.text).join('\n');
+                
+                // Estimate a timestamp so they are spaced chronologically (1 min apart)
+                const estimatedTimestamp = baseTime - (history.length - 1 - idx) * 60;
+
+                messages.push({
+                    id: `msg_${idx}`,
+                    from_me: role === 'model',
+                    type: 'text',
+                    text: textContent,
+                    media_url: null,
+                    media_type: 'text',
+                    timestamp: estimatedTimestamp,
+                    status: 'read'
+                });
+            }
+        });
+
+        // The frontend calls .reverse() before rendering.
+        // Reversing here ensures oldest is rendered first after frontend reverses it.
+        messages.reverse();
+
+        // Limit results
+        const limitedMessages = messages.slice(0, limit);
+
+        return { success: true, messages: limitedMessages };
+
+    } catch (error) {
+        console.error('Error fetching WhatsApp history:', error);
+        throw new functions.https.HttpsError('internal', `Firestore Error: ${error.message}`);
     }
 });
 
@@ -4193,4 +4229,5 @@ exports.onNotificationCreated = functions.firestore
     });
 
 exports.whatsappWebhook = require('./whatsapp.js').whatsappWebhook;
+exports.milesInactivityReminder = require('./whatsapp.js').milesInactivityReminder;
 

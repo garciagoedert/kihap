@@ -125,10 +125,14 @@ async function loadUnits() {
         const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
         const result = await getEvoUnits();
         const units = result.data || [];
-        unitSelect.innerHTML = units.map(unitId => {
+        
+        let optionsHtml = '<option value="staff">Staff / Corporativo</option>';
+        optionsHtml += units.map(unitId => {
             const name = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             return `<option value="${unitId}">${name}</option>`;
         }).join('');
+        
+        unitSelect.innerHTML = optionsHtml;
     } catch (error) {
         console.error("Error loading units:", error);
     }

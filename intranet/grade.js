@@ -1128,6 +1128,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const units = result.data;
 
             unitFilter.innerHTML = '<option value="">Selecione a Unidade</option>';
+            
+            const staffOption = document.createElement('option');
+            staffOption.value = 'staff';
+            staffOption.textContent = 'Staff / Corporativo';
+            unitFilter.appendChild(staffOption);
+
             units.forEach(unitId => {
                 const option = document.createElement('option');
                 option.value = unitId;
@@ -1139,6 +1145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const reportUnitFilterEl = document.getElementById('report-unit-filter');
             if (reportUnitFilterEl) {
                 reportUnitFilterEl.innerHTML = '<option value="all">Todas as Unidades</option>';
+                
+                const reportStaffOption = document.createElement('option');
+                reportStaffOption.value = 'staff';
+                reportStaffOption.textContent = 'Staff / Corporativo';
+                reportUnitFilterEl.appendChild(reportStaffOption);
+
                 units.forEach(unitId => {
                     const option = document.createElement('option');
                     option.value = unitId;

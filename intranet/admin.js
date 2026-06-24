@@ -1,6 +1,7 @@
 import { getAllUsers, updateUser, addUser, deleteUser, updateUserPassword } from './auth.js';
-import { db } from './firebase-config.js';
+import { db, functions } from './firebase-config.js';
 import { addDoc, collection, query, orderBy, getDocs, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 export async function setupAdminPage() {
     // A validação de admin agora é feita globalmente no common-ui.js
@@ -34,6 +35,7 @@ function continueSetup() {
     const isAcademyInput = document.getElementById('isAcademy');
     const isJuridicoInput = document.getElementById('isJuridico');
     const isSuporteInput = document.getElementById('isSuporte');
+    const userUnitSelect = document.getElementById('user-unit');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
@@ -191,7 +193,8 @@ function continueSetup() {
             isStore: isStoreInput.checked,
             isAcademy: isAcademyInput.checked,
             isJuridico: isJuridicoInput.checked,
-            isSuporte: isSuporteInput.checked
+            isSuporte: isSuporteInput.checked,
+            unitId: userUnitSelect ? userUnitSelect.value : ''
         };
 
         const userId = hiddenEmailInput.value;
@@ -213,6 +216,7 @@ function continueSetup() {
     function resetForm() {
         if (formTitle) formTitle.textContent = 'Adicionar Novo Usuário';
         if (userForm) userForm.reset();
+        if (userUnitSelect) userUnitSelect.value = '';
         if (hiddenEmailInput) hiddenEmailInput.value = '';
         if (emailInput) emailInput.disabled = false;
         if (passwordInput) {
@@ -252,6 +256,7 @@ function continueSetup() {
                 isAcademyInput.checked = user.isAcademy || false;
                 isJuridicoInput.checked = user.isJuridico || false;
                 isSuporteInput.checked = user.isSuporte || false;
+                if (userUnitSelect) userUnitSelect.value = user.unitId || '';
                 hiddenEmailInput.value = user.id;
                 passwordInput.placeholder = "Não editável aqui";
                 passwordInput.disabled = true;
@@ -304,7 +309,32 @@ function continueSetup() {
         });
     }
 
+    async function loadUnitsForSelect() {
+        if (!userUnitSelect) return;
+        try {
+            const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
+            const result = await getEvoUnits();
+            const units = result.data || [];
+            
+            userUnitSelect.innerHTML = `
+                <option value="">Sem Unidade (Centro por padrão)</option>
+                <option value="staff">Staff / Corporativo</option>
+            `;
+            
+            units.forEach(unitId => {
+                const option = document.createElement('option');
+                option.value = unitId;
+                option.textContent = unitId.replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
+                userUnitSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Erro ao carregar unidades em admin:", error);
+            userUnitSelect.innerHTML = '<option value="">Erro ao carregar unidades</option>';
+        }
+    }
+
     setupTabs();
+    loadUnitsForSelect();
     renderUsers();
     renderLoginLogs();
     renderQuotes();

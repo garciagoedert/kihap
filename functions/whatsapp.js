@@ -9,6 +9,19 @@ const WHATSAPP_TOKEN = "EAASLYib5SP8BRrg9PdevC18xe4BkFMWQ8d8kMF7hwa1vZAGUpLGZB13
 const PHONE_NUMBER_ID = "1116033658265418";
 const VERIFY_TOKEN = "kihap_miles_webhook_token_2026";
 
+const UNIT_MANAGERS = {
+    'asa-sul': '556183007146',
+    'sudoeste': '556182107146',
+    'lago-sul': '556192028980',
+    'noroeste': '556184170472',
+    'pontos-de-ensino': '556181724290',
+    'jardim-botanico': '556184171059',
+    'centro': '554892182423',
+    'coqueiros': '554896296941',
+    'santa-monica': '554892172423',
+    'dourados': '556799597001'
+};
+
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -134,7 +147,7 @@ function getAvailableUnits() {
     };
 }
 
-async function saveLeadBackend(args, customerPhone) {
+async function saveLeadBackend(args, customerPhone, existingLeadId = null) {
     const { nome, telefone, programaInteresse, unidade, unidadeKey } = args;
     try {
         const leadData = {
@@ -143,16 +156,33 @@ async function saveLeadBackend(args, customerPhone) {
             programaInteresse: programaInteresse || '',
             unidade: unidade || '',
             unidadeKey: unidadeKey || '',
-            origem: 'WhatsApp Miles',
-            status: 'Pendente',
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            origem: 'Chatbot Miles',
+            'origem do lead': 'Chatbot Miles',
+            status: 'Novo',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
 
-        const docRef = await db.collection('leads').add(leadData);
+        if (existingLeadId) {
+            try {
+                await db.collection('leads').doc(existingLeadId).update(leadData);
+                return {
+                    success: true,
+                    leadId: existingLeadId,
+                    message: `Lead de ${nome} atualizado com sucesso no CRM! Agora ofereça a grade de horários chamando getSchedule().`
+                };
+            } catch (err) {
+                console.warn(`[Miles WhatsApp] Lead ${existingLeadId} não encontrado para atualizar. Criando novo...`);
+            }
+        }
+
+        const docRef = await db.collection('leads').add({
+            ...leadData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
         return {
             success: true,
             leadId: docRef.id,
-            message: `Lead de ${nome} salvo com sucesso! Agora ofereça a grade de horários chamando getSchedule().`
+            message: `Lead de ${nome} criado com sucesso no CRM! Agora ofereça a grade de horários chamando getSchedule().`
         };
     } catch (e) {
         console.error("[Miles WhatsApp] Erro ao salvar lead:", e);
@@ -331,11 +361,67 @@ async function bookTrialClassBackend(args) {
             }
         }
 
-        // Atualiza status do lead para "Agendado"
+        // Atualiza status do lead para "Aula experimental" no CRM
         if (leadId) {
             try {
-                await db.collection('leads').doc(leadId).update({ status: 'Agendado' });
+                await db.collection('leads').doc(leadId).update({ status: 'Aula experimental' });
             } catch (_) {}
+        }
+
+        // Notifica o gerente da unidade via WhatsApp Oficial
+        const managerPhone = UNIT_MANAGERS[unitId];
+        if (managerPhone) {
+            try {
+                const configSnap = await db.collection('public_config').doc('miles').get();
+                if (configSnap.exists) {
+                    const configData = configSnap.data();
+                    const whatsappToken = configData.whatsappToken;
+                    const phoneNumberId = configData.phoneNumberId;
+
+                    if (whatsappToken && phoneNumberId) {
+                        const templateSnap = await db.collection('classTemplates').doc(templateId).get();
+                        const t = templateSnap.exists ? templateSnap.data() : null;
+                        const className = t ? t.name : 'Aula Experimental';
+                        const classTime = t ? t.time : '';
+                        
+                        const dataFormatada = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                            weekday: 'long', day: 'numeric', month: 'long'
+                        });
+
+                        await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                            messaging_product: "whatsapp",
+                            to: managerPhone,
+                            type: "template",
+                            template: {
+                                name: "notificacaoaula",
+                                language: {
+                                    code: "pt_BR"
+                                },
+                                components: [
+                                    {
+                                        type: "body",
+                                        parameters: [
+                                            { type: "text", text: nome },
+                                            { type: "text", text: telefone },
+                                            { type: "text", text: programa || className },
+                                            { type: "text", text: dataFormatada },
+                                            { type: "text", text: classTime || "Horário a combinar" }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${whatsappToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        console.log(`[Miles WhatsApp] Notificação (Template) enviada para o gerente da unidade ${unitId} (${managerPhone})`);
+                    }
+                }
+            } catch (managerErr) {
+                console.error(`[Miles WhatsApp] Erro ao notificar o gerente da unidade ${unitId} via WhatsApp:`, managerErr.response?.data || managerErr.message);
+            }
         }
 
         const dataExibicao = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -418,6 +504,32 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     const whatsappToken = configData.whatsappToken || WHATSAPP_TOKEN;
                     const phoneNumberId = configData.phoneNumberId || PHONE_NUMBER_ID;
 
+                    // Verifica se é um comando de reset
+                    const cleanText = messageText.trim().toLowerCase();
+                    if (cleanText === '/reset' || cleanText === '/limpar' || cleanText === '/restart') {
+                        // Limpa o histórico no Firestore
+                        const chatRef = db.collection('whatsapp_chats').doc(customerPhone);
+                        await chatRef.delete();
+
+                        console.log(`[WhatsApp Webhook] Conversa de ${customerPhone} reiniciada via comando.`);
+
+                        // Envia resposta de confirmação
+                        const replyText = "Conversa reiniciada com sucesso! Como posso te ajudar hoje?";
+                        await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                            messaging_product: "whatsapp",
+                            to: customerPhone,
+                            type: "text",
+                            text: { body: replyText }
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${whatsappToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        return res.status(200).send('EVENT_RECEIVED');
+                    }
+
                     // Busca histórico da conversa no Firestore
                     const chatRef = db.collection('whatsapp_chats').doc(customerPhone);
                     const chatSnap = await chatRef.get();
@@ -428,6 +540,24 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                         const dataDoc = chatSnap.data();
                         history = dataDoc.history || [];
                         lastLeadId = dataDoc.lastLeadId || null;
+                    }
+
+                    // Cria um lead preliminar no CRM caso ainda não exista
+                    if (!lastLeadId) {
+                        try {
+                            const leadRef = await db.collection('leads').add({
+                                nome: customerName || 'Visitante WhatsApp',
+                                telefone: customerPhone,
+                                status: 'Novo',
+                                'origem do lead': 'Chatbot Miles',
+                                origem: 'Chatbot Miles',
+                                createdAt: admin.firestore.FieldValue.serverTimestamp()
+                            });
+                            lastLeadId = leadRef.id;
+                            console.log(`[WhatsApp Webhook] Lead preliminar criado no CRM para ${customerPhone}: ${lastLeadId}`);
+                        } catch (leadErr) {
+                            console.error("[WhatsApp Webhook] Erro ao criar lead preliminar:", leadErr);
+                        }
                     }
 
                     // Limita histórico a 20 mensagens para evitar tokens excessivos
@@ -466,7 +596,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                             if (fnName === 'getAvailableUnits') {
                                 result = getAvailableUnits();
                             } else if (fnName === 'saveLead') {
-                                result = await saveLeadBackend(args, customerPhone);
+                                result = await saveLeadBackend(args, customerPhone, lastLeadId);
                                 if (result.success && result.leadId) {
                                     lastLeadId = result.leadId;
                                 }
@@ -496,10 +626,11 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                         finalReplyText = "Desculpe, tive uma lentidão interna. Poderia repetir ou me dizer qual unidade prefere?";
                     }
 
-                    // Atualiza o histórico e o leadId no Firestore
+                    // Atualiza o histórico e o leadId no Firestore (reseta flag de lembrete)
                     await chatRef.set({
                         history,
                         lastLeadId,
+                        reminderSent: false,
                         updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
 
@@ -526,4 +657,118 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     }
 
     return res.sendStatus(404);
+});
+
+// Agendador de Lembrete de Inatividade (Janela de menos de 24h)
+exports.milesInactivityReminder = functions.pubsub.schedule('every 1 hours').onRun(async (context) => {
+    console.log('[Miles Reminder] Iniciando verificação de inatividade de leads (janela < 24h)...');
+
+    const now = new Date();
+    
+    // Filtro para achar inatividade entre 4 e 23 horas
+    const minTime = new Date(now.getTime() - 23 * 60 * 60 * 1000); // 23h atrás
+    const maxTime = new Date(now.getTime() - 4 * 60 * 60 * 1000);  // 4h atrás
+
+    try {
+        // Carrega as credenciais da Meta do Firestore
+        const configSnap = await db.collection('public_config').doc('miles').get();
+        if (!configSnap.exists) {
+            console.error('[Miles Reminder] Configuração public_config/miles não encontrada no Firestore.');
+            return null;
+        }
+        const configData = configSnap.data();
+        const whatsappToken = configData.whatsappToken;
+        const phoneNumberId = configData.phoneNumberId;
+
+        if (!whatsappToken || !phoneNumberId) {
+            console.error('[Miles Reminder] Credenciais do WhatsApp ausentes em public_config/miles.');
+            return null;
+        }
+
+        // Busca conversas que foram atualizadas na janela [23h, 4h] atrás
+        const chatsQuery = db.collection('whatsapp_chats')
+            .where('updatedAt', '>=', minTime)
+            .where('updatedAt', '<=', maxTime);
+
+        const chatsSnap = await chatsQuery.get();
+        console.log(`[Miles Reminder] Encontradas ${chatsSnap.size} conversas atualizadas na janela de tempo.`);
+
+        let sentCount = 0;
+
+        for (const docSnap of chatsSnap.docs) {
+            const chatPhone = docSnap.id;
+            const chatData = docSnap.data();
+
+            // Pula se já enviamos o lembrete
+            if (chatData.reminderSent === true) {
+                continue;
+            }
+
+            const lastLeadId = chatData.lastLeadId;
+            if (!lastLeadId) {
+                continue; // Sem lead associado, nada a fazer
+            }
+
+            // Verifica o status do lead no CRM
+            const leadSnap = await db.collection('leads').doc(lastLeadId).get();
+            if (!leadSnap.exists) {
+                continue; // Lead foi apagado
+            }
+
+            const leadData = leadSnap.data();
+            const leadStatus = leadData.status;
+
+            // Só envia lembrete se o lead estiver na coluna 'Novo' (ainda não agendado/contactado)
+            if (leadStatus === 'Novo') {
+                const leadName = leadData.nome || '';
+                const cleanName = leadName.trim() ? leadName.trim().split(' ')[0] : '';
+                const salutation = cleanName ? `, ${cleanName}` : '';
+
+                // Mensagem amigável de lembrete
+                const reminderText = `Oi${salutation}! 😊 Notei que não finalizamos o agendamento da sua aula experimental gratuita na Kihap. Gostaria de ver os horários disponíveis novamente para escolhermos o seu?`;
+
+                try {
+                    // Envia mensagem pelo WhatsApp
+                    await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                        messaging_product: "whatsapp",
+                        to: chatPhone,
+                        type: "text",
+                        text: { body: reminderText }
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${whatsappToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    console.log(`[Miles Reminder] Lembrete enviado com sucesso para ${chatPhone} (Lead ID: ${lastLeadId})`);
+
+                    // Atualiza o histórico do chat com o lembrete enviado e a flag reminderSent
+                    const updatedHistory = chatData.history || [];
+                    updatedHistory.push({
+                        role: 'model',
+                        parts: [{ text: reminderText }]
+                    });
+
+                    await db.collection('whatsapp_chats').doc(chatPhone).update({
+                        history: updatedHistory,
+                        reminderSent: true,
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    sentCount++;
+
+                } catch (sendErr) {
+                    console.error(`[Miles Reminder] Erro ao enviar lembrete para ${chatPhone}:`, sendErr.response?.data || sendErr.message);
+                }
+            }
+        }
+
+        console.log(`[Miles Reminder] Concluído. Lembretes enviados: ${sentCount}`);
+        return null;
+
+    } catch (err) {
+        console.error('[Miles Reminder] Erro fatal no agendador:', err);
+        return null;
+    }
 });
