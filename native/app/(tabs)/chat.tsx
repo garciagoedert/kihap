@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, where, onSnapshot, doc, getDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, orderBy, limit, updateDoc } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
@@ -21,6 +21,55 @@ export default function ChatScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedNotifId, setExpandedNotifId] = useState<string | null>(null);
+
+  const formatNotifDate = (createdAt: any) => {
+    if (!createdAt) return 'Agora';
+    try {
+      let date: Date;
+      if (typeof createdAt.toDate === 'function') {
+        date = createdAt.toDate();
+      } else if (createdAt.seconds) {
+        date = new Date(createdAt.seconds * 1000);
+      } else {
+        date = new Date(createdAt);
+      }
+      
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Agora';
+      if (diffMins < 60) return `${diffMins}m atrás`;
+      if (diffHours < 24) return `${diffHours}h atrás`;
+      if (diffDays === 1) return 'Ontem';
+      if (diffDays < 7) return `${diffDays}d atrás`;
+      
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    } catch (e) {
+      return 'Agora';
+    }
+  };
+
+  const handleNotificationPress = async (notif: any) => {
+    if (expandedNotifId === notif.id) {
+      setExpandedNotifId(null);
+    } else {
+      setExpandedNotifId(notif.id);
+    }
+
+    if (!notif.read) {
+      try {
+        await updateDoc(doc(db, 'notifications', notif.id), {
+          read: true
+        });
+      } catch (err) {
+        console.error("Error marking notification as read:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -290,9 +339,11 @@ export default function ChatScreen() {
             renderItem={({ item }) => {
               const IconComp = getIcon(item.type);
               const color = getColor(item.type);
+              const isExpanded = expandedNotifId === item.id;
               
               return (
                 <TouchableOpacity 
+                  onPress={() => handleNotificationPress(item)}
                   style={!item.read ? {
                     backgroundColor: isDark ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 246, 255, 0.2)'
                   } : null}
@@ -317,9 +368,16 @@ export default function ChatScreen() {
                       >
                         {item.title}
                       </Text>
-                      <Text className="text-[11px] text-gray-400 font-bold ml-2">Agora</Text>
+                      <Text className="text-[11px] text-gray-400 font-bold ml-2">
+                        {formatNotifDate(item.createdAt)}
+                      </Text>
                     </View>
-                    <Text className="text-[14px] text-gray-500 dark:text-gray-400 leading-snug" numberOfLines={2}>{item.message}</Text>
+                    <Text 
+                      className="text-[14px] text-gray-500 dark:text-gray-400 leading-snug" 
+                      numberOfLines={isExpanded ? undefined : 2}
+                    >
+                      {item.message}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               );
