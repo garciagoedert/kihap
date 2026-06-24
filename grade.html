@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kihap Martial Arts - Grade de Horários</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#FFC107',
+                            darkGold: '#E5A900',
+                            charcoal: '#121212',
+                            cardBg: '#1C1C1E',
+                            borderDark: '#2C2C2E'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #1A1A1C 0%, #0E0E10 100%);
+            background-attachment: fixed;
+        }
+        .font-title {
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        /* Glassmorphism custom classes */
+        .glass-card {
+            background: rgba(28, 28, 30, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .glass-glow-yellow:hover {
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0E0E10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2C2C2E;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFC107;
+        }
+    </style>
+</head>
+<body class="text-gray-200 antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar/Header -->
+    <header class="border-b border-white/5 py-4 px-6 sticky top-0 bg-[#0E0E10]/80 backdrop-blur-md z-30 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3">
+            <img src="imgs/favicon.png" alt="Logo Kihap" class="w-10 h-10 rounded-full border border-brand-gold/30">
+            <span class="font-title font-extrabold tracking-wider text-white text-lg">KIHAP</span>
+        </a>
+        <div id="nav-actions" class="hidden">
+            <button id="change-unit-btn" class="flex items-center gap-2 text-xs font-bold bg-white/5 border border-white/10 hover:border-brand-gold/50 text-gray-300 hover:text-white px-4 py-2 rounded-xl transition-all duration-300">
+                <i class="fas fa-exchange-alt text-brand-gold"></i> Trocar Unidade
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+        <!-- SELECT UNIT STATE -->
+        <section id="select-unit-section" class="py-10">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h1 class="font-title text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+                    Grade de <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-yellow-300">Horários</span>
+                </h1>
+                <p class="text-gray-400 text-sm md:text-base">
+                    Selecione a sua unidade abaixo para visualizar as turmas e horários de treino disponíveis nesta semana.
+                </p>
+            </div>
+            
+            <!-- Unit Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto" id="unit-grid">
+                <!-- Javascript will render cards here -->
+                <div class="col-span-full text-center py-10 text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-3xl text-brand-gold mb-3"></i>
+                    <p>Carregando unidades disponíveis...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCHEDULE GRID STATE -->
+        <section id="schedule-section" class="hidden flex-col gap-6 py-6 animate-fadeIn">
+            <!-- Header Unidade -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
+                <div>
+                    <h2 class="font-title text-3xl font-extrabold text-white" id="selected-unit-title">Carregando...</h2>
+                    <p class="text-gray-400 text-xs md:text-sm mt-1" id="selected-unit-city">Cidade</p>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Baby
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Littles
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Kids
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Adultos
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Família
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loader -->
+            <div id="schedule-loader" class="flex flex-col items-center justify-center py-20 text-gray-500">
+                <i class="fas fa-circle-notch fa-spin text-4xl text-brand-gold mb-4"></i>
+                <p class="font-medium text-sm text-gray-400">Consultando a grade da unidade no banco de dados...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="schedule-empty" class="hidden flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+                <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                    <i class="far fa-calendar-times text-2xl text-brand-gold"></i>
+                </div>
+                <h3 class="font-title text-lg font-bold text-white mb-1">Nenhuma turma cadastrada</h3>
+                <p class="text-gray-400 text-sm mb-6">Esta unidade ainda não possui turmas ou horários semanais cadastrados na grade.</p>
+                <button class="bg-brand-gold hover:bg-brand-darkGold text-black font-extrabold px-6 py-2.5 rounded-xl transition-all duration-300 text-xs" onclick="window.location.search = ''">
+                    Escolher Outra Unidade
+                </button>
+            </div>
+
+            <!-- Weekly Schedule Container -->
+            <div id="schedule-content" class="hidden flex-col gap-6">
+                <!-- Mobile Day Tabs -->
+                <div class="md:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x" id="mobile-tabs-container">
+                    <!-- Javascript will render Seg, Ter, etc. picker buttons -->
+                </div>
+
+                <!-- Desktop Grid View & Mobile Day View Panel -->
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4" id="week-columns-grid">
+                    <!-- Day Columns (1 to 6) -->
+                    <!-- Javascript will populate class cards per day -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-white/5 text-center text-xs text-gray-600 bg-black/40">
+        <p>&copy; 2026 Kihap Martial Arts. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1WKwAsAicGdRz9cRA2Nvv3LEZve1vZe0",
+            authDomain: "intranet-kihap.firebaseapp.com",
+            projectId: "intranet-kihap",
+            storageBucket: "intranet-kihap.firebasestorage.app",
+            messagingSenderId: "1055939458006",
+            appId: "1:1055939458006:web:1d67459a0bc0da60cf2a77"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const functions = getFunctions(app, 'us-central1');
+
+        // Unit display configuration and contact info
+        const UNIT_METADATA = {
+            'asa-sul': { name: 'Asa Sul', phone: '556183007146', city: 'Brasília - DF' },
+            'sudoeste': { name: 'Sudoeste', phone: '556182107146', city: 'Brasília - DF' },
+            'lago-sul': { name: 'Lago Sul', phone: '556192028980', city: 'Brasília - DF' },
+            'noroeste': { name: 'Noroeste', phone: '556184170472', city: 'Brasília - DF' },
+            'jardim-botanico': { name: 'Jardim Botânico', phone: '556184171059', city: 'Brasília - DF' },
+            'pontos-de-ensino': { name: 'Pontos de Ensino', phone: '556181724290', city: 'Brasília - DF' },
+            'centro': { name: 'Centro', phone: '554892182423', city: 'Florianópolis - SC' },
+            'coqueiros': { name: 'Coqueiros', phone: '554896296941', city: 'Florianópolis - SC' },
+            'santa-monica': { name: 'Santa Mônica', phone: '554892172423', city: 'Florianópolis - SC' },
+            'dourados': { name: 'Dourados', phone: '556183007146', city: 'Dourados - MS' }
+        };
+
+        const DAYS_MAP = {
+            1: { name: 'Segunda-feira', short: 'Seg' },
+            2: { name: 'Terça-feira', short: 'Ter' },
+            3: { name: 'Quarta-feira', short: 'Qua' },
+            4: { name: 'Quinta-feira', short: 'Qui' },
+            5: { name: 'Sexta-feira', short: 'Sex' },
+            6: { name: 'Sábado', short: 'Sáb' }
+        };
+
+        const selectUnitSection = document.getElementById('select-unit-section');
+        const scheduleSection = document.getElementById('schedule-section');
+        const unitGrid = document.getElementById('unit-grid');
+        const navActions = document.getElementById('nav-actions');
+        const changeUnitBtn = document.getElementById('change-unit-btn');
+        const selectedUnitTitle = document.getElementById('selected-unit-title');
+        const selectedUnitCity = document.getElementById('selected-unit-city');
+        const scheduleLoader = document.getElementById('schedule-loader');
+        const scheduleEmpty = document.getElementById('schedule-empty');
+        const scheduleContent = document.getElementById('schedule-content');
+        const mobileTabsContainer = document.getElementById('mobile-tabs-container');
+        const weekColumnsGrid = document.getElementById('week-columns-grid');
+
+        let activeMobileDay = 1; // Default to Monday on mobile
+
+        // Start initialization
+        document.addEventListener('DOMContentLoaded', initialize);
+
+        async function initialize() {
+            // Read query params
+            const urlParams = new URLSearchParams(window.location.search);
+            const unitParam = urlParams.get('unidade') || urlParams.get('u');
+
+            if (unitParam && UNIT_METADATA[unitParam.toLowerCase()]) {
+                showSchedule(unitParam.toLowerCase());
+            } else {
+                showUnitSelector();
+            }
+
+            changeUnitBtn.onclick = () => {
+                window.history.pushState({}, '', window.location.pathname);
+                showUnitSelector();
+            };
+        }
+
+        async function showUnitSelector() {
+            selectUnitSection.classList.remove('hidden');
+            scheduleSection.classList.add('hidden');
+            navActions.classList.add('hidden');
+            
+            unitGrid.innerHTML = '';
+            
+            try {
+                // Call Firebase function to get units or fallback to our keys
+                const getPublicEvoUnits = httpsCallable(functions, 'getPublicEvoUnits');
+                const result = await getPublicEvoUnits();
+                const dbUnits = result.data || [];
+
+                // Filter keys to what we map, or add dynamic fallbacks
+                const visibleUnits = dbUnits.length > 0 ? dbUnits : Object.keys(UNIT_METADATA);
+
+                visibleUnits.forEach(key => {
+                    const meta = UNIT_METADATA[key] || { name: key.replace(/-/g, ' '), phone: '556183007146', city: 'Kihap' };
+                    
+                    const card = document.createElement('div');
+                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 glass-glow-yellow group';
+                    card.innerHTML = `
+                        <div>
+                            <div class="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center mb-4 group-hover:bg-brand-gold/20 transition-colors">
+                                <i class="fas fa-map-marker-alt text-brand-gold text-lg"></i>
+                            </div>
+                            <h3 class="font-title text-xl font-bold text-white mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
+                            <p class="text-gray-400 text-xs flex items-center gap-1.5">
+                                <i class="fas fa-city opacity-70"></i> ${meta.city}
+                            </p>
+                        </div>
+                        <div class="mt-6 flex items-center justify-between text-xs font-bold text-brand-gold">
+                            <span>Ver Grade Semanal</span>
+                            <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        const newUrl = `${window.location.pathname}?unidade=${key}`;
+                        window.history.pushState({}, '', newUrl);
+                        showSchedule(key);
+                    };
+                    unitGrid.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Error loading units:", err);
+                // Fallback rendering
+                Object.keys(UNIT_METADATA).forEach(key => {
+                    const meta = UNIT_METADATA[key];
+                    const card = document.createElement('div');
+                    card.className = 'glass-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 glass-glow-yellow group';
+                    card.innerHTML = `
+                        <div>
+                            <div class="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center mb-4 group-hover:bg-brand-gold/20 transition-colors">
+                                <i class="fas fa-map-marker-alt text-brand-gold text-lg"></i>
+                            </div>
+                            <h3 class="font-title text-xl font-bold text-white mb-1 group-hover:text-brand-gold transition-colors">${meta.name}</h3>
+                            <p class="text-gray-400 text-xs flex items-center gap-1.5">
+                                <i class="fas fa-city opacity-70"></i> ${meta.city}
+                            </p>
+                        </div>
+                        <div class="mt-6 flex items-center justify-between text-xs font-bold text-brand-gold">
+                            <span>Ver Grade Semanal</span>
+                            <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        const newUrl = `${window.location.pathname}?unidade=${key}`;
+                        window.history.pushState({}, '', newUrl);
+                        showSchedule(key);
+                    };
+                    unitGrid.appendChild(card);
+                });
+            }
+        }
+
+        async function showSchedule(unitId) {
+            selectUnitSection.classList.add('hidden');
+            scheduleSection.classList.remove('hidden');
+            navActions.classList.remove('hidden');
+            
+            scheduleLoader.classList.remove('hidden');
+            scheduleEmpty.classList.add('hidden');
+            scheduleContent.classList.add('hidden');
+
+            const meta = UNIT_METADATA[unitId];
+            selectedUnitTitle.textContent = `Grade de Horários - ${meta.name}`;
+            selectedUnitCity.innerHTML = `<i class="fas fa-map-pin text-brand-gold"></i> Unidade em ${meta.city}`;
+
+            try {
+                // Fetch class templates for unit
+                const tplQuery = query(collection(db, 'classTemplates'), where('unitId', '==', unitId));
+                const snap = await getDocs(tplQuery);
+                const templates = [];
+                snap.forEach(doc => {
+                    templates.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (templates.length === 0) {
+                    scheduleLoader.classList.add('hidden');
+                    scheduleEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                // Group by day of week
+                const classesByDay = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+                templates.forEach(tpl => {
+                    if (tpl.daysOfWeek && Array.isArray(tpl.daysOfWeek)) {
+                        tpl.daysOfWeek.forEach(day => {
+                            if (classesByDay[day]) {
+                                classesByDay[day].push(tpl);
+                            }
+                        });
+                    }
+                });
+
+                // Sort by time within each day
+                for (let day in classesByDay) {
+                    classesByDay[day].sort((a, b) => {
+                        const [hA, mA] = (a.time || '00:00').split(':').map(Number);
+                        const [hB, mB] = (b.time || '00:00').split(':').map(Number);
+                        return (hA * 60 + mA) - (hB * 60 + mB);
+                    });
+                }
+
+                renderMobileTabs();
+                renderScheduleColumns(classesByDay, meta);
+
+                scheduleLoader.classList.add('hidden');
+                scheduleContent.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error loading schedule:", error);
+                scheduleLoader.classList.add('hidden');
+                scheduleEmpty.classList.remove('hidden');
+            }
+        }
+
+        function renderMobileTabs() {
+            mobileTabsContainer.innerHTML = '';
+            Object.keys(DAYS_MAP).forEach(dayNum => {
+                const day = DAYS_MAP[dayNum];
+                const btn = document.createElement('button');
+                btn.className = `flex-1 py-3 text-center rounded-2xl font-bold transition-all duration-300 text-xs shrink-0 snap-align-center min-w-[70px] ${
+                    activeMobileDay == dayNum 
+                        ? 'bg-brand-gold text-black shadow-lg shadow-brand-gold/10 scale-105' 
+                        : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                }`;
+                btn.textContent = day.short;
+                btn.onclick = () => {
+                    activeMobileDay = dayNum;
+                    renderMobileDayVisibility();
+                    renderMobileTabs();
+                };
+                mobileTabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderMobileDayVisibility() {
+            document.querySelectorAll('.day-column-container').forEach(col => {
+                if (window.innerWidth < 768) { // Mobile
+                    if (col.dataset.day == activeMobileDay) {
+                        col.classList.remove('hidden');
+                        col.classList.add('flex');
+                    } else {
+                        col.classList.add('hidden');
+                        col.classList.remove('flex');
+                    }
+                } else { // Desktop
+                    col.classList.remove('hidden');
+                    col.classList.add('flex');
+                }
+            });
+        }
+
+        function renderScheduleColumns(classesByDay, unitMeta) {
+            weekColumnsGrid.innerHTML = '';
+            
+            Object.keys(DAYS_MAP).forEach(dayNum => {
+                const day = DAYS_MAP[dayNum];
+                const classes = classesByDay[dayNum] || [];
+
+                const col = document.createElement('div');
+                col.className = 'day-column-container flex-col gap-4 border border-white/5 rounded-3xl p-4 bg-white/[0.02] transition-colors hover:bg-white/[0.03]';
+                col.dataset.day = dayNum;
+
+                // Day Title Header
+                col.innerHTML = `
+                    <div class="border-b border-white/5 pb-3 mb-2 flex items-center justify-between">
+                        <span class="font-title font-extrabold text-sm text-white">${day.name}</span>
+                        <span class="text-[10px] font-bold text-gray-500">${classes.length} ${classes.length === 1 ? 'aula' : 'aulas'}</span>
+                    </div>
+                `;
+
+                if (classes.length === 0) {
+                    col.innerHTML += `
+                        <div class="flex flex-col items-center justify-center py-10 text-gray-600 text-center gap-2">
+                            <i class="far fa-clock text-xl opacity-40"></i>
+                            <span class="text-[10px] font-medium">Sem treinos</span>
+                        </div>
+                    `;
+                } else {
+                    const cardsContainer = document.createElement('div');
+                    cardsContainer.className = 'flex flex-col gap-3';
+                    
+                    classes.forEach(cls => {
+                        const style = getCategoryStyle(cls.category);
+                        const card = document.createElement('div');
+                        card.className = `glass-card border border-white/5 ${style.border} p-4 rounded-2xl flex flex-col gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-md`;
+                        
+                        // Prefilled WhatsApp message
+                        const waMsg = `Olá! Vi a grade de horários da unidade ${unitMeta.name} e gostaria de agendar uma aula experimental de *${cls.name}* na *${day.name}* às *${cls.time}*!`;
+                        const encodedMsg = encodeURIComponent(waMsg);
+                        const waLink = `https://wa.me/${unitMeta.phone}?text=${encodedMsg}`;
+
+                        card.innerHTML = `
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                    <span class="font-title font-black text-white text-sm tracking-tight flex items-center gap-1.5">
+                                        <i class="far fa-clock text-[10px] text-brand-gold"></i> ${cls.time}
+                                    </span>
+                                    ${cls.category ? `<span class="${style.badge} px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wide leading-none">${cls.category}</span>` : ''}
+                                </div>
+                                <h4 class="font-title font-bold text-xs text-white leading-snug group-hover:text-brand-gold transition-colors">${cls.name}</h4>
+                            </div>
+                            
+                            <div class="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
+                                <div class="text-[9px] text-gray-400">
+                                    <span class="block text-gray-500 font-medium">Instrutor:</span>
+                                    <span class="font-bold text-white">${cls.teacherName || 'Prof. Kihap'}</span>
+                                </div>
+                                <a href="${waLink}" target="_blank" rel="noopener" class="w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-300 text-xs shadow-sm hover:scale-105" title="Agendar pelo WhatsApp">
+                                    <i class="fab fa-whatsapp font-bold"></i>
+                                </a>
+                            </div>
+                        `;
+                        cardsContainer.appendChild(card);
+                    });
+                    col.appendChild(cardsContainer);
+                }
+                
+                weekColumnsGrid.appendChild(col);
+            });
+
+            // Adjust layout for mobile vs desktop resize
+            window.addEventListener('resize', renderMobileDayVisibility);
+            renderMobileDayVisibility();
+        }
+
+        function getCategoryStyle(categoryName) {
+            const cat = (categoryName || '').toLowerCase();
+            if (cat.includes('baby')) {
+                return {
+                    border: 'border-sky-500/10 hover:border-sky-500/30',
+                    badge: 'bg-sky-500/10 text-sky-300'
+                };
+            }
+            if (cat.includes('little')) {
+                return {
+                    border: 'border-blue-500/10 hover:border-blue-500/30',
+                    badge: 'bg-blue-500/10 text-blue-300'
+                };
+            }
+            if (cat.includes('kid')) {
+                return {
+                    border: 'border-orange-500/10 hover:border-orange-500/30',
+                    badge: 'bg-orange-500/10 text-orange-300'
+                };
+            }
+            if (cat.includes('adult')) {
+                return {
+                    border: 'border-red-500/10 hover:border-red-500/30',
+                    badge: 'bg-red-500/10 text-red-300'
+                };
+            }
+            if (cat.includes('famil') || cat.includes('família')) {
+                return {
+                    border: 'border-purple-500/10 hover:border-purple-500/30',
+                    badge: 'bg-purple-500/10 text-purple-300'
+                };
+            }
+            return {
+                border: 'border-yellow-500/10 hover:border-yellow-500/30',
+                badge: 'bg-yellow-500/10 text-yellow-300'
+            };
+        }
+    </script>
+</body>
+</html>
