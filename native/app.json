@@ -2,6 +2,7 @@
   "expo": {
     "name": "Kihap",
     "slug": "kihap",
+    "owner": "kihap",
     "version": "3.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,6 +50,18 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f27cb7d8-47f7-4d06-93fb-9a51d0303949"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f27cb7d8-47f7-4d06-93fb-9a51d0303949"
     }
   }
 }
