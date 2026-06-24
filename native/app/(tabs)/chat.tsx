@@ -17,7 +17,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [activeTab, setActiveTab] = useState<'conversas' | 'notificacoes'>('conversas');
+  const [activeTab, setActiveTab] = useState<'conversas' | 'notificacoes'>('notificacoes');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -195,29 +195,6 @@ export default function ChatScreen() {
       <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1.5 rounded-2xl mx-6 mb-4">
         <TouchableOpacity
           onPress={() => {
-            setActiveTab('conversas');
-            setSearchQuery('');
-          }}
-          style={activeTab === 'conversas' ? {
-            backgroundColor: isDark ? '#2b2b2b' : '#fff',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.15,
-            shadowRadius: 1.5,
-            elevation: 2,
-          } : null}
-          className="flex-1 py-3 rounded-xl items-center justify-center"
-        >
-          <Text 
-            style={{ color: activeTab === 'conversas' ? (isDark ? '#fff' : '#111') : '#999' }}
-            className="text-[11px] font-black uppercase tracking-wider text-center"
-          >
-            Conversas
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
             setActiveTab('notificacoes');
             setSearchQuery('');
           }}
@@ -236,6 +213,29 @@ export default function ChatScreen() {
             className="text-[11px] font-black uppercase tracking-wider text-center"
           >
             Notificações
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            setActiveTab('conversas');
+            setSearchQuery('');
+          }}
+          style={activeTab === 'conversas' ? {
+            backgroundColor: isDark ? '#2b2b2b' : '#fff',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.15,
+            shadowRadius: 1.5,
+            elevation: 2,
+          } : null}
+          className="flex-1 py-3 rounded-xl items-center justify-center"
+        >
+          <Text 
+            style={{ color: activeTab === 'conversas' ? (isDark ? '#fff' : '#111') : '#999' }}
+            className="text-[11px] font-black uppercase tracking-wider text-center"
+          >
+            Conversas
           </Text>
         </TouchableOpacity>
       </View>

@@ -34,8 +34,23 @@ export default function NotificacoesScreen() {
     { id: 'eventos', label: 'Eventos' },
   ];
 
+  const isStaff = !!(
+    userData?.isAdmin || 
+    userData?.isInstructor || 
+    userData?.isRH || 
+    userData?.isFinanceiro || 
+    userData?.isAdministrativo || 
+    userData?.isStore || 
+    userData?.isAcademy || 
+    userData?.isJuridico || 
+    userData?.isSuporte || 
+    userData?.unitId === 'staff' || 
+    userData?.unidadeId === 'staff'
+  );
+
   const units = [
     { id: 'todos', label: 'Todas Unidades' },
+    ...(isStaff ? [{ id: 'staff', label: 'Staff' }] : []),
     { id: 'centro', label: 'Centro' },
     { id: 'coqueiros', label: 'Coqueiros' },
     { id: 'santa-monica', label: 'Santa Mônica' },
