@@ -65,36 +65,49 @@
             position: relative;
             font-size: 0.9rem;
             line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
         }
 
+        /* Light Mode Default */
         .chat-bubble.sent {
-            background-color: #005c4b;
-            /* WhatsApp Green */
-            color: #e9edef;
+            background-color: #d9fdd3;
+            color: #111b21;
             align-self: flex-end;
             border-top-right-radius: 0;
         }
 
         .chat-bubble.received {
-            background-color: #202c33;
-            /* Dark Gray */
-            color: #d1d7db;
+            background-color: #ffffff;
+            color: #111b21;
             align-self: flex-start;
             border-top-left-radius: 0;
+            border: 1px solid #e2e8f0;
         }
 
         .chat-time {
             font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.6);
+            color: #667781;
             text-align: right;
             margin-top: 4px;
+        }
 
-            .chat-time {
-                font-size: 0.65rem;
-                color: rgba(255, 255, 255, 0.6);
-                text-align: right;
-                margin-top: 4px;
-            }
+        /* Dark Mode overrides */
+        .dark .chat-bubble.sent {
+            background-color: #005c4b;
+            color: #e9edef;
+            border: none;
+        }
+
+        .dark .chat-bubble.received {
+            background-color: #202c33;
+            color: #d1d7db;
+            border: none;
+        }
+
+        .dark .chat-time {
+            color: rgba(255, 255, 255, 0.6);
+        }
 
             /* Drawflow Customization */
             #drawflow {
@@ -405,191 +418,247 @@
             </form>
         </div>
     </div>
-
-    <!-- Add/Edit Prospect Modal -->
-    <div id="formModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-sm">
-        <div class="bg-white dark:bg-[#1a1a1a] w-full h-full sm:h-auto sm:rounded-xl shadow-2xl sm:max-w-3xl sm:max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 gap-4">
-                <div class="flex items-center gap-4">
-                    <h2 id="modalTitle" class="text-xl font-bold text-gray-900 dark:text-white">Adicionar Novo Prospect</h2>
+    <div id="formModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-md transition-all duration-300">
+        <div class="bg-white dark:bg-[#151515] w-full h-full sm:h-auto sm:rounded-2xl shadow-2xl sm:max-w-3xl sm:max-h-[92vh] flex flex-col border border-gray-150 dark:border-gray-800/80 overflow-hidden transform scale-100 transition-all">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 md:px-6 border-b border-gray-150 dark:border-gray-800 gap-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                    <h2 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Adicionar Novo Prospect</h2>
                 </div>
-                <button id="closeFormModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-2xl transition-colors">&times;</button>
+                <button id="closeFormModalBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-lg transition-all duration-200" aria-label="Fechar">&times;</button>
             </div>
-            <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
+            
+            <!-- Modal Tabs -->
+            <div class="flex border-b border-gray-150 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
                 <button type="button" id="tabDetailsBtn"
-                    class="flex-1 py-3 text-sm font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-widest">Detalhes</button>
+                    class="flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    <i class="fas fa-info-circle text-xs"></i>
+                    <span>Detalhes</span>
+                </button>
                 <button type="button" id="tabWhatsAppBtn"
-                    class="flex-1 py-3 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-all uppercase tracking-widest">WhatsApp</button>
+                    class="flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp text-xs"></i>
+                    <span>WhatsApp</span>
+                </button>
             </div>
 
-            <form id="prospectForm" class="p-4 sm:p-6 overflow-y-auto flex-1">
-                <div id="tabDetailsContent">
+            <form id="prospectForm" class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+                <div id="tabDetailsContent" class="space-y-5">
                     <input type="hidden" id="prospectId">
                     <input type="hidden" id="prospectType">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label for="responsavel" class="block text-sm font-medium text-gray-300 mb-1">Nome do
-                                responsável</label>
-                            <input type="text" id="responsavel"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                        </div>
-                        <div class="form-group">
-                            <label for="unidade" class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
-                            <select id="unidade"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                                <option value="">Selecione a Unidade</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="setor" class="block text-sm font-medium text-gray-300 mb-1">Aluno *</label>
-                            <input type="text" id="setor" placeholder="Ex: Kids, Adultos"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
-                                required>
-                        </div>
-                        <div class="form-group">
-                            <label for="prioridade" class="block text-sm font-medium text-gray-300 mb-1">Prioridade
-                                *</label>
-                            <select id="prioridade"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
-                                required>
-                                <option value="">Selecione</option>
-                                <option value="5">5 - Máxima 🚀</option>
-                                <option value="4">4 - Alta 🔥</option>
-                                <option value="3">3 - Média ⭐</option>
-                                <option value="2">2 - Baixa ❄️</option>
-                                <option value="1">1 - Mínima 💤</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="ticketEstimado" class="block text-sm font-medium text-gray-300 mb-1">Ticket
-                                Estimado
-                                (R$)</label>
-                            <input type="number" id="ticketEstimado" placeholder="15000"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                        </div>
-                        <div class="form-group">
-                            <label for="origemLead" class="block text-sm font-medium text-gray-300 mb-1">Origem do
-                                Lead</label>
-                            <input type="text" id="origemLead" placeholder="Ex: Indicação, Google"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                        </div>
-                        <div class="form-group">
-                            <label for="dataChegada" class="block text-sm font-medium text-gray-300 mb-1">Data de
-                                Chegada</label>
-                            <input type="text" id="dataChegada" placeholder="N/A" disabled
-                                class="w-full bg-gray-700/50 text-gray-400 border border-gray-600 rounded-lg p-2 focus:outline-none cursor-not-allowed">
-                        </div>
-                        <div class="form-group">
-                            <label for="telefone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-                            <input type="text" id="telefone" placeholder="(48) 99999-9999"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                            <a id="whatsappLink" href="#" target="_blank"
-                                class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm items-center justify-center gap-2">
-                                <i class="fab fa-whatsapp"></i>
-                                <span>Chamar no WhatsApp</span>
-                            </a>
-                        </div>
-                        <div class="form-group">
-                            <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                            <input type="email" id="email" placeholder="contato@empresa.com"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                        </div>
-                        <div class="form-group">
-                            <label for="cpf" class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
-                            <input type="text" id="cpf" placeholder="000.000.000-00"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white">
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label for="redesSociais" class="block text-sm font-medium text-gray-300 mb-1">Redes
-                                Sociais</label>
-                            <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc."
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"></textarea>
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label for="observacoes"
-                                class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-                            <textarea id="observacoes" rows="3"
-                                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"></textarea>
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Log de Contatos</label>
-                            <div id="contactLogContainer"
-                                class="max-h-40 overflow-y-auto bg-gray-900/50 p-3 rounded-lg space-y-3 mb-3 border border-gray-700">
-                                <!-- Log entries will be injected here -->
+                    
+                    <!-- Section 1: Informações Principais -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-id-card text-yellow-500 text-sm"></i>
+                            Informações Principais
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="responsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do responsável</label>
+                                <input type="text" id="responsavel"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
-                                    class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"></textarea>
-                                <button type="button" id="addContactLogBtn"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg self-start">Adicionar
-                                    Nota</button>
+                            <div class="form-group">
+                                <label for="unidade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Unidade</label>
+                                <select id="unidade"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    <option value="">Selecione a Unidade</option>
+                                </select>
                             </div>
-                        </div>
-                        <div class="form-group md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Tags</label>
-                            <div id="tagsContainer" class="flex flex-wrap gap-2">
-                                <!-- As tags serão inseridas aqui pelo JS -->
+                            <div class="form-group">
+                                <label for="setor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Aluno *</label>
+                                <input type="text" id="setor" placeholder="Ex: Kids, Adultos"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    required>
                             </div>
-                        </div>
-                        <div id="createdByContainer" class="form-group md:col-span-2 mt-4 hidden">
-                            <p class="text-sm text-gray-400">Criado por: <span id="createdByInfo"
-                                    class="font-semibold"></span></p>
+                            <div class="form-group">
+                                <label for="prioridade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Prioridade *</label>
+                                <select id="prioridade"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    required>
+                                    <option value="">Selecione</option>
+                                    <option value="5">5 - Máxima 🚀</option>
+                                    <option value="4">4 - Alta 🔥</option>
+                                    <option value="3">3 - Média ⭐</option>
+                                    <option value="2">2 - Baixa ❄️</option>
+                                    <option value="1">1 - Mínima 💤</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ticketEstimado" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Ticket Estimado (R$)</label>
+                                <input type="number" id="ticketEstimado" placeholder="15000"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div class="form-group">
+                                <label for="origemLead" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Origem do Lead</label>
+                                <input type="text" id="origemLead" placeholder="Ex: Indicação, Google"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data de Chegada</label>
+                                <input type="text" id="dataChegada" placeholder="N/A" disabled
+                                    class="w-full bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none cursor-not-allowed select-none transition-all">
+                            </div>
                         </div>
                     </div>
-                    <div
-                        class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-700">
+
+                    <!-- Section 2: Contato & Redes -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-share-alt text-yellow-500 text-sm"></i>
+                            Canais de Contato & Redes
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group flex flex-col justify-between">
+                                <div>
+                                    <label for="telefone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Telefone</label>
+                                    <input type="text" id="telefone" placeholder="(48) 99999-9999"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                                <a id="whatsappLink" href="#" target="_blank"
+                                    class="hidden w-full mt-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all duration-200 cursor-pointer">
+                                    <i class="fab fa-whatsapp text-lg"></i>
+                                    <span>Chamar no WhatsApp</span>
+                                </a>
+                            </div>
+                            <div class="form-group flex flex-col justify-between gap-4 md:gap-0">
+                                <div>
+                                    <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Email</label>
+                                    <input type="email" id="email" placeholder="contato@empresa.com"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                                <div class="mt-4 md:mt-2">
+                                    <label for="cpf" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">CPF</label>
+                                    <input type="text" id="cpf" placeholder="000.000.000-00"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label for="redesSociais" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Redes Sociais</label>
+                                <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc."
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Observações, Tags & Histórico -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-clipboard-list text-yellow-500 text-sm"></i>
+                            Notas, Tags & Linha do Tempo
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="observacoes" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Observações</label>
+                                <textarea id="observacoes" rows="3"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="block text-xs font-semibold text-gray-750 dark:text-gray-300 uppercase tracking-wider mb-2">Tags</label>
+                                <div id="tagsContainer" class="flex flex-wrap gap-2 p-3 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-750 rounded-xl shadow-sm">
+                                    <!-- As tags serão inseridas aqui pelo JS -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="block text-xs font-semibold text-gray-755 dark:text-gray-300 uppercase tracking-wider mb-2">Log de Contatos (Timeline)</label>
+                                <div id="contactLogContainer"
+                                    class="max-h-60 overflow-y-auto bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 custom-scrollbar shadow-inner">
+                                    <!-- Log entries will be injected here -->
+                                </div>
+                                <div class="flex flex-col gap-2 mt-3">
+                                    <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
+                                        class="w-full bg-white dark:bg-gray-855 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                                    <button type="button" id="addContactLogBtn"
+                                        class="bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center gap-1.5 self-start shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 transition-all duration-200">
+                                        <i class="fas fa-plus"></i>
+                                        Adicionar Nota
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="createdByContainer" class="hidden text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 border border-gray-150 dark:border-gray-800/80 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm">
+                        <span>Criado por: <span id="createdByInfo" class="font-semibold text-gray-700 dark:text-gray-300"></span></span>
+                    </div>
+
+                    <!-- Footer Action Buttons inside Details tab -->
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-150 dark:border-gray-800">
                         <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
                             <button type="button" id="archiveBtn"
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Arquivar</button>
+                                class="bg-amber-600/10 hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-white border border-amber-600/20 hover:border-amber-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
+                                <i class="fas fa-archive"></i>
+                                <span>Arquivar</span>
+                            </button>
                             <button type="button" id="deleteBtn"
-                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full sm:w-auto">Excluir</button>
+                                class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Excluir</span>
+                            </button>
                         </div>
                         <div id="formControls" class="flex gap-3 w-full sm:w-auto">
                             <button type="button" id="editBtn"
-                                class="bg-primary hover:bg-primary-dark font-semibold py-2 px-4 rounded-lg w-full sm:w-auto">Editar</button>
+                                class="bg-primary hover:bg-primary-dark font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition-all duration-200 w-full sm:w-auto flex items-center justify-center gap-1.5">
+                                <i class="fas fa-edit"></i>
+                                <span>Editar</span>
+                            </button>
                             <button type="button" id="cancelFormBtn"
-                                class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Cancelar</button>
+                                class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5">
+                                <i class="fas fa-times"></i>
+                                <span>Cancelar</span>
+                            </button>
                             <button type="submit" id="saveBtn"
-                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg hidden w-full sm:w-auto">Salvar</button>
+                                class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20">
+                                <i class="fas fa-save"></i>
+                                <span>Salvar</span>
+                            </button>
                         </div>
                     </div>
                 </div>
                 <!-- End Details Tab Content -->
-
-                <div id="tabWhatsAppContent" class="hidden flex flex-col h-full bg-gray-50 dark:bg-[#111]" style="min-height: 450px;">
-                    <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-green-500"></i>
+ 
+                <!-- WhatsApp Tab Content -->
+                <div id="tabWhatsAppContent" class="hidden flex flex-col h-full bg-gray-50 dark:bg-[#111] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm" style="min-height: 480px;">
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-[#181818] border-b border-gray-150 dark:border-gray-800">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-emerald-500 text-lg animate-pulse"></i>
                             </div>
-                            <h3 class="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Conversa WhatsApp</h3>
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-800 dark:text-gray-250 uppercase tracking-wider">Conversa WhatsApp</h3>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500">Histórico de mensagens integradas</p>
+                            </div>
                         </div>
                         <button type="button" id="refreshChatBtn"
-                            class="text-gray-400 hover:text-green-500 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Atualizar histórico">
+                            class="text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all p-2 rounded-xl" title="Atualizar histórico">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
                     <div id="whatsappChatArea"
                         class="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] dark:bg-none bg-repeat bg-opacity-5">
-                        <div class="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-6 rounded-xl border border-gray-200 dark:border-gray-700 mx-10">
-                            <i class="fab fa-whatsapp text-4xl mb-3 block opacity-20"></i>
-                            <p>Selecione um prospect com telefone válido para carregar o histórico de conversas.</p>
+                        <div class="text-center text-gray-500 dark:text-gray-400 text-sm mt-12 bg-white/60 dark:bg-gray-800/40 backdrop-blur-md p-6 rounded-2xl border border-gray-200 dark:border-gray-700 mx-8 shadow-sm">
+                            <i class="fab fa-whatsapp text-4xl mb-3 block text-emerald-500/30"></i>
+                            <p class="font-medium text-gray-700 dark:text-gray-300">Carregar Histórico</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Selecione um prospect com telefone válido para ver a conversa.</p>
                         </div>
                     </div>
-                    <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+                    <div class="p-4 bg-white dark:bg-[#181818] border-t border-gray-150 dark:border-gray-800 shadow-md">
                         <div class="flex gap-2">
                             <input type="text" id="whatsappInput" placeholder="Digite sua mensagem..."
-                                class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                                class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-750 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                                 disabled>
                             <button type="button" id="whatsappSendBtn"
-                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
+                                class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold p-2.5 w-11 h-11 flex items-center justify-center rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-emerald-600/10"
                                 disabled>
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-
             </form>
         </div>
     </div>
@@ -1236,27 +1305,56 @@
             const logs = prospect.contactLog || [];
 
             if (logs.length === 0) {
-                logContainer.innerHTML = '<p class="text-gray-500 text-sm">Nenhum contato registrado.</p>';
+                logContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm text-center py-6 select-none"><i class="fas fa-history opacity-30 text-lg block mb-1"></i>Nenhum contato registrado.</p>';
                 return;
             }
 
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            const colors = [
+                { bg: 'bg-indigo-50 dark:bg-indigo-950/30', text: 'text-indigo-600 dark:text-indigo-300', border: 'border-indigo-150 dark:border-indigo-900/20' },
+                { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-300', border: 'border-amber-150 dark:border-amber-900/20' },
+                { bg: 'bg-rose-50 dark:bg-rose-950/30', text: 'text-rose-600 dark:text-rose-300', border: 'border-rose-150 dark:border-rose-900/20' },
+                { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-600 dark:text-emerald-300', border: 'border-emerald-150 dark:border-emerald-900/20' },
+                { bg: 'bg-blue-50 dark:bg-blue-950/30', text: 'text-blue-600 dark:text-blue-300', border: 'border-blue-150 dark:border-blue-900/20' },
+                { bg: 'bg-violet-50 dark:bg-violet-950/30', text: 'text-violet-600 dark:text-violet-300', border: 'border-violet-150 dark:border-violet-900/20' },
+            ];
 
             logContainer.innerHTML = logs
                 .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
                 .map((log, index) => {
                     const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
                     const author = log.author || 'Sistema';
-                    const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-red-500 hover:text-red-400 text-xs ml-2">&times;</button>` : '';
+                    const initials = author.split(/[ @._-]/).filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('') || 'U';
+                    
+                    const colorIndex = stringToColorIndex(author, colors.length);
+                    const scheme = colors[colorIndex];
+                    
+                    const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 p-1.5 rounded-lg text-sm ml-2 self-center transition-all duration-200" title="Excluir nota"><i class="fas fa-trash-alt pointer-events-none"></i></button>` : '';
+                    
+                    const isWhatsApp = log.type === 'whatsapp-sent';
+                    const bubbleClasses = isWhatsApp 
+                        ? 'bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-150 dark:border-emerald-900/30 border-l-4 border-l-emerald-500' 
+                        : 'bg-white dark:bg-gray-800/40 border-gray-150 dark:border-gray-800/60 border-l-4 border-l-indigo-500 dark:border-l-indigo-600';
+                    
                     return `
-                        <div class="bg-gray-700/50 p-2 rounded-md flex justify-between items-start ${log.type === 'whatsapp-sent' ? 'border-l-4 border-green-500 bg-green-900/20' : ''}">
-                            <div>
-                                <p class="text-sm text-gray-300 whitespace-pre-wrap">
-                                    ${log.type === 'whatsapp-sent' ? '<i class="fab fa-whatsapp text-green-500 mr-1"></i> ' : ''}
+                        <div class="flex gap-3 items-start group relative transition-all duration-200">
+                            <!-- Avatar / Initials -->
+                            <div class="w-8 h-8 rounded-full ${scheme.bg} ${scheme.text} border ${scheme.border} flex items-center justify-center text-xs font-bold shrink-0 shadow-sm transition-all duration-200 select-none">
+                                ${initials}
+                            </div>
+                            <!-- Card Content -->
+                            <div class="flex-grow p-3 rounded-xl border ${bubbleClasses} shadow-sm transition-all duration-200">
+                                <div class="flex justify-between items-center mb-1 gap-2 select-none">
+                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-tight">${author}</span>
+                                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">${date}</span>
+                                </div>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                    ${isWhatsApp ? '<i class="fab fa-whatsapp text-emerald-500 mr-1 text-xs"></i> ' : ''}
                                     ${log.description}
                                 </p>
-                                <p class="text-xs text-gray-500 mt-1">${author} - ${date}</p>
                             </div>
+                            <!-- Delete Button -->
                             ${deleteButtonHTML}
                         </div>
                     `;
@@ -1265,7 +1363,7 @@
             if (isAdmin) {
                 logContainer.querySelectorAll('.delete-log-btn').forEach(button => {
                     button.addEventListener('click', async (e) => {
-                        const logIndex = parseInt(e.target.dataset.logIndex, 10);
+                        const logIndex = parseInt(e.currentTarget.dataset.logIndex, 10);
                         const logToDelete = logs[logIndex];
 
                         if (confirm('Tem certeza que deseja excluir este log?')) {
@@ -1344,15 +1442,15 @@
                 const formControls = document.getElementById('formControls');
 
                 if (tab === 'details') {
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors';
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
                     if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
                     if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
                     if (modalActionButtons) modalActionButtons.classList.remove('hidden');
                     if (formControls) formControls.classList.remove('hidden');
                 } else {
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3 text-sm font-medium text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors';
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none transition-colors';
+                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
                     if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
                     if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
                     if (modalActionButtons) modalActionButtons.classList.add('hidden');
