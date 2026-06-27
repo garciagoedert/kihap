@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let allSchoolMembers = [];
     let isLoadingSchoolMembers = false;
 
+    // Cache local para otimização de performance
+    let cachedTemplates = [];
+    let cachedClassInstances = new Map();
+    let unitMembersCache = new Map();
+
     let currentViewMode = 'week'; // 'week' ou 'day'
     let currentSelectedDate = new Date();
 
@@ -194,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Funções de Renderização ---
-    async function renderGrid() {
+    async function renderGrid(useCache = false) {
         if (!selectedUnitId) {
             scheduleGrid.innerHTML = `
                 <div class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 flex-col gap-3">
@@ -205,76 +210,86 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateDateRangeDisplay();
-        scheduleGrid.innerHTML = '';
+        
+        if (!useCache) {
+            scheduleGrid.innerHTML = '';
 
-        if (currentViewMode === 'week') {
-            const days = Array.from({ length: 7 }).map((_, i) => {
+            if (currentViewMode === 'week') {
+                const days = Array.from({ length: 7 }).map((_, i) => {
+                    const date = new Date(currentWeekStartDate);
+                    date.setDate(date.getDate() + i);
+                    return date;
+                });
+
+                const header = document.createElement('div');
+                header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-gray-100 dark:bg-[#1a1a1a] z-20 border-b border-gray-200 dark:border-gray-800/80';
+                header.innerHTML = '<div class="p-2 bg-gray-50 dark:bg-[#161616]"></div>' + days.map(d => {
+                    const isToday = d.toDateString() === new Date().toDateString();
+                    return `
+                    <div class="text-center p-3 bg-white dark:bg-[#1a1a1a] transition-colors hover:bg-gray-50 dark:hover:bg-[#222]/30 cursor-pointer ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}" data-header-date="${getLocalDateString(d)}">
+                        <div class="font-bold text-[10px] tracking-wider text-gray-400 dark:text-gray-500 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
+                        <div class="text-base font-extrabold ${isToday ? 'text-primary' : 'text-gray-800 dark:text-gray-200'}">${d.getDate()}</div>
+                    </div>
+                `}).join('');
+
+                header.addEventListener('click', (e) => {
+                    const dayDiv = e.target.closest('[data-header-date]');
+                    if (dayDiv) {
+                        const dateStr = dayDiv.dataset.headerDate;
+                        const [y, m, d] = dateStr.split('-').map(Number);
+                        currentSelectedDate = new Date(y, m - 1, d);
+                        currentViewMode = 'day';
+                        updateViewButtons();
+                        renderGrid();
+                    }
+                });
+                scheduleGrid.appendChild(header);
+
+                const body = document.createElement('div');
+                body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
+
+                const timeColumn = document.createElement('div');
+                timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
+                for (let hour = 7; hour < 22; hour++) {
+                    timeColumn.innerHTML += `
+                        <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
+                            <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
+                        </div>`;
+                }
+                body.appendChild(timeColumn);
+
+                for (let i = 0; i < 7; i++) {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
+                    dayColumn.dataset.date = getLocalDateString(days[i]);
+                    for (let hour = 7; hour < 22; hour++) {
+                        dayColumn.innerHTML += `
+                            <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
+                            <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
+                        `;
+                    }
+                    body.appendChild(dayColumn);
+                }
+                body.id = 'schedule-grid-body';
+                scheduleGrid.appendChild(body);
+            } else {
+                // Day View
+                const listContainer = document.createElement('div');
+                listContainer.className = 'p-6 max-w-3xl mx-auto space-y-4';
+                listContainer.id = 'day-view-list';
+                scheduleGrid.appendChild(listContainer);
+            }
+        }
+
+        const daysToRender = (currentViewMode === 'week')
+            ? Array.from({ length: 7 }).map((_, i) => {
                 const date = new Date(currentWeekStartDate);
                 date.setDate(date.getDate() + i);
                 return date;
-            });
+              })
+            : [currentSelectedDate];
 
-            const header = document.createElement('div');
-            header.className = 'grid grid-cols-8 gap-px sticky top-0 bg-gray-100 dark:bg-[#1a1a1a] z-20 border-b border-gray-200 dark:border-gray-800/80';
-            header.innerHTML = '<div class="p-2 bg-gray-50 dark:bg-[#161616]"></div>' + days.map(d => {
-                const isToday = d.toDateString() === new Date().toDateString();
-                return `
-                <div class="text-center p-3 bg-white dark:bg-[#1a1a1a] transition-colors hover:bg-gray-50 dark:hover:bg-[#222]/30 cursor-pointer ${isToday ? 'bg-primary/10 dark:bg-primary/5' : ''}" data-header-date="${getLocalDateString(d)}">
-                    <div class="font-bold text-[10px] tracking-wider text-gray-400 dark:text-gray-500 mb-1 uppercase">${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</div>
-                    <div class="text-base font-extrabold ${isToday ? 'text-primary' : 'text-gray-800 dark:text-gray-200'}">${d.getDate()}</div>
-                </div>
-            `}).join('');
-
-            header.addEventListener('click', (e) => {
-                const dayDiv = e.target.closest('[data-header-date]');
-                if (dayDiv) {
-                    const dateStr = dayDiv.dataset.headerDate;
-                    const [y, m, d] = dateStr.split('-').map(Number);
-                    currentSelectedDate = new Date(y, m - 1, d);
-                    currentViewMode = 'day';
-                    updateViewButtons();
-                    renderGrid();
-                }
-            });
-            scheduleGrid.appendChild(header);
-
-            const body = document.createElement('div');
-            body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
-
-            const timeColumn = document.createElement('div');
-            timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
-            for (let hour = 7; hour < 22; hour++) {
-                timeColumn.innerHTML += `
-                    <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
-                        <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
-                    </div>`;
-            }
-            body.appendChild(timeColumn);
-
-            for (let i = 0; i < 7; i++) {
-                const dayColumn = document.createElement('div');
-                dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
-                dayColumn.dataset.date = getLocalDateString(days[i]);
-                for (let hour = 7; hour < 22; hour++) {
-                    dayColumn.innerHTML += `
-                        <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
-                        <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
-                    `;
-                }
-                body.appendChild(dayColumn);
-            }
-            scheduleGrid.appendChild(body);
-
-            await fetchAndRenderClasses(days);
-        } else {
-            // Day View
-            const listContainer = document.createElement('div');
-            listContainer.className = 'p-6 max-w-3xl mx-auto space-y-4';
-            listContainer.id = 'day-view-list';
-            scheduleGrid.appendChild(listContainer);
-
-            await fetchAndRenderClasses([currentSelectedDate]);
-        }
+        await fetchAndRenderClasses(daysToRender, useCache);
     }
 
     function updateDateRangeDisplay() {
@@ -290,22 +305,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchAndRenderClasses(days) {
+    async function fetchAndRenderClasses(days, useCache = false) {
         try {
-            console.log(`Buscando templates para unidade: ${selectedUnitId}`);
-            const templatesQuery = query(collection(db, 'classTemplates'), where('unitId', '==', selectedUnitId));
-            const templatesSnapshot = await getDocs(templatesQuery);
-            const templates = [];
-            templatesSnapshot.forEach(doc => {
-                templates.push({ id: doc.id, ...doc.data() });
-            });
-            console.log(`Encontrados ${templates.length} templates de aula.`);
+            if (!useCache) {
+                console.log(`Buscando templates para unidade: ${selectedUnitId}`);
+                const templatesQuery = query(collection(db, 'classTemplates'), where('unitId', '==', selectedUnitId));
+                const templatesSnapshot = await getDocs(templatesQuery);
+                cachedTemplates = [];
+                templatesSnapshot.forEach(doc => {
+                    cachedTemplates.push({ id: doc.id, ...doc.data() });
+                });
+                console.log(`Encontrados ${cachedTemplates.length} templates de aula.`);
+
+                // Preparar busca paralela de todas as instâncias das aulas
+                const instancesToFetch = [];
+                for (const day of days) {
+                    const dayOfWeek = day.getDay();
+                    for (const template of cachedTemplates) {
+                        if (template.daysOfWeek && template.daysOfWeek.includes(dayOfWeek) && template.time) {
+                            const instanceId = `${template.id}_${getLocalDateString(day)}`;
+                            const instanceRef = doc(db, 'classInstances', instanceId);
+                            instancesToFetch.push({
+                                template,
+                                instanceId,
+                                instanceRef
+                            });
+                        }
+                    }
+                }
+
+                // Busca paralela para resolver N+1 queries
+                const snaps = await Promise.all(instancesToFetch.map(item => getDoc(item.instanceRef)));
+                
+                cachedClassInstances.clear();
+
+                for (let i = 0; i < instancesToFetch.length; i++) {
+                    const item = instancesToFetch[i];
+                    const instanceSnap = snaps[i];
+                    const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
+                    const trialStudents = instanceSnap.exists() ? (instanceSnap.data().trialStudents || []) : [];
+
+                    cachedClassInstances.set(item.instanceId, {
+                        presentStudents,
+                        trialStudents
+                    });
+                }
+            }
 
             const classInstancesToRender = [];
 
             for (const day of days) {
                 const dayOfWeek = day.getDay();
-                for (const template of templates) {
+                for (const template of cachedTemplates) {
                     if (template.daysOfWeek && template.daysOfWeek.includes(dayOfWeek) && template.time) {
                         const [hour, minute] = template.time.split(':').map(Number);
                         const startTime = new Date(day);
@@ -314,10 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         const endTime = new Date(startTime.getTime() + template.duration * 60000);
                         const instanceId = `${template.id}_${getLocalDateString(day)}`;
 
-                        const instanceRef = doc(db, 'classInstances', instanceId);
-                        const instanceSnap = await getDoc(instanceRef);
-                        const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents : [];
-                        const trialStudents = instanceSnap.exists() ? (instanceSnap.data().trialStudents || []) : [];
+                        const cachedInst = cachedClassInstances.get(instanceId);
+                        const presentStudents = cachedInst ? cachedInst.presentStudents || [] : [];
+                        const trialStudents = cachedInst ? cachedInst.trialStudents || [] : [];
 
                         classInstancesToRender.push({
                             ...template,
@@ -345,6 +395,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>`;
                 }
                 return;
+            }
+
+            // Remove os cartões antigos antes de desenhar se estiver usando cache para evitar duplicados
+            if (currentViewMode === 'week') {
+                scheduleGrid.querySelectorAll('.class-card').forEach(card => card.remove());
+            } else {
+                const dayViewList = scheduleGrid.querySelector('#day-view-list');
+                if (dayViewList) dayViewList.innerHTML = '';
             }
 
             for (const classInstanceData of classInstancesToRender) {
@@ -655,10 +713,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function openAttendanceModal(classData) {
+    async function openAttendanceModal(classData, useCache = false) {
         currentClassId = classData.id;
         currentClassData = classData;
-        studentList.innerHTML = '<div class="flex justify-center p-8"><i class="fas fa-spinner fa-spin text-primary text-3xl"></i></div>';
+        
+        if (!useCache) {
+            studentList.innerHTML = '<div class="flex justify-center p-8"><i class="fas fa-spinner fa-spin text-primary text-3xl"></i></div>';
+        }
         attendanceModal.classList.remove('hidden');
 
         try {
@@ -684,10 +745,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const instanceRef = doc(db, 'classInstances', classData.id);
-            const instanceSnap = await getDoc(instanceRef);
-            const presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
-            const trialStudents = instanceSnap.exists() ? instanceSnap.data().trialStudents || [] : [];
+            let presentStudents = [];
+            let trialStudents = [];
+
+            const cachedInst = cachedClassInstances.get(classData.id);
+            if (cachedInst) {
+                presentStudents = cachedInst.presentStudents || [];
+                trialStudents = cachedInst.trialStudents || [];
+            } else {
+                const instanceRef = doc(db, 'classInstances', classData.id);
+                const instanceSnap = await getDoc(instanceRef);
+                presentStudents = instanceSnap.exists() ? instanceSnap.data().presentStudents || [] : [];
+                trialStudents = instanceSnap.exists() ? instanceSnap.data().trialStudents || [] : [];
+                cachedClassInstances.set(classData.id, {
+                    presentStudents,
+                    trialStudents
+                });
+            }
 
             modalClassOccupation.textContent = `${presentStudents.length}/${classData.students ? classData.students.length : 0}`;
 
@@ -697,9 +771,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!classData.students || classData.students.length === 0) {
                 studentList.innerHTML += '<p class="text-gray-500 dark:text-gray-400 text-center py-6 text-sm font-medium">Nenhum aluno inscrito nesta turma.</p>';
             } else {
-                const listAllMembers = httpsCallable(functions, 'listAllMembers');
-                const result = await listAllMembers({ unitId: classData.unitId });
-                const allUnitMembers = result.data;
+                let allUnitMembers = unitMembersCache.get(classData.unitId);
+                if (!allUnitMembers) {
+                    const listAllMembers = httpsCallable(functions, 'listAllMembers');
+                    const result = await listAllMembers({ unitId: classData.unitId });
+                    allUnitMembers = result.data || [];
+                    unitMembersCache.set(classData.unitId, allUnitMembers);
+                }
                 const membersMap = new Map(allUnitMembers.map(m => [m.idMember.toString(), m]));
 
                 const presentStudentIds = presentStudents.map(id => id.toString());
@@ -939,6 +1017,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 await updateDoc(instanceRef, {
                     presentStudents: arrayUnion(studentIdToSave)
                 });
+                
+                // Atualizar cache em memória
+                const cachedInst = cachedClassInstances.get(currentClassId);
+                if (cachedInst) {
+                    const present = cachedInst.presentStudents || [];
+                    if (!present.map(x => x.toString()).includes(studentIdToSave)) {
+                        cachedInst.presentStudents = [...present, studentIdToSave];
+                    }
+                }
             } else {
                 const [templateId, date] = currentClassId.split('_');
                 await setDoc(instanceRef, {
@@ -946,6 +1033,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: date,
                     unitId: selectedUnitId,
                     presentStudents: [studentIdToSave]
+                });
+                
+                // Criar cache em memória
+                cachedClassInstances.set(currentClassId, {
+                    presentStudents: [studentIdToSave],
+                    trialStudents: []
                 });
             }
 
@@ -960,9 +1053,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const clearBtn = document.getElementById('clear-quick-checkin-btn');
             if (clearBtn) clearBtn.classList.add('hidden');
 
-            // Recarrega modal e grade
-            if (currentClassData) await openAttendanceModal(currentClassData);
-            renderGrid();
+            // Recarrega modal e grade usando cache para rapidez instantânea
+            if (currentClassData) await openAttendanceModal(currentClassData, true);
+            renderGrid(true);
         } catch (err) {
             console.error("Erro ao realizar checkin avulso:", err);
         }
@@ -1028,9 +1121,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         const trials = snap.data().trialStudents || [];
                         trials.splice(idx, 1);
                         await updateDoc(instanceRef, { trialStudents: trials });
+                        
+                        // Atualizar cache em memória
+                        const cachedInst = cachedClassInstances.get(currentClassId);
+                        if (cachedInst) cachedInst.trialStudents = trials;
                     }
-                    if (currentClassData) await openAttendanceModal(currentClassData);
-                    renderGrid();
+                    if (currentClassData) await openAttendanceModal(currentClassData, true);
+                    renderGrid(true);
                 } catch (err) {
                     console.error('Erro ao excluir experimental:', err);
                 }
@@ -1051,10 +1148,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (trials[idx]) {
                         trials[idx] = { ...trials[idx], compareceu: !compareceu };
                         await updateDoc(instanceRef, { trialStudents: trials });
+                        
+                        // Atualizar cache em memória
+                        const cachedInst = cachedClassInstances.get(currentClassId);
+                        if (cachedInst) cachedInst.trialStudents = trials;
                     }
                 }
-                if (currentClassData) await openAttendanceModal(currentClassData);
-                renderGrid();
+                if (currentClassData) await openAttendanceModal(currentClassData, true);
+                renderGrid(true);
             } catch (err) {
                 console.error('Erro ao atualizar experimental:', err);
             }
@@ -1080,6 +1181,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 await updateDoc(instanceRef, {
                     presentStudents: isPresent ? arrayRemove(studentIdToSave) : arrayUnion(studentIdToSave)
                 });
+                
+                // Atualizar cache em memória
+                const cachedInst = cachedClassInstances.get(currentClassId);
+                if (cachedInst) {
+                    cachedInst.presentStudents = isPresent 
+                        ? cachedInst.presentStudents.filter(id => id.toString() !== studentId.toString() && id !== Number(studentId))
+                        : [...cachedInst.presentStudents, studentIdToSave];
+                }
             } else if (!isPresent) {
                 const [templateId, date] = currentClassId.split('_');
                 await setDoc(instanceRef, {
@@ -1088,15 +1197,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     unitId: selectedUnitId,
                     presentStudents: [studentIdToSave]
                 });
+                
+                // Criar cache em memória
+                cachedClassInstances.set(currentClassId, {
+                    presentStudents: [studentIdToSave],
+                    trialStudents: []
+                });
             }
 
             // Sync streak to user document (recalculation)
             await syncStudentStreak(studentIdToSave);
 
             if (currentClassData) {
-                await openAttendanceModal(currentClassData);
+                await openAttendanceModal(currentClassData, true);
             }
-            renderGrid();
+            renderGrid(true);
         } catch (error) {
             console.error("Erro ao atualizar presença:", error);
         }
