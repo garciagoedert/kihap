@@ -393,67 +393,69 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
     const unitIdsToFetch = (unitId && unitId !== 'all') ? [unitId] : Object.keys(EVO_CREDENTIALS);
     const CACHE_TTL_HOURS = 24;
-    const PAGE_SIZE = 500;
 
     try {
         let allMembers = [];
-        let usedCache = false;
+        let unitsToFetchFromApi = [];
 
-        // Se não forçar refresh, tenta usar o cache do Firestore
-        if (!forceRefresh) {
-            functions.logger.info("Verificando status do cache por unidade...");
-
+        if (forceRefresh) {
+            unitsToFetchFromApi = unitIdsToFetch;
+        } else {
+            // Tenta usar o cache do Firestore para as unidades válidas.
+            // Se for busca de 'all' (toda a escola), sempre usamos o cache para evitar timeouts/limites do EVO.
+            const isAllUnits = (!unitId || unitId === 'all');
+            
             const syncStatusPromises = unitIdsToFetch.map(id => db.collection('evo_sync_status').doc(id).get());
             const syncStatusSnaps = await Promise.all(syncStatusPromises);
 
-            const validUnitIds = [];
-
             syncStatusSnaps.forEach((snap, index) => {
-                const unitId = unitIdsToFetch[index];
+                const uid = unitIdsToFetch[index];
+                let isCacheValid = false;
+
                 if (snap.exists) {
                     const statusData = snap.data();
                     const lastSync = statusData.lastSync?.toDate();
                     const now = new Date();
                     const hoursSinceSync = lastSync ? (now - lastSync) / (1000 * 60 * 60) : 999;
 
-                    if (hoursSinceSync < CACHE_TTL_HOURS && statusData.status === 'success') {
-                        validUnitIds.push(unitId);
+                    if (statusData.status === 'success' && (hoursSinceSync < CACHE_TTL_HOURS || isAllUnits)) {
+                        isCacheValid = true;
                     }
+                } else if (isAllUnits) {
+                    // Sem status mas busca global, aceita ler cache mesmo assim
+                    isCacheValid = true;
+                }
+
+                if (!isCacheValid) {
+                    unitsToFetchFromApi.push(uid);
                 }
             });
-
-            if (validUnitIds.length === unitIdsToFetch.length) {
-                functions.logger.info(`Buscando todas as ${validUnitIds.length} unidades do Firestore: ${validUnitIds.join(', ')}`);
-
-                const memberQueries = validUnitIds.map(uid =>
-                    db.collection('evo_students').where('unitId', '==', uid).get()
-                );
-
-                const memberSnaps = await Promise.all(memberQueries);
-                memberSnaps.forEach((snap, idx) => {
-                    functions.logger.info(`  -> Unidade ${validUnitIds[idx]}: ${snap.size} alunos`);
-                    snap.forEach(doc => allMembers.push(doc.data()));
-                });
-
-                usedCache = true;
-                functions.logger.info(`✓ Total de ${allMembers.length} alunos carregados do Firestore`);
-            }
         }
 
-        if (!usedCache) {
-            functions.logger.info("Buscando dados via API do EVO e atualizando Firestore...");
-            const results = [];
+        // 1. Carrega do cache as unidades cujas informações estão válidas
+        const unitsToLoadFromCache = unitIdsToFetch.filter(uid => !unitsToFetchFromApi.includes(uid));
+        if (unitsToLoadFromCache.length > 0) {
+            functions.logger.info(`Buscando do cache do Firestore: ${unitsToLoadFromCache.join(', ')}`);
+            const memberQueries = unitsToLoadFromCache.map(uid =>
+                db.collection('evo_students').where('unitId', '==', uid).get()
+            );
+            const memberSnaps = await Promise.all(memberQueries);
+            memberSnaps.forEach(snap => {
+                snap.forEach(doc => allMembers.push(doc.data()));
+            });
+        }
 
-            for (const currentUnitId of unitIdsToFetch) {
-                functions.logger.info(`Processando unidade via API: ${currentUnitId}`);
-
+        // 2. Busca via API apenas as unidades cujos caches precisam ser recarregados
+        if (unitsToFetchFromApi.length > 0) {
+            functions.logger.info(`Buscando da API do EVO: ${unitsToFetchFromApi.join(', ')}`);
+            for (const currentUnitId of unitsToFetchFromApi) {
                 try {
                     const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
                     let unitMembers = [];
 
                     const fetchAllPagesForStatus = async (status) => {
                         const PAGE_SIZE = 500;
-                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status: status };
+                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status };
                         if (name && name.trim() !== '') {
                             apiParams.name = name.trim();
                         }
@@ -464,19 +466,16 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
                         while (hasMorePages) {
                             apiParams.page = currentPage;
-                            functions.logger.info(`   - Chamando API: Unidade ${currentUnitId}, Status ${status}, Pagina ${currentPage}`);
                             const response = await apiClientV2.get("/members", { params: apiParams });
                             const members = response.data || [];
 
                             if (Array.isArray(members)) {
                                 if (members.length > 0) {
                                     statusMembers = statusMembers.concat(members);
-                                    functions.logger.info(`   - Recebidos ${members.length} membros na página ${currentPage}`);
                                 }
                                 if (members.length < PAGE_SIZE) hasMorePages = false;
                                 currentPage++;
                             } else {
-                                functions.logger.error(`   - ERRO: Resposta da API não é um array para unidade ${currentUnitId}:`, typeof members);
                                 hasMorePages = false;
                             }
                         }
@@ -484,17 +483,13 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                     };
 
                     const activeMembers = await fetchAllPagesForStatus(1);
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     const inactiveMembers = await fetchAllPagesForStatus(2);
 
                     unitMembers = (activeMembers || []).concat(inactiveMembers || []);
-                    functions.logger.info(`   ✓ Unidade ${currentUnitId} finalizada: ${unitMembers.length} alunos (Ativos: ${activeMembers.length}, Inativos: ${inactiveMembers.length})`);
 
-                    // Normaliza e Salva em Lote
-                    // Save in batches of 500 to avoid Firestore limits
+                    // Atualiza cache local no Firestore em batches de 500
                     const BATCH_SIZE = 500;
-                    let savedCount = 0;
-
                     for (let i = 0; i < unitMembers.length; i += BATCH_SIZE) {
                         const batch = db.batch();
                         const chunk = unitMembers.slice(i, i + BATCH_SIZE);
@@ -519,25 +514,28 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         });
 
                         await batch.commit();
-                        savedCount += chunk.length;
-                        functions.logger.info(`  ✓ Unidade ${currentUnitId}: Batch salvo (${savedCount}/${unitMembers.length})`);
                     }
 
-                    results.push(unitMembers);
-                    functions.logger.info(`  ✓ Unidade ${currentUnitId} concluída via API: ${unitMembers.length} alunos`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Registra sucesso do sync
+                    await db.collection('evo_sync_status').doc(currentUnitId).set({
+                        lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                        status: 'success',
+                        totalStudents: unitMembers.length
+                    });
+
+                    allMembers = allMembers.concat(unitMembers);
+                    await new Promise(resolve => setTimeout(resolve, 500));
 
                 } catch (unitError) {
-                    functions.logger.error(`Erro na unidade ${currentUnitId}:`, unitError);
-                    results.push([]);
+                    functions.logger.error(`Erro ao buscar dados da API do EVO para unidade ${currentUnitId}, usando cache local antigo:`, unitError);
+                    const backupSnap = await db.collection('evo_students').where('unitId', '==', currentUnitId).get();
+                    backupSnap.forEach(doc => allMembers.push(doc.data()));
                 }
             }
-
-            allMembers = results.flatMap(result => result || []);
         }
 
-        // Filtra por nome se especificado E se usou cache (API já filtra)
-        if (name && name.trim() !== '' && usedCache) {
+        // Filtra por nome se especificado e se usou cache
+        if (name && name.trim() !== '') {
             const searchTerm = name.trim().toLowerCase();
             allMembers = allMembers.filter(member => {
                 const fullName = `${member.firstName || ''} ${member.lastName || ''}`.toLowerCase();
@@ -545,7 +543,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             });
         }
 
-        // Remove duplicatas e garante números corretos para moedas
+        // Remove duplicatas
         const uniqueStudentsMap = new Map();
         allMembers.forEach(student => {
             const studentCoins = Number(student.totalFitCoins) || 0;
@@ -557,7 +555,7 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
         });
 
         const finalMembers = Array.from(uniqueStudentsMap.values());
-        functions.logger.info(`Retornando ${finalMembers.length} alunos (fonte: ${usedCache ? 'CACHE' : 'API'})`);
+        functions.logger.info(`Retornando ${finalMembers.length} alunos`);
         return finalMembers;
 
     } catch (error) {

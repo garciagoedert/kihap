@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let cachedTemplates = [];
     let cachedClassInstances = new Map();
     let unitMembersCache = new Map();
+    let allSchoolMembersPromise = null;
 
     let currentViewMode = 'week'; // 'week' ou 'day'
     let currentSelectedDate = new Date();
@@ -1021,27 +1022,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function ensureAllSchoolMembersLoaded() {
-        if (allSchoolMembers.length > 0 || isLoadingSchoolMembers) return;
-        isLoadingSchoolMembers = true;
-        try {
-            const resultsDiv = document.getElementById('quick-checkin-results');
-            if (resultsDiv) {
-                resultsDiv.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando alunos do sistema...</div>';
-                resultsDiv.classList.remove('hidden');
-            }
+        if (allSchoolMembers.length > 0) return allSchoolMembers;
+        if (allSchoolMembersPromise) return allSchoolMembersPromise;
 
-            const listAllMembers = httpsCallable(functions, 'listAllMembers');
-            const result = await listAllMembers({ unitId: 'all' });
-            allSchoolMembers = (result.data || []).filter(m => !m.isInstructor);
-        } catch (err) {
-            console.error("Erro ao carregar alunos de todas as unidades:", err);
-            const resultsDiv = document.getElementById('quick-checkin-results');
-            if (resultsDiv) {
-                resultsDiv.innerHTML = '<div class="p-3 text-xs text-red-500 text-center">Erro ao carregar alunos. Recarregue a página.</div>';
+        allSchoolMembersPromise = (async () => {
+            isLoadingSchoolMembers = true;
+            try {
+                const resultsDiv = document.getElementById('quick-checkin-results');
+                if (resultsDiv) {
+                    resultsDiv.innerHTML = '<div class="p-3 text-xs text-gray-500 text-center"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando alunos do sistema...</div>';
+                    resultsDiv.classList.remove('hidden');
+                }
+
+                const listAllMembers = httpsCallable(functions, 'listAllMembers');
+                const result = await listAllMembers({ unitId: 'all' });
+                allSchoolMembers = (result.data || []).filter(m => !m.isInstructor);
+                return allSchoolMembers;
+            } catch (err) {
+                console.error("Erro ao carregar alunos de todas as unidades:", err);
+                const resultsDiv = document.getElementById('quick-checkin-results');
+                if (resultsDiv) {
+                    resultsDiv.innerHTML = '<div class="p-3 text-xs text-red-500 text-center">Erro ao carregar alunos. Recarregue a página.</div>';
+                }
+                allSchoolMembersPromise = null; // Permite tentar novamente em caso de erro
+                throw err;
+            } finally {
+                isLoadingSchoolMembers = false;
             }
-        } finally {
-            isLoadingSchoolMembers = false;
-        }
+        })();
+
+        return allSchoolMembersPromise;
     }
 
     async function performQuickCheckin(studentId) {
