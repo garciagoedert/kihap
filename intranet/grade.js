@@ -633,19 +633,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function renderSelectedStudents() {
+        const selectedContainer = document.getElementById('selected-students-container');
+        if (!selectedContainer) return;
+
+        selectedContainer.innerHTML = '';
+        
+        const selectedMembers = currentStudents.filter(student => 
+            selectedStudentIds.has(student.idMember.toString())
+        );
+
+        // Ordenar os selecionados em ordem alfabética
+        selectedMembers.sort((a, b) => {
+            const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
+            const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
+            return aName.localeCompare(bName);
+        });
+
+        if (selectedMembers.length === 0) {
+            selectedContainer.innerHTML = '<p class="text-xs text-gray-400 dark:text-gray-500 font-semibold italic p-1">Nenhum aluno inscrito ainda.</p>';
+            return;
+        }
+
+        selectedMembers.forEach(student => {
+            const fullName = `${student.firstName} ${student.lastName || ''}`;
+            const pill = document.createElement('div');
+            // Estilo moderno de pill premium, combinando com o tema
+            pill.className = 'flex items-center gap-1.5 bg-yellow-500/10 dark:bg-yellow-500/20 text-gray-850 dark:text-white pl-3 pr-2 py-1.5 rounded-full text-xs font-bold border border-primary/20 shadow-sm transition-all hover:scale-[1.02]';
+            pill.innerHTML = `
+                <span>${fullName}</span>
+                <button type="button" class="remove-student-btn hover:bg-rose-500/20 text-gray-400 hover:text-rose-500 rounded-full w-4 h-4 flex items-center justify-center transition-all" data-student-id="${student.idMember}">
+                    <i class="fas fa-times text-[9px] pointer-events-none"></i>
+                </button>
+            `;
+            selectedContainer.appendChild(pill);
+        });
+    }
+
     function renderStudentsList(filterText = '') {
         classStudentsSelect.innerHTML = '';
+        
+        // Filtrar alunos que NÃO estão selecionados e batem com a busca
         const filtered = currentStudents.filter(student => {
+            const isSelected = selectedStudentIds.has(student.idMember.toString());
+            if (isSelected) return false; // Sai da caixa de opções
+            
             const fullName = `${student.firstName} ${student.lastName || ''}`.toLowerCase();
             return fullName.includes(filterText.toLowerCase());
         });
 
-        // Float selected students to the top
+        // Ordenar os candidatos em ordem alfabética
         filtered.sort((a, b) => {
-            const aSelected = selectedStudentIds.has(a.idMember.toString());
-            const bSelected = selectedStudentIds.has(b.idMember.toString());
-            if (aSelected && !bSelected) return -1;
-            if (!aSelected && bSelected) return 1;
             const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
             const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
             return aName.localeCompare(bName);
@@ -653,15 +691,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (filtered.length > 0) {
             filtered.forEach(student => {
-                const isSelected = selectedStudentIds.has(student.idMember.toString());
-                const prefix = isSelected ? '✓ ' : '';
-                const option = new Option(`${prefix}${student.firstName} ${student.lastName || ''}`, student.idMember);
-                option.selected = isSelected;
+                const option = new Option(`${student.firstName} ${student.lastName || ''}`, student.idMember);
                 classStudentsSelect.add(option);
             });
         } else {
             classStudentsSelect.innerHTML = '<option value="" disabled>Nenhum aluno encontrado</option>';
         }
+
+        // Renderiza os pills dos selecionados
+        renderSelectedStudents();
     }
 
     async function handleClassFormSubmit(e) {
@@ -2114,17 +2152,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     classStudentsSelect.addEventListener('change', () => {
-        Array.from(classStudentsSelect.options).forEach(opt => {
-            if (opt.value) {
-                if (opt.selected) {
-                    selectedStudentIds.add(opt.value.toString());
-                } else {
-                    selectedStudentIds.delete(opt.value.toString());
+        const val = classStudentsSelect.value;
+        if (val) {
+            selectedStudentIds.add(val.toString());
+            // Limpar busca para facilitar próxima adição
+            if (searchStudentsInput) searchStudentsInput.value = '';
+            // Atualizar lista e pills
+            renderStudentsList();
+        }
+    });
+
+    const selectedStudentsContainer = document.getElementById('selected-students-container');
+    if (selectedStudentsContainer) {
+        selectedStudentsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-student-btn');
+            if (btn) {
+                const studentId = btn.dataset.studentId;
+                if (studentId) {
+                    selectedStudentIds.delete(studentId.toString());
+                    renderStudentsList(searchStudentsInput ? searchStudentsInput.value : '');
                 }
             }
         });
-        renderStudentsList(searchStudentsInput ? searchStudentsInput.value : '');
-    });
+    }
 
     document.getElementById('class-days-of-week').addEventListener('click', (e) => {
         const btn = e.target.closest('.day-toggle');

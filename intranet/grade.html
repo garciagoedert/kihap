@@ -627,13 +627,21 @@
                 </div>
 
                 <div>
-                    <label for="class-students" class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Alunos Inscritos</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Alunos Inscritos</label>
+                    
+                    <!-- Container para Alunos Selecionados -->
+                    <div id="selected-students-container" class="flex flex-wrap gap-2 mb-3 max-h-36 overflow-y-auto custom-scrollbar p-1">
+                        <!-- Pills dos alunos selecionados aparecerão aqui -->
+                    </div>
+
                     <input type="text" id="search-students" placeholder="🔍 Buscar aluno pelo nome..."
                         class="w-full mb-2 bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2 px-3.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-sm font-semibold placeholder-gray-400">
+                    
                     <select id="class-students" name="class-students" multiple
                         class="w-full h-36 bg-gray-50 dark:bg-[#222]/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 custom-scrollbar text-gray-800 dark:text-gray-200 font-semibold"></select>
+                    
                     <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">
-                        <i class="fas fa-info-circle text-[11px]"></i> Segure Ctrl (ou Cmd) para selecionar múltiplos.
+                        <i class="fas fa-info-circle text-[11px]"></i> Clique em um aluno da lista para adicioná-lo à turma.
                     </p>
                 </div>
             </form>
