@@ -96,11 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateViewButtons() {
         if (!viewWeekBtn || !viewDayBtn) return;
         if (currentViewMode === 'week') {
-            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300';
-            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300';
+            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm';
+            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
         } else {
-            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300';
-            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm transition-all duration-300';
+            viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+            viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm';
         }
     }
 
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const card = document.createElement('div');
-        card.className = `flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 p-4 rounded-r-2xl cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md ${colorClasses.card}`;
+        card.className = `flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 p-4 rounded-r-2xl cursor-pointer group z-10 backdrop-blur-md ${colorClasses.card}`;
         card.dataset.classId = classData.id;
         card.dataset.templateId = classData.templateId;
 
@@ -247,31 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 scheduleGrid.appendChild(header);
 
                 const body = document.createElement('div');
-                body.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60 relative'; // Gap creates the grid lines
-
-                const timeColumn = document.createElement('div');
-                timeColumn.className = 'bg-gray-50 dark:bg-[#161616]';
-                for (let hour = 7; hour < 22; hour++) {
-                    timeColumn.innerHTML += `
-                        <div class="hour-label flex items-start justify-center pt-2 text-xs font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-150 dark:border-gray-800/30 relative">
-                            <span class="-mt-2.5 bg-gray-50 dark:bg-[#161616] px-1.5">${String(hour).padStart(2, '0')}:00</span>
-                        </div>`;
-                }
-                body.appendChild(timeColumn);
-
-                for (let i = 0; i < 7; i++) {
-                    const dayColumn = document.createElement('div');
-                    dayColumn.className = 'relative bg-white dark:bg-[#1a1a1a] hover:bg-gray-50/50 dark:hover:bg-[#222]/30 transition-colors';
-                    dayColumn.dataset.date = getLocalDateString(days[i]);
-                    for (let hour = 7; hour < 22; hour++) {
-                        dayColumn.innerHTML += `
-                            <div class="time-slot border-b border-gray-100 dark:border-gray-850/20"></div>
-                            <div class="time-slot border-b border-gray-200 dark:border-gray-800/60"></div>
-                        `;
-                    }
-                    body.appendChild(dayColumn);
-                }
                 body.id = 'schedule-grid-body';
+                body.className = 'flex flex-col bg-gray-200 dark:bg-gray-800/60 gap-px';
                 scheduleGrid.appendChild(body);
             } else {
                 // Day View
@@ -386,6 +363,67 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ordena cronologicamente por horário de início
             classInstancesToRender.sort((a, b) => a.startTime - b.startTime);
 
+            if (currentViewMode === 'week') {
+                // Limpa o corpo da grade semanal
+                const body = scheduleGrid.querySelector('#schedule-grid-body');
+                if (body) {
+                    body.innerHTML = '';
+
+                    // Extrai todos os horários únicos de início (formato HH:MM)
+                    const uniqueTimes = new Set();
+                    for (const inst of classInstancesToRender) {
+                        if (inst.time) {
+                            uniqueTimes.add(inst.time);
+                        }
+                    }
+
+                    // Converte em array e ordena cronologicamente
+                    const sortedTimes = Array.from(uniqueTimes).sort((a, b) => {
+                        const [h1, m1] = a.split(':').map(Number);
+                        const [h2, m2] = b.split(':').map(Number);
+                        return (h1 * 60 + m1) - (h2 * 60 + m2);
+                    });
+
+                    // Se não houver aulas agendadas para esta semana, gera um visual vazio agradável
+                    if (sortedTimes.length === 0) {
+                        const emptyRow = document.createElement('div');
+                        emptyRow.className = 'bg-white dark:bg-[#1a1a1a] p-8 text-center text-gray-400 dark:text-gray-500 font-medium text-sm flex items-center justify-center gap-2 border-b border-gray-150 dark:border-gray-800/30';
+                        emptyRow.innerHTML = `
+                            <i class="far fa-calendar-times text-xl opacity-60"></i>
+                            <span>Nenhuma aula agendada para esta semana.</span>
+                        `;
+                        body.appendChild(emptyRow);
+                    } else {
+                        // Constrói as linhas da grade dinamicamente baseadas nos horários únicos
+                        for (const timeStr of sortedTimes) {
+                            const row = document.createElement('div');
+                            row.className = 'grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-800/60';
+
+                            // Célula do horário (rótulo esquerdo)
+                            const timeLabel = document.createElement('div');
+                            timeLabel.className = 'bg-gray-50 dark:bg-[#161616] p-3 text-xs font-extrabold text-gray-550 dark:text-gray-400 flex items-center justify-center min-h-[90px] border-b border-gray-150 dark:border-gray-800/30';
+                            timeLabel.innerHTML = `<span>${timeStr}</span>`;
+                            row.appendChild(timeLabel);
+
+                            // Células de cada dia
+                            for (let i = 0; i < 7; i++) {
+                                const dateStr = getLocalDateString(days[i]);
+                                const dayCell = document.createElement('div');
+                                dayCell.className = 'bg-white dark:bg-[#1a1a1a] p-3 flex flex-col gap-2 min-h-[90px] transition-colors hover:bg-gray-50/50 dark:hover:bg-[#222]/10 border-b border-gray-100 dark:border-gray-850/20';
+                                dayCell.dataset.date = dateStr;
+                                dayCell.dataset.time = timeStr;
+                                row.appendChild(dayCell);
+                            }
+
+                            body.appendChild(row);
+                        }
+                    }
+                }
+            } else {
+                const dayViewList = scheduleGrid.querySelector('#day-view-list');
+                if (dayViewList) dayViewList.innerHTML = '';
+            }
+
             if (currentViewMode === 'day' && classInstancesToRender.length === 0) {
                 const dayViewList = scheduleGrid.querySelector('#day-view-list');
                 if (dayViewList) {
@@ -398,12 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Remove os cartões antigos antes de desenhar se estiver usando cache para evitar duplicados
+            // Remove cartões antigos em modo semanal (já limpo ao reiniciar a estrutura de linhas)
             if (currentViewMode === 'week') {
                 scheduleGrid.querySelectorAll('.class-card').forEach(card => card.remove());
-            } else {
-                const dayViewList = scheduleGrid.querySelector('#day-view-list');
-                if (dayViewList) dayViewList.innerHTML = '';
             }
 
             for (const classInstanceData of classInstancesToRender) {
@@ -425,21 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const startTime = classData.startTime;
-        const endTime = classData.endTime;
         const dayDateStr = getLocalDateString(startTime);
+        const timeStr = classData.time; // formato "HH:MM"
 
-        const dayColumn = scheduleGrid.querySelector(`[data-date="${dayDateStr}"]`);
-        if (!dayColumn) return;
-
-        const startHour = 7;
-        const pixelsPerHour = 120;
-        const pixelsPerMinute = pixelsPerHour / 60;
-
-        const startMinutes = (startTime.getHours() - startHour) * 60 + startTime.getMinutes();
-        const durationMinutes = (endTime - startTime) / 60000;
-
-        const top = startMinutes * pixelsPerMinute;
-        const height = durationMinutes * pixelsPerMinute;
+        const cell = scheduleGrid.querySelector(`[data-date="${dayDateStr}"][data-time="${timeStr}"]`);
+        if (!cell) return;
 
         const category = (classData.category || '').toLowerCase();
         let colorClasses = {
@@ -475,15 +500,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const card = document.createElement('div');
-        // Premium Card Styling
-        card.className = `class-card absolute w-[94%] left-[3%] border-l-4 p-2.5 rounded-r-xl cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 group z-10 backdrop-blur-md ${colorClasses.card}`;
-        card.style.top = `${top}px`;
-        card.style.height = `${height - 2}px`;
+        // Card flexível, sem posicionamento absoluto
+        card.className = `class-card border-l-4 p-2.5 rounded-r-xl cursor-pointer overflow-hidden shadow-sm group z-10 backdrop-blur-md w-full relative ${colorClasses.card}`;
         card.dataset.classId = classData.id;
         card.dataset.templateId = classData.templateId;
 
-        // Contadores SEPARADOS: regulares e experimentais
-        const occupation = (classData.presentStudents || []).length; // só regulares presentes
+        const occupation = (classData.presentStudents || []).length;
         const capacity = classData.capacity || (classData.students || []).length || 1;
         const trialCount = (classData.trialStudents || []).length;
         const occupationPercentage = Math.min((occupation / capacity) * 100, 100);
@@ -499,32 +521,36 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="${colorClasses.badge} px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
             : '';
 
+        const endStr = classData.endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const timeRangeBadge = `<span class="text-[9px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-2">${classData.time} - ${endStr}</span>`;
+
         card.innerHTML = `
             ${trialBadge}
-            <div class="flex flex-col h-full justify-between">
+            <div class="flex flex-col h-full justify-between gap-1.5">
                 <div>
-                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
-                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap items-center gap-1.5">
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${getShortTeacherName(classData.teacherName)}</span>
-                        </span>
+                    <div class="flex items-center justify-between mb-0.5 flex-wrap gap-1">
+                        ${timeRangeBadge}
                         ${categoryBadge}
                     </div>
+                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
+                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${getShortTeacherName(classData.teacherName)}</span>
+                    </div>
                 </div>
-                <div class="mt-1">
+                <div class="mt-0.5">
                     <div class="flex justify-between items-center text-[9px] text-gray-550 dark:text-gray-400 mb-0.5 font-bold">
-                        <span>${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
+                        <span>Ocupação: ${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
                         <span>${Math.round(occupationPercentage)}%</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1 overflow-hidden">
-                        <div class="${occupationColor} h-1 rounded-full transition-all duration-500" style="width: ${occupationPercentage}%"></div>
+                        <div class="${occupationColor} h-1 rounded-full" style="width: ${occupationPercentage}%"></div>
                     </div>
                 </div>
             </div>
         `;
 
         card.addEventListener('click', () => openAttendanceModal(classData));
-        dayColumn.appendChild(card);
+        cell.appendChild(card);
     }
 
     async function openClassModal() {
@@ -537,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset day buttons to inactive state
         document.querySelectorAll('#class-days-of-week .day-toggle').forEach(btn => {
-            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
         });
 
         if (selectedUnitId) {
@@ -583,9 +609,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#class-days-of-week .day-toggle').forEach(btn => {
             const day = parseInt(btn.dataset.day);
             if (template.daysOfWeek && template.daysOfWeek.includes(day)) {
-                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold transition-all border bg-primary border-primary text-black shadow-md shadow-yellow-500/10 scale-[1.03]';
+                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold border bg-primary border-primary text-black';
             } else {
-                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+                btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
             }
         });
 
@@ -2192,9 +2218,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const isActive = btn.classList.contains('bg-primary');
         if (isActive) {
-            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold transition-all border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-semibold border bg-gray-50 dark:bg-[#222]/40 border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]/40 hover:text-gray-800 dark:hover:text-white';
         } else {
-            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold transition-all border bg-primary border-primary text-black shadow-md shadow-yellow-500/10 scale-[1.03]';
+            btn.className = 'day-toggle flex-1 min-w-[3rem] py-2 rounded-xl text-sm font-bold border bg-primary border-primary text-black';
         }
     });
 
