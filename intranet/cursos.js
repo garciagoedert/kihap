@@ -163,10 +163,18 @@ async function deleteCourse(courseId, courseTitle) {
 }
 
 async function loadUsersListForSelect(courseId, renderedUserIds) {
-    const select = document.getElementById('select-add-subscriber');
-    if (!select) return;
+    const searchInput = document.getElementById('subscriber-search-input');
+    const hiddenSelect = document.getElementById('select-add-subscriber');
+    const suggestionsDiv = document.getElementById('subscriber-suggestions');
+    const btnClear = document.getElementById('btn-clear-search');
+    if (!searchInput || !hiddenSelect || !suggestionsDiv) return;
 
-    select.innerHTML = '<option value="">Carregando alunos...</option>';
+    // Reinicia os inputs
+    searchInput.value = '';
+    hiddenSelect.value = '';
+    if (btnClear) btnClear.classList.add('hidden');
+    suggestionsDiv.innerHTML = '';
+    suggestionsDiv.classList.add('hidden');
 
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -176,27 +184,94 @@ async function loadUsersListForSelect(courseId, renderedUserIds) {
         });
 
         // Filtrar alunos que não possuem o acesso liberado ainda (não estão renderizados)
-        const availableUsers = allUsers.filter(u => {
+        const finalUsers = allUsers.filter(u => {
             if (!u.name || !u.email) return false;
-            return !renderedUserIds.has(u.id) && !u.evoMemberId;
+            return !renderedUserIds.has(u.id);
         });
 
-        // Caso a lista de usuários sem a EVO ID esteja vazia, listamos também os que têm EVO ID (por segurança)
-        const finalUsers = availableUsers.length > 0 ? availableUsers : allUsers.filter(u => u.name && u.email && !renderedUserIds.has(u.id));
-
-        // Ordenação alfabética
+        // Ordenação alfabética pelo nome
         finalUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-        select.innerHTML = '<option value="">Selecione um aluno para liberar...</option>';
-        finalUsers.forEach(u => {
-            const option = document.createElement('option');
-            option.value = u.id;
-            option.textContent = `${u.name} (${u.email})`;
-            select.appendChild(option);
+        // Função local para renderizar as sugestões filtradas
+        const renderSuggestions = (filterText) => {
+            suggestionsDiv.innerHTML = '';
+            const queryText = filterText.toLowerCase().trim();
+
+            const filtered = finalUsers.filter(u => {
+                const nameMatch = (u.name || '').toLowerCase().includes(queryText);
+                const emailMatch = (u.email || '').toLowerCase().includes(queryText);
+                return nameMatch || emailMatch;
+            });
+
+            if (filtered.length === 0) {
+                suggestionsDiv.innerHTML = '<div class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-medium">Nenhum usuário encontrado</div>';
+                return;
+            }
+
+            filtered.forEach(u => {
+                const item = document.createElement('div');
+                item.className = 'px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800/30 last:border-b-0 transition-colors flex items-center justify-between';
+
+                const badge = u.evoMemberId
+                    ? '<span class="text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0.5 px-1.5 rounded-full">Aluno</span>'
+                    : '<span class="text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 py-0.5 px-1.5 rounded-full">Staff</span>';
+
+                item.innerHTML = `
+                    <div class="flex flex-col pr-4">
+                        <span class="font-bold text-gray-900 dark:text-white leading-tight">${u.name}</span>
+                        <span class="text-xs text-gray-400 mt-0.5">${u.email}</span>
+                    </div>
+                    ${badge}
+                `;
+
+                item.addEventListener('click', () => {
+                    searchInput.value = `${u.name} (${u.email})`;
+                    hiddenSelect.value = u.id;
+                    suggestionsDiv.classList.add('hidden');
+                    if (btnClear) btnClear.classList.remove('hidden');
+                });
+                suggestionsDiv.appendChild(item);
+            });
+        };
+
+        // Eventos de entrada do input
+        searchInput.onfocus = () => {
+            renderSuggestions(searchInput.value);
+            suggestionsDiv.classList.remove('hidden');
+        };
+
+        searchInput.oninput = () => {
+            renderSuggestions(searchInput.value);
+            suggestionsDiv.classList.remove('hidden');
+            if (searchInput.value) {
+                if (btnClear) btnClear.classList.remove('hidden');
+            } else {
+                hiddenSelect.value = '';
+                if (btnClear) btnClear.classList.add('hidden');
+            }
+        };
+
+        if (btnClear) {
+            btnClear.onclick = (e) => {
+                e.stopPropagation();
+                searchInput.value = '';
+                hiddenSelect.value = '';
+                btnClear.classList.add('hidden');
+                renderSuggestions('');
+                searchInput.focus();
+            };
+        }
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target) && (!btnClear || !btnClear.contains(e.target))) {
+                suggestionsDiv.classList.add('hidden');
+            }
         });
+
     } catch (e) {
         console.error("Erro ao carregar lista de usuários para seleção:", e);
-        select.innerHTML = '<option value="">Erro ao carregar alunos</option>';
+        searchInput.placeholder = "Erro ao carregar alunos";
     }
 }
 
