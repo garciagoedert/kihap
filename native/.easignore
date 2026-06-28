@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Expo directories
+.expo/
+dist/
+web-build/
+
+# Heavy local native build caches (never needed for remote cloud compilation)
+android/.gradle/
+android/build/
+android/app/build/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS specific files
+.DS_Store
+Thumbs.db

@@ -601,9 +601,28 @@ async function loadComponents(pageSpecificSetup) {
 
         // Set active link in sidebar
         const sidebarLinks = sidebarContainer.querySelectorAll('nav a');
+        const pageMappings = {
+            'sales-history.html': 'store.html',
+            'course-editor.html': 'cursos.html',
+            'player.html': 'cursos.html',
+            'conteudo-editor.html': 'cursos.html',
+            'conteudo-viewer.html': 'cursos.html',
+            'projeto-editor.html': 'projetos.html',
+            'juridico-novademanda.html': 'juridico-trello.html',
+            'novademanda.html': 'juridico-trello.html',
+            'evolucao-detalhes.html': 'analysis.html'
+        };
+
+        let activePage = currentPage.split('?')[0];
+        if (pageMappings[activePage]) {
+            activePage = pageMappings[activePage];
+        }
+
         sidebarLinks.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop();
-            if (linkPage === currentPage) {
+            const rawLinkPage = link.getAttribute('href').split('/').pop();
+            const linkPage = rawLinkPage.split('?')[0];
+            
+            if (linkPage === activePage) {
                 link.classList.add('bg-primary');
                 link.classList.remove('bg-white', 'dark:bg-gray-700', 'hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-white', 'border-gray-200');
                 link.classList.add('text-black', 'border-transparent');
@@ -619,6 +638,9 @@ async function loadComponents(pageSpecificSetup) {
                         if (icon) {
                             icon.classList.add('rotate-180');
                         }
+                        // Highlight parent menu button when child is active
+                        toggleBtn.classList.add('bg-primary', 'text-black');
+                        toggleBtn.classList.remove('bg-transparent', 'hover:bg-gray-100', 'dark:hover:bg-gray-800/50', 'text-gray-700', 'dark:text-gray-300', 'hover:text-primary', 'dark:hover:text-white');
                     }
                 }
 

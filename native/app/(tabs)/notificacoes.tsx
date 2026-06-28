@@ -699,7 +699,7 @@ export default function NotificacoesScreen() {
                   <View
                     style={{
                       backgroundColor: isMe 
-                        ? (isDark ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.05)')
+                        ? (isDark ? '#2B2619' : '#FEFBF3')
                         : (isDark ? '#1a1a1a' : '#fff'),
                       borderColor: isMe 
                         ? '#eab308' 

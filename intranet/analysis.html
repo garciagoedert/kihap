@@ -117,19 +117,34 @@
                 <!-- Evolution Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                     <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col">
-                        <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Evolução dos Contratos Ativos</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evolução dos Contratos Ativos</h2>
+                            <a href="evolucao-detalhes.html?type=contracts" class="text-gray-400 hover:text-yellow-500 transition-colors duration-200" title="Ver Detalhes e Comparativos">
+                                <i class="fas fa-expand-alt text-sm"></i>
+                            </a>
+                        </div>
                         <div class="relative h-80">
                             <canvas id="contracts-evolution-chart"></canvas>
                         </div>
                     </div>
                     <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col">
-                        <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Evolução dos Alunos Ativos</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evolução dos Alunos Ativos</h2>
+                            <a href="evolucao-detalhes.html?type=students" class="text-gray-400 hover:text-yellow-500 transition-colors duration-200" title="Ver Detalhes e Comparativos">
+                                <i class="fas fa-expand-alt text-sm"></i>
+                            </a>
+                        </div>
                         <div class="relative h-80">
                             <canvas id="students-evolution-chart"></canvas>
                         </div>
                     </div>
                     <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col">
-                        <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Evolução da Store</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evolução da Store</h2>
+                            <a href="evolucao-detalhes.html?type=store" class="text-gray-400 hover:text-yellow-500 transition-colors duration-200" title="Ver Detalhes e Comparativos">
+                                <i class="fas fa-expand-alt text-sm"></i>
+                            </a>
+                        </div>
                         <div class="relative h-80">
                             <canvas id="store-sales-evolution-chart"></canvas>
                         </div>

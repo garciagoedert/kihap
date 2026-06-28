@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <title>Detalhes da Evolução - Kihap Kanban</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .filter-btn { transition: all 0.2s ease-in-out; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 20px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-x-hidden">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto">
+                <!-- Top Navigation & Title -->
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <div>
+                        <a href="analysis.html" class="inline-flex items-center text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 mb-2 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>Voltar para Análise
+                        </a>
+                        <h1 id="details-title" class="text-2xl font-bold text-gray-900 dark:text-white">Detalhes de Evolução</h1>
+                        <p id="details-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Visualização detalhada, comparativos e filtros</p>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col mb-6 gap-6 relative z-30">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-filter text-yellow-500"></i> Filtros e Comparativos
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Date Filter -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Intervalo de Datas</label>
+                            <div class="flex gap-2">
+                                <input type="date" id="start-date" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none transition">
+                                <input type="date" id="end-date" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none transition">
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <button type="button" data-range="7" class="filter-btn text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-650 dark:text-gray-300 hover:bg-yellow-500 hover:text-black dark:hover:bg-yellow-500 dark:hover:text-black transition">7 Dias</button>
+                                <button type="button" data-range="30" class="filter-btn text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-650 dark:text-gray-300 hover:bg-yellow-500 hover:text-black dark:hover:bg-yellow-500 dark:hover:text-black transition">30 Dias</button>
+                                <button type="button" data-range="this-month" class="filter-btn text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-650 dark:text-gray-300 hover:bg-yellow-500 hover:text-black dark:hover:bg-yellow-500 dark:hover:text-black transition">Este Mês</button>
+                                <button type="button" data-range="this-year" class="filter-btn text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-650 dark:text-gray-300 hover:bg-yellow-500 hover:text-black dark:hover:bg-yellow-500 dark:hover:text-black transition">Este Ano</button>
+                            </div>
+                        </div>
+
+                        <!-- Unit Selector & Comparer -->
+                        <div class="flex flex-col gap-2 relative">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unidades (Comparar Selecionadas)</label>
+                            
+                            <!-- Custom Checklist Dropdown -->
+                            <div class="relative">
+                                <button type="button" id="unit-dropdown-btn" class="w-full flex items-center justify-between bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none transition text-left cursor-pointer">
+                                    <span id="selected-units-text" class="truncate">Geral (Todas as Unidades)</span>
+                                    <i class="fas fa-chevron-down text-xs ml-2 text-gray-400 transition-transform"></i>
+                                </button>
+                                
+                                <div id="unit-dropdown-menu" class="absolute z-20 top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl p-3 hidden max-h-60 overflow-y-auto custom-scrollbar">
+                                    <div class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+                                        <input type="checkbox" id="unit-select-all" checked class="w-4 h-4 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500 focus:ring-2 accent-yellow-500">
+                                        <label for="unit-select-all" class="text-sm font-semibold text-gray-700 dark:text-gray-350 cursor-pointer select-none">Todas as Unidades (Geral)</label>
+                                    </div>
+                                    <div id="unit-checkboxes-container" class="space-y-2">
+                                        <!-- Checkboxes will be injected dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-gray-400">Selecione múltiplas unidades para compará-las de forma sobreposta no gráfico.</span>
+                        </div>
+
+                        <!-- Period Comparer -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comparativo Temporal</label>
+                            <div class="flex items-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 gap-3 h-[42px]">
+                                <input type="checkbox" id="compare-period" class="w-4 h-4 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500 focus:ring-2 accent-yellow-500 cursor-pointer">
+                                <label for="compare-period" class="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none">Comparar com Período Anterior</label>
+                            </div>
+                            <span class="text-[11px] text-gray-400">Desenha uma linha tracejada no gráfico representando o mesmo intervalo de dias imediatamente anterior.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expanded Chart Section -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 id="chart-section-title" class="text-lg font-semibold text-gray-900 dark:text-white">Gráfico de Evolução</h2>
+                        <div id="chart-legend" class="flex flex-wrap gap-4 text-xs font-semibold">
+                            <!-- Custom legends will be injected if needed -->
+                        </div>
+                    </div>
+                    <div class="relative h-[450px] w-full">
+                        <canvas id="evolution-details-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Data Table Section -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col mb-10">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Dados Detalhados</h2>
+                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <input type="text" id="table-search" placeholder="Buscar por data..." class="w-full sm:w-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none transition">
+                            <button id="export-csv-btn" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition duration-200 shadow-lg shadow-emerald-600/10 active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                <i class="fas fa-file-csv"></i>Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-xl border border-gray-150 dark:border-gray-800 shadow-inner custom-scrollbar">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 dark:bg-gray-800/80 border-b border-gray-150 dark:border-gray-850">
+                                <tr id="table-header-row">
+                                    <!-- Table headers will be injected dynamically -->
+                                </tr>
+                            </thead>
+                            <tbody id="table-data-body" class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-transparent">
+                                <!-- Data rows will be injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="evolucao-detalhes.js"></script>
+</body>
+</html>

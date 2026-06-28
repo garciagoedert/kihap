@@ -3,7 +3,7 @@
     "name": "Kihap",
     "slug": "kihap",
     "owner": "kihap",
-    "version": "3.4",
+    "version": "3.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "native",
@@ -12,11 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kihap.app",
-      "buildNumber": "24"
+      "buildNumber": "33"
     },
     "android": {
       "package": "com.kihap.app",
-      "versionCode": 24,
+      "versionCode": 33,
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-safe.png"
@@ -45,7 +45,13 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita que o Kihap acesse suas fotos para alterar a imagem de perfil."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

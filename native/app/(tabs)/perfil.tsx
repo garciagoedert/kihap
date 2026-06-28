@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
 import { Settings, Camera, Mail, LogOut, ChevronRight, CreditCard, User, Flame, Trophy, Calendar } from 'lucide-react-native';
-import { auth, db, functions } from '../../src/services/firebase';
+import { auth, db, functions, storage } from '../../src/services/firebase';
 import { updatePassword } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ProfileScreen() {
   const { user, userData, signOut } = useAuth();
@@ -18,6 +20,7 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Sync state with userData once it loads
   useEffect(() => {
@@ -37,6 +40,61 @@ export default function ProfileScreen() {
   const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
   
   const displayEmail = userData?.email || 'carregando...';
+
+  const handleSelectAndUploadImage = async () => {
+    // Request permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria para alterar a foto.');
+      return;
+    }
+
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    const selectedImageUri = result.assets[0].uri;
+    setUploading(true);
+
+    try {
+      if (!user) {
+        throw new Error('Usuário não autenticado.');
+      }
+
+      // Convert local URI to Blob (required for Firebase JS SDK in React Native)
+      const response = await fetch(selectedImageUri);
+      const blob = await response.blob();
+
+      // Define reference path
+      const filename = selectedImageUri.split('/').pop() || 'profile.jpg';
+      const storageRef = ref(storage, `profile_pictures/${user.uid}/${Date.now()}_${filename}`);
+
+      // Upload to Storage
+      await uploadBytes(storageRef, blob);
+
+      // Get download URL
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Update Firestore user document
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { photoURL: downloadURL });
+
+      Alert.alert('Sucesso', 'Foto de perfil atualizada com sucesso!');
+    } catch (err: any) {
+      console.error('Erro ao atualizar foto de perfil:', err);
+      Alert.alert('Erro ao atualizar foto', err.message || 'Ocorreu um erro ao enviar a imagem.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSaveChanges = async () => {
     if (!name.trim()) {
@@ -166,11 +224,19 @@ export default function ProfileScreen() {
                   <View className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-500/20">
                     <Image 
                       source={displayPhoto} 
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${uploading ? 'opacity-50' : ''}`}
                     />
                   </View>
-                  <TouchableOpacity className="absolute inset-0 bg-black/40 rounded-full items-center justify-center">
-                    <Camera size={24} color="white" />
+                  <TouchableOpacity 
+                    onPress={handleSelectAndUploadImage}
+                    disabled={uploading}
+                    className="absolute inset-0 bg-black/40 rounded-full items-center justify-center"
+                  >
+                    {uploading ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Camera size={24} color="white" />
+                    )}
                   </TouchableOpacity>
                 </View>
 

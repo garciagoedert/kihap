@@ -1,0 +1,21 @@
+# Ignore all web app files and parent folders for native EAS builds
+www_legacy/
+novo site/
+www/
+functions/
+android/
+ios/
+node_modules/
+.firebase/
+desenvolvimento/
+experience/
+programas/
+members/
+store_assets/
+css/
+imgs/
+js/
+fonte/
+unidades/
+scratch/
+decompress_test.py
