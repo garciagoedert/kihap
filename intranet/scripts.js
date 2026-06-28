@@ -150,14 +150,14 @@ function handleSearch(e) {
 
 function createScriptCard(script) {
     const div = document.createElement('div');
-    div.className = 'bg-gray-800 rounded-lg p-5 shadow-lg flex flex-col hover:bg-gray-750 transition-colors border border-gray-700 cursor-pointer group relative';
+    div.className = 'bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl rounded-2xl p-5 shadow-sm hover:shadow-xl flex flex-col border border-gray-150/80 dark:border-gray-800/50 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative';
 
     // Category Badge Color
-    let badgeClass = 'bg-gray-600';
-    if (script.category === 'Whatsapp') badgeClass = 'bg-green-600';
-    if (script.category === 'Telefone') badgeClass = 'bg-blue-600';
-    if (script.category === 'Presencial') badgeClass = 'bg-yellow-600';
-    if (script.category === 'Email') badgeClass = 'bg-purple-600';
+    let badgeClass = 'bg-gray-50 text-gray-700 dark:bg-gray-800/40 dark:text-gray-400';
+    if (script.category === 'Whatsapp') badgeClass = 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400 border border-green-200/50 dark:border-green-900/30';
+    if (script.category === 'Telefone') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30';
+    if (script.category === 'Presencial') badgeClass = 'bg-amber-50 text-amber-750 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30';
+    if (script.category === 'Email') badgeClass = 'bg-purple-50 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30';
 
     // Snippet
     const tempDiv = document.createElement('div');
@@ -170,17 +170,19 @@ function createScriptCard(script) {
     div.innerHTML = `
         <div class="flex justify-between items-start mb-2">
             <div class="flex flex-col w-full">
-                <span class="${badgeClass} text-white text-[10px] font-bold px-2 py-0.5 rounded w-fit mb-3 mt-2">${script.category || 'Geral'}</span>
-                <h3 class="text-xl font-bold text-white truncate w-full" title="${script.title}">${script.title}</h3>
+                <span class="${badgeClass} text-[10px] font-bold px-2 py-0.5 rounded w-fit mb-3 mt-2">${script.category || 'Geral'}</span>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate w-full" title="${script.title}">${script.title}</h3>
             </div>
         </div>
-        <div class="text-xs text-gray-500 mb-3 font-mono border-b border-gray-700 pb-2">
-            ${script.authorName || 'Autor desconhecido'} • ${dateCreated}
+        <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 mb-3 border-b border-gray-100 dark:border-gray-800/80 pb-2 flex items-center gap-1.5">
+            <i class="far fa-user text-[10px]"></i> ${script.authorName || 'Autor desconhecido'} 
+            <span class="text-gray-300 dark:text-gray-700">•</span>
+            <i class="far fa-calendar text-[10px]"></i> ${dateCreated}
         </div>
-        <p class="text-gray-400 text-sm whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-24">${snippet}</p>
+        <p class="text-gray-600 dark:text-gray-350 text-sm whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-24 line-clamp-4 leading-relaxed">${snippet}</p>
         
-        <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span class="text-xs text-blue-400">Ver detalhes</span>
+        <div class="flex justify-end mt-auto pt-2 border-t border-gray-100 dark:border-gray-800 text-[11px] font-bold text-blue-500 dark:text-blue-400 group-hover:translate-x-1 transition-transform w-fit ml-auto">
+            <span>Acessar Roteiro <i class="fas fa-arrow-right text-[10px] ml-1"></i></span>
         </div>
     `;
 
@@ -278,14 +280,14 @@ function openViewModal(script) {
     viewScriptTitle.textContent = script.title;
     viewScriptContent.innerHTML = script.content; // Render HTML
 
-    let badgeClass = 'bg-gray-600';
-    if (script.category === 'Whatsapp') badgeClass = 'bg-green-600';
-    if (script.category === 'Telefone') badgeClass = 'bg-blue-600';
-    if (script.category === 'Presencial') badgeClass = 'bg-yellow-600';
-    if (script.category === 'Email') badgeClass = 'bg-purple-600';
+    let badgeClass = 'bg-gray-50 text-gray-700 dark:bg-gray-800/40 dark:text-gray-400';
+    if (script.category === 'Whatsapp') badgeClass = 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400 border border-green-200/50 dark:border-green-900/30';
+    if (script.category === 'Telefone') badgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30';
+    if (script.category === 'Presencial') badgeClass = 'bg-amber-50 text-amber-750 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30';
+    if (script.category === 'Email') badgeClass = 'bg-purple-50 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30';
 
     viewScriptCategory.textContent = script.category || 'Geral';
-    viewScriptCategory.className = `text-white text-xs px-2 py-1 rounded ${badgeClass}`;
+    viewScriptCategory.className = `text-xs font-bold px-2.5 py-1 rounded ${badgeClass}`;
 
     viewScriptMeta.textContent = `${script.authorName || 'Desconhecido'} • ${dateCreated}`;
 

@@ -39,45 +39,83 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .ql-editor {
-            min-height: 300px;
-            background-color: #374151;
-            /* gray-700 */
-            color: white;
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-        }
-
+        /* Quill Editor Light/Dark Adaptive Styles */
         .ql-toolbar {
-            background-color: #1f2937;
-            /* gray-800 */
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-            border-color: #4b5563 !important;
-            /* gray-600 */
+            background-color: #f9fafb; /* gray-50 */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-color: #e5e7eb !important; /* gray-200 */
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .dark .ql-toolbar {
+            background-color: #161616;
+            border-color: #2e2e2e !important;
         }
 
         .ql-container {
-            border-color: #4b5563 !important;
-            /* gray-600 */
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-            font-size: 1rem;
+            border-color: #e5e7eb !important;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        .dark .ql-container {
+            border-color: #2e2e2e !important;
         }
 
+        .ql-editor {
+            min-height: 300px;
+            background-color: #ffffff;
+            color: #1f2937; /* gray-800 */
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .dark .ql-editor {
+            background-color: #111111;
+            color: #f3f4f6; /* gray-100 */
+        }
+
+        /* SVG & Controls colors in toolbar */
         .ql-stroke {
-            stroke: #e5e7eb !important;
-            /* gray-200 */
+            stroke: #4b5563 !important; /* gray-600 */
+            transition: stroke 0.2s;
+        }
+        .dark .ql-stroke {
+            stroke: #d1d5db !important; /* gray-300 */
         }
 
         .ql-fill {
-            fill: #e5e7eb !important;
-            /* gray-200 */
+            fill: #4b5563 !important;
+            transition: fill 0.2s;
+        }
+        .dark .ql-fill {
+            fill: #d1d5db !important;
         }
 
         .ql-picker {
-            color: #e5e7eb !important;
-            /* gray-200 */
+            color: #4b5563 !important;
+            transition: color 0.2s;
+        }
+        .dark .ql-picker {
+            color: #d1d5db !important;
+        }
+
+        /* Custom Scrollbar for Modal Textareas */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 20px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
         }
     </style>
 </head>
@@ -85,14 +123,17 @@
 <body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
     <div class="flex h-screen">
         <div id="sidebar-container"></div>
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 hidden"></div>
         <main id="main-content"
             class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
 
-            <div class="p-6 flex-1 overflow-y-auto">
-                <div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-                    <h1 class="text-3xl font-bold">Scripts de Atendimento</h1>
+            <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
+                <div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4 border-b border-gray-100 dark:border-gray-800/80 pb-5">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Scripts de Atendimento</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Biblioteca de modelos e roteiros para suporte e vendas</p>
+                    </div>
 
                     <div class="flex items-center gap-4 w-full md:w-auto">
                         <div class="relative w-full md:w-64">
@@ -100,18 +141,18 @@
                                 <i class="fas fa-search text-gray-400"></i>
                             </span>
                             <input type="search" id="search-input"
-                                class="w-full bg-gray-800 text-white rounded-lg pl-10 pr-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+                                class="w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition text-sm"
                                 placeholder="Buscar scripts...">
                         </div>
                         <button id="add-script-btn"
-                            class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg flex items-center whitespace-nowrap">
-                            <i class="fas fa-plus mr-2"></i> Novo Script
+                            class="bg-primary hover:bg-primary-dark text-black font-bold py-2.5 px-5 rounded-xl flex items-center whitespace-nowrap transition active:scale-95 shadow-lg shadow-yellow-500/10 cursor-pointer">
+                            <i class="fas fa-plus mr-2 text-sm"></i> Novo Script
                         </button>
                     </div>
                 </div>
 
                 <!-- Lista de Scripts -->
-                <div id="scripts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div id="scripts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
                     <!-- Cards de scripts serão inseridos aqui via JS -->
                     <div class="col-span-full text-center text-gray-500 py-10">
                         <i class="fas fa-spinner fa-spin text-2xl"></i> Carregando scripts...
@@ -123,29 +164,29 @@
 
     <!-- Modal de Edição/Criação -->
     <div id="script-modal"
-        class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
-            <button id="close-script-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+        class="fixed inset-0 bg-black/60 dark:bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-white dark:bg-[#1a1a1a] border border-gray-150 dark:border-white/5 rounded-2xl max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh] shadow-2xl scale-95 transition-all duration-300">
+            <button id="close-script-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-650 dark:hover:text-white w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition cursor-pointer">
+                <i class="fas fa-times text-lg"></i>
             </button>
 
-            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-white">Novo Script</h2>
+            <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Novo Script</h2>
 
-            <form id="script-form" class="flex-1 overflow-y-auto pr-2 space-y-4">
+            <form id="script-form" class="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                 <input type="hidden" id="script-id">
 
                 <!-- Título e Categoria -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="md:col-span-3">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Título do Script</label>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Título do Script</label>
                         <input type="text" id="script-title" required
-                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            class="w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition text-sm"
                             placeholder="Ex: Abordagem Inicial Whatsapp">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tipo</label>
                         <select id="script-category" required
-                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            class="w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition text-sm font-semibold cursor-pointer">
                             <option value="Whatsapp">Whatsapp</option>
                             <option value="Telefone">Telefone</option>
                             <option value="Presencial">Presencial</option>
@@ -156,24 +197,24 @@
 
                 <!-- Conteúdo (Quill Editor) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Conteúdo</label>
-                    <div class="bg-gray-700 rounded-lg">
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Conteúdo</label>
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-850 shadow-inner">
                         <div id="editor-container" class="h-96"></div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-4 border-t border-gray-700">
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-850">
                     <button type="button" id="delete-script-btn"
-                        class="px-4 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-700 transition-colors hidden">
-                        <i class="fas fa-trash mr-2"></i> Excluir
+                        class="px-5 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-bold active:scale-95 flex items-center justify-center gap-2 cursor-pointer hidden">
+                        <i class="fas fa-trash text-sm"></i> Excluir Script
                     </button>
                     <div class="flex space-x-3 ml-auto">
                         <button type="button" id="cancel-script-btn"
-                            class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">
+                            class="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-850 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold transition active:scale-95 cursor-pointer">
                             Cancelar
                         </button>
                         <button type="submit" id="save-script-btn"
-                            class="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors">
+                            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-lg shadow-emerald-600/10 active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
                             Salvar Script
                         </button>
                     </div>
@@ -183,31 +224,31 @@
     </div>
 
     <!-- Modal de Visualização (Read-Only) -->
-    <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
-            <button id="close-view-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+    <div id="view-modal" class="fixed inset-0 bg-black/60 dark:bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-white dark:bg-[#1a1a1a] border border-gray-150 dark:border-white/5 rounded-2xl max-w-3xl w-full p-6 relative flex flex-col max-h-[90vh] shadow-2xl scale-95 transition-all duration-300">
+            <button id="close-view-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-650 dark:hover:text-white w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition cursor-pointer">
+                <i class="fas fa-times text-lg"></i>
             </button>
 
-            <div class="flex-1 overflow-y-auto pr-2">
+            <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 <div class="mb-4">
                     <div class="flex items-center gap-3 mb-2">
                         <span id="view-script-category"
-                            class="bg-green-600 text-white text-xs px-2 py-1 rounded">Whatsapp</span>
-                        <div class="text-sm text-gray-400" id="view-script-meta">Autor • Data</div>
+                            class="text-xs font-bold px-2.5 py-1 rounded">Whatsapp</span>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 font-medium" id="view-script-meta">Autor • Data</div>
                     </div>
-                    <h2 id="view-script-title" class="text-3xl font-bold text-white">Título do Script</h2>
+                    <h2 id="view-script-title" class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">Título do Script</h2>
                 </div>
 
-                <div class="prose prose-invert max-w-none mb-8">
-                    <p id="view-script-content" class="whitespace-pre-wrap text-gray-300"></p>
+                <div class="prose dark:prose-invert max-w-none mb-6 mt-4 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar text-gray-800 dark:text-gray-200 border-t border-b border-gray-100 dark:border-gray-800/80 py-4">
+                    <div id="view-script-content" class="text-base leading-relaxed whitespace-pre-line"></div>
                 </div>
             </div>
 
-            <div class="flex justify-end pt-4 border-t border-gray-700 mt-4">
+            <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
                 <button type="button" id="edit-script-btn-view"
-                    class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors">
-                    <i class="fas fa-edit mr-2"></i> Editar Script
+                    class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-600/10 active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fas fa-edit text-sm"></i> Editar Script
                 </button>
             </div>
         </div>

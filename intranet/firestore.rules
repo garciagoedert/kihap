@@ -3,7 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Regra para as Contas do Mercado Pago Marketplace
     match /mercadopagoAccounts/{accountId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true
+      );
       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
@@ -327,7 +330,11 @@ service cloud.firestore {
     // Regra para Configurações (ex: WhatsApp Auto-Reply)
     match /config/{configId} {
       allow read: if request.auth != null; // Frontend pode ler (ou webhook via admin SDK ignora regras)
-      allow write: if request.auth != null; // Admins/Staff podem editar
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true
+      );
     }
 
     // Regra para configuração pública do Miles (chave Gemini acessível sem autenticação)

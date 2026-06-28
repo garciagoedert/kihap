@@ -2,10 +2,32 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
+// Load environment variables from .env file if it exists
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      const key = match[1];
+      let val = match[2] || '';
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.substring(1, val.length - 1);
+      } else if (val.startsWith("'") && val.endsWith("'")) {
+        val = val.substring(1, val.length - 1);
+      }
+      process.env[key] = val;
+    }
+  }
+}
+
 const homeDir = process.env.HOME || '/Users/goedert';
 const configPath = path.join(homeDir, '.config', 'configstore', 'firebase-tools.json');
 
-const defaultAccessToken = 'APP_USR-5944875595784194-112514-ca8fac172506f46fcf3d97adfd7a9947-1563097303';
+const defaultAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+if (!defaultAccessToken) {
+  console.warn('Warning: MERCADOPAGO_ACCESS_TOKEN environment variable is not defined.');
+}
 
 async function run() {
   if (!fs.existsSync(configPath)) {

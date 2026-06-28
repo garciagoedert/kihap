@@ -1,5 +1,26 @@
 const admin = require('firebase-admin');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+// Load environment variables from .env file if it exists
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      const key = match[1];
+      let val = match[2] || '';
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.substring(1, val.length - 1);
+      } else if (val.startsWith("'") && val.endsWith("'")) {
+        val = val.substring(1, val.length - 1);
+      }
+      process.env[key] = val;
+    }
+  }
+}
 
 // Initialize Firebase Admin using the JSON in parent directory
 const serviceAccount = require('../intranet-kihap-firebase-adminsdk-fbsvc-43327c2f72.json');
@@ -9,7 +30,10 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // Default MP Access Token
-const defaultAccessToken = 'APP_USR-5944875595784194-112514-ca8fac172506f46fcf3d97adfd7a9947-1563097303';
+const defaultAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+if (!defaultAccessToken) {
+  console.warn('Warning: MERCADOPAGO_ACCESS_TOKEN environment variable is not defined.');
+}
 
 async function main() {
   console.log('Fetching active/authorized tuition subscriptions from Firestore...');
