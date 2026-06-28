@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, deleteDoc, collectionGroup, query, where, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, doc, deleteDoc, collectionGroup, query, where, getDoc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady } from './auth.js';
@@ -114,9 +114,24 @@ async function viewSubscribers(courseId, courseTitle) {
     modal.classList.remove('hidden');
 
     try {
-        // Query all subscriptions for this course across all users
-        const q = query(collectionGroup(db, 'subscriptions'), where('courseId', '==', courseId));
-        const snapshot = await getDocs(q);
+        let snapshot;
+        let isFallback = false;
+
+        try {
+            // Tenta primeiro usando o collectionGroup (requer regras e índice de coleção configurados)
+            const q = query(collectionGroup(db, 'subscriptions'), where('courseId', '==', courseId));
+            snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                // Força fallback se o collectionGroup retornar vazio, para buscar permissões manuais de alunos
+                throw new Error("No collectionGroup subscriptions found");
+            }
+        } catch (groupError) {
+            console.warn("CollectionGroup falhou ou retornou vazio, usando fallback de usuários:", groupError.message);
+            isFallback = true;
+            // Fallback: Busca usuários que possuem o curso em accessibleContent
+            const qFallback = query(collection(db, 'users'), where('accessibleContent', 'array-contains', courseId));
+            snapshot = await getDocs(qFallback);
+        }
 
         list.innerHTML = '';
 
@@ -125,41 +140,80 @@ async function viewSubscribers(courseId, courseTitle) {
             return;
         }
 
-        for (const subDoc of snapshot.docs) {
-            const subData = subDoc.data();
-            const userId = subDoc.ref.parent.parent.id; // users/{uid}/subscriptions/{subId} -> parent.parent is user doc
+        if (isFallback) {
+            // Caso de Fallback: Processa a lista de usuários e busca assinaturas individuais
+            for (const userDoc of snapshot.docs) {
+                const userData = userDoc.data();
+                const userId = userDoc.id;
 
-            // Fetch user data
-            let userData = { name: 'Desconhecido', email: '---' };
-            try {
-                const userSnap = await getDoc(doc(db, 'users', userId));
-                if (userSnap.exists()) {
-                    userData = userSnap.data();
+                let subData = { status: 'active', createdAt: null };
+                try {
+                    const subSnapshot = await getDocs(query(collection(db, 'users', userId, 'subscriptions'), where('courseId', '==', courseId), limit(1)));
+                    if (!subSnapshot.empty) {
+                        subData = subSnapshot.docs[0].data();
+                    }
+                } catch (subErr) {
+                    console.warn(`Erro ao carregar assinatura individual para o usuário ${userId}:`, subErr.message);
                 }
-            } catch (e) {
-                console.error('Erro ao buscar usuario', userId, e);
+
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-750 hover:bg-gray-700/30';
+
+                const statusColor = subData.status === 'active' ? 'text-green-400' : 'text-red-400';
+                const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-white font-semibold">${userData.name || 'Sem nome'}</td>
+                    <td class="px-4 py-3 text-gray-400">${userData.email || 'Sem email'}</td>
+                    <td class="px-4 py-3 ${statusColor} font-bold">${subData.status}</td>
+                    <td class="px-4 py-3 text-gray-400">${dateStr}</td>
+                    <td class="px-4 py-3">
+                        ${subData.status === 'active' ? `
+                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-red-500 hover:text-red-400 text-sm underline font-semibold">
+                                Cancelar
+                            </button>
+                        ` : '-'}
+                    </td>
+                `;
+                list.appendChild(row);
             }
+        } else {
+            // Caso Principal (collectionGroup bem sucedido)
+            for (const subDoc of snapshot.docs) {
+                const subData = subDoc.data();
+                const userId = subDoc.ref.parent.parent.id; // parent.parent é o doc do usuário
 
-            const row = document.createElement('tr');
-            row.className = 'border-b border-gray-700 hover:bg-gray-700';
+                let userData = { name: 'Desconhecido', email: '---' };
+                try {
+                    const userSnap = await getDoc(doc(db, 'users', userId));
+                    if (userSnap.exists()) {
+                        userData = userSnap.data();
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar usuário', userId, e);
+                }
 
-            const statusColor = subData.status === 'active' ? 'text-green-400' : 'text-red-400';
-            const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : '-';
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-750 hover:bg-gray-700/30';
 
-            row.innerHTML = `
-                <td class="px-4 py-3 text-white">${userData.name || 'Sem nome'}</td>
-                <td class="px-4 py-3 text-gray-400">${userData.email || 'Sem email'}</td>
-                <td class="px-4 py-3 ${statusColor} font-bold">${subData.status}</td>
-                <td class="px-4 py-3 text-gray-400">${dateStr}</td>
-                <td class="px-4 py-3">
-                    ${subData.status === 'active' ? `
-                        <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-red-500 hover:text-red-400 text-sm underline">
-                            Cancelar
-                        </button>
-                    ` : '-'}
-                </td>
-            `;
-            list.appendChild(row);
+                const statusColor = subData.status === 'active' ? 'text-green-400' : 'text-red-400';
+                const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : '-';
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-white font-semibold">${userData.name || 'Sem nome'}</td>
+                    <td class="px-4 py-3 text-gray-400">${userData.email || 'Sem email'}</td>
+                    <td class="px-4 py-3 ${statusColor} font-bold">${subData.status}</td>
+                    <td class="px-4 py-3 text-gray-400">${dateStr}</td>
+                    <td class="px-4 py-3">
+                        ${subData.status === 'active' ? `
+                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-red-500 hover:text-red-400 text-sm underline font-semibold">
+                                Cancelar
+                            </button>
+                        ` : '-'}
+                    </td>
+                `;
+                list.appendChild(row);
+            }
         }
 
     } catch (error) {
