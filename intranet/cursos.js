@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, deleteDoc, collectionGroup, query, where, getDoc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, doc, deleteDoc, collectionGroup, query, where, getDoc, limit, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from './firebase-config.js';
 import { loadComponents, setupUIListeners } from './common-ui.js';
 import { onAuthReady } from './auth.js';
@@ -21,6 +21,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('close-subscribers-modal').addEventListener('click', () => {
         document.getElementById('subscribers-modal').classList.add('hidden');
     });
+
+    // Listener para o botão de liberar acesso manual
+    const btnGrant = document.getElementById('btn-grant-access');
+    if (btnGrant) {
+        btnGrant.addEventListener('click', async () => {
+            const select = document.getElementById('select-add-subscriber');
+            const selectedUserId = select.value;
+            if (!selectedUserId) {
+                alert('Por favor, selecione um aluno.');
+                return;
+            }
+
+            const modal = document.getElementById('subscribers-modal');
+            const courseId = modal.dataset.courseId;
+            const courseTitle = document.getElementById('modal-course-name').textContent;
+
+            btnGrant.disabled = true;
+            const originalText = btnGrant.innerHTML;
+            btnGrant.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Liberando...';
+
+            try {
+                // 1. Atualizar accessibleContent no documento do usuário
+                const userRef = doc(db, 'users', selectedUserId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    const accessibleContent = userData.accessibleContent || [];
+                    if (!accessibleContent.includes(courseId)) {
+                        accessibleContent.push(courseId);
+                        await updateDoc(userRef, { accessibleContent: accessibleContent });
+                    }
+                }
+
+                // 2. Registrar na subcoleção de assinaturas para log histórico
+                const subsRef = collection(db, 'users', selectedUserId, 'subscriptions');
+                const subQuery = await getDocs(query(subsRef, where('courseId', '==', courseId)));
+                if (subQuery.empty) {
+                    await addDoc(subsRef, {
+                        courseId: courseId,
+                        status: 'active',
+                        paymentMethod: 'manual_admin',
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    });
+                }
+
+                alert('Curso liberado para o aluno com sucesso!');
+                // Recarrega a lista
+                viewSubscribers(courseId, courseTitle);
+            } catch (error) {
+                console.error('Erro ao liberar acesso manual:', error);
+                alert('Erro ao liberar curso: ' + error.message);
+            } finally {
+                btnGrant.disabled = false;
+                btnGrant.innerHTML = originalText;
+            }
+        });
+    }
 });
 
 async function loadCourses(isAdmin) {
@@ -104,14 +162,55 @@ async function deleteCourse(courseId, courseTitle) {
     }
 }
 
+async function loadUsersListForSelect(courseId, renderedUserIds) {
+    const select = document.getElementById('select-add-subscriber');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Carregando alunos...</option>';
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const allUsers = [];
+        querySnapshot.forEach((doc) => {
+            allUsers.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Filtrar alunos que não possuem o acesso liberado ainda (não estão renderizados)
+        const availableUsers = allUsers.filter(u => {
+            if (!u.name || !u.email) return false;
+            return !renderedUserIds.has(u.id) && !u.evoMemberId;
+        });
+
+        // Caso a lista de usuários sem a EVO ID esteja vazia, listamos também os que têm EVO ID (por segurança)
+        const finalUsers = availableUsers.length > 0 ? availableUsers : allUsers.filter(u => u.name && u.email && !renderedUserIds.has(u.id));
+
+        // Ordenação alfabética
+        finalUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        select.innerHTML = '<option value="">Selecione um aluno para liberar...</option>';
+        finalUsers.forEach(u => {
+            const option = document.createElement('option');
+            option.value = u.id;
+            option.textContent = `${u.name} (${u.email})`;
+            select.appendChild(option);
+        });
+    } catch (e) {
+        console.error("Erro ao carregar lista de usuários para seleção:", e);
+        select.innerHTML = '<option value="">Erro ao carregar alunos</option>';
+    }
+}
+
 async function viewSubscribers(courseId, courseTitle) {
     const modal = document.getElementById('subscribers-modal');
     const list = document.getElementById('subscribers-list');
     const titleEl = document.getElementById('modal-course-name');
 
+    modal.dataset.courseId = courseId;
     titleEl.textContent = courseTitle;
-    list.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center">Carregando...</td></tr>';
+    list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 font-medium"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando alunos com acesso...</td></tr>';
     modal.classList.remove('hidden');
+
+    const renderedUserIds = new Set();
 
     try {
         let snapshot;
@@ -136,7 +235,8 @@ async function viewSubscribers(courseId, courseTitle) {
         list.innerHTML = '';
 
         if (snapshot.empty) {
-            list.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center">Nenhum assinante encontrado.</td></tr>';
+            list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 font-medium">Nenhum aluno com acesso encontrado.</td></tr>';
+            loadUsersListForSelect(courseId, renderedUserIds);
             return;
         }
 
@@ -145,6 +245,7 @@ async function viewSubscribers(courseId, courseTitle) {
             for (const userDoc of snapshot.docs) {
                 const userData = userDoc.data();
                 const userId = userDoc.id;
+                renderedUserIds.add(userId);
 
                 let subData = { status: 'active', createdAt: null };
                 try {
@@ -157,20 +258,28 @@ async function viewSubscribers(courseId, courseTitle) {
                 }
 
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-750 hover:bg-gray-700/30';
+                row.className = 'border-b border-gray-100 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200';
 
-                const statusColor = subData.status === 'active' ? 'text-green-400' : 'text-red-400';
-                const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+                let statusBadge = '';
+                if (subData.status === 'active') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/10 text-green-600 dark:text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> ativo</span>`;
+                } else if (subData.status === 'canceled' || subData.status === 'canceled_by_admin') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/10 text-red-600 dark:text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> cancelado</span>`;
+                } else {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> ${subData.status}</span>`;
+                }
+
+                const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : '-';
 
                 row.innerHTML = `
-                    <td class="px-4 py-3 text-white font-semibold">${userData.name || 'Sem nome'}</td>
-                    <td class="px-4 py-3 text-gray-400">${userData.email || 'Sem email'}</td>
-                    <td class="px-4 py-3 ${statusColor} font-bold">${subData.status}</td>
-                    <td class="px-4 py-3 text-gray-400">${dateStr}</td>
-                    <td class="px-4 py-3">
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">${userData.name || 'Sem nome'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${userData.email || 'Sem email'}</td>
+                    <td class="px-6 py-4 text-sm font-semibold">${statusBadge}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${dateStr}</td>
+                    <td class="px-6 py-4 text-sm text-right">
                         ${subData.status === 'active' ? `
-                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-red-500 hover:text-red-400 text-sm underline font-semibold">
-                                Cancelar
+                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-xs font-bold text-red-600 dark:text-red-400 hover:text-red-500 hover:underline transition-all">
+                                Cancelar Acesso
                             </button>
                         ` : '-'}
                     </td>
@@ -182,6 +291,7 @@ async function viewSubscribers(courseId, courseTitle) {
             for (const subDoc of snapshot.docs) {
                 const subData = subDoc.data();
                 const userId = subDoc.ref.parent.parent.id; // parent.parent é o doc do usuário
+                renderedUserIds.add(userId);
 
                 let userData = { name: 'Desconhecido', email: '---' };
                 try {
@@ -194,20 +304,28 @@ async function viewSubscribers(courseId, courseTitle) {
                 }
 
                 const row = document.createElement('tr');
-                row.className = 'border-b border-gray-750 hover:bg-gray-700/30';
+                row.className = 'border-b border-gray-100 dark:border-gray-800/60 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200';
 
-                const statusColor = subData.status === 'active' ? 'text-green-400' : 'text-red-400';
+                let statusBadge = '';
+                if (subData.status === 'active') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/10 text-green-600 dark:text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> ativo</span>`;
+                } else if (subData.status === 'canceled' || subData.status === 'canceled_by_admin') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/10 text-red-600 dark:text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> cancelado</span>`;
+                } else {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> ${subData.status}</span>`;
+                }
+
                 const dateStr = subData.createdAt ? new Date(subData.createdAt.seconds * 1000).toLocaleDateString() : '-';
 
                 row.innerHTML = `
-                    <td class="px-4 py-3 text-white font-semibold">${userData.name || 'Sem nome'}</td>
-                    <td class="px-4 py-3 text-gray-400">${userData.email || 'Sem email'}</td>
-                    <td class="px-4 py-3 ${statusColor} font-bold">${subData.status}</td>
-                    <td class="px-4 py-3 text-gray-400">${dateStr}</td>
-                    <td class="px-4 py-3">
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">${userData.name || 'Sem nome'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${userData.email || 'Sem email'}</td>
+                    <td class="px-6 py-4 text-sm font-semibold">${statusBadge}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${dateStr}</td>
+                    <td class="px-6 py-4 text-sm text-right">
                         ${subData.status === 'active' ? `
-                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-red-500 hover:text-red-400 text-sm underline font-semibold">
-                                Cancelar
+                            <button onclick="adminCancelSub('${userId}', '${courseId}')" class="text-xs font-bold text-red-600 dark:text-red-400 hover:text-red-500 hover:underline transition-all">
+                                Cancelar Acesso
                             </button>
                         ` : '-'}
                     </td>
@@ -216,9 +334,12 @@ async function viewSubscribers(courseId, courseTitle) {
             }
         }
 
+        // Carrega a lista de seleção
+        loadUsersListForSelect(courseId, renderedUserIds);
+
     } catch (error) {
         console.error("Erro ao carregar assinantes:", error);
-        list.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+        list.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 font-medium">Erro ao carregar dados.</td></tr>';
     }
 }
 
@@ -228,16 +349,57 @@ async function adminCancelSub(userId, courseId) {
     }
 
     try {
-        const functions = getFunctions();
-        const adminCancelSubscription = httpsCallable(functions, 'adminCancelSubscription');
+        // Verifica se a assinatura é manual ou pagarme/mercado pago
+        const subsRef = collection(db, 'users', userId, 'subscriptions');
+        const q = query(subsRef, where('courseId', '==', courseId), where('status', '==', 'active'), limit(1));
+        const subSnap = await getDocs(q);
 
-        await adminCancelSubscription({ userId, courseId });
+        let isManual = true;
+        let subDocId = null;
+        let subData = null;
 
-        alert('Assinatura cancelada com sucesso.');
-        // Refresh the list (hacky: close and reopen or just reload page, but ideally just refresh list. 
-        // For now, let's just alert. The user can close/reopen to refresh or we can try to refresh if we had the course title.)
-        // Let's close the modal to force refresh on next open
-        document.getElementById('subscribers-modal').classList.add('hidden');
+        if (!subSnap.empty) {
+            subDocId = subSnap.docs[0].id;
+            subData = subSnap.docs[0].data();
+            if (subData.paymentMethod !== 'manual_admin') {
+                isManual = false;
+            }
+        }
+
+        if (isManual) {
+            // Cancelamento manual direto no Firestore
+            if (subDocId) {
+                await updateDoc(doc(db, 'users', userId, 'subscriptions', subDocId), {
+                    status: 'canceled_by_admin',
+                    canceledAt: new Date()
+                });
+            }
+
+            // Remove da lista de acessos
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const accessibleContent = userData.accessibleContent || [];
+                const index = accessibleContent.indexOf(courseId);
+                if (index > -1) {
+                    accessibleContent.splice(index, 1);
+                    await updateDoc(userRef, { accessibleContent: accessibleContent });
+                }
+            }
+
+            alert('Acesso manual cancelado com sucesso.');
+            const courseTitle = document.getElementById('modal-course-name').textContent;
+            viewSubscribers(courseId, courseTitle);
+        } else {
+            // Assinatura de pagamento (chama a cloud function)
+            const functions = getFunctions();
+            const adminCancelSubscription = httpsCallable(functions, 'adminCancelSubscription');
+            await adminCancelSubscription({ userId, courseId });
+            alert('Assinatura cancelada com sucesso.');
+            const courseTitle = document.getElementById('modal-course-name').textContent;
+            viewSubscribers(courseId, courseTitle);
+        }
     } catch (error) {
         console.error("Erro ao cancelar:", error);
         alert('Erro ao cancelar: ' + error.message);

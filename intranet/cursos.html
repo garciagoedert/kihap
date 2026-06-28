@@ -74,26 +74,53 @@
     </div>
     <!-- Subscribers Modal -->
     <div id="subscribers-modal"
-        class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
-            <button id="close-subscribers-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+        class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl max-w-4xl w-full p-6 md:p-8 relative flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800/80 shadow-2xl transition-all">
+            <button id="close-subscribers-modal" class="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-500 transition-all">
+                <i class="fas fa-times text-lg"></i>
             </button>
-            <h2 class="text-2xl font-bold mb-4 text-white">Assinantes do Curso: <span id="modal-course-name"
-                    class="text-blue-400"></span></h2>
+            
+            <div class="flex items-center gap-3 mb-6 shrink-0">
+                <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                    <i class="fas fa-users text-lg"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Alunos com Acesso: <span id="modal-course-name" class="text-primary"></span></h2>
+            </div>
 
-            <div class="overflow-y-auto flex-1">
-                <table class="w-full text-left text-gray-300">
-                    <thead class="text-xs text-gray-400 uppercase bg-gray-700">
-                        <tr>
-                            <th class="px-4 py-3">Nome</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Data Início</th>
-                            <th class="px-4 py-3">Ações</th>
+            <!-- Liberar Acesso Section -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6 p-5 bg-gray-50 dark:bg-gray-900/30 rounded-2xl border border-gray-205 dark:border-gray-800/80 shrink-0">
+                <div class="flex-1 relative">
+                    <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Liberar acesso para aluno</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                            <i class="fas fa-user-plus text-sm"></i>
+                        </div>
+                        <select id="select-add-subscriber" class="w-full pl-11 pr-10 py-3 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer text-gray-800 dark:text-gray-200 font-semibold">
+                            <option value="">Carregando lista de alunos...</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-grant-access" class="sm:self-end bg-primary hover:brightness-110 text-black font-black py-3 px-6 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 whitespace-nowrap h-[46px]">
+                    Liberar Curso
+                </button>
+            </div>
+
+            <!-- Table Section -->
+            <div class="overflow-y-auto flex-1 custom-scrollbar border border-gray-200 dark:border-gray-800 rounded-2xl">
+                <table class="w-full text-left text-gray-800 dark:text-gray-200 border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-800">
+                            <th class="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
+                            <th class="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data Início</th>
+                            <th class="px-6 py-4 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="subscribers-list">
+                    <tbody id="subscribers-list" class="divide-y divide-gray-100 dark:divide-gray-800">
                         <!-- Rows will be added here -->
                     </tbody>
                 </table>
