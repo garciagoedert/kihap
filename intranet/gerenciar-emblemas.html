@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="log.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .badge-card {
@@ -50,27 +51,42 @@
         <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
-                <h1 class="text-2xl font-bold mb-6">Gerenciamento de Emblemas</h1>
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <h1 class="text-2xl font-bold mb-6 tracking-tight">Gerenciamento de Emblemas</h1>
 
                 <!-- Formulário para Adicionar Novo Emblema -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg mb-8">
-                    <h2 class="text-xl font-bold mb-4">Adicionar Novo Emblema</h2>
-                    <form id="add-badge-form" class="space-y-4">
-                        <div>
-                            <label for="badge-name" class="block text-sm font-medium text-gray-400">Nome do Emblema</label>
-                            <input type="text" id="badge-name" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <div class="glass-panel p-6 md:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                    <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        <i class="fas fa-shield-halved text-primary"></i> Adicionar Novo Emblema
+                    </h2>
+                    <form id="add-badge-form" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema</label>
+                                <input type="text" id="badge-name" placeholder="Ex: Guerreiro de Elite" required
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Imagem do Emblema</label>
+                                <div class="flex flex-col gap-3">
+                                    <input type="file" id="badge-image" accept="image/*" class="hidden" required>
+                                    <button type="button" onclick="document.getElementById('badge-image').click()" 
+                                        class="px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 w-full">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Escolher ícone</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <label for="badge-description" class="block text-sm font-medium text-gray-400">Descrição</label>
-                            <textarea id="badge-description" rows="3" required class="w-full mt-1 px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
-                        </div>
-                        <div>
-                            <label for="badge-image" class="block text-sm font-medium text-gray-400">Imagem do Emblema</label>
-                            <input type="file" id="badge-image" accept="image/*" required class="w-full mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600">
+                            <label for="badge-description"
+                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição da Conquista</label>
+                            <textarea id="badge-description" rows="3" placeholder="Descreva o que o aluno precisa fazer para ganhar este emblema..."
+                                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" id="submit-badge-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                            <button type="submit" id="submit-badge-btn"
+                                class="bg-primary hover:bg-primary-dark text-white font-bold py-4 px-12 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
                                 Salvar Emblema
                             </button>
                         </div>
@@ -78,11 +94,13 @@
                 </div>
 
                 <!-- Lista de Emblemas Existentes -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg flex-grow overflow-y-auto">
-                    <h2 class="text-xl font-bold mb-4">Emblemas Existentes</h2>
+                <div class="glass-panel p-6 md:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex-grow">
+                    <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        <i class="fas fa-award text-primary"></i> Emblemas Existentes
+                    </h2>
                     <div id="badges-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         <!-- Emblemas serão carregados aqui -->
-                        <p class="col-span-full text-center text-gray-500">Carregando emblemas...</p>
+                        <p class="col-span-full text-center text-gray-400 italic p-12">Carregando emblemas...</p>
                     </div>
                 </div>
             </div>
