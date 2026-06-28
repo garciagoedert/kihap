@@ -57,7 +57,7 @@
             min-height: 200px;
         }
 
-        /* Custom scrollbar for tags */
+        /* Custom scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -68,12 +68,20 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #4b5563;
+            background: #e2e8f0;
             border-radius: 4px;
         }
 
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+        }
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+            background: #cbd5e1;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
         }
     </style>
 </head>
