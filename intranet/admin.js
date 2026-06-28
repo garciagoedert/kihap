@@ -1,7 +1,8 @@
 import { getAllUsers, updateUser, addUser, deleteUser, updateUserPassword } from './auth.js';
-import { db, functions } from './firebase-config.js';
+import { db, functions, storage } from './firebase-config.js';
 import { addDoc, collection, query, orderBy, getDocs, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 export async function setupAdminPage() {
     // A validação de admin agora é feita globalmente no common-ui.js
@@ -36,6 +37,7 @@ function continueSetup() {
     const isJuridicoInput = document.getElementById('isJuridico');
     const isSuporteInput = document.getElementById('isSuporte');
     const userUnitSelect = document.getElementById('user-unit');
+    const profilePhotoInput = document.getElementById('profile-photo-input');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
     const cancelEditBtn = document.getElementById('cancel-edit');
@@ -179,38 +181,74 @@ function continueSetup() {
         userMobileList.appendChild(listFragment);
     }
 
+    async function uploadProfilePhoto(userId, file) {
+        try {
+            const fileRef = storageRef(storage, `profile_photos/${userId}`);
+            const snapshot = await uploadBytes(fileRef, file);
+            return await getDownloadURL(snapshot.ref);
+        } catch (e) {
+            console.error("Erro ao fazer upload da foto de perfil:", e);
+            throw e;
+        }
+    }
+
     async function handleFormSubmit(e) {
         e.preventDefault();
         
-        const userData = {
-            name: nameInput.value,
-            isAdmin: isAdminInput.checked,
-            isInstructor: isInstructorInput.checked,
-            isRH: isRHInput.checked,
-            isMarketing: isMarketingInput.checked,
-            isFinanceiro: isFinanceiroInput.checked,
-            isAdministrativo: isAdministrativoInput.checked,
-            isStore: isStoreInput.checked,
-            isAcademy: isAcademyInput.checked,
-            isJuridico: isJuridicoInput.checked,
-            isSuporte: isSuporteInput.checked,
-            unitId: userUnitSelect ? userUnitSelect.value : ''
-        };
+        const submitBtn = userForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
 
-        const userId = hiddenEmailInput.value;
+        try {
+            const userData = {
+                name: nameInput.value,
+                isAdmin: isAdminInput.checked,
+                isInstructor: isInstructorInput.checked,
+                isRH: isRHInput.checked,
+                isMarketing: isMarketingInput.checked,
+                isFinanceiro: isFinanceiroInput.checked,
+                isAdministrativo: isAdministrativoInput.checked,
+                isStore: isStoreInput.checked,
+                isAcademy: isAcademyInput.checked,
+                isJuridico: isJuridicoInput.checked,
+                isSuporte: isSuporteInput.checked,
+                unitId: userUnitSelect ? userUnitSelect.value : ''
+            };
 
-        if (userId) {
-            await updateUser(userId, userData);
-        } else {
-            if (!passwordInput.value) {
-                alert('A senha é obrigatória para novos usuários.');
-                return;
+            const userId = hiddenEmailInput.value;
+            const file = profilePhotoInput ? profilePhotoInput.files[0] : null;
+
+            if (userId) {
+                if (file) {
+                    const downloadUrl = await uploadProfilePhoto(userId, file);
+                    userData.photoURL = downloadUrl;
+                    userData.photoUrl = downloadUrl;
+                }
+                await updateUser(userId, userData);
+            } else {
+                if (!passwordInput.value) {
+                    alert('A senha é obrigatória para novos usuários.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+                const result = await addUser({ ...userData, email: emailInput.value, password: passwordInput.value });
+                if (result && result.success && file) {
+                    const downloadUrl = await uploadProfilePhoto(result.uid, file);
+                    await updateUser(result.uid, { photoURL: downloadUrl, photoUrl: downloadUrl });
+                }
             }
-            await addUser({ ...userData, email: emailInput.value, password: passwordInput.value });
-        }
 
-        resetForm();
-        renderUsers('', true); // Força atualização do cache após salvar
+            resetForm();
+            renderUsers('', true); // Força atualização do cache após salvar
+        } catch (error) {
+            console.error("Erro ao salvar usuário:", error);
+            alert(`Erro ao salvar usuário: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
     }
 
     function resetForm() {
@@ -223,6 +261,20 @@ function continueSetup() {
             passwordInput.disabled = false;
             passwordInput.placeholder = "";
         }
+        
+        // Reset profile preview
+        const previewImg = document.getElementById('profile-preview-img');
+        const previewInitials = document.getElementById('profile-preview-initials');
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+        }
+        if (previewInitials) {
+            previewInitials.classList.remove('hidden');
+            previewInitials.textContent = 'U';
+        }
+        if (profilePhotoInput) profilePhotoInput.value = '';
+        
         if (userModal) userModal.classList.add('hidden');
     }
 
@@ -260,6 +312,28 @@ function continueSetup() {
                 hiddenEmailInput.value = user.id;
                 passwordInput.placeholder = "Não editável aqui";
                 passwordInput.disabled = true;
+
+                // Carrega foto de perfil atual
+                const userPhoto = user.photoURL || user.photoUrl || user.profilePic || user.profilePicture || user.avatarUrl;
+                const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                const previewImg = document.getElementById('profile-preview-img');
+                const previewInitials = document.getElementById('profile-preview-initials');
+                if (userPhoto) {
+                    if (previewImg) {
+                        previewImg.src = userPhoto;
+                        previewImg.classList.remove('hidden');
+                    }
+                    if (previewInitials) previewInitials.classList.add('hidden');
+                } else {
+                    if (previewImg) {
+                        previewImg.src = '';
+                        previewImg.classList.add('hidden');
+                    }
+                    if (previewInitials) {
+                        previewInitials.classList.remove('hidden');
+                        previewInitials.textContent = initials;
+                    }
+                }
             }
         }
 
@@ -298,6 +372,33 @@ function continueSetup() {
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetForm);
     if (closeModalBtn) closeModalBtn.addEventListener('click', resetForm);
     if (userForm) userForm.addEventListener('submit', handleFormSubmit);
+
+    // Setup profile photo preview listener
+    if (profilePhotoInput) {
+        profilePhotoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('A imagem é muito grande! Escolha um arquivo de no máximo 2MB.');
+                    profilePhotoInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const previewImg = document.getElementById('profile-preview-img');
+                    const previewInitials = document.getElementById('profile-preview-initials');
+                    if (previewImg) {
+                        previewImg.src = event.target.result;
+                        previewImg.classList.remove('hidden');
+                    }
+                    if (previewInitials) {
+                        previewInitials.classList.add('hidden');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {

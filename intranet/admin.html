@@ -257,6 +257,24 @@
                             <div class="space-y-5">
                                 <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Informações de Acesso</h3>
                                 <div class="space-y-4">
+                                    <!-- Profile Photo Upload -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Foto de Perfil</label>
+                                        <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/20 p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+                                            <div class="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg shadow-md overflow-hidden shrink-0">
+                                                <img id="profile-preview-img" class="hidden absolute inset-0 w-full h-full object-cover z-10">
+                                                <span id="profile-preview-initials" class="relative z-0">U</span>
+                                            </div>
+                                            <div class="flex flex-col gap-1.5">
+                                                <input type="file" id="profile-photo-input" accept="image/*" class="hidden">
+                                                <button type="button" onclick="document.getElementById('profile-photo-input').click()"
+                                                    class="px-4 py-2 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary-dark transition-all">
+                                                    Escolher Imagem
+                                                </button>
+                                                <p class="text-[9px] text-gray-550 dark:text-gray-400">Formatos: JPG, PNG. Máx 2MB.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div>
                                         <label for="name" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome Completo</label>
                                         <div class="relative group">
