@@ -29,6 +29,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="log.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -71,6 +73,7 @@
 
     <!-- Sidebar Container -->
     <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
     <!-- Main Content -->
     <main id="main-content"
@@ -78,32 +81,64 @@
         <div id="header-container" class="flex-shrink-0"></div>
 
         <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
-            <h1 class="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+            <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-3">
                 <i class="fas fa-chart-bar text-yellow-500"></i> Análise de Leads
             </h1>
+
+            <!-- Filter Bar -->
+            <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm mb-8 flex flex-col lg:flex-row lg:items-end gap-6">
+                <div class="flex-grow min-w-[160px]">
+                    <label for="unit-filter" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Unidade</label>
+                    <select id="unit-filter" class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                        <option value="">Todas as Unidades</option>
+                    </select>
+                </div>
+                <div class="flex-grow min-w-[160px]">
+                    <label for="origin-filter" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Origem</label>
+                    <select id="origin-filter" class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                        <option value="">Todas as Origens</option>
+                        <option value="miles">Chatbot Miles</option>
+                        <option value="site">Formulário / Site</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+                <div class="flex-grow lg:max-w-[160px] min-w-[130px]">
+                    <label for="start-date" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Data Inicial</label>
+                    <input type="date" id="start-date" class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                </div>
+                <div class="flex-grow lg:max-w-[160px] min-w-[130px]">
+                    <label for="end-date" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Data Final</label>
+                    <input type="date" id="end-date" class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                </div>
+                <div class="flex items-end h-full">
+                    <button id="clear-filters" class="w-full lg:w-auto bg-gray-200 dark:bg-gray-850 hover:bg-gray-300 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-205 font-bold py-2.5 px-6 rounded-xl transition-all text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-undo"></i> Limpar Filtros
+                    </button>
+                </div>
+            </div>
 
             <!-- Main Stats Grid -->
             <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <!-- Cards injected by JS -->
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 animate-pulse h-32"></div>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
             </div>
 
             <!-- Detail Analysis Sections -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Priority Breakdown -->
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-                    <h2 class="text-lg font-semibold mb-4 text-white">Por Prioridade</h2>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
+                    <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Por Prioridade</h2>
                     <div id="priority-stats" class="space-y-4">
                         <!-- Bars injected by JS -->
                     </div>
                 </div>
 
                 <!-- Pipeline Breakdown -->
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
-                    <h2 class="text-lg font-semibold mb-4 text-white">Funil de Vendas (Pipeline)</h2>
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
+                    <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Funil de Vendas (Pipeline)</h2>
                     <div id="pipeline-stats" class="space-y-4">
                         <!-- Bars injected by JS -->
                     </div>
@@ -124,27 +159,189 @@
         const priorityStats = document.getElementById('priority-stats');
         const pipelineStats = document.getElementById('pipeline-stats');
 
+        let rawProspects = [];
+        let rawLeads = [];
+        let allProspects = [];
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 await loadComponents();
                 setupUIListeners({});
 
-                // Fetch Prospects
-                // Correct data path based on prospeccao.html verification
+                // Setup Filter Listeners
+                document.getElementById('unit-filter').addEventListener('change', applyAnalysisFilters);
+                document.getElementById('origin-filter').addEventListener('change', applyAnalysisFilters);
+                document.getElementById('start-date').addEventListener('change', applyAnalysisFilters);
+                document.getElementById('end-date').addEventListener('change', applyAnalysisFilters);
+                document.getElementById('clear-filters').addEventListener('click', () => {
+                    document.getElementById('unit-filter').value = '';
+                    document.getElementById('origin-filter').value = '';
+                    document.getElementById('start-date').value = '';
+                    document.getElementById('end-date').value = '';
+                    applyAnalysisFilters();
+                });
+
+                // Fetch Prospects & Leads to synchronize with CRM board
                 const prospectsRef = collection(db, 'prospects');
+                const leadsRef = collection(db, 'leads');
 
                 onSnapshot(prospectsRef, (snapshot) => {
-                    const prospects = [];
+                    rawProspects = [];
                     snapshot.forEach((doc) => {
-                        prospects.push({ id: doc.id, ...doc.data() });
+                        rawProspects.push({ id: doc.id, ...doc.data(), type: 'prospect' });
                     });
-                    updateDashboard(prospects);
+                    rawProspects = rawProspects.filter(p => !p.pagina || p.pagina === 'Prospecção');
+                    combineData();
                 });
+
+                onSnapshot(leadsRef, (snapshot) => {
+                    rawLeads = [];
+                    snapshot.forEach((doc) => {
+                        rawLeads.push({ id: doc.id, ...doc.data(), type: 'lead' });
+                    });
+                    combineData();
+                });
+
+                function combineData() {
+                    const formattedLeads = rawLeads.map(lead => ({
+                        id: lead.id,
+                        responsavel: lead.nome || '',
+                        unidade: lead.unidade || '',
+                        setor: '',
+                        prioridade: 3, // Default priority for leads
+                        status: lead.status || 'Novo',
+                        ticketEstimado: 0,
+                        origemLead: lead['origem do lead'] || 'Site',
+                        telefone: lead.telefone || '',
+                        email: lead.email || '',
+                        createdAt: lead.createdAt || null,
+                        type: 'lead'
+                    }));
+
+                    allProspects = [...rawProspects, ...formattedLeads];
+                    populateUnitFilter(allProspects);
+                    applyAnalysisFilters();
+                }
 
             } else {
                 window.location.href = '../index.html';
             }
         });
+
+        function normalizeUnit(unitName) {
+            if (!unitName) return '';
+            let name = unitName.trim().toUpperCase();
+            
+            // Remove standard prefixes
+            name = name.replace(/^UNIDADE\s+/i, '');
+            name = name.replace(/^KIHAP\s*-\s*/i, '');
+            name = name.replace(/^KIHAP\s+/i, '');
+            
+            // Remove parentheses content
+            name = name.replace(/\s*\(.*\)\s*$/, '');
+            
+            // Normalize accent marks
+            name = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            return name.trim();
+        }
+
+        function populateUnitFilter(prospects) {
+            const select = document.getElementById('unit-filter');
+            const currentValue = select.value;
+
+            // Extract unique units and normalize them
+            const normalizedUnits = new Set();
+            prospects.forEach(p => {
+                if (p.unidade) {
+                    const norm = normalizeUnit(p.unidade);
+                    if (norm) normalizedUnits.add(norm);
+                }
+            });
+
+            // Standard units fallback
+            const standardUnits = [
+                'ASA SUL', 'SUDOESTE', 'LAGO SUL', 'NOROESTE', 'PONTOS DE ENSINO', 
+                'JARDIM BOTANICO', 'CENTRO', 'COQUEIROS', 'SANTA MONICA', 'DOURADOS', 'STORE'
+            ];
+            standardUnits.forEach(u => normalizedUnits.add(u));
+
+            const sortedUnits = Array.from(normalizedUnits).sort();
+
+            const unitDisplayNames = {
+                'ASA SUL': 'Unidade Asa Sul',
+                'SUDOESTE': 'Unidade Sudoeste',
+                'LAGO SUL': 'Unidade Lago Sul',
+                'NOROESTE': 'Unidade Noroeste',
+                'PONTOS DE ENSINO': 'Unidade Pontos de Ensino',
+                'JARDIM BOTANICO': 'Unidade Jardim Botânico',
+                'CENTRO': 'Unidade Centro',
+                'COQUEIROS': 'Unidade Coqueiros',
+                'SANTA MONICA': 'Unidade Santa Mônica',
+                'DOURADOS': 'Unidade Dourados',
+                'STORE': 'Unidade Store',
+                'BRASILIA': 'Brasília'
+            };
+
+            select.innerHTML = '<option value="">Todas as Unidades</option>';
+            sortedUnits.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = unitDisplayNames[u] || u.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+                if (u === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function applyAnalysisFilters() {
+            const unit = document.getElementById('unit-filter').value;
+            const origin = document.getElementById('origin-filter').value;
+            const startDateVal = document.getElementById('start-date').value;
+            const endDateVal = document.getElementById('end-date').value;
+
+            let filtered = allProspects;
+
+            // 1. Filter by unit using normalized matching
+            if (unit) {
+                filtered = filtered.filter(p => normalizeUnit(p.unidade) === unit);
+            }
+
+            // 2. Filter by lead source (origin)
+            if (origin) {
+                const siteOrigins = ['Site', 'Formulário', 'Academy', 'Curso Mente Faixa Preta', 'Site - Trabalhe Conosco'];
+                if (origin === 'miles') {
+                    filtered = filtered.filter(p => p.origemLead === 'Chatbot Miles');
+                } else if (origin === 'site') {
+                    filtered = filtered.filter(p => siteOrigins.includes(p.origemLead));
+                } else if (origin === 'outros') {
+                    filtered = filtered.filter(p => p.origemLead !== 'Chatbot Miles' && !siteOrigins.includes(p.origemLead));
+                }
+            }
+
+            // 3. Filter by start date
+            if (startDateVal) {
+                const startDate = new Date(startDateVal);
+                startDate.setHours(0, 0, 0, 0);
+                filtered = filtered.filter(p => {
+                    if (!p.createdAt) return false;
+                    const createdDate = p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
+                    return createdDate >= startDate;
+                });
+            }
+
+            // 3. Filter by end date
+            if (endDateVal) {
+                const endDate = new Date(endDateVal);
+                endDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(p => {
+                    if (!p.createdAt) return false;
+                    const createdDate = p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
+                    return createdDate <= endDate;
+                });
+            }
+
+            updateDashboard(filtered);
+        }
 
         function updateDashboard(prospects) {
             // Calculate Stats
@@ -172,16 +369,16 @@
 
         function createBigStatCard(label, value, icon, colorClass, bgClass) {
             return `
-                <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg hover:border-gray-700 transition-all">
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="p-3 rounded-lg ${bgClass}">
+                        <div class="p-3 rounded-2xl ${bgClass}">
                             <i class="fas ${icon} text-xl ${colorClass}"></i>
                         </div>
-                        <span class="text-xs font-medium text-gray-500 bg-gray-800 px-2 py-1 rounded">Hoje</span>
+                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg">Hoje</span>
                     </div>
                     <div>
-                        <h3 class="text-2xl font-bold text-white mb-1">${value}</h3>
-                        <p class="text-sm text-gray-400">${label}</p>
+                        <h3 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-1">${value}</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">${label}</p>
                     </div>
                 </div>
             `;
@@ -199,16 +396,22 @@
             container.innerHTML = Object.entries(counts).reverse().map(([priority, count]) => {
                 const percent = (count / total) * 100;
                 const labels = { 5: 'Máxima', 4: 'Alta', 3: 'Média', 2: 'Baixa', 1: 'Mínima' };
-                const colors = { 5: 'bg-red-500', 4: 'bg-orange-500', 3: 'bg-yellow-500', 2: 'bg-blue-500', 1: 'bg-gray-500' };
+                const colors = { 
+                    5: 'bg-gradient-to-r from-red-500 to-rose-600', 
+                    4: 'bg-gradient-to-r from-orange-400 to-amber-500', 
+                    3: 'bg-gradient-to-r from-yellow-400 to-yellow-500', 
+                    2: 'bg-gradient-to-r from-blue-400 to-cyan-500', 
+                    1: 'bg-gradient-to-r from-gray-400 to-slate-500' 
+                };
 
                 return `
                     <div>
                         <div class="flex justify-between text-sm mb-1">
-                            <span class="text-gray-300 font-medium">${labels[priority]} <span class="text-xs text-gray-500">(${priority})</span></span>
-                            <span class="text-gray-400">${count}</span>
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${labels[priority]} <span class="text-xs text-gray-400 dark:text-gray-500">(${priority})</span></span>
+                            <span class="text-gray-650 dark:text-gray-400 font-semibold">${count}</span>
                         </div>
-                        <div class="w-full bg-gray-800 rounded-full h-2">
-                            <div class="${colors[priority]} h-2 rounded-full" style="width: ${percent}%"></div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                            <div class="${colors[priority]} h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
                         </div>
                     </div>
                 `;
@@ -221,22 +424,28 @@
             const counts = { 'novo': 0, 'contactado': 0, 'aula_experimental': 0, 'matricula': 0 };
 
             prospects.forEach(p => {
-                // Convert column ID to key if necessary, but assuming p.status matches keys
                 if (counts[p.status] !== undefined) counts[p.status]++;
             });
 
             const total = prospects.length || 1;
+
+            const gradientMap = {
+                'novo': 'bg-gradient-to-r from-blue-500 to-cyan-500',
+                'contactado': 'bg-gradient-to-r from-yellow-500 to-orange-500',
+                'aula_experimental': 'bg-gradient-to-r from-orange-500 to-red-500',
+                'matricula': 'bg-gradient-to-r from-green-500 to-emerald-600'
+            };
 
             container.innerHTML = Object.entries(counts).map(([status, count]) => {
                 const percent = (count / total) * 100;
                 return `
                     <div>
                         <div class="flex justify-between text-sm mb-1">
-                            <span class="text-gray-300 font-medium">${statuses[status]}</span>
-                            <span class="text-gray-400">${count} (${Math.round(percent)}%)</span>
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${statuses[status]}</span>
+                            <span class="text-gray-650 dark:text-gray-400 font-semibold">${count} (${Math.round(percent)}%)</span>
                         </div>
-                        <div class="w-full bg-gray-800 rounded-full h-2">
-                            <div class="bg-indigo-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                            <div class="${gradientMap[status] || 'bg-indigo-500'} h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
                         </div>
                     </div>
                 `;
