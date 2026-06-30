@@ -1005,9 +1005,9 @@ async function renderFamilyTab() {
 
 async function handleLinkParent() {
     const parentSearchInput = document.getElementById('parent-search-input');
-    const email = parentSearchInput.value.trim().toLowerCase();
+    const typedEmail = parentSearchInput.value.trim();
 
-    if (!email) {
+    if (!typedEmail) {
         alert("Por favor, informe o e-mail do responsável.");
         return;
     }
@@ -1018,15 +1018,27 @@ async function handleLinkParent() {
     searchLinkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Vinculando...';
 
     try {
-        const parentQuery = query(collection(db, "users"), where("email", "==", email));
-        const parentSnapshot = await getDocs(parentQuery);
+        const queries = [
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail))),
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail.toLowerCase()))),
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail.toUpperCase())))
+        ];
+        
+        const snapshots = await Promise.all(queries);
+        let parentDoc = null;
+        
+        for (const snap of snapshots) {
+            if (!snap.empty) {
+                parentDoc = snap.docs[0];
+                break;
+            }
+        }
 
-        if (parentSnapshot.empty) {
+        if (!parentDoc) {
             alert("Responsável não encontrado com o e-mail informado. Certifique-se de que o responsável já criou uma conta no sistema.");
             return;
         }
 
-        const parentDoc = parentSnapshot.docs[0];
         const parentUid = parentDoc.id;
         const parentData = parentDoc.data();
 
