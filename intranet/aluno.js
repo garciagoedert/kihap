@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus } from './auth.js';
 import { showConfirm, showInviteLinkModal } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, auth } from './firebase-config.js'; // Import auth
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Cloud Functions
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -230,7 +230,7 @@ function renderDetailsTab() {
 
 function setupEventListeners() {
     // Tab switching
-    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial', 'family'];
     tabs.forEach(tabId => {
         const el = document.getElementById(`tab-${tabId}`);
         if (el) el.addEventListener('click', () => switchTab(tabId));
@@ -241,13 +241,14 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
+    document.getElementById('search-link-parent-btn').addEventListener('click', handleLinkParent);
     
     const deleteBtn = document.getElementById('delete-student-btn');
     if (deleteBtn) deleteBtn.addEventListener('click', handleDeleteStudent);
 }
 
 function switchTab(activeTabId) {
-    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial', 'family'];
     tabs.forEach(tabId => {
         const tabButton = document.getElementById(`tab-${tabId}`);
         const tabContent = document.getElementById(`tab-content-${tabId}`);
@@ -269,6 +270,8 @@ function switchTab(activeTabId) {
 
     if (activeTabId === 'financial') {
         renderFinancialTab();
+    } else if (activeTabId === 'family') {
+        renderFamilyTab();
     }
 }
 
@@ -935,3 +938,161 @@ async function findUserByEvoId(evoId) {
     }
     return null;
 }
+
+async function renderFamilyTab() {
+    const parentInfoEl = document.getElementById('family-parent-info');
+    const unlinkBtn = document.getElementById('unlink-parent-btn');
+    const parentSearchInput = document.getElementById('parent-search-input');
+    const searchLinkBtn = document.getElementById('search-link-parent-btn');
+
+    if (!parentInfoEl) return;
+
+    parentInfoEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Carregando...';
+    unlinkBtn.classList.add('hidden');
+
+    const studentUser = await findUserByEvoId(currentStudent.idMember);
+    if (!studentUser) {
+        parentInfoEl.innerHTML = `
+            <div class="text-amber-600 dark:text-amber-500 text-sm font-semibold flex items-center gap-2 mb-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Este aluno não possui uma conta de usuário ativa no sistema (Firestore).
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Por favor, convide o aluno primeiro usando o botão "Convidar Aluno" no menu lateral esquerdo.</p>
+        `;
+        parentSearchInput.disabled = true;
+        searchLinkBtn.disabled = true;
+        return;
+    }
+
+    parentSearchInput.disabled = false;
+    searchLinkBtn.disabled = false;
+
+    if (studentUser.parentUid) {
+        try {
+            const parentSnap = await getDocs(query(collection(db, "users"), where("__name__", "==", studentUser.parentUid)));
+            if (!parentSnap.empty) {
+                const parentData = parentSnap.docs[0].data();
+                parentInfoEl.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center text-primary font-bold">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">${parentData.name || 'Sem nome'}</div>
+                            <div class="text-xs text-gray-400 font-medium">${parentData.email || 'Sem e-mail'}</div>
+                        </div>
+                    </div>
+                `;
+                unlinkBtn.classList.remove('hidden');
+                unlinkBtn.onclick = () => handleUnlinkParent(studentUser.id, studentUser.parentUid);
+            } else {
+                parentInfoEl.innerHTML = `
+                    <div class="text-red-500 text-sm font-semibold">
+                        ID do Responsável (${studentUser.parentUid}) definido, mas perfil não encontrado no sistema.
+                    </div>
+                `;
+                unlinkBtn.classList.remove('hidden');
+                unlinkBtn.onclick = () => handleUnlinkParent(studentUser.id, studentUser.parentUid);
+            }
+        } catch (err) {
+            console.error("Erro ao buscar dados do responsável:", err);
+            parentInfoEl.innerHTML = `<span class="text-red-500">Erro ao carregar dados do responsável.</span>`;
+        }
+    } else {
+        parentInfoEl.innerHTML = '<span class="text-gray-500 italic">Nenhum responsável vinculado.</span>';
+    }
+}
+
+async function handleLinkParent() {
+    const parentSearchInput = document.getElementById('parent-search-input');
+    const email = parentSearchInput.value.trim().toLowerCase();
+
+    if (!email) {
+        alert("Por favor, informe o e-mail do responsável.");
+        return;
+    }
+
+    const searchLinkBtn = document.getElementById('search-link-parent-btn');
+    const originalText = searchLinkBtn.innerHTML;
+    searchLinkBtn.disabled = true;
+    searchLinkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Vinculando...';
+
+    try {
+        const parentQuery = query(collection(db, "users"), where("email", "==", email));
+        const parentSnapshot = await getDocs(parentQuery);
+
+        if (parentSnapshot.empty) {
+            alert("Responsável não encontrado com o e-mail informado. Certifique-se de que o responsável já criou uma conta no sistema.");
+            return;
+        }
+
+        const parentDoc = parentSnapshot.docs[0];
+        const parentUid = parentDoc.id;
+        const parentData = parentDoc.data();
+
+        const childUser = await findUserByEvoId(currentStudent.idMember);
+        if (!childUser) {
+            alert("Erro: Conta do aluno não encontrada.");
+            return;
+        }
+
+        if (childUser.id === parentUid) {
+            alert("Erro: Você não pode vincular um aluno a ele mesmo.");
+            return;
+        }
+
+        // 1. Atualizar o filho
+        const childRef = doc(db, "users", childUser.id);
+        await updateDoc(childRef, { parentUid: parentUid });
+
+        // 2. Atualizar o pai
+        const parentRef = doc(db, "users", parentUid);
+        await updateDoc(parentRef, {
+            linkedUids: arrayUnion(childUser.id)
+        });
+
+        alert(`Vínculo criado com sucesso! ${currentStudent.firstName} agora está vinculado ao responsável ${parentData.name}.`);
+        parentSearchInput.value = '';
+        renderFamilyTab();
+
+    } catch (err) {
+        console.error("Erro ao criar vínculo:", err);
+        alert("Erro ao criar vínculo: " + err.message);
+    } finally {
+        searchLinkBtn.disabled = false;
+        searchLinkBtn.innerHTML = originalText;
+    }
+}
+
+async function handleUnlinkParent(childUid, parentUid) {
+    showConfirm(
+        "Tem certeza que deseja remover o vínculo com este responsável? O responsável perderá o acesso a este perfil no aplicativo.",
+        async () => {
+            const unlinkBtn = document.getElementById('unlink-parent-btn');
+            unlinkBtn.disabled = true;
+            unlinkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Removendo...';
+
+            try {
+                // 1. Atualizar o filho
+                const childRef = doc(db, "users", childUid);
+                await updateDoc(childRef, { parentUid: null });
+
+                // 2. Atualizar o pai
+                const parentRef = doc(db, "users", parentUid);
+                await updateDoc(parentRef, {
+                    linkedUids: arrayRemove(childUid)
+                });
+
+                alert("Vínculo removido com sucesso.");
+                renderFamilyTab();
+            } catch (err) {
+                console.error("Erro ao remover vínculo:", err);
+                alert("Erro ao remover vínculo: " + err.message);
+            } finally {
+                unlinkBtn.disabled = false;
+                unlinkBtn.textContent = 'Remover Vínculo';
+            }
+        }
+    );
+}
+

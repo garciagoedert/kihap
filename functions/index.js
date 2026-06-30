@@ -16,6 +16,9 @@ const db = admin.firestore();
 
 exports.syncEvoToOlist = syncEvoToOlist;
 exports.syncEvoToOlistScheduled = syncEvoToOlistScheduled;
+const { getSwitchProfileToken } = require('./switch-profile.js');
+exports.getSwitchProfileToken = getSwitchProfileToken;
+
 const { getGoogleAdsData } = require('./google-ads.js');
 exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 

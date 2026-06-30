@@ -12,7 +12,8 @@ import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, Sh
 import { useRouter } from 'expo-router';
 
 export default function FeedScreen() {
-  const { user, userData, signOut } = useAuth();
+  const { user, userData, linkedProfiles, switchProfile, signOut } = useAuth();
+  const [isSwitching, setIsSwitching] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +111,20 @@ export default function FeedScreen() {
       if (unsubscribeFeed) unsubscribeFeed();
     };
   }, [user, userData]);
-
+  const handleSwitchProfile = async (uid: string) => {
+    setIsSwitching(true);
+    setSidebarOpen(false);
+    try {
+      await switchProfile(uid);
+    } catch (err) {
+      console.error(err);
+      // Wait, Alert.alert is safer in RN than native browser alert
+      // Let's import Alert from react-native or use standard alert fallback since Alert is not explicitly imported (wait, let's check react-native imports: View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions. Alert is not there. Let's use standard alert or add it to imports. Let's use alert() which is supported globally in RN, or add Alert to react-native imports.)
+      alert("Erro ao alternar perfil. Tente novamente.");
+    } finally {
+      setIsSwitching(false);
+    }
+  };
   const onRefresh = () => {
     setRefreshing(true);
     // Real-time listener will already have latest data, but we can restart flow if needed
@@ -206,6 +220,34 @@ export default function FeedScreen() {
                     <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
                   </View>
                 </View>
+                {linkedProfiles && linkedProfiles.length > 0 && (
+                  <View className="px-6 py-4 border-b border-gray-100 dark:border-white/5">
+                    <Text className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-3">Família / Alternar Perfil</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                      {linkedProfiles.map((profile) => {
+                        const profName = (profile.name || profile.nome || 'Dependente').split(' ')[0];
+                        let profPhoto = profile.photoURL || profile.profilePicture || profile.photoUrl || profile.avatar;
+                        if (profPhoto && profPhoto.startsWith('/')) {
+                          profPhoto = `https://kihap.com.br${profPhoto}`;
+                        }
+                        const profPhotoSource = profPhoto && !profPhoto.includes('default-profile.svg') ? { uri: profPhoto } : defaultProfileImg;
+                        
+                        return (
+                          <TouchableOpacity 
+                            key={profile.uid} 
+                            onPress={() => handleSwitchProfile(profile.uid)}
+                            className="items-center mr-4"
+                          >
+                            <Image source={profPhotoSource} className="w-10 h-10 rounded-full border border-gray-200 dark:border-white/10" />
+                            <Text className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mt-1" numberOfLines={1}>
+                              {profName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
 
               <ScrollView className="flex-1 p-4">
@@ -239,9 +281,14 @@ export default function FeedScreen() {
         </View>
       </Modal>
 
-      {loading && !refreshing && (
-        <View className="absolute inset-0 items-center justify-center bg-gray-50/50 dark:bg-[#050505]/50">
+      {(loading || isSwitching) && !refreshing && (
+        <View className="absolute inset-0 items-center justify-center bg-gray-50/80 dark:bg-[#050505]/80 z-[9999]">
           <ActivityIndicator size="large" color="#eab308" />
+          {isSwitching && (
+            <Text className="text-gray-500 dark:text-gray-450 font-bold mt-4 text-[10px] uppercase tracking-widest">
+              Alternando perfil...
+            </Text>
+          )}
         </View>
       )}
     </View>
