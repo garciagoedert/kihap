@@ -746,6 +746,30 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Origem do Lead</label>
+                    <select id="originFilter"
+                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
+                        <option value="">Todas</option>
+                        <option value="miles">Chatbot Miles</option>
+                        <option value="site">Formulário / Site</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Data Inicial</label>
+                        <input type="date" id="startDateFilter"
+                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Data Final</label>
+                        <input type="date" id="endDateFilter"
+                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                    </div>
+                </div>
+
                 <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-3">
                     <button id="resetFiltersBtn"
                         class="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold py-2.5 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
@@ -1123,16 +1147,13 @@
                 } else {
                     columnProspects
                         .sort((a, b) => {
-                            if (status === 'Novo') {
-                                const getTime = (p) => {
-                                    if (!p.createdAt) return 0;
-                                    if (typeof p.createdAt.toMillis === 'function') return p.createdAt.toMillis();
-                                    if (p.createdAt instanceof Date) return p.createdAt.getTime();
-                                    return new Date(p.createdAt).getTime();
-                                };
-                                return getTime(b) - getTime(a);
-                            }
-                            return b.prioridade - a.prioridade;
+                            const getTime = (p) => {
+                                if (!p.createdAt) return 0;
+                                if (typeof p.createdAt.toMillis === 'function') return p.createdAt.toMillis();
+                                if (p.createdAt instanceof Date) return p.createdAt.getTime();
+                                return new Date(p.createdAt).getTime();
+                            };
+                            return getTime(b) - getTime(a);
                         })
                         .forEach(prospect => {
                             contentArea.appendChild(createProspectCard(prospect, isMobile));
@@ -1273,8 +1294,10 @@
             const priority = document.getElementById('priorityFilter').value;
             const tag = document.getElementById('tagFilter').value;
             const unidade = document.getElementById('unidadeFilter').value;
+            const origin = document.getElementById('originFilter').value;
+            const startDateVal = document.getElementById('startDateFilter').value;
+            const endDateVal = document.getElementById('endDateFilter').value;
             const prospectingStatuses = Object.keys(COLUMNS);
-
 
             filteredProspects = combinedData.filter(p => {
                 const isProspecting = prospectingStatuses.includes(p.status);
@@ -1292,7 +1315,35 @@
                 }
 
                 const matchUnidade = !unidade || p.unidade === unidade;
-                return matchSearch && matchPriority && matchTag && matchUnidade;
+
+                // Match Lead Origin
+                let matchOrigin = true;
+                if (origin) {
+                    const siteOrigins = ['Site', 'Formulário', 'Academy', 'Curso Mente Faixa Preta', 'Site - Trabalhe Conosco'];
+                    if (origin === 'miles') {
+                        matchOrigin = p.origemLead === 'Chatbot Miles';
+                    } else if (origin === 'site') {
+                        matchOrigin = siteOrigins.includes(p.origemLead);
+                    } else if (origin === 'outros') {
+                        matchOrigin = p.origemLead !== 'Chatbot Miles' && !siteOrigins.includes(p.origemLead);
+                    }
+                }
+
+                // Match Date Range
+                let matchDate = true;
+                const createdDate = p.createdAt ? (p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt)) : null;
+                if (startDateVal) {
+                    const startDate = new Date(startDateVal);
+                    startDate.setHours(0, 0, 0, 0);
+                    if (!createdDate || createdDate < startDate) matchDate = false;
+                }
+                if (endDateVal) {
+                    const endDate = new Date(endDateVal);
+                    endDate.setHours(23, 59, 59, 999);
+                    if (!createdDate || createdDate > endDate) matchDate = false;
+                }
+
+                return matchSearch && matchPriority && matchTag && matchUnidade && matchOrigin && matchDate;
             });
             renderBoard();
         }
@@ -2477,7 +2528,7 @@
                     closeConfirmModal
                 });
 
-                // Override reset button to include unit filter
+                // Override reset button to include unit, origin and date range filters
                 const resetBtn = document.getElementById('resetFiltersBtn');
                 if (resetBtn) {
                     resetBtn.addEventListener('click', () => {
@@ -2485,6 +2536,9 @@
                         document.getElementById('priorityFilter').value = '';
                         document.getElementById('tagFilter').value = '';
                         document.getElementById('unidadeFilter').value = '';
+                        document.getElementById('originFilter').value = '';
+                        document.getElementById('startDateFilter').value = '';
+                        document.getElementById('endDateFilter').value = '';
                         applyFilters();
                     });
                 }
@@ -2526,10 +2580,14 @@
                 }
             }
 
-            // 4. Close Filters on Backdrop Click
-            if (target.id === 'filtersModal') {
-                target.classList.add('hidden');
-                target.classList.remove('flex');
+            // 4. Close Filters on Backdrop Click or Close Button Click
+            const closeFiltersBtn = target.closest('#closeFiltersModalBtn');
+            if (closeFiltersBtn || target.id === 'filtersModal') {
+                const modal = document.getElementById('filtersModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
             }
 
             // 5. Open Config Modal
