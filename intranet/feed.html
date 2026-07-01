@@ -134,6 +134,17 @@
                             </div>
                         </div>
 
+                        <!-- Schedule Settings -->
+                        <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button type="button" id="toggle-schedule" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
+                                <i class="fas fa-clock mr-2"></i> Agendar Publicação (Opcional)
+                            </button>
+                            <div id="schedule-fields" class="hidden mt-4 max-w-xs">
+                                <label for="publish-date" class="block text-xs text-gray-500 mb-1">Data e Hora de Publicação</label>
+                                <input type="datetime-local" id="publish-date" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2.5 text-sm text-gray-900 dark:text-white focus:border-primary outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
                             <div class="md:col-span-7">
                                 <label class="block text-gray-400 text-sm font-medium mb-3 text-left">Mídia em Destaque</label>
@@ -268,6 +279,13 @@
                 fields.classList.toggle('hidden');
                 this.querySelector('i').classList.toggle('fa-plus-circle');
                 this.querySelector('i').classList.toggle('fa-minus-circle');
+            });
+
+            // Toggle Schedule fields
+            document.getElementById('toggle-schedule').addEventListener('click', function() {
+                const fields = document.getElementById('schedule-fields');
+                fields.classList.toggle('hidden');
+                this.querySelector('i').classList.toggle('text-yellow-500');
             });
 
             document.getElementById('post-media').addEventListener('change', function() {

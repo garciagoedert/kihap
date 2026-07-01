@@ -276,17 +276,28 @@ export const initFeedPage = () => {
         const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
         feedList.innerHTML = '';
-
+        
         snap.forEach(docRef => {
             const post = docRef.data();
             
-            // Filtro de Visibilidade
-            if (!isAdmin && post.authorId !== user.uid) {
-                const isForMe = post.targetStudents?.includes(user.uid);
-                const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
-                const isPublic = !post.targetUnit && (!post.targetStudents || post.targetStudents.length === 0);
-                
-                if (!isForMe && !isForMyUnit && !isPublic) return;
+            // Check Scheduling
+            const now = new Date();
+            const postDate = post.createdAt ? new Date(post.createdAt.seconds * 1000) : now;
+            const isScheduled = postDate > now;
+
+            // Filtro de Visibilidade & Agendamento
+            if (isScheduled) {
+                // Se for agendado no futuro, apenas o admin e o autor do post podem ver
+                if (!isAdmin && post.authorId !== user.uid) return;
+            } else {
+                // Filtro padrão de posts normais já publicados
+                if (!isAdmin && post.authorId !== user.uid) {
+                    const isForMe = post.targetStudents?.includes(user.uid);
+                    const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
+                    const isPublic = !post.targetUnit && (!post.targetStudents || post.targetStudents.length === 0);
+                    
+                    if (!isForMe && !isForMyUnit && !isPublic) return;
+                }
             }
 
             const postElement = document.createElement('div');
@@ -326,7 +337,7 @@ export const initFeedPage = () => {
                 }
             }
 
-            const createdAt = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Agora';
+            const createdAt = post.createdAt ? postDate.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Agora';
 
             postElement.innerHTML = `
                 <div class="p-6">
@@ -342,8 +353,9 @@ export const initFeedPage = () => {
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
+                             ${isScheduled ? '<span class="text-[8px] bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 py-0.5 px-2 rounded-full border border-yellow-500/25 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fas fa-clock text-[9px]"></i> Agendado</span>' : ''}
                              ${post.targetStudents?.length > 0 ? '<span class="text-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0.5 px-2 rounded-full border border-blue-500/20 font-bold uppercase tracking-widest">Privado</span>' : ''}
-                             <span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200 dark:border-gray-700/50 font-bold uppercase tracking-widest">${post.targetUnit === 'all' ? 'Público' : (post.targetUnit || 'Unidade')}</span>
+                             <span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200/50 dark:border-gray-700/50 font-bold uppercase tracking-widest">${post.targetUnit === 'all' ? 'Público' : (post.targetUnit || 'Unidade')}</span>
                              ${(isAdmin || post.authorId === user.uid) ? `
                                  <button class="edit-btn p-2 text-gray-400 hover:text-blue-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-edit text-xs"></i></button>
                                  <button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>
@@ -415,6 +427,10 @@ export const initFeedPage = () => {
         const ctaText = document.getElementById('cta-text').value.trim();
         const ctaUrl = document.getElementById('cta-url').value.trim();
 
+        // Retrieve scheduling info
+        const publishDateVal = document.getElementById('publish-date').value;
+        const publishTimestamp = publishDateVal ? new Date(publishDateVal) : null;
+
         let targetUnits = [];
         if (targetType === 'unit') {
             if (allCheckbox && allCheckbox.checked) {
@@ -483,8 +499,8 @@ export const initFeedPage = () => {
                         mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
                         targetUnit: unit,
                         targetStudents: targetType === 'students' ? targetStudentsIds : [],
-                        createdAt: serverTimestamp(),
-                        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+                        createdAt: publishTimestamp || serverTimestamp(),
+                        expiresAt: new Date((publishTimestamp ? publishTimestamp.getTime() : Date.now()) + 24 * 60 * 60 * 1000)
                     };
                     if (batchId) storyData.batchId = batchId;
                     writePromises.push(addDoc(collection(db, 'stories'), storyData));
@@ -500,7 +516,7 @@ export const initFeedPage = () => {
                         ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
                         targetUnit: unit,
                         targetStudents: targetType === 'students' ? targetStudentsIds : [],
-                        createdAt: serverTimestamp()
+                        createdAt: publishTimestamp || serverTimestamp()
                     };
                     if (batchId) feedData.batchId = batchId;
                     writePromises.push(addDoc(collection(db, 'feed'), feedData));
@@ -510,6 +526,11 @@ export const initFeedPage = () => {
             await Promise.all(writePromises);
 
             postForm.reset();
+            // Reset schedule toggle fields in UI
+            document.getElementById('schedule-fields').classList.add('hidden');
+            const schedIcon = document.getElementById('toggle-schedule')?.querySelector('i');
+            if (schedIcon) schedIcon.className = 'fas fa-clock mr-2';
+
             // Reset checkboxes state
             if (allCheckbox) {
                 allCheckbox.checked = true;
