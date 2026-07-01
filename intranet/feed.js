@@ -431,6 +431,11 @@ export const initFeedPage = () => {
         const publishDateVal = document.getElementById('publish-date').value;
         const publishTimestamp = publishDateVal ? new Date(publishDateVal) : null;
 
+        if (publishTimestamp && publishTimestamp < new Date()) {
+            alert('A data de agendamento não pode ser no passado!');
+            return;
+        }
+
         let targetUnits = [];
         if (targetType === 'unit') {
             if (allCheckbox && allCheckbox.checked) {
