@@ -446,7 +446,10 @@ export const initFeedPage = () => {
             }
         }
 
-        if (!plainText && !document.getElementById('post-media').files[0] && content === '<p><br></p>') {
+        const mediaUrlVal = document.getElementById('media-url').value.trim();
+        const hasMedia = document.getElementById('post-media').files[0] || mediaUrlVal;
+
+        if (!plainText && !hasMedia && content === '<p><br></p>') {
             alert('Adicione algum conteúdo!');
             return;
         }
