@@ -6,6 +6,7 @@ import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, 
 document.addEventListener('DOMContentLoaded', () => {
     // Elementos da Grade
     const unitFilter = document.getElementById('unit-filter');
+    const copyPublicLinkBtn = document.getElementById('copy-public-link-btn');
     const dateRangeDisplay = document.getElementById('date-range-display');
     const scheduleGrid = document.getElementById('schedule-grid');
     const prevWeekBtn = document.getElementById('prev-week-btn');
@@ -101,6 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             viewWeekBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl text-gray-550 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
             viewDayBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-xl bg-primary text-black shadow-sm';
+        }
+    }
+
+    function updateCopyLinkButtonVisibility() {
+        if (!copyPublicLinkBtn) return;
+        if (selectedUnitId && selectedUnitId !== 'staff') {
+            copyPublicLinkBtn.classList.remove('hidden');
+        } else {
+            copyPublicLinkBtn.classList.add('hidden');
         }
     }
 
@@ -2085,11 +2095,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     unitFilter.addEventListener('change', (e) => {
         selectedUnitId = e.target.value;
+        updateCopyLinkButtonVisibility();
         renderGrid();
         if (activeTab === 'ranking') {
             renderRanking();
         }
     });
+
+    if (copyPublicLinkBtn) {
+        copyPublicLinkBtn.addEventListener('click', () => {
+            if (!selectedUnitId || selectedUnitId === 'staff') return;
+
+            const publicUrl = `https://kihap.com.br/grade?unidade=${selectedUnitId}`;
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                const icon = copyPublicLinkBtn.querySelector('i');
+                icon.className = 'fas fa-check text-emerald-500';
+                copyPublicLinkBtn.title = 'Link Copiado!';
+                
+                setTimeout(() => {
+                    icon.className = 'fas fa-link text-sm';
+                    copyPublicLinkBtn.title = 'Copiar Link da Grade Pública';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro ao copiar link:', err);
+                alert('Erro ao copiar o link. Por favor, copie manualmente: ' + publicUrl);
+            });
+        });
+    }
 
     prevWeekBtn.addEventListener('click', () => {
         if (currentViewMode === 'week') {
