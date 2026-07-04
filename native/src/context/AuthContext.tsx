@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User, signInWithCustomToken } from 'firebase/auth';
 import { auth, db, functions } from '../services/firebase';
-import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where, documentId } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 
 interface AuthContextType {
@@ -73,54 +73,84 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const unsubscribes: (() => void)[] = [];
+    const profilesMap = new Map<string, any>();
 
-    // Helper to watch parent and siblings
-    const watchParentAndSiblings = (parentUid: string) => {
-      // 1. Watch parent
-      const unsubParent = onSnapshot(doc(db, 'users', parentUid), (parentSnap) => {
-        if (parentSnap.exists()) {
-          const parentData = parentSnap.data();
-          setLinkedProfiles(prev => {
-            const others = prev.filter(p => p.uid !== parentUid);
-            return [{ uid: parentUid, isParent: true, ...parentData }, ...others];
+    const updateProfiles = () => {
+      profilesMap.delete(userData.uid);
+      setLinkedProfiles(Array.from(profilesMap.values()));
+    };
+
+    const handleQuerySnapshot = (snap: any, roleFlags: { isParent?: boolean; isChild?: boolean }) => {
+      snap.docChanges().forEach((change: any) => {
+        const docId = change.doc.id;
+        if (change.type === 'removed') {
+          profilesMap.delete(docId);
+        } else {
+          profilesMap.set(docId, {
+            uid: docId,
+            ...roleFlags,
+            ...change.doc.data()
           });
         }
       });
-      unsubscribes.push(unsubParent);
-
-      // 2. Watch siblings (all children of same parent, excluding current user)
-      const qSiblings = query(collection(db, 'users'), where('parentUid', '==', parentUid));
-      const unsubSiblings = onSnapshot(qSiblings, (snap) => {
-        const siblings: any[] = [];
-        snap.forEach(docSnap => {
-          if (docSnap.id !== userData.uid) {
-            siblings.push({ uid: docSnap.id, isChild: true, ...docSnap.data() });
-          }
-        });
-        setLinkedProfiles(prev => {
-          const parentOnly = prev.filter(p => p.uid === parentUid);
-          return [...parentOnly, ...siblings];
-        });
-      });
-      unsubscribes.push(unsubSiblings);
+      updateProfiles();
     };
 
-    // If current user is a child (has a parentUid)
+    // 1. Watch primary parent if defined
     if (userData.parentUid) {
-      watchParentAndSiblings(userData.parentUid);
-    } 
-    // If current user is a parent (or standard user)
-    else {
-      // Watch all children
-      const qChildren = query(collection(db, 'users'), where('parentUid', '==', userData.uid));
-      const unsubChildren = onSnapshot(qChildren, (snap) => {
-        const children: any[] = [];
-        snap.forEach(docSnap => {
-          children.push({ uid: docSnap.id, isChild: true, ...docSnap.data() });
-        });
-        setLinkedProfiles(children);
+      const unsubParent = onSnapshot(doc(db, 'users', userData.parentUid), (parentSnap) => {
+        if (parentSnap.exists()) {
+          profilesMap.set(userData.parentUid, {
+            uid: userData.parentUid,
+            isParent: true,
+            ...parentSnap.data()
+          });
+        } else {
+          profilesMap.delete(userData.parentUid);
+        }
+        updateProfiles();
+      }, (err) => {
+        console.error("Auth: Error watching parent document:", err);
       });
-      unsubscribes.push(unsubChildren);
+      unsubscribes.push(unsubParent);
+
+      // Watch siblings (all children of the same parent)
+      const qSiblings = query(collection(db, 'users'), where('parentUid', '==', userData.parentUid));
+      const unsubSiblings = onSnapshot(qSiblings, (snap) => {
+        handleQuerySnapshot(snap, { isChild: true });
+      }, (err) => {
+        console.error("Auth: Error watching siblings:", err);
+      });
+      unsubscribes.push(unsubSiblings);
+    }
+
+    // 2. Watch any parents who have this user in their linkedUids
+    const qParentsByLinked = query(collection(db, 'users'), where('linkedUids', 'array-contains', userData.uid));
+    const unsubParentsByLinked = onSnapshot(qParentsByLinked, (snap) => {
+      handleQuerySnapshot(snap, { isParent: true });
+    }, (err) => {
+      console.error("Auth: Error watching parents by linkedUids:", err);
+    });
+    unsubscribes.push(unsubParentsByLinked);
+
+    // 3. Watch children where parentUid == userData.uid
+    const qChildrenByParentUid = query(collection(db, 'users'), where('parentUid', '==', userData.uid));
+    const unsubChildrenByParentUid = onSnapshot(qChildrenByParentUid, (snap) => {
+      handleQuerySnapshot(snap, { isChild: true });
+    }, (err) => {
+      console.error("Auth: Error watching children by parentUid:", err);
+    });
+    unsubscribes.push(unsubChildrenByParentUid);
+
+    // 4. Watch children in userData.linkedUids
+    if (Array.isArray(userData.linkedUids) && userData.linkedUids.length > 0) {
+      const qChildrenByList = query(collection(db, 'users'), where(documentId(), 'in', userData.linkedUids));
+      const unsubChildrenByList = onSnapshot(qChildrenByList, (snap) => {
+        handleQuerySnapshot(snap, { isChild: true });
+      }, (err) => {
+        console.error("Auth: Error watching children by linkedUids list:", err);
+      });
+      unsubscribes.push(unsubChildrenByList);
     }
 
     return () => {

@@ -23,6 +23,13 @@ const getYoutubeEmbedUrl = (url: string): string | null => {
   return `https://www.youtube.com/embed/${videoId}?rel=0&origin=https://kihap.com.br&playsinline=1`;
 };
 
+const isContentEmpty = (content: string): boolean => {
+  if (!content) return true;
+  const stripped = content.replace(/<[^>]*>/g, '').trim();
+  const clean = stripped.replace(/&nbsp;/gi, '').trim();
+  return clean.length === 0;
+};
+
 interface FeedCardProps {
   post: {
     id: string;
@@ -231,39 +238,43 @@ export default function FeedCard({ post }: FeedCardProps) {
       </View>
 
       {/* Content */}
-      <View className="px-4 py-2">
-        {post.isHtml ? (
-          <RenderHtml
-            contentWidth={width - 64}
-            source={{ html: `<body>${cleanContent}</body>` }}
-            tagsStyles={tagsStyles as any}
-            ignoredStyles={['backgroundColor', 'background', 'fontFamily', 'color', 'margin', 'padding']}
-          />
-        ) : (
-          <Text className="text-gray-800 dark:text-gray-200 text-[14px]" style={{ lineHeight: 20 }}>
-            {post.content.trim()}
-          </Text>
-        )}
+      {(!isContentEmpty(cleanContent) || extractedUrl) && (
+        <View className="px-4 py-2">
+          {!isContentEmpty(cleanContent) && (
+            post.isHtml ? (
+              <RenderHtml
+                contentWidth={width - 64}
+                source={{ html: `<body>${cleanContent}</body>` }}
+                tagsStyles={tagsStyles as any}
+                ignoredStyles={['backgroundColor', 'background', 'fontFamily', 'color', 'margin', 'padding']}
+              />
+            ) : (
+              <Text className="text-gray-800 dark:text-gray-200 text-[14px]" style={{ lineHeight: 20 }}>
+                {post.content.trim()}
+              </Text>
+            )
+          )}
 
-        {/* WebView Manual para Iframes Extraídos */}
-        {extractedUrl && (
-          <View className="mt-4 rounded-xl overflow-hidden bg-black" style={{ width: '100%', height: Math.floor((width - 64) * 9 / 16) }}>
-            <WebView
-              source={{ 
-                uri: extractedUrl,
-                headers: {
-                  'Referer': 'https://kihap.com.br'
-                }
-              }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              allowsFullscreenVideo={true}
-              allowsInlineMediaPlayback={true}
-              style={{ flex: 1, backgroundColor: 'transparent' }}
-            />
-          </View>
-        )}
-      </View>
+          {/* WebView Manual para Iframes Extraídos */}
+          {extractedUrl && (
+            <View className="mt-4 rounded-xl overflow-hidden bg-black" style={{ width: '100%', height: Math.floor((width - 64) * 9 / 16) }}>
+              <WebView
+                source={{ 
+                  uri: extractedUrl,
+                  headers: {
+                    'Referer': 'https://kihap.com.br'
+                  }
+                }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                allowsFullscreenVideo={true}
+                allowsInlineMediaPlayback={true}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
+              />
+            </View>
+          )}
+        </View>
+      )}
 
         {/* Media */}
       {post.mediaUrl ? (

@@ -116,11 +116,9 @@ export default function FeedScreen() {
     setSidebarOpen(false);
     try {
       await switchProfile(uid);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      // Wait, Alert.alert is safer in RN than native browser alert
-      // Let's import Alert from react-native or use standard alert fallback since Alert is not explicitly imported (wait, let's check react-native imports: View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions. Alert is not there. Let's use standard alert or add it to imports. Let's use alert() which is supported globally in RN, or add Alert to react-native imports.)
-      alert("Erro ao alternar perfil. Tente novamente.");
+      alert("Erro ao alternar perfil: " + (err.message || err));
     } finally {
       setIsSwitching(false);
     }
