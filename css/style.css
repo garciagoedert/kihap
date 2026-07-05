@@ -449,7 +449,7 @@ body {
         background-size: cover;
         background-position: center;
         height: auto;
-        aspect-ratio: 4267 / 1600;
+        aspect-ratio: auto;
         background-color: transparent;
     }
 }
@@ -519,7 +519,8 @@ body {
 }
 
 .hero-adolescentes {
-    background-image: url('../imgs/adolescentes.png');
+    background-image: url('../imgs/cards/adolescentes.png');
+    background-position: center 20%;
 }
 
 .hero-adultos {
@@ -527,7 +528,8 @@ body {
 }
 
 .hero-baby-littles {
-    background-image: url('../imgs/littlesheader.png');
+    background-image: url('../imgs/cards/babylittles.png');
+    background-position: center 20%;
 }
 
 .hero-familia {
@@ -535,11 +537,13 @@ body {
 }
 
 .hero-kids {
-    background-image: url('../imgs/kids.png');
+    background-image: url('../imgs/cards/kids.png');
+    background-position: center 20%;
 }
 
 .hero-littles {
-    background-image: url('../imgs/littlesheader.png');
+    background-image: url('../imgs/cards/littles.png');
+    background-position: center 20%;
 }
 
 .hero-brasilia {
@@ -709,4 +713,13 @@ body.no-scroll {
     visibility: visible;
     z-index: 10;
     position: relative;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
 }
