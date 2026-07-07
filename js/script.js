@@ -160,15 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('.unit-card').forEach(card => {
         const bgImage = card.getAttribute('data-bg-image');
         if (bgImage) {
-            const style = document.createElement('style');
-            const uniqueId = `unit-card-${Math.random().toString(36).substr(2, 9)}`;
-            card.classList.add(uniqueId);
-            style.innerHTML = `
-                .${uniqueId}::before {
-                    background-image: url('${bgImage}');
-                }
-            `;
-            document.head.appendChild(style);
+            card.style.setProperty('--bg-image', `url('${bgImage}')`);
         }
     });
 
