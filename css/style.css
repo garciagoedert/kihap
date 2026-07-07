@@ -524,7 +524,8 @@ body {
 }
 
 .hero-adultos {
-    background-image: url('../imgs/adultos.png');
+    background-image: url('../imgs/cards/adultos.png');
+    background-position: center 20%;
 }
 
 .hero-baby-littles {
@@ -533,7 +534,8 @@ body {
 }
 
 .hero-familia {
-    background-image: url('../imgs/familia.png');
+    background-image: url('../imgs/cards/familias.png');
+    background-position: center 20%;
 }
 
 .hero-kids {
