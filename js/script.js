@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
         'jardim-america': {
             name: 'Jardim América',
             city: 'Dourados - MS',
-            address: 'Rua Toshinobu Katayama, 1515 - Jardim América, Dourados - MS, 79803-020',
+            address: 'R. João Rosa Góes, 710 - Sl 02 - Jardim America, Dourados - MS, 79825-070',
             whatsapp: 'https://wa.me/556799597001',
             image: 'unidades/dourados.jpg',
             query: 'Kihap Dourados'
