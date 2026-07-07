@@ -67,6 +67,34 @@ async function populateUnitsDropdown() {
             </optgroup>
         `;
     }
+
+    // Lógica para pré-seleção baseada na cidade via parâmetro da URL (GEO)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetCity = urlParams.get('cidade') || urlParams.get('utm_cidade');
+    
+    if (targetCity) {
+        const cityLower = targetCity.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const options = unidadeSelect.options;
+        
+        for (let i = 0; i < options.length; i++) {
+            const optVal = options[i].value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            // Brasília check
+            if (cityLower === 'brasilia' && (optVal.includes('asa sul') || optVal.includes('lago sul') || optVal.includes('sudoeste') || optVal.includes('noroeste') || optVal.includes('jardim botanico') || optVal.includes('pontos de ensino'))) {
+                unidadeSelect.selectedIndex = i;
+                break;
+            }
+            // Florianópolis check
+            else if (cityLower === 'florianopolis' && (optVal.includes('centro') || optVal.includes('coqueiros') || optVal.includes('santa monica'))) {
+                unidadeSelect.selectedIndex = i;
+                break;
+            }
+            // Dourados check
+            else if (cityLower === 'dourados' && optVal.includes('dourados')) {
+                unidadeSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
 }
 
 // --- Lógica do Formulário ---
@@ -96,6 +124,30 @@ if (leadForm) {
         try {
             const leadsCollectionRef = collection(db, 'leads');
             await addDoc(leadsCollectionRef, data);
+
+            // --- Google Tag Manager dataLayer event ---
+            window.dataLayer = window.dataLayer || [];
+            const getCityFromUnit = (unit) => {
+                const name = unit.toLowerCase();
+                if (name.includes('dourados')) return 'Dourados';
+                if (name.includes('centro') || name.includes('coqueiros') || name.includes('santa monica')) return 'Florianópolis';
+                return 'Brasília';
+            };
+
+            window.dataLayer.push({
+                'event': 'lead_form_submitted',
+                'form_name': 'Agendamento Aula Experimental',
+                'lead_unidade': data.unidade,
+                'lead_cidade': getCityFromUnit(data.unidade)
+            });
+
+            // --- Meta Pixel lead event ---
+            if (typeof fbq === 'function') {
+                fbq('track', 'Lead', {
+                    content_category: 'Aula Experimental',
+                    content_name: data.unidade
+                });
+            }
 
             formStatus.textContent = 'Inscrição enviada com sucesso! Redirecionando para o WhatsApp...';
             formStatus.className = 'text-green-800 text-center mt-4';
