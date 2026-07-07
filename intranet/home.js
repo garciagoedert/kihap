@@ -1,13 +1,7 @@
-import { functions } from './firebase-config.js';
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { db } from './firebase-config.js';
 import { loadComponents } from './common-ui.js';
 import { onAuthReady } from './auth.js';
-import { db } from './firebase-config.js';
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// Callables
-const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
-const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
+import { collection, getDocs, query, orderBy, where, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Quote Library
 const quotes = [
@@ -97,8 +91,17 @@ async function loadStats() {
     const contractsEl = document.getElementById('total-contracts');
     if (contractsEl) {
         try {
-            const result = await getActiveContractsCount({ unitId: 'geral' }); // Default to 'geral' for total overview
-            const total = result.data.totalGeral || 0;
+            const q = query(
+                collectionGroup(db, 'subscriptions')
+            );
+            const querySnapshot = await getDocs(q);
+            let total = 0;
+            querySnapshot.forEach(docSnap => {
+                const subData = docSnap.data();
+                if (['active', 'authorized'].includes(subData.status)) {
+                    total++;
+                }
+            });
             contractsEl.textContent = total.toLocaleString('pt-BR');
             contractsEl.classList.remove('animate-pulse');
         } catch (error) {
@@ -111,8 +114,33 @@ async function loadStats() {
     const checkinsEl = document.getElementById('daily-checkins');
     if (checkinsEl) {
         try {
-            const result = await getTodaysTotalEntries({ unitId: 'geral' });
-            const total = result.data.totalEntries || 0;
+            const localDate = new Date();
+            const year = localDate.getFullYear();
+            const month = String(localDate.getMonth() + 1).padStart(2, '0');
+            const day = String(localDate.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            const instancesRef = collection(db, 'classInstances');
+            const q = query(instancesRef, where('date', '==', todayStr));
+
+            const querySnapshot = await getDocs(q);
+            const uniqueStudents = new Set();
+
+            querySnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const present = data.presentStudents || [];
+                present.forEach(id => uniqueStudents.add(String(id)));
+
+                const trials = data.trialStudents || [];
+                trials.forEach(trial => {
+                    if (trial.compareceu === true) {
+                        const trialId = trial.email || trial.phone || trial.name || Math.random().toString();
+                        uniqueStudents.add(`trial-${trialId}`);
+                    }
+                });
+            });
+
+            const total = uniqueStudents.size;
             checkinsEl.textContent = total.toLocaleString('pt-BR');
             checkinsEl.classList.remove('animate-pulse');
         } catch (error) {

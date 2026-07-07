@@ -337,8 +337,7 @@ async function displayEvoKpi() {
     try {
         // Consultar assinaturas no Firestore (collectionGroup)
         const q = query(
-            collectionGroup(db, 'subscriptions'),
-            where('status', 'in', ['active', 'authorized'])
+            collectionGroup(db, 'subscriptions')
         );
         const querySnapshot = await getDocs(q);
 
@@ -355,14 +354,22 @@ async function displayEvoKpi() {
             const userIdsInUnit = new Set(usersSnap.docs.map(doc => doc.id));
 
             querySnapshot.forEach(docSnap => {
-                const userId = docSnap.ref.parent.parent.id;
-                if (userIdsInUnit.has(userId)) {
-                    value++;
+                const subData = docSnap.data();
+                if (['active', 'authorized'].includes(subData.status)) {
+                    const userId = docSnap.ref.parent.parent.id;
+                    if (userIdsInUnit.has(userId)) {
+                        value++;
+                    }
                 }
             });
         } else {
             label = "Total de Contratos Ativos (Sistema)";
-            value = querySnapshot.size;
+            querySnapshot.forEach(docSnap => {
+                const subData = docSnap.data();
+                if (['active', 'authorized'].includes(subData.status)) {
+                    value++;
+                }
+            });
         }
 
         const finalHtml = `
@@ -438,7 +445,7 @@ async function displayDailyEntriesKpi() {
         <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🏃</div>
             <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje (Grade)</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
@@ -481,9 +488,9 @@ async function displayDailyEntriesKpi() {
         let label;
         if (selectedUnit && selectedUnit !== 'geral') {
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Alunos Ativos Hoje - ${displayName} (Grade)`;
+            label = `Alunos Ativos Hoje - ${displayName}`;
         } else {
-            label = "Total Alunos Ativos Hoje (Grade)";
+            label = "Total Alunos Ativos (Hoje)";
         }
 
         const finalHtml = `
@@ -505,7 +512,7 @@ async function displayDailyEntriesKpi() {
             <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje (Grade)</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje</p>
                     <p class="text-xl font-bold text-red-500">Erro</p>
                 </div>
             </div>
