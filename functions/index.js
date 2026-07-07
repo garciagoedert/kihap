@@ -701,7 +701,11 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             // Para assinaturas, usamos mpWebhook para receber os eventos de status da assinatura (preapproval)
             const notificationUrl = getNotificationUrl('mpWebhook', subscriptionProduct.mpAccountId);
             console.log(`[createCartCheckoutSession] Roteando para createMercadoPagoPreference com Preapproval. Notification URL: ${notificationUrl}`);
-            mpPreference = await createMercadoPagoPreference(subscriptionProduct, subscriptionItem.formDataList, totalAmount, saleDocIds, notificationUrl);
+            // Mescla globalUserData no primeiro item do formDataList para que payer_email esteja disponível
+            const subscriptionFormDataList = subscriptionItem.formDataList.map((fd, idx) =>
+                idx === 0 ? { ...globalUserData, ...fd } : fd
+            );
+            mpPreference = await createMercadoPagoPreference(subscriptionProduct, subscriptionFormDataList, totalAmount, saleDocIds, notificationUrl);
         } else {
             console.log('[createCartCheckoutSession] Nenhum produto de assinatura. Criando preferência de carrinho normal.');
             const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
