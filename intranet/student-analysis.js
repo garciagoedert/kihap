@@ -1,14 +1,11 @@
 import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, where, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
 
-const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
-const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
 const triggerSnapshot = httpsCallable(functions, 'triggerSnapshot');
 const deleteEvoSnapshot = httpsCallable(functions, 'deleteEvoSnapshot');
-const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
 
 let snapshots = [];
 let isAdmin = false;
@@ -88,10 +85,15 @@ async function populateFilters() {
     const locationFilter = document.getElementById('location-filter');
     
     try {
-        const result = await getEvoUnits();
-        const evoUnits = result.data.sort();
+        const querySnapshot = await getDocs(collection(db, 'units'));
+        const units = [];
+        querySnapshot.forEach(docSnap => {
+            units.push(docSnap.id);
+        });
         
-        evoUnits.forEach(unitId => {
+        units.sort();
+        
+        units.forEach(unitId => {
             const option = document.createElement('option');
             option.value = unitId;
             const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -100,7 +102,7 @@ async function populateFilters() {
         });
 
     } catch (error) {
-        console.error("Erro ao buscar unidades do EVO:", error);
+        console.error("Erro ao buscar unidades do Firestore:", error);
     }
 }
 
@@ -326,28 +328,43 @@ async function displayEvoKpi() {
         <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (EVO)</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (Sistema)</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     try {
-        const result = await getActiveContractsCount({ unitId: selectedUnit });
-        const counts = result.data;
-        
+        // Consultar assinaturas no Firestore (collectionGroup)
+        const q = query(
+            collectionGroup(db, 'subscriptions'),
+            where('status', 'in', ['active', 'authorized'])
+        );
+        const querySnapshot = await getDocs(q);
+
         let label;
-        let value;
+        let value = 0;
 
         if (selectedUnit && selectedUnit !== 'geral') {
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Contratos Ativos (${displayName})`;
-            value = counts[selectedUnit] !== undefined ? counts[selectedUnit] : 0;
+            label = `Contratos Ativos - ${displayName} (Sistema)`;
+
+            // Filtrar apenas usuários desta unidade
+            const usersQuery = query(collection(db, 'users'), where('unitId', '==', selectedUnit));
+            const usersSnap = await getDocs(usersQuery);
+            const userIdsInUnit = new Set(usersSnap.docs.map(doc => doc.id));
+
+            querySnapshot.forEach(docSnap => {
+                const userId = docSnap.ref.parent.parent.id;
+                if (userIdsInUnit.has(userId)) {
+                    value++;
+                }
+            });
         } else {
-            label = "Total de Contratos Ativos (EVO)";
-            value = counts.totalGeral !== undefined ? counts.totalGeral : 0;
+            label = "Total de Contratos Ativos (Sistema)";
+            value = querySnapshot.size;
         }
-        
+
         const finalHtml = `
             <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">📝</div>
@@ -357,17 +374,17 @@ async function displayEvoKpi() {
                 </div>
             </div>
         `;
-        
+
         const placeholderCard = document.getElementById('evo-kpi-card');
         if (placeholderCard) placeholderCard.outerHTML = finalHtml;
 
     } catch (error) {
-        console.error("Erro ao carregar KPIs da EVO:", error);
+        console.error("Erro ao carregar KPIs de assinaturas do Firestore:", error);
         const errorHtml = `
             <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (EVO)</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (Sistema)</p>
                     <p class="text-xl font-bold text-red-500">Erro</p>
                 </div>
             </div>
@@ -421,22 +438,52 @@ async function displayDailyEntriesKpi() {
         <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🏃</div>
             <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Alunos Ativos (Hoje)</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje (Grade)</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     try {
-        const result = await getTodaysTotalEntries({ unitId: selectedUnit });
-        const totalAtivosHoje = result.data.totalEntries;
-        
+        const localDate = new Date();
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const instancesRef = collection(db, 'classInstances');
+        let q;
+        if (selectedUnit && selectedUnit !== 'geral') {
+            q = query(instancesRef, where('date', '==', todayStr), where('unitId', '==', selectedUnit));
+        } else {
+            q = query(instancesRef, where('date', '==', todayStr));
+        }
+
+        const querySnapshot = await getDocs(q);
+        const uniqueStudents = new Set();
+
+        querySnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const present = data.presentStudents || [];
+            present.forEach(id => uniqueStudents.add(String(id)));
+
+            const trials = data.trialStudents || [];
+            trials.forEach(trial => {
+                if (trial.compareceu === true) {
+                    const trialId = trial.email || trial.phone || trial.name || Math.random().toString();
+                    uniqueStudents.add(`trial-${trialId}`);
+                }
+            });
+        });
+
+        const totalAtivosHoje = uniqueStudents.size;
+
         let label;
         if (selectedUnit && selectedUnit !== 'geral') {
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Alunos Ativos Hoje (${displayName})`;
+            label = `Alunos Ativos Hoje - ${displayName} (Grade)`;
         } else {
-            label = "Total Alunos Ativos (Hoje)";
+            label = "Total Alunos Ativos Hoje (Grade)";
         }
 
         const finalHtml = `
@@ -448,7 +495,7 @@ async function displayDailyEntriesKpi() {
                 </div>
             </div>
         `;
-        
+
         const placeholderCard = document.getElementById('daily-entries-kpi-card');
         if (placeholderCard) placeholderCard.outerHTML = finalHtml;
 
@@ -458,7 +505,7 @@ async function displayDailyEntriesKpi() {
             <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Alunos Ativos (Hoje)</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje (Grade)</p>
                     <p class="text-xl font-bold text-red-500">Erro</p>
                 </div>
             </div>
