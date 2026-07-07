@@ -92,13 +92,13 @@ async function loadStats() {
     if (contractsEl) {
         try {
             const q = query(
-                collectionGroup(db, 'subscriptions')
+                collection(db, 'evo_students')
             );
             const querySnapshot = await getDocs(q);
             let total = 0;
             querySnapshot.forEach(docSnap => {
-                const subData = docSnap.data();
-                if (['active', 'authorized'].includes(subData.status)) {
+                const student = docSnap.data();
+                if (['active', 'authorized'].includes(student.tuitionStatus)) {
                     total++;
                 }
             });

@@ -335,9 +335,9 @@ async function displayEvoKpi() {
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     try {
-        // Consultar assinaturas no Firestore (collectionGroup)
+        // Consultar alunos na coleção evo_students no Firestore
         const q = query(
-            collectionGroup(db, 'subscriptions')
+            collection(db, 'evo_students')
         );
         const querySnapshot = await getDocs(q);
 
@@ -348,25 +348,17 @@ async function displayEvoKpi() {
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             label = `Contratos Ativos - ${displayName} (Sistema)`;
 
-            // Filtrar apenas usuários desta unidade
-            const usersQuery = query(collection(db, 'users'), where('unitId', '==', selectedUnit));
-            const usersSnap = await getDocs(usersQuery);
-            const userIdsInUnit = new Set(usersSnap.docs.map(doc => doc.id));
-
             querySnapshot.forEach(docSnap => {
-                const subData = docSnap.data();
-                if (['active', 'authorized'].includes(subData.status)) {
-                    const userId = docSnap.ref.parent.parent.id;
-                    if (userIdsInUnit.has(userId)) {
-                        value++;
-                    }
+                const student = docSnap.data();
+                if (['active', 'authorized'].includes(student.tuitionStatus) && student.unitId === selectedUnit) {
+                    value++;
                 }
             });
         } else {
             label = "Total de Contratos Ativos (Sistema)";
             querySnapshot.forEach(docSnap => {
-                const subData = docSnap.data();
-                if (['active', 'authorized'].includes(subData.status)) {
+                const student = docSnap.data();
+                if (['active', 'authorized'].includes(student.tuitionStatus)) {
                     value++;
                 }
             });
