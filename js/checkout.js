@@ -86,12 +86,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (form.userSize) itemDetails += `Tamanho: ${form.userSize} `;
             });
 
+            let priceText = formatCurrency(item.totalAmount);
+            if (item.isSubscription) {
+                const periodMap = { 'months': 'Mês', 'years': 'Ano', 'days': 'Dia' };
+                const periodName = periodMap[item.subscriptionPeriod] || 'Mês';
+                const freq = item.subscriptionFrequency || 1;
+                if (freq > 1) {
+                    priceText += ` / ${freq} ${periodName}s`;
+                } else {
+                    priceText += ` / ${periodName}`;
+                }
+            }
+
             el.innerHTML = `
                 <div>
                     <p class="font-bold text-white">${item.productName}</p>
                     <p class="text-xs text-gray-400">Qtd: ${item.formDataList.length} ${itemDetails ? `| ${itemDetails}` : ''}</p>
                 </div>
-                <span class="font-semibold text-gray-300">${formatCurrency(item.totalAmount)}</span>
+                <span class="font-semibold text-gray-300">${priceText}</span>
             `;
             summaryItemsContainer.appendChild(el);
         });

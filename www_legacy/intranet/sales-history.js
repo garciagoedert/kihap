@@ -381,7 +381,10 @@ const openSaleDetailsModal = async (saleIds) => {
     if (sale.paymentStatus === 'pending' && sale.mercadoPagoPreferenceId) {
         recoverCartBtnModal.classList.remove('hidden');
         recoverCartBtnModal.onclick = () => {
-            const link = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+            const isSub = sale.isSubscription || false;
+            const link = isSub
+                ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
+                : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
             navigator.clipboard.writeText(link).then(() => alert('Link copiado!'));
         };
     } else {
@@ -710,10 +713,13 @@ const renderStatusTag = (status) => {
     let statusText = 'Pendente';
     let colorClasses = 'bg-yellow-500/20 text-yellow-400';
     
-    if (status === 'paid') {
+    if (status === 'paid' || status === 'approved') {
         statusText = 'Pago';
         colorClasses = 'bg-green-500/20 text-green-400';
-    } else if (status === 'canceled') {
+    } else if (status === 'active' || status === 'authorized') {
+        statusText = 'Ativa';
+        colorClasses = 'bg-green-500/20 text-green-400';
+    } else if (status === 'canceled' || status === 'cancelled') {
         statusText = 'Cancelado';
         colorClasses = 'bg-red-500/20 text-red-400';
     } else if (status === 'pending') {

@@ -526,12 +526,18 @@ export async function setupStorePage() {
     const renderStatusTag = (status) => {
         if (!status) return 'N/A';
 
-        const statusText = status === 'paid' ? 'Pago' : (status === 'canceled' ? 'Cancelado' : 'Pendente');
-        const colorClasses = status === 'paid'
-            ? 'bg-green-500/20 text-green-400'
-            : (status === 'canceled' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400');
+        const statusMap = {
+            'paid': { text: 'Pago', class: 'bg-green-500/20 text-green-400' },
+            'approved': { text: 'Pago', class: 'bg-green-500/20 text-green-400' },
+            'active': { text: 'Ativa', class: 'bg-green-500/20 text-green-400' },
+            'authorized': { text: 'Ativa', class: 'bg-green-500/20 text-green-400' },
+            'cancelled': { text: 'Cancelado', class: 'bg-red-500/20 text-red-400' },
+            'canceled': { text: 'Cancelado', class: 'bg-red-500/20 text-red-400' },
+            'pending': { text: 'Pendente', class: 'bg-yellow-500/20 text-yellow-400' }
+        };
+        const config = statusMap[status] || { text: 'Pendente', class: 'bg-yellow-500/20 text-yellow-400' };
 
-        return `<span class="px-2 py-1 rounded-full text-xs font-medium ${colorClasses}">${statusText}</span>`;
+        return `<span class="px-2 py-1 rounded-full text-xs font-medium ${config.class}">${config.text}</span>`;
     };
 
     // --- Sales Log Logic ---
@@ -1935,7 +1941,10 @@ export async function setupStorePage() {
                     alert('Não foi possível encontrar o ID do Mercado Pago (Preferência) salvo para esta venda.\n\nVendas criadas antes desta atualização podem não possuir este dado salvo.');
                     return;
                 }
-                const link = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                const isSub = sale.isSubscription || false;
+                const link = isSub
+                    ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
+                    : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
                 
                 navigator.clipboard.writeText(link).then(() => {
                     alert('Link de pagamento copiado para a área de transferência com sucesso!\n\nVocê já pode colar (Ctrl+V) no WhatsApp para o cliente.\n\nLink: ' + link);

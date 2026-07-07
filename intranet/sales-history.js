@@ -389,7 +389,10 @@ const openSaleDetailsModal = async (saleIds) => {
     if (sale.paymentStatus === 'pending' && sale.mercadoPagoPreferenceId) {
         recoverCartBtnModal.classList.remove('hidden');
         recoverCartBtnModal.onclick = () => {
-            const link = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+            const isSub = sale.isSubscription || false;
+            const link = isSub
+                ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
+                : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
             navigator.clipboard.writeText(link).then(() => alert('Link copiado!'));
         };
     } else {
@@ -732,10 +735,13 @@ const renderStatusTag = (status) => {
     let statusText = 'Pendente';
     let colorClasses = 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-100 dark:border-yellow-500/20';
     
-    if (status === 'paid') {
+    if (status === 'paid' || status === 'approved') {
         statusText = 'Pago';
         colorClasses = 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-500 border border-green-100 dark:border-green-500/20';
-    } else if (status === 'canceled') {
+    } else if (status === 'active' || status === 'authorized') {
+        statusText = 'Ativa';
+        colorClasses = 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-500 border border-green-100 dark:border-green-500/20';
+    } else if (status === 'canceled' || status === 'cancelled') {
         statusText = 'Cancelado';
         colorClasses = 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-500/20';
     } else if (status === 'pending') {

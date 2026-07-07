@@ -60,6 +60,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             });
 
+            let priceText = formatCurrency(item.totalAmount);
+            if (item.isSubscription) {
+                const periodMap = { 'months': 'Mês', 'years': 'Ano', 'days': 'Dia' };
+                const periodName = periodMap[item.subscriptionPeriod] || 'Mês';
+                const freq = item.subscriptionFrequency || 1;
+                if (freq > 1) {
+                    priceText += ` / ${freq} ${periodName}s`;
+                } else {
+                    priceText += ` / ${periodName}`;
+                }
+            }
+
             itemElement.innerHTML = `
                 <img src="${item.imageUrl || 'imgs/placeholder.jpg'}" alt="${item.productName}" class="w-24 h-24 object-cover rounded-md flex-shrink-0">
                 <div class="flex-grow">
@@ -67,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${detailsHtml}
                 </div>
                 <div class="flex flex-col items-end justify-between self-stretch sm:self-auto min-w-[120px]">
-                    <span class="text-xl font-black text-yellow-500">${formatCurrency(item.totalAmount)}</span>
+                    <span class="text-xl font-black text-yellow-500">${priceText}</span>
                     <button class="remove-item-btn text-red-500 hover:text-red-400 text-sm mt-4 sm:mt-0 flex items-center" data-cart-id="${item.cartId}">
                         <i class="fas fa-trash-alt mr-1"></i> Remover
                     </button>

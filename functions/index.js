@@ -627,6 +627,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
 
         const saleDocIds = [];
         let mpAccountId = 'default';
+        let subscriptionProduct = null;
+        let subscriptionItem = null;
         
         for (const cartItem of cartItems) {
             const productRef = db.collection('products').doc(cartItem.productId);
@@ -637,6 +639,11 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             // Pega o mpAccountId do primeiro produto que tiver um conta customizada
             if (mpAccountId === 'default' && productData.mpAccountId && productData.mpAccountId !== 'default') {
                 mpAccountId = productData.mpAccountId;
+            }
+
+            if (productData.isSubscription) {
+                subscriptionProduct = { id: productDoc.id, ...productData };
+                subscriptionItem = cartItem;
             }
             
             for (const itemFormData of cartItem.formDataList) {
@@ -650,7 +657,9 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     currency: 'brl',
                     paymentStatus: 'pending',
                     couponCode: couponCode || null,
-                    isSubscription: cartItem.isSubscription || false,
+                    isSubscription: productData.isSubscription || false,
+                    subscriptionFrequency: productData.subscriptionFrequency || null,
+                    subscriptionPeriod: productData.subscriptionPeriod || null,
                     created: admin.firestore.FieldValue.serverTimestamp(),
                 };
                 const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
@@ -685,21 +694,14 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
              return res.status(400).json({ error: 'Nenhum produto válido no carrinho.' });
         }
 
-        const subscriptionItem = cartItems.find(item => item.isSubscription);
         let mpPreference;
 
-        if (subscriptionItem) {
-            console.log(`[createCartCheckoutSession] Assinatura detectada no carrinho (Produto: ${subscriptionItem.productId}). Carregando detalhes do produto...`);
-            const productRef = db.collection('products').doc(subscriptionItem.productId);
-            const productSnap = await productRef.get();
-            if (!productSnap.exists) {
-                return res.status(404).json({ error: 'Produto de assinatura não encontrado.' });
-            }
-            const productData = { id: productSnap.id, ...productSnap.data() };
+        if (subscriptionProduct) {
+            console.log(`[createCartCheckoutSession] Assinatura detectada no carrinho (Produto: ${subscriptionProduct.id}).`);
             // Para assinaturas, usamos mpWebhook para receber os eventos de status da assinatura (preapproval)
-            const notificationUrl = getNotificationUrl('mpWebhook', productData.mpAccountId);
+            const notificationUrl = getNotificationUrl('mpWebhook', subscriptionProduct.mpAccountId);
             console.log(`[createCartCheckoutSession] Roteando para createMercadoPagoPreference com Preapproval. Notification URL: ${notificationUrl}`);
-            mpPreference = await createMercadoPagoPreference(productData, subscriptionItem.formDataList, totalAmount, saleDocIds, notificationUrl);
+            mpPreference = await createMercadoPagoPreference(subscriptionProduct, subscriptionItem.formDataList, totalAmount, saleDocIds, notificationUrl);
         } else {
             console.log('[createCartCheckoutSession] Nenhum produto de assinatura. Criando preferência de carrinho normal.');
             const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
@@ -886,6 +888,8 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 paymentStatus: 'pending',
                 couponCode: couponCode || null,
                 isSubscription: product.isSubscription || false,
+                subscriptionFrequency: product.subscriptionFrequency || null,
+                subscriptionPeriod: product.subscriptionPeriod || null,
                 created: admin.firestore.FieldValue.serverTimestamp(),
             };
             const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
