@@ -22,27 +22,34 @@
     <!-- Main Content -->
     <main>
         <!-- Hero Section -->
-        <section class="program-hero">
-            <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center z-10" style="background-image: url('https://images.unsplash.com/photo-1619623513558-50a3a6a59a1a?q=80&w=1200&auto=format&fit=crop');"></div>
-            <div class="program-hero-content">
-                <h1 class="text-4xl md:text-6xl uppercase font-title">Dourados</h1>
-                <p class="text-yellow-500 text-2xl mt-2">Mato Grosso do Sul</p>
+        <section class="relative h-[50vh] flex items-center justify-center text-center overflow-hidden">
+            <!-- Background Image -->
+            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1619623513558-50a3a6a59a1a?q=80&w=1200&auto=format&fit=crop');"></div>
+            <!-- Gradient Overlays for depth and text readability -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent"></div>
+ 
+            <div class="relative z-10 px-4">
+                <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wide font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Dourados
+                </h1>
+                <p class="text-yellow-400 text-lg md:text-2xl mt-2 font-bold uppercase tracking-wider opacity-0 animate-fadeInUp delay-200">
+                    Mato Grosso do Sul
+                </p>
             </div>
         </section>
 
-        <section class="py-16">
-            <div class="container mx-auto px-6">
-                <div class="max-w-3xl mx-auto text-left text-gray-300">
-                    <h2 class="text-3xl font-bold text-white mb-6">Nossa Escola em Dourados</h2>
-                    <p class="mb-4">Conheça nossa unidade no coração do MS. A Kihap oferece um ambiente seguro, moderno e motivador para a prática de artes marciais. Nossos instrutores são altamente qualificados para guiar você em sua jornada de transformação pessoal.</p>
-                    <p>Encontre a unidade mais próxima de você e descubra como as artes marciais podem fortalecer seu corpo, mente e espírito.</p>
-                    
-                    <div class="mt-8">
-                        <h3 class="text-2xl font-bold text-yellow-500 mb-4">Unidades:</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div class="bg-gray-800 p-4 rounded-lg text-center">
-                                <p class="text-white">Jardim América</p>
-                            </div>
+        <section class="py-20 bg-white">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <h2 class="text-3xl md:text-4xl font-black uppercase font-title text-gray-900 mb-6">Nossa Escola em <span class="text-yellow-500">Dourados</span></h2>
+                <p class="text-gray-600 text-lg leading-relaxed mb-4">Conheça nossa unidade no coração do MS. A Kihap oferece um ambiente seguro, moderno e motivador para a prática de artes marciais. Nossos instrutores são altamente qualificados para guiar você em sua jornada de transformação pessoal.</p>
+                <p class="text-gray-600 text-lg leading-relaxed">Encontre a unidade mais próxima de você e descubra como as artes marciais podem fortalecer seu corpo, mente e espírito.</p>
+                
+                <div class="mt-12">
+                    <h3 class="text-2xl font-bold font-title text-gray-900 mb-6 uppercase">Unidades</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl text-center shadow-sm hover:border-yellow-500 hover:shadow-md transition-all duration-300 group">
+                            <span class="text-gray-800 font-bold font-title uppercase tracking-wider group-hover:text-yellow-600 transition-colors">Jardim América</span>
                         </div>
                     </div>
                 </div>

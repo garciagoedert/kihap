@@ -68,9 +68,16 @@ async function populateUnitsDropdown() {
         `;
     }
 
-    // Lógica para pré-seleção baseada na cidade via parâmetro da URL (GEO)
+    // Lógica para pré-seleção baseada na cidade via parâmetro da URL ou Nome da Página (GEO)
     const urlParams = new URLSearchParams(window.location.search);
-    const targetCity = urlParams.get('cidade') || urlParams.get('utm_cidade');
+    let targetCity = urlParams.get('cidade') || urlParams.get('utm_cidade');
+    
+    if (!targetCity) {
+        const path = window.location.pathname.toLowerCase();
+        if (path.includes('brasilia')) targetCity = 'brasilia';
+        else if (path.includes('florianopolis')) targetCity = 'florianopolis';
+        else if (path.includes('dourados')) targetCity = 'dourados';
+    }
     
     if (targetCity) {
         const cityLower = targetCity.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
