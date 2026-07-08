@@ -47,8 +47,14 @@ export async function setupAssinaturasPage() {
             // Status Badge Logic
             let statusClass = 'status-pending';
             let statusLabel = 'Pendente';
-            
-            if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+
+            const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
+            const isOldPending = sub.paymentStatus === 'pending' && sub.created && (() => {
+                const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : new Date(sub.created).getTime();
+                return (Date.now() - createdMs) > 30 * 24 * 60 * 60 * 1000; // >30 dias
+            })();
+
+            if (isActive) {
                 statusClass = 'status-authorized';
                 statusLabel = 'Ativo';
             } else if (sub.paymentStatus === 'cancelled') {
@@ -57,6 +63,9 @@ export async function setupAssinaturasPage() {
             } else if (sub.paymentStatus === 'paused') {
                 statusClass = 'status-paused';
                 statusLabel = 'Pausado';
+            } else if (isOldPending) {
+                statusClass = 'status-expired';
+                statusLabel = 'Expirado';
             }
 
             // Date Formation
@@ -120,7 +129,12 @@ export async function setupAssinaturasPage() {
         // Status Badge Logic for Modal
         let statusClass = 'status-pending';
         let statusLabel = 'Pendente';
-        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+        const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
+        const isOldPending = sub.paymentStatus === 'pending' && sub.created && (() => {
+            const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : new Date(sub.created).getTime();
+            return (Date.now() - createdMs) > 30 * 24 * 60 * 60 * 1000;
+        })();
+        if (isActive) {
             statusClass = 'status-authorized';
             statusLabel = 'Ativo';
         } else if (sub.paymentStatus === 'cancelled') {
@@ -129,6 +143,9 @@ export async function setupAssinaturasPage() {
         } else if (sub.paymentStatus === 'paused') {
             statusClass = 'status-paused';
             statusLabel = 'Pausado';
+        } else if (isOldPending) {
+            statusClass = 'status-expired';
+            statusLabel = 'Expirado';
         }
 
         const dateObj = new Date(sub.created._seconds * 1000);
@@ -195,7 +212,7 @@ export async function setupAssinaturasPage() {
         `;
 
         // Show/Hide Cancel Button
-        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+        if (isActive) {
             cancelSubBtnModal.classList.remove('hidden');
             cancelSubBtnModal.setAttribute('data-id', sub.idx);
         } else {
@@ -218,7 +235,8 @@ export async function setupAssinaturasPage() {
         let cancelledCount = 0;
 
         subscriptions.forEach(sub => {
-            if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+            const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
+            if (isActive) {
                 totalMrr += sub.amountTotal;
                 activeCount++;
             } else if (sub.paymentStatus === 'cancelled') {
