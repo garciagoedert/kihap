@@ -328,16 +328,26 @@ async function renderFinancialTab() {
             `;
             mpContainer.innerHTML = mpHtml;
 
+            const recreateContainer = document.getElementById('recreate-subscription-container');
             if (mp.status === 'authorized' || mp.status === 'pending') {
                 cancelContainer.classList.remove('hidden');
+                recreateContainer.classList.add('hidden');
                 document.getElementById('cancel-sub-btn').onclick = () => handleCancelSubscription(mp.id);
+            } else if (mp.status === 'cancelled' || mp.status === 'canceled') {
+                cancelContainer.classList.add('hidden');
+                recreateContainer.classList.remove('hidden');
+                document.getElementById('recreate-sub-btn').onclick = () => {
+                    document.getElementById('open-generate-link-modal-btn').click();
+                };
             } else {
                 cancelContainer.classList.add('hidden');
+                recreateContainer.classList.add('hidden');
             }
         } else {
             countEl.textContent = '0 parcelas';
             mpContainer.innerHTML = '<p class="text-gray-500 italic">Nenhuma assinatura vinculada no Mercado Pago.</p>';
             cancelContainer.classList.add('hidden');
+            document.getElementById('recreate-subscription-container').classList.add('hidden');
         }
 
     } catch (error) {
