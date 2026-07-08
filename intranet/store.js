@@ -1937,14 +1937,18 @@ export async function setupStorePage() {
         if (sale.paymentStatus === 'pending') {
             recoverCartBtnModal.classList.remove('hidden');
             recoverCartBtnModal.onclick = () => {
-                if (!sale.mercadoPagoPreferenceId) {
+                if (!sale.mercadoPagoPreferenceId && !sale.checkoutUrl) {
                     alert('Não foi possível encontrar o ID do Mercado Pago (Preferência) salvo para esta venda.\n\nVendas criadas antes desta atualização podem não possuir este dado salvo.');
                     return;
                 }
-                const isSub = sale.isSubscription || false;
-                const link = isSub
-                    ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
-                    : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                // Prefere o checkoutUrl salvo (init_point original). Fallback: reconstrói a URL
+                let link = sale.checkoutUrl || null;
+                if (!link) {
+                    const isSub = sale.isSubscription || false;
+                    link = isSub
+                        ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
+                        : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                }
                 
                 navigator.clipboard.writeText(link).then(() => {
                     alert('Link de pagamento copiado para a área de transferência com sucesso!\n\nVocê já pode colar (Ctrl+V) no WhatsApp para o cliente.\n\nLink: ' + link);

@@ -719,6 +719,15 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
         const isSandbox = process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.MERCADOPAGO_ACCESS_TOKEN.startsWith('TEST-');
         const checkoutUrl = isSandbox ? (mpPreference.sandbox_init_point || mpPreference.init_point) : mpPreference.init_point;
 
+        // Salva o checkoutUrl no documento de venda para recuperação futura
+        if (checkoutUrl) {
+            const batch = db.batch();
+            for (const docId of saleDocIds) {
+                batch.update(db.collection('inscricoesFaixaPreta').doc(docId), { checkoutUrl });
+            }
+            await batch.commit();
+        }
+
         res.status(200).json({ checkoutUrl: checkoutUrl, provider: 'mercadopago', preferenceId: mpPreference.id });
     } catch (error) {
         console.error('Error creating cart checkout session:', error);
