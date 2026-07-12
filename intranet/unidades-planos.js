@@ -35,6 +35,45 @@ export function setupUnidadesPlanosPage() {
 }
 
 function initEvents() {
+    // --- Gerenciamento de Abas ---
+    const tabUnidades = document.getElementById('tab-unidades');
+    const tabContas   = document.getElementById('tab-contas');
+    const tabPlanos   = document.getElementById('tab-planos');
+
+    const secUnidades = document.getElementById('section-unidades');
+    const secContas   = document.getElementById('section-contas');
+    const secPlanos   = document.getElementById('section-planos');
+
+    function switchTab(activeTab) {
+        const configs = {
+            'unidades': { button: tabUnidades, section: secUnidades },
+            'contas':   { button: tabContas,   section: secContas },
+            'planos':   { button: tabPlanos,   section: secPlanos }
+        };
+
+        for (const key in configs) {
+            const config = configs[key];
+            if (config.section) config.section.classList.add('hidden');
+            if (config.button) {
+                config.button.classList.remove('bg-primary', 'text-black', 'shadow-lg');
+                config.button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            }
+        }
+
+        const active = configs[activeTab];
+        if (active) {
+            if (active.section) active.section.classList.remove('hidden');
+            if (active.button) {
+                active.button.classList.add('bg-primary', 'text-black', 'shadow-lg');
+                active.button.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            }
+        }
+    }
+
+    if (tabUnidades) tabUnidades.addEventListener('click', () => switchTab('unidades'));
+    if (tabContas)   tabContas.addEventListener('click', () => switchTab('contas'));
+    if (tabPlanos)   tabPlanos.addEventListener('click', () => switchTab('planos'));
+
     // --- Unidades ---
     const addUnitBtn      = document.getElementById('add-unit-btn');
     const closeUnitModal  = document.getElementById('close-unit-modal');
@@ -58,6 +97,7 @@ function initEvents() {
 
     filterUnit.addEventListener('change', () => renderPlans(currentPlans, filterUnit.value));
     addPlanBtn.addEventListener('click', () => openPlanModal());
+
     closeBtn.addEventListener('click', closePlanModal);
     cancelBtn.addEventListener('click', closePlanModal);
     planModal.addEventListener('click', (e) => { if (e.target === planModal) closePlanModal(); });
