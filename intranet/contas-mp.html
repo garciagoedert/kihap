@@ -11,85 +11,114 @@
             }
         })();
         window.tailwind = { config: { darkMode: "class" } };
-    </script>    <meta charset="UTF-8">
+    </script>
+    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
     
+    <title>Contas MP - Intranet Kihap</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
     
-    
-    
-    
-    
-        
-    
-    
-    <title>Contas MP - Intranet</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 flex h-screen overflow-hidden font-poppins selection:bg-yellow-500 selection:text-gray-900">
-    <div id="sidebar-container" class="transition-all duration-300 ease-in-out md:w-64"></div>
-    <main class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 w-full relative">
-        <div id="header-container" class="w-full"></div>
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 h-screen overflow-hidden">
+    <div id="app-container" class="flex h-screen overflow-hidden">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden backdrop-blur-sm transition-opacity"></div>
         
-        <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 custom-scrollbar p-4 md:p-8">
-            <h1 class="text-3xl font-bold mb-8 text-yellow-500"><i class="fas fa-money-check-alt mr-2"></i> Contas MP</h1>
+        <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 relative">
+            <div id="header-container"></div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Painel de Vinculação -->
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg col-span-1 border-l-4 border-yellow-500">
-                    <h2 class="text-xl font-semibold mb-4 text-white">Vincular Nova Conta</h2>
-                    <p class="text-gray-400 text-sm mb-4">Adicione uma nova conta Mercado Pago para ser utilizada como recebedora ou Split no Store.</p>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Apelido / Nome da Unidade</label>
-                        <input type="text" id="account-label" placeholder="Ex: Kihap Florianópolis" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><i class="fas fa-money-check-alt mr-2"></i>Contas Mercado Pago</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Conecte e gerencie as contas do Mercado Pago para recebimento de matrículas e mensalidades.</p>
                     </div>
-                    
-                    <!-- Este APP_ID deveria estar configurado no Firebase ou digitado aqui. Vamos usar o env var. O JS fará a geração do link. -->
-                    <button id="btn-vincular" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded-lg transition duration-200">
-                        <i class="fas fa-link mr-2"></i> Conectar com Mercado Pago
-                    </button>
-                    <div id="oauth-status" class="mt-4 text-sm hidden"></div>
+                    <a href="unidades-planos.html" class="inline-flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                        <i class="fas fa-arrow-left mr-2"></i>Voltar para Unidades
+                    </a>
                 </div>
-
-                <!-- Lista de Contas Vinculadas -->
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg col-span-2">
-                    <h2 class="text-xl font-semibold mb-4 text-white">Contas Integradas (Marketplace)</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-gray-800 text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="py-3 px-4 text-gray-400 font-medium">Nome (Label)</th>
-                                    <th class="py-3 px-4 text-gray-400 font-medium">MP User ID</th>
-                                    <th class="py-3 px-4 text-gray-400 font-medium">Vinculada Em</th>
-                                    <th class="py-3 px-4 text-gray-400 font-medium text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="accounts-table-body">
-                                <tr>
-                                    <td colspan="4" class="py-4 text-center text-gray-400">Carregando contas...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Painel de Vinculação -->
+                    <div class="lg:col-span-1 bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg h-fit">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Vincular Nova Conta</h2>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">Adicione uma nova conta Mercado Pago para ser utilizada como recebedora na Store ou mensalidades.</p>
+                        
+                        <div class="mb-6">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Apelido / Nome da Unidade *</label>
+                            <input type="text" id="account-label" placeholder="Ex: centro, asa-sul" 
+                                class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all font-mono" required>
+                            <p class="text-xs text-gray-400 mt-1.5">Aviso: Para que o vínculo funcione, o apelido deve corresponder exatamente ao <strong>slug da unidade</strong> cadastrado.</p>
+                        </div>
+                        
+                        <button id="btn-vincular" class="w-full bg-primary hover:bg-primary-dark text-black font-bold py-3 px-4 rounded-lg transition-all active:scale-95 shadow-md flex items-center justify-center">
+                            <i class="fas fa-link mr-2"></i> Conectar Mercado Pago
+                        </button>
+                        
+                        <div id="oauth-status" class="mt-4 p-3 rounded-lg text-xs font-semibold hidden"></div>
+                    </div>
+    
+                    <!-- Lista de Contas Vinculadas -->
+                    <div class="lg:col-span-2 bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Contas Integradas (Marketplace)</h2>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-800/30">
+                                        <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Nome (Label)</th>
+                                        <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">MP User ID</th>
+                                        <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Vinculada Em</th>
+                                        <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accounts-table-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                    <tr>
+                                        <td colspan="4" class="p-8 text-center text-gray-400">Carregando contas...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <script type="module" src="common-ui.js"></script>
-    <script src="contas-mp.js"></script>
+    <!-- Generic Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 id="confirmTitle" class="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirmar Ação</h2>
+            <p id="confirmMessage" class="text-gray-600 dark:text-gray-300 mb-6">Você tem certeza?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelConfirmBtn" class="bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 font-semibold py-2 px-6 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all">Cancelar</button>
+                <button id="confirmActionBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-all active:scale-95 shadow-md">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupContasMpPage } from './contas-mp.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupContasMpPage();
+            });
+        });
+    </script>
 </body>
 </html>
