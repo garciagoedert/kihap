@@ -3790,6 +3790,9 @@ exports.deleteLocalMember = tuitions.deleteLocalMember;
 exports.getStudentFinancialHub = tuitions.getStudentFinancialHub;
 exports.cleanupRemovedStudents = tuitions.cleanupRemovedStudents;
 exports.mpWebhook = tuitions.mpWebhook;
+exports.getUnits = tuitions.getUnits;
+exports.createUnit = tuitions.createUnit;
+exports.updateUnit = tuitions.updateUnit;
 
 // ─── TRELLO NOTIFICATIONS ───────────────────────────────────────────────────
 

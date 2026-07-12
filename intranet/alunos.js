@@ -1,5 +1,5 @@
 import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
-import { showConfirm } from './common-ui.js';
+import { showConfirm, getUnidades } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, storage } from './firebase-config.js'; // Added storage import
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -28,6 +28,37 @@ const getRegisteredUsersByEvoId = httpsCallable(functions, 'getRegisteredUsersBy
 const syncEvoStudentsToCache = httpsCallable(functions, 'syncEvoStudentsToCache');
 const batchSetDefaultPasswords = httpsCallable(functions, 'batchSetDefaultPasswords');
 const registerLocalStudent = httpsCallable(functions, 'registerLocalStudent');
+
+// Popula os selects de unidade com dados dinâmicos do Firestore
+async function populateUnitSelects() {
+    try {
+        const unidades = await getUnidades();
+        const filterSel = document.getElementById('unit-filter');
+        const regSel    = document.getElementById('reg-unit');
+
+        if (filterSel) {
+            filterSel.innerHTML = '<option value="all">Todas as Unidades</option>';
+            unidades.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.name;
+                filterSel.appendChild(opt);
+            });
+        }
+
+        if (regSel) {
+            regSel.innerHTML = '<option value="">Selecione</option>';
+            unidades.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.name;
+                regSel.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.warn('[alunos] Erro ao popular selects de unidade:', err);
+    }
+}
 const deleteLocalMember = httpsCallable(functions, 'deleteLocalMember');
 const cleanupRemovedStudents = httpsCallable(functions, 'cleanupRemovedStudents');
 
@@ -61,6 +92,9 @@ export function setupAlunosPage() {
         if (user) {
             currentAppUser = user;
             console.log("👤 Usuário autenticado na página de alunos:", user.email);
+            // Popular selects de unidade dinamicamente
+            populateUnitSelects();
+
             // Oculta o botão de adicionar prospect no header
             const addProspectBtn = document.getElementById('addProspectBtnHeader');
             if (addProspectBtn) {

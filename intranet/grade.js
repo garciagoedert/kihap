@@ -2,6 +2,7 @@ import { db, functions } from './firebase-config.js';
 import { onAuthReady } from './auth.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { collection, getDocs, query, where, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp, setDoc, deleteDoc, orderBy, limit, documentId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getUnidades } from './common-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Elementos da Grade
@@ -1322,9 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initialize() {
         try {
-            const getPublicEvoUnits = httpsCallable(functions, 'getPublicEvoUnits');
-            const result = await getPublicEvoUnits();
-            const units = result.data;
+            const units = await getUnidades();
 
             unitFilter.innerHTML = '<option value="">Selecione a Unidade</option>';
             
@@ -1333,10 +1332,10 @@ document.addEventListener('DOMContentLoaded', () => {
             staffOption.textContent = 'Staff / Corporativo';
             unitFilter.appendChild(staffOption);
 
-            units.forEach(unitId => {
+            units.forEach(unit => {
                 const option = document.createElement('option');
-                option.value = unitId;
-                option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                option.value = unit.id;
+                option.textContent = unit.name;
                 unitFilter.appendChild(option);
             });
 
@@ -1350,15 +1349,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 reportStaffOption.textContent = 'Staff / Corporativo';
                 reportUnitFilterEl.appendChild(reportStaffOption);
 
-                units.forEach(unitId => {
+                units.forEach(unit => {
                     const option = document.createElement('option');
-                    option.value = unitId;
-                    option.textContent = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    option.value = unit.id;
+                    option.textContent = unit.name;
                     reportUnitFilterEl.appendChild(option);
                 });
             }
         } catch (error) {
-            console.error("Erro ao carregar unidades do EVO:", error);
+            console.error("Erro ao carregar unidades:", error);
             unitFilter.innerHTML = '<option value="">Erro ao carregar</option>';
         }
         updateViewButtons();

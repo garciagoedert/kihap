@@ -558,3 +558,89 @@ exports.mpWebhook = functions.https.onRequest(async (req, res) => {
         res.status(200).send('Error Logged');
     }
 });
+
+// ============================================================
+// --- GESTÃO DE UNIDADES ---
+// ============================================================
+
+/**
+ * Retorna a lista de unidades cadastradas no Firestore.
+ * Qualquer usuário autenticado pode listar.
+ */
+exports.getUnits = functions.https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+
+    const snapshot = await db.collection('units').orderBy('order', 'asc').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+});
+
+/**
+ * Cria uma nova unidade. Apenas administradores.
+ * Recebe: { slug, name, city?, order? }
+ */
+exports.createUnit = functions.https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+
+    const userSnap = await db.collection('users').doc(context.auth.uid).get();
+    if (!userSnap.exists || !userSnap.data().isAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem criar unidades.');
+    }
+
+    const { slug, name, city, order } = data;
+
+    if (!slug || !name) {
+        throw new functions.https.HttpsError('invalid-argument', 'O slug e o nome são obrigatórios.');
+    }
+
+    // Valida formato do slug (apenas letras minúsculas, números e hífens)
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+        throw new functions.https.HttpsError('invalid-argument', 'O slug deve conter apenas letras minúsculas, números e hífens.');
+    }
+
+    // Verifica se o slug já existe
+    const existing = await db.collection('units').doc(slug).get();
+    if (existing.exists) {
+        throw new functions.https.HttpsError('already-exists', `Já existe uma unidade com o slug "${slug}".`);
+    }
+
+    const unitData = {
+        name: name.trim(),
+        city: (city || '').trim(),
+        order: typeof order === 'number' ? order : 99,
+        active: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Usa o slug como ID do documento
+    await db.collection('units').doc(slug).set(unitData);
+
+    return { success: true, id: slug, ...unitData };
+});
+
+/**
+ * Atualiza uma unidade existente. Apenas administradores.
+ * Recebe: { id (slug), name?, city?, order?, active? }
+ */
+exports.updateUnit = functions.https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+
+    const userSnap = await db.collection('users').doc(context.auth.uid).get();
+    if (!userSnap.exists || !userSnap.data().isAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem editar unidades.');
+    }
+
+    const { id, name, city, order, active } = data;
+
+    if (!id) throw new functions.https.HttpsError('invalid-argument', 'O ID (slug) da unidade é obrigatório.');
+
+    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (name !== undefined) updates.name = name.trim();
+    if (city !== undefined) updates.city = city.trim();
+    if (order !== undefined) updates.order = parseInt(order, 10);
+    if (active !== undefined) updates.active = Boolean(active);
+
+    await db.collection('units').doc(id).update(updates);
+
+    return { success: true, message: 'Unidade atualizada.' };
+});

@@ -1,9 +1,9 @@
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { app, functions } from "./firebase-config.js";
+import { getUnidades } from "./common-ui.js";
 
 // functions is already configured with emulator in firebase-config.js
 const sendMassMessage = httpsCallable(functions, 'sendMassMessage');
-const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
 
 const unitSelect = document.getElementById('unitSelect');
 const audienceSelect = document.getElementById('audienceSelect');
@@ -38,24 +38,7 @@ function log(msg, type = 'info') {
 // Load Units
 async function loadUnits() {
     try {
-        const units = [
-            // Hardcoded list as fallback or expected list
-            { id: "centro", name: "Centro (Matriz)" },
-            { id: "coqueiros", name: "Coqueiros" },
-            { id: "asa-sul", name: "Asa Sul" },
-            { id: "sudoeste", name: "Sudoeste" },
-            { id: "lago-sul", name: "Lago Sul" },
-            { id: "pontos-de-ensino", name: "Pontos de Ensino" },
-            { id: "jardim-botanico", name: "Jardim Botânico" },
-            { id: "dourados", name: "Dourados" },
-            { id: "santa-monica", name: "Santa Mônica" },
-            { id: "noroeste", name: "Noroeste" }
-        ];
-
-        // Try fetching dynamic list if possible (optional)
-        // const result = await getEvoUnits();
-        // const dynamicUnits = result.data; 
-
+        const units = await getUnidades();
         units.forEach(u => {
             const opt = document.createElement('option');
             opt.value = u.id;

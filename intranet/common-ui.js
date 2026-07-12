@@ -1,4 +1,62 @@
-import { getAllUsers } from './auth.js';
+import { getAllUsers, getCurrentUser, ensureAdmin } from './auth.js';
+import { db, functions, auth } from './firebase-config.js';
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { showNotification as showChatMessageNotification } from './notification.js';
+import { notificationsManager } from './notifications-manager.js';
+
+// ============================================================
+// UNIDADES — Fonte central de verdade
+// ============================================================
+
+// Unidades default como fallback caso o Firestore falhe
+const UNITS_FALLBACK = [
+    { id: 'asa-sul',         name: 'Asa Sul' },
+    { id: 'centro',          name: 'Centro (Matriz)' },
+    { id: 'coqueiros',       name: 'Coqueiros' },
+    { id: 'dourados',        name: 'Dourados' },
+    { id: 'jardim-botanico', name: 'Jardim Botânico' },
+    { id: 'lago-sul',        name: 'Lago Sul' },
+    { id: 'noroeste',        name: 'Noroeste' },
+    { id: 'pontos-de-ensino',name: 'Pontos de Ensino' },
+    { id: 'santa-monica',    name: 'Santa Mônica' },
+    { id: 'sudoeste',        name: 'Sudoeste' },
+    { id: 'atadf',           name: 'ATADF' },
+];
+
+let _unidadesCache = null; // Cache em memória (válido por sessão)
+
+/**
+ * Retorna a lista de unidades ativas do Firestore.
+ * Faz cache em memória para evitar múltiplas chamadas por sessão.
+ * Em caso de falha, retorna o fallback hardcoded.
+ *
+ * @param {boolean} includeInactive - Se true, retorna também unidades inativas
+ * @returns {Promise<Array<{id: string, name: string, active: boolean}>>}
+ */
+async function getUnidades(includeInactive = false) {
+    if (!_unidadesCache) {
+        try {
+            const getUnitsCallable = httpsCallable(functions, 'getUnits');
+            const result = await getUnitsCallable();
+            _unidadesCache = result.data || UNITS_FALLBACK;
+        } catch (error) {
+            console.warn('[getUnidades] Erro ao buscar unidades do Firestore, usando fallback:', error);
+            _unidadesCache = UNITS_FALLBACK;
+        }
+    }
+    return includeInactive
+        ? _unidadesCache
+        : _unidadesCache.filter(u => u.active !== false);
+}
+
+
+/**
+ * Invalida o cache de unidades, forçando nova busca na próxima chamada.
+ */
+function invalidateUnidadesCache() {
+    _unidadesCache = null;
+}
 
 function setupUIListeners(handlers = {}) {
     const {
@@ -300,12 +358,6 @@ function setupModalCloseListeners(handlers = {}) {
     }
 }
 
-import { db, functions, auth } from './firebase-config.js';
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { showNotification as showChatMessageNotification } from './notification.js';
-import { getCurrentUser, ensureAdmin } from './auth.js';
-import { notificationsManager } from './notifications-manager.js';
 
 
 // Atualiza ou remove o indicador de notificação (ponto ou contador)
@@ -2398,4 +2450,4 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     };
 }
 
-export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal };
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache };

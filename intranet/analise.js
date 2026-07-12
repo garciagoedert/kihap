@@ -1,7 +1,7 @@
 import { onAuthReady, checkAdminStatus } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { app } from './firebase-config.js';
-import { showAlert } from './common-ui.js';
+import { showAlert, getUnidades } from './common-ui.js';
 
 const functions = getFunctions(app);
 const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
@@ -29,6 +29,16 @@ function initEvents() {
         unitFilter.addEventListener('change', () => {
             renderDashboard(unitFilter.value);
         });
+
+        // Popula o select com unidades dinâmicas
+        getUnidades().then(unidades => {
+            unidades.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.name;
+                unitFilter.appendChild(opt);
+            });
+        }).catch(err => console.warn('[analise] Erro ao carregar unidades:', err));
     }
 }
 

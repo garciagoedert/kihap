@@ -87,21 +87,11 @@
                 <div class="flex flex-wrap items-center gap-6">
                     <div class="flex items-center gap-3">
                         <label for="unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade</label>
-                        <select id="unit-filter"
-                            class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]">
-                            <option value="all">Todas as Unidades</option>
-                            <option value="centro">Unidade Centro</option>
-                            <option value="coqueiros">Unidade Coqueiros</option>
-                            <option value="asa-sul">Unidade Asa Sul</option>
-                            <option value="sudoeste">Unidade Sudoeste</option>
-                            <option value="lago-sul">Unidade Lago Sul</option>
-                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
-                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
-                            <option value="dourados">Unidade Dourados</option>
-                            <option value="santa-monica">Unidade Santa Mônica</option>
-                            <option value="noroeste">Unidade Noroeste</option>
-                            <option value="atadf">Unidade Store</option>
-                        </select>
+                            <select id="unit-filter"
+                                class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]">
+                                <option value="all">Todas as Unidades</option>
+                                <!-- Unidades carregadas dinamicamente via getUnidades() em alunos.js -->
+                            </select>
                     </div>
                 </div>
 
@@ -456,17 +446,7 @@
                         <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Unidade *</label>
                         <select id="reg-unit" required class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
                             <option value="">Selecione</option>
-                            <option value="centro">Unidade Centro</option>
-                            <option value="coqueiros">Unidade Coqueiros</option>
-                            <option value="asa-sul">Unidade Asa Sul</option>
-                            <option value="sudoeste">Unidade Sudoeste</option>
-                            <option value="lago-sul">Unidade Lago Sul</option>
-                            <option value="pontos-de-ensino">Unidade Pontos de Ensino</option>
-                            <option value="jardim-botanico">Unidade Jardim Botânico</option>
-                            <option value="dourados">Unidade Dourados</option>
-                            <option value="santa-monica">Unidade Santa Mônica</option>
-                            <option value="noroeste">Unidade Noroeste</option>
-                            <option value="atadf">Unidade Store</option>
+                            <!-- Unidades carregadas dinamicamente via getUnidades() em alunos.js -->
                         </select>
                     </div>
                     <div>

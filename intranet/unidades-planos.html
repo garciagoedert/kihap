@@ -46,15 +46,46 @@
         <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
             <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Unidades e Planos de Mensalidade</h1>
 
-            <!-- Unidades Section -->
+            <!-- ===== SEÇÃO: GERENCIAMENTO DE UNIDADES ===== -->
             <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg mb-8">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Unidades (Mercado Pago Tokens)</h2>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Unidades</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gerencie as unidades Kihap. O slug é usado como identificador em toda a intranet.</p>
+                    </div>
+                    <button id="add-unit-btn" class="bg-primary hover:bg-primary-dark text-black font-bold py-2 px-6 rounded-lg transition-all active:scale-95 shadow-md flex items-center whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i> Nova Unidade
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-800/30">
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Ordem</th>
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Nome</th>
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Slug (ID)</th>
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700">Cidade</th>
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700 text-center">Status</th>
+                                <th class="p-4 font-bold border-b border-gray-200 dark:border-gray-700 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="units-management-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            <tr><td colspan="6" class="text-center p-8 text-gray-500">Carregando unidades...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== SEÇÃO: CONTAS MERCADO PAGO ===== -->
+            <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg mb-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Contas Mercado Pago (Tokens)</h2>
                     <a href="contas-mp.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition-all active:scale-95 shadow-md">
                         <i class="fas fa-external-link-alt mr-2"></i>Conectar Conta MP
                     </a>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 bg-gray-50 dark:bg-gray-800/30 p-3 rounded-lg border border-gray-100 dark:border-gray-700">As unidades são cadastradas diretamente na aba de Contas MP. Certifique-se de que o nome da conta conectada tenha exatamente o *slug* da unidade (ex: `centro`, `santa-monica`).</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 bg-gray-50 dark:bg-gray-800/30 p-3 rounded-lg border border-gray-100 dark:border-gray-700">Certifique-se de que o nome da conta conectada corresponda ao <strong>slug</strong> da unidade cadastrada acima (ex: <code class="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">centro</code>, <code class="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">santa-monica</code>).</p>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -71,6 +102,7 @@
                     </table>
                 </div>
             </div>
+
 
             <!-- Planos Section -->
             <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
@@ -160,6 +192,61 @@
                     </button>
                     <button type="submit" id="save-plan-btn" class="flex-1 flex justify-center items-center px-4 py-3 rounded-lg bg-primary hover:bg-primary-dark text-black font-bold transition-all shadow-lg active:scale-95">
                         <i class="fas fa-save mr-2"></i> Salvar Plano
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Criar/Editar Unidade -->
+    <div id="unit-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="unit-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Nova Unidade</h3>
+                <button id="close-unit-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="unit-form" class="space-y-4">
+                <input type="hidden" id="unit-edit-id">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Slug (ID único) <span class="text-red-500">*</span></label>
+                    <input type="text" id="unit-slug" required pattern="[a-z0-9-]+"
+                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all font-mono"
+                        placeholder="ex: santa-monica">
+                    <p class="text-xs text-gray-400 mt-1">Apenas letras minúsculas, números e hífens. Não pode ser alterado depois.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Nome de Exibição <span class="text-red-500">*</span></label>
+                    <input type="text" id="unit-name" required
+                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                        placeholder="ex: Santa Mônica">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Cidade</label>
+                        <input type="text" id="unit-city"
+                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                            placeholder="ex: Florianópolis">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Ordem</label>
+                        <input type="number" id="unit-order" value="99" min="1"
+                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                            placeholder="1">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex space-x-3">
+                    <button type="button" id="cancel-unit-btn" class="flex-1 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-semibold">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="save-unit-btn" class="flex-1 flex justify-center items-center px-4 py-3 rounded-lg bg-primary hover:bg-primary-dark text-black font-bold transition-all shadow-lg active:scale-95">
+                        <i class="fas fa-save mr-2"></i> Salvar Unidade
                     </button>
                 </div>
             </form>
