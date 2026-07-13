@@ -28,56 +28,103 @@
     <title>Planificador - Intranet Kihap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="./theme.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="log.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
 
-        .ql-editor {
-            min-height: 300px;
-            background-color: #374151;
-            /* gray-700 */
+        /* Cores customizadas da Kihap para a grade semanal */
+        .block-header-gray {
+            background-color: #4b5563; /* gray-600 */
             color: white;
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
         }
-
-        .ql-toolbar {
+        .block-cell-gray {
+            background-color: #f9fafb;
+            color: #111827;
+        }
+        .dark .block-cell-gray {
             background-color: #1f2937;
-            /* gray-800 */
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-            border-color: #4b5563 !important;
-            /* gray-600 */
+            color: #f3f4f6;
         }
 
-        .ql-container {
-            border-color: #4b5563 !important;
-            /* gray-600 */
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-            font-size: 1rem;
+        .block-header-orange {
+            background-color: #d97706; /* orange-600 */
+            color: white;
+        }
+        .block-cell-orange {
+            background-color: #fef3c7; /* orange-100 */
+            color: #78350f;
+        }
+        .dark .block-cell-orange {
+            background-color: #78350f; /* orange-900/50 */
+            color: #fde68a;
         }
 
-        .ql-stroke {
-            stroke: #e5e7eb !important;
-            /* gray-200 */
-        }
-
-        .ql-fill {
-            fill: #e5e7eb !important;
-            /* gray-200 */
-        }
-
-        .ql-picker {
-            color: #e5e7eb !important;
-            /* gray-200 */
+        /* Regras de impressão otimizada */
+        @media print {
+            body {
+                padding-left: 0 !important;
+                background-color: white !important;
+                color: black !important;
+            }
+            #sidebar-container, #sidebar, #header-container, header, #sidebar-backdrop, #main-content > div:first-child, #add-plan-btn, #plans-list, #plan-modal, #close-view-modal, .pt-4.border-t, #edit-plan-btn-view, #print-plan-btn {
+                display: none !important;
+            }
+            main, #main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                overflow: visible !important;
+            }
+            #view-modal {
+                position: relative !important;
+                background: none !important;
+                backdrop-filter: none !important;
+                display: block !important;
+                padding: 0 !important;
+                z-index: auto !important;
+                box-shadow: none !important;
+            }
+            #view-modal > div {
+                background: white !important;
+                color: black !important;
+                border: none !important;
+                box-shadow: none !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: avoid !important;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                background: white !important;
+                padding: 8px !important;
+                font-size: 10pt !important;
+            }
+            .print-table .block-header-orange {
+                background-color: #eaeaea !important;
+                font-weight: bold !important;
+            }
+            .print-table .block-cell-orange {
+                background-color: #f7f7f7 !important;
+            }
+            .print-table th {
+                background-color: #ddd !important;
+            }
         }
     </style>
 </head>
@@ -112,13 +159,13 @@
     </div>
 
     <!-- Modal de Edição/Criação -->
-    <div id="plan-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
-            <button id="close-plan-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+    <div id="plan-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl max-w-5xl w-full p-6 relative flex flex-col max-h-[92vh] border border-gray-150 dark:border-gray-800 shadow-2xl">
+            <button id="close-plan-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i class="fas fa-times text-lg"></i>
             </button>
 
-            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-white">Novo Plano de Aula</h2>
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Novo Plano de Aula</h2>
 
             <form id="plan-form" class="flex-1 overflow-y-auto pr-2 space-y-4">
                 <input type="hidden" id="plan-id">
@@ -126,15 +173,15 @@
                 <!-- Título e Categoria -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="md:col-span-3">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Título do Plano</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do Plano</label>
                         <input type="text" id="plan-title" required
-                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
-                            placeholder="Ex: Aula Adulto A - Terça-feira">
+                            class="w-full bg-gray-50 dark:bg-gray-900/50 text-gray-950 dark:text-white rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            placeholder="Ex: Aula Adulto B - Julho/2026">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
                         <select id="plan-category" required
-                            class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            class="w-full bg-gray-50 dark:bg-gray-900/50 text-gray-950 dark:text-white rounded-xl px-4 py-2.5 border border-gray-200 dark:border-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
                             <option value="A">Planificador A</option>
                             <option value="B">Planificador B</option>
                             <option value="C">Planificador C</option>
@@ -142,36 +189,103 @@
                     </div>
                 </div>
 
-                <!-- Conteúdo (Quill Editor) -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Conteúdo da Aula</label>
-                    <div class="bg-gray-700 rounded-lg">
-                        <div id="editor-container" class="h-64"></div>
+                <!-- Layout Toggle e Presets -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-800/80 pt-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Estrutura do Planificador</label>
+                        <div class="flex rounded-xl bg-gray-100 dark:bg-gray-900 p-1 border border-gray-200 dark:border-gray-800/60 max-w-sm">
+                            <button type="button" id="layout-simple-btn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all bg-white dark:bg-gray-800 text-gray-950 dark:text-white shadow-sm flex items-center justify-center gap-1.5">
+                                <i class="fas fa-list-ul"></i> Lista de Blocos
+                            </button>
+                            <button type="button" id="layout-grid-btn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all text-gray-500 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white flex items-center justify-center gap-1.5">
+                                <i class="fas fa-table"></i> Grade Semanal
+                            </button>
+                        </div>
+                        <input type="hidden" id="plan-layout" value="simple">
+                    </div>
+                    <div class="flex items-end justify-start md:justify-end gap-2">
+                        <button type="button" id="load-preset-littles-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 py-2 px-3.5 rounded-xl text-xs transition-all flex items-center gap-1.5 font-medium border border-gray-200/40 dark:border-gray-800/50">
+                            <i class="fas fa-magic text-blue-500"></i> Modelo Littles
+                        </button>
+                        <button type="button" id="load-preset-adults-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 py-2 px-3.5 rounded-xl text-xs transition-all flex items-center gap-1.5 font-medium border border-gray-200/40 dark:border-gray-800/50">
+                            <i class="fas fa-magic text-orange-500"></i> Modelo Adultos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Editores Dinâmicos -->
+                <div class="border-t border-gray-100 dark:border-gray-800/80 pt-3">
+                    <!-- Layout Simples (Blocos Verticais) -->
+                    <div id="simple-editor-view" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Conteúdo do Plano (Blocos Verticais)</label>
+                            <button type="button" id="add-block-simple-btn" class="text-xs bg-primary/10 hover:bg-primary/20 text-primary-dark dark:text-primary px-3 py-1.5 rounded-lg border border-primary/20 transition-all font-semibold flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Adicionar Bloco
+                            </button>
+                        </div>
+                        <div id="simple-blocks-list" class="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Layout Grade Semanal (Matriz) -->
+                    <div id="grid-editor-view" class="space-y-3 hidden">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Grade Semanal de Aulas (Matriz)</label>
+                            <button type="button" id="add-block-grid-btn" class="text-xs bg-primary/10 hover:bg-primary/20 text-primary-dark dark:text-primary px-3 py-1.5 rounded-lg border border-primary/20 transition-all font-semibold flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Adicionar Linha (Bloco)
+                            </button>
+                        </div>
+                        
+                        <!-- Datas das 4 Semanas -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl border border-gray-200/50 dark:border-gray-800/50">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Semana 1 (Data)</label>
+                                <input type="text" id="week-1-dates" class="w-full bg-white dark:bg-[#111] text-xs text-gray-950 dark:text-white rounded-lg px-2.5 py-2 border border-gray-200 dark:border-gray-850 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Ex: 06/07 a 11/07">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Semana 2 (Data)</label>
+                                <input type="text" id="week-2-dates" class="w-full bg-white dark:bg-[#111] text-xs text-gray-950 dark:text-white rounded-lg px-2.5 py-2 border border-gray-200 dark:border-gray-850 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Ex: 13/07 a 18/07">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Semana 3 (Data)</label>
+                                <input type="text" id="week-3-dates" class="w-full bg-white dark:bg-[#111] text-xs text-gray-950 dark:text-white rounded-lg px-2.5 py-2 border border-gray-200 dark:border-gray-850 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Ex: 20/07 a 25/07">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Semana 4 (Data)</label>
+                                <input type="text" id="week-4-dates" class="w-full bg-white dark:bg-[#111] text-xs text-gray-950 dark:text-white rounded-lg px-2.5 py-2 border border-gray-200 dark:border-gray-850 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Ex: 27/07 a 01/08">
+                            </div>
+                        </div>
+
+                        <!-- Lista de Linhas da Tabela -->
+                        <div id="grid-blocks-list" class="space-y-4 max-h-[42vh] overflow-y-auto pr-1">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
                     </div>
                 </div>
 
                 <!-- Upload de Mídia -->
-                <div class="border-t border-gray-700 pt-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Mídia (Arquivos e Vídeos)</label>
+                <div class="border-t border-gray-100 dark:border-gray-800/80 pt-4">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Mídia e Anexos (Arquivos e Vídeos)</label>
 
                     <!-- Youtube Link Input -->
-                    <div class="flex gap-2 mb-4">
+                    <div class="flex gap-2 mb-3">
                         <input type="text" id="youtube-link"
-                            class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                            class="flex-1 bg-gray-50 dark:bg-gray-900/50 text-gray-950 dark:text-white rounded-xl px-4 py-2 border border-gray-200 dark:border-gray-800 focus:outline-none focus:ring-1 focus:ring-primary"
                             placeholder="Cole o link do YouTube aqui">
                         <button type="button" id="add-youtube-btn"
-                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            <i class="fab fa-youtube mr-2"></i> Adicionar
+                            class="bg-red-650 hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-all font-semibold text-xs flex items-center justify-center gap-1.5">
+                            <i class="fab fa-youtube text-base"></i> Adicionar
                         </button>
                     </div>
 
-                    <div class="flex items-center space-x-2 mb-4">
+                    <div class="flex items-center space-x-3 mb-3">
                         <label
-                            class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors border border-gray-600">
-                            <i class="fas fa-cloud-upload-alt mr-2"></i> Adicionar Arquivo
+                            class="cursor-pointer bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl transition-all border border-gray-200/55 dark:border-gray-800/85 text-xs font-semibold flex items-center gap-1.5">
+                            <i class="fas fa-cloud-upload-alt text-blue-500"></i> Adicionar Arquivo
                             <input type="file" id="media-upload" class="hidden" accept="image/*,video/*" multiple>
                         </label>
-                        <span id="upload-status" class="text-sm text-gray-400"></span>
+                        <span id="upload-status" class="text-xs text-gray-500"></span>
                     </div>
 
                     <!-- Lista de Itens de Mídia -->
@@ -180,18 +294,18 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between pt-4 border-t border-gray-700">
+                <div class="flex justify-between pt-4 border-t border-gray-100 dark:border-gray-800/80">
                     <button type="button" id="delete-plan-btn"
-                        class="px-4 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-700 transition-colors hidden">
-                        <i class="fas fa-trash mr-2"></i> Excluir
+                        class="px-4 py-2 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all font-semibold text-xs hidden">
+                        <i class="fas fa-trash mr-1.5"></i> Excluir Plano
                     </button>
-                    <div class="flex space-x-3">
+                    <div class="flex space-x-3 ml-auto">
                         <button type="button" id="cancel-plan-btn"
-                            class="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">
+                            class="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-850 transition-all font-semibold text-xs">
                             Cancelar
                         </button>
                         <button type="submit" id="save-plan-btn"
-                            class="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors">
+                            class="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-black font-bold transition-all text-xs shadow-md">
                             Salvar Plano
                         </button>
                     </div>
@@ -201,39 +315,45 @@
     </div>
 
     <!-- Modal de Visualização (Read-Only) -->
-    <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg max-w-4xl w-full p-6 relative flex flex-col max-h-[90vh]">
-            <button id="close-view-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+    <div id="view-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl max-w-5xl w-full p-6 relative flex flex-col max-h-[92vh] border border-gray-150 dark:border-gray-800 shadow-2xl">
+            <button id="close-view-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i class="fas fa-times text-lg"></i>
             </button>
 
             <div class="flex-1 overflow-y-auto pr-2">
                 <div class="mb-4">
                     <div class="flex items-center gap-3 mb-2">
-                        <span id="view-plan-category" class="bg-blue-600 text-white text-xs px-2 py-1 rounded">Tipo
-                            A</span>
-                        <div class="text-sm text-gray-400" id="view-plan-meta">Autor • Data</div>
+                        <span id="view-plan-category" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">TIPO A</span>
+                        <div class="text-xs text-gray-500 dark:text-gray-400" id="view-plan-meta">Autor • Data</div>
                     </div>
-                    <h2 id="view-plan-title" class="text-3xl font-bold text-white">Título do Plano</h2>
+                    <h2 id="view-plan-title" class="text-3xl font-bold text-gray-900 dark:text-white">Título do Plano</h2>
                 </div>
 
-                <div class="prose prose-invert max-w-none mb-8">
-                    <p id="view-plan-content" class="whitespace-pre-wrap text-gray-300"></p>
+                <!-- Conteúdo Renderizado (Legado, Blocos Verticais ou Tabela Matriz) -->
+                <div id="view-plan-body" class="mb-8">
+                    <!-- Gerado dinamicamente via JS -->
                 </div>
 
                 <!-- Lista de Mídia (Visualização) -->
-                <div>
-                    <h3 class="text-lg font-bold text-white mb-3 border-b border-gray-700 pb-2">Mídia e Anexos</h3>
+                <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                    <h3 class="text-base font-bold text-gray-850 dark:text-gray-200 mb-3 flex items-center gap-1.5">
+                        <i class="fas fa-paperclip text-blue-500 text-sm"></i> Mídia e Anexos
+                    </h3>
                     <div id="view-media-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <!-- Itens de mídia entrarão aqui -->
                     </div>
                 </div>
             </div>
 
-            <div class="flex justify-end pt-4 border-t border-gray-700 mt-4">
+            <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800 mt-4 gap-2">
+                <button type="button" id="print-plan-btn"
+                    class="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold transition-all text-xs flex items-center gap-1.5">
+                    <i class="fas fa-print"></i> Imprimir Planificador
+                </button>
                 <button type="button" id="edit-plan-btn-view"
-                    class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors">
-                    <i class="fas fa-edit mr-2"></i> Editar Plano
+                    class="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-black font-bold transition-all text-xs shadow-md flex items-center gap-1.5">
+                    <i class="fas fa-edit"></i> Editar Plano
                 </button>
             </div>
         </div>
