@@ -171,8 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="bg-amber-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-md leading-tight tracking-wide shadow-sm">EXP</span>`
             : '';
 
-        const categoryBadge = classData.category
-            ? `<span class="${colorClasses.badge} px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
+        let displayCategory = classData.category || '';
+        if (displayCategory.toLowerCase().includes('baby')) {
+            displayCategory = 'Baby';
+        }
+        const categoryBadge = displayCategory
+            ? `<span class="${colorClasses.badge} px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider leading-none shadow-sm">${displayCategory}</span>`
             : '';
 
         card.innerHTML = `
@@ -183,24 +187,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h4 class="font-extrabold text-sm text-gray-850 dark:text-white leading-tight group-hover:text-primary transition-colors">${classData.name}</h4>
+                        <h4 class="font-extrabold text-sm text-gray-900 dark:text-white leading-tight group-hover:text-primary transition-colors">${classData.name}</h4>
                         ${categoryBadge}
                         ${trialBadge}
                     </div>
-                    <div class="text-[10px] text-gray-550 dark:text-gray-400 mt-1.5 flex items-center gap-2">
+                    <div class="text-[11px] text-gray-700 dark:text-gray-300 mt-1.5 flex items-center gap-2">
                         <span class="flex items-center gap-1">
-                            <i class="fas fa-user-tie text-[9px] opacity-75"></i> <span class="font-semibold">${getShortTeacherName(classData.teacherName)}</span>
+                            <i class="fas fa-user-tie text-[10px] opacity-80"></i> <span class="font-semibold">${getShortTeacherName(classData.teacherName)}</span>
                         </span>
                     </div>
                 </div>
             </div>
             
             <div class="mt-3 sm:mt-0 w-full sm:w-48 flex flex-col justify-end">
-                <div class="flex justify-between items-center text-[10px] text-gray-550 dark:text-gray-400 mb-1 font-bold">
+                <div class="flex justify-between items-center text-[11px] text-gray-700 dark:text-gray-300 mb-1 font-bold">
                     <span>Ocupação: ${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
                     <span>${Math.round(occupationPercentage)}%</span>
                 </div>
-                <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1.5 overflow-hidden">
+                <div class="w-full bg-gray-300 dark:bg-black/40 rounded-full h-1.5 overflow-hidden">
                     <div class="${occupationColor} h-1.5 rounded-full transition-all duration-500" style="width: ${occupationPercentage}%"></div>
                 </div>
             </div>
@@ -528,12 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="absolute top-1.5 right-1.5 bg-amber-500 text-black text-[8px] font-extrabold px-1.5 py-0.5 rounded-md leading-tight tracking-wide z-20">EXP</span>`
             : '';
 
-        const categoryBadge = classData.category
-            ? `<span class="${colorClasses.badge} px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wider leading-none shadow-sm">${classData.category}</span>`
+        let displayCategory = classData.category || '';
+        if (displayCategory.toLowerCase().includes('baby')) {
+            displayCategory = 'Baby';
+        }
+        const categoryBadge = displayCategory
+            ? `<span class="${colorClasses.badge} px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider leading-none shadow-sm">${displayCategory}</span>`
             : '';
 
         const endStr = classData.endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const timeRangeBadge = `<span class="text-[9px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-2">${classData.time} - ${endStr}</span>`;
+        const timeRangeBadge = `<span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mr-2">${classData.time} - ${endStr}</span>`;
 
         card.innerHTML = `
             ${trialBadge}
@@ -543,17 +551,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${timeRangeBadge}
                         ${categoryBadge}
                     </div>
-                    <div class="font-bold text-[11px] text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
-                    <div class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        <i class="fas fa-user-tie text-[8px] opacity-75"></i> <span class="font-medium">${getShortTeacherName(classData.teacherName)}</span>
+                    <div class="font-extrabold text-[12px] text-gray-900 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 ${trialCount > 0 ? 'pr-8' : ''}">${classData.name}</div>
+                    <div class="text-[10px] text-gray-700 dark:text-gray-300 mt-1 flex items-center gap-1">
+                        <i class="fas fa-user-tie text-[9px] opacity-80"></i> <span class="font-semibold">${getShortTeacherName(classData.teacherName)}</span>
                     </div>
                 </div>
                 <div class="mt-0.5">
-                    <div class="flex justify-between items-center text-[9px] text-gray-550 dark:text-gray-400 mb-0.5 font-bold">
+                    <div class="flex justify-between items-center text-[10px] text-gray-700 dark:text-gray-300 mb-0.5 font-semibold">
                         <span>Ocupação: ${occupation}/${capacity}${trialCount > 0 ? ` <span class="text-amber-500">+${trialCount} exp</span>` : ''}</span>
                         <span>${Math.round(occupationPercentage)}%</span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-black/30 rounded-full h-1 overflow-hidden">
+                    <div class="w-full bg-gray-300 dark:bg-black/40 rounded-full h-1 overflow-hidden">
                         <div class="${occupationColor} h-1 rounded-full" style="width: ${occupationPercentage}%"></div>
                     </div>
                 </div>
