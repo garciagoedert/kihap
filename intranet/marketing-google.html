@@ -11,38 +11,87 @@
                 document.documentElement.classList.remove("dark");
             }
         })();
-        window.tailwind = { config: { darkMode: "class" } };
-    </script>    <meta charset="UTF-8">
+        window.tailwind = { 
+            config: { 
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#FF9800",
+                            "primary-dark": "#E68900"
+                        }
+                    }
+                }
+            } 
+        };
+    </script>
+    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
     
-    
-    
-    
-    
-    
-        
-    
-    
     <title>Kihap - Google Ads</title>
-    <!-- Tailwind CSS -->
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    
+    <!-- Tailwind & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="log.css">
+    <link rel="stylesheet" href="theme.css">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111111;
-            color: #e5e7eb;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReport, #printableReport * {
+                visibility: visible;
+            }
+            #printableReport {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                display: block !important;
+            }
+            body, main, #sidebar-container, #header-container, #google-config-modal {
+                display: none !important;
+            }
+            .print-card {
+                page-break-inside: avoid;
+                border: 1px solid #e5e7eb;
+                background-color: #f9fafb !important;
+                color: black !important;
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                border-radius: 0.75rem;
+            }
+            .print-table {
+                page-break-inside: avoid;
+                border-collapse: collapse;
+                width: 100%;
+                color: black !important;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #e5e7eb;
+                padding: 8px;
+                color: black !important;
+            }
         }
     </style>
 </head>
 
-<body class="flex h-screen overflow-hidden">
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 flex h-screen overflow-hidden">
 
     <div id="sidebar-container"></div>
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
@@ -50,29 +99,32 @@
     <main id="main-content" class="flex-1 flex flex-col h-screen overflow-y-auto">
         <div id="header-container"></div>
 
-        <div class="p-6 max-w-7xl mx-auto w-full space-y-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 flex-grow">
+            <!-- Header & Action Bar -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-white mb-2"><i class="fab fa-google text-red-500 mr-2"></i>
-                        Google Ads</h1>
-                    <p class="text-gray-400">Dashboard de performance de campanhas (Search & Display).</p>
+                    <h1 class="text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
+                        <i class="fab fa-google text-red-500"></i> Google Ads
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Dashboard de performance de campanhas (Search & Display)</p>
                 </div>
-                <div class="flex gap-3 items-center">
+
+                <div class="flex flex-wrap items-center gap-2.5">
                     <!-- Custom Date Wrapper -->
-                    <div id="customDateControls"
-                        class="hidden flex gap-2 items-center bg-gray-800 p-1 rounded-lg border border-gray-700">
+                    <div id="customDateControls" class="hidden flex gap-2 items-center bg-white dark:bg-gray-800 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <input type="date" id="dateStart"
-                            class="bg-gray-700 text-white rounded px-2 py-1 text-sm border-none focus:ring-1 focus:ring-blue-500 w-32 cursor-pointer">
-                        <span class="text-gray-400">-</span>
+                            class="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2.5 py-1 text-xs border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+                        <span class="text-gray-400 text-xs">-</span>
                         <input type="date" id="dateEnd"
-                            class="bg-gray-700 text-white rounded px-2 py-1 text-sm border-none focus:ring-1 focus:ring-blue-500 w-32 cursor-pointer">
-                        <button id="applyCustomDate"
-                            class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-sm"><i
-                                class="fas fa-check"></i></button>
+                            class="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2.5 py-1 text-xs border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+                        <button id="applyCustomDate" title="Aplicar Período"
+                            class="bg-primary hover:bg-primary-dark text-black px-2.5 py-1 rounded-lg text-xs font-bold transition-all">
+                            <i class="fas fa-check"></i>
+                        </button>
                     </div>
 
                     <select id="periodSelect"
-                        class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm cursor-pointer transition-all">
                         <option value="today">Hoje</option>
                         <option value="yesterday">Ontem</option>
                         <option value="last7">Últimos 7 dias</option>
@@ -80,200 +132,231 @@
                         <option value="thisMonth">Este Mês</option>
                         <option value="custom">Personalizado</option>
                     </select>
-                    <button id="refreshBtn"
-                        class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors border border-gray-700">
-                        <i class="fas fa-sync-alt"></i>
+
+                    <button id="refreshBtn" title="Atualizar Dados"
+                        class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all cursor-pointer">
+                        <i class="fas fa-sync-alt text-sm"></i>
                     </button>
-                    <button
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors shadow-lg shadow-blue-900/20">
-                        <i class="fas fa-plug mr-2"></i> Conectar Google
+
+                    <button id="exportPdfBtn" title="Exportar Relatório PDF"
+                        class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold transition-all shadow-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-file-pdf text-red-500"></i> Exportar PDF
+                    </button>
+
+                    <button id="openConfigBtn"
+                        class="bg-primary hover:bg-primary-dark text-black px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-primary/20 flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-plug"></i> Conectar Google
                     </button>
                 </div>
             </div>
 
-            <!-- AI Insight Card -->
-            <div
-                class="bg-gradient-to-r from-gray-900 to-black rounded-xl p-6 border border-gray-800 shadow-lg relative overflow-hidden group">
-                <div
-                    class="absolute top-0 right-0 w-64 h-64 bg-red-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none">
-                </div>
+            <!-- Dedicated Container for API Warnings & Notifications -->
+            <div id="apiAlertContainer" class="w-full"></div>
+
+            <!-- Gemini AI Insight Card -->
+            <div class="bg-gradient-to-br from-indigo-900/10 via-purple-900/10 to-pink-900/10 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border border-indigo-200/50 dark:border-indigo-800/50 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
                 <div class="relative z-10">
-                    <div class="flex justify-between items-start mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <div class="flex items-center gap-3">
-                            <div
-                                class="p-2 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg shadow-lg shadow-purple-500/20">
-                                <i class="fas fa-robot text-white text-lg"></i>
+                            <div class="w-10 h-10 bg-primary/20 text-primary rounded-xl flex items-center justify-center shadow-inner">
+                                <i class="fas fa-robot text-lg"></i>
                             </div>
-                            <h2 class="text-xl font-bold text-white">Análise Inteligente (Gemini AI)</h2>
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    Análise Inteligente (Gemini AI)
+                                </h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Diagnóstico avançado e sugestões estratégicas para campanhas</p>
+                            </div>
                         </div>
                         <button id="analyzeBtn"
-                            class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm border border-gray-700 transition-all flex items-center gap-2">
-                            <i class="fas fa-magic text-yellow-500"></i> Gerar Análise
+                            class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fas fa-wand-magic-sparkles text-yellow-500"></i> Gerar Análise
                         </button>
                     </div>
 
-                    <div id="aiLoading" class="hidden py-4 text-center">
-                        <i class="fas fa-circle-notch fa-spin text-purple-500 text-2xl"></i>
-                        <p class="text-gray-400 text-sm mt-2">Analisando métricas com IA...</p>
+                    <div id="aiLoading" class="hidden py-6 text-center">
+                        <i class="fas fa-circle-notch fa-spin text-primary text-2xl"></i>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2 font-medium">Analisando performance com IA...</p>
                     </div>
 
-                    <div id="aiContent" class="text-gray-300 text-sm leading-relaxed space-y-2 hidden">
-                        <!-- AI Response goes here -->
+                    <div id="aiContent" class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed space-y-3 hidden">
+                        <!-- AI Response injected here -->
                     </div>
 
-                    <div id="aiPlaceholder" class="text-gray-500 text-sm italic">
-                        Clique em "Gerar Análise" para que a IA identifique pontos de melhoria nas suas campanhas.
+                    <div id="aiPlaceholder" class="text-gray-500 dark:text-gray-400 text-sm italic">
+                        Clique em "Gerar Análise" para que a IA identifique pontos de melhoria nas suas campanhas de Search & Display.
                     </div>
                 </div>
             </div>
 
-            <!-- Overview Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Overview Metrics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <!-- Spend -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-green-500/10 rounded-lg">
-                            <i class="fas fa-dollar-sign text-green-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                            <i class="fas fa-dollar-sign text-lg"></i>
                         </div>
-                        <span
-                            class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">+8%</span>
+                        <span id="badgeSpend" class="text-xs font-semibold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">+8%</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Investimento Total</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="totalSpend">R$ 0,00</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Investimento Total</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="totalSpend">R$ 0,00</p>
                 </div>
 
                 <!-- Impressions -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-blue-500/10 rounded-lg">
-                            <i class="fas fa-eye text-blue-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                            <i class="fas fa-eye text-lg"></i>
                         </div>
-                        <span
-                            class="text-xs font-semibold px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">+15%</span>
+                        <span id="badgeImpressions" class="text-xs font-semibold px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full">+15%</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Impressões</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="totalImpressions">0</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Impressões</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="totalImpressions">0</p>
                 </div>
 
                 <!-- Clicks -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-purple-500/10 rounded-lg">
-                            <i class="fas fa-mouse-pointer text-purple-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-500">
+                            <i class="fas fa-mouse-pointer text-lg"></i>
                         </div>
-                        <span
-                            class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">+3%</span>
+                        <span id="badgeClicks" class="text-xs font-semibold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">+3%</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Cliques</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="totalClicks">0</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliques</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="totalClicks">0</p>
                 </div>
 
                 <!-- CTR -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-yellow-500/10 rounded-lg">
-                            <i class="fas fa-percent text-yellow-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                            <i class="fas fa-percent text-lg"></i>
                         </div>
-                        <span class="text-xs font-semibold px-2 py-1 bg-red-500/20 text-red-400 rounded-full">-1%</span>
+                        <span id="badgeCtr" class="text-xs font-semibold px-2 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-full">-1%</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">CTR Médio</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="avgCtr">0%</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">CTR Médio</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="avgCtr">0%</p>
                 </div>
 
                 <!-- Conversions -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-red-500/10 rounded-lg">
-                            <i class="fas fa-bullseye text-red-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500">
+                            <i class="fas fa-bullseye text-lg"></i>
                         </div>
-                        <span
-                            class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">+5%</span>
+                        <span id="badgeConversions" class="text-xs font-semibold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">+5%</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Conversões</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="totalConversions">0</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Conversões</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="totalConversions">0</p>
                 </div>
 
-                <!-- Cost Per Conversion (CPA) -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-indigo-500/10 rounded-lg">
-                            <i class="fas fa-coins text-indigo-500 text-xl"></i>
+                <!-- CPA -->
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-500">
+                            <i class="fas fa-coins text-lg"></i>
                         </div>
-                        <span class="text-xs font-semibold px-2 py-1 bg-green-500/20 text-green-400 rounded-full">-R$
-                            1.20</span>
+                        <span id="badgeCpa" class="text-xs font-semibold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">-R$ 1.20</span>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Custo por Conversão</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="avgCpa">R$ 0,00</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custo por Conversão</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="avgCpa">R$ 0,00</p>
                 </div>
 
                 <!-- Search Impression Share -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-teal-500/10 rounded-lg">
-                            <i class="fas fa-share-alt text-teal-500 text-xl"></i>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-teal-500/10 rounded-xl flex items-center justify-center text-teal-500">
+                            <i class="fas fa-share-nodes text-lg"></i>
                         </div>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Parcela de Impressão</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="impressionShare">0%</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parcela de Impressão</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="impressionShare">0%</p>
                 </div>
 
-                <!-- Quality Score (Avg) -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-orange-500/10 rounded-lg">
-                            <i class="fas fa-star text-orange-500 text-xl"></i>
+                <!-- Quality Score -->
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500">
+                            <i class="fas fa-star text-lg"></i>
                         </div>
                     </div>
-                    <h3 class="text-gray-400 text-sm font-medium">Índice de Qualidade (Médio)</h3>
-                    <p class="text-2xl font-bold text-white mt-1" id="qualityScore">0/10</p>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Índice de Qualidade (Médio)</h3>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1" id="qualityScore">0/10</p>
                 </div>
             </div>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Performance Over Time -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <h3 class="text-lg font-bold text-white mb-6">Desempenho (30 dias)</h3>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-chart-line text-primary"></i> Desempenho no Tempo
+                        </h3>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Conversões vs Investimento</span>
+                    </div>
                     <div class="relative h-64 w-full">
                         <canvas id="performanceChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Device Split -->
-                <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
-                    <h3 class="text-lg font-bold text-white mb-6">Dispositivos</h3>
+                <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-mobile-screen text-primary"></i> Dispositivos
+                        </h3>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Distribuição %</span>
+                    </div>
                     <div class="relative h-64 w-full flex justify-center">
                         <canvas id="deviceChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Campaigns Table -->
-            <div class="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-lg overflow-hidden">
-                <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-white">Campanhas Ativas</h3>
-                    <div class="flex gap-2">
-                        <input type="text" placeholder="Buscar campanha..."
-                            class="bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <!-- Active Campaigns Table -->
+            <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Campanhas Google Ads</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Lista de campanhas ativas e pausadas no período</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="relative min-w-[200px]">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-search text-xs"></i>
+                            </span>
+                            <input type="text" id="searchCampaignInput" placeholder="Buscar campanha..."
+                                class="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                        </div>
+
+                        <select id="statusFilter"
+                            class="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
+                            <option value="all">Todos os Status</option>
+                            <option value="active">Apenas Ativas</option>
+                            <option value="paused">Apenas Pausadas</option>
+                        </select>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-400">
-                        <thead class="bg-gray-800 text-gray-200 uppercase text-xs">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200 dark:border-gray-800">
                             <tr>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Campanha</th>
-                                <th class="px-4 py-3">Tipo</th>
-                                <th class="px-4 py-3">Conversões</th>
-                                <th class="px-4 py-3">Cliques</th>
-                                <th class="px-4 py-3">CTR</th>
-                                <th class="px-4 py-3">CPC Médio</th>
-                                <th class="px-4 py-3">CPA</th>
-                                <th class="px-4 py-3">Custo</th>
+                                <th class="px-4 py-3.5">Status</th>
+                                <th class="px-4 py-3.5">Campanha</th>
+                                <th class="px-4 py-3.5">Tipo</th>
+                                <th class="px-4 py-3.5">Conversões</th>
+                                <th class="px-4 py-3.5">Cliques</th>
+                                <th class="px-4 py-3.5">CTR</th>
+                                <th class="px-4 py-3.5">CPC Médio</th>
+                                <th class="px-4 py-3.5">CPA</th>
+                                <th class="px-4 py-3.5">Custo</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-800" id="campaignsTableBody">
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-gray-800 dark:text-gray-200 text-xs font-medium" id="campaignsTableBody">
                             <!-- Rows loaded via JS -->
                         </tbody>
                     </table>
@@ -282,6 +365,73 @@
 
         </div>
     </main>
+
+    <!-- Modal de Configuração do Google Ads -->
+    <div id="google-config-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] p-6 md:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500">
+                    <i class="fab fa-google text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Conectar Google Ads API</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Insira suas credenciais da conta Google Ads para carregar dados reais</p>
+                </div>
+            </div>
+            <form id="google-config-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="cfg-customer-id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">ID do Cliente (Customer ID)</label>
+                        <input type="text" id="cfg-customer-id" placeholder="Ex: 123-456-7890" required
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        <p class="text-[10px] text-gray-400 mt-1">Encontrado no canto superior direito do painel do Google Ads.</p>
+                    </div>
+
+                    <div>
+                        <label for="cfg-client-id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">OAuth 2.0 Client ID</label>
+                        <input type="text" id="cfg-client-id" placeholder="Ex: 123456...apps.googleusercontent.com" required
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
+
+                    <div>
+                        <label for="cfg-client-secret" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">OAuth 2.0 Client Secret</label>
+                        <input type="password" id="cfg-client-secret" placeholder="Ex: GOCSPX-..." required
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
+
+                    <div>
+                        <label for="cfg-refresh-token" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Refresh Token</label>
+                        <textarea id="cfg-refresh-token" rows="2" placeholder="Ex: 1//04..." required
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="cfg-developer-token" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Developer Token (Opcional)</label>
+                        <input type="text" id="cfg-developer-token" placeholder="Opcional - deixe em branco caso não tenha"
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
+
+                    <div>
+                        <label for="cfg-login-customer-id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">ID da Conta Gerenciadora MCC (Opcional)</label>
+                        <input type="text" id="cfg-login-customer-id" placeholder="Ex: 987-654-3210"
+                            class="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex gap-3">
+                    <button type="button" id="cancel-google-cfg-btn"
+                        class="flex-1 px-4 py-3 font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer">Cancelar</button>
+                    <button type="submit" id="save-google-cfg-btn"
+                        class="flex-1 px-4 py-3 font-bold text-black bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 cursor-pointer flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Salvar e Testar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Printable Container for PDF Export -->
+    <div id="printableReport" class="hidden"></div>
 
     <!-- Scripts -->
     <script src="firebase-config.js" type="module"></script>
