@@ -3238,22 +3238,73 @@ export async function setupStorePage() {
             });
         }
 
+        // Populate bi-prod-exclude options dynamically with all products in prodAgg
+        const biProdLimit = document.getElementById('bi-prod-limit');
+        const biProdSort = document.getElementById('bi-prod-sort');
+        const biProdExclude = document.getElementById('bi-prod-exclude');
+
+        if (biProdExclude) {
+            const currentExcludeVal = biProdExclude.value;
+            const allProdNames = Object.keys(prodAgg).sort();
+            let excludeOptsHtml = '<option value="">Excluir Produto...</option>';
+            allProdNames.forEach(pName => {
+                excludeOptsHtml += `<option value="${pName}" ${pName === currentExcludeVal ? 'selected' : ''}>🚫 ${pName}</option>`;
+            });
+            biProdExclude.innerHTML = excludeOptsHtml;
+        }
+
         // 5. Chart 4: Top Products
         if (biChartProducts) biChartProducts.destroy();
         const ctxProducts = document.getElementById('bi-chart-products');
         if (ctxProducts) {
-            const sortedProducts = Object.entries(prodAgg).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 7);
-            const prodLabels = sortedProducts.map(p => p[0]);
-            const prodRevenues = sortedProducts.map(p => p[1].revenue);
+            const sortMode = biProdSort ? biProdSort.value : 'revenue';
+            const excludedProd = biProdExclude ? biProdExclude.value : '';
+            const limitVal = biProdLimit ? biProdLimit.value : '7';
+
+            let prodEntries = Object.entries(prodAgg);
+
+            // Filter out excluded product if selected
+            if (excludedProd) {
+                prodEntries = prodEntries.filter(([pName]) => pName !== excludedProd);
+            }
+
+            // Sort by Revenue or Count
+            if (sortMode === 'count') {
+                prodEntries.sort((a, b) => b[1].count - a[1].count);
+            } else {
+                prodEntries.sort((a, b) => b[1].revenue - a[1].revenue);
+            }
+
+            // Limit products count
+            if (limitVal !== 'all') {
+                const limitNum = parseInt(limitVal, 10) || 7;
+                prodEntries = prodEntries.slice(0, limitNum);
+            }
+
+            const prodLabels = prodEntries.map(p => p[0]);
+            const prodValues = prodEntries.map(p => sortMode === 'count' ? p[1].count : p[1].revenue);
+            const valueLabel = sortMode === 'count' ? 'Unidades Vendidas' : 'Faturamento (R$)';
+
+            // Dynamically adjust container height if showing many products
+            const canvasContainer = ctxProducts.parentElement;
+            if (canvasContainer) {
+                const itemCount = prodLabels.length;
+                if (itemCount > 10) {
+                    canvasContainer.style.minHeight = `${Math.max(300, itemCount * 28)}px`;
+                } else {
+                    canvasContainer.style.minHeight = '300px';
+                }
+            }
+
             biChartProducts = new Chart(ctxProducts.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: prodLabels.length > 0 ? prodLabels : ['Sem dados'],
                     datasets: [{
-                        label: 'Faturamento (R$)',
-                        data: prodRevenues.length > 0 ? prodRevenues : [0],
-                        backgroundColor: 'rgba(245, 158, 11, 0.75)',
-                        borderColor: '#f59e0b',
+                        label: valueLabel,
+                        data: prodValues.length > 0 ? prodValues : [0],
+                        backgroundColor: sortMode === 'count' ? 'rgba(236, 72, 153, 0.75)' : 'rgba(245, 158, 11, 0.75)',
+                        borderColor: sortMode === 'count' ? '#ec4899' : '#f59e0b',
                         borderWidth: 1,
                         borderRadius: 8
                     }]
@@ -3266,7 +3317,12 @@ export async function setupStorePage() {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.x.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                                label: (ctx) => {
+                                    const val = ctx.parsed.x;
+                                    return sortMode === 'count'
+                                        ? ` Qtd Vendida: ${val} un.`
+                                        : ` Faturamento: R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                                }
                             }
                         }
                     },
@@ -3277,7 +3333,9 @@ export async function setupStorePage() {
                             ticks: {
                                 color: textColor,
                                 font: { size: 10 },
-                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                                callback: val => sortMode === 'count'
+                                    ? val
+                                    : 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
                             }
                         },
                         y: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }
@@ -3529,4 +3587,11 @@ export async function setupStorePage() {
     if (biInstructorFilter) biInstructorFilter.addEventListener('change', updateBIDashboard);
     if (biGraduationFilter) biGraduationFilter.addEventListener('change', updateBIDashboard);
     if (biStatusFilter) biStatusFilter.addEventListener('change', updateBIDashboard);
+
+    const biProdLimit = document.getElementById('bi-prod-limit');
+    const biProdSort = document.getElementById('bi-prod-sort');
+    const biProdExclude = document.getElementById('bi-prod-exclude');
+    if (biProdLimit) biProdLimit.addEventListener('change', updateBIDashboard);
+    if (biProdSort) biProdSort.addEventListener('change', updateBIDashboard);
+    if (biProdExclude) biProdExclude.addEventListener('change', updateBIDashboard);
 }

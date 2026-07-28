@@ -498,11 +498,32 @@
 
                     <!-- Top Products Chart -->
                     <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                             <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <i class="fas fa-box-open text-amber-500"></i> Top Produtos Mais Vendidos
                             </h3>
-                            <span class="text-xs text-gray-400 font-medium">Faturamento por Produto</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <!-- Quantidade a exibir -->
+                                <select id="bi-prod-limit" title="Quantidade de produtos a exibir" class="px-2.5 py-1 text-[11px] font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                    <option value="5">Top 5</option>
+                                    <option value="7" selected>Top 7</option>
+                                    <option value="10">Top 10</option>
+                                    <option value="15">Top 15</option>
+                                    <option value="20">Top 20</option>
+                                    <option value="all">Todos os Produtos</option>
+                                </select>
+
+                                <!-- Ordenação -->
+                                <select id="bi-prod-sort" title="Métrica de ordenação" class="px-2.5 py-1 text-[11px] font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                    <option value="revenue" selected>Por R$ Faturamento</option>
+                                    <option value="count">Por Qtd Vendida</option>
+                                </select>
+
+                                <!-- Exclusão de produto -->
+                                <select id="bi-prod-exclude" title="Excluir produto do gráfico" class="px-2.5 py-1 text-[11px] font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[150px] truncate">
+                                    <option value="">Excluir Produto...</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="relative flex-grow min-h-[300px]">
                             <canvas id="bi-chart-products"></canvas>
