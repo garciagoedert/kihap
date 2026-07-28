@@ -2648,14 +2648,23 @@ export async function setupStorePage() {
         if (sale.productCategory && String(sale.productCategory).trim() !== '') return String(sale.productCategory).trim();
         
         const prodName = sale.productName || sale.title || sale.name || '';
-        if (typeof products !== 'undefined' && Array.isArray(products)) {
-            const found = products.find(p => p.id === sale.productId || (p.name || p.title) === prodName);
-            if (found && found.category && String(found.category).trim() !== '') return String(found.category).trim();
+        const norm = (str) => String(str || '').trim().toLowerCase();
+
+        if (typeof allProducts !== 'undefined' && Array.isArray(allProducts)) {
+            const found = allProducts.find(p => 
+                (sale.productId && p.id === sale.productId) || 
+                (sale.product_id && p.id === sale.product_id) || 
+                (prodName && (norm(p.name) === norm(prodName) || norm(p.title) === norm(prodName) || norm(p.nome) === norm(prodName)))
+            );
+            if (found && (found.category || found.categoria)) {
+                const c = found.category || found.categoria;
+                if (String(c).trim() !== '') return String(c).trim();
+            }
         }
 
         const lower = prodName.toLowerCase();
         if (lower.includes('graduaç') || lower.includes('exame') || lower.includes('1bd') || lower.includes('2bd') || lower.includes('3bd')) {
-            return 'Exames & Graduações';
+            return 'Graduação';
         }
         if (lower.includes('experience') || lower.includes('torneio') || lower.includes('evento') || lower.includes('campeonato')) {
             return 'Eventos & Experiências';
@@ -3179,7 +3188,14 @@ export async function setupStorePage() {
         }
 
         if (biCatExcludePicker) {
-            const allCategories = Array.from(new Set(Object.values(prodCategoryMap))).sort();
+            const allCatSet = new Set(Object.values(prodCategoryMap));
+            if (typeof allProducts !== 'undefined' && Array.isArray(allProducts)) {
+                allProducts.forEach(p => {
+                    const c = p.category || p.categoria;
+                    if (c && String(c).trim() !== '') allCatSet.add(String(c).trim());
+                });
+            }
+            const allCategories = Array.from(allCatSet).sort();
             let catOptsHtml = '<option value="">+ Excluir Categoria...</option>';
             allCategories.forEach(catName => {
                 if (!biExcludedCategories.has(catName)) {
