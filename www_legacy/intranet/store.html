@@ -32,6 +32,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="log.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -314,6 +315,9 @@
             <!-- Tabs -->
             <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
                 <nav class="flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
+                    <button id="tab-dashboard" class="tab-btn text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white px-3 py-2 text-sm font-medium flex-shrink-0">
+                        📈 Dashboard
+                    </button>
                     <button id="tab-sales-log" class="tab-btn text-primary dark:text-white px-3 py-2 text-sm font-semibold flex-shrink-0">
                         📊 Log de Vendas
                     </button>
@@ -330,6 +334,218 @@
                         🎫 Eventos
                     </button>
                 </nav>
+            </div>
+
+            <!-- BI Dashboard Content -->
+            <div id="content-dashboard" class="tab-content hidden animate-fadeIn">
+                <!-- BI Filters Header Bar -->
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Business Intelligence & Vendas</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Análise analítica de faturamento, instrutores e unidades</p>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Period Filter -->
+                            <div>
+                                <label for="bi-period-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Período</label>
+                                <select id="bi-period-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">Todo o Histórico</option>
+                                    <option value="this_month">Este Mês</option>
+                                    <option value="last_month">Mês Passado</option>
+                                    <option value="30_days" selected>Últimos 30 Dias</option>
+                                    <option value="90_days">Últimos 90 Dias</option>
+                                    <option value="this_year">Este Ano</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+
+                            <!-- Custom Dates -->
+                            <div id="bi-custom-dates-container" class="hidden flex items-center gap-2">
+                                <div>
+                                    <label for="bi-start-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">De</label>
+                                    <input type="date" id="bi-start-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
+                                </div>
+                                <div>
+                                    <label for="bi-end-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Até</label>
+                                    <input type="date" id="bi-end-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
+                                </div>
+                            </div>
+
+                            <!-- Unit Filter -->
+                            <div>
+                                <label for="bi-unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Unidade</label>
+                                <select id="bi-unit-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todas as Unidades</option>
+                                </select>
+                            </div>
+
+                            <!-- Instructor Filter -->
+                            <div>
+                                <label for="bi-instructor-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Instrutor / Professor</label>
+                                <select id="bi-instructor-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todos os Instrutores</option>
+                                </select>
+                            </div>
+
+                            <!-- Status Filter -->
+                            <div>
+                                <label for="bi-status-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Status Pagamento</label>
+                                <select id="bi-status-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="approved_only" selected>Apenas Pagas / Aprovadas</option>
+                                    <option value="all">Todos os Status</option>
+                                    <option value="pending">Apenas Pendentes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BI KPI Cards -->
+                <div id="bi-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4 mb-8">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <!-- Charts Row 1: Timeline & Unidades -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Timeline Chart -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-chart-line text-blue-500"></i> Evolução das Vendas (Faturamento)
+                            </h3>
+                            <span id="bi-timeline-subtitle" class="text-xs text-gray-400 font-medium">Por Período</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[300px]">
+                            <canvas id="bi-chart-timeline"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Sales by Unit Chart -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-building text-indigo-500"></i> Vendas por Unidade
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Faturamento Total</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[300px]">
+                            <canvas id="bi-chart-units"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2: Instrutores & Top Produtos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Sales by Instructor Chart -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-user-ninja text-emerald-500"></i> Vendas por Instrutor / Professor
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Faturamento por Instrutor</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[300px]">
+                            <canvas id="bi-chart-instructors"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Products Chart -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-box-open text-amber-500"></i> Top Produtos Mais Vendidos
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Faturamento por Produto</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[300px]">
+                            <canvas id="bi-chart-products"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 3: Payment Methods & Day of Week -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Payment Methods Doughnut -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-credit-card text-purple-500"></i> Formas de Pagamento
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Proporção %</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[260px] max-h-[300px] flex items-center justify-center">
+                            <canvas id="bi-chart-payment-methods"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Sales by Day of Week -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-calendar-week text-rose-500"></i> Vendas por Dia da Semana
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Volume Diário</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[260px]">
+                            <canvas id="bi-chart-dow"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed BI Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Unit Performance Table -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-building text-blue-500"></i> Performance por Unidade
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                        <th class="pb-3">Unidade</th>
+                                        <th class="pb-3 text-center">Vendas</th>
+                                        <th class="pb-3 text-right">Faturamento</th>
+                                        <th class="pb-3 text-right">Ticket Médio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bi-table-units" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Instructor Performance Table -->
+                    <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-user-ninja text-emerald-500"></i> Performance por Instrutor / Professor
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                        <th class="pb-3">Instrutor</th>
+                                        <th class="pb-3 text-center">Vendas</th>
+                                        <th class="pb-3 text-right">Faturamento</th>
+                                        <th class="pb-3 text-right">Ticket Médio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bi-table-instructors" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sales Log Content -->

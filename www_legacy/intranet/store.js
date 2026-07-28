@@ -15,10 +15,12 @@ export async function setupStorePage() {
     const isStore = currentUser && currentUser.isStore === true;
 
     // Tab elements
+    const tabDashboard = document.getElementById('tab-dashboard');
     const tabSalesLog = document.getElementById('tab-sales-log');
     const tabManageProducts = document.getElementById('tab-manage-products');
     const tabMarketing = document.getElementById('tab-marketing');
     const tabEvents = document.getElementById('tab-events');
+    const contentDashboard = document.getElementById('content-dashboard');
     const contentSalesLog = document.getElementById('content-sales-log');
     const contentManageProducts = document.getElementById('content-manage-products');
     const contentMarketing = document.getElementById('content-marketing');
@@ -187,33 +189,58 @@ export async function setupStorePage() {
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
-        [tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
-            tab.classList.remove('text-white', 'border-blue-500');
-            tab.classList.add('text-gray-400', 'hover:border-gray-500');
+        [tabDashboard, tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
+            if (tab) {
+                tab.classList.remove('text-white', 'border-blue-500');
+                tab.classList.add('text-gray-400', 'hover:border-gray-500');
+            }
         });
 
-        [contentSalesLog, contentManageProducts, contentMarketing, contentEvents].forEach(content => {
-            content.classList.add('hidden');
+        [contentDashboard, contentSalesLog, contentManageProducts, contentMarketing, contentEvents].forEach(content => {
+            if (content) content.classList.add('hidden');
         });
 
-        if (activeTab === 'sales') {
-            tabSalesLog.classList.add('text-white', 'border-blue-500');
-            tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
-            contentSalesLog.classList.remove('hidden');
+        if (activeTab === 'dashboard' && contentDashboard) {
+            if (tabDashboard) {
+                tabDashboard.classList.add('text-white', 'border-blue-500');
+                tabDashboard.classList.remove('text-gray-400', 'hover:border-gray-500');
+            }
+            contentDashboard.classList.remove('hidden');
+            if (allSales.length === 0) {
+                fetchSales().then(() => {
+                    populateBIFilters();
+                    updateBIDashboard();
+                });
+            } else {
+                populateBIFilters();
+                updateBIDashboard();
+            }
+        } else if (activeTab === 'sales') {
+            if (tabSalesLog) {
+                tabSalesLog.classList.add('text-white', 'border-blue-500');
+                tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
+            }
+            if (contentSalesLog) contentSalesLog.classList.remove('hidden');
         } else if (activeTab === 'products') {
-            tabManageProducts.classList.add('text-white', 'border-blue-500');
-            tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
-            contentManageProducts.classList.remove('hidden');
+            if (tabManageProducts) {
+                tabManageProducts.classList.add('text-white', 'border-blue-500');
+                tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
+            }
+            if (contentManageProducts) contentManageProducts.classList.remove('hidden');
         } else if (activeTab === 'marketing') {
-            tabMarketing.classList.add('text-white', 'border-blue-500');
-            tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
-            contentMarketing.classList.remove('hidden');
+            if (tabMarketing) {
+                tabMarketing.classList.add('text-white', 'border-blue-500');
+                tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
+            }
+            if (contentMarketing) contentMarketing.classList.remove('hidden');
         } else if (activeTab === 'events') {
             populateEventFilter();
             fetchEventSubscribers();
-            tabEvents.classList.add('text-white', 'border-blue-500');
-            tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
-            contentEvents.classList.remove('hidden');
+            if (tabEvents) {
+                tabEvents.classList.add('text-white', 'border-blue-500');
+                tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
+            }
+            if (contentEvents) contentEvents.classList.remove('hidden');
         }
     }
 
@@ -236,6 +263,7 @@ export async function setupStorePage() {
         }
     }
 
+    if (tabDashboard) tabDashboard.addEventListener('click', () => switchTab('dashboard'));
     if (tabSalesLog) tabSalesLog.addEventListener('click', () => switchTab('sales'));
     if (tabManageProducts) tabManageProducts.addEventListener('click', () => switchTab('products'));
     if (tabMarketing) tabMarketing.addEventListener('click', () => switchTab('marketing'));
@@ -2019,9 +2047,11 @@ export async function setupStorePage() {
     const initialLoad = async () => {
         await fetchMpAccounts(); // Fetch MP Accounts for product forms
         await fetchProducts(); // Fetch products first to populate filter
-        fetchSales();   // Fetch sales
+        await fetchSales();   // Fetch sales (must await so allSales is ready)
         populateFilters();    // Then populate filters with data from both
         populateEventFilter(); // Populate the events tab filter as well
+        populateBIFilters();   // Populate BI filters (Units, Instructors)
+        updateBIDashboard();   // Render BI Dashboard
         await fetchBanners();
         await fetchCoupons();
         // fetchCheckins() is now called when switching to the tab
@@ -2542,6 +2572,725 @@ export async function setupStorePage() {
                     <div class="text-4xl text-red-500 opacity-80"><i class="fas fa-exclamation-triangle"></i></div>
                 </div>
             `;
+        }
+    }
+
+    // ==========================================
+    // --- Business Intelligence (BI) Dashboard ---
+    // ==========================================
+    let biChartTimeline = null;
+    let biChartUnits = null;
+    let biChartInstructors = null;
+    let biChartProducts = null;
+    let biChartPaymentMethods = null;
+    let biChartDow = null;
+
+    const biPeriodFilter = document.getElementById('bi-period-filter');
+    const biCustomDatesContainer = document.getElementById('bi-custom-dates-container');
+    const biStartDate = document.getElementById('bi-start-date');
+    const biEndDate = document.getElementById('bi-end-date');
+    const biUnitFilter = document.getElementById('bi-unit-filter');
+    const biInstructorFilter = document.getElementById('bi-instructor-filter');
+    const biStatusFilter = document.getElementById('bi-status-filter');
+    const biKpiContainer = document.getElementById('bi-kpi-container');
+    const biTableUnits = document.getElementById('bi-table-units');
+    const biTableInstructors = document.getElementById('bi-table-instructors');
+
+    const getSaleDateObj = (sale) => {
+        if (!sale || !sale.created) return null;
+        if (typeof sale.created.toDate === 'function') return sale.created.toDate();
+        if (sale.created instanceof Date) return sale.created;
+        const parsed = new Date(sale.created);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const getSaleAmountInCents = (sale) => {
+        if (sale.amountTotal !== undefined && sale.amountTotal !== null) return parseInt(sale.amountTotal, 10) || 0;
+        if (sale.amount !== undefined && sale.amount !== null) {
+            const val = parseFloat(sale.amount);
+            return val < 1000 ? val * 100 : val;
+        }
+        if (sale.totalAmount !== undefined && sale.totalAmount !== null) return parseInt(sale.totalAmount, 10) || 0;
+        return 0;
+    };
+
+    const getPaymentMethodLabel = (sale) => {
+        if (!sale) return 'Outros';
+
+        let raw = '';
+        if (sale.paymentDetails) {
+            raw = sale.paymentDetails.method || 
+                  sale.paymentDetails.paymentMethodId || 
+                  sale.paymentDetails.paymentTypeId || 
+                  sale.paymentDetails.payment_method_id || '';
+        }
+        if (!raw) {
+            raw = sale.paymentMethod || 
+                  sale.paymentType || 
+                  sale.payment_method_id || 
+                  sale.payment_type_id || '';
+        }
+
+        const lower = String(raw).toLowerCase().trim();
+
+        if (lower.includes('pix') || lower.includes('bank_transfer')) {
+            return 'PIX';
+        }
+        if (lower.includes('credit') || lower.includes('card') || lower === 'visa' || lower === 'master' || lower === 'elo' || lower === 'amex' || lower === 'hipercard') {
+            return 'Cartão de Crédito';
+        }
+        if (lower.includes('debit') || lower === 'debvisa' || lower === 'debmaster') {
+            return 'Cartão de Débito';
+        }
+        if (lower.includes('ticket') || lower.includes('boleto') || lower.includes('bolbradesco')) {
+            return 'Boleto Bancário';
+        }
+        if (lower.includes('account_money') || lower.includes('saldo')) {
+            return 'Saldo Mercado Pago';
+        }
+        if (lower.includes('cash') || lower.includes('dinheiro') || lower.includes('especie')) {
+            return 'Dinheiro / Espécie';
+        }
+
+        if (sale.saleType === 'manual') {
+            if (sale.paymentDetails && sale.paymentDetails.method) {
+                const m = String(sale.paymentDetails.method).toLowerCase();
+                if (m.includes('pix')) return 'PIX';
+                if (m.includes('card') || m.includes('credit')) return 'Cartão de Crédito';
+                if (m.includes('debit')) return 'Cartão de Débito';
+                if (m.includes('cash') || m.includes('dinheiro')) return 'Dinheiro / Espécie';
+            }
+            return 'Venda Manual';
+        }
+
+        if (!raw) return 'Mercado Pago (Outros)';
+
+        const formatMap = {
+            'pix': 'PIX',
+            'card': 'Cartão de Crédito',
+            'credit': 'Cartão de Crédito',
+            'debit': 'Cartão de Débito',
+            'ticket': 'Boleto Bancário',
+            'cash': 'Dinheiro / Espécie'
+        };
+        return formatMap[lower] || raw.charAt(0).toUpperCase() + raw.slice(1);
+    };
+
+    const populateBIFilters = () => {
+        if (!biUnitFilter || !biInstructorFilter) return;
+
+        const currentUnitVal = biUnitFilter.value;
+        const currentInstVal = biInstructorFilter.value;
+
+        const units = new Set();
+        const instructors = new Set();
+
+        allSales.forEach(sale => {
+            const u = sale.userUnit || sale.unit || sale.unidade;
+            if (u && u.trim() !== '') units.add(u.trim());
+
+            const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor;
+            if (inst && inst.trim() !== '') instructors.add(inst.trim());
+        });
+
+        let unitOptionsHtml = '<option value="">Todas as Unidades</option>';
+        Array.from(units).sort().forEach(u => {
+            unitOptionsHtml += `<option value="${u}" ${u === currentUnitVal ? 'selected' : ''}>${u}</option>`;
+        });
+        biUnitFilter.innerHTML = unitOptionsHtml;
+
+        let instOptionsHtml = '<option value="">Todos os Instrutores</option>';
+        Array.from(instructors).sort().forEach(inst => {
+            instOptionsHtml += `<option value="${inst}" ${inst === currentInstVal ? 'selected' : ''}>${inst}</option>`;
+        });
+        biInstructorFilter.innerHTML = instOptionsHtml;
+    };
+
+    const updateBIDashboard = () => {
+        if (!biKpiContainer) return;
+
+        const period = biPeriodFilter ? biPeriodFilter.value : '30_days';
+        const selectedUnit = biUnitFilter ? biUnitFilter.value : '';
+        const selectedInstructor = biInstructorFilter ? biInstructorFilter.value : '';
+        const statusFilterVal = biStatusFilter ? biStatusFilter.value : 'approved_only';
+
+        const now = new Date();
+        let startDateLimit = null;
+        let endDateLimit = null;
+
+        if (period === 'this_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (period === 'last_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDateLimit = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        } else if (period === '30_days') {
+            startDateLimit = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        } else if (period === '90_days') {
+            startDateLimit = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+        } else if (period === 'this_year') {
+            startDateLimit = new Date(now.getFullYear(), 0, 1);
+        } else if (period === 'custom') {
+            if (biStartDate && biStartDate.value) {
+                startDateLimit = new Date(biStartDate.value + 'T00:00:00');
+            }
+            if (biEndDate && biEndDate.value) {
+                endDateLimit = new Date(biEndDate.value + 'T23:59:59');
+            }
+        }
+
+        const filteredSales = allSales.filter(sale => {
+            const saleDate = getSaleDateObj(sale);
+            if (startDateLimit && (!saleDate || saleDate < startDateLimit)) return false;
+            if (endDateLimit && (!saleDate || saleDate > endDateLimit)) return false;
+
+            const unit = sale.userUnit || sale.unit || sale.unidade || '';
+            if (selectedUnit && unit !== selectedUnit) return false;
+
+            const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor || '';
+            if (selectedInstructor && inst !== selectedInstructor) return false;
+
+            const status = (sale.paymentStatus || '').toLowerCase();
+            if (statusFilterVal === 'approved_only') {
+                if (status !== 'paid' && status !== 'approved' && status !== 'pago' && status !== 'concluido') return false;
+            } else if (statusFilterVal === 'pending') {
+                if (status !== 'pending' && status !== 'aguardando') return false;
+            }
+
+            return true;
+        });
+
+        // 1. Metrics Calculations
+        const totalSalesCount = filteredSales.length;
+        const totalRevenueCents = filteredSales.reduce((acc, s) => acc + getSaleAmountInCents(s), 0);
+        const totalRevenue = totalRevenueCents / 100;
+        const avgTicket = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
+
+        const paidSalesCount = filteredSales.filter(s => {
+            const st = (s.paymentStatus || '').toLowerCase();
+            return st === 'paid' || st === 'approved' || st === 'pago' || st === 'concluido';
+        }).length;
+        const approvalRate = totalSalesCount > 0 ? Math.round((paidSalesCount / totalSalesCount) * 100) : 0;
+
+        const unitAgg = {};
+        const instAgg = {};
+        const prodAgg = {};
+        const payAgg = {};
+        const dowRevenue = [0, 0, 0, 0, 0, 0, 0];
+        const timeAgg = {};
+
+        filteredSales.forEach(sale => {
+            const amount = getSaleAmountInCents(sale) / 100;
+
+            // Unit
+            const unit = sale.userUnit || sale.unit || sale.unidade || 'Outras Unidades';
+            if (!unitAgg[unit]) unitAgg[unit] = { count: 0, revenue: 0 };
+            unitAgg[unit].count += 1;
+            unitAgg[unit].revenue += amount;
+
+            // Instructor
+            const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor || 'Venda Direta';
+            if (!instAgg[inst]) instAgg[inst] = { count: 0, revenue: 0 };
+            instAgg[inst].count += 1;
+            instAgg[inst].revenue += amount;
+
+            // Product
+            const prodName = sale.productName || 'Produto Genérico';
+            if (!prodAgg[prodName]) prodAgg[prodName] = { count: 0, revenue: 0 };
+            prodAgg[prodName].count += 1;
+            prodAgg[prodName].revenue += amount;
+
+            if (sale.recommendedItems && Array.isArray(sale.recommendedItems)) {
+                sale.recommendedItems.forEach(item => {
+                    const rName = item.productName || 'Item Extra';
+                    const rPrice = (item.price || 0) * (item.quantity || 1);
+                    if (!prodAgg[rName]) prodAgg[rName] = { count: 0, revenue: 0 };
+                    prodAgg[rName].count += (item.quantity || 1);
+                    prodAgg[rName].revenue += rPrice;
+                });
+            }
+
+            // Payment method
+            const pMethod = getPaymentMethodLabel(sale);
+            if (!payAgg[pMethod]) payAgg[pMethod] = 0;
+            payAgg[pMethod] += amount;
+
+            // Date & DOW
+            const d = getSaleDateObj(sale);
+            if (d) {
+                dowRevenue[d.getDay()] += amount;
+                const dateKey = (period === 'all' || period === 'this_year' || period === '90_days')
+                    ? `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+                    : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (!timeAgg[dateKey]) timeAgg[dateKey] = 0;
+                timeAgg[dateKey] += amount;
+            }
+        });
+
+        const sortedUnits = Object.entries(unitAgg).sort((a, b) => b[1].revenue - a[1].revenue);
+        const topUnit = sortedUnits.length > 0 ? sortedUnits[0] : null;
+
+        const sortedInstructors = Object.entries(instAgg).sort((a, b) => b[1].revenue - a[1].revenue);
+        const topInstructor = sortedInstructors.length > 0 ? sortedInstructors[0] : null;
+
+        // KPI Cards HTML
+        biKpiContainer.innerHTML = `
+            <div class="glass-card bg-gradient-to-br from-blue-600/10 to-indigo-600/10 dark:from-blue-600/20 dark:to-indigo-600/20 p-4 rounded-3xl border border-blue-200 dark:border-blue-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Faturamento Total</span>
+                    <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-sack-dollar"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xl xl:text-2xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight truncate" title="${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}">
+                        ${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">${totalSalesCount} transações</p>
+                </div>
+            </div>
+
+            <div class="glass-card bg-gradient-to-br from-emerald-600/10 to-teal-600/10 dark:from-emerald-600/20 dark:to-teal-600/20 p-4 rounded-3xl border border-emerald-200 dark:border-emerald-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Total de Vendas</span>
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xl xl:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight truncate">${totalSalesCount.toLocaleString('pt-BR')}</p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">Vendas finalizadas</p>
+                </div>
+            </div>
+
+            <div class="glass-card bg-gradient-to-br from-purple-600/10 to-pink-600/10 dark:from-purple-600/20 dark:to-pink-600/20 p-4 rounded-3xl border border-purple-200 dark:border-purple-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Ticket Médio</span>
+                    <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xl xl:text-2xl font-extrabold text-purple-600 dark:text-purple-400 tracking-tight truncate" title="${avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}">
+                        ${avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">Por pedido</p>
+                </div>
+            </div>
+
+            <div class="glass-card bg-gradient-to-br from-amber-600/10 to-orange-600/10 dark:from-amber-600/20 dark:to-orange-600/20 p-4 rounded-3xl border border-amber-200 dark:border-amber-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Top Unidade</span>
+                    <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-building text-amber-500"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-lg xl:text-xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight truncate" title="${topUnit ? topUnit[0] : 'N/A'}">
+                        ${topUnit ? topUnit[0] : 'N/A'}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">${topUnit ? topUnit[1].revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}</p>
+                </div>
+            </div>
+
+            <div class="glass-card bg-gradient-to-br from-indigo-600/10 to-cyan-600/10 dark:from-indigo-600/20 dark:to-cyan-600/20 p-4 rounded-3xl border border-indigo-200 dark:border-indigo-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Top Instrutor</span>
+                    <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-user-ninja text-indigo-500"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-lg xl:text-xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight truncate" title="${topInstructor ? topInstructor[0] : 'N/A'}">
+                        ${topInstructor ? topInstructor[0] : 'N/A'}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">${topInstructor ? topInstructor[1].revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}</p>
+                </div>
+            </div>
+
+            <div class="glass-card bg-gradient-to-br from-rose-600/10 to-red-600/10 dark:from-rose-600/20 dark:to-red-600/20 p-4 rounded-3xl border border-rose-200 dark:border-rose-800/40 shadow-sm flex flex-col justify-between overflow-hidden">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <span class="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-wider truncate">Taxa de Conclusão</span>
+                    <div class="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xl xl:text-2xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight truncate">${approvalRate}%</p>
+                    <p class="text-[10px] text-gray-400 mt-1 font-medium truncate">${paidSalesCount} pagas de ${totalSalesCount}</p>
+                </div>
+            </div>
+        `;
+
+        if (typeof Chart === 'undefined') {
+            console.warn('[BI Dashboard] Chart.js não está carregado.');
+            return;
+        }
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#9ca3af' : '#4b5563';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+        // 2. Chart 1: Timeline
+        if (biChartTimeline) biChartTimeline.destroy();
+        const ctxTimeline = document.getElementById('bi-chart-timeline');
+        if (ctxTimeline) {
+            const labels = Object.keys(timeAgg);
+            const data = Object.values(timeAgg);
+            biChartTimeline = new Chart(ctxTimeline.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Sem dados'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: data.length > 0 ? data : [0],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#3b82f6',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Chart 2: Units
+        if (biChartUnits) biChartUnits.destroy();
+        const ctxUnits = document.getElementById('bi-chart-units');
+        if (ctxUnits) {
+            const unitLabels = sortedUnits.map(u => u[0]);
+            const unitRevenues = sortedUnits.map(u => u[1].revenue);
+            biChartUnits = new Chart(ctxUnits.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: unitLabels.length > 0 ? unitLabels : ['Sem dados'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: unitRevenues.length > 0 ? unitRevenues : [0],
+                        backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. Chart 3: Instructors
+        if (biChartInstructors) biChartInstructors.destroy();
+        const ctxInstructors = document.getElementById('bi-chart-instructors');
+        if (ctxInstructors) {
+            const instLabels = sortedInstructors.map(i => i[0]);
+            const instRevenues = sortedInstructors.map(i => i[1].revenue);
+            biChartInstructors = new Chart(ctxInstructors.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: instLabels.length > 0 ? instLabels : ['Sem dados'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: instRevenues.length > 0 ? instRevenues : [0],
+                        backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                        borderColor: '#10b981',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5. Chart 4: Top Products
+        if (biChartProducts) biChartProducts.destroy();
+        const ctxProducts = document.getElementById('bi-chart-products');
+        if (ctxProducts) {
+            const sortedProducts = Object.entries(prodAgg).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 7);
+            const prodLabels = sortedProducts.map(p => p[0]);
+            const prodRevenues = sortedProducts.map(p => p[1].revenue);
+            biChartProducts = new Chart(ctxProducts.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: prodLabels.length > 0 ? prodLabels : ['Sem dados'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: prodRevenues.length > 0 ? prodRevenues : [0],
+                        backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                        borderColor: '#f59e0b',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.x.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        },
+                        y: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // 6. Chart 5: Payment Methods
+        if (biChartPaymentMethods) biChartPaymentMethods.destroy();
+        const ctxPay = document.getElementById('bi-chart-payment-methods');
+        if (ctxPay) {
+            const payEntries = Object.entries(payAgg).sort((a, b) => b[1] - a[1]);
+            const payLabels = payEntries.map(p => p[0]);
+            const payValues = payEntries.map(p => p[1]);
+
+            const colorPalette = {
+                'PIX': 'rgba(16, 185, 129, 0.85)',
+                'Cartão de Crédito': 'rgba(59, 130, 246, 0.85)',
+                'Cartão de Débito': 'rgba(99, 102, 241, 0.85)',
+                'Boleto Bancário': 'rgba(245, 158, 11, 0.85)',
+                'Dinheiro / Espécie': 'rgba(168, 85, 247, 0.85)',
+                'Saldo Mercado Pago': 'rgba(6, 182, 212, 0.85)',
+                'Venda Manual': 'rgba(236, 72, 153, 0.85)',
+                'Mercado Pago (Outros)': 'rgba(107, 114, 128, 0.85)'
+            };
+
+            const defaultColors = [
+                'rgba(16, 185, 129, 0.85)',
+                'rgba(59, 130, 246, 0.85)',
+                'rgba(168, 85, 247, 0.85)',
+                'rgba(245, 158, 11, 0.85)',
+                'rgba(236, 72, 153, 0.85)',
+                'rgba(6, 182, 212, 0.85)'
+            ];
+
+            const backgroundColors = payLabels.map((lbl, idx) => colorPalette[lbl] || defaultColors[idx % defaultColors.length]);
+            const totalPayRevenue = payValues.reduce((a, b) => a + b, 0);
+
+            biChartPaymentMethods = new Chart(ctxPay.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: payLabels.length > 0 ? payLabels : ['Sem dados'],
+                    datasets: [{
+                        data: payValues.length > 0 ? payValues : [1],
+                        backgroundColor: backgroundColors,
+                        borderWidth: 2,
+                        borderColor: isDark ? '#1a1a1a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor, font: { size: 11, weight: 'bold' } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const val = ctx.parsed;
+                                    const pct = totalPayRevenue > 0 ? ((val / totalPayRevenue) * 100).toFixed(1) : 0;
+                                    return ` ${ctx.label}: R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 7. Chart 6: Day of Week
+        if (biChartDow) biChartDow.destroy();
+        const ctxDow = document.getElementById('bi-chart-dow');
+        if (ctxDow) {
+            biChartDow = new Chart(ctxDow.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: dowRevenue,
+                        backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                        borderColor: '#f43f5e',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 8. BI Tables
+        if (biTableUnits) {
+            if (sortedUnits.length === 0) {
+                biTableUnits.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">Sem vendas registradas no período.</td></tr>';
+            } else {
+                biTableUnits.innerHTML = sortedUnits.map(([unitName, data]) => {
+                    const ticket = data.count > 0 ? data.revenue / data.count : 0;
+                    const pct = totalRevenue > 0 ? Math.round((data.revenue / totalRevenue) * 100) : 0;
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                            <td class="py-3 font-bold text-gray-900 dark:text-white">
+                                <div class="flex items-center gap-2">
+                                    <span>${unitName}</span>
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold">${pct}%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-center text-gray-600 dark:text-gray-300 font-semibold">${data.count}</td>
+                            <td class="py-3 text-right font-extrabold text-blue-600 dark:text-blue-400">${data.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td class="py-3 text-right text-gray-500 dark:text-gray-400 font-medium">${ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        if (biTableInstructors) {
+            if (sortedInstructors.length === 0) {
+                biTableInstructors.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">Sem vendas registradas no período.</td></tr>';
+            } else {
+                biTableInstructors.innerHTML = sortedInstructors.map(([instName, data]) => {
+                    const ticket = data.count > 0 ? data.revenue / data.count : 0;
+                    const pct = totalRevenue > 0 ? Math.round((data.revenue / totalRevenue) * 100) : 0;
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                            <td class="py-3 font-bold text-gray-900 dark:text-white">
+                                <div class="flex items-center gap-2">
+                                    <span>${instName}</span>
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">${pct}%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-center text-gray-600 dark:text-gray-300 font-semibold">${data.count}</td>
+                            <td class="py-3 text-right font-extrabold text-emerald-600 dark:text-emerald-400">${data.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td class="py-3 text-right text-gray-500 dark:text-gray-400 font-medium">${ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    };
+
+    // Filter event listeners for BI Dashboard
+    if (biPeriodFilter) {
+        biPeriodFilter.addEventListener('change', () => {
+            if (biPeriodFilter.value === 'custom') {
+                if (biCustomDatesContainer) biCustomDatesContainer.classList.remove('hidden');
+            } else {
+                if (biCustomDatesContainer) biCustomDatesContainer.classList.add('hidden');
+            }
+            updateBIDashboard();
+        });
+    }
+    if (biStartDate) biStartDate.addEventListener('change', updateBIDashboard);
+    if (biEndDate) biEndDate.addEventListener('change', updateBIDashboard);
+    if (biUnitFilter) biUnitFilter.addEventListener('change', updateBIDashboard);
+    if (biInstructorFilter) biInstructorFilter.addEventListener('change', updateBIDashboard);
+    if (biStatusFilter) biStatusFilter.addEventListener('change', updateBIDashboard);
         }
     }
 
