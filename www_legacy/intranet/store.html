@@ -494,13 +494,18 @@
                                 </select>
 
                                 <!-- Adicionar Exclusão de Produto -->
-                                <select id="bi-prod-exclude-picker" title="Excluir produto do gráfico" class="px-2.5 py-1 text-[11px] font-semibold bg-red-50/60 dark:bg-red-900/30 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 max-w-[160px] truncate">
+                                <select id="bi-prod-exclude-picker" title="Excluir produto do gráfico" class="px-2.5 py-1 text-[11px] font-semibold bg-red-50/60 dark:bg-red-900/30 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 max-w-[150px] truncate">
                                     <option value="">+ Excluir Produto...</option>
+                                </select>
+
+                                <!-- Adicionar Exclusão de Categoria -->
+                                <select id="bi-cat-exclude-picker" title="Excluir categoria inteira do gráfico" class="px-2.5 py-1 text-[11px] font-semibold bg-amber-50/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[160px] truncate">
+                                    <option value="">+ Excluir Categoria...</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Active Excluded Products Pills -->
+                        <!-- Active Excluded Products & Categories Pills -->
                         <div id="bi-prod-excluded-pills" class="flex flex-wrap items-center gap-1.5 mb-3 empty:hidden">
                             <!-- Populated by JavaScript -->
                         </div>

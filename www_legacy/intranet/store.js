@@ -2587,14 +2587,21 @@ export async function setupStorePage() {
     let biChartDow = null;
 
     const biExcludedProducts = new Set();
+    const biExcludedCategories = new Set();
 
     window.removeBIExcludedProduct = (pName) => {
         biExcludedProducts.delete(pName);
         if (typeof updateBIDashboard === 'function') updateBIDashboard();
     };
 
+    window.removeBIExcludedCategory = (catName) => {
+        biExcludedCategories.delete(catName);
+        if (typeof updateBIDashboard === 'function') updateBIDashboard();
+    };
+
     window.clearAllBIExcludedProducts = () => {
         biExcludedProducts.clear();
+        biExcludedCategories.clear();
         if (typeof updateBIDashboard === 'function') updateBIDashboard();
     };
 
@@ -2633,6 +2640,34 @@ export async function setupStorePage() {
         const g = sale.userGraduacao || sale.graduacao || sale.faixa || sale.chosenVariant || sale.variationName;
         if (g && String(g).trim() !== '') return String(g).trim();
         return 'Venda Direta / Sem Faixa';
+    };
+
+    const getSaleCategory = (sale) => {
+        if (!sale) return 'Outros / Gerais';
+        if (sale.category && String(sale.category).trim() !== '') return String(sale.category).trim();
+        if (sale.productCategory && String(sale.productCategory).trim() !== '') return String(sale.productCategory).trim();
+        
+        const prodName = sale.productName || sale.title || sale.name || '';
+        if (typeof products !== 'undefined' && Array.isArray(products)) {
+            const found = products.find(p => p.id === sale.productId || (p.name || p.title) === prodName);
+            if (found && found.category && String(found.category).trim() !== '') return String(found.category).trim();
+        }
+
+        const lower = prodName.toLowerCase();
+        if (lower.includes('graduaç') || lower.includes('exame') || lower.includes('1bd') || lower.includes('2bd') || lower.includes('3bd')) {
+            return 'Exames & Graduações';
+        }
+        if (lower.includes('experience') || lower.includes('torneio') || lower.includes('evento') || lower.includes('campeonato')) {
+            return 'Eventos & Experiências';
+        }
+        if (lower.includes('equipamento') || lower.includes('dobok') || lower.includes('protetor') || lower.includes('luva') || lower.includes('canela') || lower.includes('capacete') || lower.includes('faixa')) {
+            return 'Equipamentos & Uniformes';
+        }
+        if (lower.includes('curso') || lower.includes('treinamento') || lower.includes('seminario')) {
+            return 'Cursos & Treinamentos';
+        }
+
+        return 'Outros / Gerais';
     };
 
     const getPaymentMethodLabel = (sale) => {
@@ -2812,6 +2847,7 @@ export async function setupStorePage() {
         const unitAgg = {};
         const instAgg = {};
         const prodAgg = {};
+        const prodCategoryMap = {};
         const payAgg = {};
         const gradAgg = {};
         const dowRevenue = [0, 0, 0, 0, 0, 0, 0];
@@ -2838,9 +2874,12 @@ export async function setupStorePage() {
             gradAgg[grad].count += 1;
             gradAgg[grad].revenue += amount;
 
-            // Product
+            // Product & Category
             const prodName = sale.productName || 'Produto Genérico';
-            if (!prodAgg[prodName]) prodAgg[prodName] = { count: 0, revenue: 0 };
+            const catName = getSaleCategory(sale);
+            prodCategoryMap[prodName] = catName;
+
+            if (!prodAgg[prodName]) prodAgg[prodName] = { count: 0, revenue: 0, category: catName };
             prodAgg[prodName].count += 1;
             prodAgg[prodName].revenue += amount;
 
@@ -2848,7 +2887,9 @@ export async function setupStorePage() {
                 sale.recommendedItems.forEach(item => {
                     const rName = item.productName || 'Item Extra';
                     const rPrice = (item.price || 0) * (item.quantity || 1);
-                    if (!prodAgg[rName]) prodAgg[rName] = { count: 0, revenue: 0 };
+                    const rCat = getSaleCategory({ productName: rName, ...item });
+                    prodCategoryMap[rName] = rCat;
+                    if (!prodAgg[rName]) prodAgg[rName] = { count: 0, revenue: 0, category: rCat };
                     prodAgg[rName].count += (item.quantity || 1);
                     prodAgg[rName].revenue += rPrice;
                 });
@@ -3119,10 +3160,11 @@ export async function setupStorePage() {
             });
         }
 
-        // Populate bi-prod-exclude-picker options dynamically with all products in prodAgg not yet excluded
+        // Populate bi-prod-exclude-picker & bi-cat-exclude-picker options dynamically
         const biProdLimit = document.getElementById('bi-prod-limit');
         const biProdSort = document.getElementById('bi-prod-sort');
         const biProdExcludePicker = document.getElementById('bi-prod-exclude-picker');
+        const biCatExcludePicker = document.getElementById('bi-cat-exclude-picker');
         const biProdExcludedPills = document.getElementById('bi-prod-excluded-pills');
 
         if (biProdExcludePicker) {
@@ -3136,11 +3178,35 @@ export async function setupStorePage() {
             biProdExcludePicker.innerHTML = excludeOptsHtml;
         }
 
+        if (biCatExcludePicker) {
+            const allCategories = Array.from(new Set(Object.values(prodCategoryMap))).sort();
+            let catOptsHtml = '<option value="">+ Excluir Categoria...</option>';
+            allCategories.forEach(catName => {
+                if (!biExcludedCategories.has(catName)) {
+                    catOptsHtml += `<option value="${catName}">📁 Categoria: ${catName}</option>`;
+                }
+            });
+            biCatExcludePicker.innerHTML = catOptsHtml;
+        }
+
         if (biProdExcludedPills) {
-            if (biExcludedProducts.size === 0) {
+            if (biExcludedProducts.size === 0 && biExcludedCategories.size === 0) {
                 biProdExcludedPills.innerHTML = '';
             } else {
                 let pillsHtml = '<span class="text-[10px] font-bold text-gray-400 uppercase mr-1 flex items-center">Excluídos:</span>';
+                
+                // Categories pills
+                biExcludedCategories.forEach(catName => {
+                    const escaped = catName.replace(/'/g, "\\'");
+                    pillsHtml += `
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
+                            <span>📁 Cat: ${catName}</span>
+                            <button type="button" onclick="removeBIExcludedCategory('${escaped}')" class="hover:text-amber-800 dark:hover:text-amber-200 font-extrabold focus:outline-none">&times;</button>
+                        </span>
+                    `;
+                });
+
+                // Product pills
                 biExcludedProducts.forEach(pName => {
                     const escaped = pName.replace(/'/g, "\\'");
                     pillsHtml += `
@@ -3150,6 +3216,7 @@ export async function setupStorePage() {
                         </span>
                     `;
                 });
+
                 pillsHtml += `
                     <button type="button" onclick="clearAllBIExcludedProducts()" class="text-[10px] font-bold text-gray-400 hover:text-red-500 underline ml-1">Limpar todos</button>
                 `;
@@ -3166,9 +3233,14 @@ export async function setupStorePage() {
 
             let prodEntries = Object.entries(prodAgg);
 
-            // Filter out all excluded products
-            if (biExcludedProducts.size > 0) {
-                prodEntries = prodEntries.filter(([pName]) => !biExcludedProducts.has(pName));
+            // Filter out all excluded products AND excluded categories
+            if (biExcludedProducts.size > 0 || biExcludedCategories.size > 0) {
+                prodEntries = prodEntries.filter(([pName]) => {
+                    if (biExcludedProducts.has(pName)) return false;
+                    const cat = prodCategoryMap[pName];
+                    if (cat && biExcludedCategories.has(cat)) return false;
+                    return true;
+                });
             }
 
             // Sort by Revenue or Count
@@ -3494,6 +3566,7 @@ export async function setupStorePage() {
     const biProdLimit = document.getElementById('bi-prod-limit');
     const biProdSort = document.getElementById('bi-prod-sort');
     const biProdExcludePicker = document.getElementById('bi-prod-exclude-picker');
+    const biCatExcludePicker = document.getElementById('bi-cat-exclude-picker');
     if (biProdLimit) biProdLimit.addEventListener('change', updateBIDashboard);
     if (biProdSort) biProdSort.addEventListener('change', updateBIDashboard);
     if (biProdExcludePicker) {
@@ -3502,6 +3575,16 @@ export async function setupStorePage() {
             if (val) {
                 biExcludedProducts.add(val);
                 biProdExcludePicker.value = '';
+                updateBIDashboard();
+            }
+        });
+    }
+    if (biCatExcludePicker) {
+        biCatExcludePicker.addEventListener('change', () => {
+            const val = biCatExcludePicker.value;
+            if (val) {
+                biExcludedCategories.add(val);
+                biCatExcludePicker.value = '';
                 updateBIDashboard();
             }
         });
