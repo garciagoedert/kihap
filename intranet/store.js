@@ -2714,6 +2714,7 @@ export async function setupStorePage() {
     let biChartInstructors = null;
     let biChartProducts = null;
     let biChartPaymentMethods = null;
+    let biChartGraduation = null;
     let biChartDow = null;
 
     const biPeriodFilter = document.getElementById('bi-period-filter');
@@ -2722,10 +2723,12 @@ export async function setupStorePage() {
     const biEndDate = document.getElementById('bi-end-date');
     const biUnitFilter = document.getElementById('bi-unit-filter');
     const biInstructorFilter = document.getElementById('bi-instructor-filter');
+    const biGraduationFilter = document.getElementById('bi-graduation-filter');
     const biStatusFilter = document.getElementById('bi-status-filter');
     const biKpiContainer = document.getElementById('bi-kpi-container');
     const biTableUnits = document.getElementById('bi-table-units');
     const biTableInstructors = document.getElementById('bi-table-instructors');
+    const biTableGraduations = document.getElementById('bi-table-graduations');
 
     const getSaleDateObj = (sale) => {
         if (!sale || !sale.created) return null;
@@ -2743,6 +2746,12 @@ export async function setupStorePage() {
         }
         if (sale.totalAmount !== undefined && sale.totalAmount !== null) return parseInt(sale.totalAmount, 10) || 0;
         return 0;
+    };
+
+    const getSaleGraduation = (sale) => {
+        const g = sale.userGraduacao || sale.graduacao || sale.faixa || sale.chosenVariant || sale.variationName;
+        if (g && String(g).trim() !== '') return String(g).trim();
+        return 'Venda Direta / Sem Faixa';
     };
 
     const getPaymentMethodLabel = (sale) => {
@@ -2812,9 +2821,11 @@ export async function setupStorePage() {
 
         const currentUnitVal = biUnitFilter.value;
         const currentInstVal = biInstructorFilter.value;
+        const currentGradVal = biGraduationFilter ? biGraduationFilter.value : '';
 
         const units = new Set();
         const instructors = new Set();
+        const graduations = new Set();
 
         allSales.forEach(sale => {
             const u = sale.userUnit || sale.unit || sale.unidade;
@@ -2822,6 +2833,9 @@ export async function setupStorePage() {
 
             const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor;
             if (inst && inst.trim() !== '') instructors.add(inst.trim());
+
+            const g = getSaleGraduation(sale);
+            if (g && g !== 'Venda Direta / Sem Faixa') graduations.add(g);
         });
 
         let unitOptionsHtml = '<option value="">Todas as Unidades</option>';
@@ -2835,6 +2849,14 @@ export async function setupStorePage() {
             instOptionsHtml += `<option value="${inst}" ${inst === currentInstVal ? 'selected' : ''}>${inst}</option>`;
         });
         biInstructorFilter.innerHTML = instOptionsHtml;
+
+        if (biGraduationFilter) {
+            let gradOptionsHtml = '<option value="">Todas as Graduações</option>';
+            Array.from(graduations).sort().forEach(g => {
+                gradOptionsHtml += `<option value="${g}" ${g === currentGradVal ? 'selected' : ''}>${g}</option>`;
+            });
+            biGraduationFilter.innerHTML = gradOptionsHtml;
+        }
     };
 
     const updateBIDashboard = () => {
@@ -2843,6 +2865,7 @@ export async function setupStorePage() {
         const period = biPeriodFilter ? biPeriodFilter.value : '30_days';
         const selectedUnit = biUnitFilter ? biUnitFilter.value : '';
         const selectedInstructor = biInstructorFilter ? biInstructorFilter.value : '';
+        const selectedGraduation = biGraduationFilter ? biGraduationFilter.value : '';
         const statusFilterVal = biStatusFilter ? biStatusFilter.value : 'approved_only';
 
         const now = new Date();
@@ -2880,6 +2903,9 @@ export async function setupStorePage() {
             const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor || '';
             if (selectedInstructor && inst !== selectedInstructor) return false;
 
+            const grad = getSaleGraduation(sale);
+            if (selectedGraduation && grad !== selectedGraduation) return false;
+
             const status = (sale.paymentStatus || '').toLowerCase();
             if (statusFilterVal === 'approved_only') {
                 if (status !== 'paid' && status !== 'approved' && status !== 'pago' && status !== 'concluido') return false;
@@ -2906,6 +2932,7 @@ export async function setupStorePage() {
         const instAgg = {};
         const prodAgg = {};
         const payAgg = {};
+        const gradAgg = {};
         const dowRevenue = [0, 0, 0, 0, 0, 0, 0];
         const timeAgg = {};
 
@@ -2923,6 +2950,12 @@ export async function setupStorePage() {
             if (!instAgg[inst]) instAgg[inst] = { count: 0, revenue: 0 };
             instAgg[inst].count += 1;
             instAgg[inst].revenue += amount;
+
+            // Graduation
+            const grad = getSaleGraduation(sale);
+            if (!gradAgg[grad]) gradAgg[grad] = { count: 0, revenue: 0 };
+            gradAgg[grad].count += 1;
+            gradAgg[grad].revenue += amount;
 
             // Product
             const prodName = sale.productName || 'Produto Genérico';
@@ -2963,6 +2996,8 @@ export async function setupStorePage() {
 
         const sortedInstructors = Object.entries(instAgg).sort((a, b) => b[1].revenue - a[1].revenue);
         const topInstructor = sortedInstructors.length > 0 ? sortedInstructors[0] : null;
+
+        const sortedGraduations = Object.entries(gradAgg).sort((a, b) => b[1].revenue - a[1].revenue);
 
         // KPI Cards HTML
         biKpiContainer.innerHTML = `
@@ -3312,7 +3347,54 @@ export async function setupStorePage() {
             });
         }
 
-        // 7. Chart 6: Day of Week
+        // 7. Chart 6: Graduation
+        if (biChartGraduation) biChartGraduation.destroy();
+        const ctxGrad = document.getElementById('bi-chart-graduation');
+        if (ctxGrad) {
+            const gradLabels = sortedGraduations.map(g => g[0]);
+            const gradRevenues = sortedGraduations.map(g => g[1].revenue);
+
+            biChartGraduation = new Chart(ctxGrad.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: gradLabels.length > 0 ? gradLabels : ['Sem dados'],
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: gradRevenues.length > 0 ? gradRevenues : [0],
+                        backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                        borderColor: '#06b6d4',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Faturamento: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 8. Chart 7: Day of Week
         if (biChartDow) biChartDow.destroy();
         const ctxDow = document.getElementById('bi-chart-dow');
         if (ctxDow) {
@@ -3356,7 +3438,7 @@ export async function setupStorePage() {
             });
         }
 
-        // 8. BI Tables
+        // 9. BI Tables
         if (biTableUnits) {
             if (sortedUnits.length === 0) {
                 biTableUnits.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">Sem vendas registradas no período.</td></tr>';
@@ -3404,6 +3486,30 @@ export async function setupStorePage() {
                 }).join('');
             }
         }
+
+        if (biTableGraduations) {
+            if (sortedGraduations.length === 0) {
+                biTableGraduations.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">Sem vendas registradas no período.</td></tr>';
+            } else {
+                biTableGraduations.innerHTML = sortedGraduations.map(([gradName, data]) => {
+                    const ticket = data.count > 0 ? data.revenue / data.count : 0;
+                    const pct = totalRevenue > 0 ? Math.round((data.revenue / totalRevenue) * 100) : 0;
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                            <td class="py-3 font-bold text-gray-900 dark:text-white">
+                                <div class="flex items-center gap-2">
+                                    <span>${gradName}</span>
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-semibold">${pct}%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-center text-gray-600 dark:text-gray-300 font-semibold">${data.count}</td>
+                            <td class="py-3 text-right font-extrabold text-cyan-600 dark:text-cyan-400">${data.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td class="py-3 text-right text-gray-500 dark:text-gray-400 font-medium">${ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
     };
 
     // Filter event listeners for BI Dashboard
@@ -3421,5 +3527,6 @@ export async function setupStorePage() {
     if (biEndDate) biEndDate.addEventListener('change', updateBIDashboard);
     if (biUnitFilter) biUnitFilter.addEventListener('change', updateBIDashboard);
     if (biInstructorFilter) biInstructorFilter.addEventListener('change', updateBIDashboard);
+    if (biGraduationFilter) biGraduationFilter.addEventListener('change', updateBIDashboard);
     if (biStatusFilter) biStatusFilter.addEventListener('change', updateBIDashboard);
 }

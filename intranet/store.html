@@ -421,6 +421,14 @@
                                 </select>
                             </div>
 
+                            <!-- Graduation Filter -->
+                            <div>
+                                <label for="bi-graduation-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Graduação / Faixa</label>
+                                <select id="bi-graduation-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todas as Graduações</option>
+                                </select>
+                            </div>
+
                             <!-- Status Filter -->
                             <div>
                                 <label for="bi-status-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Status Pagamento</label>
@@ -497,8 +505,8 @@
                     </div>
                 </div>
 
-                <!-- Charts Row 3: Payment Methods & Day of Week -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Charts Row 3: Payment Methods, Graduação & Day of Week -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     <!-- Payment Methods Doughnut -->
                     <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
                         <div class="flex items-center justify-between mb-4">
@@ -509,6 +517,19 @@
                         </div>
                         <div class="relative flex-grow min-h-[260px] max-h-[300px] flex items-center justify-center">
                             <canvas id="bi-chart-payment-methods"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Graduation Chart -->
+                    <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-award text-cyan-500"></i> Vendas por Graduação
+                            </h3>
+                            <span class="text-xs text-gray-400 font-medium">Faixa / Graduação</span>
+                        </div>
+                        <div class="relative flex-grow min-h-[260px] max-h-[300px]">
+                            <canvas id="bi-chart-graduation"></canvas>
                         </div>
                     </div>
 
@@ -527,7 +548,7 @@
                 </div>
 
                 <!-- Detailed BI Tables -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     <!-- Unit Performance Table -->
                     <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
                         <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -566,6 +587,28 @@
                                     </tr>
                                 </thead>
                                 <tbody id="bi-table-instructors" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Graduation Performance Table -->
+                    <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-award text-cyan-500"></i> Performance por Graduação
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                        <th class="pb-3">Graduação</th>
+                                        <th class="pb-3 text-center">Vendas</th>
+                                        <th class="pb-3 text-right">Faturamento</th>
+                                        <th class="pb-3 text-right">Ticket Médio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bi-table-graduations" class="divide-y divide-gray-100 dark:divide-gray-800/60">
                                     <!-- Populated by JS -->
                                 </tbody>
                             </table>
