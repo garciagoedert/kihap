@@ -366,77 +366,82 @@
             <div id="content-dashboard" class="tab-content hidden animate-fadeIn">
                 <!-- BI Filters Header Bar -->
                 <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-5 border-b border-gray-200/60 dark:border-gray-800/60">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30">
                                 <i class="fas fa-chart-pie"></i>
                             </div>
                             <div>
                                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Business Intelligence & Vendas</h2>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Análise analítica de faturamento, instrutores e unidades</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Análise analítica de faturamento, instrutores, graduações e unidades</p>
                             </div>
                         </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
+                                <i class="fas fa-filter text-[10px] mr-1"></i> Filtros de BI
+                            </span>
+                        </div>
+                    </div>
 
-                        <!-- Filters -->
-                        <div class="flex flex-wrap items-center gap-3">
-                            <!-- Period Filter -->
+                    <!-- 5-Column Grid Filters -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                        <!-- Period Filter -->
+                        <div>
+                            <label for="bi-period-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Período</label>
+                            <select id="bi-period-filter" class="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="all">Todo o Histórico</option>
+                                <option value="this_month">Este Mês</option>
+                                <option value="last_month">Mês Passado</option>
+                                <option value="30_days" selected>Últimos 30 Dias</option>
+                                <option value="90_days">Últimos 90 Dias</option>
+                                <option value="this_year">Este Ano</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+
+                        <!-- Unit Filter -->
+                        <div>
+                            <label for="bi-unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Unidade</label>
+                            <select id="bi-unit-filter" class="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+                        </div>
+
+                        <!-- Instructor Filter -->
+                        <div>
+                            <label for="bi-instructor-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Instrutor / Professor</label>
+                            <select id="bi-instructor-filter" class="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="">Todos os Instrutores</option>
+                            </select>
+                        </div>
+
+                        <!-- Graduation Filter -->
+                        <div>
+                            <label for="bi-graduation-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Graduação / Faixa</label>
+                            <select id="bi-graduation-filter" class="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="">Todas as Graduações</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div>
+                            <label for="bi-status-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Status Pagamento</label>
+                            <select id="bi-status-filter" class="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="approved_only" selected>Apenas Pagas / Aprovadas</option>
+                                <option value="all">Todos os Status</option>
+                                <option value="pending">Apenas Pendentes</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Dates Container (Appears when Custom is picked) -->
+                        <div id="bi-custom-dates-container" class="hidden col-span-full flex flex-wrap items-center gap-3 pt-3 mt-1 border-t border-gray-200/60 dark:border-gray-800/60">
                             <div>
-                                <label for="bi-period-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Período</label>
-                                <select id="bi-period-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="all">Todo o Histórico</option>
-                                    <option value="this_month">Este Mês</option>
-                                    <option value="last_month">Mês Passado</option>
-                                    <option value="30_days" selected>Últimos 30 Dias</option>
-                                    <option value="90_days">Últimos 90 Dias</option>
-                                    <option value="this_year">Este Ano</option>
-                                    <option value="custom">Personalizado</option>
-                                </select>
+                                <label for="bi-start-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Data Inicial (De)</label>
+                                <input type="date" id="bi-start-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
                             </div>
-
-                            <!-- Custom Dates -->
-                            <div id="bi-custom-dates-container" class="hidden flex items-center gap-2">
-                                <div>
-                                    <label for="bi-start-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">De</label>
-                                    <input type="date" id="bi-start-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
-                                </div>
-                                <div>
-                                    <label for="bi-end-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Até</label>
-                                    <input type="date" id="bi-end-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
-                                </div>
-                            </div>
-
-                            <!-- Unit Filter -->
                             <div>
-                                <label for="bi-unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Unidade</label>
-                                <select id="bi-unit-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todas as Unidades</option>
-                                </select>
-                            </div>
-
-                            <!-- Instructor Filter -->
-                            <div>
-                                <label for="bi-instructor-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Instrutor / Professor</label>
-                                <select id="bi-instructor-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todos os Instrutores</option>
-                                </select>
-                            </div>
-
-                            <!-- Graduation Filter -->
-                            <div>
-                                <label for="bi-graduation-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Graduação / Faixa</label>
-                                <select id="bi-graduation-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todas as Graduações</option>
-                                </select>
-                            </div>
-
-                            <!-- Status Filter -->
-                            <div>
-                                <label for="bi-status-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Status Pagamento</label>
-                                <select id="bi-status-filter" class="px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="approved_only" selected>Apenas Pagas / Aprovadas</option>
-                                    <option value="all">Todos os Status</option>
-                                    <option value="pending">Apenas Pendentes</option>
-                                </select>
+                                <label for="bi-end-date" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Data Final (Até)</label>
+                                <input type="date" id="bi-end-date" class="px-3 py-1.5 text-xs bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] text-gray-900 dark:text-white rounded-xl">
                             </div>
                         </div>
                     </div>
