@@ -2717,6 +2717,18 @@ export async function setupStorePage() {
     let biChartGraduation = null;
     let biChartDow = null;
 
+    const biExcludedProducts = new Set();
+
+    window.removeBIExcludedProduct = (pName) => {
+        biExcludedProducts.delete(pName);
+        if (typeof updateBIDashboard === 'function') updateBIDashboard();
+    };
+
+    window.clearAllBIExcludedProducts = () => {
+        biExcludedProducts.clear();
+        if (typeof updateBIDashboard === 'function') updateBIDashboard();
+    };
+
     const biPeriodFilter = document.getElementById('bi-period-filter');
     const biCustomDatesContainer = document.getElementById('bi-custom-dates-container');
     const biStartDate = document.getElementById('bi-start-date');
@@ -3238,19 +3250,42 @@ export async function setupStorePage() {
             });
         }
 
-        // Populate bi-prod-exclude options dynamically with all products in prodAgg
+        // Populate bi-prod-exclude-picker options dynamically with all products in prodAgg not yet excluded
         const biProdLimit = document.getElementById('bi-prod-limit');
         const biProdSort = document.getElementById('bi-prod-sort');
-        const biProdExclude = document.getElementById('bi-prod-exclude');
+        const biProdExcludePicker = document.getElementById('bi-prod-exclude-picker');
+        const biProdExcludedPills = document.getElementById('bi-prod-excluded-pills');
 
-        if (biProdExclude) {
-            const currentExcludeVal = biProdExclude.value;
+        if (biProdExcludePicker) {
             const allProdNames = Object.keys(prodAgg).sort();
-            let excludeOptsHtml = '<option value="">Excluir Produto...</option>';
+            let excludeOptsHtml = '<option value="">+ Excluir Produto...</option>';
             allProdNames.forEach(pName => {
-                excludeOptsHtml += `<option value="${pName}" ${pName === currentExcludeVal ? 'selected' : ''}>🚫 ${pName}</option>`;
+                if (!biExcludedProducts.has(pName)) {
+                    excludeOptsHtml += `<option value="${pName}">🚫 ${pName}</option>`;
+                }
             });
-            biProdExclude.innerHTML = excludeOptsHtml;
+            biProdExcludePicker.innerHTML = excludeOptsHtml;
+        }
+
+        if (biProdExcludedPills) {
+            if (biExcludedProducts.size === 0) {
+                biProdExcludedPills.innerHTML = '';
+            } else {
+                let pillsHtml = '<span class="text-[10px] font-bold text-gray-400 uppercase mr-1 flex items-center">Excluídos:</span>';
+                biExcludedProducts.forEach(pName => {
+                    const escaped = pName.replace(/'/g, "\\'");
+                    pillsHtml += `
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40">
+                            <span>🚫 ${pName}</span>
+                            <button type="button" onclick="removeBIExcludedProduct('${escaped}')" class="hover:text-red-800 dark:hover:text-red-200 font-extrabold focus:outline-none">&times;</button>
+                        </span>
+                    `;
+                });
+                pillsHtml += `
+                    <button type="button" onclick="clearAllBIExcludedProducts()" class="text-[10px] font-bold text-gray-400 hover:text-red-500 underline ml-1">Limpar todos</button>
+                `;
+                biProdExcludedPills.innerHTML = pillsHtml;
+            }
         }
 
         // 5. Chart 4: Top Products
@@ -3258,14 +3293,13 @@ export async function setupStorePage() {
         const ctxProducts = document.getElementById('bi-chart-products');
         if (ctxProducts) {
             const sortMode = biProdSort ? biProdSort.value : 'revenue';
-            const excludedProd = biProdExclude ? biProdExclude.value : '';
             const limitVal = biProdLimit ? biProdLimit.value : '7';
 
             let prodEntries = Object.entries(prodAgg);
 
-            // Filter out excluded product if selected
-            if (excludedProd) {
-                prodEntries = prodEntries.filter(([pName]) => pName !== excludedProd);
+            // Filter out all excluded products
+            if (biExcludedProducts.size > 0) {
+                prodEntries = prodEntries.filter(([pName]) => !biExcludedProducts.has(pName));
             }
 
             // Sort by Revenue or Count
@@ -3590,8 +3624,17 @@ export async function setupStorePage() {
 
     const biProdLimit = document.getElementById('bi-prod-limit');
     const biProdSort = document.getElementById('bi-prod-sort');
-    const biProdExclude = document.getElementById('bi-prod-exclude');
+    const biProdExcludePicker = document.getElementById('bi-prod-exclude-picker');
     if (biProdLimit) biProdLimit.addEventListener('change', updateBIDashboard);
     if (biProdSort) biProdSort.addEventListener('change', updateBIDashboard);
-    if (biProdExclude) biProdExclude.addEventListener('change', updateBIDashboard);
+    if (biProdExcludePicker) {
+        biProdExcludePicker.addEventListener('change', () => {
+            const val = biProdExcludePicker.value;
+            if (val) {
+                biExcludedProducts.add(val);
+                biProdExcludePicker.value = '';
+                updateBIDashboard();
+            }
+        });
+    }
 }
