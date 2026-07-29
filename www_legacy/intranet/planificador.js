@@ -60,6 +60,40 @@ onAuthReady(async (user) => {
             }
         });
     }
+// Section switcher helper
+function showSection(sectionName, updateUrl = true, planId = null, action = null) {
+    const catalogSection = document.getElementById('plans-catalog-section');
+    const viewSection = document.getElementById('plan-view-section');
+    const editSection = document.getElementById('plan-edit-section');
+
+    if (catalogSection) catalogSection.classList.add('hidden');
+    if (viewSection) viewSection.classList.add('hidden');
+    if (editSection) editSection.classList.add('hidden');
+
+    if (sectionName === 'catalog') {
+        if (catalogSection) catalogSection.classList.remove('hidden');
+        if (updateUrl) {
+            history.pushState({ view: 'catalog' }, '', 'planificador.html');
+        }
+    } else if (sectionName === 'view') {
+        if (viewSection) viewSection.classList.remove('hidden');
+        if (updateUrl && planId) {
+            history.pushState({ view: 'view', planId }, '', `planificador.html?id=${planId}`);
+        }
+    } else if (sectionName === 'edit') {
+        if (editSection) editSection.classList.remove('hidden');
+        if (updateUrl) {
+            const url = planId ? `planificador.html?id=${planId}&action=edit` : `planificador.html?action=new`;
+            history.pushState({ view: 'edit', planId, action }, '', url);
+        }
+    }
+
+    const mainContainer = document.querySelector('main .overflow-y-auto') || window;
+    if (mainContainer.scrollTo) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Initialization
+onAuthReady(async (user) => {
     if (!user) return; // Auth redirects handled in auth.js
 
     currentUser = user;
@@ -69,13 +103,43 @@ onAuthReady(async (user) => {
         addPlanBtn.classList.add('hidden');
     }
 
-    loadPlans();
+    await loadPlans();
     setupEventListeners();
+
+    // Check URL params on initial load
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialPlanId = urlParams.get('id');
+    const initialAction = urlParams.get('action');
+
+    if (initialPlanId && initialAction === 'edit') {
+        openEditPlanModal(initialPlanId, false);
+    } else if (initialPlanId) {
+        openViewModal(initialPlanId, false);
+    } else if (initialAction === 'new') {
+        openNewPlanModal(false);
+    } else {
+        showSection('catalog', false);
+    }
+});
+
+window.addEventListener('popstate', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const planId = urlParams.get('id');
+    const action = urlParams.get('action');
+
+    if (planId && action === 'edit') {
+        openEditPlanModal(planId, false);
+    } else if (planId) {
+        openViewModal(planId, false);
+    } else if (action === 'new') {
+        openNewPlanModal(false);
+    } else {
+        showSection('catalog', false);
+    }
 });
 
 function setupEventListeners() {
-    addPlanBtn.addEventListener('click', openNewPlanModal);
-    closePlanModalBtn.addEventListener('click', closeModal);
+    addPlanBtn.addEventListener('click', () => openNewPlanModal(true));
     cancelPlanBtn.addEventListener('click', closeModal);
     planForm.addEventListener('submit', handleFormSubmit);
     mediaUploadInput.addEventListener('change', handleFileUpload);
@@ -89,6 +153,13 @@ function setupEventListeners() {
         });
     }
 
+    // Back to catalog buttons
+    const backBtnView = document.getElementById('back-to-catalog-btn-view');
+    if (backBtnView) backBtnView.addEventListener('click', () => showSection('catalog'));
+
+    const backBtnEdit = document.getElementById('back-to-catalog-btn-edit');
+    if (backBtnEdit) backBtnEdit.addEventListener('click', () => showSection('catalog'));
+
     // Modal Delete Button
     deletePlanBtn.addEventListener('click', () => {
         const id = planIdInput.value;
@@ -96,12 +167,11 @@ function setupEventListeners() {
     });
 
     // View Modal Listeners
-    closeViewModalBtn.addEventListener('click', closeViewModal);
+    if (closeViewModalBtn) closeViewModalBtn.addEventListener('click', closeViewModal);
     editPlanBtnView.addEventListener('click', () => {
         const id = editPlanBtnView.dataset.id;
         if (id) {
-            closeViewModal();
-            openEditPlanModal(id);
+            openEditPlanModal(id, true);
         }
     });
 }
@@ -289,7 +359,7 @@ async function deletePlan(id) {
 
 // --- Modals ---
 
-function openNewPlanModal() {
+function openNewPlanModal(updateUrl = true) {
     const canEdit = currentUser && (currentUser.isAdmin === true || currentUser.isColarinhoPreto === true || currentUser.isBlackCollar === true || currentUser.colarinhoPreto === true);
     if (!canEdit) {
         alert("Apenas usuários com a permissão 'Colarinho Preto' ou Administradores podem adicionar novos planificadores.");
@@ -298,10 +368,10 @@ function openNewPlanModal() {
     resetForm();
     modalTitle.textContent = "Novo Plano de Aula";
     deletePlanBtn.classList.add('hidden'); // Hide delete button for new plans
-    planModal.classList.remove('hidden');
+    showSection('edit', updateUrl, null, 'new');
 }
 
-async function openEditPlanModal(id) {
+async function openEditPlanModal(id, updateUrl = true) {
     const canEdit = currentUser && (currentUser.isAdmin === true || currentUser.isColarinhoPreto === true || currentUser.isBlackCollar === true || currentUser.colarinhoPreto === true);
     if (!canEdit) {
         alert("Apenas usuários com a permissão 'Colarinho Preto' ou Administradores podem editar planificadores.");
@@ -326,14 +396,14 @@ async function openEditPlanModal(id) {
 
         modalTitle.textContent = "Editar Plano de Aula";
         deletePlanBtn.classList.remove('hidden'); // Show delete button for existing plans
-        planModal.classList.remove('hidden');
+        showSection('edit', updateUrl, id, 'edit');
     } catch (error) {
         console.error("Erro ao abrir plano:", error);
         alert("Erro ao carregar detalhes do plano.");
     }
 }
 
-async function openViewModal(id) {
+async function openViewModal(id, updateUrl = true) {
     try {
         const docSnap = await getDoc(doc(db, "plans", id));
         if (!docSnap.exists()) return;
@@ -409,18 +479,18 @@ async function openViewModal(id) {
             viewMediaList.innerHTML = '<p class="text-gray-500 text-sm italic col-span-full">Nenhum anexo.</p>';
         }
 
-        viewModal.classList.remove('hidden');
+        showSection('view', updateUrl, id);
     } catch (error) {
         console.error("Erro ao abrir visualização:", error);
     }
 }
 
 function closeViewModal() {
-    viewModal.classList.add('hidden');
+    showSection('catalog');
 }
 
 function closeModal() {
-    planModal.classList.add('hidden');
+    showSection('catalog');
     resetForm();
 }
 
