@@ -552,7 +552,6 @@ async function loadComponents(pageSpecificSetup) {
         'arquivo.html',
         'analise.html',
         'contas-mp.html',
-        'planificador.html',
         'unidades-planos.html',
         'comunicados.html',
         'grade.html',

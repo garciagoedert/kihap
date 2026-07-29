@@ -62,13 +62,6 @@ onAuthReady(async (user) => {
     }
     if (!user) return; // Auth redirects handled in auth.js
 
-    // Check permissions
-    if (!user.isAdmin && !user.isInstructor) {
-        alert("Acesso restrito a professores e administradores.");
-        window.location.href = 'index.html';
-        return;
-    }
-
     currentUser = user;
 
     const canEditPlan = user.isAdmin === true || user.isColarinhoPreto === true || user.isBlackCollar === true || user.colarinhoPreto === true;
