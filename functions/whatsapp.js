@@ -166,8 +166,9 @@ Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem
 - Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
 - CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups e as observações.
 - Loja e Pedidos: você pode pesquisar produtos (\`searchStoreProducts\`) e ver seus detalhes de preço/estoque (\`getStoreProductDetails\`). Também pode pesquisar transações de venda (\`searchStoreSales\`) e ver detalhes de uma venda específica (\`getStoreSaleDetails\`), assim como pesquisar pedidos de faixas/doboks (\`searchStoreOrders\`) e ver detalhes de um pedido específico (\`getStoreOrderDetails\`).
+- Planificadores de Aula: você pode pesquisar planificadores/planos pedagógicos (\`searchLessonPlans\`) e ver o detalhamento completo de um plano (\`getLessonPlanDetails\`), incluindo objetivos, estrutura por blocos/semanas e os links diretos de vídeos do YouTube. Quando professores ou instrutores perguntarem sobre planos de aula, treinos, técnicas específicas, aquecimentos ou pedirem vídeos demonstrativos, consulte o planificador e envie a explicação com os links de vídeo do YouTube.
 
-Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads ou produtos, vendas e pedidos da loja.`;
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, ou planificadores de aula.`;
 
 const KOBE_TOOLS = [{
     functionDeclarations: [
@@ -397,6 +398,40 @@ const KOBE_TOOLS = [{
                     }
                 },
                 required: ["title", "description", "priority"]
+            }
+        },
+        {
+            name: "searchLessonPlans",
+            description: "Busca nos planificadores de aula da Kihap por palavra-chave (ex: 'Defesas', 'Chute semicircular', 'Littles', 'Kids', 'Aquecimento', 'Tipo A') ou por categoria/programa.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar planos de aula (título, técnica, aquecimento ou conteúdo)."
+                    },
+                    category: {
+                        type: "STRING",
+                        description: "Categoria/Tipo do plano (opcional: 'A', 'B' ou 'C')."
+                    }
+                }
+            }
+        },
+        {
+            name: "getLessonPlanDetails",
+            description: "Retorna o detalhamento completo de um planificador de aula por ID ou por busca de título, contendo todos os blocos pedagógicos, semanas, instruções e os links de vídeos do YouTube.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    planId: {
+                        type: "STRING",
+                        description: "O ID do documento do plano de aula (opcional se fornecer query)."
+                    },
+                    query: {
+                        type: "STRING",
+                        description: "Título ou termo de busca do plano para localizar os detalhes quando o ID não for conhecido."
+                    }
+                }
             }
         }
     ]
@@ -1200,6 +1235,137 @@ async function createSupportTicketBackend(args, customerPhone, customerName) {
     }
 }
 
+async function searchLessonPlansBackend(args) {
+    const { query: searchQuery, category } = args;
+    try {
+        const snapshot = await db.collection('plans').get();
+        const results = [];
+        const lowerQuery = (searchQuery || '').toLowerCase();
+        const upperCategory = (category || '').toUpperCase();
+
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const title = (data.title || '').toLowerCase();
+            const planCat = (data.category || 'A').toUpperCase();
+            const author = (data.authorName || '').toLowerCase();
+            let contentText = (data.content || '').toLowerCase();
+
+            if (data.blocks && Array.isArray(data.blocks)) {
+                data.blocks.forEach(b => {
+                    contentText += ' ' + (b.title || '').toLowerCase();
+                    if (b.content) contentText += ' ' + b.content.toLowerCase();
+                    if (b.contents) {
+                        contentText += ' ' + (b.contents.w1 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w2 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w3 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w4 || '').toLowerCase();
+                    }
+                });
+            }
+
+            const categoryMatch = !upperCategory || planCat === upperCategory;
+            const queryMatch = !lowerQuery || title.includes(lowerQuery) || contentText.includes(lowerQuery) || author.includes(lowerQuery);
+
+            if (categoryMatch && queryMatch) {
+                const mediaVideos = (data.media || []).filter(m => m.type === 'youtube' || (m.url && (m.url.includes('youtube') || m.url.includes('youtu.be'))));
+                results.push({
+                    id: docSnap.id,
+                    title: data.title || 'Sem Título',
+                    category: data.category || 'A',
+                    layout: data.layout || 'simple',
+                    authorName: data.authorName || 'Desconhecido',
+                    hasVideos: mediaVideos.length > 0,
+                    videoCount: mediaVideos.length,
+                    summarySnippet: contentText.substring(0, 150) + '...'
+                });
+            }
+        });
+
+        return {
+            query: searchQuery || '',
+            category: category || '',
+            results: results.slice(0, 10),
+            countFound: results.length,
+            message: `Busca nos planificadores concluída. ${results.length} planos encontrados.`
+        };
+    } catch (e) {
+        console.error("[Kobe Backend] Erro ao buscar planificadores:", e);
+        return { error: e.message };
+    }
+}
+
+async function getLessonPlanDetailsBackend(args) {
+    const { planId, query: searchQuery } = args;
+    try {
+        let docSnap;
+        if (planId) {
+            docSnap = await db.collection('plans').doc(planId).get();
+        } else if (searchQuery) {
+            const snapshot = await db.collection('plans').get();
+            const lower = searchQuery.toLowerCase();
+            snapshot.forEach(d => {
+                if (!docSnap && (d.data().title || '').toLowerCase().includes(lower)) {
+                    docSnap = d;
+                }
+            });
+        }
+
+        if (!docSnap || !docSnap.exists) {
+            return { error: `Planificador de aula não encontrado.` };
+        }
+
+        const data = docSnap.data();
+        const mediaVideos = (data.media || [])
+            .map(m => {
+                let url = m.url || '';
+                if (m.type === 'youtube' && m.videoId && !url) {
+                    url = `https://www.youtube.com/watch?v=${m.videoId}`;
+                }
+                return {
+                    name: m.name || 'Vídeo demonstrativo',
+                    type: m.type || 'youtube',
+                    url: url
+                };
+            });
+
+        let blocksFormatted = [];
+        if (data.blocks && Array.isArray(data.blocks)) {
+            blocksFormatted = data.blocks.map(b => {
+                if (data.layout === 'grid') {
+                    return {
+                        title: b.title || '',
+                        style: b.style || 'normal',
+                        unified: b.unified || false,
+                        semanas: b.contents || {}
+                    };
+                } else {
+                    return {
+                        title: b.title || '',
+                        content: b.content || ''
+                    };
+                }
+            });
+        }
+
+        return {
+            id: docSnap.id,
+            title: data.title || '',
+            category: data.category || 'A',
+            layout: data.layout || 'simple',
+            authorName: data.authorName || 'Desconhecido',
+            weeks: data.weeks || [],
+            blocks: blocksFormatted,
+            contentHtmlOrText: data.content || null,
+            mediaVideos: mediaVideos,
+            videoLinksForUser: mediaVideos.map(v => `${v.name}: ${v.url}`).join('\n'),
+            message: `Planificador '${data.title}' obtido com sucesso.`
+        };
+    } catch (e) {
+        console.error("[Kobe Backend] Erro ao obter detalhes do planificador:", e);
+        return { error: e.message };
+    }
+}
+
 async function callGeminiKobe(history, apiKey) {
     const response = await axios.post(`${GEMINI_API_BASE}?key=${apiKey}`, {
         contents: history,
@@ -1782,6 +1948,10 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                                     result = await getStoreOrderDetailsBackend(args);
                                 } else if (fnName === 'createSupportTicket') {
                                     result = await createSupportTicketBackend(args, customerPhone, customerName);
+                                } else if (fnName === 'searchLessonPlans') {
+                                    result = await searchLessonPlansBackend(args);
+                                } else if (fnName === 'getLessonPlanDetails') {
+                                    result = await getLessonPlanDetailsBackend(args);
                                 } else {
                                     result = { error: 'Função do Kobe desconhecida.' };
                                 }
