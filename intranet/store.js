@@ -2716,6 +2716,29 @@ export async function setupStorePage() {
     let biChartPaymentMethods = null;
     let biChartGraduation = null;
     let biChartDow = null;
+    let biChartComparison = null;
+
+    let biCompareMode = 'unit'; // 'unit' or 'instructor'
+    let biCompareTargetA = '';
+    let biCompareTargetB = '';
+
+    window.setBICompareMode = (mode) => {
+        biCompareMode = mode;
+        biCompareTargetA = '';
+        biCompareTargetB = '';
+        const btnUnits = document.getElementById('bi-cmp-mode-units');
+        const btnInsts = document.getElementById('bi-cmp-mode-instructors');
+        if (btnUnits && btnInsts) {
+            if (mode === 'unit') {
+                btnUnits.className = 'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all bg-white dark:bg-[#1a1a1a] text-indigo-600 dark:text-indigo-400 shadow-sm';
+                btnInsts.className = 'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+            } else {
+                btnInsts.className = 'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all bg-white dark:bg-[#1a1a1a] text-indigo-600 dark:text-indigo-400 shadow-sm';
+                btnUnits.className = 'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+            }
+        }
+        if (typeof updateBIDashboard === 'function') updateBIDashboard();
+    };
 
     const biExcludedProducts = new Set();
     const biExcludedCategories = new Set();
@@ -3690,6 +3713,247 @@ export async function setupStorePage() {
                 }).join('');
             }
         }
+
+        // 10. BI Side-by-Side Comparator Logic
+        const cmpSelectA = document.getElementById('bi-cmp-select-a');
+        const cmpSelectB = document.getElementById('bi-cmp-select-b');
+        const cmpLabelA = document.getElementById('bi-cmp-label-a');
+        const cmpLabelB = document.getElementById('bi-cmp-label-b');
+        const cmpCardsContainer = document.getElementById('bi-cmp-cards-container');
+        const ctxComparison = document.getElementById('bi-chart-comparison');
+
+        if (cmpSelectA && cmpSelectB && cmpCardsContainer) {
+            const isUnitMode = biCompareMode === 'unit';
+            const entityAgg = isUnitMode ? unitAgg : instAgg;
+            const sortedEntities = Object.entries(entityAgg).sort((a, b) => b[1].revenue - a[1].revenue);
+            const entityList = sortedEntities.map(e => e[0]);
+
+            if (cmpLabelA) cmpLabelA.textContent = isUnitMode ? 'Primeira Unidade (A)' : 'Primeiro Professor (A)';
+            if (cmpLabelB) cmpLabelB.textContent = isUnitMode ? 'Segunda Unidade (B)' : 'Segundo Professor (B)';
+
+            if (entityList.length > 0) {
+                if (!biCompareTargetA || !entityList.includes(biCompareTargetA)) {
+                    biCompareTargetA = entityList[0];
+                }
+                if (!biCompareTargetB || !entityList.includes(biCompareTargetB)) {
+                    biCompareTargetB = entityList.length > 1 ? entityList[1] : entityList[0];
+                }
+            }
+
+            // Populate Selectors A & B
+            let optsAHtml = '';
+            let optsBHtml = '';
+            entityList.forEach(eName => {
+                optsAHtml += `<option value="${eName}" ${eName === biCompareTargetA ? 'selected' : ''}>${eName}</option>`;
+                optsBHtml += `<option value="${eName}" ${eName === biCompareTargetB ? 'selected' : ''}>${eName}</option>`;
+            });
+            cmpSelectA.innerHTML = optsAHtml || '<option value="">Sem dados</option>';
+            cmpSelectB.innerHTML = optsBHtml || '<option value="">Sem dados</option>';
+
+            // Helper to compute stats for a single entity
+            const getEntityStats = (entityName) => {
+                if (!entityName) return { revenue: 0, count: 0, ticket: 0, topProduct: 'N/A', topProductCount: 0, timeAgg: {} };
+
+                const entitySales = filteredSales.filter(sale => {
+                    if (isUnitMode) {
+                        const u = sale.userUnit || sale.unit || sale.unidade || 'Outras Unidades';
+                        return u === entityName;
+                    } else {
+                        const inst = sale.userProfessor || sale.professor || sale.selectedProfessor || sale.instructor || 'Venda Direta';
+                        return inst === entityName;
+                    }
+                });
+
+                let revenueCents = 0;
+                const prodCounts = {};
+                const timeMap = {};
+
+                entitySales.forEach(sale => {
+                    const amtCents = getSaleAmountInCents(sale);
+                    revenueCents += amtCents;
+
+                    const pName = sale.productName || 'Produto Genérico';
+                    if (!prodCounts[pName]) prodCounts[pName] = 0;
+                    prodCounts[pName] += 1;
+
+                    const d = getSaleDateObj(sale);
+                    if (d) {
+                        const dateKey = (period === 'all' || period === 'this_year' || period === '90_days')
+                            ? `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+                            : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        if (!timeMap[dateKey]) timeMap[dateKey] = 0;
+                        timeMap[dateKey] += amtCents / 100;
+                    }
+                });
+
+                const count = entitySales.length;
+                const revenue = revenueCents / 100;
+                const ticket = count > 0 ? revenue / count : 0;
+
+                const sortedProds = Object.entries(prodCounts).sort((a, b) => b[1] - a[1]);
+                const topProduct = sortedProds.length > 0 ? sortedProds[0][0] : 'N/A';
+                const topProductCount = sortedProds.length > 0 ? sortedProds[0][1] : 0;
+
+                return { revenue, count, ticket, topProduct, topProductCount, timeAgg: timeMap };
+            };
+
+            const statsA = getEntityStats(biCompareTargetA);
+            const statsB = getEntityStats(biCompareTargetB);
+
+            // Render Comparison Cards
+            const formatCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            const getDiffBadge = (valSelf, valOther) => {
+                if (valSelf === valOther || valOther === 0) return '';
+                if (valSelf > valOther) {
+                    const diff = valSelf - valOther;
+                    const pct = Math.round((diff / valOther) * 100);
+                    return `<span class="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                        <i class="fas fa-crown text-[8px]"></i> Líder (+${pct}%)
+                    </span>`;
+                }
+                return '';
+            };
+
+            cmpCardsContainer.innerHTML = `
+                <!-- Card Entity A -->
+                <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent dark:from-blue-600/20 dark:via-blue-600/10 dark:to-transparent p-5 sm:p-6 rounded-3xl border border-blue-200 dark:border-blue-800/40 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-blue-100 dark:border-blue-800/30">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center">A</span>
+                                <h4 class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white truncate">${biCompareTargetA || 'Selecione...'}</h4>
+                            </div>
+                            ${statsA.revenue > statsB.revenue ? '<span class="text-[10px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/40">🏆 Maior Faturamento</span>' : ''}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-blue-100/60 dark:border-blue-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Faturamento</span>
+                                <p class="text-base sm:text-lg font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">${formatCurrency(statsA.revenue)}</p>
+                                <div class="mt-1">${getDiffBadge(statsA.revenue, statsB.revenue)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-blue-100/60 dark:border-blue-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Vendas</span>
+                                <p class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">${statsA.count} un.</p>
+                                <div class="mt-1">${getDiffBadge(statsA.count, statsB.count)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-blue-100/60 dark:border-blue-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ticket Médio</span>
+                                <p class="text-base font-bold text-purple-600 dark:text-purple-400 tracking-tight">${formatCurrency(statsA.ticket)}</p>
+                                <div class="mt-1">${getDiffBadge(statsA.ticket, statsB.ticket)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-blue-100/60 dark:border-blue-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Top Produto</span>
+                                <p class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate" title="${statsA.topProduct}">${statsA.topProduct}</p>
+                                <span class="text-[9px] text-gray-400 font-medium">${statsA.topProductCount} vendid.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Entity B -->
+                <div class="bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent dark:from-purple-600/20 dark:via-purple-600/10 dark:to-transparent p-5 sm:p-6 rounded-3xl border border-purple-200 dark:border-purple-800/40 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-purple-100 dark:border-purple-800/30">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center">B</span>
+                                <h4 class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white truncate">${biCompareTargetB || 'Selecione...'}</h4>
+                            </div>
+                            ${statsB.revenue > statsA.revenue ? '<span class="text-[10px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/40">🏆 Maior Faturamento</span>' : ''}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-purple-100/60 dark:border-purple-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Faturamento</span>
+                                <p class="text-base sm:text-lg font-extrabold text-purple-600 dark:text-purple-400 tracking-tight">${formatCurrency(statsB.revenue)}</p>
+                                <div class="mt-1">${getDiffBadge(statsB.revenue, statsA.revenue)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-purple-100/60 dark:border-purple-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Vendas</span>
+                                <p class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">${statsB.count} un.</p>
+                                <div class="mt-1">${getDiffBadge(statsB.count, statsA.count)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-purple-100/60 dark:border-purple-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ticket Médio</span>
+                                <p class="text-base font-bold text-purple-600 dark:text-purple-400 tracking-tight">${formatCurrency(statsB.ticket)}</p>
+                                <div class="mt-1">${getDiffBadge(statsB.ticket, statsA.ticket)}</div>
+                            </div>
+
+                            <div class="bg-white/80 dark:bg-[#202020]/80 p-3 rounded-2xl border border-purple-100/60 dark:border-purple-900/30">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Top Produto</span>
+                                <p class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate" title="${statsB.topProduct}">${statsB.topProduct}</p>
+                                <span class="text-[9px] text-gray-400 font-medium">${statsB.topProductCount} vendid.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Chart Comparison Timeline
+            if (biChartComparison) biChartComparison.destroy();
+            if (ctxComparison) {
+                const allKeysSet = new Set([...Object.keys(statsA.timeAgg), ...Object.keys(statsB.timeAgg)]);
+                const sortedTimelineKeys = Array.from(allKeysSet).sort();
+
+                const dataA = sortedTimelineKeys.map(k => statsA.timeAgg[k] || 0);
+                const dataB = sortedTimelineKeys.map(k => statsB.timeAgg[k] || 0);
+
+                biChartComparison = new Chart(ctxComparison.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: sortedTimelineKeys.length > 0 ? sortedTimelineKeys : ['Sem dados'],
+                        datasets: [
+                            {
+                                label: biCompareTargetA || 'A',
+                                data: dataA.length > 0 ? dataA : [0],
+                                backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                                borderColor: '#3b82f6',
+                                borderWidth: 1,
+                                borderRadius: 6
+                            },
+                            {
+                                label: biCompareTargetB || 'B',
+                                data: dataB.length > 0 ? dataB : [0],
+                                backgroundColor: 'rgba(168, 85, 247, 0.85)',
+                                borderColor: '#a855f7',
+                                borderWidth: 1,
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { color: textColor, font: { size: 11, weight: 'bold' } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: gridColor },
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 10 },
+                                    callback: val => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val)
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
     };
 
     // Filter event listeners for BI Dashboard
@@ -3734,6 +3998,21 @@ export async function setupStorePage() {
                 biCatExcludePicker.value = '';
                 updateBIDashboard();
             }
+        });
+    }
+
+    const biCmpSelectA = document.getElementById('bi-cmp-select-a');
+    const biCmpSelectB = document.getElementById('bi-cmp-select-b');
+    if (biCmpSelectA) {
+        biCmpSelectA.addEventListener('change', () => {
+            biCompareTargetA = biCmpSelectA.value;
+            updateBIDashboard();
+        });
+    }
+    if (biCmpSelectB) {
+        biCmpSelectB.addEventListener('change', () => {
+            biCompareTargetB = biCmpSelectB.value;
+            updateBIDashboard();
         });
     }
 }

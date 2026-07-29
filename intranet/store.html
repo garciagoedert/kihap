@@ -652,6 +652,72 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- BI Side-by-Side Comparator Section -->
+                <div class="glass-card bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800/80">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2.5">
+                                <i class="fas fa-balance-scale text-indigo-500"></i> Comparador Analítico Lado a Lado
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecione duas unidades ou dois professores para comparar desempenho em tempo real</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <!-- Toggle Mode: Unidades vs Professores -->
+                            <div class="inline-flex p-1 bg-gray-100 dark:bg-[#282828] rounded-2xl border border-gray-200/60 dark:border-gray-800">
+                                <button type="button" id="bi-cmp-mode-units" onclick="setBICompareMode('unit')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all bg-white dark:bg-[#1a1a1a] text-indigo-600 dark:text-indigo-400 shadow-sm">
+                                    <i class="fas fa-building mr-1.5"></i> Unidades
+                                </button>
+                                <button type="button" id="bi-cmp-mode-instructors" onclick="setBICompareMode('instructor')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                    <i class="fas fa-user-ninja mr-1.5"></i> Professores
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Dropdowns Bar -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <!-- Entity A Selector -->
+                        <div class="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                            <span class="w-7 h-7 rounded-xl bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">A</span>
+                            <div class="flex-grow">
+                                <label id="bi-cmp-label-a" class="block text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Primeira Unidade</label>
+                                <select id="bi-cmp-select-a" class="w-full bg-white dark:bg-[#252525] border border-blue-200 dark:border-blue-800/50 text-gray-900 dark:text-white text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Entity B Selector -->
+                        <div class="flex items-center gap-3 p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
+                            <span class="w-7 h-7 rounded-xl bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">B</span>
+                            <div class="flex-grow">
+                                <label id="bi-cmp-label-b" class="block text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-0.5">Segunda Unidade</label>
+                                <select id="bi-cmp-select-b" class="w-full bg-white dark:bg-[#252525] border border-purple-200 dark:border-purple-800/50 text-gray-900 dark:text-white text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Side-by-Side Cards -->
+                    <div id="bi-cmp-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+
+                    <!-- Comparison Timeline Chart -->
+                    <div class="bg-gray-50/50 dark:bg-[#222]/50 p-5 rounded-2xl border border-gray-200/60 dark:border-gray-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                                <i class="fas fa-chart-line text-indigo-500"></i> Evolução Comparativa de Faturamento
+                            </h4>
+                            <span class="text-[10px] font-semibold text-gray-400">Comparação no Período Selecionado</span>
+                        </div>
+                        <div class="relative min-h-[280px]">
+                            <canvas id="bi-chart-comparison"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sales Log Content -->
