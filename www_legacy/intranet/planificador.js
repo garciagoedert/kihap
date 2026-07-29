@@ -81,7 +81,15 @@ function setupEventListeners() {
     cancelPlanBtn.addEventListener('click', closeModal);
     planForm.addEventListener('submit', handleFormSubmit);
     mediaUploadInput.addEventListener('change', handleFileUpload);
-    addYoutubeBtn.addEventListener('click', handleYouTubeAdd);
+    if (addYoutubeBtn) addYoutubeBtn.addEventListener('click', handleYouTubeAdd);
+    if (youtubeLinkInput) {
+        youtubeLinkInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleYouTubeAdd();
+            }
+        });
+    }
 
     // Modal Delete Button
     deletePlanBtn.addEventListener('click', () => {
@@ -101,20 +109,22 @@ function setupEventListeners() {
 }
 
 function handleYouTubeAdd() {
+    if (!youtubeLinkInput) return;
     const url = youtubeLinkInput.value.trim();
     if (!url) return;
 
     const videoId = extractYouTubeID(url);
     if (!videoId) {
-        alert("Link do YouTube inválido.");
+        alert("Link do YouTube não reconhecido. Por favor, cole um link válido (ex: https://www.youtube.com/watch?v=... ou https://youtu.be/...)");
         return;
     }
 
-    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
     currentMediaFiles.push({
-        name: 'YouTube Video',
+        name: 'Vídeo do YouTube',
         url: url,
+        videoId: videoId,
         type: 'youtube',
         thumbnail: thumbnailUrl
     });
@@ -124,9 +134,11 @@ function handleYouTubeAdd() {
 }
 
 function extractYouTubeID(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    if (!url) return null;
+    const trimmed = url.trim();
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = trimmed.match(regExp);
+    return match ? match[1] : null;
 }
 
 // --- Plans CRUD ---
@@ -214,6 +226,11 @@ function createPlanCard(id, plan) {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
+
+    // Auto-process pending YouTube link if user typed/pasted it into input without clicking "Adicionar"
+    if (youtubeLinkInput && youtubeLinkInput.value.trim()) {
+        handleYouTubeAdd();
+    }
 
     const id = planIdInput.value;
     const title = planTitleInput.value;
@@ -336,10 +353,17 @@ async function openViewModal(id) {
                 if (media.type === 'image') {
                     contentHTML = `<img src="${media.url}" class="w-full h-full object-cover">`;
                 } else if (media.type === 'youtube') {
+                    const videoId = media.videoId || extractYouTubeID(media.url);
+                    const thumb = media.thumbnail || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://img.youtube.com/vi/default/0.jpg');
                     contentHTML = `
-                        <img src="${media.thumbnail || 'https://img.youtube.com/vi/default/0.jpg'}" class="w-full h-full object-cover opacity-70">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <i class="fab fa-youtube text-red-600 text-5xl bg-white rounded-full"></i>
+                        <div class="relative w-full h-full group/yt">
+                            <img src="${thumb}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 group-hover/yt:bg-black/20 transition-colors flex items-center justify-center">
+                                <i class="fab fa-youtube text-red-650 text-5xl bg-white rounded-full p-1 shadow-lg group-hover/yt:scale-110 transition-transform"></i>
+                            </div>
+                            <span class="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                                <i class="fab fa-youtube text-red-500"></i> Abrir Vídeo
+                            </span>
                         </div>
                     `;
                 } else {
@@ -437,12 +461,15 @@ function renderMediaList() {
         if (media.type === 'image') {
             content = `<img src="${media.url}" class="w-full h-full object-cover">`;
         } else if (media.type === 'youtube') {
+            const videoId = media.videoId || extractYouTubeID(media.url);
+            const thumb = media.thumbnail || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://img.youtube.com/vi/default/0.jpg');
             content = `
                 <div class="relative w-full h-full">
-                    <img src="${media.thumbnail || 'https://img.youtube.com/vi/default/0.jpg'}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <i class="fab fa-youtube text-red-600 text-4xl bg-white rounded-full"></i>
+                    <img src="${thumb}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/35 flex items-center justify-center">
+                        <i class="fab fa-youtube text-red-650 text-3xl bg-white rounded-full p-0.5 shadow-md"></i>
                     </div>
+                    <span class="absolute bottom-1 left-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">YouTube</span>
                 </div>
             `;
         } else {
