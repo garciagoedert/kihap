@@ -540,6 +540,7 @@ async function loadComponents(pageSpecificSetup) {
         const isRH = userData.isRH === true;
         const isMarketing = userData.isMarketing === true;
         const isInstructor = userData.isInstructor === true;
+        const isColarinhoPreto = userData.isColarinhoPreto === true || userData.isBlackCollar === true || userData.colarinhoPreto === true;
         const isAdministrativo = userData.isAdministrativo === true;
 
         // Se for uma página administrativa, valida acesso

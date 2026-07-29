@@ -95,6 +95,11 @@ onAuthReady(async (user) => {
 
     currentUser = user;
 
+    const canEditPlan = user.isAdmin === true || user.isColarinhoPreto === true || user.isBlackCollar === true || user.colarinhoPreto === true;
+    if (!canEditPlan && addPlanBtn) {
+        addPlanBtn.classList.add('hidden');
+    }
+
     loadPlans();
     setupEventListeners();
 });
@@ -560,6 +565,11 @@ async function deletePlan(id) {
 
 // --- Modals Setup ---
 function openNewPlanModal() {
+    const canEdit = currentUser && (currentUser.isAdmin === true || currentUser.isColarinhoPreto === true || currentUser.isBlackCollar === true || currentUser.colarinhoPreto === true);
+    if (!canEdit) {
+        alert("Apenas usuários com a permissão 'Colarinho Preto' ou Administradores podem adicionar novos planificadores.");
+        return;
+    }
     resetForm();
     modalTitle.textContent = "Novo Plano de Aula";
     deletePlanBtn.classList.add('hidden');
@@ -568,6 +578,11 @@ function openNewPlanModal() {
 }
 
 async function openEditPlanModal(id) {
+    const canEdit = currentUser && (currentUser.isAdmin === true || currentUser.isColarinhoPreto === true || currentUser.isBlackCollar === true || currentUser.colarinhoPreto === true);
+    if (!canEdit) {
+        alert("Apenas usuários com a permissão 'Colarinho Preto' ou Administradores podem editar planificadores.");
+        return;
+    }
     try {
         const docSnap = await getDoc(doc(db, "plans", id));
         if (!docSnap.exists()) {
@@ -738,6 +753,12 @@ async function openViewModal(id) {
         }
 
         editPlanBtnView.dataset.id = id;
+        const canEdit = currentUser && (currentUser.isAdmin === true || currentUser.isColarinhoPreto === true || currentUser.isBlackCollar === true || currentUser.colarinhoPreto === true);
+        if (canEdit) {
+            editPlanBtnView.classList.remove('hidden');
+        } else {
+            editPlanBtnView.classList.add('hidden');
+        }
 
         // Render Media for View
         viewMediaList.innerHTML = '';

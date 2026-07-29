@@ -28,6 +28,7 @@ function continueSetup() {
     const passwordInput = document.getElementById('password');
     const isAdminInput = document.getElementById('isAdmin');
     const isInstructorInput = document.getElementById('isInstructor');
+    const isColarinhoPretoInput = document.getElementById('isColarinhoPreto');
     const isRHInput = document.getElementById('isRH');
     const isMarketingInput = document.getElementById('isMarketing');
     const isFinanceiroInput = document.getElementById('isFinanceiro');
@@ -91,6 +92,7 @@ function continueSetup() {
             const roles = [];
             if (user.isAdmin) roles.push('<span class="badge-soft bg-red-500/10 text-red-600 dark:text-red-400">Admin</span>');
             if (user.isInstructor) roles.push('<span class="badge-soft bg-blue-500/10 text-blue-600 dark:text-blue-400">Instrutor</span>');
+            if (user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto) roles.push('<span class="badge-soft bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-extrabold">🥋 Colarinho Preto</span>');
             if (user.isRH) roles.push('<span class="badge-soft bg-purple-500/10 text-purple-600 dark:text-purple-400">RH</span>');
             if (user.isFinanceiro) roles.push('<span class="badge-soft bg-green-500/10 text-green-600 dark:text-green-400">Financeiro</span>');
             if (user.isAdministrativo) roles.push('<span class="badge-soft bg-gray-500/10 text-gray-600 dark:text-gray-400">Admin.</span>');
@@ -205,6 +207,7 @@ function continueSetup() {
                 name: nameInput.value,
                 isAdmin: isAdminInput.checked,
                 isInstructor: isInstructorInput.checked,
+                isColarinhoPreto: isColarinhoPretoInput ? isColarinhoPretoInput.checked : false,
                 isRH: isRHInput.checked,
                 isMarketing: isMarketingInput.checked,
                 isFinanceiro: isFinanceiroInput.checked,
@@ -300,6 +303,7 @@ function continueSetup() {
                 emailInput.disabled = true;
                 isAdminInput.checked = user.isAdmin || false;
                 isInstructorInput.checked = user.isInstructor || false;
+                if (isColarinhoPretoInput) isColarinhoPretoInput.checked = user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto || false;
                 isRHInput.checked = user.isRH || false;
                 isMarketingInput.checked = user.isMarketing || false;
                 isFinanceiroInput.checked = user.isFinanceiro || false;

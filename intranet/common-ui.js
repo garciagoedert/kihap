@@ -629,6 +629,7 @@ async function loadComponents(pageSpecificSetup) {
         const isRH = userData.isRH === true;
         const isMarketing = userData.isMarketing === true;
         const isInstructor = userData.isInstructor === true;
+        const isColarinhoPreto = userData.isColarinhoPreto === true || userData.isBlackCollar === true || userData.colarinhoPreto === true;
         const isAdministrativo = userData.isAdministrativo === true;
         const isSuporte = userData.isSuporte === true;
 
@@ -1444,6 +1445,7 @@ async function getStudentProfile(args) {
                     id: uSnap.docs[0].id,
                     isAdmin: docData.isAdmin || false,
                     isInstructor: docData.isInstructor || false,
+                    isColarinhoPreto: docData.isColarinhoPreto || docData.isBlackCollar || docData.colarinhoPreto || false,
                     isSuporte: docData.isSuporte || false,
                     earnedBadges: docData.earnedBadges || [],
                     accessibleContent: docData.accessibleContent || []
