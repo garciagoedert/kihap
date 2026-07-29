@@ -569,9 +569,24 @@ export async function setupStorePage() {
             salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando vendas...</td></tr>';
         }
         try {
-            const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
-            const querySnapshot = await getDocs(q);
+            let querySnapshot;
+            try {
+                const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
+                querySnapshot = await getDocs(q);
+            } catch (errOrderBy) {
+                console.warn('[Store] Fallback to simple query for sales:', errOrderBy);
+                querySnapshot = await getDocs(collection(db, 'inscricoesFaixaPreta'));
+            }
             allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allSales.sort((a, b) => {
+                const getTime = (val) => {
+                    if (!val) return 0;
+                    if (typeof val.toDate === 'function') return val.toDate().getTime();
+                    if (val.seconds) return val.seconds * 1000;
+                    return new Date(val).getTime() || 0;
+                };
+                return getTime(b.created) - getTime(a.created);
+            });
             applyFilters();
         } catch (error) {
             console.error('Error fetching sales:', error);
@@ -4025,4 +4040,6 @@ export async function setupStorePage() {
             updateBIDashboard();
         });
     }
+
+    initialLoad();
 }
