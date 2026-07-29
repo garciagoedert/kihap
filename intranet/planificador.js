@@ -744,39 +744,48 @@ async function openViewModal(id) {
         if (data.media && data.media.length > 0) {
             data.media.forEach(media => {
                 const item = document.createElement('div');
-                item.className = 'bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-250/50 dark:border-gray-800 h-40 flex items-center justify-center relative group';
 
-                let contentHTML = '';
-                if (media.type === 'image') {
-                    contentHTML = `<img src="${media.url}" class="w-full h-full object-cover">`;
-                } else if (media.type === 'youtube') {
+                if (media.type === 'youtube') {
                     const videoId = media.videoId || extractYouTubeID(media.url);
-                    const thumb = media.thumbnail || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://img.youtube.com/vi/default/0.jpg');
-                    contentHTML = `
-                        <div class="relative w-full h-full group/yt">
-                            <img src="${thumb}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-black/40 group-hover/yt:bg-black/20 transition-colors flex items-center justify-center">
-                                <i class="fab fa-youtube text-red-650 text-5xl bg-white rounded-full p-1 shadow-lg group-hover/yt:scale-110 transition-transform"></i>
-                            </div>
-                            <span class="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
-                                <i class="fab fa-youtube text-red-500"></i> Abrir Vídeo
-                            </span>
-                        </div>
+                    if (videoId) {
+                        item.className = 'col-span-full w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 bg-black aspect-video my-1.5';
+                        item.innerHTML = `
+                            <iframe 
+                                src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1" 
+                                title="Vídeo do YouTube" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen 
+                                class="w-full h-full rounded-2xl min-h-[220px] sm:min-h-[300px]">
+                            </iframe>
+                        `;
+                    } else {
+                        item.className = 'bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-250/50 dark:border-gray-800 h-40 flex items-center justify-center relative group';
+                        item.innerHTML = `
+                            <a href="${media.url}" target="_blank" class="w-full h-full flex items-center justify-center text-xs text-red-500 font-bold gap-1.5">
+                                <i class="fab fa-youtube text-lg"></i> Abrir Vídeo no YouTube
+                            </a>
+                        `;
+                    }
+                } else if (media.type === 'image') {
+                    item.className = 'bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-250/50 dark:border-gray-800 h-40 flex items-center justify-center relative group';
+                    item.innerHTML = `
+                        <a href="${media.url}" target="_blank" class="w-full h-full flex items-center justify-center">
+                            <img src="${media.url}" class="w-full h-full object-cover">
+                        </a>
                     `;
                 } else {
-                    contentHTML = `
-                        <div class="text-center">
-                            <i class="fas fa-video text-4xl mb-2 text-blue-500"></i>
-                            <p class="text-xs truncate max-w-[120px] px-2 font-medium">${media.name}</p>
-                        </div>
+                    item.className = 'bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-250/50 dark:border-gray-800 h-40 flex items-center justify-center relative group';
+                    item.innerHTML = `
+                        <a href="${media.url}" target="_blank" class="w-full h-full flex items-center justify-center">
+                            <div class="text-center">
+                                <i class="fas fa-video text-4xl mb-2 text-blue-500"></i>
+                                <p class="text-xs truncate max-w-[120px] px-2 font-medium">${media.name}</p>
+                            </div>
+                        </a>
                     `;
                 }
 
-                item.innerHTML = `
-                    <a href="${media.url}" target="_blank" class="w-full h-full flex items-center justify-center">
-                        ${contentHTML}
-                    </a>
-                `;
                 viewMediaList.appendChild(item);
             });
         } else {
