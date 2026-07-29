@@ -221,6 +221,11 @@ export async function setupStorePage() {
                 tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
             }
             if (contentSalesLog) contentSalesLog.classList.remove('hidden');
+            if (allSales.length === 0) {
+                fetchSales().then(() => applyFilters());
+            } else {
+                applyFilters();
+            }
         } else if (activeTab === 'products') {
             if (tabManageProducts) {
                 tabManageProducts.classList.add('text-white', 'border-blue-500');
@@ -523,14 +528,19 @@ export async function setupStorePage() {
 
     // --- Sales Log Logic ---
     const fetchSales = async () => {
-        salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Carregando vendas...</td></tr>';
+        if (salesTableBody) {
+            salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando vendas...</td></tr>';
+        }
         try {
             const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
             const querySnapshot = await getDocs(q);
             allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            applyFilters();
         } catch (error) {
             console.error('Error fetching sales:', error);
-            salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-red-500">Erro ao carregar vendas.</td></tr>';
+            if (salesTableBody) {
+                salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-red-500">Erro ao carregar vendas. (' + (error.message || error) + ')</td></tr>';
+            }
         }
     };
 
