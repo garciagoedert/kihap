@@ -876,18 +876,30 @@ export async function setupStorePage() {
         return `<div class="flex flex-wrap gap-1.5">${badges.join('')}</div>`;
     };
 
+    const isProductActive = (product) => {
+        if (!product) return false;
+        if (product.visible === false || product.active === false || product.status === 'inactive' || product.available === false) {
+            return false;
+        }
+        return true;
+    };
+
     const updateStoreKPIs = (products) => {
         if (!products) return;
         if (kpiTotalProducts) kpiTotalProducts.textContent = products.length;
-        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(p => p.visible !== false).length;
+        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(isProductActive).length;
         
         let totalVal = 0;
         products.forEach(p => {
-            const price = p.price || (p.priceVariants && p.priceVariants.length > 0 ? p.priceVariants[0].price : 0);
-            if (p.controlStock && p.stockQuantity && price) {
-                totalVal += (p.stockQuantity * (price / 100));
-            } else if (price) {
-                totalVal += (price / 100);
+            if (p.controlStock) {
+                let qty = p.stockQuantity || 0;
+                if (!qty && p.cdStock) {
+                    qty = Object.values(p.cdStock).reduce((sum, cd) => sum + (cd.total || 0), 0);
+                }
+                const price = p.price || (p.priceVariants && p.priceVariants.length > 0 ? p.priceVariants[0].price : 0);
+                if (qty > 0 && price > 0) {
+                    totalVal += (qty * (price / 100));
+                }
             }
         });
         if (kpiTotalStockValue) kpiTotalStockValue.textContent = totalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -942,6 +954,8 @@ export async function setupStorePage() {
             if (product.isSubscription) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded border border-green-200 dark:border-green-800">Assinatura</span> `;
             if (product.isEvent) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800">Evento</span> `;
 
+            const isActive = isProductActive(product);
+
             row.innerHTML = `
                 <td class="p-4">
                     <div class="flex items-center gap-3">
@@ -974,8 +988,8 @@ export async function setupStorePage() {
                     `}
                 </td>
                 <td class="p-4 text-center whitespace-nowrap">
-                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.visible ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
-                        ${product.visible ? 'Ativo' : 'Inativo'}
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
+                        ${isActive ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
                 <td class="p-4 text-right whitespace-nowrap">
@@ -1012,7 +1026,7 @@ export async function setupStorePage() {
             );
             const matchesCategory = !selectedCat || product.category === selectedCat;
             const matchesStatus = !selectedStatus || (
-                selectedStatus === 'active' ? product.visible : !product.visible
+                selectedStatus === 'active' ? isProductActive(product) : !isProductActive(product)
             );
 
             return matchesSearch && matchesCategory && matchesStatus;
