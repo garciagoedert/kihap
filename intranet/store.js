@@ -91,6 +91,20 @@ export async function setupStorePage() {
 
     // Product Management elements
     const productModal = document.getElementById('product-modal');
+    const productsCatalogView = document.getElementById('products-catalog-view');
+    const productEditorView = document.getElementById('product-editor-view');
+    const closeProductEditorBtn = document.getElementById('close-product-editor-btn');
+    const productPageTitle = document.getElementById('product-page-title');
+    const deleteProductPageBtn = document.getElementById('delete-product-page-btn');
+    const saveProductPageTrigger = document.getElementById('save-product-page-trigger');
+    const productsSearchInput = document.getElementById('products-search-input') || document.getElementById('product-search-input');
+    const productsCategoryFilter = document.getElementById('products-category-filter');
+    const productsStatusFilter = document.getElementById('products-status-filter');
+    const kpiTotalProducts = document.getElementById('kpi-total-products');
+    const kpiActiveProducts = document.getElementById('kpi-active-products');
+    const kpiTotalStockValue = document.getElementById('kpi-total-stock-value');
+    const kpiTotalCategories = document.getElementById('kpi-total-categories');
+
     const addProductBtn = document.getElementById('add-product-btn');
     const closeProductModalBtn = document.getElementById('close-product-modal-btn');
     const cancelProductModalBtn = document.getElementById('cancel-product-modal-btn');
@@ -791,65 +805,172 @@ export async function setupStorePage() {
         }
     };
 
-    // --- Product Management Logic ---
-    const fetchProducts = async () => {
-        productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando produtos...</td></tr>';
+    // --- Product Management & Full-Page Editor Logic ---
+    let allCDsMap = {};
+    const fetchDistributionCenters = async () => {
         try {
+            const querySnapshot = await getDocs(collection(db, 'distribution_centers'));
+            allCDsMap = {};
+            querySnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                allCDsMap[docSnap.id] = data.name || ('CD ' + docSnap.id.substring(0, 4));
+            });
+        } catch (err) {
+            console.warn('Error loading distribution centers for store:', err);
+        }
+    };
+
+    const fetchProducts = async () => {
+        if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Carregando produtos...</td></tr>';
+        try {
+            await fetchDistributionCenters();
             const q = query(collection(db, 'products'), orderBy('name', 'asc'));
             const querySnapshot = await getDocs(q);
             allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            displayProducts(allProducts);
+            applyProductsFilter();
         } catch (error) {
             console.error('Error fetching products:', error);
-            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+            if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+        }
+    };
+
+    const renderCDStockBadges = (product) => {
+        if (!product.controlStock) {
+            return '<span class="text-xs text-gray-400 font-medium italic">Sem controle de estoque</span>';
+        }
+        if (!product.cdStock || Object.keys(product.cdStock).length === 0) {
+            return `<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Total: ${product.stockQuantity || 0} un</span>`;
+        }
+        
+        const badges = [];
+        Object.entries(product.cdStock).forEach(([cdId, data]) => {
+            const cdName = allCDsMap[cdId] || ('CD ' + cdId.substring(0, 4));
+            const total = data.total || 0;
+            let sizesStr = '';
+            if (data.sizes && Object.keys(data.sizes).length > 0) {
+                const activeSizes = Object.entries(data.sizes).filter(([, q]) => q > 0);
+                if (activeSizes.length > 0) {
+                    sizesStr = ` (${activeSizes.map(([sz, qty]) => `${sz}:${qty}`).join(', ')})`;
+                }
+            }
+            badges.push(`
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                    <i class="fas fa-warehouse text-[9px] text-blue-500"></i> ${cdName}: <strong>${total}</strong>${sizesStr}
+                </span>
+            `);
+        });
+        return `<div class="flex flex-wrap gap-1.5">${badges.join('')}</div>`;
+    };
+
+    const updateStoreKPIs = (products) => {
+        if (kpiTotalProducts) kpiTotalProducts.textContent = products.length;
+        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(p => p.visible).length;
+        
+        let totalVal = 0;
+        products.forEach(p => {
+            if (p.controlStock && p.stockQuantity && p.price) {
+                totalVal += (p.stockQuantity * (p.price / 100));
+            }
+        });
+        if (kpiTotalStockValue) kpiTotalStockValue.textContent = totalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        if (kpiTotalCategories) kpiTotalCategories.textContent = categories.length;
+
+        // Populate category dropdown filter if empty
+        if (productsCategoryFilter && productsCategoryFilter.options.length <= 1 && categories.length > 0) {
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                productsCategoryFilter.appendChild(opt);
+            });
         }
     };
 
     const displayProducts = (productsToDisplay) => {
         if (!productsTableBody) return;
-        
+        updateStoreKPIs(allProducts);
+
         if (productsToDisplay.length === 0) {
-            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500 italic">Nenhum produto cadastrado.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500 italic">Nenhum produto encontrado.</td></tr>';
             return;
         }
 
         const fragment = document.createDocumentFragment();
         productsToDisplay.forEach(product => {
             const row = document.createElement('tr');
-            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-all duration-200 group';
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-all duration-200 group';
 
             let price;
-            if (product.priceType === 'variable' && product.priceVariants) {
+            if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
                 const prices = product.priceVariants.map(v => v.price / 100);
                 const minPrice = Math.min(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const maxPrice = Math.max(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 price = `${minPrice} - ${maxPrice}`;
             } else {
-                price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                price = ((product.price || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             }
+
+            const imgHtml = product.imageUrl ? `
+                <img src="${product.imageUrl}" alt="${product.name}" class="w-10 h-10 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');" />
+                <div class="hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 items-center justify-center font-bold text-xs"><i class="fas fa-box"></i></div>
+            ` : `
+                <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-xs"><i class="fas fa-box"></i></div>
+            `;
+
+            let badgesStr = '';
+            if (product.isTicket) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded border border-purple-200 dark:border-purple-800">Ingresso</span> `;
+            if (product.isSubscription) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded border border-green-200 dark:border-green-800">Assinatura</span> `;
+            if (product.isEvent) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800">Evento</span> `;
 
             row.innerHTML = `
                 <td class="p-4">
-                    <div class="font-bold text-gray-900 dark:text-white">${product.name}</div>
-                    <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1">${product.category || 'Geral'}</div>
+                    <div class="flex items-center gap-3">
+                        ${imgHtml}
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
+                                ${product.name}
+                                ${badgesStr}
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-medium">ID: ${product.id}</div>
+                        </div>
+                    </div>
                 </td>
-                <td class="p-4 font-mono text-sm text-primary font-bold">${price}</td>
                 <td class="p-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'}">
+                    <span class="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                        ${product.category || 'Geral'}
+                    </span>
+                </td>
+                <td class="p-4 font-mono text-sm text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">${price}</td>
+                <td class="p-4">${renderCDStockBadges(product)}</td>
+                <td class="p-4 text-center whitespace-nowrap">
+                    ${product.controlStock ? `
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'}">
+                            ${product.stockQuantity || 0} un
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">
+                            Sem Controle
+                        </span>
+                    `}
+                </td>
+                <td class="p-4 text-center whitespace-nowrap">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.visible ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
                         ${product.visible ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
-                <td class="p-4">
-                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700 shadow-sm" 
-                        data-link="https://www.kihap.com.br/checkout?product=${product.id}">
-                        <i class="fas fa-link text-xs"></i>
-                    </button>
-                </td>
-                <td class="p-4 text-right">
-                    <button class="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all edit-btn font-bold uppercase tracking-widest text-[10px] shadow-sm" data-id="${product.id}">
-                        <i class="fas fa-pencil-alt"></i>
-                        <span>Editar</span>
-                    </button>
+                <td class="p-4 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-2">
+                        <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700 shadow-sm" 
+                            data-link="https://www.kihap.com.br/checkout?product=${product.id}">
+                            <i class="fas fa-link text-xs"></i>
+                        </button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white rounded-xl transition-all edit-btn font-bold text-xs shadow-sm border border-blue-200 dark:border-blue-800/40" data-id="${product.id}">
+                            <i class="fas fa-edit text-xs"></i>
+                            <span>Editar</span>
+                        </button>
+                    </div>
                 </td>
             `;
             fragment.appendChild(row);
@@ -858,6 +979,33 @@ export async function setupStorePage() {
         productsTableBody.innerHTML = '';
         productsTableBody.appendChild(fragment);
     };
+
+    const applyProductsFilter = () => {
+        if (!allProducts) return;
+        const searchTerm = (productsSearchInput ? productsSearchInput.value : '').toLowerCase().trim();
+        const selectedCat = productsCategoryFilter ? productsCategoryFilter.value : '';
+        const selectedStatus = productsStatusFilter ? productsStatusFilter.value : '';
+
+        const filtered = allProducts.filter(product => {
+            const matchesSearch = !searchTerm || (
+                (product.name && product.name.toLowerCase().includes(searchTerm)) ||
+                (product.category && product.category.toLowerCase().includes(searchTerm)) ||
+                (product.id && product.id.toLowerCase().includes(searchTerm))
+            );
+            const matchesCategory = !selectedCat || product.category === selectedCat;
+            const matchesStatus = !selectedStatus || (
+                selectedStatus === 'active' ? product.visible : !product.visible
+            );
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        displayProducts(filtered);
+    };
+
+    if (productsSearchInput) productsSearchInput.addEventListener('input', debounce(applyProductsFilter, 250));
+    if (productsCategoryFilter) productsCategoryFilter.addEventListener('change', applyProductsFilter);
+    if (productsStatusFilter) productsStatusFilter.addEventListener('change', applyProductsFilter);
 
     const populateRecommendedProductsSelect = () => {
         if (!recommendedProductsSelect) return;
@@ -873,31 +1021,60 @@ export async function setupStorePage() {
         });
     };
 
-    const openProductModal = () => {
-        productModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    const openProductEditor = (productId = null) => {
+        if (productsCatalogView) productsCatalogView.classList.add('hidden');
+        if (productEditorView) productEditorView.classList.remove('hidden');
+
+        if (productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product && productPageTitle) productPageTitle.textContent = `Editar Produto: ${product.name}`;
+            if (deleteProductPageBtn) deleteProductPageBtn.classList.remove('hidden');
+        } else {
+            if (productPageTitle) productPageTitle.textContent = 'Cadastrar Novo Produto';
+            if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const closeProductModal = () => {
-        productModal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        productForm.reset();
-        eventConfigContainer.classList.add('hidden');
-        eventSlotsList.innerHTML = '';
+    const closeProductEditor = () => {
+        if (productEditorView) productEditorView.classList.add('hidden');
+        if (productsCatalogView) productsCatalogView.classList.remove('hidden');
+        if (productForm) productForm.reset();
+        if (eventConfigContainer) eventConfigContainer.classList.add('hidden');
+        if (eventSlotsList) eventSlotsList.innerHTML = '';
         if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
+        if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
     };
+
+    // Alias old modal functions for full backwards compatibility
+    const openProductModal = (id) => openProductEditor(id);
+    const closeProductModal = () => closeProductEditor();
 
     if (addProductBtn) {
         addProductBtn.addEventListener('click', () => {
-            productFormTitle.textContent = 'Adicionar Produto';
+            if (productFormTitle) productFormTitle.textContent = 'Adicionar Produto';
             productIdInput.value = '';
             if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
             populateRecommendedProductsSelect();
-            openProductModal();
+            openProductEditor();
         });
     }
-    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductModal);
-    if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductModal);
+    if (closeProductEditorBtn) closeProductEditorBtn.addEventListener('click', closeProductEditor);
+    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductEditor);
+    if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductEditor);
+
+    if (saveProductPageTrigger && saveProductBtn) {
+        saveProductPageTrigger.addEventListener('click', () => {
+            if (productForm) productForm.requestSubmit();
+        });
+    }
+
+    if (deleteProductPageBtn && deleteProductBtn) {
+        deleteProductPageBtn.addEventListener('click', () => {
+            deleteProductBtn.click();
+        });
+    }
 
     if (productForm) productForm.addEventListener('submit', async (e) => {
         e.preventDefault();

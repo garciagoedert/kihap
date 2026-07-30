@@ -9,6 +9,21 @@ import {
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
+// Global cache variables for performance
+let allSales = [];
+let allProducts = [];
+let allBanners = [];
+let allCoupons = [];
+let allCheckins = [];
+let searchTimeout = null;
+
+const debounce = (func, delay) => {
+    return (...args) => {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => func.apply(null, args), delay);
+    };
+};
+
 export async function setupStorePage() {
     const currentUser = await getCurrentUser();
     const isAdmin = await checkAdminStatus(currentUser);
@@ -76,6 +91,20 @@ export async function setupStorePage() {
 
     // Product Management elements
     const productModal = document.getElementById('product-modal');
+    const productsCatalogView = document.getElementById('products-catalog-view');
+    const productEditorView = document.getElementById('product-editor-view');
+    const closeProductEditorBtn = document.getElementById('close-product-editor-btn');
+    const productPageTitle = document.getElementById('product-page-title');
+    const deleteProductPageBtn = document.getElementById('delete-product-page-btn');
+    const saveProductPageTrigger = document.getElementById('save-product-page-trigger');
+    const productsSearchInput = document.getElementById('products-search-input') || document.getElementById('product-search-input');
+    const productsCategoryFilter = document.getElementById('products-category-filter');
+    const productsStatusFilter = document.getElementById('products-status-filter');
+    const kpiTotalProducts = document.getElementById('kpi-total-products');
+    const kpiActiveProducts = document.getElementById('kpi-active-products');
+    const kpiTotalStockValue = document.getElementById('kpi-total-stock-value');
+    const kpiTotalCategories = document.getElementById('kpi-total-categories');
+
     const addProductBtn = document.getElementById('add-product-btn');
     const closeProductModalBtn = document.getElementById('close-product-modal-btn');
     const cancelProductModalBtn = document.getElementById('cancel-product-modal-btn');
@@ -118,6 +147,8 @@ export async function setupStorePage() {
     const productIsSubscriptionInput = document.getElementById('product-is-subscription');
     const productAvailabilityDateInput = document.getElementById('product-availability-date');
     const productAskProfessorInput = document.getElementById('product-ask-professor');
+    const availableProfessorsContainer = document.getElementById('available-professors-container');
+    const availableProfessorsInput = document.getElementById('product-available-professors');
     const productAskAgeInput = document.getElementById('product-ask-age');
     const productControlStockInput = document.getElementById('product-control-stock');
     const stockContainer = document.getElementById('stock-container');
@@ -181,18 +212,26 @@ export async function setupStorePage() {
     const manualSaleUnitSelect = document.getElementById('manual-sale-user-unit');
 
 
-    let allSales = [];
-    let allProducts = [];
-    let allBanners = [];
-    let allCoupons = [];
     let currentOpenSaleId = null;
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
-        [tabDashboard, tabSalesLog, tabManageProducts, tabMarketing, tabEvents].forEach(tab => {
-            if (tab) {
-                tab.classList.remove('text-white', 'border-blue-500');
-                tab.classList.add('text-gray-400', 'hover:border-gray-500');
+        const tabs = [
+            { id: 'dashboard', el: tabDashboard },
+            { id: 'sales', el: tabSalesLog },
+            { id: 'products', el: tabManageProducts },
+            { id: 'marketing', el: tabMarketing },
+            { id: 'events', el: tabEvents }
+        ];
+
+        tabs.forEach(tab => {
+            if (!tab.el) return;
+            if (tab.id === activeTab) {
+                tab.el.classList.add('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            } else {
+                tab.el.classList.remove('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
             }
         });
 
@@ -201,10 +240,6 @@ export async function setupStorePage() {
         });
 
         if (activeTab === 'dashboard' && contentDashboard) {
-            if (tabDashboard) {
-                tabDashboard.classList.add('text-white', 'border-blue-500');
-                tabDashboard.classList.remove('text-gray-400', 'hover:border-gray-500');
-            }
             contentDashboard.classList.remove('hidden');
             if (allSales.length === 0) {
                 fetchSales().then(() => {
@@ -215,64 +250,80 @@ export async function setupStorePage() {
                 populateBIFilters();
                 updateBIDashboard();
             }
-        } else if (activeTab === 'sales') {
-            if (tabSalesLog) {
-                tabSalesLog.classList.add('text-white', 'border-blue-500');
-                tabSalesLog.classList.remove('text-gray-400', 'hover:border-gray-500');
-            }
-            if (contentSalesLog) contentSalesLog.classList.remove('hidden');
+        } else if (activeTab === 'sales' && contentSalesLog) {
+            contentSalesLog.classList.remove('hidden');
             if (allSales.length === 0) {
                 fetchSales().then(() => applyFilters());
             } else {
                 applyFilters();
             }
-        } else if (activeTab === 'products') {
-            if (tabManageProducts) {
-                tabManageProducts.classList.add('text-white', 'border-blue-500');
-                tabManageProducts.classList.remove('text-gray-400', 'hover:border-gray-500');
-            }
-            if (contentManageProducts) contentManageProducts.classList.remove('hidden');
-        } else if (activeTab === 'marketing') {
-            if (tabMarketing) {
-                tabMarketing.classList.add('text-white', 'border-blue-500');
-                tabMarketing.classList.remove('text-gray-400', 'hover:border-gray-500');
-            }
-            if (contentMarketing) contentMarketing.classList.remove('hidden');
-        } else if (activeTab === 'events') {
+        } else if (activeTab === 'products' && contentManageProducts) {
+            contentManageProducts.classList.remove('hidden');
+        } else if (activeTab === 'marketing' && contentMarketing) {
+            contentMarketing.classList.remove('hidden');
+        } else if (activeTab === 'events' && contentEvents) {
             populateEventFilter();
             fetchEventSubscribers();
-            if (tabEvents) {
-                tabEvents.classList.add('text-white', 'border-blue-500');
-                tabEvents.classList.remove('text-gray-400', 'hover:border-gray-500');
-            }
-            if (contentEvents) contentEvents.classList.remove('hidden');
+            contentEvents.classList.remove('hidden');
         }
     }
 
     // --- Marketing Sub-tab Switching Logic ---
     function switchMarketingSubTab(activeSubTab) {
-        if (activeSubTab === 'banners') {
-            subtabBanners.classList.add('text-white', 'border-blue-500');
-            subtabBanners.classList.remove('text-gray-400', 'hover:border-gray-500');
-            subtabCoupons.classList.remove('text-white', 'border-blue-500');
-            subtabCoupons.classList.add('text-gray-400', 'hover:border-gray-500');
+        const subtabs = [
+            { id: 'banners', el: subtabBanners },
+            { id: 'coupons', el: subtabCoupons }
+        ];
+
+        subtabs.forEach(tab => {
+            if (!tab.el) return;
+            if (tab.id === activeSubTab) {
+                tab.el.classList.add('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            } else {
+                tab.el.classList.remove('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
+                tab.el.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+            }
+        });
+
+        [contentManageBanners, contentManageCoupons].forEach(content => {
+            if (content) content.classList.add('hidden');
+        });
+
+        if (activeSubTab === 'banners' && contentManageBanners) {
             contentManageBanners.classList.remove('hidden');
-            contentManageCoupons.classList.add('hidden');
-        } else if (activeSubTab === 'coupons') {
-            subtabCoupons.classList.add('text-white', 'border-blue-500');
-            subtabCoupons.classList.remove('text-gray-400', 'hover:border-gray-500');
-            subtabBanners.classList.remove('text-white', 'border-blue-500');
-            subtabBanners.classList.add('text-gray-400', 'hover:border-gray-500');
+            fetchBanners();
+        } else if (activeSubTab === 'coupons' && contentManageCoupons) {
             contentManageCoupons.classList.remove('hidden');
-            contentManageBanners.classList.add('hidden');
+            fetchCoupons();
         }
     }
 
-    if (tabDashboard) tabDashboard.addEventListener('click', () => switchTab('dashboard'));
-    if (tabSalesLog) tabSalesLog.addEventListener('click', () => switchTab('sales'));
-    if (tabManageProducts) tabManageProducts.addEventListener('click', () => switchTab('products'));
-    if (tabMarketing) tabMarketing.addEventListener('click', () => switchTab('marketing'));
-    if (tabEvents) tabEvents.addEventListener('click', () => switchTab('events'));
+    if (tabDashboard) tabDashboard.addEventListener('click', () => {
+        console.log('[Store] Switching to BI Dashboard');
+        switchTab('dashboard');
+    });
+    if (tabSalesLog) tabSalesLog.addEventListener('click', () => {
+        console.log('[Store] Switching to Sales Log');
+        switchTab('sales');
+        if (allSales.length === 0) fetchSales().then(() => applyFilters());
+    });
+    if (tabManageProducts) tabManageProducts.addEventListener('click', () => {
+        console.log('[Store] Switching to Products');
+        switchTab('products');
+        if (allProducts.length === 0) fetchProducts();
+    });
+    if (tabMarketing) tabMarketing.addEventListener('click', () => {
+        console.log('[Store] Switching to Marketing');
+        switchTab('marketing');
+        // Initial fetch for marketing if needed
+    });
+    if (tabEvents) tabEvents.addEventListener('click', () => {
+        console.log('[Store] Switching to Events');
+        switchTab('events');
+        populateEventFilter();
+        if (allCheckins.length === 0) fetchEventSubscribers();
+    });
 
     if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
     if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
@@ -307,7 +358,7 @@ export async function setupStorePage() {
         row.className = 'manual-sale-product-row grid grid-cols-3 gap-2 items-center';
 
         const productSelect = document.createElement('select');
-        productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        productSelect.className = 'manual-sale-product-select col-span-2 w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
         productSelect.innerHTML = '<option value="">Selecione um produto</option>';
         allProducts.forEach(product => {
             const option = document.createElement('option');
@@ -319,7 +370,7 @@ export async function setupStorePage() {
 
         const priceInput = document.createElement('input');
         priceInput.type = 'number';
-        priceInput.className = 'manual-sale-product-price w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md';
+        priceInput.className = 'manual-sale-product-price w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
         priceInput.placeholder = 'Preço';
 
         const removeBtn = document.createElement('button');
@@ -483,7 +534,7 @@ export async function setupStorePage() {
 
         switch (status) {
             case 'processing':
-                colorClass = 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-transparent';
+                colorClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/30';
                 text = 'Em Preparação';
                 break;
             case 'shipped':
@@ -560,49 +611,58 @@ export async function setupStorePage() {
     };
 
     const displaySales = (salesToDisplay) => {
-        salesTableBody.innerHTML = '';
+        if (!salesTableBody) return;
+        
         if (salesToDisplay.length === 0) {
-            salesTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Nenhuma venda encontrada.</td></tr>';
+            salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic">Nenhuma venda encontrada com os filtros atuais.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         salesToDisplay.forEach(sale => {
-            const row = salesTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-100', 'dark:border-gray-800', 'hover:bg-gray-50', 'dark:hover:bg-gray-800/30', 'cursor-pointer', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-all duration-200 group';
             row.dataset.saleId = sale.id;
 
             const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
             const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
 
-            let nameDisplay = sale.userName || 'N/A';
+            let nameDisplay = `<div class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</div>`;
+            if (sale.payerName && sale.payerName !== sale.userName) {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400 font-normal mt-0.5">Responsável: ${sale.payerName}</div>`;
+            }
             if (sale.saleType === 'manual') {
-                nameDisplay += ` <span class="ml-2 px-2 py-1 text-xs font-semibold text-blue-300 bg-blue-800/50 rounded-full">Manual</span>`;
+                nameDisplay += `<div class="mt-1"><span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-transparent">Manual</span></div>`;
             }
 
-            let productDisplay = sale.productName || 'N/A';
+            let productDisplay = `<span class="font-bold text-gray-900 dark:text-white">${sale.productName || 'N/A'}</span>`;
             if (sale.recommendedItems && sale.recommendedItems.length > 0) {
                 const recommendedNames = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
-                productDisplay += `<br><span class="text-xs text-gray-400">+ ${recommendedNames}</span>`;
+                productDisplay += `<div class="text-[10px] text-gray-400 mt-0.5">+ ${recommendedNames}</div>`;
             }
 
             row.innerHTML = `
                 <td class="p-4" data-label="Nome do Cliente">
-                    <div class="text-gray-900 dark:text-white font-medium">${nameDisplay}</div>
+                    ${nameDisplay}
                 </td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
-                <td class="p-4 text-gray-900 dark:text-white font-medium" data-label="Produto">${productDisplay}</td>
+                <td class="p-4 text-gray-500 dark:text-gray-400 text-sm" data-label="Email">${sale.userEmail || 'N/A'}</td>
+                <td class="p-4" data-label="Produto">${productDisplay}</td>
                 <td class="p-4 text-gray-900 dark:text-white font-bold" data-label="Valor">${amount}</td>
                 <td class="p-4" data-label="Status do Pagamento">${renderStatusTag(sale.paymentStatus)}</td>
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
-                <td class="p-4 text-gray-500 dark:text-gray-400 text-xs" data-label="Data da Compra">${date}</td>
+                <td class="p-4 text-gray-400 text-[10px] font-medium" data-label="Data da Compra">${date}</td>
                 <td class="p-4" data-label="Ações">
-                    <button class="update-status-btn bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-blue-100 dark:border-transparent" 
-                        data-sale-id="${sale.id}">
-                        <i class="fas fa-eye mr-1"></i>Ver
+                    <button class="update-status-btn w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" 
+                        data-sale-id="${sale.id}" title="Ver Detalhes">
+                        <i class="fas fa-eye text-xs"></i>
                     </button>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        salesTableBody.innerHTML = '';
+        salesTableBody.appendChild(fragment);
     };
 
     const applyFilters = () => {
@@ -616,7 +676,9 @@ export async function setupStorePage() {
         const selectedFulfillment = fulfillmentFilter ? fulfillmentFilter.value : '';
 
         let filteredSales = allSales.filter(sale => {
-            const nameMatch = !searchTerm || (sale.userName && sale.userName.toLowerCase().includes(searchTerm));
+            const nameMatch = !searchTerm || 
+                (sale.userName && sale.userName.toLowerCase().includes(searchTerm)) ||
+                (sale.payerName && sale.payerName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
             const mainProductMatch = sale.productId === selectedProduct;
@@ -698,12 +760,28 @@ export async function setupStorePage() {
         });
     }
 
-    [searchInput, unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter, fulfillmentFilter].forEach(el => {
-        if (el) {
-            el.addEventListener('change', applyFilters);
-            el.addEventListener('keyup', applyFilters);
-        }
+    // Optimizing filter listeners with debounce for keyup
+    const debouncedSalesFilter = debounce(applyFilters, 300);
+    
+    [unitFilter, productFilter, filterStartDate, filterEndDate, statusFilter, fulfillmentFilter].forEach(el => {
+        if (el) el.addEventListener('change', applyFilters);
     });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', debouncedSalesFilter);
+    }
+    
+    // Adding product search listener (it was missing or incomplete)
+    if (productSearchInput) {
+        productSearchInput.addEventListener('input', debounce(() => {
+            const term = productSearchInput.value.toLowerCase();
+            const filtered = allProducts.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                (p.category && p.category.toLowerCase().includes(term))
+            );
+            displayProducts(filtered);
+        }, 300));
+    }
 
 
     const fetchMpAccounts = async () => {
@@ -727,67 +805,207 @@ export async function setupStorePage() {
         }
     };
 
-    // --- Product Management Logic ---
-    const fetchProducts = async () => {
-        productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando produtos...</td></tr>';
+    // --- Product Management & Full-Page Editor Logic ---
+    let allCDsMap = {};
+    const fetchDistributionCenters = async () => {
         try {
+            const querySnapshot = await getDocs(collection(db, 'distribution_centers'));
+            allCDsMap = {};
+            querySnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                allCDsMap[docSnap.id] = data.name || ('CD ' + docSnap.id.substring(0, 4));
+            });
+        } catch (err) {
+            console.warn('Error loading distribution centers for store:', err);
+        }
+    };
+
+    const fetchProducts = async () => {
+        if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Carregando produtos...</td></tr>';
+        try {
+            await fetchDistributionCenters();
             const q = query(collection(db, 'products'), orderBy('name', 'asc'));
             const querySnapshot = await getDocs(q);
             allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            displayProducts(allProducts);
+            applyProductsFilter();
         } catch (error) {
             console.error('Error fetching products:', error);
-            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+            if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+        }
+    };
+
+    const renderCDStockBadges = (product) => {
+        if (!product.controlStock) {
+            return '<span class="text-xs text-gray-400 font-medium italic">Sem controle de estoque</span>';
+        }
+        if (!product.cdStock || Object.keys(product.cdStock).length === 0) {
+            return `<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Total: ${product.stockQuantity || 0} un</span>`;
+        }
+        
+        const badges = [];
+        Object.entries(product.cdStock).forEach(([cdId, data]) => {
+            const cdName = allCDsMap[cdId] || ('CD ' + cdId.substring(0, 4));
+            const total = data.total || 0;
+            let sizesStr = '';
+            if (data.sizes && Object.keys(data.sizes).length > 0) {
+                const activeSizes = Object.entries(data.sizes).filter(([, q]) => q > 0);
+                if (activeSizes.length > 0) {
+                    sizesStr = ` (${activeSizes.map(([sz, qty]) => `${sz}:${qty}`).join(', ')})`;
+                }
+            }
+            badges.push(`
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                    <i class="fas fa-warehouse text-[9px] text-blue-500"></i> ${cdName}: <strong>${total}</strong>${sizesStr}
+                </span>
+            `);
+        });
+        return `<div class="flex flex-wrap gap-1.5">${badges.join('')}</div>`;
+    };
+
+    const updateStoreKPIs = (products) => {
+        if (kpiTotalProducts) kpiTotalProducts.textContent = products.length;
+        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(p => p.visible).length;
+        
+        let totalVal = 0;
+        products.forEach(p => {
+            if (p.controlStock && p.stockQuantity && p.price) {
+                totalVal += (p.stockQuantity * (p.price / 100));
+            }
+        });
+        if (kpiTotalStockValue) kpiTotalStockValue.textContent = totalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        if (kpiTotalCategories) kpiTotalCategories.textContent = categories.length;
+
+        // Populate category dropdown filter if empty
+        if (productsCategoryFilter && productsCategoryFilter.options.length <= 1 && categories.length > 0) {
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                productsCategoryFilter.appendChild(opt);
+            });
         }
     };
 
     const displayProducts = (productsToDisplay) => {
-        productsTableBody.innerHTML = '';
+        if (!productsTableBody) return;
+        updateStoreKPIs(allProducts);
+
         if (productsToDisplay.length === 0) {
-            productsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum produto cadastrado.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500 italic">Nenhum produto encontrado.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         productsToDisplay.forEach(product => {
-            const row = productsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-800', 'hover:bg-gray-800/30', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-all duration-200 group';
 
             let price;
-            if (product.priceType === 'variable' && product.priceVariants) {
+            if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
                 const prices = product.priceVariants.map(v => v.price / 100);
                 const minPrice = Math.min(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const maxPrice = Math.max(...prices).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 price = `${minPrice} - ${maxPrice}`;
             } else {
-                price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                price = ((product.price || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             }
+
+            const imgHtml = product.imageUrl ? `
+                <img src="${product.imageUrl}" alt="${product.name}" class="w-10 h-10 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');" />
+                <div class="hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 items-center justify-center font-bold text-xs"><i class="fas fa-box"></i></div>
+            ` : `
+                <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-xs"><i class="fas fa-box"></i></div>
+            `;
+
+            let badgesStr = '';
+            if (product.isTicket) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded border border-purple-200 dark:border-purple-800">Ingresso</span> `;
+            if (product.isSubscription) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded border border-green-200 dark:border-green-800">Assinatura</span> `;
+            if (product.isEvent) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800">Evento</span> `;
 
             row.innerHTML = `
                 <td class="p-4">
-                    <div class="font-bold text-white">${product.name}</div>
-                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">${product.category || 'Geral'}</div>
+                    <div class="flex items-center gap-3">
+                        ${imgHtml}
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
+                                ${product.name}
+                                ${badgesStr}
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-medium">ID: ${product.id}</div>
+                        </div>
+                    </div>
                 </td>
-                <td class="p-4 font-mono text-sm text-gray-300 font-bold">${price}</td>
                 <td class="p-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.visible ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                    <span class="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                        ${product.category || 'Geral'}
+                    </span>
+                </td>
+                <td class="p-4 font-mono text-sm text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">${price}</td>
+                <td class="p-4">${renderCDStockBadges(product)}</td>
+                <td class="p-4 text-center whitespace-nowrap">
+                    ${product.controlStock ? `
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'}">
+                            ${product.stockQuantity || 0} un
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">
+                            Sem Controle
+                        </span>
+                    `}
+                </td>
+                <td class="p-4 text-center whitespace-nowrap">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.visible ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
                         ${product.visible ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
-                <td class="p-4">
-                    <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-all copy-link-btn" 
-                        data-link="https://www.kihap.com.br/checkout?product=${product.id}">
-                        <i class="fas fa-link text-xs"></i>
-                    </button>
-                </td>
-                <td class="p-4 text-right">
-                    <button class="inline-flex items-center gap-2 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all edit-btn" data-id="${product.id}">
-                        <i class="fas fa-pencil-alt text-[10px]"></i>
-                        <span class="text-[10px] font-bold uppercase tracking-widest">Editar</span>
-                    </button>
+                <td class="p-4 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-2">
+                        <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700 shadow-sm" 
+                            data-link="https://www.kihap.com.br/checkout?product=${product.id}">
+                            <i class="fas fa-link text-xs"></i>
+                        </button>
+                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white rounded-xl transition-all edit-btn font-bold text-xs shadow-sm border border-blue-200 dark:border-blue-800/40" data-id="${product.id}">
+                            <i class="fas fa-edit text-xs"></i>
+                            <span>Editar</span>
+                        </button>
+                    </div>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        productsTableBody.innerHTML = '';
+        productsTableBody.appendChild(fragment);
     };
+
+    const applyProductsFilter = () => {
+        if (!allProducts) return;
+        const searchTerm = (productsSearchInput ? productsSearchInput.value : '').toLowerCase().trim();
+        const selectedCat = productsCategoryFilter ? productsCategoryFilter.value : '';
+        const selectedStatus = productsStatusFilter ? productsStatusFilter.value : '';
+
+        const filtered = allProducts.filter(product => {
+            const matchesSearch = !searchTerm || (
+                (product.name && product.name.toLowerCase().includes(searchTerm)) ||
+                (product.category && product.category.toLowerCase().includes(searchTerm)) ||
+                (product.id && product.id.toLowerCase().includes(searchTerm))
+            );
+            const matchesCategory = !selectedCat || product.category === selectedCat;
+            const matchesStatus = !selectedStatus || (
+                selectedStatus === 'active' ? product.visible : !product.visible
+            );
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        displayProducts(filtered);
+    };
+
+    if (productsSearchInput) productsSearchInput.addEventListener('input', debounce(applyProductsFilter, 250));
+    if (productsCategoryFilter) productsCategoryFilter.addEventListener('change', applyProductsFilter);
+    if (productsStatusFilter) productsStatusFilter.addEventListener('change', applyProductsFilter);
 
     const populateRecommendedProductsSelect = () => {
         if (!recommendedProductsSelect) return;
@@ -803,31 +1021,60 @@ export async function setupStorePage() {
         });
     };
 
-    const openProductModal = () => {
-        productModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    const openProductEditor = (productId = null) => {
+        if (productsCatalogView) productsCatalogView.classList.add('hidden');
+        if (productEditorView) productEditorView.classList.remove('hidden');
+
+        if (productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product && productPageTitle) productPageTitle.textContent = `Editar Produto: ${product.name}`;
+            if (deleteProductPageBtn) deleteProductPageBtn.classList.remove('hidden');
+        } else {
+            if (productPageTitle) productPageTitle.textContent = 'Cadastrar Novo Produto';
+            if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const closeProductModal = () => {
-        productModal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        productForm.reset();
-        eventConfigContainer.classList.add('hidden');
-        eventSlotsList.innerHTML = '';
+    const closeProductEditor = () => {
+        if (productEditorView) productEditorView.classList.add('hidden');
+        if (productsCatalogView) productsCatalogView.classList.remove('hidden');
+        if (productForm) productForm.reset();
+        if (eventConfigContainer) eventConfigContainer.classList.add('hidden');
+        if (eventSlotsList) eventSlotsList.innerHTML = '';
         if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
+        if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
     };
+
+    // Alias old modal functions for full backwards compatibility
+    const openProductModal = (id) => openProductEditor(id);
+    const closeProductModal = () => closeProductEditor();
 
     if (addProductBtn) {
         addProductBtn.addEventListener('click', () => {
-            productFormTitle.textContent = 'Adicionar Produto';
+            if (productFormTitle) productFormTitle.textContent = 'Adicionar Produto';
             productIdInput.value = '';
             if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
             populateRecommendedProductsSelect();
-            openProductModal();
+            openProductEditor();
         });
     }
-    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductModal);
-    if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductModal);
+    if (closeProductEditorBtn) closeProductEditorBtn.addEventListener('click', closeProductEditor);
+    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeProductEditor);
+    if (cancelProductModalBtn) cancelProductModalBtn.addEventListener('click', closeProductEditor);
+
+    if (saveProductPageTrigger && saveProductBtn) {
+        saveProductPageTrigger.addEventListener('click', () => {
+            if (productForm) productForm.requestSubmit();
+        });
+    }
+
+    if (deleteProductPageBtn && deleteProductBtn) {
+        deleteProductPageBtn.addEventListener('click', () => {
+            deleteProductBtn.click();
+        });
+    }
 
     if (productForm) productForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -863,9 +1110,10 @@ export async function setupStorePage() {
                 hasSizes: productHasSizesInput.checked,
                 sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
                 askProfessor: productAskProfessorInput.checked,
+                availableProfessors: productAskProfessorInput.checked && availableProfessorsInput.value ? availableProfessorsInput.value.split(',').map(p => p.trim()).filter(p => p) : [],
                 askAge: productAskAgeInput.checked,
                 controlStock: productControlStockInput.checked,
-                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(',').map(u => u.trim()).filter(u => u) : [],
+                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(/,|\n/).map(u => u.trim()).filter(u => u) : [],
                 recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
                 mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
                 mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
@@ -1094,6 +1342,13 @@ export async function setupStorePage() {
                     productSizesInput.value = '';
                 }
                 productAskProfessorInput.checked = product.askProfessor || false;
+                if (product.askProfessor) {
+                    availableProfessorsContainer.classList.remove('hidden');
+                    availableProfessorsInput.value = product.availableProfessors ? product.availableProfessors.join(', ') : '';
+                } else {
+                    availableProfessorsContainer.classList.add('hidden');
+                    availableProfessorsInput.value = '';
+                }
                 productAskAgeInput.checked = product.askAge || false;
                 productControlStockInput.checked = product.controlStock || false;
                 if (product.controlStock) {
@@ -1110,7 +1365,7 @@ export async function setupStorePage() {
                     stockContainer.classList.add('hidden');
                     productStockQuantityInput.value = '';
                 }
-                productCustomUnitsInput.value = product.customUnits ? product.customUnits.join(', ') : '';
+                productCustomUnitsInput.value = product.customUnits ? product.customUnits.join('\n') : '';
                 
                 if (productMpAccountSelect) productMpAccountSelect.value = product.mpAccountId || 'default';
                 if (productMpSplitInput) productMpSplitInput.value = product.mpSplitPercentage || '';
@@ -1274,6 +1529,16 @@ export async function setupStorePage() {
         });
     }
 
+    if (productAskProfessorInput) {
+        productAskProfessorInput.addEventListener('change', () => {
+            if (productAskProfessorInput.checked) {
+                availableProfessorsContainer.classList.remove('hidden');
+            } else {
+                availableProfessorsContainer.classList.add('hidden');
+            }
+        });
+    }
+
     // --- Stock per-size helper ---
     const stockSimpleDiv = document.getElementById('stock-simple');
     const stockPerSizeDiv = document.getElementById('stock-per-size');
@@ -1296,10 +1561,10 @@ export async function setupStorePage() {
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-3';
                 row.innerHTML = `
-                    <span class="text-sm font-medium text-gray-200 w-16 flex-shrink-0">${size}</span>
-                    <input type="number" data-size="${size}" data-stock-size-input 
-                        class="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Qtd" min="0" value="${qty}" />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200 w-16 flex-shrink-0">${size}</span>
+                <input type="number" data-size="${size}" data-stock-size-input 
+                    class="flex-1 px-3 py-1.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Qtd" min="0" value="${qty}" />
                 `;
                 stockPerSizeInputs.appendChild(row);
             });
@@ -1334,9 +1599,9 @@ export async function setupStorePage() {
         const isVariablePrice = document.querySelector('input[name="price-type"]:checked').value === 'variable';
 
         variantItem.innerHTML = `
-            <input type="text" name="variant-name" placeholder="Nome da Variação (ex: 1BD)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="variant-name" placeholder="Nome da Variação" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         priceVariantsList.appendChild(variantItem);
     };
@@ -1356,10 +1621,10 @@ export async function setupStorePage() {
         const isLotePrice = document.querySelector('input[name="price-type"]:checked').value === 'lotes';
 
         loteItem.innerHTML = `
-            <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
-            <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
-            <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3">&times; Remover</button>
+            <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
+            <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3 text-xs font-bold uppercase mt-1 flex items-center gap-1 justify-end"><i class="fas fa-trash-alt"></i> Remover</button>
         `;
         lotesList.appendChild(loteItem);
     };
@@ -1378,9 +1643,9 @@ export async function setupStorePage() {
         const isKitPrice = document.querySelector('input[name="price-type"]:checked').value === 'kit';
 
         itemRow.innerHTML = `
-            <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
+            <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
+            <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         kitItemsList.appendChild(itemRow);
     };
@@ -1398,9 +1663,9 @@ export async function setupStorePage() {
         const addonItem = document.createElement('div');
         addonItem.className = 'addon-item flex items-center space-x-2 mb-2';
         addonItem.innerHTML = `
-            <input type="text" name="addon-name" placeholder="Nome do Addon (ex: Camiseta Extra)" value="${name}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400">&times;</button>
+            <input type="text" name="addon-name" placeholder="Nome do Addon" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         addonsList.appendChild(addonItem);
     };
@@ -1494,7 +1759,7 @@ export async function setupStorePage() {
 
     const addEventSlotRow = (variationName = '', day = '', time = '', ring = '', minAge = '', maxAge = '', programId = 'tradicional') => {
         const slotRow = document.createElement('div');
-        slotRow.className = 'event-slot-row bg-purple-900/10 p-5 rounded-2xl border border-purple-600/20 mb-4 transition-all hover:bg-purple-900/20 shadow-lg';
+        slotRow.className = 'event-slot-row bg-purple-50 dark:bg-purple-900/10 p-5 rounded-2xl border border-purple-100 dark:border-purple-600/20 mb-4 transition-all hover:bg-white dark:hover:bg-purple-900/20 shadow-sm';
         
         // Handle variations (can be string or array)
         let selectedBelts = [];
@@ -1560,11 +1825,11 @@ export async function setupStorePage() {
                     <div>
                         <label class="text-[10px] text-purple-400 font-bold uppercase mb-1.5 block tracking-wider">Graduações (Multi-seleção)</label>
                         <div class="relative event-belts-container">
-                            <button type="button" class="select-belts-btn w-full px-4 py-2.5 text-sm text-left text-white bg-gray-900/80 border border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-inner flex justify-between items-center transition-all">
+                            <button type="button" class="select-belts-btn w-full px-4 py-2.5 text-sm text-left text-gray-900 dark:text-white bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl focus:outline-none focus:border-purple-500 shadow-sm flex justify-between items-center transition-all">
                                 <span class="selected-belts-text truncate">Selecionar Faixas...</span>
-                                <i class="fas fa-chevron-down text-[10px] text-gray-500 transition-transform"></i>
+                                <i class="fas fa-chevron-down text-[10px] text-gray-400 transition-transform"></i>
                             </button>
-                            <div class="belts-dropdown hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-gray-900 border border-gray-700/50 rounded-xl shadow-2xl p-2 space-y-1 backdrop-blur-md">
+                            <div class="belts-dropdown hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/50 rounded-xl shadow-2xl p-2 space-y-1 backdrop-blur-md">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
@@ -1784,72 +2049,78 @@ export async function setupStorePage() {
             };
             method = methodMap[method] || method;
 
-            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-700/50">
-                <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Origem do Pagamento</h4>
-                <p><span class="text-gray-400">Método:</span> <span class="text-white font-medium">${method}</span></p>`;
+            paymentDetailsHtml = `<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                <h4 class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Origem do Pagamento</h4>
+                <p><span class="text-gray-500 dark:text-gray-400">Método:</span> <span class="text-gray-900 dark:text-white font-bold">${method}</span></p>`;
 
             if (details.cardLast4) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Cartão:</span> <span class="text-white">**** **** **** ${details.cardLast4}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Cartão:</span> <span class="text-gray-900 dark:text-white font-medium">**** **** **** ${details.cardLast4}</span></p>`;
             }
             if (details.cardBrand || details.paymentMethodId) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Bandeira/Rede:</span> <span class="text-white uppercase">${details.cardBrand || details.paymentMethodId}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Bandeira/Rede:</span> <span class="text-gray-900 dark:text-white uppercase font-bold">${details.cardBrand || details.paymentMethodId}</span></p>`;
             }
             if (details.installments && details.installments > 1) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Parcelas:</span> <span class="text-white">${details.installments}x</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Parcelas:</span> <span class="text-gray-900 dark:text-white font-medium">${details.installments}x</span></p>`;
             }
             if (details.authCode) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Cód. Autorização:</span> <span class="text-white">${details.authCode}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Cód. Autorização:</span> <span class="text-gray-900 dark:text-white font-medium">${details.authCode}</span></p>`;
             }
             if (details.updatedBy) {
-                paymentDetailsHtml += `<p><span class="text-gray-400">Atualizado por:</span> <span class="text-white">${details.updatedBy}</span></p>`;
+                paymentDetailsHtml += `<p><span class="text-gray-500 dark:text-gray-400">Atualizado por:</span> <span class="text-gray-900 dark:text-white font-medium">${details.updatedBy}</span></p>`;
             }
             paymentDetailsHtml += `</div>`;
+
         }
 
         modalContent.innerHTML = `
             <div class="space-y-6">
                 <!-- ID e Info Básica -->
-                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID da Venda</p>
-                    <p class="text-sm font-mono text-blue-400 break-all">${sale.id}</p>
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 font-bold">ID da Venda</p>
+                    <p class="text-sm font-mono text-blue-600 dark:text-blue-400 break-all">${sale.id}</p>
                     ${sale.studentId ? `
-                        <div class="mt-2 pt-2 border-t border-gray-700/50">
-                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1 font-bold">ID do Aluno</p>
-                            <p class="text-sm font-mono text-gray-300 break-all">${sale.studentId}</p>
+                        <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 font-bold">ID do Aluno</p>
+                            <p class="text-sm font-mono text-gray-600 dark:text-gray-300 break-all">${sale.studentId}</p>
                         </div>
                     ` : ''}
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Coluna 1: Cliente -->
-                    <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
-                        <h4 class="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                    <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                        <h4 class="text-blue-600 dark:text-blue-400 font-bold mb-3 flex items-center gap-2">
                             <span>👤</span> Dados do Cliente
                         </h4>
                         <div class="space-y-2 text-sm">
-                            <p><span class="text-gray-400">Nome:</span> <span class="text-white font-medium">${sale.userName || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Email:</span> <span class="text-white break-all">${sale.userEmail || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Telefone:</span> <span class="text-white">${sale.userPhone || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">CPF:</span> <span class="text-white">${sale.userCpf || 'N/A'}</span></p>
-                            ${sale.userAge ? `<p><span class="text-gray-400">Idade:</span> <span class="text-white">${sale.userAge}</span></p>` : ''}
-                            <p><span class="text-gray-400">Unidade:</span> <span class="text-white">${sale.userUnit || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Programa:</span> <span class="text-white">${sale.userPrograma || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Graduação:</span> <span class="text-white">${sale.userGraduacao || 'N/A'}</span></p>
-                        </div>
+                            ${sale.payerName && sale.payerName !== sale.userName ? `
+                                <p><span class="text-gray-500 dark:text-gray-400">Inscrito/Aluno:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</span></p>
+                                <p><span class="text-gray-500 dark:text-gray-400">Responsável/Pagador:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.payerName}</span></p>
+                            ` : `
+                                <p><span class="text-gray-500 dark:text-gray-400">Nome:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userName || 'N/A'}</span></p>
+                            `}
+                            <p><span class="text-gray-500 dark:text-gray-400">Email:</span> <span class="text-gray-900 dark:text-white break-all font-medium">${sale.userEmail || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Telefone:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPhone || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">CPF:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userCpf || 'N/A'}</span></p>
+                            ${sale.userAge ? `<p><span class="text-gray-500 dark:text-gray-400">Idade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userAge}</span></p>` : ''}
+                            <p><span class="text-gray-500 dark:text-gray-400">Unidade:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userUnit || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Programa:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userPrograma || 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Graduação:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.userGraduacao || 'N/A'}</span></p>
+                            ${sale.userProfessor ? `<p><span class="text-gray-500 dark:text-gray-400">Professor:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.userProfessor}</span></p>` : ''}
                         </div>
                     </div>
 
                     <!-- Coluna 2: Produto e Pagamento -->
                     <div class="space-y-4">
                         <!-- Card Produto -->
-                        <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50 h-full">
-                            <h4 class="text-purple-400 font-bold mb-3 flex items-center gap-2">
+                        <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50 h-full">
+                            <h4 class="text-purple-600 dark:text-purple-400 font-bold mb-3 flex items-center gap-2">
                                 <span>🛍️</span> Produto
                             </h4>
                             <div class="space-y-2 text-sm">
-                                <p><span class="text-gray-400">Item:</span> <span class="text-white font-medium">${sale.productName || 'N/A'}</span></p>
-                                ${sale.userSize ? `<p><span class="text-gray-400">Tamanho:</span> <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded font-bold">${sale.userSize}</span></p>` : ''}
-                                <div class="mt-2 text-gray-300">
+                                <p><span class="text-gray-500 dark:text-gray-400">Item:</span> <span class="text-gray-900 dark:text-white font-bold">${sale.productName || 'N/A'}</span></p>
+                                ${sale.userSize ? `<p><span class="text-gray-500 dark:text-gray-400">Tamanho:</span> <span class="px-2 py-0.5 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-500 rounded font-bold">${sale.userSize}</span></p>` : ''}
+                                <div class="mt-2 text-gray-700 dark:text-gray-300">
                                     ${productDetailsHtml}
                                 </div>
                             </div>
@@ -1858,23 +2129,24 @@ export async function setupStorePage() {
                 </div>
 
                 <!-- Info Pagamento -->
-                <div class="bg-gray-800/30 p-4 rounded-xl border border-gray-700/50">
-                    <h4 class="text-green-400 font-bold mb-3 flex items-center gap-2">
+                <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                    <h4 class="text-green-600 dark:text-green-400 font-bold mb-3 flex items-center gap-2">
                         <span>💳</span> Detalhes Financeiros
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div class="space-y-2">
-                            <p><span class="text-gray-400">Valor Total:</span> <span class="text-green-400 font-bold text-lg">${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
-                            <p><span class="text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
-                            <p><span class="text-gray-400">Data:</span> <span class="text-white">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Valor Total:</span> <span class="text-green-600 dark:text-green-400 font-bold text-lg">${(sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Status:</span> ${renderStatusTag(sale.paymentStatus)}</p>
+                            <p><span class="text-gray-500 dark:text-gray-400">Data:</span> <span class="text-gray-900 dark:text-white font-medium">${sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A'}</span></p>
                         </div>
-                        <div class="border-l border-gray-700/50 pl-4">
+                        <div class="border-l border-gray-200 dark:border-gray-700/50 pl-4">
                             ${paymentDetailsHtml}
                         </div>
                     </div>
                 </div>
             </div>
         `;
+
 
         // Load email logs
         await loadEmailLogs(saleId);
@@ -1885,14 +2157,18 @@ export async function setupStorePage() {
         if (sale.paymentStatus === 'pending') {
             recoverCartBtnModal.classList.remove('hidden');
             recoverCartBtnModal.onclick = () => {
-                if (!sale.mercadoPagoPreferenceId) {
+                if (!sale.mercadoPagoPreferenceId && !sale.checkoutUrl) {
                     alert('Não foi possível encontrar o ID do Mercado Pago (Preferência) salvo para esta venda.\n\nVendas criadas antes desta atualização podem não possuir este dado salvo.');
                     return;
                 }
-                const isSub = sale.isSubscription || false;
-                const link = isSub
-                    ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
-                    : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                // Prefere o checkoutUrl salvo (init_point original). Fallback: reconstrói a URL
+                let link = sale.checkoutUrl || null;
+                if (!link) {
+                    const isSub = sale.isSubscription || false;
+                    link = isSub
+                        ? `https://www.mercadopago.com.br/preapproval/client/signin?preapproval_id=${sale.mercadoPagoPreferenceId}`
+                        : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${sale.mercadoPagoPreferenceId}`;
+                }
                 
                 navigator.clipboard.writeText(link).then(() => {
                     alert('Link de pagamento copiado para a área de transferência com sucesso!\n\nVocê já pode colar (Ctrl+V) no WhatsApp para o cliente.\n\nLink: ' + link);
@@ -1962,15 +2238,16 @@ export async function setupStorePage() {
                 const dateStr = log.sentAt ? new Date(log.sentAt.toDate()).toLocaleString('pt-BR') : 'N/A';
 
                 const logItem = document.createElement('div');
-                logItem.className = 'bg-[#2a2a2a] p-3 rounded-lg text-sm';
+                logItem.className = 'bg-gray-50 dark:bg-[#2a2a2a] p-3 rounded-lg text-sm border border-gray-100 dark:border-gray-800/50';
                 logItem.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span>${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
-                        <span class="text-gray-400">${dateStr}</span>
+                        <span class="font-bold text-gray-900 dark:text-white">${typeIcon} ${log.type === 'ticket' ? 'Ingresso' : 'Recibo'} ${statusIcon}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</span>
                     </div>
-                    ${log.error ? `<p class="text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
+                    ${log.error ? `<p class="text-red-600 dark:text-red-400 text-xs mt-1">Erro: ${log.error}</p>` : ''}
                 `;
                 emailLogsList.appendChild(logItem);
+
             });
         } catch (error) {
             console.error('Error loading email logs:', error);
@@ -2148,11 +2425,11 @@ export async function setupStorePage() {
             ringStatsList.innerHTML = Object.entries(rings)
                 .sort((a, b) => a[0] - b[0])
                 .map(([ring, count]) => `
-                    <div class="px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 min-w-[80px] text-center">
-                        <p class="text-[10px] text-gray-500 uppercase">Ringue ${ring}</p>
-                        <p class="text-lg font-bold text-blue-400">${count}</p>
+                    <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 min-w-[80px] text-center">
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Ringue ${ring}</p>
+                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400">${count}</p>
                     </div>
-                `).join('') || '<p class="text-xs text-gray-600 italic">Nenhum dado por ringue</p>';
+                `).join('') || '<p class="text-xs text-gray-500 italic">Nenhum dado por ringue</p>';
         }
     };
 
@@ -2168,18 +2445,20 @@ export async function setupStorePage() {
     };
 
     const displayEventSubscribers = (subscribers) => {
-        eventsTableBody.innerHTML = '';
+        if (!eventsTableBody) return;
+        
         if (subscribers.length === 0) {
-            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Nenhum inscrito encontrado com estes filtros.</td></tr>';
+            eventsTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500 italic">Nenhum inscrito encontrado com estes filtros.</td></tr>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         subscribers.forEach(sub => {
-            const row = eventsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-800', 'cursor-pointer', 'transition-colors');
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-all duration-200';
             row.dataset.saleId = sub.id;
 
-            const checkinStatusClass = sub.checkinStatus === 'realizado' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400';
+            const checkinStatusClass = sub.checkinStatus === 'realizado' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-gray-500/10 text-gray-500';
             const checkinStatusText = sub.checkinStatus === 'realizado' ? 'Check-in OK' : 'Pendente';
             const graduation = sub.userGraduacao || sub.variationName || sub.chosenVariant || 'N/A';
             const program = sub.userPrograma ? ` (${sub.userPrograma})` : '';
@@ -2187,22 +2466,32 @@ export async function setupStorePage() {
             const ring = sub.eventRing || '-';
             const dateTime = sub.eventDay && sub.eventTime ? `${sub.eventDay} às ${sub.eventTime}` : (sub.eventTime || '-');
 
+            let nameDisplay = `<div class="font-bold text-gray-900 dark:text-white">${sub.userName || 'N/A'}</div>`;
+            if (sub.payerName && sub.payerName !== sub.userName) {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400">Responsável: ${sub.payerName} | ${sub.userEmail || ''}</div>`;
+            } else {
+                nameDisplay += `<div class="text-[10px] text-gray-500 dark:text-gray-400">${sub.userEmail || ''}</div>`;
+            }
+
             row.innerHTML = `
-                <td class="p-4 font-mono text-xs text-blue-400">#${sub.attendeeNumber || '---'}</td>
+                <td class="p-4 font-mono text-[10px] font-bold text-primary">#${sub.attendeeNumber || '---'}</td>
                 <td class="p-4">
-                    <div class="font-medium">${sub.userName || 'N/A'}</div>
-                    <div class="text-[10px] text-gray-500">${sub.userEmail || ''}</div>
+                    ${nameDisplay}
                 </td>
-                <td class="p-4 text-xs">${variant}</td>
-                <td class="p-4 text-center"><span class="px-2 py-1 bg-blue-500/10 rounded text-blue-400 font-bold">${ring}</span></td>
-                <td class="p-4 text-xs text-gray-400">${dateTime}</td>
+                <td class="p-4 text-[11px] font-medium text-gray-600 dark:text-gray-400">${variant}</td>
+                <td class="p-4 text-center"><span class="px-2 py-1 bg-primary/10 rounded text-primary font-bold text-[11px]">${ring}</span></td>
+                <td class="p-4 text-[11px] text-gray-500 dark:text-gray-400">${dateTime}</td>
                 <td class="p-4">
-                    <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${checkinStatusClass}">
+                    <span class="px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${checkinStatusClass}">
                         ${checkinStatusText}
                     </span>
                 </td>
             `;
+            fragment.appendChild(row);
         });
+
+        eventsTableBody.innerHTML = '';
+        eventsTableBody.appendChild(fragment);
         updateEventKPIs(subscribers);
     };
 
@@ -2212,7 +2501,9 @@ export async function setupStorePage() {
         const unitFilter = eventUnitFilter?.value || '';
 
         let filtered = allCheckins.filter(sub => {
-            const nameMatch = !searchTerm || (sub.userName && sub.userName.toLowerCase().includes(searchTerm));
+            const nameMatch = !searchTerm || 
+                (sub.userName && sub.userName.toLowerCase().includes(searchTerm)) ||
+                (sub.payerName && sub.payerName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sub.userEmail && sub.userEmail.toLowerCase().includes(searchTerm));
             const ringMatch = !ringFilter || (sub.eventRing == ringFilter);
             const unitMatch = !unitFilter || (sub.userUnit == unitFilter);
@@ -2229,13 +2520,14 @@ export async function setupStorePage() {
         }
         const selectedProduct = allProducts.find(p => p.id === eventProductFilter.value);
         const eventName = selectedProduct ? selectedProduct.name.replace(/\s+/g, '_') : 'evento';
-        const headers = ['Numero', 'Nome', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
+        const headers = ['Numero', 'Nome', 'Responsavel/Pagador', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
         const rows = allCheckins.map(sub => [
             sub.attendeeNumber || '',
             sub.userName || '',
+            sub.payerName || '',
             sub.userEmail || '',
             sub.userPhone || '',
-            sub.userCPF || '',
+            sub.userCpf || sub.userCPF || '',
             sub.variationName || sub.chosenVariant || '',
             sub.eventRing || '',
             sub.eventDay || '',
@@ -2256,7 +2548,8 @@ export async function setupStorePage() {
     };
 
     if (eventProductFilter) eventProductFilter.addEventListener('change', fetchEventSubscribers);
-    if (eventSearchInput) eventSearchInput.addEventListener('keyup', applyEventFilters);
+    const debouncedEventFilter = debounce(applyEventFilters, 300);
+    if (eventSearchInput) eventSearchInput.addEventListener('input', debouncedEventFilter);
     if (eventRingFilter) eventRingFilter.addEventListener('change', applyEventFilters);
     if (eventUnitFilter) eventUnitFilter.addEventListener('change', applyEventFilters);
     if (exportEventCsvBtn) exportEventCsvBtn.addEventListener('click', exportEventToCSV);
@@ -2289,18 +2582,33 @@ export async function setupStorePage() {
 
         banners.forEach(banner => {
             const bannerEl = document.createElement('div');
-            bannerEl.className = 'bg-gray-800 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4';
+            bannerEl.className = 'glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-all group';
             bannerEl.innerHTML = `
-                <div class="flex items-center">
-                    <img src="${banner.imageUrl}" class="w-24 h-12 object-cover rounded-md mr-4">
-                    <div>
-                        <a href="${banner.link}" target="_blank" class="hover:underline">${banner.link || 'Sem link'}</a>
-                        <p class="text-sm text-gray-400">${banner.active ? 'Ativo' : 'Inativo'}</p>
+                <div class="flex items-center gap-4 flex-grow">
+                    <div class="relative overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-700 w-32 h-16 flex-shrink-0 group-hover:scale-[1.02] transition-transform">
+                        <img src="${banner.imageUrl}" class="w-full h-full object-cover">
+                        ${!banner.active ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><span class="text-[8px] text-white font-bold uppercase tracking-widest">Inativo</span></div>' : ''}
+                    </div>
+                    <div class="min-w-0">
+                        <a href="${banner.link}" target="_blank" class="text-xs font-bold text-primary hover:underline truncate block">
+                            ${banner.link ? banner.link.replace(/^https?:\/\//, '') : 'Sem link de destino'}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${banner.active ? 'bg-green-500/10 text-green-600' : 'bg-gray-500/10 text-gray-500'}">
+                                ${banner.active ? 'Ativo' : 'Pausado'}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <button class="edit-banner-btn text-blue-400 hover:text-blue-300 mr-2" data-id="${banner.id}"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="delete-banner-btn text-red-500 hover:text-red-400" data-id="${banner.id}"><i class="fas fa-trash-alt"></i></button>
+                <div class="flex gap-2">
+                    <button class="edit-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-primary hover:bg-white dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        data-id="${banner.id}" title="Editar">
+                        <i class="fas fa-pencil-alt text-[10px]"></i>
+                    </button>
+                    <button class="delete-banner-btn w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-white dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 shadow-sm" 
+                        data-id="${banner.id}" title="Excluir">
+                        <i class="fas fa-trash-alt text-[10px]"></i>
+                    </button>
                 </div>
             `;
             bannersList.appendChild(bannerEl);
@@ -2423,7 +2731,7 @@ export async function setupStorePage() {
 
         couponsToDisplay.forEach(coupon => {
             const row = couponsTableBody.insertRow();
-            row.classList.add('border-b', 'border-gray-700');
+            row.classList.add('border-b', 'border-gray-100', 'dark:border-gray-800', 'hover:bg-gray-50', 'dark:hover:bg-gray-800/30', 'transition-colors');
 
             const value = coupon.type === 'percentage' ? `${coupon.value}%` : (coupon.value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const expiry = coupon.expiry ? new Date(coupon.expiry).toLocaleDateString('pt-BR') : 'Sem validade';
@@ -2528,22 +2836,22 @@ export async function setupStorePage() {
         kpiContainer.innerHTML = `
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total de Vendas</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
             </div>
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Receita Total</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
             </div>
             <div class="kpi-card p-6 rounded-xl flex items-center justify-between animate-pulse">
                 <div>
-                    <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
-                    <p class="text-3xl font-bold text-white mt-1">...</p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ticket Médio</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">...</p>
                 </div>
                 <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
             </div>
@@ -2557,8 +2865,8 @@ export async function setupStorePage() {
             let kpiHtml = `
                 <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Vendas</p>
-                        <p class="text-3xl font-bold text-white mt-1">${totalSales.toLocaleString('pt-BR')}</p>
+                        <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total de Vendas</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${totalSales.toLocaleString('pt-BR')}</p>
                     </div>
                     <div class="text-4xl text-blue-500 opacity-80"><i class="fas fa-shopping-cart"></i></div>
                 </div>
@@ -2568,8 +2876,8 @@ export async function setupStorePage() {
                 kpiHtml += `
                     <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Receita Total</p>
-                            <p class="text-3xl font-bold text-white mt-1">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Receita Total</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
                         <div class="text-4xl text-green-500 opacity-80"><i class="fas fa-dollar-sign"></i></div>
                     </div>
@@ -2577,8 +2885,8 @@ export async function setupStorePage() {
                 kpiHtml += `
                     <div class="kpi-card p-6 rounded-xl flex items-center justify-between">
                         <div>
-                            <p class="text-gray-400 text-sm font-medium uppercase tracking-wider">Ticket Médio</p>
-                            <p class="text-3xl font-bold text-white mt-1">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ticket Médio</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
                         <div class="text-4xl text-purple-500 opacity-80"><i class="fas fa-chart-line"></i></div>
                     </div>
