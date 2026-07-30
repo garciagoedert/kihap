@@ -360,7 +360,25 @@ export async function setupEstoquePage() {
                 statusBadge = `<span class="inline-block whitespace-nowrap px-3 py-1 bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase border border-emerald-200/50">Em Estoque</span>`;
             }
 
-            const imageUrl = p.imageUrl || 'https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png';
+            const rawImageUrl = (p.imageUrl || p.image || '').trim();
+            let imgHtml = '';
+            if (rawImageUrl) {
+                imgHtml = `
+                    <div class="relative w-10 h-10 shrink-0">
+                        <img src="${rawImageUrl}" alt="${p.name}" class="w-10 h-10 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shrink-0" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30 shrink-0 hidden items-center justify-center font-bold text-sm">
+                            <i class="fas fa-box text-xs"></i>
+                        </div>
+                    </div>
+                `;
+            } else {
+                imgHtml = `
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30 shrink-0 flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-box text-xs"></i>
+                    </div>
+                `;
+            }
+
             const priceFormatted = formatCurrency(parsePrice(p.price));
 
             const tr = document.createElement('tr');
@@ -368,7 +386,7 @@ export async function setupEstoquePage() {
             tr.innerHTML = `
                 <td class="p-4">
                     <div class="flex items-center gap-3 min-w-[180px]">
-                        <img src="${imageUrl}" alt="${p.name}" class="w-10 h-10 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shrink-0">
+                        ${imgHtml}
                         <div>
                             <div class="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">${p.name || 'Sem nome'}</div>
                             <div class="text-[10px] text-gray-400 font-mono">ID: #${p.id.slice(-6)}</div>
