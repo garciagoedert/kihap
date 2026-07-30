@@ -353,11 +353,11 @@ export async function setupEstoquePage() {
             // Status Badge
             let statusBadge = '';
             if (totalQty === 0) {
-                statusBadge = `<span class="px-3 py-1 bg-red-100/50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full text-[10px] font-bold uppercase border border-red-200/50">Fora de Estoque</span>`;
+                statusBadge = `<span class="inline-block whitespace-nowrap px-3 py-1 bg-red-100/50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full text-[10px] font-bold uppercase border border-red-200/50">Fora de Estoque</span>`;
             } else if (totalQty <= 5) {
-                statusBadge = `<span class="px-3 py-1 bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase border border-amber-200/50">Estoque Baixo</span>`;
+                statusBadge = `<span class="inline-block whitespace-nowrap px-3 py-1 bg-amber-100/50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase border border-amber-200/50">Estoque Baixo</span>`;
             } else {
-                statusBadge = `<span class="px-3 py-1 bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase border border-emerald-200/50">Em Estoque</span>`;
+                statusBadge = `<span class="inline-block whitespace-nowrap px-3 py-1 bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase border border-emerald-200/50">Em Estoque</span>`;
             }
 
             const imageUrl = p.imageUrl || 'https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png';
@@ -367,40 +367,40 @@ export async function setupEstoquePage() {
             tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-xs';
             tr.innerHTML = `
                 <td class="p-4">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-[180px]">
                         <img src="${imageUrl}" alt="${p.name}" class="w-10 h-10 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shrink-0">
                         <div>
-                            <div class="font-bold text-gray-900 dark:text-white text-sm">${p.name || 'Sem nome'}</div>
+                            <div class="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">${p.name || 'Sem nome'}</div>
                             <div class="text-[10px] text-gray-400 font-mono">ID: #${p.id.slice(-6)}</div>
                         </div>
                     </div>
                 </td>
-                <td class="p-4 font-semibold text-gray-600 dark:text-gray-400">
-                    <span class="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-[10px] font-bold uppercase">
+                <td class="p-4 font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <span class="inline-block whitespace-nowrap px-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-[10px] font-bold uppercase">
                         ${p.category || 'Geral'}
                     </span>
                 </td>
-                <td class="p-4 font-bold text-gray-900 dark:text-white">${priceFormatted}</td>
+                <td class="p-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">${priceFormatted}</td>
                 <td class="p-4">
                     <div class="flex flex-wrap gap-1.5 max-w-xs">
                         ${cdBadgesHtml}
                     </div>
                 </td>
-                <td class="p-4 text-center font-black text-sm text-gray-900 dark:text-white">
+                <td class="p-4 text-center font-black text-sm text-gray-900 dark:text-white whitespace-nowrap">
                     <span class="inline-flex items-center justify-center px-3 py-1 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                         ${totalQty}
                     </span>
                 </td>
-                <td class="p-4 text-center">
+                <td class="p-4 text-center whitespace-nowrap">
                     ${statusBadge}
                 </td>
-                <td class="p-4 text-right">
+                <td class="p-4 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-1.5">
-                        <button data-product-id="${p.id}" class="action-adjust-btn h-8 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl text-[11px] font-bold transition-all border border-blue-200 dark:border-blue-800 flex items-center gap-1.5">
+                        <button data-product-id="${p.id}" class="action-adjust-btn h-8 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl text-[11px] font-bold transition-all border border-blue-200 dark:border-blue-800 inline-flex items-center gap-1.5 whitespace-nowrap">
                             <i class="fas fa-plus-minus"></i>
                             <span>Entrada / Saída</span>
                         </button>
-                        <button data-product-id="${p.id}" class="action-transfer-btn h-8 px-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white rounded-xl text-[11px] font-bold transition-all border border-purple-200 dark:border-purple-800 flex items-center gap-1.5">
+                        <button data-product-id="${p.id}" class="action-transfer-btn h-8 px-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white rounded-xl text-[11px] font-bold transition-all border border-purple-200 dark:border-purple-800 inline-flex items-center gap-1.5 whitespace-nowrap">
                             <i class="fas fa-exchange-alt"></i>
                             <span>Transferir</span>
                         </button>
