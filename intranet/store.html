@@ -1017,161 +1017,325 @@
 
                     <!-- Editor Content Wrapper -->
                     <div class="glass-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                        <!-- Product Form Container -->
-                        <form id="product-form" class="space-y-8">
+                        <!-- Product Form Container (Modular Stacked Cards) -->
+                        <form id="product-form" class="space-y-6">
                             <input type="hidden" id="product-id">
-                        
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div class="space-y-6">
-                                    <div>
-                                        <label for="product-name" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Nome do Produto</label>
-                                        <input type="text" id="product-name"
-                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+
+                            <!-- CARD 1: Nome, Categoria e Descrição (com Kobe IA) -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-file-alt text-blue-500"></i> Nome e Descrição
+                                    </h3>
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Informações Básicas</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="md:col-span-2">
+                                        <label for="product-name" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Nome do Produto *</label>
+                                        <input type="text" id="product-name" placeholder="Ex: Dobok Colarinho Preto Mestre"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                                             required>
                                     </div>
                                     
                                     <div>
                                         <label for="product-category" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Categoria</label>
                                         <input type="text" id="product-category"
-                                            placeholder="Ex: Uniforme, Equipamento, Kit"
-                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                    </div>
-
-                                    <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">Tipo de Preço</label>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all group">
-                                                <input type="radio" name="price-type" value="fixed" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked>
-                                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Fixo</span>
-                                            </label>
-                                            <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all group">
-                                                <input type="radio" name="price-type" value="variable" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Variável</span>
-                                            </label>
-                                            <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all group">
-                                                <input type="radio" name="price-type" value="lotes" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Lotes</span>
-                                            </label>
-                                            <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-all group">
-                                                <input type="radio" name="price-type" value="kit" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Kit</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <!-- Price Containers -->
-                                    <div id="fixed-price-container">
-                                        <label for="product-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Principal (centavos)</label>
-                                        <input type="number" id="product-price" name="product-price"
-                                            placeholder="Ex: 1000 para R$10,00"
-                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                    </div>
-
-                                    <div id="variable-prices-container" class="hidden animate-fadeIn space-y-3">
-                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Variações de Preço</label>
-                                        <input type="text" id="product-variants-label" placeholder="Título da Opção (Padrão: Opções)"
-                                            class="w-full px-4 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm mb-2">
-                                        <div id="price-variants-list" class="space-y-2 mt-2"></div>
-                                        <button type="button" id="add-price-variant-btn"
-                                            class="w-full mt-2 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all">
-                                            <i class="fas fa-plus mr-2"></i> Adicionar Variação
-                                        </button>
-                                    </div>
-
-                                    <div id="lotes-container" class="hidden animate-fadeIn space-y-3">
-                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Lotes</label>
-                                        <div id="lotes-list" class="space-y-2 mt-2"></div>
-                                        <button type="button" id="add-lote-btn"
-                                            class="w-full mt-2 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all">
-                                            <i class="fas fa-plus mr-2"></i> Adicionar Lote
-                                        </button>
-                                    </div>
-
-                                    <div id="kit-container" class="hidden animate-fadeIn">
-                                        <div class="p-5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
-                                            <label for="kit-base-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Base do Kit (centavos)</label>
-                                            <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" 
-                                                class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            
-                                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4 mb-2">Itens do Kit</label>
-                                            <div id="kit-items-list" class="space-y-3"></div>
-                                            <button type="button" id="add-kit-item-btn" 
-                                                class="w-full mt-3 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all shadow-sm">
-                                                <i class="fas fa-plus mr-2"></i> Adicionar Item ao Kit
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div id="addons-container" class="p-5 border border-yellow-500/30 rounded-2xl bg-yellow-50 dark:bg-yellow-900/10">
-                                        <label class="block text-xs font-bold text-yellow-600 dark:text-yellow-500 mb-3 uppercase tracking-widest">
-                                            <i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)
-                                        </label>
-                                        <div id="addons-list" class="space-y-3 mt-1"></div>
-                                        <button type="button" id="add-addon-btn" class="w-full mt-3 px-4 py-2.5 text-xs font-bold text-yellow-600 dark:text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-all">
-                                            <i class="fas fa-plus mr-1"></i> Adicionar Add-on
-                                        </button>
+                                            placeholder="Ex: Uniforme, Equipamento, Graduação"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                                     </div>
                                 </div>
 
-                                <div class="space-y-6">
-                                    <div>
-                                        <label for="product-description" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Descrição</label>
-                                        <textarea id="product-description" rows="4"
-                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label for="product-description" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Descrição</label>
+                                        <button type="button" id="generate-kobe-desc-btn" class="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow transition-all inline-flex items-center gap-1.5">
+                                            <i class="fas fa-sparkles text-yellow-300"></i> Kobe IA - Gerar Descrição
+                                        </button>
                                     </div>
-                                    
+                                    <textarea id="product-description" rows="4" placeholder="Descreva os detalhes, material, benefícios e especificações do produto..."
+                                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- CARD 2: Mídia (Fotos e Vídeo) -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-photo-video text-purple-500"></i> Fotos e Vídeo
+                                    </h3>
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Mídia do Produto</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label for="product-image" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Imagem do Produto</label>
-                                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 dark:border-gray-700 border-dashed rounded-2xl hover:border-blue-500 transition-all bg-gray-50 dark:bg-gray-800/50">
+                                        <label for="product-image" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Imagem Principal</label>
+                                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 dark:border-gray-700 border-dashed rounded-2xl hover:border-blue-500 transition-all bg-gray-50 dark:bg-gray-800/40">
                                             <div class="space-y-1 text-center">
-                                                <i class="fas fa-image text-gray-400 text-4xl mb-3"></i>
-                                                <div class="flex text-sm text-gray-600 dark:text-gray-400">
-                                                    <label for="product-image" class="relative cursor-pointer bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all">
-                                                        <span>Upload de arquivo</span>
+                                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                                <div class="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
+                                                    <label for="product-image" class="relative cursor-pointer bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all border border-gray-200 dark:border-gray-700">
+                                                        <span>Escolher Imagem</span>
                                                         <input type="file" id="product-image" class="sr-only">
                                                     </label>
                                                 </div>
-                                                <p class="text-[10px] text-gray-500 mt-2">PNG, JPG, GIF até 10MB</p>
+                                                <p class="text-[10px] text-gray-400">PNG, JPG, WEBP até 10MB</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Toggles Grid -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-blue-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Visível</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-visible" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
+                                    <div>
+                                        <label for="product-video-url" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Link de Vídeo Demonstração (YouTube / Vimeo)</label>
+                                        <div class="relative">
+                                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-red-500 text-sm">
+                                                <i class="fab fa-youtube"></i>
+                                            </span>
+                                            <input type="url" id="product-video-url" placeholder="https://www.youtube.com/watch?v=..."
+                                                class="w-full pl-10 pr-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
                                         </div>
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-blue-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Disponível</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-available" class="sr-only peer" checked>
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-indigo-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Público</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-public" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                            </label>
-                                        </div>
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-blue-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Ingresso</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-is-ticket" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-2">Cole a URL do vídeo de demonstração do produto para exibir aos alunos na Store.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CARD 3: Preços & Inteligência Financeira -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-coins text-emerald-500"></i> Preços e Margem de Lucro
+                                    </h3>
+                                    <div id="profit-margin-badge" class="hidden px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-black items-center gap-1.5">
+                                        <i class="fas fa-chart-line text-[10px]"></i> Margem de Lucro Est.: <span id="profit-margin-value">0%</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">Tipo de Preço</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-blue-500 transition-all group shadow-sm">
+                                            <input type="radio" name="price-type" value="fixed" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked>
+                                            <span class="ml-2 text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Preço Fixo</span>
+                                        </label>
+                                        <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-blue-500 transition-all group shadow-sm">
+                                            <input type="radio" name="price-type" value="variable" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="ml-2 text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Variável</span>
+                                        </label>
+                                        <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-blue-500 transition-all group shadow-sm">
+                                            <input type="radio" name="price-type" value="lotes" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="ml-2 text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Lotes</span>
+                                        </label>
+                                        <label class="flex items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-blue-500 transition-all group shadow-sm">
+                                            <input type="radio" name="price-type" value="kit" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="ml-2 text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600">Kit de Itens</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Fixed Price Grid (Regular, Promotional, Cost) -->
+                                <div id="fixed-price-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                    <div>
+                                        <label for="product-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Principal (centavos)</label>
+                                        <input type="number" id="product-price" name="product-price"
+                                            placeholder="Ex: 10000 para R$ 100,00"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
                                     </div>
 
+                                    <div>
+                                        <label for="product-promo-price" class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">Preço Promocional (centavos)</label>
+                                        <input type="number" id="product-promo-price" name="product-promo-price"
+                                            placeholder="Ex: 7990 para R$ 79,90"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium">
+                                    </div>
+
+                                    <div>
+                                        <label for="product-cost-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Custo Interno R$ (centavos)</label>
+                                        <input type="number" id="product-cost-price" name="product-cost-price"
+                                            placeholder="Ex: 4000 para R$ 40,00"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
+                                    </div>
+                                </div>
+
+                                <div id="variable-prices-container" class="hidden animate-fadeIn space-y-3">
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Variações de Preço</label>
+                                    <input type="text" id="product-variants-label" placeholder="Título da Opção (Padrão: Opções)"
+                                        class="w-full px-4 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm mb-2">
+                                    <div id="price-variants-list" class="space-y-2 mt-2"></div>
+                                    <button type="button" id="add-price-variant-btn"
+                                        class="w-full mt-2 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all">
+                                        <i class="fas fa-plus mr-2"></i> Adicionar Variação
+                                    </button>
+                                </div>
+
+                                <div id="lotes-container" class="hidden animate-fadeIn space-y-3">
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Lotes</label>
+                                    <div id="lotes-list" class="space-y-2 mt-2"></div>
+                                    <button type="button" id="add-lote-btn"
+                                        class="w-full mt-2 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all">
+                                        <i class="fas fa-plus mr-2"></i> Adicionar Lote
+                                    </button>
+                                </div>
+
+                                <div id="kit-container" class="hidden animate-fadeIn">
+                                    <div class="p-5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <label for="kit-base-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Base do Kit (centavos)</label>
+                                        <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" 
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4 mb-2">Itens do Kit</label>
+                                        <div id="kit-items-list" class="space-y-3"></div>
+                                        <button type="button" id="add-kit-item-btn" 
+                                            class="w-full mt-3 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all shadow-sm">
+                                            <i class="fas fa-plus mr-2"></i> Adicionar Item ao Kit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CARD 4: Identificação, Peso e Dimensões (Nuvemshop style) -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-barcode text-amber-500"></i> Identificação, Peso e Dimensões
+                                    </h3>
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Logística e Frete</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="product-sku" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">SKU (Código de Estoque)</label>
+                                        <input type="text" id="product-sku" placeholder="Ex: DOB-MAIS-01"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="product-barcode" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Código de Barras (EAN / GTIN)</label>
+                                        <input type="text" id="product-barcode" placeholder="Ex: 7891234567890"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm">
+                                    </div>
+                                </div>
+
+                                <div class="pt-2">
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">Dimensões para Cálculo de Envio</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        <div>
+                                            <span class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Peso (kg)</span>
+                                            <input type="number" step="0.01" id="product-weight" placeholder="0.5"
+                                                class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                        </div>
+                                        <div>
+                                            <span class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Comprimento (cm)</span>
+                                            <input type="number" id="product-length" placeholder="20"
+                                                class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                        </div>
+                                        <div>
+                                            <span class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Largura (cm)</span>
+                                            <input type="number" id="product-width" placeholder="15"
+                                                class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                        </div>
+                                        <div>
+                                            <span class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Altura (cm)</span>
+                                            <input type="number" id="product-height" placeholder="10"
+                                                class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CARD 5: Controle de Estoque & CD -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-boxes text-blue-500"></i> Inventário e Estoque por CD
+                                    </h3>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="product-control-stock" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                <div id="stock-container" class="hidden animate-fadeIn space-y-4">
+                                    <div id="stock-simple">
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Quantidade Total Disponível</label>
+                                        <input type="number" id="product-stock-quantity"
+                                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            placeholder="Qtd total" min="0" />
+                                    </div>
+                                    <div id="stock-per-size" class="hidden">
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Estoque por Tamanho</label>
+                                        <div id="stock-per-size-inputs" class="space-y-2"></div>
+                                        <p class="text-[10px] text-gray-500 mt-2 italic">* Os tamanhos são herdados da configuração de tamanhos abaixo.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CARD 6: Tags, Visibilidade e SEO -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-globe text-cyan-500"></i> Visibilidade, Tags e SEO
+                                    </h3>
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Otimização e Busca</span>
+                                </div>
+
+                                <!-- Toggles Grid -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Visível</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-visible" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Disponível</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-available" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Público</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-public" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Ingresso</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-is-ticket" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="product-seo-keywords" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Tags do Produto (separadas por vírgula)</label>
+                                        <input type="text" id="product-seo-keywords" placeholder="Ex: dobok, faixa preta, uniforme, taekwondo"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                                    </div>
+                                    <div>
+                                        <label for="product-url-slug" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Atalho URL (Slug)</label>
+                                        <input type="text" id="product-url-slug" placeholder="Ex: dobok-colarinho-preto"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-mono">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CARD 7: Configurações Especiais (Assinaturas, Tamanhos, Eventos, Add-ons) -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-sliders-h text-indigo-500"></i> Regras & Configurações Avançadas
+                                    </h3>
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Módulos Kihap</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="p-4 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-600/30 rounded-2xl">
                                         <div class="flex items-center justify-between mb-2">
                                             <label class="text-sm font-bold text-green-600 dark:text-green-400 flex items-center">
-                                                <i class="fas fa-sync-alt mr-2 text-xs"></i>Assinatura?
+                                                <i class="fas fa-sync-alt mr-2 text-xs"></i>Assinatura Recorrente?
                                             </label>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" id="product-is-subscription" class="sr-only peer">
@@ -1190,7 +1354,7 @@
                                     <div class="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-600/30 rounded-2xl">
                                          <div class="flex items-center justify-between mb-2">
                                             <label class="text-sm font-bold text-blue-600 dark:text-blue-400 flex items-center">
-                                                <i class="fas fa-ruler-combined mr-2 text-xs"></i>Tamanhos?
+                                                <i class="fas fa-ruler-combined mr-2 text-xs"></i>Grade de Tamanhos?
                                             </label>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" id="product-has-sizes" class="sr-only peer">
@@ -1204,121 +1368,107 @@
                                                 class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-blue-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Solicitar Professor</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-ask-professor" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                        <div id="available-professors-container" class="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-600/30 rounded-xl col-span-1 sm:col-span-2 hidden animate-fadeIn">
-                                            <label for="product-available-professors" class="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5">Professores Disponíveis (separados por vírgula)</label>
-                                            <textarea id="product-available-professors" rows="2" placeholder="Ex: Prof. João, Prof. Maria (Deixe vazio para usar a lista automática)"
-                                                class="w-full px-4 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
-                                        </div>
-                                        <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group transition-colors hover:border-blue-500/30">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Solicitar Idade</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-ask-age" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                        <div class="p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-600/30 rounded-xl flex items-center justify-between col-span-1 sm:col-span-2">
-                                            <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider"><i class="fas fa-calendar-star mr-2"></i>Configurar como Evento?</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-is-event" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                                            </label>
-                                        </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Solicitar Professor</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-ask-professor" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
                                     </div>
-
-
-                                    <div class="p-5 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-200 dark:border-gray-700">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Controlar Estoque?</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="product-control-stock" class="sr-only peer">
-                                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                            </label>
-                                        </div>
-                                        <div id="stock-container" class="hidden animate-fadeIn mt-4 space-y-4">
-                                            <div id="stock-simple">
-                                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Quantidade Total</label>
-                                                <input type="number" id="product-stock-quantity"
-                                                    class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                                                    placeholder="Qtd total" min="0" />
-                                            </div>
-                                            <div id="stock-per-size" class="hidden">
-                                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Estoque por Tamanho</label>
-                                                <div id="stock-per-size-inputs" class="space-y-2"></div>
-                                                <p class="text-[10px] text-gray-500 mt-2 italic">* Os tamanhos são herdados do campo acima.</p>
-                                            </div>
-                                        </div>
+                                    <div id="available-professors-container" class="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-600/30 rounded-xl col-span-1 sm:col-span-2 hidden animate-fadeIn">
+                                        <label for="product-available-professors" class="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5">Professores Disponíveis (separados por vírgula)</label>
+                                        <textarea id="product-available-professors" rows="2" placeholder="Ex: Prof. João, Prof. Maria (Deixe vazio para usar a lista automática)"
+                                            class="w-full px-4 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
+                                    </div>
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between group">
+                                        <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Solicitar Idade</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-ask-age" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-600/30 rounded-xl flex items-center justify-between col-span-1 sm:col-span-2">
+                                        <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider"><i class="fas fa-calendar-star mr-2"></i>Configurar como Evento?</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="product-is-event" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        </label>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100 dark:border-gray-800">
-                                <div>
-                                    <label for="product-availability-date" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Disponível até</label>
-                                    <input type="date" id="product-availability-date"
-                                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <div id="addons-container" class="p-5 border border-yellow-500/30 rounded-2xl bg-yellow-50 dark:bg-yellow-900/10">
+                                    <label class="block text-xs font-bold text-yellow-600 dark:text-yellow-500 mb-3 uppercase tracking-widest">
+                                        <i class="fas fa-puzzle-piece mr-2"></i>Itens Opcionais (Add-ons)
+                                    </label>
+                                    <div id="addons-list" class="space-y-3 mt-1"></div>
+                                    <button type="button" id="add-addon-btn" class="w-full mt-3 px-4 py-2.5 text-xs font-bold text-yellow-600 dark:text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-all">
+                                        <i class="fas fa-plus mr-1"></i> Adicionar Add-on
+                                    </button>
                                 </div>
-                                
-                                <div>
-                                    <label for="product-mp-account" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Conta Recebedora</label>
-                                    <select id="product-mp-account" class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all font-medium">
-                                        <option value="default">Store (Matriz)</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                 <div>
-                                    <label for="product-custom-units" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Unidades Específicas (opcional)</label>
-                                    <textarea id="product-custom-units" rows="3" placeholder="Ex: Unidade A, Unidade B"
-                                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
-                                </div>
-                                <div>
-                                    <label for="recommended-products" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Produtos Recomendados</label>
-                                    <select id="recommended-products" multiple
-                                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 h-28 text-sm custom-scrollbar">
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Event Configuration -->
-                            <div id="event-config-container" class="hidden mt-8 p-8 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-600/25 rounded-3xl space-y-6 animate-fadeIn shadow-xl shadow-purple-900/5">
-                                <div class="flex items-center justify-between mb-2">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                                     <div>
-                                        <h3 class="text-lg font-bold text-purple-700 dark:text-purple-400 flex items-center">
-                                            <i class="fas fa-calendar-alt mr-2"></i>Configuração do Evento
-                                        </h3>
-                                        <p class="text-xs text-purple-600/70 dark:text-gray-500 mt-1"> RINGUES E HORÁRIOS BASEADOS NO PROGRAMA E GRADUAÇÃO.</p>
+                                        <label for="product-availability-date" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Disponível até</label>
+                                        <input type="date" id="product-availability-date"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="product-mp-account" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Conta Recebedora MercadoPago</label>
+                                        <select id="product-mp-account" class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all font-medium">
+                                            <option value="default">Store (Matriz)</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div class="pt-2">
-                                    <label for="product-event-address" class="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Local do Evento</label>
-                                    <textarea id="product-event-address" rows="2" placeholder="Ex: Ginásio Municipal, Rua Exemplo, 123"
-                                        class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900/50 border border-purple-200 dark:border-purple-600/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm"></textarea>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                     <div>
+                                        <label for="product-custom-units" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Unidades Específicas (opcional)</label>
+                                        <textarea id="product-custom-units" rows="3" placeholder="Ex: Unidade A, Unidade B"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
+                                    </div>
+                                    <div>
+                                        <label for="recommended-products" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Produtos Recomendados</label>
+                                        <select id="recommended-products" multiple
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 h-28 text-sm custom-scrollbar">
+                                        </select>
+                                    </div>
                                 </div>
-                                
-                                <div class="pt-4">
-                                    <h4 class="text-sm font-bold text-purple-700 dark:text-purple-400 flex items-center mb-4">
-                                        <i class="fas fa-clock mr-2 text-xs"></i>Cronograma Inteligente
-                                    </h4>
-                                    <div id="event-slots-list" class="space-y-4"></div>
+
+                                <!-- Event Configuration -->
+                                <div id="event-config-container" class="hidden mt-6 p-6 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-600/25 rounded-3xl space-y-6 animate-fadeIn shadow-xl shadow-purple-900/5">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div>
+                                            <h3 class="text-lg font-bold text-purple-700 dark:text-purple-400 flex items-center">
+                                                <i class="fas fa-calendar-alt mr-2"></i>Configuração do Evento
+                                            </h3>
+                                            <p class="text-xs text-purple-600/70 dark:text-gray-500 mt-1"> RINGUES E HORÁRIOS BASEADOS NO PROGRAMA E GRADUAÇÃO.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <label for="product-event-address" class="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Local do Evento</label>
+                                        <textarea id="product-event-address" rows="2" placeholder="Ex: Ginásio Municipal, Rua Exemplo, 123"
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-900/50 border border-purple-200 dark:border-purple-600/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm"></textarea>
+                                    </div>
+                                    
+                                    <div class="pt-4">
+                                        <h4 class="text-sm font-bold text-purple-700 dark:text-purple-400 flex items-center mb-4">
+                                            <i class="fas fa-clock mr-2 text-xs"></i>Cronograma Inteligente
+                                        </h4>
+                                        <div id="event-slots-list" class="space-y-4"></div>
+                                    </div>
+                                    
+                                    <button type="button" id="add-event-slot-btn" class="w-full py-4 text-xs font-bold text-purple-600 dark:text-purple-400 bg-white dark:bg-purple-400/10 border-2 border-dashed border-purple-200 dark:border-purple-400/20 rounded-2xl hover:bg-purple-50 dark:hover:bg-purple-400/20 transition-all shadow-sm">
+                                        <i class="fas fa-plus mr-1"></i> Adicionar Horário ao Cronograma
+                                    </button>
                                 </div>
-                                
-                                <button type="button" id="add-event-slot-btn" class="w-full py-4 text-xs font-bold text-purple-600 dark:text-purple-400 bg-white dark:bg-purple-400/10 border-2 border-dashed border-purple-200 dark:border-purple-400/20 rounded-2xl hover:bg-purple-50 dark:hover:bg-purple-400/20 transition-all shadow-sm">
-                                    <i class="fas fa-plus mr-1"></i> Adicionar Horário ao Cronograma
-                                </button>
                             </div>
 
-                            <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-8 border-t border-gray-200 dark:border-gray-800">
+                            <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-800">
                                 <button type="button" id="delete-product-btn"
                                     class="w-full sm:w-auto px-6 py-3.5 text-sm font-bold text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all hidden">
                                     <i class="fas fa-trash-alt mr-2"></i> Excluir Produto

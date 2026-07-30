@@ -120,6 +120,20 @@ export async function setupStorePage() {
     const productIdInput = document.getElementById('product-id');
     const productNameInput = document.getElementById('product-name');
     const productPriceInput = document.getElementById('product-price');
+    const productPromoPriceInput = document.getElementById('product-promo-price');
+    const productCostPriceInput = document.getElementById('product-cost-price');
+    const profitMarginBadge = document.getElementById('profit-margin-badge');
+    const profitMarginValue = document.getElementById('profit-margin-value');
+    const productVideoUrlInput = document.getElementById('product-video-url');
+    const productSkuInput = document.getElementById('product-sku');
+    const productBarcodeInput = document.getElementById('product-barcode');
+    const productWeightInput = document.getElementById('product-weight');
+    const productLengthInput = document.getElementById('product-length');
+    const productWidthInput = document.getElementById('product-width');
+    const productHeightInput = document.getElementById('product-height');
+    const productSeoKeywordsInput = document.getElementById('product-seo-keywords');
+    const productUrlSlugInput = document.getElementById('product-url-slug');
+    const generateKobeDescBtn = document.getElementById('generate-kobe-desc-btn');
     const productCategoryInput = document.getElementById('product-category');
     const productDescriptionInput = document.getElementById('product-description');
     const productImageInput = document.getElementById('product-image');
@@ -1076,169 +1090,229 @@ export async function setupStorePage() {
         });
     }
 
-    if (productForm) productForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        saveProductBtn.disabled = true;
-        saveProductBtn.textContent = 'Salvando...';
+    // Real-time Profit Margin Calculation & Kobe IA Generator
+    const updateProfitMarginCalculation = () => {
+        if (!productPriceInput || !productCostPriceInput || !profitMarginBadge) return;
+        const price = parseInt(productPriceInput.value, 10) || 0;
+        const cost = parseInt(productCostPriceInput.value, 10) || 0;
 
-        const id = productIdInput.value;
-        const imageFile = productImageInput.files[0];
-        let imageUrl = productImageInput.dataset.existingImageUrl || null;
+        if (price > 0 && cost > 0) {
+            const margin = (((price - cost) / price) * 100).toFixed(1);
+            if (profitMarginValue) profitMarginValue.textContent = `${margin}%`;
+            profitMarginBadge.classList.remove('hidden');
+            profitMarginBadge.classList.add('inline-flex');
+        } else {
+            profitMarginBadge.classList.add('hidden');
+            profitMarginBadge.classList.remove('inline-flex');
+        }
+    };
 
-        try {
-            if (imageFile) {
-                const storage = getStorage();
-                const storageRef = ref(storage, `product_images/${Date.now()}_${imageFile.name}`);
-                const snapshot = await uploadBytes(storageRef, imageFile);
-                imageUrl = await getDownloadURL(snapshot.ref);
+    if (productPriceInput) productPriceInput.addEventListener('input', updateProfitMarginCalculation);
+    if (productCostPriceInput) productCostPriceInput.addEventListener('input', updateProfitMarginCalculation);
+
+    if (generateKobeDescBtn) {
+        generateKobeDescBtn.addEventListener('click', () => {
+            const name = productNameInput ? productNameInput.value.trim() : '';
+            const category = productCategoryInput ? productCategoryInput.value.trim() : '';
+            
+            if (!name) {
+                alert('Por favor, digite o Nome do Produto antes de gerar a descrição com Kobe IA.');
+                return;
             }
 
-            const eventConfigData = getEventConfigFromUI();
-            const priceType = document.querySelector('input[name="price-type"]:checked').value;
+            generateKobeDescBtn.disabled = true;
+            generateKobeDescBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Gerando...';
 
-            const productData = {
-                name: productNameInput.value,
-                category: productCategoryInput.value || '',
-                description: productDescriptionInput.value,
-                imageUrl: imageUrl,
-                priceType: priceType,
-                visible: productVisibleInput.checked,
-                available: productAvailableInput.checked,
-                acessoPublico: productPublicInput.checked,
-                isTicket: productIsTicketInput.checked,
-                availabilityDate: productAvailabilityDateInput.value || null,
-                hasSizes: productHasSizesInput.checked,
-                sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
-                askProfessor: productAskProfessorInput.checked,
-                availableProfessors: productAskProfessorInput.checked && availableProfessorsInput.value ? availableProfessorsInput.value.split(',').map(p => p.trim()).filter(p => p) : [],
-                askAge: productAskAgeInput.checked,
-                controlStock: productControlStockInput.checked,
-                customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(/,|\n/).map(u => u.trim()).filter(u => u) : [],
-                recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
-                mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
-                mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
-                sizesLabel: productSizesLabelInput ? productSizesLabelInput.value : '',
-                variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : '',
-                isEvent: eventConfigData.isEvent,
-                eventAddress: eventConfigData.eventAddress,
-                eventConfig: eventConfigData.eventConfig
-            };
+            setTimeout(() => {
+                const generated = `✨ ${name}${category ? ` (${category})` : ''}\n\nProduto oficial Kihap desenvolvido com materiais de alta qualidade para proporcionar máximo conforto, durabilidade e desempenho durante o treino e exames.\n\n• Tecido respirável e alta resistência\n• Design exclusivo e caimento perfeito\n• Garantia e aprovação dos mestres Kihap`;
+                
+                if (productDescriptionInput) productDescriptionInput.value = generated;
+                generateKobeDescBtn.disabled = false;
+                generateKobeDescBtn.innerHTML = '<i class="fas fa-sparkles text-yellow-300"></i> Kobe IA - Gerar Descrição';
+            }, 500);
+        });
+    }
 
-            // Handle stock fields
-            if (productControlStockInput.checked) {
-                const hasSizes = productHasSizesInput.checked;
-                if (hasSizes && stockPerSizeInputs) {
-                    const sizeInputEls = stockPerSizeInputs.querySelectorAll('[data-stock-size-input]');
-                    const sizeStock = {};
-                    let allZero = true;
-                    sizeInputEls.forEach(el => {
-                        const qty = parseInt(el.value) || 0;
-                        sizeStock[el.dataset.size] = qty;
-                        if (qty > 0) allZero = false;
-                    });
-                    productData.sizeStock = sizeStock;
-                    productData.stockQuantity = Object.values(sizeStock).reduce((a, b) => a + b, 0);
-                    if (allZero && sizeInputEls.length > 0) {
-                        productData.available = false;
+    if (productForm) {
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const saveProductBtn = document.getElementById('save-product-btn');
+            saveProductBtn.disabled = true;
+            saveProductBtn.textContent = 'Salvando...';
+
+            const id = productIdInput.value;
+            const imageFile = productImageInput.files[0];
+            let imageUrl = productImageInput.dataset.existingImageUrl || null;
+
+            try {
+                if (imageFile) {
+                    const storage = getStorage();
+                    const storageRef = ref(storage, `product_images/${Date.now()}_${imageFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, imageFile);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+                }
+
+                const eventConfigData = getEventConfigFromUI();
+                const priceType = document.querySelector('input[name="price-type"]:checked').value;
+
+                const productData = {
+                    name: productNameInput.value,
+                    category: productCategoryInput.value || '',
+                    description: productDescriptionInput.value,
+                    imageUrl: imageUrl,
+                    priceType: priceType,
+                    promoPrice: productPromoPriceInput ? (parseInt(productPromoPriceInput.value, 10) || null) : null,
+                    costPrice: productCostPriceInput ? (parseInt(productCostPriceInput.value, 10) || null) : null,
+                    videoUrl: productVideoUrlInput ? productVideoUrlInput.value.trim() : '',
+                    sku: productSkuInput ? productSkuInput.value.trim() : '',
+                    barcode: productBarcodeInput ? productBarcodeInput.value.trim() : '',
+                    weight: productWeightInput ? (parseFloat(productWeightInput.value) || null) : null,
+                    dimensions: {
+                        length: productLengthInput ? (parseInt(productLengthInput.value, 10) || null) : null,
+                        width: productWidthInput ? (parseInt(productWidthInput.value, 10) || null) : null,
+                        height: productHeightInput ? (parseInt(productHeightInput.value, 10) || null) : null
+                    },
+                    seoKeywords: productSeoKeywordsInput ? productSeoKeywordsInput.value.trim() : '',
+                    urlSlug: productUrlSlugInput ? productUrlSlugInput.value.trim() : '',
+                    visible: productVisibleInput.checked,
+                    available: productAvailableInput.checked,
+                    acessoPublico: productPublicInput.checked,
+                    isTicket: productIsTicketInput.checked,
+                    availabilityDate: productAvailabilityDateInput.value || null,
+                    hasSizes: productHasSizesInput.checked,
+                    sizes: productHasSizesInput.checked ? productSizesInput.value.split(',').map(s => s.trim()).filter(s => s) : [],
+                    askProfessor: productAskProfessorInput.checked,
+                    availableProfessors: productAskProfessorInput.checked && availableProfessorsInput.value ? availableProfessorsInput.value.split(',').map(p => p.trim()).filter(p => p) : [],
+                    askAge: productAskAgeInput.checked,
+                    controlStock: productControlStockInput.checked,
+                    customUnits: productCustomUnitsInput.value ? productCustomUnitsInput.value.split(/,|\n/).map(u => u.trim()).filter(u => u) : [],
+                    recommendedProducts: Array.from(recommendedProductsSelect.selectedOptions).map(option => option.value),
+                    mpAccountId: productMpAccountSelect ? productMpAccountSelect.value : 'default',
+                    mpSplitPercentage: productMpSplitInput ? (parseFloat(productMpSplitInput.value) || 0) : 0,
+                    sizesLabel: productSizesLabelInput ? productSizesLabelInput.value : '',
+                    variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : '',
+                    isEvent: eventConfigData.isEvent,
+                    eventAddress: eventConfigData.eventAddress,
+                    eventConfig: eventConfigData.eventConfig
+                };
+
+                // Handle stock fields
+                if (productControlStockInput.checked) {
+                    const hasSizes = productHasSizesInput.checked;
+                    if (hasSizes && stockPerSizeInputs) {
+                        const sizeInputEls = stockPerSizeInputs.querySelectorAll('[data-stock-size-input]');
+                        const sizeStock = {};
+                        let allZero = true;
+                        sizeInputEls.forEach(el => {
+                            const qty = parseInt(el.value) || 0;
+                            sizeStock[el.dataset.size] = qty;
+                            if (qty > 0) allZero = false;
+                        });
+                        productData.sizeStock = sizeStock;
+                        productData.stockQuantity = Object.values(sizeStock).reduce((a, b) => a + b, 0);
+                        if (allZero && sizeInputEls.length > 0) {
+                            productData.available = false;
+                        }
+                    } else {
+                        productData.stockQuantity = parseInt(productStockQuantityInput.value) || 0;
+                        if (productData.stockQuantity <= 0) {
+                            productData.available = false;
+                        }
                     }
                 } else {
-                    productData.stockQuantity = parseInt(productStockQuantityInput.value) || 0;
-                    if (productData.stockQuantity <= 0) {
-                        productData.available = false;
-                    }
+                    productData.stockQuantity = 0;
+                    productData.sizeStock = {};
                 }
-            } else {
-                productData.stockQuantity = 0;
-                productData.sizeStock = {};
-            }
 
-            // Handle Subscription toggle regardless of priceType
-            if (productIsSubscriptionInput && productIsSubscriptionInput.checked) {
-                productData.isSubscription = true;
-                const parts = subscriptionFrequencyInput.value.split('_');
-                productData.subscriptionFrequency = parseInt(parts[0], 10);
-                productData.subscriptionPeriod = parts[1]; // months, years
-                productData.subscriptionFrequencyInput = subscriptionFrequencyInput.value;
-            } else {
-                productData.isSubscription = false;
-            }
+                // Handle Subscription toggle regardless of priceType
+                if (productIsSubscriptionInput && productIsSubscriptionInput.checked) {
+                    productData.isSubscription = true;
+                    const parts = subscriptionFrequencyInput.value.split('_');
+                    productData.subscriptionFrequency = parseInt(parts[0], 10);
+                    productData.subscriptionPeriod = parts[1]; // months, years
+                    productData.subscriptionFrequencyInput = subscriptionFrequencyInput.value;
+                } else {
+                    productData.isSubscription = false;
+                }
 
-            if (priceType === 'fixed') {
-                productData.price = parseInt(productPriceInput.value, 10) || 0;
-            } else if (priceType === 'variable') {
-                const variants = [];
-                const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
-                variantElements.forEach(item => {
-                    const name = item.querySelector('input[name="variant-name"]').value;
-                    const price = parseInt(item.querySelector('input[name="variant-price"]').value, 10);
-                    if (name && !isNaN(price)) {
-                        variants.push({ name, price });
-                    }
-                });
-                productData.priceVariants = variants;
-                productData.price = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 0;
-            } else if (priceType === 'lotes') {
-                const lotes = [];
-                const loteElements = lotesList.querySelectorAll('.lote-item');
-                loteElements.forEach(item => {
-                    const name = item.querySelector('input[name="lote-name"]').value;
-                    const price = parseInt(item.querySelector('input[name="lote-price"]').value, 10);
-                    const startDate = item.querySelector('input[name="lote-start-date"]').value;
-                    if (name && !isNaN(price)) {
-                        lotes.push({ name, price, startDate: startDate || null });
-                    }
-                });
-                productData.lotes = lotes;
-                productData.price = lotes.length > 0 ? lotes[0].price : 0;
-            } else if (priceType === 'kit') {
-                productData.kitBasePrice = parseInt(kitBasePriceInput.value, 10) || 0;
-                productData.price = productData.kitBasePrice;
-                const kitItems = [];
-                const itemElements = kitItemsList.querySelectorAll('.kit-item-row');
-                itemElements.forEach(item => {
-                    const name = item.querySelector('input[name="kit-item-name"]').value;
-                    const optionsStr = item.querySelector('input[name="kit-item-options"]').value;
-                    if (name) {
-                        const options = optionsStr.split(',').map(o => o.trim()).filter(o => o);
-                        kitItems.push({ name, options });
-                    }
-                });
-                productData.kitItems = kitItems;
-            }
+                if (priceType === 'fixed') {
+                    productData.price = parseInt(productPriceInput.value, 10) || 0;
+                } else if (priceType === 'variable') {
+                    const variants = [];
+                    const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
+                    variantElements.forEach(item => {
+                        const name = item.querySelector('input[name="variant-name"]').value;
+                        const price = parseInt(item.querySelector('input[name="variant-price"]').value, 10);
+                        if (name && !isNaN(price)) {
+                            variants.push({ name, price });
+                        }
+                    });
+                    productData.priceVariants = variants;
+                    productData.price = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 0;
+                } else if (priceType === 'lotes') {
+                    const lotes = [];
+                    const loteElements = lotesList.querySelectorAll('.lote-item');
+                    loteElements.forEach(item => {
+                        const name = item.querySelector('input[name="lote-name"]').value;
+                        const price = parseInt(item.querySelector('input[name="lote-price"]').value, 10);
+                        const startDate = item.querySelector('input[name="lote-start-date"]').value;
+                        if (name && !isNaN(price)) {
+                            lotes.push({ name, price, startDate: startDate || null });
+                        }
+                    });
+                    productData.lotes = lotes;
+                    productData.price = lotes.length > 0 ? lotes[0].price : 0;
+                } else if (priceType === 'kit') {
+                    productData.kitBasePrice = parseInt(kitBasePriceInput.value, 10) || 0;
+                    productData.price = productData.kitBasePrice;
+                    const kitItems = [];
+                    const itemElements = kitItemsList.querySelectorAll('.kit-item-row');
+                    itemElements.forEach(item => {
+                        const name = item.querySelector('input[name="kit-item-name"]').value;
+                        const optionsStr = item.querySelector('input[name="kit-item-options"]').value;
+                        if (name) {
+                            const options = optionsStr.split(',').map(o => o.trim()).filter(o => o);
+                            kitItems.push({ name, options });
+                        }
+                    });
+                    productData.kitItems = kitItems;
+                }
 
-            // Handle Addons
-            const addons = [];
-            if (addonsList) {
-                const addonElements = addonsList.querySelectorAll('.addon-item');
-                addonElements.forEach(item => {
-                    const name = item.querySelector('input[name="addon-name"]').value;
-                    const price = parseInt(item.querySelector('input[name="addon-price"]').value, 10);
-                    if (name && !isNaN(price)) {
-                        addons.push({ name, price });
-                    }
-                });
-            }
-            productData.addons = addons;
+                // Handle Addons
+                const addons = [];
+                if (addonsList) {
+                    const addonElements = addonsList.querySelectorAll('.addon-item');
+                    addonElements.forEach(item => {
+                        const name = item.querySelector('input[name="addon-name"]').value;
+                        const price = parseInt(item.querySelector('input[name="addon-price"]').value, 10);
+                        if (name && !isNaN(price)) {
+                            addons.push({ name, price });
+                        }
+                    });
+                }
+                productData.addons = addons;
 
-            if (id) {
-                const productRef = doc(db, 'products', id);
-                await updateDoc(productRef, productData);
-                alert('Produto atualizado com sucesso!');
-            } else {
-                await addDoc(collection(db, 'products'), productData);
-                alert('Produto adicionado com sucesso!');
-            }
+                if (id) {
+                    const productRef = doc(db, 'products', id);
+                    await updateDoc(productRef, productData);
+                    alert('Produto atualizado com sucesso!');
+                } else {
+                    await addDoc(collection(db, 'products'), productData);
+                    alert('Produto adicionado com sucesso!');
+                }
 
-            closeProductModal();
-            fetchProducts();
-        } catch (error) {
-            console.error('Error saving product:', error);
-            alert('Erro ao salvar produto.');
-        } finally {
-            saveProductBtn.disabled = false;
-            saveProductBtn.textContent = 'Salvar Produto';
-        }
-    });
+                closeProductModal();
+                fetchProducts();
+            } catch (error) {
+                console.error('Error saving product:', error);
+                alert('Erro ao salvar produto.');
+            } finally {
+                saveProductBtn.disabled = false;
+                saveProductBtn.textContent = 'Salvar Produto';
+            }
+        });
+    }
 
     if (productsTableBody) productsTableBody.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
@@ -1267,6 +1341,21 @@ export async function setupStorePage() {
                 productDescriptionInput.value = product.description;
                 if (productImageInput) productImageInput.dataset.existingImageUrl = product.imageUrl || '';
                 if (deleteProductBtn) deleteProductBtn.classList.remove('hidden');
+
+                // Populate new Nuvemshop fields
+                if (productPromoPriceInput) productPromoPriceInput.value = product.promoPrice || '';
+                if (productCostPriceInput) productCostPriceInput.value = product.costPrice || '';
+                if (productVideoUrlInput) productVideoUrlInput.value = product.videoUrl || '';
+                if (productSkuInput) productSkuInput.value = product.sku || '';
+                if (productBarcodeInput) productBarcodeInput.value = product.barcode || '';
+                if (productWeightInput) productWeightInput.value = product.weight || '';
+                if (productLengthInput) productLengthInput.value = product.dimensions?.length || '';
+                if (productWidthInput) productWidthInput.value = product.dimensions?.width || '';
+                if (productHeightInput) productHeightInput.value = product.dimensions?.height || '';
+                if (productSeoKeywordsInput) productSeoKeywordsInput.value = product.seoKeywords || '';
+                if (productUrlSlugInput) productUrlSlugInput.value = product.urlSlug || '';
+                updateProfitMarginCalculation();
+
                 openProductEditor(product.id);
 
                 if (product.priceType === 'variable' && product.priceVariants) {
