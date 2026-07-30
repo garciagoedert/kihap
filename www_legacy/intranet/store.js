@@ -1110,26 +1110,101 @@ export async function setupStorePage() {
     if (productPriceInput) productPriceInput.addEventListener('input', updateProfitMarginCalculation);
     if (productCostPriceInput) productCostPriceInput.addEventListener('input', updateProfitMarginCalculation);
 
+    const generateKobeProductDescription = async (name, category, price, promoPrice) => {
+        let apiKey = null;
+        try {
+            const localConfig = localStorage.getItem('meta_ads_config');
+            if (localConfig) {
+                const parsed = JSON.parse(localConfig);
+                if (parsed && parsed.geminiKey) apiKey = parsed.geminiKey;
+            }
+            if (!apiKey && typeof db !== 'undefined') {
+                const docRef = doc(db, "config", "meta_ads");
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().geminiKey) {
+                    apiKey = docSnap.data().geminiKey;
+                }
+            }
+        } catch (err) {
+            console.warn("Could not load Gemini API key from config:", err);
+        }
+
+        const promptText = `Escreva uma descrição de vendas profissional, persuasiva e atraente em português para o produto da loja Kihap Martial Arts (Taekwondo / Artes Marciais).
+Nome do produto: "${name}"
+Categoria: "${category || 'Geral'}"
+${price ? `Preço: R$ ${(price / 100).toFixed(2)}` : ''}
+${promoPrice ? `Preço Promocional: R$ ${(promoPrice / 100).toFixed(2)}` : ''}
+
+Requisitos:
+- Título impactante com emojis.
+- Apresentação inspiradora ressaltando os benefícios para treinos, exames ou dia a dia.
+- Bullet points com principais características e diferenciais.
+- Chamada para ação motivadora no final (Garanta o seu na Loja Oficial Kihap).
+- Responda apenas com o texto da descrição prontas para exibição na loja (sem prefixos como 'Aqui está').`;
+
+        if (apiKey) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts: [{ text: promptText }] }]
+                    })
+                });
+                const data = await response.json();
+                if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                    return data.candidates[0].content.parts[0].text.trim();
+                }
+            } catch (apiErr) {
+                console.error("Gemini API call failed, using dynamic template fallback:", apiErr);
+            }
+        }
+
+        // High-quality dynamic fallback based on category/name
+        const searchStr = `${category} ${name}`.toLowerCase();
+        const isUniform = searchStr.includes('dobok') || searchStr.includes('uniforme') || searchStr.includes('faixa') || searchStr.includes('calça') || searchStr.includes('camisa');
+        const isEquip = searchStr.includes('equipamento') || searchStr.includes('protetor') || searchStr.includes('luva') || searchStr.includes('caneleira') || searchStr.includes('capacete') || searchStr.includes('colete');
+        const isEvent = searchStr.includes('evento') || searchStr.includes('seminário') || searchStr.includes('campeonato') || searchStr.includes('exame') || searchStr.includes('ingresso');
+
+        if (isUniform) {
+            return `✨ ${name.toUpperCase()}\n\nElevando o seu nível no tatame com a qualidade e tradição oficial Kihap! O ${name} foi projetado especificamente para praticantes e atletas exigentes que buscam máximo conforto, leveza e durabilidade durante os treinos e graduações.\n\n🔥 Destaques & Especificações:\n• Tecido premium de alta resistência e costuras reforçadas.\n• Modelagem ergonômica que permite amplitude total de movimentos para chutes e bases.\n• Acabamento de primeira linha com aprovação dos mestres Kihap.\n• Tecido respirável de rápida secagem e alta durabilidade.\n\n🥋 Indispensável para treinos diários, exames de faixa e campeonatos oficiais. Garanta já o seu na Loja Oficial Kihap!`;
+        } else if (isEquip) {
+            return `🛡️ ${name.toUpperCase()}\n\nSua segurança e máxima performance em cada combate! O ${name} oferece proteção superior contra impactos mantendo a leveza e a mobilidade total.\n\n💪 Diferenciais do Produto:\n• Absorção de impacto de alta densidade para proteção do atleta.\n• Encaixe perfeito e ergonômico que proporciona estabilidade e conforto.\n• Material sintético premium de alta resistência e fácil higienização.\n• Fechamento ajustável reforçado para treino seguro.\n\n⚡ Essencial para sparring, treinos táticos e campeonatos. Adquira agora o seu equipamento oficial Kihap!`;
+        } else if (isEvent) {
+            return `🎟️ ${name.toUpperCase()}\n\nGaranta a sua vaga e participe deste momento marcante na trajetória Kihap! Uma experiência inesquecível de aprendizado, superação e celebração do Taekwondo.\n\n📌 O que está incluído:\n• Acesso completo à programação oficial do evento.\n• Acompanhamento por mestres e instrutores credenciados.\n• Certificação e momentos exclusivos para fotos e integração.\n\n⚠️ Vagas limitadas! Garanta já a sua inscrição antecipada na Loja Kihap.`;
+        } else {
+            return `✨ ${name.toUpperCase()}\n\nProduto exclusivo da Loja Oficial Kihap! Confeccionado com padrões de qualidade internacional para acompanhar você em todos os momentos da sua jornada artes marciais.\n\n🚀 Por que escolher o ${name}:\n• Design exclusivo com a marca de excelência Kihap.\n• Confeccionado com materiais selecionados para máxima durabilidade.\n• Garantia de satisfação e teste de qualidade aprovado pelos mestres.\n\n🛒 Adicione ao seu carrinho e garanta já o seu!`;
+        }
+    };
+
     if (generateKobeDescBtn) {
-        generateKobeDescBtn.addEventListener('click', () => {
+        generateKobeDescBtn.addEventListener('click', async () => {
             const name = productNameInput ? productNameInput.value.trim() : '';
             const category = productCategoryInput ? productCategoryInput.value.trim() : '';
-            
+            const price = productPriceInput ? (parseInt(productPriceInput.value, 10) || 0) : 0;
+            const promoPrice = productPromoPriceInput ? (parseInt(productPromoPriceInput.value, 10) || 0) : 0;
+
             if (!name) {
-                alert('Por favor, digite o Nome do Produto antes de gerar a descrição com Kobe IA.');
+                alert('Por favor, preencha o Nome do Produto antes de gerar a descrição com o Kobe IA.');
                 return;
             }
 
             generateKobeDescBtn.disabled = true;
-            generateKobeDescBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Gerando...';
+            generateKobeDescBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Kobe IA Criando...';
 
-            setTimeout(() => {
-                const generated = `✨ ${name}${category ? ` (${category})` : ''}\n\nProduto oficial Kihap desenvolvido com materiais de alta qualidade para proporcionar máximo conforto, durabilidade e desempenho durante o treino e exames.\n\n• Tecido respirável e alta resistência\n• Design exclusivo e caimento perfeito\n• Garantia e aprovação dos mestres Kihap`;
-                
-                if (productDescriptionInput) productDescriptionInput.value = generated;
+            try {
+                const generated = await generateKobeProductDescription(name, category, price, promoPrice);
+                if (productDescriptionInput) {
+                    productDescriptionInput.value = generated;
+                    productDescriptionInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } catch (err) {
+                console.error('Error generating description:', err);
+                alert('Erro ao gerar descrição com Kobe IA. Tente novamente.');
+            } finally {
                 generateKobeDescBtn.disabled = false;
                 generateKobeDescBtn.innerHTML = '<i class="fas fa-sparkles text-yellow-300"></i> Kobe IA - Gerar Descrição';
-            }, 500);
+            }
         });
     }
 
