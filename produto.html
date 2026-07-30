@@ -43,7 +43,7 @@
     <!-- Header -->
     <div id="header-container"></div>
 
-    <main class="flex-grow pt-6 pb-20">
+    <main class="flex-grow pt-28 sm:pt-36 pb-20">
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Product Loading Skeleton -->
@@ -58,15 +58,17 @@
             <div id="product-content" class="hidden space-y-8 animate-fadeIn">
                 
                 <!-- Breadcrumbs Bar -->
-                <nav class="flex items-center text-xs text-gray-400 gap-2 overflow-x-auto pb-2 border-b border-gray-800/80">
-                    <a href="/store.html" class="hover:text-amber-400 transition-colors flex items-center gap-1.5 font-medium">
-                        <i class="fas fa-store text-amber-500"></i> Loja Kihap
-                    </a>
-                    <span>/</span>
-                    <span id="product-category-breadcrumb" class="hover:text-gray-300 font-medium">Artes Marciais</span>
-                    <span>/</span>
-                    <span id="product-name-breadcrumb" class="text-gray-200 font-bold truncate max-w-xs">Produto</span>
-                </nav>
+                <div class="flex">
+                    <nav class="flex items-center text-xs text-gray-400 gap-2 overflow-x-auto px-4 py-2.5 bg-[#121929]/80 backdrop-blur-md rounded-2xl border border-gray-800/90 shadow-md">
+                        <a href="/store.html" class="hover:text-amber-400 transition-colors flex items-center gap-1.5 font-semibold">
+                            <i class="fas fa-store text-amber-500"></i> Loja Kihap
+                        </a>
+                        <span class="text-gray-600">/</span>
+                        <span id="product-category-breadcrumb" class="hover:text-gray-300 font-medium">Artes Marciais</span>
+                        <span class="text-gray-600">/</span>
+                        <span id="product-name-breadcrumb" class="text-amber-400 font-bold truncate max-w-xs">Produto</span>
+                    </nav>
+                </div>
 
                 <!-- Grid Layout (Gallery + Details on Left, Buy Box on Right) -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
