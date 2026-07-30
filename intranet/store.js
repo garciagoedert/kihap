@@ -1259,7 +1259,7 @@ export async function setupStorePage() {
             const id = editBtn.dataset.id;
             const product = allProducts.find(p => p.id === id);
             if (product) {
-                productFormTitle.textContent = 'Editar Produto';
+                if (productFormTitle) productFormTitle.textContent = 'Editar Produto';
                 productIdInput.value = product.id;
                 populateRecommendedProductsSelect(); // Repopulate to exclude current product
                 productNameInput.value = product.name;
@@ -1267,7 +1267,7 @@ export async function setupStorePage() {
                 productDescriptionInput.value = product.description;
                 if (productImageInput) productImageInput.dataset.existingImageUrl = product.imageUrl || '';
                 if (deleteProductBtn) deleteProductBtn.classList.remove('hidden');
-                openProductModal();
+                openProductEditor(product.id);
 
                 if (product.priceType === 'variable' && product.priceVariants) {
                     document.querySelector('input[name="price-type"][value="variable"]').checked = true;
