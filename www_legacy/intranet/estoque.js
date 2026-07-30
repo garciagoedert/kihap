@@ -152,46 +152,117 @@ export async function setupEstoquePage() {
         cdsListContainer.innerHTML = '';
 
         if (allCDs.length === 0) {
-            cdsListContainer.innerHTML = '<div class="text-xs text-gray-400">Nenhum CD cadastrado.</div>';
+            cdsListContainer.innerHTML = '<div class="text-xs text-gray-400 p-3 italic">Nenhum Centro de Distribuição cadastrado.</div>';
             return;
         }
 
         allCDs.forEach(cd => {
             const isActive = cd.active !== false;
             const card = document.createElement('div');
-            card.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 text-xs';
-            card.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} flex items-center justify-center font-bold text-xs">
-                        <i class="fas fa-warehouse"></i>
-                    </div>
-                    <div>
-                        <div class="font-bold text-gray-900 dark:text-white">${cd.name}</div>
-                        <div class="text-[10px] text-gray-400 font-mono">Código: ${cd.code}</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${isActive ? 'bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}">
-                        ${isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                    <button data-cd-id="${cd.id}" data-active="${isActive}" class="toggle-cd-btn p-1.5 text-gray-400 hover:text-purple-600 transition-colors">
-                        <i class="fas ${isActive ? 'fa-toggle-on text-purple-600 text-lg' : 'fa-toggle-off text-gray-400 text-lg'}"></i>
-                    </button>
-                </div>
-            `;
+            card.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs shadow-sm transition-all duration-200 hover:border-purple-200 dark:hover:border-purple-900/40';
 
-            card.querySelector('.toggle-cd-btn').addEventListener('click', async (e) => {
-                const btn = e.currentTarget;
-                const cdId = btn.dataset.cdId;
-                const currentActive = btn.dataset.active === 'true';
-                try {
-                    await updateDoc(doc(db, 'distribution_centers', cdId), { active: !currentActive });
-                    await fetchCDs();
-                } catch (err) {
-                    console.error("Erro ao alterar status do CD:", err);
-                }
-            });
+            const renderNormalState = () => {
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} flex items-center justify-center font-bold text-sm shrink-0">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
+                                <span>${cd.name}</span>
+                                <span class="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase ${isActive ? 'bg-emerald-100/60 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}">
+                                    ${isActive ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-mono mt-0.5">Código: ${cd.code || '-'}</div>
+                        </div>
+                    </div>
 
+                    <div class="flex items-center gap-1.5">
+                        <button data-cd-id="${cd.id}" data-active="${isActive}" class="toggle-cd-btn p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" title="${isActive ? 'Desativar CD' : 'Ativar CD'}">
+                            <i class="fas ${isActive ? 'fa-toggle-on text-purple-600 text-lg' : 'fa-toggle-off text-gray-400 text-lg'}"></i>
+                        </button>
+                        <button data-cd-id="${cd.id}" class="edit-cd-btn p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" title="Editar CD">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button data-cd-id="${cd.id}" data-cd-name="${cd.name}" class="delete-cd-btn p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" title="Excluir CD">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
+                `;
+
+                card.querySelector('.toggle-cd-btn').addEventListener('click', async () => {
+                    try {
+                        await updateDoc(doc(db, 'distribution_centers', cd.id), { active: !isActive });
+                        await fetchCDs();
+                    } catch (err) {
+                        console.error("Erro ao alterar status do CD:", err);
+                    }
+                });
+
+                card.querySelector('.edit-cd-btn').addEventListener('click', () => {
+                    renderEditState();
+                });
+
+                card.querySelector('.delete-cd-btn').addEventListener('click', async () => {
+                    if (confirm(`Tem certeza que deseja excluir o Centro de Distribuição "${cd.name}"?`)) {
+                        try {
+                            await deleteDoc(doc(db, 'distribution_centers', cd.id));
+                            await fetchCDs();
+                        } catch (err) {
+                            console.error("Erro ao excluir CD:", err);
+                            alert("Erro ao excluir CD. Verifique e tente novamente.");
+                        }
+                    }
+                });
+            };
+
+            const renderEditState = () => {
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full p-1">
+                        <div class="flex flex-col sm:flex-row items-center gap-2 flex-1">
+                            <input type="text" class="edit-name-input px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white w-full sm:w-1/2 focus:outline-none focus:ring-2 focus:ring-purple-500" value="${cd.name || ''}" placeholder="Nome do CD">
+                            <input type="text" class="edit-code-input px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-mono font-bold text-gray-900 dark:text-white w-full sm:w-1/3 focus:outline-none focus:ring-2 focus:ring-purple-500 uppercase" value="${cd.code || ''}" placeholder="Código (Ex: CD-FLN)">
+                        </div>
+                        <div class="flex items-center gap-2 justify-end">
+                            <button class="save-edit-cd-btn px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-sm flex items-center gap-1">
+                                <i class="fas fa-check"></i> Salvar
+                            </button>
+                            <button class="cancel-edit-cd-btn px-3.5 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs transition-all">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                const nameInput = card.querySelector('.edit-name-input');
+                const codeInput = card.querySelector('.edit-code-input');
+
+                card.querySelector('.save-edit-cd-btn').addEventListener('click', async () => {
+                    const newName = nameInput.value.trim();
+                    const newCode = codeInput.value.trim().toUpperCase();
+                    if (!newName || !newCode) {
+                        alert("Por favor, preencha o Nome e o Código do CD.");
+                        return;
+                    }
+                    try {
+                        await updateDoc(doc(db, 'distribution_centers', cd.id), {
+                            name: newName,
+                            code: newCode
+                        });
+                        await fetchCDs();
+                    } catch (err) {
+                        console.error("Erro ao atualizar CD:", err);
+                        alert("Erro ao atualizar CD.");
+                    }
+                });
+
+                card.querySelector('.cancel-edit-cd-btn').addEventListener('click', () => {
+                    renderNormalState();
+                });
+            };
+
+            renderNormalState();
             cdsListContainer.appendChild(card);
         });
     }
@@ -328,7 +399,7 @@ export async function setupEstoquePage() {
                     if (cdQty > 0 || selectedCd === cd.id) {
                         const isHighlight = selectedCd === cd.id;
                         cdBadgesHtml += `
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${isHighlight ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${isHighlight ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}">
                                 <i class="fas fa-warehouse text-[9px] text-gray-400"></i> ${cd.code || cd.name}: <strong class="text-gray-900 dark:text-white">${cdQty}</strong>
                             </span>
                         `;
@@ -339,7 +410,7 @@ export async function setupEstoquePage() {
                 const firstCd = activeCDs[0];
                 if (firstCd && totalQty > 0) {
                     cdBadgesHtml = `
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                             <i class="fas fa-warehouse text-[9px] text-gray-400"></i> ${firstCd.code || firstCd.name}: <strong class="text-gray-900 dark:text-white">${totalQty}</strong>
                         </span>
                     `;
