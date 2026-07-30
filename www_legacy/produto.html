@@ -1,106 +1,297 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
     
-    
-    
-    
-    
-    
-    
     <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
-    <title>Kihap - Compra de Produto</title>
+    <title>Kihap - Loja Oficial</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kihap: {
+                            gold: '#fbbf24',
+                            yellow: '#f59e0b',
+                            dark: '#0a0f1d',
+                            card: '#151d30',
+                            border: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
-
     <link rel="stylesheet" href="css/style.css">
+    
     <!-- Stripe.js CDN -->
     <script src="https://js.stripe.com/v3/"></script>
 </head>
-<body class="antialiased bg-gray-900 text-gray-200">
+<body class="antialiased bg-[#0b101d] text-gray-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
 
     <!-- Header -->
     <div id="header-container"></div>
 
-    <main class="py-16">
-        <section class="container mx-auto px-6">
-            <div id="product-loading" class="text-center">
-                <p class="text-2xl">Carregando produto...</p>
+    <main class="flex-grow pt-6 pb-20">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Product Loading Skeleton -->
+            <div id="product-loading" class="py-20 text-center space-y-4">
+                <div class="inline-block p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-amber-400">
+                    <i class="fas fa-circle-notch fa-spin text-3xl"></i>
+                </div>
+                <p class="text-xl font-bold text-gray-300">Carregando produto Kihap...</p>
             </div>
 
-            <div id="product-content" class="hidden">
-                <div class="text-center mb-8">
-                    <img id="product-image-display" src="" alt="Imagem do Produto" class="w-full max-w-sm mx-auto rounded-lg shadow-lg hidden">
-                </div>
-                <h1 id="product-name-title" class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-4">
-                    <!-- Nome do Produto -->
-                </h1>
-                <p id="product-description" class="text-lg text-gray-300 mb-12 text-center max-w-3xl mx-auto">
-                    <!-- Descrição do Produto -->
-                </p>
+            <!-- Main E-Commerce Product Layout (Amazon / Mercado Livre Inspired) -->
+            <div id="product-content" class="hidden space-y-8 animate-fadeIn">
+                
+                <!-- Breadcrumbs Bar -->
+                <nav class="flex items-center text-xs text-gray-400 gap-2 overflow-x-auto pb-2 border-b border-gray-800/80">
+                    <a href="/store.html" class="hover:text-amber-400 transition-colors flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-store text-amber-500"></i> Loja Kihap
+                    </a>
+                    <span>/</span>
+                    <span id="product-category-breadcrumb" class="hover:text-gray-300 font-medium">Artes Marciais</span>
+                    <span>/</span>
+                    <span id="product-name-breadcrumb" class="text-gray-200 font-bold truncate max-w-xs">Produto</span>
+                </nav>
 
-                <div class="max-w-2xl mx-auto bg-gray-800 p-8 rounded-lg shadow-xl">
-                    <div class="text-center mb-8">
-                        <span class="text-gray-400 text-lg">Valor Total</span>
-                        <p id="product-price-display" class="text-4xl font-bold text-yellow-500">
-                            <!-- Preço do Produto -->
-                        </p>
-                        <p id="product-lote-display" class="text-lg text-yellow-400 mt-2 hidden">
-                            <!-- Lote do Produto -->
-                        </p>
-                        <p id="product-stock-display" class="text-sm text-gray-400 mt-1 hidden">
-                            <!-- Estoque do Produto -->
-                        </p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="coupon-code" class="block text-sm font-medium text-gray-400 mb-1">Cupom de Desconto</label>
-                        <div class="flex items-center">
-                            <input type="text" id="coupon-code" placeholder="Insira seu cupom" class="w-full px-4 py-3 rounded-l-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                            <button type="button" id="apply-coupon-btn" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-r-lg hover:bg-yellow-600 transition">Aplicar</button>
-                        </div>
-                        <p id="coupon-status" class="mt-2 text-sm"></p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="quantity-selector" class="block text-sm font-medium text-gray-400 mb-1">Quantidade</label>
-                        <select id="quantity-selector" class="w-full max-w-xs px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                        </select>
-                    </div>
-
-                    <form id="payment-form">
-                        <div id="forms-container" class="space-y-8">
-                            <!-- Formulários dinâmicos serão inseridos aqui -->
-                        </div>
+                <!-- Grid Layout (Gallery + Details on Left, Buy Box on Right) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- LEFT COLUMN: Media Gallery & Product Specs (Cols 1-7) -->
+                    <div class="lg:col-span-7 space-y-8">
                         
-                        <button type="submit" id="pay-button" class="mt-8 bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition w-full text-lg">
-                            Adicionar ao Carrinho
-                        </button>
-                    </form>
-                    <p id="form-status" class="mt-6 text-center text-lg"></p>
-                </div>
+                        <!-- Main Product Media Gallery Card -->
+                        <div class="bg-[#121929] p-6 rounded-3xl border border-gray-800/80 shadow-2xl space-y-4 relative group">
+                            <div class="relative w-full overflow-hidden rounded-2xl bg-gray-900/60 border border-gray-800 min-h-[320px] sm:min-h-[420px] flex items-center justify-center p-4">
+                                <img id="product-image-display" src="" alt="Imagem do Produto" class="max-h-[380px] w-auto object-contain transition-all duration-300 group-hover:scale-105 rounded-xl hidden">
+                                
+                                <!-- Video Player Container (Dynamic YouTube Embed) -->
+                                <div id="product-video-container" class="hidden w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-gray-800">
+                                    <iframe id="product-video-iframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
 
-                <!-- Recommended Products Section -->
-                <div id="recommended-products-container" class="max-w-2xl mx-auto mt-12 hidden">
-                    <h2 class="text-3xl font-bold text-center mb-8">Compre Junto</h2>
-                    <div id="recommended-products-list" class="space-y-6">
-                        <!-- Recommended products will be injected here by JS -->
+                                <!-- Zoom Badges -->
+                                <div class="absolute top-3 right-3 flex gap-2">
+                                    <span class="px-2.5 py-1 bg-black/60 backdrop-blur-md text-gray-300 rounded-lg text-[10px] font-bold border border-white/10 uppercase tracking-widest flex items-center gap-1">
+                                        <i class="fas fa-shield-alt text-amber-400"></i> Produto Oficial
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Media Tabs (Photos / Video toggle if video exists) -->
+                            <div id="media-thumbnails-bar" class="hidden flex items-center gap-3 overflow-x-auto pb-2 pt-1">
+                                <button type="button" id="show-photo-btn" class="px-3.5 py-2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+                                    <i class="fas fa-image"></i> Foto Principal
+                                </button>
+                                <button type="button" id="show-video-btn" class="hidden px-3.5 py-2 bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+                                    <i class="fab fa-youtube"></i> Ver Vídeo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Product Overview & Details Card -->
+                        <div class="bg-[#121929] p-6 sm:p-8 rounded-3xl border border-gray-800/80 shadow-xl space-y-6">
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <span id="product-category-tag" class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-xs font-black uppercase tracking-wider">
+                                        Artes Marciais
+                                    </span>
+                                    <span id="product-sku-tag" class="hidden px-3 py-1 bg-gray-800 text-gray-400 border border-gray-700 rounded-xl text-xs font-mono">
+                                        SKU: -
+                                    </span>
+                                </div>
+
+                                <h1 id="product-name-title" class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-snug">
+                                    <!-- Nome do Produto -->
+                                </h1>
+
+                                <!-- Ratings & Social Proof -->
+                                <div class="flex flex-wrap items-center gap-3 text-xs text-gray-400 pt-1">
+                                    <div class="flex items-center text-amber-400 gap-1 font-bold">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-white ml-1 font-extrabold">5.0</span>
+                                    </div>
+                                    <span>•</span>
+                                    <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                                        <i class="fas fa-fire"></i> Mais de 100 vendidos
+                                    </span>
+                                    <span>•</span>
+                                    <span class="text-gray-300 flex items-center gap-1">
+                                        <i class="fas fa-certificate text-amber-400"></i> Homologado Kihap
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- E-Commerce Trust Badges Grid (Amazon Style) -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-gray-800/80">
+                                <div class="p-3 bg-[#0e1424] rounded-2xl border border-gray-800/60 text-center space-y-1">
+                                    <i class="fas fa-truck-fast text-amber-400 text-lg"></i>
+                                    <span class="block text-[11px] font-bold text-gray-200">Envio Imediato</span>
+                                    <span class="block text-[9px] text-gray-400">Direto do CD Kihap</span>
+                                </div>
+                                <div class="p-3 bg-[#0e1424] rounded-2xl border border-gray-800/60 text-center space-y-1">
+                                    <i class="fas fa-shield-check text-emerald-400 text-lg"></i>
+                                    <span class="block text-[11px] font-bold text-gray-200">Garantia Kihap</span>
+                                    <span class="block text-[9px] text-gray-400">Devolução em 7 dias</span>
+                                </div>
+                                <div class="p-3 bg-[#0e1424] rounded-2xl border border-gray-800/60 text-center space-y-1">
+                                    <i class="fas fa-lock text-blue-400 text-lg"></i>
+                                    <span class="block text-[11px] font-bold text-gray-200">Compra Segura</span>
+                                    <span class="block text-[9px] text-gray-400">Criptografia SSL</span>
+                                </div>
+                                <div class="p-3 bg-[#0e1424] rounded-2xl border border-gray-800/60 text-center space-y-1">
+                                    <i class="fas fa-award text-amber-400 text-lg"></i>
+                                    <span class="block text-[11px] font-bold text-gray-200">Testado por Mestres</span>
+                                    <span class="block text-[9px] text-gray-400">Padrão Oficial</span>
+                                </div>
+                            </div>
+
+                            <!-- Description Section -->
+                            <div class="pt-4 border-t border-gray-800/80 space-y-3">
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i class="fas fa-align-left text-amber-500"></i> Sobre este item
+                                </h3>
+                                <div id="product-description" class="text-sm text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-normal">
+                                    <!-- Descrição do Produto -->
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN: Buy Box Sidebar (Cols 8-12 - Mercado Livre / Amazon Style) -->
+                    <div class="lg:col-span-5 sticky top-24 space-y-6">
+                        
+                        <!-- Main Buy Box Card -->
+                        <div class="bg-[#121929] p-6 rounded-3xl border border-gray-800/90 shadow-2xl space-y-6 relative overflow-hidden">
+                            
+                            <!-- Highlight Gradient Accent -->
+                            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600"></div>
+
+                            <!-- Price Container -->
+                            <div class="space-y-2 pb-4 border-b border-gray-800">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Preço de Tabela</span>
+                                    <span id="product-stock-display" class="text-xs font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">
+                                        Em Estoque
+                                    </span>
+                                </div>
+
+                                <div class="flex items-baseline gap-3">
+                                    <span id="product-price-regular" class="hidden text-sm text-gray-400 line-through"></span>
+                                    <p id="product-price-display" class="text-3xl sm:text-4xl font-black text-amber-400 tracking-tight">
+                                        <!-- Preço do Produto -->
+                                    </p>
+                                </div>
+
+                                <p id="product-lote-display" class="text-xs font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 inline-block hidden">
+                                    <!-- Lote do Produto -->
+                                </p>
+
+                                <div class="pt-2 text-xs text-gray-300 space-y-1 font-medium">
+                                    <p class="flex items-center gap-1.5 text-emerald-400 font-bold">
+                                        <i class="fas fa-qrcode"></i> Economize com desconto no PIX à vista
+                                    </p>
+                                    <p class="text-gray-400 flex items-center gap-1.5">
+                                        <i class="far fa-credit-card"></i> em até <strong class="text-gray-200">12x sem juros</strong> no cartão
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Form Options & Dynamic Selectors -->
+                            <form id="payment-form" class="space-y-6">
+                                
+                                <div id="forms-container" class="space-y-6">
+                                    <!-- Formulários dinâmicos (tamanhos, variações, professores, add-ons) -->
+                                </div>
+
+                                <!-- Coupon Section -->
+                                <div class="space-y-2 pt-2 border-t border-gray-800/80">
+                                    <label for="coupon-code" class="block text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                                        <span><i class="fas fa-ticket-alt text-amber-400 mr-1"></i> Cupom de Desconto</span>
+                                    </label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" id="coupon-code" placeholder="CÓDIGO DO CUPOM" class="w-full px-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-700 text-white font-mono text-sm uppercase focus:outline-none focus:border-amber-500 transition-all">
+                                        <button type="button" id="apply-coupon-btn" class="bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
+                                            Aplicar
+                                        </button>
+                                    </div>
+                                    <p id="coupon-status" class="text-xs font-bold"></p>
+                                </div>
+
+                                <!-- Quantity Selector -->
+                                <div class="space-y-2 pt-2">
+                                    <label for="quantity-selector" class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Quantidade</label>
+                                    <div class="flex items-center">
+                                        <select id="quantity-selector" class="w-full px-4 py-3 rounded-xl bg-gray-900/90 border border-gray-700 text-white font-bold focus:outline-none focus:border-amber-500 transition-all text-sm">
+                                            <option value="1">1 unidade</option>
+                                            <option value="2">2 unidades</option>
+                                            <option value="3">3 unidades</option>
+                                            <option value="4">4 unidades</option>
+                                            <option value="5">5 unidades</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Buy & Add to Cart Action Buttons -->
+                                <div class="space-y-3 pt-4">
+                                    <button type="submit" id="pay-button" class="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-amber-500 text-black font-black py-4 px-6 rounded-2xl shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.01] active:scale-[0.99] text-base uppercase tracking-wider flex items-center justify-center gap-2">
+                                        <i class="fas fa-bolt text-lg"></i>
+                                        <span>Comprar Agora</span>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <p id="form-status" class="text-center text-sm font-bold"></p>
+
+                            <!-- Seller Info Box -->
+                            <div class="pt-4 border-t border-gray-800 text-xs text-gray-400 space-y-1.5">
+                                <div class="flex justify-between">
+                                    <span>Vendido e entregue por:</span>
+                                    <span class="text-gray-200 font-bold">Loja Oficial Kihap</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Envio:</span>
+                                    <span class="text-emerald-400 font-bold">Centro de Distribuição Kihap</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+
+                <!-- Recommended Products Section (Compre Junto) -->
+                <div id="recommended-products-container" class="mt-16 bg-[#121929] p-8 rounded-3xl border border-gray-800/80 shadow-xl space-y-6 hidden">
+                    <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+                        <h2 class="text-2xl font-black text-white flex items-center gap-2">
+                            <i class="fas fa-cubes text-amber-400"></i> Aproveite e Compre Junto
+                        </h2>
+                        <span class="text-xs text-gray-400">Produtos sugeridos pelos mestres Kihap</span>
+                    </div>
+
+                    <div id="recommended-products-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Recommended products injected dynamically -->
+                    </div>
+                </div>
+
             </div>
         </section>
     </main>
@@ -114,32 +305,46 @@
     <script type="module" src="js/cart.js"></script>
     <script type="module" src="js/produto.js"></script>
 
-    <!-- Template para o formulário dinâmico -->
+    <!-- Dynamic Form Template -->
     <template id="form-template">
-        <div class="form-instance border-t border-gray-700 pt-6">
-            <h3 class="text-lg font-semibold text-yellow-500 mb-4 form-instance-title">Inscrição <span class="form-instance-number">1</span></h3>
-            <div class="grid grid-cols-1 gap-6">
+        <div class="form-instance border border-gray-800 bg-[#0e1424] p-5 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 form-instance-title">
+                <i class="fas fa-layer-group text-xs"></i> Opção <span class="form-instance-number">1</span>
+            </h3>
+            
+            <div class="grid grid-cols-1 gap-4">
                 <div class="price-variant-selector-container hidden">
-                    <label for="price-variant-selector" class="block text-sm font-medium text-gray-400 mb-1 variants-label">Opções</label>
-                    <select name="price-variant-selector" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <!-- Options will be populated dynamically -->
+                    <label for="price-variant-selector" class="block text-xs font-bold text-gray-400 uppercase mb-1.5 variants-label">Opção / Variação</label>
+                    <select name="price-variant-selector" class="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white font-medium focus:outline-none focus:border-amber-500 transition-all text-sm">
+                        <!-- Options populated dynamically -->
                     </select>
                 </div>
+                
                 <div class="kit-options-container hidden grid grid-cols-1 gap-4">
-                    <!-- Dynamic selects for kit items will be populated here -->
+                    <!-- Dynamic selects for kit items -->
                 </div>
-                <div class="addons-options-container hidden grid grid-cols-1 gap-3 mt-2">
-                    <!-- Dynamic checkboxes for addons will be populated here -->
+                
+                <div class="addons-options-container hidden grid grid-cols-1 gap-3.5 mt-2">
+                    <!-- Dynamic checkboxes for addons -->
                 </div>
-                <div class="size-selector-container hidden mb-4">
-                    <label for="size-selector" class="block text-sm font-medium text-gray-400 mb-1 sizes-label">Escolha o Tamanho</label>
-                    <select name="size-selector" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <!-- Sizes will be populated dynamically -->
+                
+                <div class="size-selector-container hidden mb-2">
+                    <label for="size-selector" class="block text-xs font-bold text-gray-400 uppercase mb-1.5 sizes-label">Escolha o Tamanho</label>
+                    <select name="size-selector" class="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white font-medium focus:outline-none focus:border-amber-500 transition-all text-sm">
+                        <!-- Sizes populated dynamically -->
                     </select>
                 </div>
+                
                 <div class="age-container hidden">
-                    <label for="idade" class="block text-sm font-medium text-gray-400 mb-1">Idade do Aluno</label>
-                    <input type="number" name="idade" placeholder="Idade" class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <label for="idade" class="block text-xs font-bold text-gray-400 uppercase mb-1.5">Idade do Aluno</label>
+                    <input type="number" name="idade" placeholder="Informe a idade em anos" class="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-all text-sm">
+                </div>
+                
+                <div class="professor-container hidden">
+                    <label for="professor-selector" class="block text-xs font-bold text-gray-400 uppercase mb-1.5">Professor Responsável</label>
+                    <select name="professor-selector" class="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white font-medium focus:outline-none focus:border-amber-500 transition-all text-sm">
+                        <option value="">Selecione o Professor</option>
+                    </select>
                 </div>
             </div>
         </div>

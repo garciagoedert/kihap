@@ -103,39 +103,105 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const getYouTubeEmbedUrl = (url) => {
+        if (!url) return null;
+        let videoId = null;
+        if (url.includes('youtube.com/watch?v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        } else if (url.includes('vimeo.com/')) {
+            const vimeoId = url.split('vimeo.com/')[1]?.split('?')[0];
+            return `https://player.vimeo.com/video/${vimeoId}`;
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    };
+
     const displayProduct = async (product) => {
         productNameTitle.textContent = product.name;
         document.title = `Kihap - ${product.name}`;
+        
+        // Breadcrumbs & Tags
+        const nameBreadcrumb = document.getElementById('product-name-breadcrumb');
+        const catBreadcrumb = document.getElementById('product-category-breadcrumb');
+        const catTag = document.getElementById('product-category-tag');
+        const skuTag = document.getElementById('product-sku-tag');
+        
+        if (nameBreadcrumb) nameBreadcrumb.textContent = product.name;
+        if (catBreadcrumb) catBreadcrumb.textContent = product.category || 'Artes Marciais';
+        if (catTag) catTag.textContent = product.category || 'Artes Marciais';
+        
+        if (product.sku && skuTag) {
+            skuTag.textContent = `SKU: ${product.sku}`;
+            skuTag.classList.remove('hidden');
+        }
+
+        // Description
         productDescription.textContent = product.description || '';
+
+        // Media Gallery & Video Embed
+        const showPhotoBtn = document.getElementById('show-photo-btn');
+        const showVideoBtn = document.getElementById('show-video-btn');
+        const videoContainer = document.getElementById('product-video-container');
+        const videoIframe = document.getElementById('product-video-iframe');
+        const mediaThumbnailsBar = document.getElementById('media-thumbnails-bar');
+
         if (product.imageUrl) {
             productImageDisplay.src = product.imageUrl;
             productImageDisplay.classList.remove('hidden');
         }
 
+        const embedUrl = getYouTubeEmbedUrl(product.videoUrl);
+        if (embedUrl && videoContainer && videoIframe && showVideoBtn && mediaThumbnailsBar) {
+            videoIframe.src = embedUrl;
+            showVideoBtn.classList.remove('hidden');
+            mediaThumbnailsBar.classList.remove('hidden');
+
+            showVideoBtn.addEventListener('click', () => {
+                productImageDisplay.classList.add('hidden');
+                videoContainer.classList.remove('hidden');
+                showVideoBtn.classList.add('bg-red-500', 'text-white');
+                showPhotoBtn.classList.remove('bg-amber-500', 'text-black');
+            });
+
+            showPhotoBtn.addEventListener('click', () => {
+                videoContainer.classList.add('hidden');
+                productImageDisplay.classList.remove('hidden');
+                showPhotoBtn.classList.add('bg-amber-500', 'text-black');
+                showVideoBtn.classList.remove('bg-red-500', 'text-white');
+            });
+        }
+
+        // Promotional price vs Regular price
+        const priceRegular = document.getElementById('product-price-regular');
+        if (product.promoPrice && product.price && priceRegular) {
+            priceRegular.textContent = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            priceRegular.classList.remove('hidden');
+        }
+
         if (product.controlStock) {
             productStockDisplay.classList.remove('hidden');
             if (product.hasSizes && product.sizeStock) {
-                // Per-size: show total but defer detail to size selection event
                 const totalQty = Object.values(product.sizeStock).reduce((a, b) => a + b, 0);
                 if (totalQty <= 0) {
-                    productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">Esgotado</span>`;
                 } else if (totalQty <= 10) {
-                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Poucas unidades em estoque!</span>`;
+                    productStockDisplay.innerHTML = `<span class="text-amber-400 font-bold"><i class="fas fa-fire mr-1"></i> Poucas unidades em estoque!</span>`;
                 } else {
-                    productStockDisplay.textContent = `Estoque disponível`;
+                    productStockDisplay.textContent = `Em Estoque`;
                 }
             } else if (product.stockQuantity !== undefined) {
-                // Simple stock display
                 if (product.stockQuantity <= 10 && product.stockQuantity > 0) {
-                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">🔥 Últimas ${product.stockQuantity} unidades em estoque!</span>`;
+                    productStockDisplay.innerHTML = `<span class="text-amber-400 font-bold"><i class="fas fa-fire mr-1"></i> Últimas ${product.stockQuantity} unidades!</span>`;
                 } else if (product.stockQuantity > 0) {
-                    productStockDisplay.textContent = `${product.stockQuantity} unidades disponíveis`;
+                    productStockDisplay.textContent = `${product.stockQuantity} em estoque`;
                 } else {
-                    productStockDisplay.innerHTML = `<span class="text-red-500 font-bold">Esgotado</span>`;
+                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">Esgotado</span>`;
                 }
             }
         } else {
-            productStockDisplay.classList.add('hidden');
+            productStockDisplay.classList.remove('hidden');
+            productStockDisplay.textContent = `Em Estoque`;
         }
 
         if (product.isSubscription) {
