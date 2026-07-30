@@ -100,10 +100,10 @@ export async function setupStorePage() {
     const productsSearchInput = document.getElementById('products-search-input') || document.getElementById('product-search-input');
     const productsCategoryFilter = document.getElementById('products-category-filter');
     const productsStatusFilter = document.getElementById('products-status-filter');
-    const kpiTotalProducts = document.getElementById('kpi-total-products');
-    const kpiActiveProducts = document.getElementById('kpi-active-products');
-    const kpiTotalStockValue = document.getElementById('kpi-total-stock-value');
-    const kpiTotalCategories = document.getElementById('kpi-total-categories');
+    const kpiTotalProducts = document.getElementById('kpi-store-total-products') || document.getElementById('kpi-total-products');
+    const kpiActiveProducts = document.getElementById('kpi-store-active-products') || document.getElementById('kpi-active-products');
+    const kpiTotalStockValue = document.getElementById('kpi-store-inventory-value') || document.getElementById('kpi-total-stock-value');
+    const kpiTotalCategories = document.getElementById('kpi-store-categories-count') || document.getElementById('kpi-total-categories');
 
     const addProductBtn = document.getElementById('add-product-btn');
     const closeProductModalBtn = document.getElementById('close-product-modal-btn');
@@ -877,18 +877,22 @@ export async function setupStorePage() {
     };
 
     const updateStoreKPIs = (products) => {
+        if (!products) return;
         if (kpiTotalProducts) kpiTotalProducts.textContent = products.length;
-        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(p => p.visible).length;
+        if (kpiActiveProducts) kpiActiveProducts.textContent = products.filter(p => p.visible !== false).length;
         
         let totalVal = 0;
         products.forEach(p => {
-            if (p.controlStock && p.stockQuantity && p.price) {
-                totalVal += (p.stockQuantity * (p.price / 100));
+            const price = p.price || (p.priceVariants && p.priceVariants.length > 0 ? p.priceVariants[0].price : 0);
+            if (p.controlStock && p.stockQuantity && price) {
+                totalVal += (p.stockQuantity * (price / 100));
+            } else if (price) {
+                totalVal += (price / 100);
             }
         });
         if (kpiTotalStockValue) kpiTotalStockValue.textContent = totalVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
-        const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        const categories = Array.from(new Set(products.map(p => p.category).filter(c => c && c.trim())));
         if (kpiTotalCategories) kpiTotalCategories.textContent = categories.length;
 
         // Populate category dropdown filter if empty
