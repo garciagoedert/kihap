@@ -28,6 +28,98 @@ export async function setupAssinaturasPage() {
     const closeSubModalBtn = document.getElementById('close-sub-modal-btn');
     const closeSubModalFooterBtn = document.getElementById('close-sub-modal-footer-btn');
     const cancelSubBtnModal = document.getElementById('cancel-sub-btn-modal');
+    const getSubscriptionCycleStatus = (sub) => {
+        let createdMs = 0;
+        if (sub.created) {
+            if (sub.created._seconds) {
+                createdMs = sub.created._seconds * 1000;
+            } else if (sub.created.seconds) {
+                createdMs = sub.created.seconds * 1000;
+            } else {
+                createdMs = new Date(sub.created).getTime();
+            }
+        }
+
+        const daysSince = createdMs ? Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24)) : 999;
+        const isWithinCycle = daysSince <= 30;
+
+        if (sub.paymentStatus === 'cancelled') {
+            return {
+                statusClass: 'status-cancelled',
+                statusLabel: 'Cancelado',
+                isActive: false,
+                isCancelled: true,
+                key: 'cancelled',
+                daysSince
+            };
+        }
+
+        if (sub.paymentStatus === 'paused') {
+            return {
+                statusClass: 'status-paused',
+                statusLabel: 'Pausado',
+                isActive: false,
+                isCancelled: false,
+                key: 'paused',
+                daysSince
+            };
+        }
+
+        const rawAuthorized = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
+
+        if (rawAuthorized) {
+            if (isWithinCycle) {
+                return {
+                    statusClass: 'status-authorized',
+                    statusLabel: 'Ativo',
+                    isActive: true,
+                    isCancelled: false,
+                    key: 'active',
+                    daysSince
+                };
+            } else {
+                return {
+                    statusClass: 'status-vencido',
+                    statusLabel: `Vencido (${daysSince}d)`,
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'vencido',
+                    daysSince
+                };
+            }
+        }
+
+        if (sub.paymentStatus === 'pending') {
+            if (isWithinCycle) {
+                return {
+                    statusClass: 'status-pending',
+                    statusLabel: 'Pendente',
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'pending',
+                    daysSince
+                };
+            } else {
+                return {
+                    statusClass: 'status-expired',
+                    statusLabel: 'Expirado (>30d)',
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'expired',
+                    daysSince
+                };
+            }
+        }
+
+        return {
+            statusClass: 'status-pending',
+            statusLabel: sub.paymentStatus || 'Desconhecido',
+            isActive: false,
+            isCancelled: false,
+            key: sub.paymentStatus || 'unknown',
+            daysSince
+        };
+    };
 
     const renderSubscriptions = (subscriptions) => {
         tableBody.innerHTML = '';
@@ -41,53 +133,49 @@ export async function setupAssinaturasPage() {
         emptyState.classList.add('hidden');
         subscriptions.forEach(sub => {
             const tr = document.createElement('tr');
-            tr.className = 'table-row-hover transition-colors cursor-pointer group';
+            tr.className = 'border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group';
             tr.setAttribute('data-id', sub.idx);
             
-            // Status Badge Logic
-            let statusClass = 'status-pending';
-            let statusLabel = 'Pendente';
-            
-            if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
-                statusClass = 'status-authorized';
-                statusLabel = 'Ativo';
-            } else if (sub.paymentStatus === 'cancelled') {
-                statusClass = 'status-cancelled';
-                statusLabel = 'Cancelado';
-            } else if (sub.paymentStatus === 'paused') {
-                statusClass = 'status-paused';
-                statusLabel = 'Pausado';
-            }
+            const cycle = getSubscriptionCycleStatus(sub);
 
             // Date Formation
-            const dateObj = new Date(sub.created._seconds * 1000);
-            const dateStr = dateObj.toLocaleDateString('pt-BR');
+            let dateStr = 'Data desc.';
+            if (sub.created) {
+                const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : (sub.created.seconds ? sub.created.seconds * 1000 : new Date(sub.created).getTime());
+                if (!isNaN(createdMs)) {
+                    dateStr = new Date(createdMs).toLocaleDateString('pt-BR');
+                }
+            }
 
             // Currency Fmt
             const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             tr.innerHTML = `
-                <td class="p-4">
-                    <div class="font-medium text-white group-hover:text-blue-400 transition-colors">${sub.userName}</div>
-                    <div class="text-xs text-gray-500">${sub.userEmail} &bull; ${sub.userUnit || 'Não informada'}</div>
+                <td class="p-6">
+                    <div class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${sub.userName}</div>
+                    <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                        <span class="truncate max-w-[150px]">${sub.userEmail}</span>
+                        <span class="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
+                        <span class="font-medium text-gray-600 dark:text-gray-400">${sub.userUnit || 'Unidade Geral'}</span>
+                    </div>
                 </td>
-                <td class="p-4">
-                    <span class="inline-flex items-center gap-1.5 py-1 px-2 rounded-md bg-gray-700/50 text-gray-300 font-medium">
+                <td class="p-6">
+                    <span class="inline-flex items-center py-1 px-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] font-bold uppercase tracking-wider border border-gray-200 dark:border-gray-700">
                         ${sub.productName}
                     </span>
                 </td>
-                <td class="p-4 font-medium text-yellow-400">${priceFmt}</td>
-                <td class="p-4 text-center">
-                    <span class="status-badge ${statusClass}">${statusLabel}</span>
+                <td class="p-6 font-bold text-emerald-600 dark:text-emerald-400">${priceFmt}</td>
+                <td class="p-6 text-center">
+                    <span class="status-badge ${cycle.statusClass}">${cycle.statusLabel}</span>
                 </td>
-                <td class="p-4 text-gray-400">${dateStr}</td>
-                <td class="p-4 text-center">
-                    <div class="flex items-center justify-center gap-1">
-                        <button class="sync-sub-btn p-2 text-gray-400 hover:text-blue-400 transition-colors" data-id="${sub.idx}" title="Sincronizar Status">
-                            <i class="fas fa-sync-alt"></i>
+                <td class="p-6 text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</td>
+                <td class="p-6 text-center">
+                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="sync-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-all shadow-sm" data-id="${sub.idx}" title="Sincronizar">
+                            <i class="fas fa-sync-alt text-sm"></i>
                         </button>
-                        <button class="view-sub-btn p-2 text-gray-400 hover:text-white transition-colors" data-id="${sub.idx}" title="Ver Detalhes">
-                            <i class="fas fa-eye"></i>
+                        <button class="view-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm" data-id="${sub.idx}" title="Detalhes">
+                            <i class="fas fa-eye text-sm"></i>
                         </button>
                     </div>
                 </td>
@@ -112,72 +200,93 @@ export async function setupAssinaturasPage() {
 
     const openSubscriptionModal = (sub) => {
         currentOpenSub = sub;
-        
-        // Status Badge Logic for Modal
-        let statusClass = 'status-pending';
-        let statusLabel = 'Pendente';
-        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
-            statusClass = 'status-authorized';
-            statusLabel = 'Ativo';
-        } else if (sub.paymentStatus === 'cancelled') {
-            statusClass = 'status-cancelled';
-            statusLabel = 'Cancelado';
-        } else if (sub.paymentStatus === 'paused') {
-            statusClass = 'status-paused';
-            statusLabel = 'Pausado';
-        }
+        const cycle = getSubscriptionCycleStatus(sub);
 
-        const dateObj = new Date(sub.created._seconds * 1000);
-        const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        let dateStr = 'Data desc.';
+        if (sub.created) {
+            const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : (sub.created.seconds ? sub.created.seconds * 1000 : new Date(sub.created).getTime());
+            if (!isNaN(createdMs)) {
+                dateStr = new Date(createdMs).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+            }
+        }
         const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+        let cycleNotice = '';
+        if (cycle.key === 'vencido') {
+            cycleNotice = `
+                <div class="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-xs font-bold flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Esta compra possui ${cycle.daysSince} dias e ultrapassou os 30 dias do ciclo recorrente sem novo pagamento efetuado.</span>
+                </div>
+            `;
+        }
+
         subModalContent.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <!-- Info Section -->
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Informações do Aluno</h3>
-                        <p class="text-lg font-bold text-white">${sub.userName}</p>
-                        <p class="text-sm text-gray-400">${sub.userEmail}</p>
-                        <p class="text-sm text-gray-400">Unidade: ${sub.userUnit || 'Não informada'}</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Informações do Aluno</h3>
+                        <div class="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <p class="text-lg font-bold text-gray-900 dark:text-white">${sub.userName}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${sub.userEmail}</p>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-lg uppercase border border-blue-100 dark:border-blue-500/20">
+                                    ${sub.userUnit || 'Geral'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Plano / Produto</h3>
-                        <p class="text-lg font-bold text-blue-400">${sub.productName}</p>
-                        <p class="text-xs text-gray-500">ID da Venda: #sub_${sub.idx}</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Plano / Produto</h3>
+                        <div class="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-500/10">
+                            <p class="text-lg font-bold text-blue-700 dark:text-blue-400">${sub.productName}</p>
+                            <p class="text-[10px] font-bold text-blue-500 dark:text-blue-500/70 mt-1 uppercase tracking-tighter">ID: #sub_${sub.idx}</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Status Section -->
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status da Assinatura</h3>
-                        <span class="status-badge ${statusClass} text-sm">${statusLabel}</span>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Status da Assinatura</h3>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex">
+                                <span class="status-badge ${cycle.statusClass} py-1.5 px-4 text-xs font-bold">${cycle.statusLabel}</span>
+                            </div>
+                            ${cycleNotice}
+                        </div>
                     </div>
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Valor Recorrente</h3>
-                        <p class="text-2xl font-bold text-yellow-400">${priceFmt}</p>
-                        <p class="text-xs text-gray-500">Cobrança mensal automatizada</p>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Valor Recorrente</h3>
+                        <div class="flex flex-col">
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white tracking-tighter">${priceFmt}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Cobrança mensal automatizada</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="pt-6 border-t border-[#333]">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-4 text-sm text-gray-400">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-blue-500"></i>
-                        <span>Início em: <strong>${dateStr}</strong></span>
+            <div class="pt-8 border-t border-gray-50 dark:border-gray-800/50">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-6 text-sm">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-blue-500">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span>Início / Último Pago: <strong class="text-gray-900 dark:text-white font-semibold">${dateStr}</strong></span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-credit-card text-emerald-500"></i>
-                        <span>Gateway: <strong>Mercado Pago</strong></span>
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-emerald-500">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <span>Gateway: <strong class="text-gray-900 dark:text-white font-semibold">Mercado Pago</strong></span>
                     </div>
                 </div>
             </div>
         `;
 
         // Show/Hide Cancel Button
-        if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+        if (cycle.isActive) {
             cancelSubBtnModal.classList.remove('hidden');
             cancelSubBtnModal.setAttribute('data-id', sub.idx);
         } else {
@@ -200,10 +309,11 @@ export async function setupAssinaturasPage() {
         let cancelledCount = 0;
 
         subscriptions.forEach(sub => {
-            if (sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid') {
+            const cycle = getSubscriptionCycleStatus(sub);
+            if (cycle.isActive) {
                 totalMrr += sub.amountTotal;
                 activeCount++;
-            } else if (sub.paymentStatus === 'cancelled') {
+            } else if (cycle.isCancelled) {
                 cancelledCount++;
             }
         });
@@ -243,10 +353,29 @@ export async function setupAssinaturasPage() {
         const selectedProduct = productFilter.value;
 
         const filtered = allSubscriptions.filter(sub => {
+            const cycle = getSubscriptionCycleStatus(sub);
+
             const nameMatch = !searchTerm || (sub.userName && sub.userName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sub.userEmail && sub.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sub.userUnit === selectedUnit;
-            const statusMatch = !selectedStatus || sub.paymentStatus === selectedStatus;
+            
+            let statusMatch = true;
+            if (selectedStatus) {
+                if (selectedStatus === 'active') {
+                    statusMatch = cycle.isActive;
+                } else if (selectedStatus === 'vencido') {
+                    statusMatch = cycle.key === 'vencido';
+                } else if (selectedStatus === 'pending') {
+                    statusMatch = cycle.key === 'pending';
+                } else if (selectedStatus === 'cancelled') {
+                    statusMatch = cycle.isCancelled;
+                } else if (selectedStatus === 'paused') {
+                    statusMatch = cycle.key === 'paused';
+                } else {
+                    statusMatch = sub.paymentStatus === selectedStatus;
+                }
+            }
+
             const productMatch = !selectedProduct || sub.productName === selectedProduct;
 
             return (nameMatch || emailMatch) && unitMatch && statusMatch && productMatch;

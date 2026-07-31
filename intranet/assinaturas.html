@@ -93,6 +93,17 @@
             border-color: rgba(245, 158, 11, 0.3);
         }
 
+        .status-vencido { 
+            background-color: rgba(245, 158, 11, 0.15); 
+            color: #d97706; 
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .dark .status-vencido {
+            background-color: rgba(245, 158, 11, 0.25); 
+            color: #fbbf24; 
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
         .status-pending { 
             background-color: rgba(156, 163, 175, 0.1); 
             color: #4b5563; 
@@ -233,7 +244,8 @@
                             <div class="relative">
                                 <select id="filter-status" class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none transition-all duration-200 text-sm font-medium">
                                     <option value="">Todos os Status</option>
-                                    <option value="authorized">Ativo</option>
+                                    <option value="active">Ativo (No Ciclo)</option>
+                                    <option value="vencido">Vencido (> 30 dias)</option>
                                     <option value="paid">Ativo (Processado)</option>
                                     <option value="pending">Pendente</option>
                                     <option value="paused">Pausado</option>

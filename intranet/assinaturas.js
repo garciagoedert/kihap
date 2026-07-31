@@ -28,6 +28,98 @@ export async function setupAssinaturasPage() {
     const closeSubModalBtn = document.getElementById('close-sub-modal-btn');
     const closeSubModalFooterBtn = document.getElementById('close-sub-modal-footer-btn');
     const cancelSubBtnModal = document.getElementById('cancel-sub-btn-modal');
+    const getSubscriptionCycleStatus = (sub) => {
+        let createdMs = 0;
+        if (sub.created) {
+            if (sub.created._seconds) {
+                createdMs = sub.created._seconds * 1000;
+            } else if (sub.created.seconds) {
+                createdMs = sub.created.seconds * 1000;
+            } else {
+                createdMs = new Date(sub.created).getTime();
+            }
+        }
+
+        const daysSince = createdMs ? Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24)) : 999;
+        const isWithinCycle = daysSince <= 30;
+
+        if (sub.paymentStatus === 'cancelled') {
+            return {
+                statusClass: 'status-cancelled',
+                statusLabel: 'Cancelado',
+                isActive: false,
+                isCancelled: true,
+                key: 'cancelled',
+                daysSince
+            };
+        }
+
+        if (sub.paymentStatus === 'paused') {
+            return {
+                statusClass: 'status-paused',
+                statusLabel: 'Pausado',
+                isActive: false,
+                isCancelled: false,
+                key: 'paused',
+                daysSince
+            };
+        }
+
+        const rawAuthorized = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
+
+        if (rawAuthorized) {
+            if (isWithinCycle) {
+                return {
+                    statusClass: 'status-authorized',
+                    statusLabel: 'Ativo',
+                    isActive: true,
+                    isCancelled: false,
+                    key: 'active',
+                    daysSince
+                };
+            } else {
+                return {
+                    statusClass: 'status-vencido',
+                    statusLabel: `Vencido (${daysSince}d)`,
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'vencido',
+                    daysSince
+                };
+            }
+        }
+
+        if (sub.paymentStatus === 'pending') {
+            if (isWithinCycle) {
+                return {
+                    statusClass: 'status-pending',
+                    statusLabel: 'Pendente',
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'pending',
+                    daysSince
+                };
+            } else {
+                return {
+                    statusClass: 'status-expired',
+                    statusLabel: 'Expirado (>30d)',
+                    isActive: false,
+                    isCancelled: false,
+                    key: 'expired',
+                    daysSince
+                };
+            }
+        }
+
+        return {
+            statusClass: 'status-pending',
+            statusLabel: sub.paymentStatus || 'Desconhecido',
+            isActive: false,
+            isCancelled: false,
+            key: sub.paymentStatus || 'unknown',
+            daysSince
+        };
+    };
 
     const renderSubscriptions = (subscriptions) => {
         tableBody.innerHTML = '';
@@ -44,33 +136,16 @@ export async function setupAssinaturasPage() {
             tr.className = 'border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer group';
             tr.setAttribute('data-id', sub.idx);
             
-            // Status Badge Logic
-            let statusClass = 'status-pending';
-            let statusLabel = 'Pendente';
-
-            const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
-            const isOldPending = sub.paymentStatus === 'pending' && sub.created && (() => {
-                const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : new Date(sub.created).getTime();
-                return (Date.now() - createdMs) > 30 * 24 * 60 * 60 * 1000; // >30 dias
-            })();
-
-            if (isActive) {
-                statusClass = 'status-authorized';
-                statusLabel = 'Ativo';
-            } else if (sub.paymentStatus === 'cancelled') {
-                statusClass = 'status-cancelled';
-                statusLabel = 'Cancelado';
-            } else if (sub.paymentStatus === 'paused') {
-                statusClass = 'status-paused';
-                statusLabel = 'Pausado';
-            } else if (isOldPending) {
-                statusClass = 'status-expired';
-                statusLabel = 'Expirado';
-            }
+            const cycle = getSubscriptionCycleStatus(sub);
 
             // Date Formation
-            const dateObj = new Date(sub.created._seconds * 1000);
-            const dateStr = dateObj.toLocaleDateString('pt-BR');
+            let dateStr = 'Data desc.';
+            if (sub.created) {
+                const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : (sub.created.seconds ? sub.created.seconds * 1000 : new Date(sub.created).getTime());
+                if (!isNaN(createdMs)) {
+                    dateStr = new Date(createdMs).toLocaleDateString('pt-BR');
+                }
+            }
 
             // Currency Fmt
             const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -91,7 +166,7 @@ export async function setupAssinaturasPage() {
                 </td>
                 <td class="p-6 font-bold text-emerald-600 dark:text-emerald-400">${priceFmt}</td>
                 <td class="p-6 text-center">
-                    <span class="status-badge ${statusClass}">${statusLabel}</span>
+                    <span class="status-badge ${cycle.statusClass}">${cycle.statusLabel}</span>
                 </td>
                 <td class="p-6 text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</td>
                 <td class="p-6 text-center">
@@ -125,32 +200,28 @@ export async function setupAssinaturasPage() {
 
     const openSubscriptionModal = (sub) => {
         currentOpenSub = sub;
-        
-        // Status Badge Logic for Modal
-        let statusClass = 'status-pending';
-        let statusLabel = 'Pendente';
-        const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
-        const isOldPending = sub.paymentStatus === 'pending' && sub.created && (() => {
-            const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : new Date(sub.created).getTime();
-            return (Date.now() - createdMs) > 30 * 24 * 60 * 60 * 1000;
-        })();
-        if (isActive) {
-            statusClass = 'status-authorized';
-            statusLabel = 'Ativo';
-        } else if (sub.paymentStatus === 'cancelled') {
-            statusClass = 'status-cancelled';
-            statusLabel = 'Cancelado';
-        } else if (sub.paymentStatus === 'paused') {
-            statusClass = 'status-paused';
-            statusLabel = 'Pausado';
-        } else if (isOldPending) {
-            statusClass = 'status-expired';
-            statusLabel = 'Expirado';
+        const cycle = getSubscriptionCycleStatus(sub);
+
+        let dateStr = 'Data desc.';
+        if (sub.created) {
+            const createdMs = sub.created._seconds ? sub.created._seconds * 1000 : (sub.created.seconds ? sub.created.seconds * 1000 : new Date(sub.created).getTime());
+            if (!isNaN(createdMs)) {
+                dateStr = new Date(createdMs).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+            }
+        }
+        const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        let cycleNotice = '';
+        if (cycle.key === 'vencido') {
+            cycleNotice = `
+                <div class="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-xs font-bold flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Esta compra possui ${cycle.daysSince} dias e ultrapassou os 30 dias do ciclo recorrente sem novo pagamento efetuado.</span>
+                </div>
+            `;
         }
 
-        const dateObj = new Date(sub.created._seconds * 1000);
-        const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-        const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });        subModalContent.innerHTML = `
+        subModalContent.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <!-- Info Section -->
                 <div class="space-y-8">
@@ -179,8 +250,11 @@ export async function setupAssinaturasPage() {
                 <div class="space-y-8">
                     <div>
                         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Status da Assinatura</h3>
-                        <div class="flex">
-                            <span class="status-badge ${statusClass} py-1.5 px-4 text-xs font-bold">${statusLabel}</span>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex">
+                                <span class="status-badge ${cycle.statusClass} py-1.5 px-4 text-xs font-bold">${cycle.statusLabel}</span>
+                            </div>
+                            ${cycleNotice}
                         </div>
                     </div>
                     <div>
@@ -199,7 +273,7 @@ export async function setupAssinaturasPage() {
                         <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-blue-500">
                             <i class="fas fa-calendar-alt"></i>
                         </div>
-                        <span>Início em: <strong class="text-gray-900 dark:text-white font-semibold">${dateStr}</strong></span>
+                        <span>Início / Último Pago: <strong class="text-gray-900 dark:text-white font-semibold">${dateStr}</strong></span>
                     </div>
                     <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                         <div class="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-emerald-500">
@@ -212,7 +286,7 @@ export async function setupAssinaturasPage() {
         `;
 
         // Show/Hide Cancel Button
-        if (isActive) {
+        if (cycle.isActive) {
             cancelSubBtnModal.classList.remove('hidden');
             cancelSubBtnModal.setAttribute('data-id', sub.idx);
         } else {
@@ -235,11 +309,11 @@ export async function setupAssinaturasPage() {
         let cancelledCount = 0;
 
         subscriptions.forEach(sub => {
-            const isActive = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
-            if (isActive) {
+            const cycle = getSubscriptionCycleStatus(sub);
+            if (cycle.isActive) {
                 totalMrr += sub.amountTotal;
                 activeCount++;
-            } else if (sub.paymentStatus === 'cancelled') {
+            } else if (cycle.isCancelled) {
                 cancelledCount++;
             }
         });
@@ -279,10 +353,29 @@ export async function setupAssinaturasPage() {
         const selectedProduct = productFilter.value;
 
         const filtered = allSubscriptions.filter(sub => {
+            const cycle = getSubscriptionCycleStatus(sub);
+
             const nameMatch = !searchTerm || (sub.userName && sub.userName.toLowerCase().includes(searchTerm));
             const emailMatch = !searchTerm || (sub.userEmail && sub.userEmail.toLowerCase().includes(searchTerm));
             const unitMatch = !selectedUnit || sub.userUnit === selectedUnit;
-            const statusMatch = !selectedStatus || sub.paymentStatus === selectedStatus;
+            
+            let statusMatch = true;
+            if (selectedStatus) {
+                if (selectedStatus === 'active') {
+                    statusMatch = cycle.isActive;
+                } else if (selectedStatus === 'vencido') {
+                    statusMatch = cycle.key === 'vencido';
+                } else if (selectedStatus === 'pending') {
+                    statusMatch = cycle.key === 'pending';
+                } else if (selectedStatus === 'cancelled') {
+                    statusMatch = cycle.isCancelled;
+                } else if (selectedStatus === 'paused') {
+                    statusMatch = cycle.key === 'paused';
+                } else {
+                    statusMatch = sub.paymentStatus === selectedStatus;
+                }
+            }
+
             const productMatch = !selectedProduct || sub.productName === selectedProduct;
 
             return (nameMatch || emailMatch) && unitMatch && statusMatch && productMatch;
