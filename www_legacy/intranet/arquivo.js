@@ -332,6 +332,47 @@ function openEditModal(lead) {
     document.getElementById('editClientSiteAtual').value = lead.siteAtual || '';
     document.getElementById('editClientObservacoes').value = lead.observacoes || '';
 
+    // WhatsApp Modal Link Setup
+    const whatsappLinkModal = document.getElementById('whatsappLinkModal');
+    if (whatsappLinkModal) {
+        const rawPhone = lead.telefone ? lead.telefone.replace(/\D/g, '') : '';
+        if (rawPhone) {
+            whatsappLinkModal.href = `https://wa.me/55${rawPhone}`;
+            whatsappLinkModal.classList.remove('hidden');
+            whatsappLinkModal.classList.add('flex');
+        } else {
+            whatsappLinkModal.classList.add('hidden');
+            whatsappLinkModal.classList.remove('flex');
+        }
+    }
+
+    // Modal Tabs Navigation Logic
+    const tabDetailsBtn = document.getElementById('tabDetailsBtn');
+    const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
+    const tabDetailsContent = document.getElementById('tabDetailsContent');
+    const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+
+    const activateTab = (tabName) => {
+        if (tabName === 'details') {
+            tabDetailsBtn.className = "flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2";
+            tabWhatsAppBtn.className = "flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2";
+            tabDetailsContent.classList.remove('hidden');
+            tabWhatsAppContent.classList.add('hidden');
+        } else {
+            tabWhatsAppBtn.className = "flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2";
+            tabDetailsBtn.className = "flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2";
+            tabDetailsContent.classList.add('hidden');
+            tabWhatsAppContent.classList.remove('hidden');
+            renderWhatsAppChat(lead);
+        }
+    };
+
+    if (tabDetailsBtn && tabWhatsAppBtn) {
+        tabDetailsBtn.onclick = () => activateTab('details');
+        tabWhatsAppBtn.onclick = () => activateTab('whatsapp');
+        activateTab('details');
+    }
+
     renderContactLog(lead.contactLog);
 
     const createdByContainer = document.getElementById('createdByContainer');
@@ -349,62 +390,99 @@ function openEditModal(lead) {
     const cancelEditFormBtn = document.getElementById('cancelEditFormBtn');
     const addContactLogBtn = document.getElementById('addContactLogBtn');
     const newContactLogTextarea = document.getElementById('newContactLog');
-    const contactLogSection = newContactLogTextarea.parentElement;
+    const contactLogSection = newContactLogTextarea ? newContactLogTextarea.parentElement : null;
 
     const setFormEditable = (isEditable) => {
         fields.forEach(field => {
             if (field.id !== 'editClientId') field.disabled = !isEditable;
         });
-        contactLogSection.style.display = isEditable ? 'flex' : 'none';
-        editBtn.classList.toggle('hidden', isEditable);
-        saveBtn.classList.toggle('hidden', !isEditable);
-        cancelEditFormBtn.classList.toggle('hidden', !isEditable);
+        if (contactLogSection) contactLogSection.style.display = isEditable ? 'flex' : 'none';
+        if (editBtn) editBtn.classList.toggle('hidden', isEditable);
+        if (saveBtn) saveBtn.classList.toggle('hidden', !isEditable);
+        if (cancelEditFormBtn) cancelEditFormBtn.classList.toggle('hidden', !isEditable);
     };
 
-    const newAddContactBtn = addContactLogBtn.cloneNode(true);
-    addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
-    newAddContactBtn.addEventListener('click', async () => {
-        const description = newContactLogTextarea.value.trim();
-        if (!description) return alert('Por favor, adicione uma descrição para o contato.');
-        
-        try {
-            const clientRef = doc(db, 'prospects', lead.id);
-            await updateDoc(clientRef, {
-                contactLog: arrayUnion({
+    if (addContactLogBtn) {
+        const newAddContactBtn = addContactLogBtn.cloneNode(true);
+        addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
+        newAddContactBtn.addEventListener('click', async () => {
+            const description = newContactLogTextarea.value.trim();
+            if (!description) return alert('Por favor, adicione uma descrição para o contato.');
+            
+            try {
+                const clientRef = doc(db, 'prospects', lead.id);
+                await updateDoc(clientRef, {
+                    contactLog: arrayUnion({
+                        author: auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous',
+                        description: description,
+                        timestamp: Timestamp.now()
+                    })
+                });
+                newContactLogTextarea.value = '';
+                // Refresh lead contact logs
+                lead.contactLog = lead.contactLog || [];
+                lead.contactLog.push({
                     author: auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous',
                     description: description,
                     timestamp: Timestamp.now()
-                })
-            });
-            newContactLogTextarea.value = '';
-            // Refresh lead contact logs
-            lead.contactLog = lead.contactLog || [];
-            lead.contactLog.push({
-                author: auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous',
-                description: description,
-                timestamp: Timestamp.now()
-            });
-            renderContactLog(lead.contactLog);
-        } catch (error) {
-            console.error("Error adding contact log:", error);
-            alert("Erro ao adicionar o registro de contato.");
-        }
-    });
+                });
+                renderContactLog(lead.contactLog);
+            } catch (error) {
+                console.error("Error adding contact log:", error);
+                alert("Erro ao adicionar o registro de contato.");
+            }
+        });
+    }
 
     setFormEditable(false);
-    editBtn.onclick = () => setFormEditable(true);
-    cancelEditFormBtn.onclick = () => openEditModal(lead);
+    if (editBtn) editBtn.onclick = () => setFormEditable(true);
+    if (cancelEditFormBtn) cancelEditFormBtn.onclick = () => openEditModal(lead);
 
     const unarchiveBtn = document.getElementById('unarchiveBtn');
-    unarchiveBtn.onclick = () => unarchiveLead(lead.id);
+    if (unarchiveBtn) unarchiveBtn.onclick = () => unarchiveLead(lead.id);
 
     const deleteBtn = document.getElementById('deleteBtn');
-    deleteBtn.onclick = () => deleteLead(lead.id);
+    if (deleteBtn) deleteBtn.onclick = () => deleteLead(lead.id);
 
     const modal = document.getElementById('editClientModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+}
+
+function renderWhatsAppChat(lead) {
+    const chatArea = document.getElementById('whatsappChatArea');
+    if (!chatArea) return;
+
+    if (Array.isArray(lead.messages) && lead.messages.length > 0) {
+        chatArea.innerHTML = lead.messages.map(m => {
+            const isSent = m.fromMe || m.sender === 'user';
+            const timeStr = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+            return `
+                <div class="flex flex-col ${isSent ? 'items-end' : 'items-start'}">
+                    <div class="chat-bubble ${isSent ? 'sent' : 'received'} max-w-[80%] p-3 rounded-2xl text-xs shadow-sm">
+                        <p class="whitespace-pre-wrap font-medium">${m.text || m.body || ''}</p>
+                        <span class="chat-time text-[10px] text-gray-400 block text-right mt-1">${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        const rawPhone = lead.telefone ? lead.telefone.replace(/\D/g, '') : '';
+        const waUrl = rawPhone ? `https://wa.me/55${rawPhone}` : '#';
+        chatArea.innerHTML = `
+            <div class="text-center text-gray-500 dark:text-gray-400 text-sm mt-12 bg-white/60 dark:bg-gray-800/40 backdrop-blur-md p-6 rounded-2xl border border-gray-200 dark:border-gray-700 mx-8 shadow-sm space-y-3">
+                <i class="fab fa-whatsapp text-4xl block text-emerald-500"></i>
+                <p class="font-bold text-gray-800 dark:text-white">Conversa no WhatsApp Webhook</p>
+                <p class="text-xs text-gray-400">Não há registros de conversa automatizada do bot vinculados a este lead.</p>
+                ${rawPhone ? `
+                    <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-md">
+                        <i class="fab fa-whatsapp"></i> Iniciar Conversa Manual no WhatsApp
+                    </a>
+                ` : ''}
+            </div>
+        `;
+    }
 }
 
 function closeEditModal() {

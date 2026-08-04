@@ -142,137 +142,237 @@
         </main>
     </div>
 
-    <!-- Modern Styled Lead Details / Edit Modal -->
-    <div id="editClientModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-800 overflow-hidden animate-fadeIn">
+    <!-- CRM Prospecção Identical Lead Details / Edit Modal -->
+    <div id="editClientModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-md transition-all duration-300">
+        <div class="bg-white dark:bg-[#151515] w-full h-full sm:h-auto sm:rounded-2xl shadow-2xl sm:max-w-3xl sm:max-h-[92vh] flex flex-col border border-gray-150 dark:border-gray-800/80 overflow-hidden transform scale-100 transition-all">
             
-            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 font-bold border border-amber-500/20">
-                        <i class="fas fa-user-edit"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black text-gray-900 dark:text-white tracking-tight">Detalhes do Lead Arquivado</h3>
-                        <p class="text-xs text-gray-400">Edite dados, consulte o histórico ou desarquive para o CRM.</p>
-                    </div>
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 md:px-6 border-b border-gray-150 dark:border-gray-800 gap-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                    <h2 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Lead Arquivado</h2>
                 </div>
-                <button id="cancelEditBtn" class="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                    <i class="fas fa-times text-lg"></i>
+                <button id="cancelEditBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-lg transition-all duration-200" aria-label="Fechar">&times;</button>
+            </div>
+            
+            <!-- Modal Tabs -->
+            <div class="flex border-b border-gray-150 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
+                <button type="button" id="tabDetailsBtn"
+                    class="flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    <i class="fas fa-info-circle text-xs"></i>
+                    <span>Detalhes</span>
+                </button>
+                <button type="button" id="tabWhatsAppBtn"
+                    class="flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp text-xs"></i>
+                    <span>WhatsApp</span>
                 </button>
             </div>
 
-            <form id="editClientForm" class="p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1">
-                <input type="hidden" id="editClientId">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="editClientEmpresa" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Empresa / Lead *</label>
-                        <input type="text" id="editClientEmpresa" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500" required>
-                    </div>
-                    <div>
-                        <label for="editClientSetor" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Setor *</label>
-                        <input type="text" id="editClientSetor" placeholder="Ex: Imobiliário" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500" required>
-                    </div>
-                    <div>
-                        <label for="editClientPrioridade" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Prioridade *</label>
-                        <select id="editClientPrioridade" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500" required>
-                            <option value="">Selecione</option>
-                            <option value="5">5 - Máxima 🚀</option>
-                            <option value="4">4 - Alta 🔥</option>
-                            <option value="3">3 - Média ⭐</option>
-                            <option value="2">2 - Baixa ❄️</option>
-                            <option value="1">1 - Mínima 💤</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="editClientTicket" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Ticket Estimado (R$)</label>
-                        <input type="number" id="editClientTicket" placeholder="15000" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editOrigemLead" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Origem do Lead</label>
-                        <input type="text" id="editOrigemLead" placeholder="Ex: Indicação, Google" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editResponsavel" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nome do Responsável</label>
-                        <input type="text" id="editResponsavel" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editClientTelefone" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Telefone</label>
-                        <input type="text" id="editClientTelefone" placeholder="(48) 99999-9999" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editClientEmail" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                        <input type="email" id="editClientEmail" placeholder="contato@empresa.com" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editClientCpf" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">CPF</label>
-                        <input type="text" id="editClientCpf" placeholder="000.000.000-00" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <label for="editClientCnpj" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">CNPJ</label>
-                        <input type="text" id="editClientCnpj" placeholder="00.000.000/0000-00" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
+            <form id="editClientForm" class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+                <div id="tabDetailsContent" class="space-y-5">
+                    <input type="hidden" id="editClientId">
                     
-                    <div class="md:col-span-2">
-                        <label for="editClientEndereco" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Endereço</label>
-                        <div class="flex items-center gap-2">
-                            <input type="text" id="editClientEndereco" placeholder="Rua, Número, Bairro, Cidade" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            <button type="button" id="openEditMapBtn" title="Abrir no Google Maps" class="px-4 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-xs flex items-center gap-1.5 shrink-0 transition-all">
-                                <i class="fas fa-map-marker-alt"></i> Maps
+                    <!-- Section 1: Informações Principais -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-id-card text-yellow-500 text-sm"></i>
+                            Informações Principais
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="editClientEmpresa" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Empresa / Lead *</label>
+                                <input type="text" id="editClientEmpresa"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editResponsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do Responsável</label>
+                                <input type="text" id="editResponsavel"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div class="form-group">
+                                <label for="editClientSetor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Setor *</label>
+                                <input type="text" id="editClientSetor" placeholder="Ex: Imobiliário"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editClientPrioridade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Prioridade *</label>
+                                <select id="editClientPrioridade"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    required>
+                                    <option value="">Selecione</option>
+                                    <option value="5">5 - Máxima 🚀</option>
+                                    <option value="4">4 - Alta 🔥</option>
+                                    <option value="3">3 - Média ⭐</option>
+                                    <option value="2">2 - Baixa ❄️</option>
+                                    <option value="1">1 - Mínima 💤</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editClientTicket" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Ticket Estimado (R$)</label>
+                                <input type="number" id="editClientTicket" placeholder="15000"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div class="form-group">
+                                <label for="editOrigemLead" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Origem do Lead</label>
+                                <input type="text" id="editOrigemLead" placeholder="Ex: Indicação, Google"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Contato & Redes -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-share-alt text-yellow-500 text-sm"></i>
+                            Canais de Contato & Redes
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group flex flex-col justify-between">
+                                <div>
+                                    <label for="editClientTelefone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Telefone</label>
+                                    <input type="text" id="editClientTelefone" placeholder="(48) 99999-9999"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                                <a id="whatsappLinkModal" href="#" target="_blank"
+                                    class="hidden w-full mt-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all duration-200 cursor-pointer">
+                                    <i class="fab fa-whatsapp text-lg"></i>
+                                    <span>Chamar no WhatsApp</span>
+                                </a>
+                            </div>
+                            <div class="form-group flex flex-col justify-between gap-4 md:gap-0">
+                                <div>
+                                    <label for="editClientEmail" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Email</label>
+                                    <input type="email" id="editClientEmail" placeholder="contato@empresa.com"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                                <div class="mt-4 md:mt-2">
+                                    <label for="editClientCpf" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">CPF</label>
+                                    <input type="text" id="editClientCpf" placeholder="000.000.000-00"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="editClientCnpj" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">CNPJ</label>
+                                <input type="text" id="editClientCnpj" placeholder="00.000.000/0000-00"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div>
+                                <label for="editClientSiteAtual" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Site Atual</label>
+                                <input type="text" id="editClientSiteAtual" placeholder="empresa.com.br"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label for="editClientEndereco" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Endereço</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="editClientEndereco" placeholder="Rua, Número, Bairro, Cidade"
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    <button type="button" id="openEditMapBtn" title="Abrir no Google Maps"
+                                        class="bg-amber-500 hover:bg-amber-400 text-black font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1.5 shrink-0 transition-all">
+                                        <i class="fas fa-map-marker-alt"></i> Maps
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group md:col-span-2">
+                                <label for="editClientRedesSociais" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Redes Sociais</label>
+                                <textarea id="editClientRedesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc."
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Observações, Tags & Histórico -->
+                    <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
+                            <i class="fas fa-clipboard-list text-yellow-500 text-sm"></i>
+                            Notas, Tags & Linha do Tempo
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="editClientObservacoes" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Observações</label>
+                                <textarea id="editClientObservacoes" rows="3"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Log de Contatos (Timeline)</label>
+                                <div id="contactLogContainer"
+                                    class="max-h-60 overflow-y-auto bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 custom-scrollbar shadow-inner">
+                                    <!-- Log entries will be injected here -->
+                                </div>
+                                <div class="flex flex-col gap-2 mt-3">
+                                    <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                                    <button type="button" id="addContactLogBtn"
+                                        class="bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center gap-1.5 self-start shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 transition-all duration-200">
+                                        <i class="fas fa-plus"></i>
+                                        Adicionar Nota
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="createdByContainer" class="hidden text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 border border-gray-150 dark:border-gray-800/80 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm">
+                        <span>Criado por: <span id="createdByInfo" class="font-semibold text-gray-700 dark:text-gray-300"></span></span>
+                    </div>
+
+                    <!-- Footer Action Buttons inside Details tab -->
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-150 dark:border-gray-800">
+                        <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="unarchiveBtn"
+                                class="bg-emerald-600/10 hover:bg-emerald-600 text-emerald-700 dark:text-emerald-400 hover:text-white border border-emerald-600/20 hover:border-emerald-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
+                                <i class="fas fa-box-open"></i>
+                                <span>Desarquivar para CRM</span>
+                            </button>
+                            <button type="button" id="deleteBtn"
+                                class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Excluir</span>
+                            </button>
+                        </div>
+                        <div id="formControls" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="editBtn"
+                                class="bg-amber-500 hover:bg-amber-400 font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 text-black transition-all duration-200 w-full sm:w-auto flex items-center justify-center gap-1.5">
+                                <i class="fas fa-edit"></i>
+                                <span>Editar</span>
+                            </button>
+                            <button type="button" id="cancelEditFormBtn"
+                                class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5">
+                                <i class="fas fa-times"></i>
+                                <span>Cancelar</span>
+                            </button>
+                            <button type="submit" id="saveBtn"
+                                class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20">
+                                <i class="fas fa-save"></i>
+                                <span>Salvar</span>
                             </button>
                         </div>
                     </div>
-
-                    <div class="md:col-span-2">
-                        <label for="editClientRedesSociais" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Redes Sociais</label>
-                        <textarea id="editClientRedesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc." class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 custom-scrollbar"></textarea>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="editClientSiteAtual" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Site Atual</label>
-                        <input type="text" id="editClientSiteAtual" placeholder="empresa.com.br" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="editClientObservacoes" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Follow-up / Observações</label>
-                        <textarea id="editClientObservacoes" rows="3" class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 custom-scrollbar"></textarea>
-                    </div>
-
-                    <div class="md:col-span-2 space-y-2">
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Log de Contatos</label>
-                        <div id="contactLogContainer" class="max-h-40 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-gray-900/60 p-3 rounded-2xl space-y-3 border border-gray-200 dark:border-gray-800">
-                            <!-- Log entries injected here -->
-                        </div>
-                        <div class="flex gap-2 pt-1">
-                            <textarea id="newContactLog" rows="2" placeholder="Adicionar novo contato..." class="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/80 rounded-xl p-3 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 custom-scrollbar"></textarea>
-                            <button type="button" id="addContactLogBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs self-start transition-all shadow-md">Adicionar</button>
-                        </div>
-                    </div>
-
-                    <div id="createdByContainer" class="md:col-span-2 text-xs text-gray-400 hidden">
-                        <p>Criado por: <span id="createdByInfo" class="font-bold text-gray-200"></span></p>
-                    </div>
                 </div>
+                <!-- End Details Tab Content -->
 
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-800">
-                    <div id="modalActionButtons" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                        <button type="button" id="unarchiveBtn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
-                            <i class="fas fa-box-open"></i> Desarquivar para CRM
-                        </button>
-                        <button type="button" id="deleteBtn" class="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-red-500/20 flex items-center gap-1.5">
-                            <i class="fas fa-trash-alt"></i> Excluir
-                        </button>
+                <!-- WhatsApp Tab Content -->
+                <div id="tabWhatsAppContent" class="hidden flex flex-col h-full bg-gray-50 dark:bg-[#111] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm" style="min-height: 440px;">
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-[#181818] border-b border-gray-150 dark:border-gray-800">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-emerald-500 text-lg animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-800 dark:text-gray-250 uppercase tracking-wider">Conversa WhatsApp</h3>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500">Histórico de mensagens do WhatsApp Webhook / Chatbot</p>
+                            </div>
+                        </div>
                     </div>
-                    <div id="formControls" class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                        <button type="button" id="editBtn" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5">
-                            <i class="fas fa-pencil-alt"></i> Habilitar Edição
-                        </button>
-                        <button type="button" id="cancelEditFormBtn" class="px-4 py-2.5 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs transition-all hidden">
-                            Cancelar
-                        </button>
-                        <button type="submit" id="saveBtn" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-amber-500 text-black font-black rounded-xl text-xs transition-all shadow-lg shadow-amber-500/20 hidden flex items-center gap-1.5">
-                            <i class="fas fa-save"></i> Salvar Alterações
-                        </button>
+                    <div id="whatsappChatArea" class="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
+                        <div class="text-center text-gray-500 dark:text-gray-400 text-sm mt-12 bg-white/60 dark:bg-gray-800/40 backdrop-blur-md p-6 rounded-2xl border border-gray-200 dark:border-gray-700 mx-8 shadow-sm">
+                            <i class="fab fa-whatsapp text-4xl mb-3 block text-emerald-500/30"></i>
+                            <p class="font-medium text-gray-700 dark:text-gray-300">Histórico WhatsApp</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Nenhuma conversa direta vinculada para este número.</p>
+                        </div>
                     </div>
                 </div>
             </form>
