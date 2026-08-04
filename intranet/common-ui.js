@@ -2553,7 +2553,10 @@ function showAlert(message, title = "Aviso") {
     const alertMessage = document.getElementById('alertMessage');
     const closeAlertBtn = document.getElementById('closeAlertBtn');
 
-    if (!alertModal) return;
+    if (!alertModal || !alertTitle || !alertMessage || !closeAlertBtn) {
+        window.alert(message);
+        return;
+    }
 
     alertTitle.textContent = title;
     alertMessage.textContent = message;
@@ -2604,7 +2607,12 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
     const confirmActionBtn = document.getElementById('confirmActionBtn');
 
-    if (!confirmModal) return;
+    if (!confirmModal || !confirmTitle || !confirmMessage || !cancelConfirmBtn || !confirmActionBtn) {
+        if (window.confirm(message)) {
+            if (typeof onConfirm === 'function') onConfirm();
+        }
+        return;
+    }
 
     confirmTitle.textContent = title;
     confirmMessage.textContent = message;

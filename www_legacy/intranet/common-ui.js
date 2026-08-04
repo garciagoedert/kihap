@@ -1,4 +1,62 @@
-import { getAllUsers } from './auth.js';
+import { getAllUsers, getCurrentUser, ensureAdmin } from './auth.js';
+import { db, functions, auth } from './firebase-config.js';
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, getDocs, limit, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { showNotification as showChatMessageNotification } from './notification.js';
+import { notificationsManager } from './notifications-manager.js';
+
+// ============================================================
+// UNIDADES — Fonte central de verdade
+// ============================================================
+
+// Unidades default como fallback caso o Firestore falhe
+const UNITS_FALLBACK = [
+    { id: 'asa-sul',         name: 'Asa Sul' },
+    { id: 'centro',          name: 'Centro (Matriz)' },
+    { id: 'coqueiros',       name: 'Coqueiros' },
+    { id: 'dourados',        name: 'Dourados' },
+    { id: 'jardim-botanico', name: 'Jardim Botânico' },
+    { id: 'lago-sul',        name: 'Lago Sul' },
+    { id: 'noroeste',        name: 'Noroeste' },
+    { id: 'pontos-de-ensino',name: 'Pontos de Ensino' },
+    { id: 'santa-monica',    name: 'Santa Mônica' },
+    { id: 'sudoeste',        name: 'Sudoeste' },
+    { id: 'atadf',           name: 'ATADF' },
+];
+
+let _unidadesCache = null; // Cache em memória (válido por sessão)
+
+/**
+ * Retorna a lista de unidades ativas do Firestore.
+ * Faz cache em memória para evitar múltiplas chamadas por sessão.
+ * Em caso de falha, retorna o fallback hardcoded.
+ *
+ * @param {boolean} includeInactive - Se true, retorna também unidades inativas
+ * @returns {Promise<Array<{id: string, name: string, active: boolean}>>}
+ */
+async function getUnidades(includeInactive = false) {
+    if (!_unidadesCache) {
+        try {
+            const getUnitsCallable = httpsCallable(functions, 'getUnits');
+            const result = await getUnitsCallable();
+            _unidadesCache = result.data || UNITS_FALLBACK;
+        } catch (error) {
+            console.warn('[getUnidades] Erro ao buscar unidades do Firestore, usando fallback:', error);
+            _unidadesCache = UNITS_FALLBACK;
+        }
+    }
+    return includeInactive
+        ? _unidadesCache
+        : _unidadesCache.filter(u => u.active !== false);
+}
+
+
+/**
+ * Invalida o cache de unidades, forçando nova busca na próxima chamada.
+ */
+function invalidateUnidadesCache() {
+    _unidadesCache = null;
+}
 
 function setupUIListeners(handlers = {}) {
     const {
@@ -14,44 +72,48 @@ function setupUIListeners(handlers = {}) {
     } = handlers;
 
     // Sidebar toggle
-    const menuToggle = document.getElementById('menu-toggle');
-    if (menuToggle && !menuToggle.dataset.listenerAttached) {
-        menuToggle.dataset.listenerAttached = 'true';
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    
+    if (sidebar && !sidebar.dataset.listenerAttached) {
+        sidebar.dataset.listenerAttached = 'true';
 
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('main-content');
-        const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-        const backdrop = document.getElementById('sidebar-backdrop');
-
-        if (sidebar && mainContent && backdrop) {
-            const toggleSidebar = () => {
-                // Toggle apenas para mobile
-                if (window.innerWidth < 768) {
-                    const isHidden = sidebar.classList.contains('-translate-x-full');
-                    if (isHidden) {
-                        sidebar.classList.remove('-translate-x-full');
-                        sidebar.classList.add('translate-x-0');
-                        backdrop.classList.remove('hidden');
-                    } else {
-                        sidebar.classList.add('-translate-x-full');
-                        sidebar.classList.remove('translate-x-0');
-                        backdrop.classList.add('hidden');
-                    }
-                }
-            };
-            menuToggle.addEventListener('click', toggleSidebar);
-            if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
-            backdrop.addEventListener('click', toggleSidebar);
-
-            // Garante estado correto no resize
-            window.addEventListener('resize', () => {
-                if (window.innerWidth >= 768) {
+        const toggleSidebar = () => {
+            // Toggle apenas para mobile
+            if (window.innerWidth < 768) {
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
                     sidebar.classList.remove('-translate-x-full');
-                    sidebar.classList.add('md:translate-x-0');
-                    backdrop.classList.add('hidden');
+                    sidebar.classList.add('translate-x-0');
+                    if (backdrop) backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('translate-x-0');
+                    if (backdrop) backdrop.classList.add('hidden');
                 }
-            });
-        }
+            }
+        };
+
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+
+        if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+        if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
+        if (backdrop) backdrop.addEventListener('click', toggleSidebar);
+
+        // Garante estado correto no resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('md:translate-x-0');
+                if (backdrop) backdrop.classList.add('hidden');
+            } else {
+                // Ao voltar pro mobile, se não estiver visível (translate-x-0), garantir q tem translate-x-full
+                if (!sidebar.classList.contains('translate-x-0')) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            }
+        });
     }
 
     // Profile Menu toggle
@@ -105,7 +167,6 @@ function setupUIListeners(handlers = {}) {
     setupModalCloseListeners({ closeFormModal, closeImportModal, closeConfirmModal: handlers.closeConfirmModal });
 
     // Generic Submenu toggles (Event Delegation)
-    const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.dataset.delegatedListenerAttached) {
         sidebar.dataset.delegatedListenerAttached = 'true';
         sidebar.addEventListener('click', (event) => {
@@ -197,6 +258,10 @@ async function updateUserProfileUI() {
             const isAdmin = currentUser.isAdmin === true;
             localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
             
+            if (isAdmin) {
+                syncMilesPublicKey();
+            }
+            
             document.querySelectorAll('#profile-dropdown .admin-only').forEach(el => {
                 if (isAdmin) {
                     el.classList.remove('hidden');
@@ -207,6 +272,32 @@ async function updateUserProfileUI() {
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
+    }
+}
+
+async function syncMilesPublicKey() {
+    try {
+        const metaDocRef = doc(db, "config", "meta_ads");
+        const metaSnap = await getDoc(metaDocRef);
+        if (metaSnap.exists()) {
+            const geminiKey = metaSnap.data().geminiKey;
+            if (geminiKey) {
+                const publicDocRef = doc(db, "public_config", "miles");
+                const publicSnap = await getDoc(publicDocRef);
+                const currentPublic = publicSnap.exists() ? publicSnap.data().geminiKey : null;
+
+                if (currentPublic !== geminiKey) {
+                    console.log("[Miles Sync] Sincronizando chave do Gemini pública...");
+                    await setDoc(publicDocRef, {
+                        geminiKey: geminiKey,
+                        updatedAt: serverTimestamp()
+                    });
+                    console.log("[Miles Sync] Chave pública do Miles sincronizada com sucesso!");
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[Miles Sync] Erro na sincronização da chave pública:", e);
     }
 }
 
@@ -267,11 +358,6 @@ function setupModalCloseListeners(handlers = {}) {
     }
 }
 
-import { db } from './firebase-config.js';
-import { doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { showNotification as showChatMessageNotification } from './notification.js';
-import { getCurrentUser, ensureAdmin } from './auth.js';
-import { notificationsManager } from './notifications-manager.js';
 
 
 // Atualiza ou remove o indicador de notificação (ponto ou contador)
@@ -440,10 +526,13 @@ function shadeColor(color, percent) {
 async function loadComponents(pageSpecificSetup) {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    let currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    if (currentPage && !currentPage.endsWith('.html')) {
+        currentPage += '.html';
+    }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.0.6'; 
+    const CACHE_VERSION = '1.0.7'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -503,8 +592,8 @@ async function loadComponents(pageSpecificSetup) {
 
         // Inicia o carregamento dos componentes IMEDIATAMENTE do cache/network
         const componentsPromise = Promise.all([
-            loadComp('header', 'header.html', headerContainer),
-            loadComp('sidebar', 'sidebar.html', sidebarContainer)
+            loadComp('header', '/intranet/header.html', headerContainer),
+            loadComp('sidebar', '/intranet/sidebar.html', sidebarContainer)
         ]);
 
         // Aguarda os componentes serem injetados antes de prosseguir com ACL da sidebar
@@ -541,6 +630,7 @@ async function loadComponents(pageSpecificSetup) {
         const isInstructor = userData.isInstructor === true;
         const isColarinhoPreto = userData.isColarinhoPreto === true || userData.isBlackCollar === true || userData.colarinhoPreto === true;
         const isAdministrativo = userData.isAdministrativo === true;
+        const isSuporte = userData.isSuporte === true;
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {
@@ -563,12 +653,48 @@ async function loadComponents(pageSpecificSetup) {
 
         // Set active link in sidebar
         const sidebarLinks = sidebarContainer.querySelectorAll('nav a');
+        const pageMappings = {
+            'sales-history.html': 'store.html',
+            'course-editor.html': 'cursos.html',
+            'player.html': 'cursos.html',
+            'conteudo-editor.html': 'cursos.html',
+            'conteudo-viewer.html': 'cursos.html',
+            'projeto-editor.html': 'projetos.html',
+            'juridico-novademanda.html': 'juridico-trello.html',
+            'novademanda.html': 'juridico-trello.html',
+            'evolucao-detalhes.html': 'analysis.html'
+        };
+
+        let activePage = currentPage.split('?')[0];
+        if (pageMappings[activePage]) {
+            activePage = pageMappings[activePage];
+        }
+
         sidebarLinks.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop();
-            if (linkPage === currentPage) {
+            const rawLinkPage = link.getAttribute('href').split('/').pop();
+            const linkPage = rawLinkPage.split('?')[0];
+            
+            if (linkPage === activePage) {
                 link.classList.add('bg-primary');
                 link.classList.remove('bg-white', 'dark:bg-gray-700', 'hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-white', 'border-gray-200');
                 link.classList.add('text-black', 'border-transparent');
+
+                // Expand parent submenu if link is inside one
+                const parentSubmenu = link.closest('[id$="-submenu"]');
+                if (parentSubmenu) {
+                    parentSubmenu.classList.remove('hidden');
+                    const baseName = parentSubmenu.id.replace('-submenu', '');
+                    const toggleBtn = document.getElementById(`${baseName}-menu-btn`);
+                    if (toggleBtn) {
+                        const icon = toggleBtn.querySelector('i.fa-chevron-down');
+                        if (icon) {
+                            icon.classList.add('rotate-180');
+                        }
+                        // Highlight parent menu button when child is active
+                        toggleBtn.classList.add('bg-primary', 'text-black');
+                        toggleBtn.classList.remove('bg-transparent', 'hover:bg-gray-100', 'dark:hover:bg-gray-800/50', 'text-gray-700', 'dark:text-gray-300', 'hover:text-primary', 'dark:hover:text-white');
+                    }
+                }
 
                 if (linkPage === 'index.html') {
                     const prospectActions = document.getElementById('prospect-actions');
@@ -594,6 +720,11 @@ async function loadComponents(pageSpecificSetup) {
         const adminLink = document.getElementById('admin-link');
         if (isAdmin && adminLink) {
             adminLink.classList.remove('hidden');
+        }
+
+        const gestaoSuporteLink = document.getElementById('gestao-suporte-link');
+        if ((isAdmin || isSuporte) && gestaoSuporteLink) {
+            gestaoSuporteLink.classList.remove('hidden');
         }
 
 
@@ -697,6 +828,9 @@ async function loadComponents(pageSpecificSetup) {
         // Inicia o listener de notificações de chat
         listenForChatNotifications();
 
+        // Inicializa o chatbot global do Kobe
+        initGlobalKobeChatbot();
+
     } catch (error) {
         console.error('Error loading components:', error);
         headerContainer.innerHTML = '<p class="text-red-500 p-4">Error loading header.</p>';
@@ -704,13 +838,1725 @@ async function loadComponents(pageSpecificSetup) {
     }
 }
 
+const systemInstruction = `Você é o Kobe, o simpático, inteligente, ativo e prestativo assistente virtual oficial e mascote de toda a Intranet da Kihap, uma renomada escola de artes marciais.
+Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores e administradores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte, vendas, produtos e muito mais.
+
+IDENTIDADE IMPORTANTE:
+- Você é simplesmente o "Kobe".
+- Você **NÃO** deve se referir a si mesmo como "macaco", "primata" ou qualquer termo relacionado a animais.
+- Você **NÃO** é um mestre de artes marciais. Nunca use títulos como "mestre", "macaco-mestre" ou similares para se referir a você mesmo. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito, dedicação e graduação.
+
+DIRETRIZES DE COMUNICAÇÃO E TOM DE VOZ KIHAP:
+1. **Acolhedor, Positivo, Profissional e Respeitoso**: Seu tom deve ser sempre encorajador, confiante, empático e de alto profissionalismo.
+2. **Evite Palavras Negativas**: Evite ao máximo termos excessivamente negativos como "não", "infelizmente" e "nunca". Em vez disso, utilize construções de frases proativas, positivas e orientadas a soluções (ex: em vez de dizer "Eu não posso fazer isso", prefira "Consigo te ajudar com isso através de..."). Isso evita confronto e mantém a cultura de desenvolvimento positivo da escola.
+3. **Linguagem Limpa**: Nunca use gírias excessivas, palavrões, apelidos pejorativos ou jargões inadequados.
+4. **Valores da Kihap**: Em todas as suas interações, conselhos e respostas, reflita os valores essenciais da escola: **DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR**.
+5. **Foco no Relacionamento e Valor (Jeito Kihap de Vender)**: Quando questionado sobre vendas ou processos comerciais da escola, lembre-se de que "vender significa gerar valor através do relacionamento, da experiência e da transformação proporcionada pela Arte Marcial". Foque em comunicar benefícios, transformação e propósito, em vez de apenas focar em custos financeiros.
+6. **Linguagem Direta e Organizada**: Mantenha suas respostas diretas, organizadas (use negritos como **texto** para destacar caminhos e termos importantes) e evite textos excessivamente longos.
+
+Aqui estão algumas seções principais da intranet que você pode guiar os usuários a encontrar:
+- **Início/Painel**: Tela inicial com visão geral.
+- **Alunos**: Cadastro e acompanhamento de alunos (/intranet/alunos.html).
+- **Marketing**:
+  - **Prospecção**: Funil de vendas / CRM (/intranet/prospeccao.html).
+  - **Redes Sociais (Meta Ads)**: Dashboard de campanhas e métricas (/intranet/marketing-social.html).
+  - **Google Ads**: Métricas de Google Ads (/intranet/marketing-google.html).
+- **Administrativo**:
+  - **Projetos**: Gerenciador de tarefas e projetos (/intranet/projetos.html).
+  - **Processos**: Biblioteca de manuais e POPs (/intranet/processos.html).
+  - **Pedidos**: Pedidos de doboks, faixas, etc. (/intranet/pedidos.html).
+- **RH**: Setor de recursos humanos, recrutamento e seleção (/intranet/rh.html).
+- **Chat**: Comunicação interna em tempo real (/intranet/chat.html).
+- **Cursos / Tatame**: Treinamentos e aulas (/intranet/cursos.html).
+- **Feed**: Comunicados internos (/intranet/feed.html).
+
+Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem acesso a ferramentas integradas ao banco de dados:
+- Alunos: você pode pesquisar alunos (\`searchStudents\`) e ver a ficha completa de um aluno (\`getStudentProfile\`), incluindo informações financeiras do Mercado Pago, histórico de testes físicos, cursos liberados e emblemas conquistados.
+- Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
+- CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups (\`contactLog\`) e as observações.
+- Loja e Pedidos: você pode pesquisar produtos (\`searchStoreProducts\`) e ver seus detalhes de preço/estoque (\`getStoreProductDetails\`). Também pode pesquisar transações de venda (\`searchStoreSales\`) e ver detalhes de uma venda específica (\`getStoreSaleDetails\`), assim como pesquisar pedidos de faixas/doboks (\`searchStoreOrders\`) e ver detalhes de um pedido específico (\`getStoreOrderDetails\`).
+- **Planificadores de Aula**: você pode pesquisar planificadores/planos pedagógicos (\`searchLessonPlans\`) e ver o detalhamento completo de um plano (\`getLessonPlanDetails\`), incluindo objetivos, estrutura por blocos/semanas e os links diretos de vídeos do YouTube. Quando o usuário (instrutor ou professor) perguntar sobre o que ensinar na aula, estrutura de treinos, técnicas específicas, aquecimentos ou pedir vídeos demonstrativos, consulte o planificador e envie os detalhes junto com os links de vídeos do YouTube.
+
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, ou planificadores de aula.`;
+
+function initGlobalKobeChatbot() {
+    if (document.getElementById('aiChatToggle')) return; // Já injetado
+
+    // Injeta o CSS/HTML
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'global-kobe-chatbot';
+    chatContainer.innerHTML = `
+        <!-- Botão Flutuante do Chat IA -->
+        <button id="aiChatToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-tr from-[#6366F1] via-[#A855F7] to-[#EC4899] text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 shadow-purple-500/30 hover:shadow-purple-500/50 border border-white/10">
+            <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1.5C12 7.3 16.7 12 22.5 12C16.7 12 12 16.7 12 22.5C12 16.7 7.3 12 1.5 12C7.3 12 12 7.3 12 1.5Z"/>
+            </svg>
+        </button>
+
+        <!-- Janela do Chat IA -->
+        <div id="aiChatWindow" class="fixed bottom-24 right-6 w-96 h-[550px] z-50 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 rounded-t-3xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-white">
+                        <img src="/imgs/personagens/perfilpersonagens/avatar_03.png" alt="Kobe" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                            Kobe
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
+                        </h3>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Assistente IA da Intranet</p>
+                    </div>
+                </div>
+                <button id="closeChatBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Messages Body -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-sm text-gray-700 dark:text-gray-300">
+                <!-- Messages bubble -->
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="chatTypingIndicator" class="px-4 py-2 flex justify-start hidden">
+                <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none shadow-sm border border-gray-150 dark:border-gray-700/50 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <form id="chatForm" class="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-b-3xl">
+                <input type="text" id="chatInput" required placeholder="Faça uma pergunta ou peça ajuda..." autocomplete="off"
+                    class="flex-grow px-4 py-2.5 text-sm bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-white">
+                <button type="submit" id="sendChatBtn" class="w-10 h-10 bg-gradient-to-tr from-[#6366F1] to-[#A855F7] hover:from-[#4F46E5] hover:to-[#9333EA] text-white rounded-2xl flex items-center justify-center shadow-md transition-all active:scale-95 disabled:opacity-50">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(chatContainer);
+
+    setupKobeChatbotLogic();
+}
+
+const kobeTools = [{
+    functionDeclarations: [
+        {
+            name: "getProspectsSummary",
+            description: "Retorna o total de prospects cadastrados na base de dados da Kihap e as quantidades em cada status/fase do funil.",
+            parameters: {
+                type: "OBJECT",
+                properties: {}
+            }
+        },
+        {
+            name: "searchProspects",
+            description: "Busca leads/prospects cadastrados no CRM do funil de marketing/vendas por termo parcial (responsável, empresa, e-mail, telefone, setor).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome do responsável, empresa, e-mail, telefone, setor)."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getProspectDetails",
+            description: "Retorna todos os dados detalhados de um lead/prospect específico por ID, incluindo o histórico completo de contatos (contactLog) e observações.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    prospectId: {
+                        type: "STRING",
+                        description: "O ID do documento do prospect."
+                    }
+                },
+                required: ["prospectId"]
+            }
+        },
+        {
+            name: "searchStudents",
+            description: "Busca estudantes/alunos cadastrados no sistema por nome, e-mail ou ID. Retorna uma lista resumida.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome, e-mail ou ID parcial) para encontrar os alunos."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStudentProfile",
+            description: "Retorna o perfil detalhado de um aluno específico pelo seu ID (idMember), incluindo dados cadastrais, histórico de testes físicos, cursos permitidos, emblemas e informações financeiras do Mercado Pago.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    studentId: {
+                        type: "INTEGER",
+                        description: "O ID numérico do aluno (idMember) para obter os detalhes."
+                    },
+                    unitId: {
+                        type: "STRING",
+                        description: "O ID da unidade do aluno (ex: 'centro', 'coqueiros', etc.). Opcional."
+                    }
+                },
+                required: ["studentId"]
+            }
+        },
+        {
+            name: "getTasksSummary",
+            description: "Retorna o resumo de planos e tarefas cadastrados na base de dados da intranet.",
+            parameters: {
+                type: "OBJECT",
+                properties: {}
+            }
+        },
+        {
+            name: "getDepartmentDemands",
+            description: "Busca as demandas/tarefas em aberto do Trello da intranet, opcionalmente filtrando por setor/departamento (como 'rh', 'financeiro', 'comercial', 'juridico', etc.).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    department: {
+                        type: "STRING",
+                        description: "Nome do setor/departamento para filtrar as demandas (opcional)."
+                    }
+                }
+            }
+        },
+        {
+            name: "searchDemands",
+            description: "Busca demandas (tarefas do painel/Trello da intranet) por palavra-chave no título ou descrição.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar demandas no título ou descrição."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getDemandDetails",
+            description: "Busca os detalhes completos de uma demanda específica por seu ID do documento, incluindo o histórico completo de comentários e notas internas.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    demandId: {
+                        type: "STRING",
+                        description: "O ID do documento da demanda."
+                    }
+                },
+                required: ["demandId"]
+            }
+        },
+        {
+            name: "searchStoreProducts",
+            description: "Busca produtos cadastrados no catálogo da loja por termo parcial (nome, categoria ou descrição).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar produtos no catálogo (ex: 'dobok', 'camiseta')."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreProductDetails",
+            description: "Retorna os detalhes completos de um produto específico da loja pelo seu ID.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    productId: {
+                        type: "STRING",
+                        description: "O ID do documento do produto."
+                    }
+                },
+                required: ["productId"]
+            }
+        },
+        {
+            name: "searchStoreSales",
+            description: "Busca no log de transações/vendas realizadas na loja por termo parcial (nome do comprador, e-mail, CPF, unidade ou nome do produto).",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome, e-mail, CPF, unidade ou produto)."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreSaleDetails",
+            description: "Retorna o detalhamento completo de uma transação/venda específica pelo ID da venda, incluindo dados do pagador, itens e status do pedido.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    saleId: {
+                        type: "STRING",
+                        description: "O ID do documento da venda/inscrição."
+                    }
+                },
+                required: ["saleId"]
+            }
+        },
+        {
+            name: "searchStoreOrders",
+            description: "Busca pedidos de uniformes e graduações (faixas coloridas, faixas pretas e doboks) nas coleções correspondentes por aluno, unidade ou status.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca (nome do aluno, unidade ou status do pedido como 'Pendente', 'Entregue')."
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "getStoreOrderDetails",
+            description: "Retorna a ficha detalhada de um pedido específico por ID e tipo do pedido.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    orderId: {
+                        type: "STRING",
+                        description: "O ID do documento do pedido."
+                    },
+                    orderType: {
+                        type: "STRING",
+                        description: "O tipo do pedido: 'faixa' (para faixas coloridas), 'faixapreta' (para faixas pretas) ou 'dobok' (para doboks).",
+                        enum: ["faixa", "faixapreta", "dobok"]
+                    }
+                },
+                required: ["orderId", "orderType"]
+            }
+        },
+        {
+            name: "createSupportTicket",
+            description: "Cria um ticket de suporte na intranet quando o usuário relata um problema, dúvida, ou solicita ajuda técnica.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    title: {
+                        type: "STRING",
+                        description: "Resumo curto do problema ou solicitação."
+                    },
+                    description: {
+                        type: "STRING",
+                        description: "Descrição detalhada do problema."
+                    },
+                    priority: {
+                        type: "STRING",
+                        description: "Prioridade do ticket: 'Baixa', 'Média', 'Alta', ou 'Urgente'."
+                    }
+                },
+                required: ["title", "description", "priority"]
+            }
+        },
+        {
+            name: "searchLessonPlans",
+            description: "Busca nos planificadores de aula da Kihap por palavra-chave (ex: 'Defesas', 'Chute semicircular', 'Littles', 'Kids', 'Aquecimento', 'Tipo A') ou por categoria/programa.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    query: {
+                        type: "STRING",
+                        description: "Termo de busca para encontrar planos de aula (título, técnica, aquecimento ou conteúdo)."
+                    },
+                    category: {
+                        type: "STRING",
+                        description: "Categoria/Tipo do plano (opcional: 'A', 'B' ou 'C')."
+                    }
+                }
+            }
+        },
+        {
+            name: "getLessonPlanDetails",
+            description: "Retorna o detalhamento completo de um planificador de aula por ID ou por busca de título, contendo todos os blocos pedagógicos, semanas, instruções e os links de vídeos do YouTube.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    planId: {
+                        type: "STRING",
+                        description: "O ID do documento do plano de aula (opcional se fornecer query)."
+                    },
+                    query: {
+                        type: "STRING",
+                        description: "Título ou termo de busca do plano para localizar os detalhes quando o ID não for conhecido."
+                    }
+                }
+            }
+        }
+    ]
+}];
+
+async function getProspectsSummary() {
+    try {
+        const prospectsRef = collection(db, 'prospects');
+        const q = query(prospectsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const count = snapshot.size;
+        
+        const stats = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const phase = data.phase || data.status || 'Não Definido';
+            stats[phase] = (stats[phase] || 0) + 1;
+        });
+
+        return {
+            total: count,
+            fases: stats,
+            message: `Temos um total de ${count} prospects cadastrados na base (amostra de 150).`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar resumo de prospects:", e);
+        return { error: e.message };
+    }
+}
+
+async function createSupportTicket(args) {
+    const { title, description, priority } = args;
+    if (!title || !description || !priority) return { error: "Parâmetros incompletos." };
+    try {
+        const user = auth.currentUser;
+        if (!user) return { error: "Usuário não autenticado." };
+        
+        let solicitanteNome = user.displayName || user.email;
+        try {
+            const localUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (localUser && localUser.name) solicitanteNome = localUser.name;
+        } catch(e) {}
+
+        // Get or create Suporte department
+        const deptsRef = collection(db, 'trello_departments');
+        const qDepts = query(deptsRef, where('name', '==', 'Suporte'));
+        const snap = await getDocs(qDepts);
+        let deptId = null;
+        if (!snap.empty) {
+            deptId = snap.docs[0].id;
+        } else {
+            const newDeptRef = await addDoc(deptsRef, {
+                name: 'Suporte',
+                color: '#06b6d4',
+                columns: [
+                    { id: 'todo', title: 'Novos / Pendentes', color: 'gray' },
+                    { id: 'doing', title: 'Em Análise', color: 'blue' },
+                    { id: 'done', title: 'Resolvidos', color: 'green' }
+                ]
+            });
+            deptId = newDeptRef.id;
+        }
+
+        const docRef = await addDoc(collection(db, 'trello_demands'), {
+            titulo: `[${priority}] ${title}`,
+            demanda: `${description}\n\n**Solicitado via Kobe (IA) por:** ${solicitanteNome} (${user.email})\n**Prioridade:** ${priority}`,
+            nome: solicitanteNome,
+            unidade: 'N/A',
+            departamentoId: deptId,
+            status: 'todo',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            priority: priority,
+            tags: ['Suporte', 'Kobe IA'],
+            solicitanteEmail: user.email,
+            solicitanteUid: user.uid
+        });
+
+        return { success: true, message: "Ticket criado com sucesso no departamento de Suporte.", ticketId: docRef.id };
+    } catch (e) {
+        console.error("Erro ao criar ticket de suporte via Kobe:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchProspects(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const prospectsRef = collection(db, 'prospects');
+        const lowerQuery = searchQuery.trim().toLowerCase();
+        const cleanQuery = searchQuery.replace(/\D/g, '');
+        
+        const queryPromises = [];
+        
+        // 1. Busca por CPF exato ou formatado
+        if (cleanQuery.length === 11 || cleanQuery.length === 14) {
+            queryPromises.push(getDocs(query(prospectsRef, where('cpf', '==', cleanQuery))));
+            if (cleanQuery.length === 11) {
+                const formattedCpf = `${cleanQuery.slice(0,3)}.${cleanQuery.slice(3,6)}.${cleanQuery.slice(6,9)}-${cleanQuery.slice(9)}`;
+                queryPromises.push(getDocs(query(prospectsRef, where('cpf', '==', formattedCpf))));
+            }
+        }
+        
+        // 2. Busca por e-mail exato
+        if (lowerQuery.includes('@')) {
+            queryPromises.push(getDocs(query(prospectsRef, where('email', '==', searchQuery.trim()))));
+            queryPromises.push(getDocs(query(prospectsRef, where('email', '==', lowerQuery))));
+        }
+        
+        // 3. Busca geral com limite maior (ex: 1000)
+        queryPromises.push(getDocs(query(prospectsRef, limit(1000))));
+        
+        const snapshots = await Promise.all(queryPromises);
+        const resultsMap = new Map();
+        
+        snapshots.forEach(snapshot => {
+            snapshot.forEach(doc => {
+                resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+        });
+        
+        const results = [];
+        resultsMap.forEach((data, id) => {
+            const company = (data.empresa || '').toLowerCase();
+            const resp = (data.responsavel || '').toLowerCase();
+            const email = (data.email || '').toLowerCase();
+            const phone = (data.telefone || '').toLowerCase();
+            const sector = (data.setor || '').toLowerCase();
+            const cpf = (data.cpf || '').toLowerCase();
+            
+            const cleanCpfInDb = cpf.replace(/\D/g, '');
+            const cleanPhoneInDb = phone.replace(/\D/g, '');
+            
+            const matchesCompany = company.includes(lowerQuery);
+            const matchesResp = resp.includes(lowerQuery);
+            const matchesEmail = email.includes(lowerQuery);
+            const matchesSector = sector.includes(lowerQuery);
+            const matchesCpf = cpf.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanCpfInDb.includes(cleanQuery));
+            const matchesPhone = phone.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanPhoneInDb.includes(cleanQuery));
+            
+            if (matchesCompany || matchesResp || matchesEmail || matchesSector || matchesCpf || matchesPhone) {
+                results.push({
+                    id: id,
+                    empresa: data.empresa || 'Sem Empresa',
+                    responsavel: data.responsavel || 'Sem Responsável',
+                    email: data.email || '',
+                    telefone: data.telefone || '',
+                    fase: data.phase || data.status || 'Contato Inicial',
+                    prioridade: data.prioridade || 'Média'
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca concluída. Encontramos ${results.length} prospects.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar prospects:", e);
+        return { error: e.message };
+    }
+}
+
+async function getProspectDetails(args) {
+    const { prospectId } = args;
+    if (!prospectId) return { error: "prospectId não fornecido." };
+    try {
+        const docRef = doc(db, 'prospects', prospectId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Prospect com ID ${prospectId} não encontrado.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const logs = (data.contactLog || []).map(log => ({
+            author: log.author || 'Usuário',
+            description: log.description || '',
+            timestamp: log.timestamp || ''
+        }));
+        
+        return {
+            id: docSnap.id,
+            empresa: data.empresa || 'Sem Empresa',
+            responsavel: data.responsavel || 'Sem Responsável',
+            setor: data.setor || '',
+            telefone: data.telefone || '',
+            email: data.email || '',
+            prioridade: data.prioridade || 'Média',
+            ticketEstimado: data.ticketEstimado || '',
+            origemLead: data.origemLead || '',
+            cpf: data.cpf || '',
+            cnpj: data.cnpj || '',
+            endereco: data.endereco || '',
+            redesSociais: data.redesSociais || '',
+            siteAtual: data.siteAtual || '',
+            observacoes: data.observacoes || '',
+            contactLog: logs,
+            fase: data.phase || data.status || 'Contato Inicial'
+        };
+    } catch (e) {
+        console.error("Erro ao buscar detalhes do prospect:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStudents(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
+        const result = await listAlunosLocais({ unitId: 'all' });
+        const students = result.data || [];
+        
+        const lowerQuery = searchQuery.toLowerCase();
+        let matchedStudents = students.filter(s => {
+            const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
+            const idStr = String(s.idMember || '');
+            return fullName.includes(lowerQuery) || idStr.includes(lowerQuery);
+        });
+
+        const results = matchedStudents.slice(0, 15).map(s => ({
+            idMember: s.idMember,
+            name: `${s.firstName || ''} ${s.lastName || ''}`,
+            email: s.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || 'Sem e-mail',
+            phone: s.contacts?.find(c => c.contactType === 'Telefone' || c.idContactType === 1)?.description || 'Sem telefone',
+            branchName: s.branchName || 'Centro',
+            belt: s.belt || 'N/A',
+            tuitionStatus: s.tuitionStatus || 'N/A'
+        }));
+
+        return {
+            query: searchQuery,
+            results: results,
+            countFound: matchedStudents.length,
+            message: `Busca finalizada. Encontramos ${matchedStudents.length} correspondentes.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar alunos:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStudentProfile(args) {
+    const { studentId, unitId } = args;
+    if (!studentId) return { error: "studentId não fornecido." };
+    
+    try {
+        const idNum = parseInt(studentId, 10);
+        const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
+        const listResult = await listAlunosLocais({ unitId: 'all' });
+        const students = listResult.data || [];
+        const student = students.find(s => s.idMember === idNum);
+        
+        if (!student) {
+            return { error: `Aluno com ID ${studentId} não encontrado.` };
+        }
+
+        const resolvedUnitId = unitId || student.unitId || 'all';
+
+        let userDoc = null;
+        try {
+            const usersRef = collection(db, "users");
+            const uQuery = query(usersRef, where("evoMemberId", "==", idNum));
+            const uSnap = await getDocs(uQuery);
+            if (!uSnap.empty) {
+                const docData = uSnap.docs[0].data();
+                userDoc = {
+                    id: uSnap.docs[0].id,
+                    isAdmin: docData.isAdmin || false,
+                    isInstructor: docData.isInstructor || false,
+                    isColarinhoPreto: docData.isColarinhoPreto || docData.isBlackCollar || docData.colarinhoPreto || false,
+                    isSuporte: docData.isSuporte || false,
+                    earnedBadges: docData.earnedBadges || [],
+                    accessibleContent: docData.accessibleContent || []
+                };
+            }
+        } catch (err) {
+            console.warn("Erro ao buscar usuário no Firestore:", err);
+        }
+
+        let physicalTests = [];
+        try {
+            const testsRef = collection(db, "physicalTests");
+            const tQuery = query(testsRef, where("evoMemberId", "==", idNum), orderBy("date", "desc"));
+            const tSnap = await getDocs(tQuery);
+            tSnap.forEach(d => {
+                const data = d.data();
+                physicalTests.push({
+                    date: data.date?.toDate?.()?.toLocaleDateString('pt-BR') || data.date || '',
+                    score: data.score
+                });
+            });
+        } catch (err) {
+            console.warn("Erro ao buscar testes físicos:", err);
+        }
+
+        let financeInfo = null;
+        try {
+            const getStudentFinancialHub = httpsCallable(functions, 'getStudentFinancialHub');
+            const finResult = await getStudentFinancialHub({
+                idMember: idNum,
+                unitId: resolvedUnitId
+            });
+            financeInfo = finResult.data || {};
+        } catch (err) {
+            console.warn("Erro ao buscar hub financeiro:", err);
+        }
+
+        return {
+            student: {
+                idMember: student.idMember,
+                name: `${student.firstName || ''} ${student.lastName || ''}`,
+                email: student.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || student.email || '',
+                phone: student.phone || student.contacts?.find(c => c.contactType === 'Telefone' || c.idContactType === 1)?.description || '',
+                cpf: student.cpf || student.document || '',
+                birthDate: student.birthDate || '',
+                registerDate: student.registerDate || '',
+                address: student.address || '',
+                responsible: student.responsible || '',
+                origin: student.origin || '',
+                branchName: student.branchName || '',
+                rankType: student.rankType || '',
+                belt: student.belt || '',
+                membershipStatus: student.membershipStatus || student.tuitionStatus || 'N/A'
+            },
+            userDoc,
+            physicalTests,
+            financialHub: financeInfo ? {
+                tuitionStatus: financeInfo.tuitionStatus || 'N/A',
+                registeredAt: financeInfo.registeredAt || '',
+                mpDetails: financeInfo.mpDetails ? {
+                    reason: financeInfo.mpDetails.reason || '',
+                    status: financeInfo.mpDetails.status || '',
+                    next_payment_date: financeInfo.mpDetails.next_payment_date || '',
+                    charged_quantity: financeInfo.mpDetails.summarized?.charged_quantity || 0
+                } : null
+            } : null
+        };
+    } catch (e) {
+        console.error("Erro ao montar perfil do estudante:", e);
+        return { error: e.message };
+    }
+}
+
+async function getTasksSummary() {
+    try {
+        const plansRef = collection(db, 'plans');
+        const snapshot = await getDocs(plansRef);
+        const count = snapshot.size;
+        const stats = {};
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const status = data.status || 'Pendente';
+            stats[status] = (stats[status] || 0) + 1;
+        });
+
+        return {
+            totalPlans: count,
+            statusDistribution: stats,
+            message: `Encontramos ${count} planos cadastrados na base.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar resumo de planos/tarefas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getDepartmentDemands(args) {
+    const { department } = args;
+    try {
+        const demandsRef = collection(db, 'trello_demands');
+        const q = query(demandsRef, limit(100));
+        const snapshot = await getDocs(q);
+        const results = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const dept = (data.department || data.setor || '').toLowerCase();
+            if (!department || dept.includes(department.toLowerCase())) {
+                results.push({
+                    title: data.title || data.titulo || 'Sem Título',
+                    status: data.status || 'Pendente',
+                    department: data.department || data.setor || 'Geral',
+                    description: data.description || data.descricao || ''
+                });
+            }
+        });
+
+        return {
+            departmentRequested: department || 'Todos',
+            totalDemands: results.length,
+            demands: results.slice(0, 10),
+            message: `Busca por demandas finalizada. ${results.length} encontradas.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar demandas:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchDemands(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const demandsRef = collection(db, 'trello_demands');
+        const q = query(demandsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const title = (data.title || data.titulo || '').toLowerCase();
+            const desc = (data.description || data.demanda || '').toLowerCase();
+            const dept = (data.department || data.setor || '').toLowerCase();
+            
+            if (title.includes(lowerQuery) || desc.includes(lowerQuery) || dept.includes(lowerQuery)) {
+                results.push({
+                    id: doc.id,
+                    title: data.title || data.titulo || 'Sem Título',
+                    status: data.status || 'Pendente',
+                    priority: data.priority || 'Média',
+                    department: data.department || data.setor || 'Geral',
+                    nomeSolicitante: data.nome || 'Sem Nome'
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca finalizada. Encontramos ${results.length} demandas.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar demandas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getDemandDetails(args) {
+    const { demandId } = args;
+    if (!demandId) return { error: "demandId não fornecido." };
+    try {
+        const docRef = doc(db, 'trello_demands', demandId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Demanda com ID ${demandId} não encontrada.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const commentsCol = collection(db, `trello_demands/${demandId}/comments`);
+        const cSnap = await getDocs(query(commentsCol, orderBy('createdAt', 'asc')));
+        const comments = [];
+        cSnap.forEach(d => {
+            const c = d.data();
+            comments.push({
+                author: c.authorName || 'Usuário',
+                text: c.text || '',
+                createdAt: c.createdAt?.toDate?.()?.toLocaleString('pt-BR') || c.createdAt || ''
+            });
+        });
+        
+        return {
+            id: docSnap.id,
+            title: data.title || data.titulo || 'Sem Título',
+            description: data.description || data.demanda || '',
+            status: data.status || 'Pendente',
+            priority: data.priority || 'Média',
+            department: data.department || data.setor || 'Geral',
+            createdBy: data.nome || 'Sem Nome',
+            email: data.email || '',
+            unidade: data.unidade || '',
+            createdAt: data.createdAt?.toDate?.()?.toLocaleString('pt-BR') || data.createdAt || '',
+            dataMaxima: data.dataMaxima || '',
+            links: data.linkRefs || [],
+            comments: comments
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes da demanda:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStoreProducts(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const productsRef = collection(db, 'products');
+        const q = query(productsRef, limit(150));
+        const snapshot = await getDocs(q);
+        const results = [];
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const name = (data.name || '').toLowerCase();
+            const cat = (data.category || '').toLowerCase();
+            const desc = (data.description || '').toLowerCase();
+            
+            if (name.includes(lowerQuery) || cat.includes(lowerQuery) || desc.includes(lowerQuery)) {
+                results.push({
+                    id: doc.id,
+                    name: data.name || 'Sem Nome',
+                    category: data.category || 'Geral',
+                    price: data.price ? data.price / 100 : 0,
+                    visible: data.visible !== false,
+                    available: data.available !== false,
+                    stockQuantity: data.stockQuantity || 0
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca no catálogo concluída. ${results.length} produtos correspondentes encontrados.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar produtos da loja:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreProductDetails(args) {
+    const { productId } = args;
+    if (!productId) return { error: "productId não fornecido." };
+    try {
+        const docRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Produto com ID ${productId} não encontrado.` };
+        }
+        
+        const data = docSnap.data();
+        
+        return {
+            id: docSnap.id,
+            name: data.name || '',
+            category: data.category || 'Geral',
+            description: data.description || '',
+            imageUrl: data.imageUrl || null,
+            priceType: data.priceType || 'fixed',
+            price: data.price ? data.price / 100 : 0,
+            priceVariants: (data.priceVariants || []).map(v => ({ name: v.name, price: v.price / 100 })),
+            lotes: (data.lotes || []).map(l => ({ name: l.name, price: l.price / 100, startDate: l.startDate || '' })),
+            kitItems: data.kitItems || [],
+            visible: data.visible !== false,
+            available: data.available !== false,
+            controlStock: data.controlStock || false,
+            stockQuantity: data.stockQuantity || 0,
+            sizeStock: data.sizeStock || {},
+            isSubscription: data.isSubscription || false,
+            isEvent: data.isEvent || false,
+            eventAddress: data.eventAddress || '',
+            eventConfig: data.eventConfig || null,
+            addons: (data.addons || []).map(a => ({ name: a.name, price: a.price / 100 }))
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes do produto:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStoreSales(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca de vendas." };
+    try {
+        const salesRef = collection(db, 'inscricoesFaixaPreta');
+        const lowerQuery = searchQuery.trim().toLowerCase();
+        const cleanQuery = searchQuery.replace(/\D/g, '');
+        
+        const queryPromises = [];
+        
+        // 1. Busca por CPF exato ou formatado
+        if (cleanQuery.length === 11 || cleanQuery.length === 14) {
+            queryPromises.push(getDocs(query(salesRef, where('userCpf', '==', cleanQuery))));
+            if (cleanQuery.length === 11) {
+                const formattedCpf = `${cleanQuery.slice(0,3)}.${cleanQuery.slice(3,6)}.${cleanQuery.slice(6,9)}-${cleanQuery.slice(9)}`;
+                queryPromises.push(getDocs(query(salesRef, where('userCpf', '==', formattedCpf))));
+            }
+        }
+        
+        // 2. Busca por e-mail exato
+        if (lowerQuery.includes('@')) {
+            queryPromises.push(getDocs(query(salesRef, where('userEmail', '==', searchQuery.trim()))));
+            queryPromises.push(getDocs(query(salesRef, where('userEmail', '==', lowerQuery))));
+        }
+        
+        // 3. Busca geral ordenada pelas últimas 1000 vendas (evita retornar lixo ou omitir registros novos)
+        queryPromises.push(getDocs(query(salesRef, orderBy('created', 'desc'), limit(1000))));
+        
+        const snapshots = await Promise.all(queryPromises);
+        const resultsMap = new Map();
+        
+        snapshots.forEach(snapshot => {
+            snapshot.forEach(doc => {
+                resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+        });
+        
+        const results = [];
+        resultsMap.forEach((data, id) => {
+            const clientName = (data.userName || '').toLowerCase();
+            const payerName = (data.payerName || '').toLowerCase();
+            const email = (data.userEmail || '').toLowerCase();
+            const phone = (data.userPhone || '').toLowerCase();
+            const cpf = (data.userCpf || '').toLowerCase();
+            const prodName = (data.productName || '').toLowerCase();
+            const unit = (data.userUnit || '').toLowerCase();
+            
+            const cleanCpfInDb = cpf.replace(/\D/g, '');
+            const cleanPhoneInDb = phone.replace(/\D/g, '');
+            
+            const matchesName = clientName.includes(lowerQuery) || payerName.includes(lowerQuery);
+            const matchesEmail = email.includes(lowerQuery);
+            const matchesProd = prodName.includes(lowerQuery);
+            const matchesUnit = unit.includes(lowerQuery);
+            const matchesCpf = cpf.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanCpfInDb.includes(cleanQuery));
+            const matchesPhone = phone.includes(lowerQuery) || (cleanQuery.length >= 4 && cleanPhoneInDb.includes(cleanQuery));
+            
+            if (matchesName || matchesEmail || matchesProd || matchesUnit || matchesCpf || matchesPhone) {
+                results.push({
+                    id: id,
+                    userName: data.userName || 'N/A',
+                    userEmail: data.userEmail || '',
+                    productName: data.productName || '',
+                    amountTotal: data.amountTotal ? data.amountTotal / 100 : 0,
+                    paymentStatus: data.paymentStatus || 'pending',
+                    fulfillmentStatus: data.fulfillmentStatus || 'pending',
+                    created: data.created?.toDate?.()?.toLocaleString('pt-BR') || data.created || '',
+                    saleType: data.saleType || 'online'
+                });
+            }
+        });
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 15),
+            countFound: results.length,
+            message: `Busca de vendas concluída. Encontramos ${results.length} transações.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar transações de vendas:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreSaleDetails(args) {
+    const { saleId } = args;
+    if (!saleId) return { error: "saleId não fornecido." };
+    try {
+        const docRef = doc(db, 'inscricoesFaixaPreta', saleId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Venda com ID ${saleId} não encontrada.` };
+        }
+        
+        const data = docSnap.data();
+        
+        const logsRef = collection(db, 'inscricoesFaixaPreta', saleId, 'emailLogs');
+        const logsSnap = await getDocs(query(logsRef, limit(50)));
+        const emailLogs = [];
+        logsSnap.forEach(d => {
+            const log = d.data();
+            emailLogs.push({
+                type: log.type || '',
+                sentAt: log.sentAt?.toDate?.()?.toLocaleString('pt-BR') || log.sentAt || '',
+                status: log.status || 'success'
+            });
+        });
+        
+        return {
+            id: docSnap.id,
+            saleType: data.saleType || 'online',
+            userName: data.userName || '',
+            payerName: data.payerName || '',
+            userEmail: data.userEmail || '',
+            userPhone: data.userPhone || '',
+            userCpf: data.userCpf || '',
+            userUnit: data.userUnit || '',
+            productName: data.productName || '',
+            amountTotal: data.amountTotal ? data.amountTotal / 100 : 0,
+            paymentStatus: data.paymentStatus || 'pending',
+            fulfillmentStatus: data.fulfillmentStatus || 'pending',
+            created: data.created?.toDate?.()?.toLocaleString('pt-BR') || data.created || '',
+            details: data.details || '',
+            paymentDetails: data.paymentDetails || {},
+            items: data.items || [],
+            recommendedItems: data.recommendedItems || [],
+            emailLogs: emailLogs
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes da venda:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchStoreOrders(args) {
+    const { query: searchQuery } = args;
+    if (!searchQuery) return { error: "Query não fornecida para busca." };
+    try {
+        const lowerQuery = searchQuery.toLowerCase();
+        const results = [];
+        
+        // 1. pedidosFaixas
+        try {
+            const snap = await getDocs(collection(db, "pedidosFaixas"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const sol = (data.solicitante?.nome || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                const itemsSummary = (data.itens || []).map(i => `${i.quantidade}x ${i.faixa}`).join(', ').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || sol.includes(lowerQuery) || status.includes(lowerQuery) || itemsSummary.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'faixa',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: 'Diversos (Coloridas)',
+                        itensResumo: (data.itens || []).map(i => `${i.quantidade}x ${i.faixa} (${i.tamanho})`).join(', '),
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosFaixas:", err);
+        }
+        
+        // 2. pedidosFaixasPretas
+        try {
+            const snap = await getDocs(collection(db, "pedidosFaixasPretas"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const aluno = (data.aluno || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                const faixa = (data.faixa || '').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || aluno.includes(lowerQuery) || status.includes(lowerQuery) || faixa.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'faixapreta',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: data.aluno || '',
+                        itensResumo: `${data.faixa || 'Faixa Preta'} (${data.tamanho || ''})`,
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosFaixasPretas:", err);
+        }
+        
+        // 3. pedidosDoboks
+        try {
+            const snap = await getDocs(collection(db, "pedidosDoboks"));
+            snap.forEach(d => {
+                const data = d.data();
+                const unit = (data.unidade || '').toLowerCase();
+                const aluno = (data.aluno || '').toLowerCase();
+                const status = (data.status || '').toLowerCase();
+                
+                if (unit.includes(lowerQuery) || aluno.includes(lowerQuery) || status.includes(lowerQuery)) {
+                    results.push({
+                        id: d.id,
+                        orderType: 'dobok',
+                        unidade: data.unidade || '',
+                        solicitante: data.solicitante?.nome || '',
+                        aluno: data.aluno || '',
+                        itensResumo: `Dobok ${data.isFaixaPreta ? 'Faixa Preta' : 'Comum'} (Tam: ${data.tamanho || ''}, Colarinho: ${data.colarinho || ''})`,
+                        status: data.status || 'Pendente',
+                        data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || ''
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Erro ao ler pedidosDoboks:", err);
+        }
+        
+        return {
+            query: searchQuery,
+            results: results.slice(0, 20),
+            countFound: results.length,
+            message: `Busca finalizada. Encontramos ${results.length} pedidos correspondentes.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar pedidos:", e);
+        return { error: e.message };
+    }
+}
+
+async function getStoreOrderDetails(args) {
+    const { orderId, orderType } = args;
+    if (!orderId || !orderType) return { error: "orderId e orderType são obrigatórios." };
+    
+    try {
+        let collectionName = '';
+        if (orderType === 'faixa') collectionName = 'pedidosFaixas';
+        else if (orderType === 'faixapreta') collectionName = 'pedidosFaixasPretas';
+        else if (orderType === 'dobok') collectionName = 'pedidosDoboks';
+        else return { error: `Tipo de pedido inválido: ${orderType}` };
+        
+        const docRef = doc(db, collectionName, orderId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+            return { error: `Pedido com ID ${orderId} não encontrado na coleção ${collectionName}.` };
+        }
+        
+        const data = docSnap.data();
+        
+        return {
+            id: docSnap.id,
+            orderType: orderType,
+            unidade: data.unidade || '',
+            status: data.status || 'Pendente',
+            justificativa: data.justificativa || null,
+            data: data.data?.toDate?.()?.toLocaleString('pt-BR') || data.data || '',
+            solicitante: data.solicitante || null,
+            lastUpdatedBy: data.lastUpdatedBy || null,
+            lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toLocaleString('pt-BR') || data.lastUpdatedAt || '',
+            itens: data.itens || null,
+            aluno: data.aluno || null,
+            faixa: data.faixa || null,
+            tamanho: data.tamanho || null,
+            colarinho: data.colarinho || null,
+            isFaixaPreta: data.isFaixaPreta || null
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes do pedido:", e);
+        return { error: e.message };
+    }
+}
+
+async function searchLessonPlans(args) {
+    const { query: searchQuery, category } = args;
+    try {
+        const plansRef = collection(db, 'plans');
+        const snapshot = await getDocs(plansRef);
+        const results = [];
+        const lowerQuery = (searchQuery || '').toLowerCase();
+        const upperCategory = (category || '').toUpperCase();
+
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const title = (data.title || '').toLowerCase();
+            const planCat = (data.category || 'A').toUpperCase();
+            const author = (data.authorName || '').toLowerCase();
+            let contentText = (data.content || '').toLowerCase();
+
+            if (data.blocks && Array.isArray(data.blocks)) {
+                data.blocks.forEach(b => {
+                    contentText += ' ' + (b.title || '').toLowerCase();
+                    if (b.content) contentText += ' ' + b.content.toLowerCase();
+                    if (b.contents) {
+                        contentText += ' ' + (b.contents.w1 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w2 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w3 || '').toLowerCase();
+                        contentText += ' ' + (b.contents.w4 || '').toLowerCase();
+                    }
+                });
+            }
+
+            const categoryMatch = !upperCategory || planCat === upperCategory;
+            const queryMatch = !lowerQuery || title.includes(lowerQuery) || contentText.includes(lowerQuery) || author.includes(lowerQuery);
+
+            if (categoryMatch && queryMatch) {
+                const videoCount = (data.media || []).filter(m => m.type === 'youtube' || (m.url && (m.url.includes('youtube') || m.url.includes('youtu.be')))).length;
+                results.push({
+                    id: docSnap.id,
+                    title: data.title || 'Sem Título',
+                    category: data.category || 'A',
+                    layout: data.layout || 'simple',
+                    authorName: data.authorName || 'Desconhecido',
+                    videoCount,
+                    hasVideos: videoCount > 0,
+                    summarySnippet: contentText.substring(0, 150) + '...'
+                });
+            }
+        });
+
+        return {
+            query: searchQuery || '',
+            category: category || '',
+            results: results.slice(0, 10),
+            countFound: results.length,
+            message: `Busca nos planificadores concluída. ${results.length} planos encontrados.`
+        };
+    } catch (e) {
+        console.error("Erro ao buscar planificadores:", e);
+        return { error: e.message };
+    }
+}
+
+async function getLessonPlanDetails(args) {
+    const { planId, query: searchQuery } = args;
+    try {
+        let docSnap;
+        if (planId) {
+            docSnap = await getDoc(doc(db, 'plans', planId));
+        } else if (searchQuery) {
+            const plansRef = collection(db, 'plans');
+            const snapshot = await getDocs(plansRef);
+            const lower = searchQuery.toLowerCase();
+            snapshot.forEach(d => {
+                if (!docSnap && (d.data().title || '').toLowerCase().includes(lower)) {
+                    docSnap = d;
+                }
+            });
+        }
+
+        if (!docSnap || !docSnap.exists()) {
+            return { error: `Planificador de aula não encontrado.` };
+        }
+
+        const data = docSnap.data();
+        const mediaVideos = (data.media || [])
+            .map(m => {
+                let url = m.url || '';
+                if (m.type === 'youtube' && m.videoId && !url) {
+                    url = `https://www.youtube.com/watch?v=${m.videoId}`;
+                }
+                return {
+                    name: m.name || 'Vídeo demonstrativo',
+                    type: m.type || 'youtube',
+                    url: url,
+                    videoId: m.videoId || null
+                };
+            });
+
+        let blocksFormatted = [];
+        if (data.blocks && Array.isArray(data.blocks)) {
+            blocksFormatted = data.blocks.map(b => {
+                if (data.layout === 'grid') {
+                    return {
+                        title: b.title || '',
+                        style: b.style || 'normal',
+                        unified: b.unified || false,
+                        semanas: b.contents || {}
+                    };
+                } else {
+                    return {
+                        title: b.title || '',
+                        content: b.content || ''
+                    };
+                }
+            });
+        }
+
+        return {
+            id: docSnap.id,
+            title: data.title || '',
+            category: data.category || 'A',
+            layout: data.layout || 'simple',
+            authorName: data.authorName || 'Desconhecido',
+            weeks: data.weeks || [],
+            blocks: blocksFormatted,
+            contentHtmlOrText: data.content || null,
+            mediaVideos: mediaVideos,
+            videoLinksForUser: mediaVideos.map(v => `${v.name}: ${v.url}`).join('\n'),
+            message: `Planificador '${data.title}' obtido com sucesso.`
+        };
+    } catch (e) {
+        console.error("Erro ao obter detalhes do planificador:", e);
+        return { error: e.message };
+    }
+}
+
+async function callGemini(history, systemInstruction, apiKey) {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: history,
+            systemInstruction: {
+                parts: [{ text: systemInstruction }]
+            },
+            tools: kobeTools
+        })
+    });
+    
+    const json = await response.json();
+    if (json.error) throw new Error(json.error.message);
+    return json;
+}
+
+function setupKobeChatbotLogic() {
+    const aiChatToggle = document.getElementById('aiChatToggle');
+    const aiChatWindow = document.getElementById('aiChatWindow');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatTypingIndicator = document.getElementById('chatTypingIndicator');
+
+    let chatHistory = [];
+    try {
+        const savedHistory = sessionStorage.getItem('kobe_chat_history');
+        if (savedHistory) {
+            chatHistory = JSON.parse(savedHistory);
+        }
+    } catch (e) {
+        console.error("Erro ao carregar histórico do Kobe:", e);
+    }
+
+    function saveHistory() {
+        try {
+            sessionStorage.setItem('kobe_chat_history', JSON.stringify(chatHistory));
+        } catch (e) {
+            console.error("Erro ao salvar histórico do Kobe:", e);
+        }
+    }
+
+    function formatMessageText(text) {
+        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        formatted = formatted.replace(/\n/g, '<br>');
+        return formatted;
+    }
+
+    function appendMessage(role, text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+
+        const innerDiv = document.createElement('div');
+        if (role === 'user') {
+            innerDiv.className = 'bg-primary text-black font-semibold px-4 py-2.5 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm';
+        } else {
+            innerDiv.className = 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2.5 rounded-2xl rounded-tl-none max-w-[85%] border border-gray-200 dark:border-gray-700/50 shadow-sm';
+        }
+
+        innerDiv.innerHTML = formatMessageText(text);
+        messageDiv.appendChild(innerDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function renderHistory() {
+        chatMessages.innerHTML = '';
+        chatHistory.forEach(msg => {
+            const text = msg.parts?.[0]?.text;
+            if (text && !text.includes('systemInstruction') && !text.includes('Faça uma análise inicial') && !text.includes('Analise o desempenho recente') && !text.includes('Boas-vindas à página')) {
+                appendMessage(msg.role, text);
+            }
+        });
+    }
+
+    async function loadGeminiKey() {
+        try {
+            const local = localStorage.getItem('meta_ads_config');
+            if (local) {
+                const parsed = JSON.parse(local);
+                if (parsed.geminiKey) return parsed.geminiKey;
+            }
+            const docRef = doc(db, "config", "meta_ads");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return docSnap.data().geminiKey;
+            }
+        } catch (e) {
+            console.warn("Erro ao carregar chave do Gemini:", e);
+        }
+        return null;
+    }
+
+    function getMetaAdsMetricsFromDOM() {
+        const spend = document.getElementById('totalSpend')?.textContent || 'R$ 0,00';
+        const cpr = document.getElementById('avgCpr')?.textContent || 'R$ 0,00';
+        const clicks = document.getElementById('totalClicks')?.textContent || '0';
+        const msgs = document.getElementById('totalMsgs')?.textContent || '0';
+        const likes = document.getElementById('totalLikes')?.textContent || '0';
+
+        const campaigns = [];
+        const rows = document.querySelectorAll('#campaignsTableBody tr');
+        rows.forEach((row, idx) => {
+            if (idx < 3) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 9) {
+                    const name = cells[1]?.textContent || '';
+                    const msgsVal = cells[2]?.textContent || '0';
+                    const clicksVal = cells[3]?.textContent || '0';
+                    const spendVal = cells[8]?.textContent || 'R$ 0,00';
+                    campaigns.push(`${name} (Gasto: ${spendVal}, Conversas: ${msgsVal}, Cliques: ${clicksVal})`);
+                }
+            }
+        });
+
+        return { spend, cpr, clicks, msgs, likes, campaigns };
+    }
+
+    async function triggerWelcomeMessage() {
+        chatTypingIndicator.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const isMetaAdsPage = window.location.pathname.includes('marketing-social.html');
+        let prompt = '';
+
+        const currentUserStr = localStorage.getItem('currentUser');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : {};
+        const userName = currentUser.name || currentUser.displayName || '';
+
+        if (isMetaAdsPage) {
+            const metrics = getMetaAdsMetricsFromDOM();
+            prompt = `
+Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial da Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma calorosa e pessoal pelo nome. Como o usuário está na página de Redes Sociais (Meta Ads), dê as boas-vindas e comente brevemente sobre os dados atuais do dashboard:
+- Investimento Total: ${metrics.spend}
+- Custo por Resultado: ${metrics.cpr}
+- Cliques: ${metrics.clicks}
+- Mensagens Iniciadas: ${metrics.msgs}
+- Novos Seguidores (Ads): ${metrics.likes}
+- Top Campanhas: ${JSON.stringify(metrics.campaigns)}
+
+Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
+
+Por favor, faça uma saudação muito amigável como Kobe e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
+`;
+        } else {
+            const pageTitle = document.title || 'Intranet Kihap';
+            prompt = `
+Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial de toda a Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma muito calorosa e pessoal pelo nome (ex: "Olá, Mr. Garcia!" ou "Que energia boa ver você por aqui, Mr. Garcia!"). Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos ou qualquer suporte. Mantenha a saudação curta, amigável e direta.
+
+Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
+`;
+        }
+
+        try {
+            const apiKey = await loadGeminiKey();
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não encontrada. Configure-a no painel do Meta Ads.");
+            }
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemInstruction }]
+                    }
+                })
+            });
+
+            const json = await response.json();
+            if (json.error) throw new Error(json.error.message);
+
+            const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Olá! Como posso te ajudar hoje?";
+
+            chatHistory.push({
+                role: 'user',
+                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : `Boas-vindas à página ${document.title || 'Intranet'}` }]
+            });
+            chatHistory.push({
+                role: 'model',
+                parts: [{ text: aiText }]
+            });
+            saveHistory();
+
+            appendMessage('model', aiText);
+
+        } catch (e) {
+            console.error("Erro na saudação inicial do Kobe:", e);
+            appendMessage('model', `<span class="text-red-500 font-medium">Erro ao carregar saudação do Kobe: ${e.message}</span><br><br>Certifique-se de configurar uma chave válida do Gemini nas configurações da página de Meta Ads.`);
+        } finally {
+            chatTypingIndicator.classList.add('hidden');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    aiChatToggle?.addEventListener('click', () => {
+        const isHidden = aiChatWindow.classList.contains('hidden');
+        if (isHidden) {
+            aiChatWindow.classList.remove('hidden');
+            setTimeout(() => {
+                aiChatWindow.classList.remove('scale-95', 'opacity-0');
+                aiChatWindow.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            if (chatHistory.length === 0) {
+                triggerWelcomeMessage();
+            } else {
+                renderHistory();
+            }
+        } else {
+            aiChatWindow.classList.remove('scale-100', 'opacity-100');
+            aiChatWindow.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                aiChatWindow.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    closeChatBtn?.addEventListener('click', () => {
+        aiChatWindow.classList.remove('scale-100', 'opacity-100');
+        aiChatWindow.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            aiChatWindow.classList.add('hidden');
+        }, 300);
+    });
+
+    chatForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        chatInput.value = '';
+        appendMessage('user', text);
+
+        chatHistory.push({
+            role: 'user',
+            parts: [{ text: text }]
+        });
+        saveHistory();
+
+        chatTypingIndicator.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            const apiKey = await loadGeminiKey();
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não configurada.");
+            }
+
+            let responseJson = await callGemini(chatHistory, systemInstruction, apiKey);
+            
+            let loops = 0;
+            const maxLoops = 5;
+            
+            while (loops < maxLoops) {
+                const candidate = responseJson.candidates?.[0];
+                const parts = candidate?.content?.parts || [];
+                const functionCalls = parts.filter(p => p.functionCall);
+                
+                if (functionCalls.length === 0) {
+                    const aiText = parts[0]?.text || "Desculpe, não consegui obter uma resposta.";
+                    chatHistory.push({
+                        role: 'model',
+                        parts: [{ text: aiText }]
+                    });
+                    saveHistory();
+                    appendMessage('model', aiText);
+                    break;
+                }
+                
+                chatHistory.push({
+                    role: 'model',
+                    parts: parts
+                });
+                saveHistory();
+                
+                const responseParts = [];
+                for (const call of functionCalls) {
+                    const funcName = call.functionCall.name;
+                    const args = call.functionCall.args || {};
+                    
+                    let result = {};
+                    if (funcName === "getProspectsSummary") {
+                        result = await getProspectsSummary();
+                    } else if (funcName === "searchProspects") {
+                        result = await searchProspects(args);
+                    } else if (funcName === "getProspectDetails") {
+                        result = await getProspectDetails(args);
+                    } else if (funcName === "searchStudents") {
+                        result = await searchStudents(args);
+                    } else if (funcName === "getStudentProfile") {
+                        result = await getStudentProfile(args);
+                    } else if (funcName === "getTasksSummary") {
+                        result = await getTasksSummary();
+                    } else if (funcName === "getDepartmentDemands") {
+                        result = await getDepartmentDemands(args);
+                    } else if (funcName === "searchDemands") {
+                        result = await searchDemands(args);
+                    } else if (funcName === "getDemandDetails") {
+                        result = await getDemandDetails(args);
+                    } else if (funcName === "searchStoreProducts") {
+                        result = await searchStoreProducts(args);
+                    } else if (funcName === "getStoreProductDetails") {
+                        result = await getStoreProductDetails(args);
+                    } else if (funcName === "searchStoreSales") {
+                        result = await searchStoreSales(args);
+                    } else if (funcName === "getStoreSaleDetails") {
+                        result = await getStoreSaleDetails(args);
+                    } else if (funcName === "searchStoreOrders") {
+                        result = await searchStoreOrders(args);
+                    } else if (funcName === "getStoreOrderDetails") {
+                        result = await getStoreOrderDetails(args);
+                    } else if (funcName === "createSupportTicket") {
+                        result = await createSupportTicket(args);
+                    } else if (funcName === "searchLessonPlans") {
+                        result = await searchLessonPlans(args);
+                    } else if (funcName === "getLessonPlanDetails") {
+                        result = await getLessonPlanDetails(args);
+                    } else {
+                        result = { error: "Função desconhecida." };
+                    }
+                    
+                    responseParts.push({
+                        functionResponse: {
+                            name: funcName,
+                            response: result
+                        }
+                    });
+                }
+                
+                chatHistory.push({
+                    role: 'user',
+                    parts: responseParts
+                });
+                saveHistory();
+                
+                responseJson = await callGemini(chatHistory, systemInstruction, apiKey);
+                loops++;
+            }
+            
+            if (loops >= maxLoops) {
+                appendMessage('model', "Erro: Limite de chamadas de ferramentas excedido.");
+            }
+
+        } catch (e) {
+            console.error("Erro ao enviar mensagem para a IA:", e);
+            appendMessage('model', `<span class="text-red-500 font-medium">Erro na comunicação com a IA: ${e.message}</span>`);
+            chatHistory.pop();
+            saveHistory();
+        } finally {
+            chatTypingIndicator.classList.add('hidden');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+}
+
+
 function showAlert(message, title = "Aviso") {
     const alertModal = document.getElementById('alertModal');
     const alertTitle = document.getElementById('alertTitle');
     const alertMessage = document.getElementById('alertMessage');
     const closeAlertBtn = document.getElementById('closeAlertBtn');
 
-    if (!alertModal) return;
+    if (!alertModal || !alertTitle || !alertMessage || !closeAlertBtn) {
+        window.alert(message);
+        return;
+    }
 
     alertTitle.textContent = title;
     alertMessage.textContent = message;
@@ -761,7 +2607,12 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
     const confirmActionBtn = document.getElementById('confirmActionBtn');
 
-    if (!confirmModal) return;
+    if (!confirmModal || !confirmTitle || !confirmMessage || !cancelConfirmBtn || !confirmActionBtn) {
+        if (window.confirm(message)) {
+            if (typeof onConfirm === 'function') onConfirm();
+        }
+        return;
+    }
 
     confirmTitle.textContent = title;
     confirmMessage.textContent = message;
@@ -781,4 +2632,4 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     };
 }
 
-export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal };
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache };

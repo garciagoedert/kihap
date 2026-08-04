@@ -225,6 +225,7 @@ async function deleteArticle(articleId) {
     showConfirm("Tem certeza de que deseja excluir este conteúdo? Esta ação não pode ser desfeita.", async () => {
         try {
             await deleteDoc(doc(db, 'tatame_conteudos', articleId));
+            sessionStorage.removeItem('selectedTatameArticleId');
             showAlert("Conteúdo excluído com sucesso!");
             window.location.href = 'tatame.html';
         } catch (error) {
