@@ -534,11 +534,59 @@ function createPlanCard(id, plan) {
     let layoutLabel = plan.layout === 'grid' ? 'Grade Semanal' : (plan.layout === 'simple' ? 'Lista Blocos' : 'Legado');
     let layoutBadgeClass = plan.layout === 'grid' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : 'bg-gray-500/10 text-gray-650 dark:text-gray-400 border border-gray-200 dark:border-gray-800';
 
-    // Pre-formatting content snippet
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = plan.content || '';
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
-    const snippet = textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
+    // Clean snippet preview formatting for cards
+    let snippetLines = [];
+
+    if (Array.isArray(plan.blocks) && plan.blocks.length > 0) {
+        plan.blocks.forEach(b => {
+            const title = (b.title || '').trim();
+            const content = (b.content || '').trim();
+            if (title && content) {
+                snippetLines.push(`${title}: ${content}`);
+            } else if (title) {
+                snippetLines.push(title);
+            } else if (content) {
+                snippetLines.push(content);
+            }
+        });
+    } else if (Array.isArray(plan.weeks) && plan.weeks.length > 0) {
+        plan.weeks.forEach(w => {
+            const rowTitle = (w.title || '').trim();
+            const cellTexts = w.contents ? Object.values(w.contents).map(c => (c || '').trim()).filter(Boolean).join(' - ') : '';
+            if (rowTitle && cellTexts) {
+                snippetLines.push(`${rowTitle}: ${cellTexts}`);
+            } else if (rowTitle) {
+                snippetLines.push(rowTitle);
+            } else if (cellTexts) {
+                snippetLines.push(cellTexts);
+            }
+        });
+    }
+
+    if (snippetLines.length === 0 && plan.content) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = (plan.content || '')
+            .replace(/<\/(div|p|h[1-6]|li|tr|br)>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n');
+        const rawText = tempDiv.textContent || tempDiv.innerText || '';
+        snippetLines = rawText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean);
+    }
+
+    let snippetHtml = '';
+    if (snippetLines.length > 0) {
+        const displayLines = snippetLines.slice(0, 3);
+        snippetHtml = displayLines.map(line => {
+            return `<div class="text-[11px] text-gray-600 dark:text-gray-300 line-clamp-1 leading-relaxed flex items-start gap-1.5"><span class="text-amber-500 font-bold shrink-0">•</span><span class="truncate">${line}</span></div>`;
+        }).join('');
+        if (snippetLines.length > 3) {
+            snippetHtml += `<div class="text-[10px] text-gray-400 font-semibold italic pt-1">+ mais ${snippetLines.length - 3} tópico(s)</div>`;
+        }
+    } else {
+        snippetHtml = `<div class="text-xs text-gray-400 italic">Sem conteúdo detalhado registrado.</div>`;
+    }
 
     const dateCreated = plan.createdAt ? new Date(plan.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
 
@@ -550,14 +598,16 @@ function createPlanCard(id, plan) {
             </div>
             ${plan.media && plan.media.length > 0 ? '<i class="fas fa-paperclip text-gray-400 text-xs mt-1" title="Possui anexos"></i>' : ''}
         </div>
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate mb-2 mt-1" title="${plan.title}">${plan.title}</h3>
-        <div class="text-[10px] text-gray-500 dark:text-gray-400 mb-3 border-b border-gray-100 dark:border-gray-850 pb-2">
-            ${plan.authorName || 'Professor'} • ${dateCreated}
+        <h3 class="text-base font-extrabold text-gray-900 dark:text-white truncate mb-1 mt-1" title="${plan.title}">${plan.title}</h3>
+        <div class="text-[10px] text-gray-400 mb-3 border-b border-gray-100 dark:border-gray-800 pb-2 flex items-center justify-between">
+            <span>${plan.authorName || 'Professor'} • ${dateCreated}</span>
         </div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs whitespace-pre-wrap flex-grow mb-4 overflow-hidden h-16 leading-relaxed">${snippet}</p>
+        <div class="flex-grow space-y-1 mb-4 overflow-hidden min-h-[4.5rem]">
+            ${snippetHtml}
+        </div>
         
-        <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-100 dark:border-gray-850 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span class="text-[10px] text-gray-400 font-semibold flex items-center gap-1">Clique para visualizar <i class="fas fa-arrow-right"></i></span>
+        <div class="flex justify-end space-x-2 mt-auto pt-2 border-t border-gray-100 dark:border-gray-800/80 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span class="text-[10px] text-gray-400 font-semibold flex items-center gap-1">Clique para visualizar <i class="fas fa-arrow-right text-[9px]"></i></span>
         </div>
     `;
 
