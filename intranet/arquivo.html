@@ -174,23 +174,13 @@
                             <i class="fas fa-id-card text-yellow-500 text-sm"></i>
                             Informações Principais
                         </h3>
+                        <input type="hidden" id="editClientEmpresa">
+                        <input type="hidden" id="editClientSetor">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="form-group">
-                                <label for="editClientEmpresa" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Empresa / Lead *</label>
-                                <input type="text" id="editClientEmpresa"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
-                                    required>
-                            </div>
                             <div class="form-group">
                                 <label for="editResponsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do Responsável</label>
                                 <input type="text" id="editResponsavel"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
-                            </div>
-                            <div class="form-group">
-                                <label for="editClientSetor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Setor *</label>
-                                <input type="text" id="editClientSetor" placeholder="Ex: Imobiliário"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
-                                    required>
                             </div>
                             <div class="form-group">
                                 <label for="editClientPrioridade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Prioridade *</label>
@@ -224,6 +214,7 @@
                             <i class="fas fa-share-alt text-yellow-500 text-sm"></i>
                             Canais de Contato & Redes
                         </h3>
+                        <input type="hidden" id="editClientSiteAtual">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-group flex flex-col justify-between">
                                 <div>
@@ -249,14 +240,9 @@
                                         class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                                 </div>
                             </div>
-                            <div>
+                            <div class="form-group">
                                 <label for="editClientCnpj" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">CNPJ</label>
                                 <input type="text" id="editClientCnpj" placeholder="00.000.000/0000-00"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
-                            </div>
-                            <div>
-                                <label for="editClientSiteAtual" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Site Atual</label>
-                                <input type="text" id="editClientSiteAtual" placeholder="empresa.com.br"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
                             <div class="form-group md:col-span-2">
