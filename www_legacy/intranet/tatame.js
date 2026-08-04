@@ -160,16 +160,78 @@ function initializeEditor() {
 
     if (articleId) {
         loadArticleForEditing(articleId);
-        document.getElementById('editor-title').textContent = 'Editar Conteúdo';
-        deleteButton.classList.remove('hidden');
-        deleteButton.addEventListener('click', () => deleteArticle(articleId));
+        const editorTitle = document.getElementById('editor-title');
+        if (editorTitle) editorTitle.textContent = 'Editar Conteúdo';
+        if (deleteButton) {
+            deleteButton.classList.remove('hidden');
+            deleteButton.addEventListener('click', () => deleteArticle(articleId));
+        }
     }
 
-    document.getElementById('saveArticle').addEventListener('click', () => saveArticle(articleId));
-    document.getElementById('attachFile').addEventListener('click', () => document.getElementById('fileInput').click());
-    document.getElementById('fileInput').addEventListener('change', uploadAttachment);
-    document.getElementById('heroImageInput').addEventListener('change', handleHeroImageSelect);
-    document.getElementById('removeHeroImage').addEventListener('click', removeHeroImage);
+    const saveBtn = document.getElementById('saveArticle');
+    if (saveBtn) saveBtn.addEventListener('click', () => saveArticle(articleId));
+
+    const attachBtn = document.getElementById('attachFile');
+    if (attachBtn) attachBtn.addEventListener('click', () => document.getElementById('fileInput')?.click());
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.addEventListener('change', uploadAttachment);
+
+    const heroInput = document.getElementById('heroImageInput');
+    if (heroInput) heroInput.addEventListener('change', handleHeroImageSelect);
+
+    const removeHeroBtn = document.getElementById('removeHeroImage');
+    if (removeHeroBtn) removeHeroBtn.addEventListener('click', removeHeroImage);
+}
+
+async function loadArticleForEditing(articleId) {
+    try {
+        const docRef = doc(db, 'tatame_conteudos', articleId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const titleInput = document.getElementById('articleTitle');
+            if (titleInput) titleInput.value = data.title || '';
+            
+            if (data.content && quill) {
+                quill.setContents(data.content);
+            }
+            const youtubeInput = document.getElementById('youtubeUrl');
+            if (youtubeInput && data.youtubeUrl) {
+                youtubeInput.value = data.youtubeUrl;
+            }
+
+            if (data.heroImageUrl) {
+                const preview = document.getElementById('heroImagePreview');
+                const icon = document.getElementById('heroImageIcon');
+                const removeBtn = document.getElementById('removeHeroImage');
+                if (preview && icon && removeBtn) {
+                    preview.src = data.heroImageUrl;
+                    preview.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                    removeBtn.classList.remove('hidden');
+                }
+            }
+        } else {
+            console.error("Nenhum conteúdo encontrado com este ID!");
+            showAlert("Conteúdo não encontrado.");
+        }
+    } catch (error) {
+        console.error("Erro ao carregar conteúdo para edição: ", error);
+    }
+}
+
+async function deleteArticle(articleId) {
+    showConfirm("Tem certeza de que deseja excluir este conteúdo? Esta ação não pode ser desfeita.", async () => {
+        try {
+            await deleteDoc(doc(db, 'tatame_conteudos', articleId));
+            showAlert("Conteúdo excluído com sucesso!");
+            window.location.href = 'tatame.html';
+        } catch (error) {
+            console.error("Erro ao excluir conteúdo: ", error);
+            showAlert("Ocorreu um erro ao excluir o conteúdo.");
+        }
+    });
 }
 
 function createArticleCard(doc) {
