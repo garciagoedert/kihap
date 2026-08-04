@@ -24,6 +24,9 @@ export function initViewerPage() {
     const urlParams = new URLSearchParams(window.location.search);
     let articleId = urlParams.get('id');
     if (!articleId) {
+        articleId = sessionStorage.getItem('selectedTatameArticleId');
+    }
+    if (!articleId) {
         const hash = window.location.hash.replace('#', '');
         if (hash) articleId = hash;
     }
@@ -82,6 +85,7 @@ async function loadArticleForViewing(articleId) {
             }
             if (editButton) {
                 editButton.href = `conteudo-editor.html?id=${articleId}`;
+                editButton.onclick = () => sessionStorage.setItem('selectedTatameArticleId', articleId);
                 editButton.classList.remove('hidden');
             }
 
@@ -133,48 +137,39 @@ async function loadArticleForViewing(articleId) {
     }
 }
 
-async function saveArticle(articleId) {
-    const title = document.getElementById('articleTitle').value.trim();
-    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
-    const content = quill.getContents();
-    const user = auth.currentUser;
+function initializeEditor() {
+    quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
 
-    if (!title || content.ops.every(op => !op.insert.trim())) {
-        showAlert("Por favor, preencha o título e o conteúdo.");
-        return;
+    const urlParams = new URLSearchParams(window.location.search);
+    let articleId = urlParams.get('id');
+    if (!articleId) {
+        articleId = sessionStorage.getItem('selectedTatameArticleId');
+    }
+    const deleteButton = document.getElementById('deleteArticle');
+
+    if (articleId) {
+        loadArticleForEditing(articleId);
+        document.getElementById('editor-title').textContent = 'Editar Conteúdo';
+        deleteButton.classList.remove('hidden');
+        deleteButton.addEventListener('click', () => deleteArticle(articleId));
     }
 
-    // Converte o objeto Delta do Quill para um objeto JSON simples
-    const contentAsObject = JSON.parse(JSON.stringify(content));
-
-    try {
-        let heroImageUrl = document.getElementById('heroImagePreview').src;
-        if (heroImageFile) {
-            heroImageUrl = await uploadHeroImage(heroImageFile);
-        }
-
-        const articleData = {
-            title: title,
-            content: contentAsObject,
-            youtubeUrl: youtubeUrl,
-            updatedAt: serverTimestamp(),
-            author: user.displayName || user.email,
-            heroImageUrl: (heroImageUrl && heroImageUrl.startsWith('http') && !heroImageUrl.endsWith('#')) ? heroImageUrl : ''
-        };
-
-        if (articleId) {
-            await updateDoc(doc(db, 'tatame_conteudos', articleId), articleData);
-            showAlert("Conteúdo atualizado com sucesso!");
-        } else {
-            articleData.createdAt = serverTimestamp();
-            await addDoc(collection(db, 'tatame_conteudos'), articleData);
-            showAlert("Conteúdo salvo com sucesso!");
-        }
-        window.location.href = 'tatame.html';
-    } catch (error) {
-        console.error("Erro ao salvar conteúdo: ", error);
-        showAlert("Ocorreu um erro ao salvar o conteúdo.");
-    }
+    document.getElementById('saveArticle').addEventListener('click', () => saveArticle(articleId));
+    document.getElementById('attachFile').addEventListener('click', () => document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', uploadAttachment);
+    document.getElementById('heroImageInput').addEventListener('change', handleHeroImageSelect);
+    document.getElementById('removeHeroImage').addEventListener('click', removeHeroImage);
 }
 
 function createArticleCard(doc) {
@@ -195,7 +190,13 @@ function createArticleCard(doc) {
     const dateCreated = article.createdAt && article.createdAt.toDate ? article.createdAt.toDate().toLocaleDateString('pt-BR') : '';
 
     const card = document.createElement('div');
-    card.className = 'bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-150 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col justify-between relative';
+    card.className = 'bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-150 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col justify-between relative cursor-pointer';
+    
+    card.addEventListener('click', (e) => {
+        sessionStorage.setItem('selectedTatameArticleId', doc.id);
+        window.location.href = `conteudo-viewer.html?id=${doc.id}`;
+    });
+
     card.innerHTML = `
         <div>
             <div class="flex items-center justify-between mb-3">
@@ -213,7 +214,7 @@ function createArticleCard(doc) {
                 <span class="truncate">Por ${article.author || 'Equipe KIHAP'}</span>
                 ${dateCreated ? `<span>${dateCreated}</span>` : ''}
             </div>
-            <a href="conteudo-viewer.html?id=${doc.id}" class="w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-800/60 hover:bg-amber-500 text-gray-700 dark:text-gray-200 hover:text-black font-extrabold text-xs rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 group-hover:bg-amber-500 group-hover:text-black group-hover:border-amber-500">
+            <a href="conteudo-viewer.html?id=${doc.id}" onclick="sessionStorage.setItem('selectedTatameArticleId', '${doc.id}')" class="w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-800/60 hover:bg-amber-500 text-gray-700 dark:text-gray-200 hover:text-black font-extrabold text-xs rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 group-hover:bg-amber-500 group-hover:text-black group-hover:border-amber-500">
                 <span>Visualizar</span> <i class="fas fa-arrow-right text-[10px]"></i>
             </a>
         </div>
