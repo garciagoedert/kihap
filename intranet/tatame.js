@@ -22,93 +22,51 @@ export function initEditorPage() {
 // Função para inicializar a página de visualização de Conteúdos
 export function initViewerPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const articleId = urlParams.get('id');
+    let articleId = urlParams.get('id');
+    if (!articleId) {
+        const hash = window.location.hash.replace('#', '');
+        if (hash) articleId = hash;
+    }
     if (articleId) {
         loadArticleForViewing(articleId);
     } else {
-        document.getElementById('article-title').innerText = "Conteúdo não encontrado";
+        showNotFoundState();
     }
 }
 
-function initializeEditor() {
-    quill = new Quill('#editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['link', 'image'],
-                ['clean']
-            ]
-        }
-    });
+function showNotFoundState() {
+    const titleEl = document.getElementById('article-title');
+    const contentEl = document.getElementById('article-content');
+    const editButton = document.getElementById('edit-button');
+    const metaEl = document.getElementById('article-meta');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const articleId = urlParams.get('id');
-    const deleteButton = document.getElementById('deleteArticle');
-
-    if (articleId) {
-        loadArticleForEditing(articleId);
-        document.getElementById('editor-title').textContent = 'Editar Conteúdo';
-        deleteButton.classList.remove('hidden');
-        deleteButton.addEventListener('click', () => deleteArticle(articleId));
+    if (titleEl) {
+        titleEl.innerText = "Conteúdo não encontrado";
+        titleEl.className = "text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white";
     }
-
-    document.getElementById('saveArticle').addEventListener('click', () => saveArticle(articleId));
-    document.getElementById('attachFile').addEventListener('click', () => document.getElementById('fileInput').click());
-    document.getElementById('fileInput').addEventListener('change', uploadAttachment);
-    document.getElementById('heroImageInput').addEventListener('change', handleHeroImageSelect);
-    document.getElementById('removeHeroImage').addEventListener('click', removeHeroImage);
-}
-
-async function loadArticleForEditing(articleId) {
-    try {
-        const docRef = doc(db, 'tatame_conteudos', articleId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('articleTitle').value = data.title;
-            quill.setContents(data.content);
-            if (data.youtubeUrl) {
-                document.getElementById('youtubeUrl').value = data.youtubeUrl;
-            }
-
-            if (data.heroImageUrl) {
-                const preview = document.getElementById('heroImagePreview');
-                const icon = document.getElementById('heroImageIcon');
-                const removeBtn = document.getElementById('removeHeroImage');
-                preview.src = data.heroImageUrl;
-                preview.classList.remove('hidden');
-                icon.classList.add('hidden');
-                removeBtn.classList.remove('hidden');
-            }
-        } else {
-            console.error("Nenhum conteúdo encontrado com este ID!");
-            showAlert("Conteúdo não encontrado.");
-        }
-    } catch (error) {
-        console.error("Erro ao carregar conteúdo para edição: ", error);
+    if (metaEl) metaEl.innerText = "";
+    if (editButton) editButton.classList.add('hidden');
+    if (contentEl) {
+        contentEl.innerHTML = `
+            <div class="text-center py-12 px-4">
+                <i class="fas fa-exclamation-circle text-4xl text-amber-500 mb-4 opacity-80"></i>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">Nenhum conteúdo selecionado</h3>
+                <p class="text-xs sm:text-sm text-gray-400 max-w-md mx-auto mb-6">
+                    O conteúdo que você tentou acessar não foi encontrado ou o link é inválido.
+                </p>
+                <a href="tatame.html" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-dark text-black font-extrabold text-xs shadow-md transition-all">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Tatame
+                </a>
+            </div>
+        `;
     }
-}
-
-async function deleteArticle(articleId) {
-    showConfirm("Tem certeza de que deseja excluir este conteúdo? Esta ação não pode ser desfeita.", async () => {
-        try {
-            await deleteDoc(doc(db, 'tatame_conteudos', articleId));
-            showAlert("Conteúdo excluído com sucesso!");
-            window.location.href = 'tatame.html';
-        } catch (error) {
-            console.error("Erro ao excluir conteúdo: ", error);
-            showAlert("Ocorreu um erro ao excluir o conteúdo.");
-        }
-    });
 }
 
 async function loadArticleForViewing(articleId) {
     const titleEl = document.getElementById('article-title');
     const contentEl = document.getElementById('article-content');
     const editButton = document.getElementById('edit-button');
+    const metaEl = document.getElementById('article-meta');
     const heroContainer = document.getElementById('hero-container');
     const heroImage = document.getElementById('hero-image');
     const videoContainer = document.getElementById('video-container');
@@ -118,8 +76,19 @@ async function loadArticleForViewing(articleId) {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            titleEl.innerText = data.title;
-            editButton.href = `conteudo-editor.html?id=${articleId}`;
+            if (titleEl) {
+                titleEl.innerText = data.title;
+                titleEl.className = "text-2xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight";
+            }
+            if (editButton) {
+                editButton.href = `conteudo-editor.html?id=${articleId}`;
+                editButton.classList.remove('hidden');
+            }
+
+            const dateStr = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toLocaleDateString('pt-BR') : '') : '';
+            if (metaEl) {
+                metaEl.innerText = `Por ${data.author || 'Equipe KIHAP'}${dateStr ? ' • ' + dateStr : ''}`;
+            }
 
             if (data.heroImageUrl && data.heroImageUrl.startsWith('http')) {
                 heroImage.src = data.heroImageUrl;
@@ -129,6 +98,7 @@ async function loadArticleForViewing(articleId) {
             if (data.youtubeUrl) {
                 const videoId = getYouTubeVideoId(data.youtubeUrl);
                 if (videoId) {
+                    videoContainer.innerHTML = '';
                     const iframe = document.createElement('iframe');
                     iframe.src = `https://www.youtube.com/embed/${videoId}`;
                     iframe.frameBorder = '0';
@@ -140,22 +110,26 @@ async function loadArticleForViewing(articleId) {
             }
 
             // Usa o Quill em modo read-only para renderizar o conteúdo
-            const viewerQuill = new Quill(contentEl, {
-                theme: 'snow',
-                readOnly: true,
-                modules: { toolbar: false }
-            });
-            viewerQuill.setContents(data.content);
+            contentEl.innerHTML = '';
+            if (data.content && data.content.ops) {
+                const viewerQuill = new Quill(contentEl, {
+                    theme: 'snow',
+                    readOnly: true,
+                    modules: { toolbar: false }
+                });
+                viewerQuill.setContents(data.content);
+            } else if (typeof data.content === 'string') {
+                contentEl.innerHTML = data.content;
+            } else {
+                contentEl.innerHTML = '<p class="text-gray-400 italic">Sem conteúdo registrado.</p>';
+            }
 
         } else {
-            titleEl.innerText = "Conteúdo não encontrado";
-            contentEl.innerHTML = "<p>O conteúdo que você está procurando não existe ou foi removido.</p>";
-            editButton.style.display = 'none';
+            showNotFoundState();
         }
     } catch (error) {
         console.error("Erro ao carregar conteúdo para visualização: ", error);
-        titleEl.innerText = "Erro ao carregar";
-        contentEl.innerHTML = "<p>Ocorreu um erro ao carregar o conteúdo.</p>";
+        showNotFoundState();
     }
 }
 
@@ -205,28 +179,42 @@ async function saveArticle(articleId) {
 
 function createArticleCard(doc) {
     const article = doc.data();
-    const contentText = (article.content && article.content.ops) 
-        ? article.content.ops.map(op => op.insert).join('').trim().substring(0, 150) + '...'
-        : 'Nenhum conteúdo.';
+    let contentText = '';
+    if (article.content && article.content.ops) {
+        contentText = article.content.ops.map(op => (typeof op.insert === 'string' ? op.insert : '')).join('').trim();
+    } else if (typeof article.content === 'string') {
+        const temp = document.createElement('div');
+        temp.innerHTML = article.content;
+        contentText = temp.textContent || temp.innerText || '';
+    }
+    if (contentText.length > 140) {
+        contentText = contentText.substring(0, 140) + '...';
+    }
+    if (!contentText) contentText = 'Clique em visualizar para ver o conteúdo completo.';
+
+    const dateCreated = article.createdAt && article.createdAt.toDate ? article.createdAt.toDate().toLocaleDateString('pt-BR') : '';
 
     const card = document.createElement('div');
-    card.className = 'article-card';
+    card.className = 'bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-150 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col justify-between relative';
     card.innerHTML = `
         <div>
-            <div class="flex items-center gap-3 mb-2">
-                <i class="fas fa-book-open text-yellow-500"></i>
-                <h3 class="text-xl font-bold text-gray-100">${article.title}</h3>
+            <div class="flex items-center justify-between mb-3">
+                <span class="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-extrabold px-2.5 py-0.5 rounded-md uppercase">
+                    <i class="fas fa-book-open mr-1"></i> Tatame
+                </span>
+                ${article.youtubeUrl ? '<i class="fab fa-youtube text-red-500 text-sm" title="Possui vídeo"></i>' : ''}
             </div>
-            <div class="article-card-content mb-4">
-                <p class="text-gray-400 text-sm">${contentText}</p>
-            </div>
+            <h3 class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white mb-2 leading-snug group-hover:text-amber-500 transition-colors line-clamp-2">${article.title}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-6 line-clamp-3">${contentText}</p>
         </div>
-        <div>
-            <div class="text-xs text-gray-500 mb-4">
-                <span>Por ${article.author}</span> | <span>Em ${article.createdAt.toDate().toLocaleDateString()}</span>
+        
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800/80 flex flex-col gap-3">
+            <div class="text-[10px] text-gray-400 font-semibold flex items-center justify-between">
+                <span class="truncate">Por ${article.author || 'Equipe KIHAP'}</span>
+                ${dateCreated ? `<span>${dateCreated}</span>` : ''}
             </div>
-            <a href="conteudo-viewer.html?id=${doc.id}" class="bg-gray-700 hover:bg-yellow-500 hover:text-black text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 w-full text-center block">
-                Visualizar
+            <a href="conteudo-viewer.html?id=${doc.id}" class="w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-800/60 hover:bg-amber-500 text-gray-700 dark:text-gray-200 hover:text-black font-extrabold text-xs rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 group-hover:bg-amber-500 group-hover:text-black group-hover:border-amber-500">
+                <span>Visualizar</span> <i class="fas fa-arrow-right text-[10px]"></i>
             </a>
         </div>
     `;
@@ -240,7 +228,17 @@ async function loadArticles() {
         const querySnapshot = await getDocs(q);
         articlesList.innerHTML = '';
         if (querySnapshot.empty) {
-            articlesList.innerHTML = '<p class="text-center text-gray-500">Nenhum conteúdo encontrado. Crie o primeiro!</p>';
+            articlesList.className = '';
+            articlesList.innerHTML = `
+                <div class="text-center py-16 bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-150 dark:border-gray-800">
+                    <i class="fas fa-folder-open text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                    <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Nenhum conteúdo cadastrado</p>
+                    <p class="text-xs text-gray-400 mt-1 mb-4">Seja o primeiro a publicar um conteúdo no Tatame.</p>
+                    <a href="conteudo-editor.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-black font-bold text-xs shadow-md">
+                        <i class="fas fa-plus"></i> Criar Conteúdo
+                    </a>
+                </div>
+            `;
             return;
         }
         articlesList.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
@@ -249,7 +247,7 @@ async function loadArticles() {
         });
     } catch (error) {
         console.error("Erro ao carregar conteúdos: ", error);
-        articlesList.innerHTML = '<p>Erro ao carregar conteúdos.</p>';
+        articlesList.innerHTML = '<p class="text-center text-red-500 text-xs py-8">Erro ao carregar conteúdos.</p>';
     }
 }
 
@@ -264,14 +262,20 @@ async function searchArticles() {
         
         const filteredDocs = querySnapshot.docs.filter(doc => {
             const article = doc.data();
-            const title = article.title.toLowerCase();
-            const contentText = (article.content && article.content.ops) ? article.content.ops.map(op => op.insert).join('').toLowerCase() : '';
+            const title = (article.title || '').toLowerCase();
+            const contentText = (article.content && article.content.ops) ? article.content.ops.map(op => (typeof op.insert === 'string' ? op.insert : '')).join('').toLowerCase() : '';
             return title.includes(searchTerm) || contentText.includes(searchTerm);
         });
 
         if (filteredDocs.length === 0) {
             articlesList.className = '';
-            articlesList.innerHTML = '<p class="text-center text-gray-500">Nenhum conteúdo encontrado com o termo buscado.</p>';
+            articlesList.innerHTML = `
+                <div class="text-center py-12 bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-150 dark:border-gray-800">
+                    <i class="fas fa-search text-3xl text-gray-300 dark:text-gray-600 mb-3 opacity-60"></i>
+                    <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Nenhum resultado encontrado</p>
+                    <p class="text-xs text-gray-400 mt-1">Tente pesquisar por outros termos.</p>
+                </div>
+            `;
             return;
         }
         
@@ -281,7 +285,7 @@ async function searchArticles() {
         });
     } catch (error) {
         console.error("Erro ao buscar conteúdos: ", error);
-        articlesList.innerHTML = '<p>Erro ao realizar a busca.</p>';
+        articlesList.innerHTML = '<p class="text-center text-red-500 text-xs py-8">Erro ao realizar a busca.</p>';
     }
 }
 
