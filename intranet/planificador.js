@@ -58,6 +58,7 @@ const week4DatesInput = document.getElementById('week-4-dates');
 
 let currentMediaFiles = []; // Array to store { name, url, type, path }
 let currentUser = null;
+let allLoadedPlans = [];
 
 // Presets Constants
 const presetLittles = [
@@ -211,6 +212,15 @@ function setupEventListeners() {
             openEditPlanModal(id, true);
         }
     });
+
+    // Search and Filter Listeners
+    const searchInput = document.getElementById('searchPlansInput');
+    const filterCategory = document.getElementById('filterCategory');
+    const filterLayout = document.getElementById('filterLayout');
+
+    if (searchInput) searchInput.addEventListener('input', filterAndRenderPlans);
+    if (filterCategory) filterCategory.addEventListener('change', filterAndRenderPlans);
+    if (filterLayout) filterLayout.addEventListener('change', filterAndRenderPlans);
 }
 
 // Layout Switch Handler
@@ -411,7 +421,7 @@ function extractYouTubeID(url) {
     return match ? match[1] : null;
 }
 
-// --- Load Plans (Grid View) ---
+// --- Load & Filter Plans (Grid View) ---
 async function loadPlans() {
     plansList.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10"><i class="fas fa-spinner fa-spin text-2xl"></i> Carregando planos...</div>';
 
@@ -423,22 +433,91 @@ async function loadPlans() {
 
         const querySnapshot = await getDocs(q);
 
-        plansList.innerHTML = '';
-
         if (querySnapshot.empty) {
-            plansList.innerHTML = '<div class="col-span-full text-center text-gray-505 py-10">Nenhum plano de aula encontrado.</div>';
+            allLoadedPlans = [];
+            filterAndRenderPlans();
             return;
         }
 
-        querySnapshot.forEach((doc) => {
-            const plan = doc.data();
-            const planEl = createPlanCard(doc.id, plan);
-            plansList.appendChild(planEl);
-        });
+        allLoadedPlans = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        filterAndRenderPlans();
     } catch (error) {
         console.error("Erro ao carregar planos:", error);
         plansList.innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Erro ao carregar planos.</div>';
     }
+}
+
+function filterAndRenderPlans() {
+    if (!plansList) return;
+
+    const queryTerm = document.getElementById('searchPlansInput')?.value.toLowerCase().trim() || '';
+    const selectedCategory = document.getElementById('filterCategory')?.value || '';
+    const selectedLayout = document.getElementById('filterLayout')?.value || '';
+
+    const filtered = allLoadedPlans.filter(plan => {
+        // Category filter
+        if (selectedCategory && plan.category !== selectedCategory) return false;
+
+        // Layout filter
+        if (selectedLayout && plan.layout !== selectedLayout) return false;
+
+        // Search query filter
+        if (!queryTerm) return true;
+
+        const title = (plan.title || '').toLowerCase();
+        const author = (plan.authorName || '').toLowerCase();
+        const content = (plan.content || '').toLowerCase();
+        const category = (plan.category || '').toLowerCase();
+
+        // Search inside blocks (simple layout)
+        let blocksText = '';
+        if (Array.isArray(plan.blocks)) {
+            blocksText = plan.blocks.map(b => `${b.title || ''} ${b.content || ''}`).join(' ').toLowerCase();
+        }
+
+        // Search inside weeks (grid layout)
+        let weeksText = '';
+        if (Array.isArray(plan.weeks)) {
+            weeksText = plan.weeks.map(w => {
+                const rowTitle = w.title || '';
+                const contents = w.contents ? Object.values(w.contents).join(' ') : '';
+                return `${rowTitle} ${contents}`;
+            }).join(' ').toLowerCase();
+        }
+
+        return title.includes(queryTerm) ||
+            author.includes(queryTerm) ||
+            content.includes(queryTerm) ||
+            category.includes(queryTerm) ||
+            blocksText.includes(queryTerm) ||
+            weeksText.includes(queryTerm);
+    });
+
+    plansList.innerHTML = '';
+
+    if (filtered.length === 0) {
+        if (allLoadedPlans.length === 0) {
+            plansList.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10 font-medium text-sm">Nenhum plano de aula encontrado.</div>';
+        } else {
+            plansList.innerHTML = `
+                <div class="col-span-full text-center text-gray-500 dark:text-gray-400 py-12 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-150 dark:border-gray-800">
+                    <i class="fas fa-search text-3xl mb-3 opacity-30"></i>
+                    <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Nenhum resultado encontrado</p>
+                    <p class="text-xs text-gray-400 mt-1">Tente buscar por outros termos ou alterar os filtros selecionados.</p>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    filtered.forEach(plan => {
+        const planEl = createPlanCard(plan.id, plan);
+        plansList.appendChild(planEl);
+    });
 }
 
 function createPlanCard(id, plan) {
