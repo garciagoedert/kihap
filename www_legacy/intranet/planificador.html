@@ -160,7 +160,15 @@
                                 class="w-full bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700/80 rounded-xl py-2.5 pl-11 pr-4 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
                         </div>
 
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+                            <select id="filterAgeGroup" class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700/80 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                <option value="">Todas as Faixas Etárias</option>
+                                <option value="Baby Littles">Baby Littles</option>
+                                <option value="Littles">Littles</option>
+                                <option value="Kids">Kids</option>
+                                <option value="Adultos">Adultos</option>
+                            </select>
+
                             <select id="filterCategory" class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700/80 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50">
                                 <option value="">Todas as Categorias</option>
                                 <option value="A">Tipo A</option>
@@ -211,6 +219,7 @@
                         <div class="mb-6">
                             <div class="flex items-center gap-3 mb-2 flex-wrap">
                                 <span id="view-plan-category" class="bg-blue-600 text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg shadow-sm">TIPO A</span>
+                                <span id="view-plan-age-group" class="hidden text-[10px] font-bold px-2.5 py-0.5 rounded border"></span>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 font-medium" id="view-plan-meta">Autor • Data</div>
                             </div>
                             <h1 id="view-plan-title" class="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white leading-tight">Título do Plano</h1>
@@ -247,13 +256,24 @@
                         <form id="plan-form" class="space-y-6">
                             <input type="hidden" id="plan-id">
 
-                            <!-- Título e Categoria -->
+                            <!-- Título, Faixa Etária e Categoria -->
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1.5">Título do Plano</label>
                                     <input type="text" id="plan-title" required
                                         class="w-full bg-gray-50 dark:bg-gray-900/50 text-gray-950 dark:text-white font-semibold rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                                         placeholder="Ex: Defesas | Littles - Julho/2026">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1.5">Faixa Etária *</label>
+                                    <select id="plan-age-group" required
+                                        class="w-full bg-gray-50 dark:bg-gray-900/50 text-gray-950 dark:text-white font-semibold rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm">
+                                        <option value="">Selecione...</option>
+                                        <option value="Baby Littles">Baby Littles</option>
+                                        <option value="Littles">Littles</option>
+                                        <option value="Kids">Kids</option>
+                                        <option value="Adultos">Adultos</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-1.5">Tipo</label>

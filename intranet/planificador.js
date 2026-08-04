@@ -25,6 +25,7 @@ const modalTitle = document.getElementById('modal-title');
 const youtubeLinkInput = document.getElementById('youtube-link');
 const addYoutubeBtn = document.getElementById('add-youtube-btn');
 const planCategoryInput = document.getElementById('plan-category');
+const planAgeGroupInput = document.getElementById('plan-age-group');
 
 // New Layout Elements
 const layoutSimpleBtn = document.getElementById('layout-simple-btn');
@@ -215,10 +216,12 @@ function setupEventListeners() {
 
     // Search and Filter Listeners
     const searchInput = document.getElementById('searchPlansInput');
+    const filterAgeGroup = document.getElementById('filterAgeGroup');
     const filterCategory = document.getElementById('filterCategory');
     const filterLayout = document.getElementById('filterLayout');
 
     if (searchInput) searchInput.addEventListener('input', filterAndRenderPlans);
+    if (filterAgeGroup) filterAgeGroup.addEventListener('change', filterAndRenderPlans);
     if (filterCategory) filterCategory.addEventListener('change', filterAndRenderPlans);
     if (filterLayout) filterLayout.addEventListener('change', filterAndRenderPlans);
 }
@@ -455,10 +458,24 @@ function filterAndRenderPlans() {
     if (!plansList) return;
 
     const queryTerm = document.getElementById('searchPlansInput')?.value.toLowerCase().trim() || '';
+    const selectedAgeGroup = document.getElementById('filterAgeGroup')?.value || '';
     const selectedCategory = document.getElementById('filterCategory')?.value || '';
     const selectedLayout = document.getElementById('filterLayout')?.value || '';
 
     const filtered = allLoadedPlans.filter(plan => {
+        // Auto detect ageGroup from title if missing
+        let planAge = plan.ageGroup || '';
+        if (!planAge && plan.title) {
+            const t = plan.title.toLowerCase();
+            if (t.includes('baby littles') || t.includes('baby')) planAge = 'Baby Littles';
+            else if (t.includes('littles')) planAge = 'Littles';
+            else if (t.includes('kids')) planAge = 'Kids';
+            else if (t.includes('adulto') || t.includes('adultos')) planAge = 'Adultos';
+        }
+
+        // Age Group filter
+        if (selectedAgeGroup && planAge !== selectedAgeGroup) return false;
+
         // Category filter
         if (selectedCategory && plan.category !== selectedCategory) return false;
 
@@ -493,6 +510,7 @@ function filterAndRenderPlans() {
             author.includes(queryTerm) ||
             content.includes(queryTerm) ||
             category.includes(queryTerm) ||
+            planAge.toLowerCase().includes(queryTerm) ||
             blocksText.includes(queryTerm) ||
             weeksText.includes(queryTerm);
     });
@@ -530,9 +548,21 @@ function createPlanCard(id, plan) {
     if (plan.category === 'B') badgeClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
     if (plan.category === 'C') badgeClass = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20';
 
-    // Layout label badge
-    let layoutLabel = plan.layout === 'grid' ? 'Grade Semanal' : (plan.layout === 'simple' ? 'Lista Blocos' : 'Legado');
-    let layoutBadgeClass = plan.layout === 'grid' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : 'bg-gray-500/10 text-gray-650 dark:text-gray-400 border border-gray-200 dark:border-gray-800';
+    // Detect or read Age Group
+    let ageGroup = plan.ageGroup || '';
+    if (!ageGroup && plan.title) {
+        const t = plan.title.toLowerCase();
+        if (t.includes('baby littles') || t.includes('baby')) ageGroup = 'Baby Littles';
+        else if (t.includes('littles')) ageGroup = 'Littles';
+        else if (t.includes('kids')) ageGroup = 'Kids';
+        else if (t.includes('adulto') || t.includes('adultos')) ageGroup = 'Adultos';
+    }
+
+    let ageBadgeClass = 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700';
+    if (ageGroup === 'Baby Littles') ageBadgeClass = 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20';
+    else if (ageGroup === 'Littles') ageBadgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+    else if (ageGroup === 'Kids') ageBadgeClass = 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20';
+    else if (ageGroup === 'Adultos') ageBadgeClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20';
 
     // Clean snippet preview formatting for cards
     let snippetLines = [];
@@ -592,9 +622,9 @@ function createPlanCard(id, plan) {
 
     div.innerHTML = `
         <div class="flex justify-between items-start mb-2">
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="${badgeClass} text-[9px] font-bold px-2 py-0.5 rounded w-fit uppercase">TIPO ${plan.category || 'A'}</span>
-                <span class="${layoutBadgeClass} text-[9px] font-bold px-2 py-0.5 rounded w-fit uppercase">${layoutLabel}</span>
+                ${ageGroup ? `<span class="${ageBadgeClass} text-[9px] font-bold px-2 py-0.5 rounded w-fit uppercase">${ageGroup}</span>` : ''}
             </div>
             ${plan.media && plan.media.length > 0 ? '<i class="fas fa-paperclip text-gray-400 text-xs mt-1" title="Possui anexos"></i>' : ''}
         </div>
@@ -629,6 +659,7 @@ async function handleFormSubmit(e) {
     const id = planIdInput.value;
     const title = planTitleInput.value;
     const category = planCategoryInput.value;
+    const ageGroup = planAgeGroupInput ? planAgeGroupInput.value : '';
     const layout = planLayoutInput.value;
 
     let blocks = [];
@@ -704,6 +735,7 @@ async function handleFormSubmit(e) {
     const planData = {
         title,
         category,
+        ageGroup,
         layout,
         blocks,
         weeks,
@@ -786,6 +818,7 @@ async function openEditPlanModal(id, updateUrl = true) {
         planIdInput.value = id;
         planTitleInput.value = data.title;
         planCategoryInput.value = data.category || 'A';
+        if (planAgeGroupInput) planAgeGroupInput.value = data.ageGroup || '';
         currentMediaFiles = data.media || [];
 
         renderMediaList();
@@ -849,6 +882,32 @@ async function openViewModal(id, updateUrl = true) {
                     ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' 
                     : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
         }`;
+
+        // Faixa Etária badge in View Modal
+        const viewPlanAgeGroup = document.getElementById('view-plan-age-group');
+        let ageGroup = data.ageGroup || '';
+        if (!ageGroup && data.title) {
+            const t = data.title.toLowerCase();
+            if (t.includes('baby littles') || t.includes('baby')) ageGroup = 'Baby Littles';
+            else if (t.includes('littles')) ageGroup = 'Littles';
+            else if (t.includes('kids')) ageGroup = 'Kids';
+            else if (t.includes('adulto') || t.includes('adultos')) ageGroup = 'Adultos';
+        }
+        if (viewPlanAgeGroup) {
+            if (ageGroup) {
+                viewPlanAgeGroup.textContent = ageGroup;
+                let ageBadgeClass = 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+                if (ageGroup === 'Baby Littles') ageBadgeClass = 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20';
+                else if (ageGroup === 'Littles') ageBadgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+                else if (ageGroup === 'Kids') ageBadgeClass = 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
+                else if (ageGroup === 'Adultos') ageBadgeClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20';
+
+                viewPlanAgeGroup.className = `text-[10px] font-bold px-2.5 py-0.5 rounded border ${ageBadgeClass}`;
+                viewPlanAgeGroup.classList.remove('hidden');
+            } else {
+                viewPlanAgeGroup.classList.add('hidden');
+            }
+        }
 
         // Render content depending on layout
         viewPlanBody.innerHTML = '';
@@ -1022,6 +1081,7 @@ function closeModal() {
 function resetForm() {
     planForm.reset();
     planIdInput.value = '';
+    if (planAgeGroupInput) planAgeGroupInput.value = '';
     simpleBlocksList.innerHTML = '';
     gridBlocksList.innerHTML = '';
     currentMediaFiles = [];
