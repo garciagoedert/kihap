@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { loadComponents } from './common-ui.js';
 import { onAuthReady } from './auth.js';
-import { collection, getDocs, query, orderBy, where, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, where, collectionGroup, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Quote Library
 const quotes = [
@@ -152,37 +152,49 @@ async function loadStats() {
         }
     }
 
-    // Load EVO Daily Entries (Catracas/Presenças EVO)
+    // Load EVO Daily Entries (Catracas/Presenças EVO) com Atualização Instantânea em Tempo Real
     const evoCheckinsEl = document.getElementById('daily-checkins-evo');
     if (evoCheckinsEl) {
+        // 1. Escuta em tempo real no Firestore (onSnapshot) para atualização instantânea
         try {
-            let totalEvoEntries = 0;
-            const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
-            statusSnap.forEach(docSnap => {
-                const data = docSnap.data();
-                if (data && data.todayEntries) {
-                    totalEvoEntries += Number(data.todayEntries) || 0;
+            onSnapshot(collection(db, 'evo_sync_status'), (snapshot) => {
+                let totalEvoEntries = 0;
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data && data.todayEntries) {
+                        totalEvoEntries += Number(data.todayEntries) || 0;
+                    }
+                });
+                if (totalEvoEntries > 0) {
+                    evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
+                    evoCheckinsEl.classList.remove('animate-pulse');
                 }
             });
+        } catch (err) {
+            console.warn("Realtime listener error for evo_sync_status:", err);
+        }
 
-            if (totalEvoEntries > 0) {
-                evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
-            } else {
+        // 2. Consulta AO VIVO na API do EVO (getTodaysTotalEntries)
+        const fetchLiveEvoEntries = async () => {
+            try {
                 const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
                 const { functions } = await import('./firebase-config.js');
                 const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
                 const res = await getTodaysTotalEntries({ unitId: 'geral' });
+                
                 if (res.data && res.data.totalEntries !== undefined) {
-                    evoCheckinsEl.textContent = Number(res.data.totalEntries).toLocaleString('pt-BR');
-                } else {
-                    evoCheckinsEl.textContent = "0";
+                    const liveTotal = Number(res.data.totalEntries);
+                    evoCheckinsEl.textContent = liveTotal.toLocaleString('pt-BR');
+                    evoCheckinsEl.classList.remove('animate-pulse');
                 }
+            } catch (error) {
+                console.error("Error fetching live EVO entries:", error);
             }
-            evoCheckinsEl.classList.remove('animate-pulse');
-        } catch (error) {
-            console.error("Error loading EVO entries:", error);
-            evoCheckinsEl.textContent = "0";
-        }
+        };
+
+        // Executa ao carregar e agenda atualização automática a cada 30 segundos
+        fetchLiveEvoEntries();
+        setInterval(fetchLiveEvoEntries, 30000);
     }
 
     // Hide Skeleton and Show Content
