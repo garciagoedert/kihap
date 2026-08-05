@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus } from './auth.js';
 import { showConfirm, showInviteLinkModal } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, auth } from './firebase-config.js'; // Import auth
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Cloud Functions
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -29,22 +29,26 @@ export function setupAlunoPage() {
 
     onAuthReady(async (user) => {
         if (user) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const studentId = urlParams.get('id');
-            currentUnitId = urlParams.get('unit'); // Armazenar o ID da unidade
+        const urlParams = new URLSearchParams(window.location.search);
+        let studentId = urlParams.get('id') || sessionStorage.getItem('selectedStudentId');
+        currentUnitId = urlParams.get('unit') || sessionStorage.getItem('selectedStudentUnit');
 
-            if (!studentId) {
-                document.body.innerHTML = '<div class="text-red-500 text-center p-8">ID do aluno não fornecido.</div>';
-                return;
-            }
+        if (!studentId) {
+            document.body.innerHTML = '<div class="text-red-500 text-center p-8 font-bold">ID do aluno não fornecido.</div>';
+            return;
+        }
 
-            // Tentar recuperar a unidade do Firestore se não estiver na URL
-            if (!currentUnitId) {
-                const studentDoc = await findUserByEvoId(parseInt(studentId));
-                if (studentDoc && (studentDoc.unitId || studentDoc.unit)) {
-                    currentUnitId = studentDoc.unitId || studentDoc.unit;
-                }
+        // Cache in sessionStorage for clean URL rewrites
+        sessionStorage.setItem('selectedStudentId', studentId);
+        if (currentUnitId) sessionStorage.setItem('selectedStudentUnit', currentUnitId);
+
+        // Tentar recuperar a unidade do Firestore se não estiver na URL
+        if (!currentUnitId) {
+            const studentDoc = await findUserByEvoId(parseInt(studentId));
+            if (studentDoc && (studentDoc.unitId || studentDoc.unit)) {
+                currentUnitId = studentDoc.unitId || studentDoc.unit;
             }
+        }
 
             await loadAllSelectableContent();
             await loadStudentData(studentId, currentUnitId); // Passar o ID da unidade
@@ -105,6 +109,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
                 if (studentUser.belt) currentStudent.belt = studentUser.belt;
                 if (studentUser.partials !== undefined) currentStudent.partials = studentUser.partials;
                 if (studentUser.rankType) currentStudent.rankType = studentUser.rankType;
+                if (studentUser.photoURL) currentStudent.photoURL = studentUser.photoURL;
                 
                 // Armazenar o UID do Firestore para uso em outras partes
                 currentStudent.firestoreUid = studentUser.id;
@@ -131,6 +136,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
 async function renderStudentProfile() {
     const fullName = `${currentStudent.firstName || ''} ${currentStudent.lastName || ''}`;
     const email = currentStudent.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || 'N/A';
+    const initials = (currentStudent.firstName?.[0] || '') + (currentStudent.lastName?.[0] || '');
 
     document.getElementById('student-name-header').textContent = fullName;
     document.getElementById('student-name-sidebar').textContent = fullName;
@@ -138,25 +144,38 @@ async function renderStudentProfile() {
     if (emailEl) emailEl.textContent = email;
 
     const studentPhoto = document.getElementById('student-photo');
-    studentPhoto.src = currentStudent.photoUrl || 'default-profile.svg';
+    const photoContainer = document.getElementById('student-photo-container');
+    
+    // Prioridade: Foto do Firestore (upload manual) > Foto do EVO
+    let photoUrl = currentStudent.photoURL || currentStudent.photoUrl || currentStudent.photo || null;
 
-    // Try to fetch Firestore user data to get the uploaded photo
-    try {
-        const studentUser = await findUserByEvoId(currentStudent.idMember);
-        if (studentUser && studentUser.photoURL) {
-            studentPhoto.src = studentUser.photoURL;
-        }
-    } catch (e) {
-        console.warn("Could not fetch Firestore user data for photo:", e);
+    // Limpar iniciais antigas se houver
+    const oldInitials = photoContainer.querySelector('.initials-avatar');
+    if (oldInitials) oldInitials.remove();
+
+    if (photoUrl && photoUrl.length > 10) {
+        studentPhoto.src = photoUrl;
+        studentPhoto.style.display = 'block';
+    } else {
+        // Fallback para iniciais
+        studentPhoto.style.display = 'none';
+        const initialsDiv = document.createElement('div');
+        initialsDiv.className = "initials-avatar w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-black text-3xl border border-primary/10 shadow-xl mx-auto mb-4";
+        initialsDiv.textContent = initials.toUpperCase();
+        photoContainer.prepend(initialsDiv);
     }
 
     const statusBadge = document.getElementById('student-status-badge');
+    const statusIndicator = document.getElementById('student-status-indicator');
+    
     if (currentStudent.membershipStatus === 'Active') {
         statusBadge.textContent = 'Ativo';
-        statusBadge.className = 'mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full bg-green-500 text-white';
+        statusBadge.className = 'mt-4 inline-flex items-center px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full bg-green-500/10 text-green-500 border border-green-500/20 shadow-sm';
+        if (statusIndicator) statusIndicator.className = 'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 bg-green-500 shadow-sm';
     } else {
         statusBadge.textContent = 'Inativo';
-        statusBadge.className = 'mt-2 inline-block px-3 py-1 text-sm font-semibold rounded-full bg-red-500 text-white';
+        statusBadge.className = 'mt-4 inline-flex items-center px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full bg-red-500/10 text-red-500 border border-red-500/20 shadow-sm';
+        if (statusIndicator) statusIndicator.className = 'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 bg-red-500 shadow-sm';
     }
 }
 
@@ -195,13 +214,13 @@ function renderDetailsTab() {
         }
     };
 
-    let html = '<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">';
+    let html = '<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">';
     for (const key in translations) {
         if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt', 'partials'].includes(key)) {
             html += `
-                <div>
-                    <dt class="font-semibold text-gray-400">${translations[key]}</dt>
-                    <dd class="text-gray-200">${formatValue(key, currentStudent[key])}</dd>
+                <div class="flex flex-col gap-1 group">
+                    <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-primary transition-colors">${translations[key]}</dt>
+                    <dd class="text-sm font-bold text-gray-900 dark:text-white">${formatValue(key, currentStudent[key])}</dd>
                 </div>
             `;
         }
@@ -215,7 +234,7 @@ function renderDetailsTab() {
 
 function setupEventListeners() {
     // Tab switching
-    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial', 'family'];
     tabs.forEach(tabId => {
         const el = document.getElementById(`tab-${tabId}`);
         if (el) el.addEventListener('click', () => switchTab(tabId));
@@ -226,13 +245,14 @@ function setupEventListeners() {
     document.getElementById('save-permissions-btn').addEventListener('click', handleSavePermissions);
     document.getElementById('save-badges-btn').addEventListener('click', handleSaveBadges);
     document.getElementById('save-physical-test-btn').addEventListener('click', handleSavePhysicalTest);
+    document.getElementById('search-link-parent-btn').addEventListener('click', handleLinkParent);
     
     const deleteBtn = document.getElementById('delete-student-btn');
     if (deleteBtn) deleteBtn.addEventListener('click', handleDeleteStudent);
 }
 
 function switchTab(activeTabId) {
-    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial'];
+    const tabs = ['details', 'permissions', 'physical-test', 'badges', 'financial', 'family'];
     tabs.forEach(tabId => {
         const tabButton = document.getElementById(`tab-${tabId}`);
         const tabContent = document.getElementById(`tab-content-${tabId}`);
@@ -242,14 +262,20 @@ function switchTab(activeTabId) {
         const isActive = tabId === activeTabId;
 
         tabContent.classList.toggle('hidden', !isActive);
-        tabButton.classList.toggle('text-yellow-500', isActive);
-        tabButton.classList.toggle('border-yellow-500', isActive);
-        tabButton.classList.toggle('text-gray-400', !isActive);
-        tabButton.classList.toggle('hover:text-white', !isActive);
+        
+        if (isActive) {
+            tabButton.classList.add('bg-primary', 'text-black', 'shadow-lg');
+            tabButton.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+        } else {
+            tabButton.classList.remove('bg-primary', 'text-black', 'shadow-lg');
+            tabButton.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200');
+        }
     });
 
     if (activeTabId === 'financial') {
         renderFinancialTab();
+    } else if (activeTabId === 'family') {
+        renderFamilyTab();
     }
 }
 
@@ -306,16 +332,26 @@ async function renderFinancialTab() {
             `;
             mpContainer.innerHTML = mpHtml;
 
+            const recreateContainer = document.getElementById('recreate-subscription-container');
             if (mp.status === 'authorized' || mp.status === 'pending') {
                 cancelContainer.classList.remove('hidden');
+                recreateContainer.classList.add('hidden');
                 document.getElementById('cancel-sub-btn').onclick = () => handleCancelSubscription(mp.id);
+            } else if (mp.status === 'cancelled' || mp.status === 'canceled') {
+                cancelContainer.classList.add('hidden');
+                recreateContainer.classList.remove('hidden');
+                document.getElementById('recreate-sub-btn').onclick = () => {
+                    document.getElementById('open-generate-link-modal-btn').click();
+                };
             } else {
                 cancelContainer.classList.add('hidden');
+                recreateContainer.classList.add('hidden');
             }
         } else {
             countEl.textContent = '0 parcelas';
             mpContainer.innerHTML = '<p class="text-gray-500 italic">Nenhuma assinatura vinculada no Mercado Pago.</p>';
             cancelContainer.classList.add('hidden');
+            document.getElementById('recreate-subscription-container').classList.add('hidden');
         }
 
     } catch (error) {
@@ -626,16 +662,16 @@ async function populatePermissionsChecklists() {
     const studentPermissions = studentUser?.accessibleContent || [];
 
     coursesChecklist.innerHTML = allCourses.map(course => `
-        <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
-            <input type="checkbox" value="${course.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${studentPermissions.includes(course.id) ? 'checked' : ''}>
-            <span>${course.title}</span>
+        <label class="flex items-center space-x-3 text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-xl transition-colors">
+            <input type="checkbox" value="${course.id}" class="w-4 h-4 text-primary bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary focus:ring-2" ${studentPermissions.includes(course.id) ? 'checked' : ''}>
+            <span class="text-sm font-semibold">${course.title}</span>
         </label>
     `).join('');
 
     tatameChecklist.innerHTML = allTatameContents.map(content => `
-        <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
-            <input type="checkbox" value="${content.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${studentPermissions.includes(content.id) ? 'checked' : ''}>
-            <span>${content.title}</span>
+        <label class="flex items-center space-x-3 text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-xl transition-colors">
+            <input type="checkbox" value="${content.id}" class="w-4 h-4 text-primary bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary focus:ring-2" ${studentPermissions.includes(content.id) ? 'checked' : ''}>
+            <span class="text-sm font-semibold">${content.title}</span>
         </label>
     `).join('');
 }
@@ -680,10 +716,10 @@ async function populateBadgesChecklist() {
     badgesChecklist.innerHTML = allBadges.map(badge => {
         const isChecked = studentBadges.includes(badge.id);
         return `
-            <label class="flex flex-col items-center space-y-2 text-gray-300 cursor-pointer p-2 rounded-lg hover:bg-gray-700">
-                <img src="${badge.imageUrl}" alt="${badge.name}" class="w-16 h-16 rounded-full object-cover border-2 ${isChecked ? 'border-yellow-500' : 'border-gray-600'}">
-                <input type="checkbox" value="${badge.id}" class="form-checkbox bg-gray-700 border-gray-600 rounded" ${isChecked ? 'checked' : ''}>
-                <span class="text-xs text-center">${badge.name}</span>
+            <label class="flex flex-col items-center space-y-3 text-gray-700 dark:text-gray-300 cursor-pointer p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                <img src="${badge.imageUrl}" alt="${badge.name}" class="w-20 h-20 rounded-full object-cover border-4 shadow-sm ${isChecked ? 'border-primary' : 'border-gray-200 dark:border-gray-700'}">
+                <input type="checkbox" value="${badge.id}" class="w-4 h-4 text-primary bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary focus:ring-2" ${isChecked ? 'checked' : ''}>
+                <span class="text-xs font-bold text-center uppercase tracking-widest">${badge.name}</span>
             </label>
         `;
     }).join('');
@@ -732,13 +768,13 @@ async function populatePhysicalTestTab() {
         return;
     }
 
-    historyContainer.innerHTML = '<ul class="space-y-2">' + testsSnapshot.docs.map(doc => {
+    historyContainer.innerHTML = '<ul class="space-y-3">' + testsSnapshot.docs.map(doc => {
         const data = doc.data();
         const date = data.date.toDate().toLocaleDateString('pt-BR');
         return `
-            <li class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                <span>Data: <span class="font-semibold">${date}</span></span>
-                <span>Pontuação: <span class="font-semibold text-yellow-500">${data.score}</span></span>
+            <li class="flex justify-between items-center bg-gray-50 dark:bg-[#111111] p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Data: <span class="text-gray-900 dark:text-white">${date}</span></span>
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Pontuação: <span class="text-primary text-sm">${data.score}</span></span>
             </li>
         `;
     }).join('') + '</ul>';
@@ -916,3 +952,173 @@ async function findUserByEvoId(evoId) {
     }
     return null;
 }
+
+async function renderFamilyTab() {
+    const parentInfoEl = document.getElementById('family-parent-info');
+    const unlinkBtn = document.getElementById('unlink-parent-btn');
+    const parentSearchInput = document.getElementById('parent-search-input');
+    const searchLinkBtn = document.getElementById('search-link-parent-btn');
+
+    if (!parentInfoEl) return;
+
+    parentInfoEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Carregando...';
+    unlinkBtn.classList.add('hidden');
+
+    const studentUser = await findUserByEvoId(currentStudent.idMember);
+    if (!studentUser) {
+        parentInfoEl.innerHTML = `
+            <div class="text-amber-600 dark:text-amber-500 text-sm font-semibold flex items-center gap-2 mb-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Este aluno não possui uma conta de usuário ativa no sistema (Firestore).
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Por favor, convide o aluno primeiro usando o botão "Convidar Aluno" no menu lateral esquerdo.</p>
+        `;
+        parentSearchInput.disabled = true;
+        searchLinkBtn.disabled = true;
+        return;
+    }
+
+    parentSearchInput.disabled = false;
+    searchLinkBtn.disabled = false;
+
+    if (studentUser.parentUid) {
+        try {
+            const parentSnap = await getDocs(query(collection(db, "users"), where("__name__", "==", studentUser.parentUid)));
+            if (!parentSnap.empty) {
+                const parentData = parentSnap.docs[0].data();
+                parentInfoEl.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center text-primary font-bold">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">${parentData.name || 'Sem nome'}</div>
+                            <div class="text-xs text-gray-400 font-medium">${parentData.email || 'Sem e-mail'}</div>
+                        </div>
+                    </div>
+                `;
+                unlinkBtn.classList.remove('hidden');
+                unlinkBtn.onclick = () => handleUnlinkParent(studentUser.id, studentUser.parentUid);
+            } else {
+                parentInfoEl.innerHTML = `
+                    <div class="text-red-500 text-sm font-semibold">
+                        ID do Responsável (${studentUser.parentUid}) definido, mas perfil não encontrado no sistema.
+                    </div>
+                `;
+                unlinkBtn.classList.remove('hidden');
+                unlinkBtn.onclick = () => handleUnlinkParent(studentUser.id, studentUser.parentUid);
+            }
+        } catch (err) {
+            console.error("Erro ao buscar dados do responsável:", err);
+            parentInfoEl.innerHTML = `<span class="text-red-500">Erro ao carregar dados do responsável.</span>`;
+        }
+    } else {
+        parentInfoEl.innerHTML = '<span class="text-gray-500 italic">Nenhum responsável vinculado.</span>';
+    }
+}
+
+async function handleLinkParent() {
+    const parentSearchInput = document.getElementById('parent-search-input');
+    const typedEmail = parentSearchInput.value.trim();
+
+    if (!typedEmail) {
+        alert("Por favor, informe o e-mail do responsável.");
+        return;
+    }
+
+    const searchLinkBtn = document.getElementById('search-link-parent-btn');
+    const originalText = searchLinkBtn.innerHTML;
+    searchLinkBtn.disabled = true;
+    searchLinkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Vinculando...';
+
+    try {
+        const queries = [
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail))),
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail.toLowerCase()))),
+            getDocs(query(collection(db, "users"), where("email", "==", typedEmail.toUpperCase())))
+        ];
+        
+        const snapshots = await Promise.all(queries);
+        let parentDoc = null;
+        
+        for (const snap of snapshots) {
+            if (!snap.empty) {
+                parentDoc = snap.docs[0];
+                break;
+            }
+        }
+
+        if (!parentDoc) {
+            alert("Responsável não encontrado com o e-mail informado. Certifique-se de que o responsável já criou uma conta no sistema.");
+            return;
+        }
+
+        const parentUid = parentDoc.id;
+        const parentData = parentDoc.data();
+
+        const childUser = await findUserByEvoId(currentStudent.idMember);
+        if (!childUser) {
+            alert("Erro: Conta do aluno não encontrada.");
+            return;
+        }
+
+        if (childUser.id === parentUid) {
+            alert("Erro: Você não pode vincular um aluno a ele mesmo.");
+            return;
+        }
+
+        // 1. Atualizar o filho
+        const childRef = doc(db, "users", childUser.id);
+        await updateDoc(childRef, { parentUid: parentUid });
+
+        // 2. Atualizar o pai
+        const parentRef = doc(db, "users", parentUid);
+        await updateDoc(parentRef, {
+            linkedUids: arrayUnion(childUser.id)
+        });
+
+        alert(`Vínculo criado com sucesso! ${currentStudent.firstName} agora está vinculado ao responsável ${parentData.name}.`);
+        parentSearchInput.value = '';
+        renderFamilyTab();
+
+    } catch (err) {
+        console.error("Erro ao criar vínculo:", err);
+        alert("Erro ao criar vínculo: " + err.message);
+    } finally {
+        searchLinkBtn.disabled = false;
+        searchLinkBtn.innerHTML = originalText;
+    }
+}
+
+async function handleUnlinkParent(childUid, parentUid) {
+    showConfirm(
+        "Tem certeza que deseja remover o vínculo com este responsável? O responsável perderá o acesso a este perfil no aplicativo.",
+        async () => {
+            const unlinkBtn = document.getElementById('unlink-parent-btn');
+            unlinkBtn.disabled = true;
+            unlinkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Removendo...';
+
+            try {
+                // 1. Atualizar o filho
+                const childRef = doc(db, "users", childUid);
+                await updateDoc(childRef, { parentUid: null });
+
+                // 2. Atualizar o pai
+                const parentRef = doc(db, "users", parentUid);
+                await updateDoc(parentRef, {
+                    linkedUids: arrayRemove(childUid)
+                });
+
+                alert("Vínculo removido com sucesso.");
+                renderFamilyTab();
+            } catch (err) {
+                console.error("Erro ao remover vínculo:", err);
+                alert("Erro ao remover vínculo: " + err.message);
+            } finally {
+                unlinkBtn.disabled = false;
+                unlinkBtn.textContent = 'Remover Vínculo';
+            }
+        }
+    );
+}
+

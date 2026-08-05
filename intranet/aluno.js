@@ -29,22 +29,26 @@ export function setupAlunoPage() {
 
     onAuthReady(async (user) => {
         if (user) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const studentId = urlParams.get('id');
-            currentUnitId = urlParams.get('unit'); // Armazenar o ID da unidade
+        const urlParams = new URLSearchParams(window.location.search);
+        let studentId = urlParams.get('id') || sessionStorage.getItem('selectedStudentId');
+        currentUnitId = urlParams.get('unit') || sessionStorage.getItem('selectedStudentUnit');
 
-            if (!studentId) {
-                document.body.innerHTML = '<div class="text-red-500 text-center p-8">ID do aluno não fornecido.</div>';
-                return;
-            }
+        if (!studentId) {
+            document.body.innerHTML = '<div class="text-red-500 text-center p-8 font-bold">ID do aluno não fornecido.</div>';
+            return;
+        }
 
-            // Tentar recuperar a unidade do Firestore se não estiver na URL
-            if (!currentUnitId) {
-                const studentDoc = await findUserByEvoId(parseInt(studentId));
-                if (studentDoc && (studentDoc.unitId || studentDoc.unit)) {
-                    currentUnitId = studentDoc.unitId || studentDoc.unit;
-                }
+        // Cache in sessionStorage for clean URL rewrites
+        sessionStorage.setItem('selectedStudentId', studentId);
+        if (currentUnitId) sessionStorage.setItem('selectedStudentUnit', currentUnitId);
+
+        // Tentar recuperar a unidade do Firestore se não estiver na URL
+        if (!currentUnitId) {
+            const studentDoc = await findUserByEvoId(parseInt(studentId));
+            if (studentDoc && (studentDoc.unitId || studentDoc.unit)) {
+                currentUnitId = studentDoc.unitId || studentDoc.unit;
             }
+        }
 
             await loadAllSelectableContent();
             await loadStudentData(studentId, currentUnitId); // Passar o ID da unidade

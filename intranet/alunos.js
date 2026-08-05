@@ -308,21 +308,13 @@ export function setupAlunosPage() {
             const tableBody = document.getElementById('students-table-body');
             if (tableBody) {
                 tableBody.addEventListener('click', async (e) => {
-                    // Row Click Listener
                     const row = e.target.closest('.student-row');
                     if (row) {
-                        const memberId = parseInt(row.dataset.id, 10);
-                        const student = allStudents.find(s => s.idMember === memberId);
+                        const memberId = row.dataset.id;
+                        const student = allStudents.find(s => String(s.idMember) === String(memberId) || String(s.id) === String(memberId));
+                        sessionStorage.setItem('selectedStudentId', memberId);
                         if (student && student.unitId) {
-                            window.location.href = `aluno.html?id=${memberId}&unit=${student.unitId}`;
-                        } else {
-                            window.location.href = `aluno.html?id=${memberId}`;
-                        }
-                    }
-                    if (row) {
-                        const memberId = parseInt(row.dataset.id, 10);
-                        const student = allStudents.find(s => s.idMember === memberId);
-                        if (student && student.unitId) {
+                            sessionStorage.setItem('selectedStudentUnit', student.unitId);
                             window.location.href = `aluno.html?id=${memberId}&unit=${student.unitId}`;
                         } else {
                             window.location.href = `aluno.html?id=${memberId}`;
@@ -915,7 +907,7 @@ async function renderTuitionsTable() {
                 <td class="p-4"><span class="${s.tuitionPlanId ? 'text-primary font-bold text-sm' : 'text-gray-400 text-xs italic'}">${planName}</span></td>
                 <td class="p-4 text-center">${statusBadge}</td>
                 <td class="p-4 text-right">
-                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" class="inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-black px-4 py-2 rounded-xl transition-all duration-300 text-xs font-bold shadow-sm active:scale-95 border border-primary/20">
+                    <a href="aluno.html?id=${s.idMember}&unit=${s.unitId || ''}" onclick="sessionStorage.setItem('selectedStudentId', '${s.idMember}'); sessionStorage.setItem('selectedStudentUnit', '${s.unitId || ''}');" class="inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-black px-4 py-2 rounded-xl transition-all duration-300 text-xs font-bold shadow-sm active:scale-95 border border-primary/20">
                         <i class="fas fa-external-link-alt"></i> Abrir Ficha
                     </a>
                 </td>
