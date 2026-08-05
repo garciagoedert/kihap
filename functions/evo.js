@@ -15,7 +15,7 @@ const EVO_CREDENTIALS = {
     },
     coqueiros: {
         dns: "atadf",
-        token: "9409BA4A-CA49-45ED-86D5-35BF336ECFAF",
+        token: "2DC18D28-4BF3-4C16-A579-DD89D873EE65",
     },
     "asa-sul": {
         dns: "atadf",
