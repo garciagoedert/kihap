@@ -43,7 +43,7 @@ const EVO_CREDENTIALS = {
     },
     "santa-monica": {
         dns: "atadf",
-        token: "78C3EA0E-3757-4FE0-A40C-E0C9E3E4D79B",
+        token: "4D224BA6-DD87-4F1E-BA16-AE17DCD4B18A",
     },
     noroeste: {
         dns: "atadf",
