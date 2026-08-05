@@ -4,6 +4,9 @@
 <head>
     <script>
         (function() {
+            if (window.location.pathname.endsWith('/intranet')) {
+                window.location.replace(window.location.pathname + '/');
+            }
             const theme = localStorage.getItem("theme") || "light";
             if (theme === "dark") {
                 document.documentElement.classList.add("dark");
@@ -32,7 +35,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="./theme.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -49,7 +52,24 @@
         <main id="main-content" class="flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-x-hidden">
             <div id="header-container"></div>
 
-            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+            <!-- SKELETON LOADER -->
+            <div id="dashboard-skeleton" class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col animate-pulse space-y-8">
+                <!-- Quote Skeleton -->
+                <div class="hidden md:block bg-gray-200 dark:bg-gray-800/50 h-48 md:h-64 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                <!-- Main Grid Skeleton -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Stats Skeleton -->
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="h-32 bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                        <div class="h-32 bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                    </div>
+                    <!-- Quick Actions Skeleton -->
+                    <div class="h-[280px] bg-gray-200 dark:bg-gray-800/50 rounded-2xl w-full border border-gray-100 dark:border-gray-800/30"></div>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO PRINCIPAL (Inicialmente Oculto) -->
+            <div id="dashboard-content" class="hidden flex-grow p-4 md:p-6 lg:p-8 flex-col overflow-y-auto custom-scrollbar">
 
                 <!-- Daily Quote Section -->
                 <div
@@ -72,30 +92,43 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
                     <!-- Stats Column -->
-                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Active Contracts Card -->
                         <div
-                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
                             <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Contratos Ativos</p>
-                                <h3 id="total-contracts" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
-                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Total geral (EVO)</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Contratos Ativos</p>
+                                <h3 id="total-contracts" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Total geral (Sistema)</p>
                             </div>
-                            <div class="bg-blue-500/10 p-4 rounded-2xl group-hover:bg-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/5">
-                                <i class="fas fa-file-contract text-blue-500 text-2xl"></i>
+                            <div class="bg-blue-500/10 p-3.5 rounded-2xl group-hover:bg-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/5">
+                                <i class="fas fa-file-contract text-blue-500 text-xl"></i>
                             </div>
                         </div>
 
-                        <!-- Daily Check-ins Card -->
+                        <!-- Daily Check-ins Card (Grade Interna) -->
                         <div
-                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
                             <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Alunos hoje</p>
-                                <h3 id="daily-checkins" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
-                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Alunos ativos no dia</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Alunos Hoje (Grade)</p>
+                                <h3 id="daily-checkins" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Presenças Grade Interna</p>
                             </div>
-                            <div class="bg-emerald-500/10 p-4 rounded-2xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-500/5">
-                                <i class="fas fa-user-check text-emerald-500 text-2xl"></i>
+                            <div class="bg-emerald-500/10 p-3.5 rounded-2xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-500/5">
+                                <i class="fas fa-user-check text-emerald-500 text-xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Daily EVO Check-ins Card (EVO) -->
+                        <div
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            <div>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Alunos Hoje (EVO)</p>
+                                <h3 id="daily-checkins-evo" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Entradas Catraca EVO</p>
+                            </div>
+                            <div class="bg-purple-500/10 p-3.5 rounded-2xl group-hover:bg-purple-500/20 transition-all duration-300 shadow-lg shadow-purple-500/5">
+                                <i class="fas fa-id-card text-purple-500 text-xl"></i>
                             </div>
                         </div>
                     </div>
@@ -152,7 +185,7 @@
         </main>
     </div>
 
-    <script type="module" src="home.js"></script>
+    <script type="module" src="./home.js"></script>
 </body>
 
 </html>

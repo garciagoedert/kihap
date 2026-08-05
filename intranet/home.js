@@ -152,6 +152,27 @@ async function loadStats() {
         }
     }
 
+    // Load EVO Daily Entries (Catracas/Presenças EVO)
+    const evoCheckinsEl = document.getElementById('daily-checkins-evo');
+    if (evoCheckinsEl) {
+        try {
+            const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
+            const { functions } = await import('./firebase-config.js');
+            const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
+            const res = await getTodaysTotalEntries({ unitId: 'geral' });
+            
+            if (res.data && res.data.totalEntries !== undefined) {
+                evoCheckinsEl.textContent = Number(res.data.totalEntries).toLocaleString('pt-BR');
+            } else {
+                evoCheckinsEl.textContent = "0";
+            }
+            evoCheckinsEl.classList.remove('animate-pulse');
+        } catch (error) {
+            console.error("Error loading EVO entries:", error);
+            evoCheckinsEl.textContent = "0";
+        }
+    }
+
     // Hide Skeleton and Show Content
     const skeleton = document.getElementById('dashboard-skeleton');
     const content = document.getElementById('dashboard-content');

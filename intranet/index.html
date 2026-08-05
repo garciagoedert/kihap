@@ -92,30 +92,43 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
                     <!-- Stats Column -->
-                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Active Contracts Card -->
                         <div
-                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
                             <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Contratos Ativos</p>
-                                <h3 id="total-contracts" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
-                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Total geral (Sistema)</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Contratos Ativos</p>
+                                <h3 id="total-contracts" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Total geral (Sistema)</p>
                             </div>
-                            <div class="bg-blue-500/10 p-4 rounded-2xl group-hover:bg-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/5">
-                                <i class="fas fa-file-contract text-blue-500 text-2xl"></i>
+                            <div class="bg-blue-500/10 p-3.5 rounded-2xl group-hover:bg-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/5">
+                                <i class="fas fa-file-contract text-blue-500 text-xl"></i>
                             </div>
                         </div>
 
-                        <!-- Daily Check-ins Card -->
+                        <!-- Daily Check-ins Card (Grade Interna) -->
                         <div
-                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
                             <div>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest text-[10px] mb-2">Alunos hoje</p>
-                                <h3 id="daily-checkins" class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
-                                <p class="text-[10px] text-gray-400 mt-2 font-medium">Alunos ativos no dia</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Alunos Hoje (Grade)</p>
+                                <h3 id="daily-checkins" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Presenças Grade Interna</p>
                             </div>
-                            <div class="bg-emerald-500/10 p-4 rounded-2xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-500/5">
-                                <i class="fas fa-user-check text-emerald-500 text-2xl"></i>
+                            <div class="bg-emerald-500/10 p-3.5 rounded-2xl group-hover:bg-emerald-500/20 transition-all duration-300 shadow-lg shadow-emerald-500/5">
+                                <i class="fas fa-user-check text-emerald-500 text-xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Daily EVO Check-ins Card (EVO) -->
+                        <div
+                            class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 flex items-center justify-between group hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-sm">
+                            <div>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Alunos Hoje (EVO)</p>
+                                <h3 id="daily-checkins-evo" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">...</h3>
+                                <p class="text-[10px] text-gray-400 mt-1 font-medium">Entradas Catraca EVO</p>
+                            </div>
+                            <div class="bg-purple-500/10 p-3.5 rounded-2xl group-hover:bg-purple-500/20 transition-all duration-300 shadow-lg shadow-purple-500/5">
+                                <i class="fas fa-id-card text-purple-500 text-xl"></i>
                             </div>
                         </div>
                     </div>
