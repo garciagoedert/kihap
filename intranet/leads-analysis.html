@@ -126,11 +126,16 @@
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
             </div>
 
-            <!-- Detail Analysis Sections -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Detail Analysis Sections Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Priority Breakdown -->
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
-                    <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Por Prioridade</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-fire text-red-500"></i> Por Prioridade
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-400">Classificação 1 a 5★</span>
+                    </div>
                     <div id="priority-stats" class="space-y-4">
                         <!-- Bars injected by JS -->
                     </div>
@@ -138,9 +143,56 @@
 
                 <!-- Pipeline Breakdown -->
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
-                    <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Funil de Vendas (Pipeline)</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-filter text-yellow-500"></i> Funil de Vendas (Pipeline)
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-400">Etapas CRM</span>
+                    </div>
                     <div id="pipeline-stats" class="space-y-4">
                         <!-- Bars injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Row of Rich Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Instructor / Attendant Performance Ranking -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-[#eab308] fa-user-shield text-amber-500"></i> Atendimentos por Instrutor / Equipe
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-400">Interações</span>
+                    </div>
+                    <div id="team-stats" class="space-y-4">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Origin / Channel Breakdown -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-bullhorn text-blue-500"></i> Origem dos Leads (Canais)
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-400">Captação</span>
+                    </div>
+                    <div id="origin-stats" class="space-y-4">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Unit Distribution Breakdown -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-building text-emerald-500"></i> Distribuição por Unidade
+                        </h2>
+                        <span class="text-xs font-semibold text-gray-400">Filiais</span>
+                    </div>
+                    <div id="unit-stats" class="space-y-4">
+                        <!-- Injected by JS -->
                     </div>
                 </div>
             </div>
@@ -155,9 +207,6 @@
         import { setupUIListeners, loadComponents } from './common-ui.js';
 
         const auth = getAuth(app);
-        const statsGrid = document.getElementById('stats-grid');
-        const priorityStats = document.getElementById('priority-stats');
-        const pipelineStats = document.getElementById('pipeline-stats');
 
         let rawProspects = [];
         let rawLeads = [];
@@ -181,27 +230,15 @@
                     applyAnalysisFilters();
                 });
 
-                // Fetch Prospects & Leads to synchronize with CRM board
+                // Fetch Prospects & Leads simultaneously as original design
                 const prospectsRef = collection(db, 'prospects');
                 const leadsRef = collection(db, 'leads');
-
-                let includeWebsiteForms = false;
-
-                // Add source toggle if elements exist
-                const sourceToggle = document.getElementById('source-toggle');
-                if (sourceToggle) {
-                    sourceToggle.addEventListener('change', (e) => {
-                        includeWebsiteForms = e.target.checked;
-                        combineData();
-                    });
-                }
 
                 onSnapshot(prospectsRef, (snapshot) => {
                     rawProspects = [];
                     snapshot.forEach((doc) => {
                         rawProspects.push({ id: doc.id, ...doc.data(), type: 'prospect' });
                     });
-                    // Filter exclusively for Prospecção page CRM cards
                     rawProspects = rawProspects.filter(p => !p.pagina || p.pagina === 'Prospecção');
                     combineData();
                 });
@@ -215,27 +252,23 @@
                 });
 
                 function combineData() {
-                    let dataset = [...rawProspects];
+                    const formattedLeads = rawLeads.map(lead => ({
+                        id: lead.id,
+                        responsavel: lead.nome || lead.responsavel || '',
+                        unidade: lead.unidade || '',
+                        setor: '',
+                        prioridade: 3,
+                        status: lead.status || 'Novo',
+                        ticketEstimado: 0,
+                        origemLead: lead['origem do lead'] || lead.origem || 'Formulário Site',
+                        telefone: lead.telefone || '',
+                        email: lead.email || '',
+                        createdAt: lead.createdAt || null,
+                        contactLog: lead.contactLog || [],
+                        type: 'lead'
+                    }));
 
-                    if (includeWebsiteForms) {
-                        const formattedLeads = rawLeads.map(lead => ({
-                            id: lead.id,
-                            responsavel: lead.nome || '',
-                            unidade: lead.unidade || '',
-                            setor: '',
-                            prioridade: 3,
-                            status: lead.status || 'Novo',
-                            ticketEstimado: 0,
-                            origemLead: lead['origem do lead'] || lead.origem || 'Formulário Site',
-                            telefone: lead.telefone || '',
-                            email: lead.email || '',
-                            createdAt: lead.createdAt || null,
-                            type: 'lead'
-                        }));
-                        dataset = [...dataset, ...formattedLeads];
-                    }
-
-                    allProspects = dataset;
+                    allProspects = [...rawProspects, ...formattedLeads];
                     populateUnitFilter(allProspects);
                     populateOriginFilter(allProspects);
                     applyAnalysisFilters();
@@ -380,34 +413,32 @@
             const highPriority = prospects.filter(p => Number(p.prioridade) >= 4).length;
             const totalPotential = prospects.reduce((sum, p) => sum + (Number(p.ticketEstimado) || Number(p.ticket) || 0), 0);
             
-            // Average ticket calculated only over prospects that have a ticket set, or over total
             const prospectsWithTicket = prospects.filter(p => (Number(p.ticketEstimado) || Number(p.ticket) || 0) > 0);
-            const avgTicket = prospectsWithTicket.length > 0 ? totalPotential / prospectsWithTicket.length : (total > 0 ? totalPotential / total : 0);
-            
-            const matriculas = prospects.filter(p => normalizeStatusKey(p.status) === 'matricula').length;
-            const conversionRate = total > 0 ? Math.round((matriculas / total) * 100) : 0;
+            const avgTicket = total > 0 ? totalPotential / total : 0;
 
             // Render Main KPI Cards
             document.getElementById('stats-grid').innerHTML = `
-                ${createBigStatCard('Leads em Prospecção', total, 'fa-users', 'text-blue-500', 'bg-blue-500/10', 'CRM Prospecção')}
-                ${createBigStatCard('Alta Prioridade (4-5★)', highPriority, 'fa-fire', 'text-red-500', 'bg-red-500/10', `${total > 0 ? Math.round((highPriority/total)*100) : 0}% do Total`)}
-                ${createBigStatCard('Potencial Total', formatCurrency(totalPotential), 'fa-wallet', 'text-green-500', 'bg-green-500/10', 'Estimado')}
-                ${createBigStatCard('Ticket Médio', formatCurrency(avgTicket), 'fa-chart-pie', 'text-yellow-500', 'bg-yellow-500/10', `${conversionRate}% Matrículas`)}
+                ${createBigStatCard('Total Leads', total, 'fa-users', 'text-blue-500', 'bg-blue-500/10')}
+                ${createBigStatCard('Alta Prioridade', highPriority, 'fa-fire', 'text-red-500', 'bg-red-500/10')}
+                ${createBigStatCard('Potencial Total', formatCurrency(totalPotential), 'fa-wallet', 'text-green-500', 'bg-green-500/10')}
+                ${createBigStatCard('Ticket Médio', formatCurrency(avgTicket), 'fa-chart-pie', 'text-yellow-500', 'bg-yellow-500/10')}
             `;
 
             renderPriorityStats(prospects);
             renderPipelineStats(prospects);
+            renderTeamContactStats(prospects);
             renderOriginStats(prospects);
+            renderUnitStats(prospects);
         }
 
-        function createBigStatCard(label, value, icon, colorClass, bgClass, badgeText = "Hoje") {
+        function createBigStatCard(label, value, icon, colorClass, bgClass) {
             return `
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300">
                     <div class="flex items-center justify-between mb-4">
                         <div class="p-3 rounded-2xl ${bgClass}">
                             <i class="fas ${icon} text-xl ${colorClass}"></i>
                         </div>
-                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg">${badgeText}</span>
+                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg">Hoje</span>
                     </div>
                     <div>
                         <h3 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-1">${value}</h3>
@@ -431,7 +462,7 @@
 
             container.innerHTML = Object.entries(counts).reverse().map(([priority, count]) => {
                 const percent = Math.round((count / total) * 100);
-                const labels = { 5: 'Máxima (5★)', 4: 'Alta (4★)', 3: 'Média (3★)', 2: 'Baixa (2★)', 1: 'Mínima (1★)' };
+                const labels = { 5: 'Máxima (5)', 4: 'Alta (4)', 3: 'Média (3)', 2: 'Baixa (2)', 1: 'Mínima (1)' };
                 const colors = { 
                     5: 'bg-gradient-to-r from-red-500 to-rose-600', 
                     4: 'bg-gradient-to-r from-orange-400 to-amber-500', 
@@ -444,7 +475,7 @@
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-gray-700 dark:text-gray-300 font-medium">${labels[priority]}</span>
-                            <span class="text-gray-650 dark:text-gray-400 font-semibold">${count} <span class="text-xs text-gray-400">(${percent}%)</span></span>
+                            <span class="text-gray-650 dark:text-gray-400 font-semibold">${count}</span>
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
                             <div class="${colors[priority]} h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
@@ -491,30 +522,132 @@
             }).join('');
         }
 
-        function renderOriginStats(prospects) {
-            const container = document.getElementById('origin-stats-container');
+        function renderTeamContactStats(prospects) {
+            const container = document.getElementById('team-stats');
             if (!container) return;
 
-            const originCounts = {};
+            const teamCounts = {};
+            let totalInteractions = 0;
+
             prospects.forEach(p => {
-                const o = (p.origemLead || p['origem do lead'] || p.origem || 'Não Informado').trim();
-                originCounts[o] = (originCounts[o] || 0) + 1;
+                // Check contact log entries
+                if (Array.isArray(p.contactLog) && p.contactLog.length > 0) {
+                    p.contactLog.forEach(log => {
+                        const author = (log.author || 'Sistema').trim();
+                        if (author && author !== 'Sistema') {
+                            teamCounts[author] = (teamCounts[author] || 0) + 1;
+                            totalInteractions++;
+                        }
+                    });
+                }
+                
+                // Check owner / attendant field
+                const owner = p.atendente || p.vendedor || p.usuario || p.atendidoPor;
+                if (owner && owner !== 'Sistema') {
+                    teamCounts[owner] = (teamCounts[owner] || 0) + 1;
+                    totalInteractions++;
+                }
             });
 
-            const sorted = Object.entries(originCounts).sort((a, b) => b[1] - a[1]);
+            const sorted = Object.entries(teamCounts).sort((a, b) => b[1] - a[1]);
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Nenhum registro de contato por atendente localizado nos filtros selecionados.</p>`;
+                return;
+            }
+
+            const maxCount = sorted[0][1] || 1;
+
+            container.innerHTML = sorted.map(([member, count], idx) => {
+                const percent = Math.round((count / (totalInteractions || 1)) * 100);
+                const barWidth = Math.round((count / maxCount) * 100);
+                const trophy = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '👤';
+
+                return `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700 dark:text-gray-300 font-bold flex items-center gap-1.5">
+                                <span>${trophy}</span> ${member}
+                            </span>
+                            <span class="text-gray-600 dark:text-gray-400 font-bold text-xs">${count} contatos <span class="text-gray-400 font-normal">(${percent}%)</span></span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-amber-400 to-yellow-500 h-2 rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderOriginStats(prospects) {
+            const container = document.getElementById('origin-stats');
+            if (!container) return;
+
+            const origins = {};
+            prospects.forEach(p => {
+                const o = (p.origemLead || p['origem do lead'] || p.origem || 'Não Informado').trim();
+                origins[o] = (origins[o] || 0) + 1;
+            });
+
+            const sorted = Object.entries(origins).sort((a, b) => b[1] - a[1]);
             const total = prospects.length || 1;
+            const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Nenhuma origem mapeada.</p>`;
+                return;
+            }
 
             container.innerHTML = sorted.map(([origin, count]) => {
                 const percent = Math.round((count / total) * 100);
+                const barWidth = Math.round((count / maxCount) * 100);
+
                 return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                                <i class="fas fa-bullhorn text-yellow-500 text-xs"></i>
-                            </div>
-                            <span class="text-sm font-bold text-gray-800 dark:text-gray-200">${origin}</span>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${origin}</span>
+                            <span class="text-gray-600 dark:text-gray-400 font-bold text-xs">${count} <span class="text-gray-400 font-normal">(${percent}%)</span></span>
                         </div>
-                        <span class="text-xs font-black text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-3 py-1 rounded-xl shadow-xs">${count} (${percent}%)</span>
+                        <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderUnitStats(prospects) {
+            const container = document.getElementById('unit-stats');
+            if (!container) return;
+
+            const units = {};
+            prospects.forEach(p => {
+                const u = normalizeUnit(p.unidade) || 'Outros / Não Especificado';
+                units[u] = (units[u] || 0) + 1;
+            });
+
+            const sorted = Object.entries(units).sort((a, b) => b[1] - a[1]);
+            const total = prospects.length || 1;
+            const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Nenhuma unidade mapeada.</p>`;
+                return;
+            }
+
+            container.innerHTML = sorted.map(([unit, count]) => {
+                const percent = Math.round((count / total) * 100);
+                const barWidth = Math.round((count / maxCount) * 100);
+
+                return `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${unit}</span>
+                            <span class="text-gray-600 dark:text-gray-400 font-bold text-xs">${count} <span class="text-gray-400 font-normal">(${percent}%)</span></span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 h-2 rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
+                        </div>
                     </div>
                 `;
             }).join('');
