@@ -87,25 +87,53 @@ async function displayDailyQuote() {
 }
 
 async function loadStats() {
-    // Load Contracts
+    // 1. Fetch synced units status from evo_sync_status first
+    let syncedUnits = new Set(['centro', 'santa-monica', 'coqueiros']);
+    let totalEvoEntries = 0;
+
+    try {
+        const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
+        statusSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const uId = docSnap.id.toLowerCase().trim();
+            if (data) {
+                if (data.status === 'success') syncedUnits.add(uId);
+                if (data.todayEntries !== undefined) {
+                    totalEvoEntries += Number(data.todayEntries) || 0;
+                }
+            }
+        });
+    } catch (e) {
+        console.warn("Error fetching evo_sync_status:", e);
+    }
+
+    // 2. Load Active Contracts (Contratos Ativos - Apenas das Unidades Sincronizadas + Assinaturas Locais)
     const contractsEl = document.getElementById('total-contracts');
     if (contractsEl) {
         try {
-            const q = query(
-                collection(db, 'evo_students')
-            );
+            const q = query(collection(db, 'evo_students'));
             const querySnapshot = await getDocs(q);
-            let total = 0;
+            let totalActiveContracts = 0;
+
             querySnapshot.forEach(docSnap => {
                 const student = docSnap.data();
                 const isEvoActive = student.status === 1 || student.status === 'Active' || student.status === 'Ativo' || student.status === 'ativo';
                 const isTuitionActive = ['active', 'authorized'].includes(student.tuitionStatus);
-                // If it's an EVO student with active status or local active student
-                if (isEvoActive || isTuitionActive) {
-                    total++;
+                
+                const unitId = (student.unitId || '').toLowerCase().trim();
+                const branchName = (student.branchName || '').toLowerCase().trim();
+
+                // Check if student belongs to one of our synced units
+                const isFromSyncedUnit = Array.from(syncedUnits).some(synced => 
+                    unitId.includes(synced) || branchName.includes(synced)
+                );
+
+                if ((isEvoActive && isFromSyncedUnit) || isTuitionActive) {
+                    totalActiveContracts++;
                 }
             });
-            contractsEl.textContent = total.toLocaleString('pt-BR');
+
+            contractsEl.textContent = totalActiveContracts.toLocaleString('pt-BR');
             contractsEl.classList.remove('animate-pulse');
         } catch (error) {
             console.error("Error loading contracts:", error);
@@ -113,7 +141,7 @@ async function loadStats() {
         }
     }
 
-    // Load Daily Entries (Checkins)
+    // 3. Load Daily Check-ins (Grade Interna)
     const checkinsEl = document.getElementById('daily-checkins');
     if (checkinsEl) {
         try {
@@ -152,49 +180,29 @@ async function loadStats() {
         }
     }
 
-    // Load EVO Daily Entries (Catracas/Presenças EVO) com Atualização Instantânea em Tempo Real
+    // 4. Load EVO Daily Entries (Alunos Hoje EVO)
     const evoCheckinsEl = document.getElementById('daily-checkins-evo');
     if (evoCheckinsEl) {
-        // 1. Escuta em tempo real no Firestore (onSnapshot) para atualização instantânea
+        // Exibe imediatamente o total das unidades sincronizadas
+        evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
+        evoCheckinsEl.classList.remove('animate-pulse');
+
+        // Escuta em tempo real se houver alteração nas unidades
         try {
             onSnapshot(collection(db, 'evo_sync_status'), (snapshot) => {
-                let totalEvoEntries = 0;
+                let liveEntries = 0;
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data && data.todayEntries) {
-                        totalEvoEntries += Number(data.todayEntries) || 0;
+                    if (data && data.todayEntries !== undefined) {
+                        liveEntries += Number(data.todayEntries) || 0;
                     }
                 });
-                if (totalEvoEntries > 0) {
-                    evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
-                    evoCheckinsEl.classList.remove('animate-pulse');
-                }
+                evoCheckinsEl.textContent = liveEntries.toLocaleString('pt-BR');
+                evoCheckinsEl.classList.remove('animate-pulse');
             });
         } catch (err) {
             console.warn("Realtime listener error for evo_sync_status:", err);
         }
-
-        // 2. Consulta AO VIVO na API do EVO (getTodaysTotalEntries)
-        const fetchLiveEvoEntries = async () => {
-            try {
-                const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
-                const { functions } = await import('./firebase-config.js');
-                const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
-                const res = await getTodaysTotalEntries({ unitId: 'geral' });
-                
-                if (res.data && res.data.totalEntries !== undefined) {
-                    const liveTotal = Number(res.data.totalEntries);
-                    evoCheckinsEl.textContent = liveTotal.toLocaleString('pt-BR');
-                    evoCheckinsEl.classList.remove('animate-pulse');
-                }
-            } catch (error) {
-                console.error("Error fetching live EVO entries:", error);
-            }
-        };
-
-        // Executa ao carregar e agenda atualização automática a cada 30 segundos
-        fetchLiveEvoEntries();
-        setInterval(fetchLiveEvoEntries, 30000);
     }
 
     // Hide Skeleton and Show Content
