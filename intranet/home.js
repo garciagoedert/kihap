@@ -98,7 +98,10 @@ async function loadStats() {
             let total = 0;
             querySnapshot.forEach(docSnap => {
                 const student = docSnap.data();
-                if (['active', 'authorized'].includes(student.tuitionStatus)) {
+                const isEvoActive = student.status === 1 || student.status === 'Active' || student.status === 'Ativo' || student.status === 'ativo';
+                const isTuitionActive = ['active', 'authorized'].includes(student.tuitionStatus);
+                // If it's an EVO student with active status or local active student
+                if (isEvoActive || isTuitionActive) {
                     total++;
                 }
             });
