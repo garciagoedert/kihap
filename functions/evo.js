@@ -11,7 +11,7 @@ const db = admin.firestore();
 const EVO_CREDENTIALS = {
     centro: {
         dns: "atadf",
-        token: "08AD03F4-B0A7-4B4B-958C-38C81EA66E48",
+        token: "F894248D-1ECD-4DE2-8A34-2D41B0024BEA",
     },
     coqueiros: {
         dns: "atadf",
