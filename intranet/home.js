@@ -156,15 +156,27 @@ async function loadStats() {
     const evoCheckinsEl = document.getElementById('daily-checkins-evo');
     if (evoCheckinsEl) {
         try {
-            const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
-            const { functions } = await import('./firebase-config.js');
-            const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
-            const res = await getTodaysTotalEntries({ unitId: 'geral' });
-            
-            if (res.data && res.data.totalEntries !== undefined) {
-                evoCheckinsEl.textContent = Number(res.data.totalEntries).toLocaleString('pt-BR');
+            let totalEvoEntries = 0;
+            const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
+            statusSnap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data && data.todayEntries) {
+                    totalEvoEntries += Number(data.todayEntries) || 0;
+                }
+            });
+
+            if (totalEvoEntries > 0) {
+                evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
             } else {
-                evoCheckinsEl.textContent = "0";
+                const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js");
+                const { functions } = await import('./firebase-config.js');
+                const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
+                const res = await getTodaysTotalEntries({ unitId: 'geral' });
+                if (res.data && res.data.totalEntries !== undefined) {
+                    evoCheckinsEl.textContent = Number(res.data.totalEntries).toLocaleString('pt-BR');
+                } else {
+                    evoCheckinsEl.textContent = "0";
+                }
             }
             evoCheckinsEl.classList.remove('animate-pulse');
         } catch (error) {
