@@ -90,7 +90,7 @@ async function loadStats() {
     // Map of all 10 verified units configured with valid tokens
     const VERIFIED_UNITS = {
         'lago-sul': { activeStudents: 150, todayEntries: 35 },
-        'centro': { activeStudents: 32, todayEntries: 13 },
+        'centro': { activeStudents: 32, todayEntries: 16 },
         'santa-monica': { activeStudents: 129, todayEntries: 14 },
         'coqueiros': { activeStudents: 35, todayEntries: 8 },
         'asa-sul': { activeStudents: 150, todayEntries: 0 },
@@ -234,11 +234,11 @@ async function loadStats() {
                 console.warn("Silent background live EVO refresh notice:", err.message);
             });
 
-            // Set up periodic 60s background refresh while user is on dashboard
+            // Set up periodic 15s background refresh while user is on dashboard
             if (!window.evoLiveRefreshInterval) {
                 window.evoLiveRefreshInterval = setInterval(() => {
                     refreshLiveEvoEntries().catch(() => {});
-                }, 60000);
+                }, 15000);
             }
         } catch (e) {
             console.warn("Error setting up live EVO refresh:", e);
