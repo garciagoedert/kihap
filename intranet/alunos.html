@@ -89,7 +89,7 @@
                         <label for="unit-filter" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Unidade</label>
                             <select id="unit-filter"
                                 class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[200px]">
-                                <option value="">Selecione uma Unidade...</option>
+                                <option value="" selected>Selecione uma Unidade...</option>
                                 <option value="all">Todas as Unidades</option>
                                 <!-- Unidades carregadas dinamicamente via getUnidades() em alunos.js -->
                             </select>
@@ -351,7 +351,7 @@
     <script type="module" src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
-        import { setupAlunosPage } from './alunos.js';
+        import { setupAlunosPage } from './alunos.js?v=938';
         // Import functions for badge management from gerenciar-emblemas.js
         import { setupGerenciarEmblemasPage as setupBadgeManagement } from './gerenciar-emblemas.js';
 

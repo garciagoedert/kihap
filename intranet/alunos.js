@@ -93,7 +93,7 @@ export function setupAlunosPage() {
             currentAppUser = user;
             console.log("👤 Usuário autenticado na página de alunos:", user.email);
             // Popular selects de unidade dinamicamente
-            populateUnitSelects();
+            await populateUnitSelects();
 
             // Oculta o botão de adicionar prospect no header
             const addProspectBtn = document.getElementById('addProspectBtnHeader');
