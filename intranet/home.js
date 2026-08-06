@@ -1,7 +1,8 @@
-import { db } from './firebase-config.js';
+import { db, functions } from './firebase-config.js';
 import { loadComponents } from './common-ui.js';
 import { onAuthReady } from './auth.js';
 import { collection, getDocs, query, orderBy, where, collectionGroup, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 // Quote Library
 const quotes = [
