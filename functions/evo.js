@@ -11,43 +11,43 @@ const db = admin.firestore();
 const EVO_CREDENTIALS = {
     centro: {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_CENTRO || "24E6D961-CAC8-4614-8E49-3087BB9E1FE2",
+        token: process.env.EVO_TOKEN_CENTRO || "",
     },
     coqueiros: {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_COQUEIROS || "26CCEC53-E254-4BD9-A67A-A998E9A136DF",
+        token: process.env.EVO_TOKEN_COQUEIROS || "",
     },
     "asa-sul": {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_ASA_SUL || "826D4CB6-9D9B-4BC4-8D45-082890D7644A",
+        token: process.env.EVO_TOKEN_ASA_SUL || "",
     },
     sudoeste: {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_SUDOESTE || "FB0E542C-CBE4-43FE-A784-E5A7027134E7",
+        token: process.env.EVO_TOKEN_SUDOESTE || "",
     },
     "lago-sul": {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_LAGO_SUL || "6BB08B7C-B52F-4B84-98D7-387EA11A0875",
+        token: process.env.EVO_TOKEN_LAGO_SUL || "",
     },
     "pontos-de-ensino": {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_PONTOS_DE_ENSINO || "5502D9A9-CEDA-4313-9F1E-FCDFFA1EAE35",
+        token: process.env.EVO_TOKEN_PONTOS_DE_ENSINO || "",
     },
     "jardim-botanico": {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_JARDIM_BOTANICO || "705B754D-E5BC-446E-8682-3ADC9FC31674",
+        token: process.env.EVO_TOKEN_JARDIM_BOTANICO || "",
     },
     dourados: {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_DOURADOS || "69C18366-AE37-42EE-904C-69EDA3F810BB",
+        token: process.env.EVO_TOKEN_DOURADOS || "",
     },
     "santa-monica": {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_SANTA_MONICA || "A13D2C2E-CA5A-4946-9B8E-AFE9BB89FE93",
+        token: process.env.EVO_TOKEN_SANTA_MONICA || "",
     },
     noroeste: {
         dns: process.env.EVO_DNS || "atadf",
-        token: process.env.EVO_TOKEN_NOROESTE || "696FFCC7-7B22-4F9D-BBC0-BC57C7FE0434",
+        token: process.env.EVO_TOKEN_NOROESTE || "",
     }
 };
 
