@@ -37,7 +37,7 @@ async function populateUnitSelects() {
         const regSel    = document.getElementById('reg-unit');
 
         if (filterSel) {
-            filterSel.innerHTML = '<option value="all">Todas as Unidades</option>';
+            filterSel.innerHTML = '<option value="">Selecione uma Unidade...</option><option value="all">Todas as Unidades</option>';
             unidades.forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.id;
@@ -488,23 +488,41 @@ async function loadStudents() {
     const tableBody = document.getElementById('students-table-body');
     const unitFilter = document.getElementById('unit-filter');
     const searchInput = document.getElementById('search-input');
-    const selectedUnit = unitFilter.value;
-    const searchTerm = searchInput.value.trim();
+    const selectedUnit = unitFilter ? unitFilter.value : '';
+    const searchTerm = searchInput ? searchInput.value.trim() : '';
 
-    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8">Carregando alunos...</td></tr>';
+    if (!selectedUnit && !searchTerm) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-16 px-4">
+                    <div class="max-w-md mx-auto flex flex-col items-center">
+                        <div class="w-14 h-14 bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-500 rounded-2xl flex items-center justify-center text-xl mb-4">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">Selecione uma Unidade</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Por favor, escolha uma unidade no filtro acima (ou busque por um nome) para carregar os alunos.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        allStudents = [];
+        return;
+    }
+
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8"><i class="fas fa-circle-notch fa-spin text-primary mr-2"></i>Carregando alunos...</td></tr>';
 
     try {
         console.log("🚀 Buscando alunos nativamente através de Cloud Function (rápido)...", { selectedUnit, searchTerm });
         const startTime = Date.now();
 
-        const result = await listAlunosLocais({ unitId: selectedUnit });
+        const result = await listAlunosLocais({ unitId: selectedUnit || 'all' });
         let studentList = result.data || [];
 
         // Search logic local no frontend
         if (searchTerm) {
             const lowerSearchTerm = searchTerm.toLowerCase();
             studentList = studentList.filter(s => {
-                const fullName = (s.firstName + " " + s.lastName).toLowerCase();
+                const fullName = ((s.firstName || '') + " " + (s.lastName || '')).toLowerCase();
                 return fullName.includes(lowerSearchTerm);
             });
         }
@@ -515,13 +533,11 @@ async function loadStudents() {
         allStudents = studentList;
         const isAdmin = await checkAdminStatus(currentAppUser);
         renderStudents(studentList, isAdmin);
-        updateCacheStatus();
 
     } catch (error) {
         console.error("Erro ao carregar lista de alunos:", error);
         tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500">Erro ao carregar alunos: ${error.message}</td></tr>`;
         allStudents = [];
-        updateCacheStatus(false);
     }
 }
 

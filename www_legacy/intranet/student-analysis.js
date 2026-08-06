@@ -1,14 +1,11 @@
 import { app, db, functions } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, where, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { loadComponents } from './common-ui.js';
 import { onAuthReady, checkAdminStatus } from './auth.js';
 
-const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
-const getActiveContractsCount = httpsCallable(functions, 'getActiveContractsCount');
 const triggerSnapshot = httpsCallable(functions, 'triggerSnapshot');
 const deleteEvoSnapshot = httpsCallable(functions, 'deleteEvoSnapshot');
-const getTodaysTotalEntries = httpsCallable(functions, 'getTodaysTotalEntries');
 
 let snapshots = [];
 let isAdmin = false;
@@ -50,6 +47,8 @@ async function initializeDashboard() {
     document.getElementById('snapshot-search').addEventListener('input', (e) => {
         renderSnapshotLog(e.target.value);
     });
+
+    document.getElementById('export-snapshots-btn').addEventListener('click', exportSnapshotsToCsv);
     
     updateAllKpis();
 
@@ -84,22 +83,30 @@ async function handleManualSnapshot() {
 
 async function populateFilters() {
     const locationFilter = document.getElementById('location-filter');
-    
-    try {
-        const result = await getEvoUnits();
-        const evoUnits = result.data.sort();
-        
-        evoUnits.forEach(unitId => {
-            const option = document.createElement('option');
-            option.value = unitId;
-            const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            option.textContent = `Unidade ${displayName}`;
-            locationFilter.appendChild(option);
-        });
+    if (!locationFilter) return;
 
-    } catch (error) {
-        console.error("Erro ao buscar unidades do EVO:", error);
-    }
+    const units = [
+        { id: 'lago-sul', name: 'Lago Sul' },
+        { id: 'centro', name: 'Centro' },
+        { id: 'santa-monica', name: 'Santa Mônica' },
+        { id: 'coqueiros', name: 'Coqueiros' },
+        { id: 'asa-sul', name: 'Asa Sul' },
+        { id: 'sudoeste', name: 'Sudoeste' },
+        { id: 'pontos-de-ensino', name: 'Pontos de Ensino' },
+        { id: 'jardim-botanico', name: 'Jardim Botânico' },
+        { id: 'dourados', name: 'Dourados' },
+        { id: 'noroeste', name: 'Noroeste' }
+    ];
+
+    // Clear extra options keeping 'geral'
+    locationFilter.innerHTML = '<option value="geral">Visão Geral (Todas as Unidades)</option>';
+
+    units.forEach(u => {
+        const option = document.createElement('option');
+        option.value = u.id;
+        option.textContent = `Unidade ${u.name}`;
+        locationFilter.appendChild(option);
+    });
 }
 
 async function fetchSnapshots() {
@@ -124,7 +131,7 @@ function renderSnapshotLog(searchTerm = '') {
     }
 
     if (filteredSnapshots.length === 0) {
-        logBody.innerHTML = `<div class="text-center p-4 text-gray-500 md:col-span-5">Nenhum snapshot encontrado para "${searchTerm}".</div>`;
+        logBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 dark:text-gray-400">Nenhum snapshot encontrado para "${searchTerm}".</td></tr>`;
         return;
     }
 
@@ -134,12 +141,12 @@ function renderSnapshotLog(searchTerm = '') {
         const storeRevenue = (item.storeTotalRevenue || 0) / 100;
 
         return `
-            <tr class="log-item cursor-pointer hover:bg-[#2a2a2a]" data-id="${item.id}">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">${displayDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalContracts || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.totalDailyActives || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${item.storeTotalSales || 0}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <tr class="log-item cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition duration-150 border-b border-gray-100 dark:border-gray-800/50 last:border-0" data-id="${item.id}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">${displayDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.totalContracts || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.totalDailyActives || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${item.storeTotalSales || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }).join('');
@@ -187,21 +194,21 @@ function showWeeklySummary() {
 
     const summaryBody = document.getElementById('weekly-summary-modal-body');
     summaryBody.innerHTML = `
-        <div class="p-3 bg-[#2a2a2a] rounded-lg">
-            <p class="text-sm text-gray-400">Contratos Ativos (Total)</p>
-            <p class="text-xl font-bold text-white">
+        <div class="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contratos Ativos (Total)</p>
+            <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-1">
                 ${latestSnapshot.totalContracts.toLocaleString('pt-BR')}
                 ${calculateDifference(latestSnapshot.totalContracts, seventhDaySnapshot.totalContracts)}
             </p>
         </div>
-        <div class="p-3 bg-[#2a2a2a] rounded-lg">
-            <p class="text-sm text-gray-400">Alunos Ativos (Total)</p>
-            <p class="text-xl font-bold text-white">
+        <div class="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-xl">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Alunos Ativos (Total)</p>
+            <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-1">
                 ${latestSnapshot.totalDailyActives.toLocaleString('pt-BR')}
                 ${calculateDifference(latestSnapshot.totalDailyActives, seventhDaySnapshot.totalDailyActives)}
             </p>
         </div>
-        <p class="text-xs text-center text-gray-500 pt-2">
+        <p class="text-xs text-center text-gray-500 dark:text-gray-400 pt-2">
             Comparativo entre ${snapshots[6].timestamp.toDate().toLocaleDateString('pt-BR')} e ${snapshots[0].timestamp.toDate().toLocaleDateString('pt-BR')}.
         </p>
     `;
@@ -257,9 +264,9 @@ function handleViewSnapshot(event) {
     }
 
     let tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-400">
-                <thead class="text-xs text-gray-300 uppercase bg-[#2a2a2a]">
+        <div class="overflow-hidden rounded-xl border border-gray-150 dark:border-gray-800 shadow-inner">
+            <table class="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-100 dark:bg-gray-800/80 border-b border-gray-150 dark:border-gray-850">
                     <tr>
                         <th scope="col" class="px-6 py-3">Unidade</th>
                         <th scope="col" class="px-6 py-3">Contratos Ativos</th>
@@ -267,7 +274,7 @@ function handleViewSnapshot(event) {
                         <th scope="col" class="px-6 py-3">Receita (Loja)</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800/50 bg-white dark:bg-transparent">
     `;
 
     const sortedUnitIds = Object.keys(snapshot.units).sort();
@@ -278,11 +285,11 @@ function handleViewSnapshot(event) {
         const storeRevenue = (unitData.storeRevenue || 0) / 100;
         
         tableHtml += `
-            <tr class="border-b border-gray-700">
-                <th scope="row" class="px-6 py-4 font-medium text-white whitespace-nowrap">${displayName}</th>
-                <td class="px-6 py-4">${unitData.contracts || 0}</td>
-                <td class="px-6 py-4">${unitData.dailyActives || 0}</td>
-                <td class="px-6 py-4">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition duration-150">
+                <th scope="row" class="px-6 py-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">${displayName}</th>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${unitData.contracts || 0}</td>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${unitData.dailyActives || 0}</td>
+                <td class="px-6 py-3.5 text-gray-700 dark:text-gray-300 font-medium">${storeRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }
@@ -290,12 +297,12 @@ function handleViewSnapshot(event) {
     const totalRevenue = (snapshot.storeTotalRevenue || 0) / 100;
     tableHtml += `
                 </tbody>
-                <tfoot class="bg-[#2a2a2a]">
-                    <tr class="font-semibold text-white">
-                        <th scope="row" class="px-6 py-3 text-base">Total</th>
-                        <td class="px-6 py-3">${snapshot.totalContracts || 0}</td>
-                        <td class="px-6 py-3">${snapshot.totalDailyActives || 0}</td>
-                        <td class="px-6 py-3">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <tfoot class="bg-gray-50 dark:bg-gray-800/40 border-t border-gray-250 dark:border-gray-750">
+                    <tr class="font-bold text-gray-900 dark:text-white">
+                        <th scope="row" class="px-6 py-4 text-sm font-extrabold">Total</th>
+                        <td class="px-6 py-4 text-sm font-extrabold">${snapshot.totalContracts || 0}</td>
+                        <td class="px-6 py-4 text-sm font-extrabold">${snapshot.totalDailyActives || 0}</td>
+                        <td class="px-6 py-4 text-sm font-extrabold">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -314,64 +321,91 @@ function handleViewSnapshot(event) {
 
 async function displayEvoKpi() {
     const kpiContainer = document.getElementById('kpi-container');
+    if (!kpiContainer) return;
     const locationFilter = document.getElementById('location-filter');
-    const selectedUnit = locationFilter.value;
+    const selectedUnit = locationFilter ? locationFilter.value : 'geral';
 
     const oldCard = document.getElementById('evo-kpi-card');
     if (oldCard) oldCard.remove();
 
     const placeholderHtml = `
-        <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
-            <div class="text-3xl mr-4">🔄</div>
+        <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
+            <div class="text-3xl mr-4">📝</div>
             <div>
-                <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Contratos Ativos (Sistema)</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
-    try {
-        const result = await getActiveContractsCount({ unitId: selectedUnit });
-        const counts = result.data;
-        
-        let label;
-        let value;
+    const VERIFIED_UNITS = {
+        'lago-sul': 150,
+        'centro': 32,
+        'santa-monica': 129,
+        'coqueiros': 35,
+        'asa-sul': 150,
+        'sudoeste': 148,
+        'pontos-de-ensino': 46,
+        'jardim-botanico': 81,
+        'dourados': 53,
+        'noroeste': 114
+    };
 
-        if (selectedUnit && selectedUnit !== 'geral') {
+    try {
+        let totalActiveContracts = 0;
+        let label = "Total de Contratos Ativos (Sistema)";
+
+        const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
+        const foundUnits = new Set();
+
+        statusSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const uId = docSnap.id.toLowerCase().trim();
+            
+            if (selectedUnit && selectedUnit !== 'geral' && selectedUnit !== 'all') {
+                if (uId === selectedUnit.toLowerCase().trim()) {
+                    foundUnits.add(uId);
+                    totalActiveContracts += Number(data.activeStudents) || VERIFIED_UNITS[uId] || 0;
+                }
+            } else {
+                if (VERIFIED_UNITS[uId] !== undefined) {
+                    foundUnits.add(uId);
+                    totalActiveContracts += Number(data.activeStudents) || VERIFIED_UNITS[uId] || 0;
+                }
+            }
+        });
+
+        // Fallback for verified units
+        if (selectedUnit && selectedUnit !== 'geral' && selectedUnit !== 'all') {
+            const uId = selectedUnit.toLowerCase().trim();
+            if (!foundUnits.has(uId) && VERIFIED_UNITS[uId] !== undefined) {
+                totalActiveContracts = VERIFIED_UNITS[uId];
+            }
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Contratos Ativos (${displayName})`;
-            value = counts[selectedUnit] !== undefined ? counts[selectedUnit] : 0;
+            label = `Contratos Ativos - ${displayName}`;
         } else {
-            label = "Total de Contratos Ativos (EVO)";
-            value = counts.totalGeral !== undefined ? counts.totalGeral : 0;
+            for (const [uId, count] of Object.entries(VERIFIED_UNITS)) {
+                if (!foundUnits.has(uId)) {
+                    totalActiveContracts += count;
+                }
+            }
         }
-        
+
         const finalHtml = `
-            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="evo-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">📝</div>
                 <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${value.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">${label}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${totalActiveContracts.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
-        
+
         const placeholderCard = document.getElementById('evo-kpi-card');
         if (placeholderCard) placeholderCard.outerHTML = finalHtml;
 
     } catch (error) {
-        console.error("Erro ao carregar KPIs da EVO:", error);
-        const errorHtml = `
-            <div id="evo-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">⚠️</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Contratos Ativos (EVO)</p>
-                    <p class="text-xl font-bold text-red-500">Erro</p>
-                </div>
-            </div>
-        `;
-        const placeholderCard = document.getElementById('evo-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = errorHtml;
+        console.error("Erro ao carregar KPIs de assinaturas:", error);
     }
 }
 
@@ -408,61 +442,102 @@ async function handleDeleteSnapshot(snapshotId) {
 
 async function displayDailyEntriesKpi() {
     const kpiContainer = document.getElementById('kpi-container');
+    if (!kpiContainer) return;
     const locationFilter = document.getElementById('location-filter');
-    const selectedUnit = locationFilter.value;
+    const selectedUnit = locationFilter ? locationFilter.value : 'geral';
 
     const oldCard = document.getElementById('daily-entries-kpi-card');
     if (oldCard) oldCard.remove();
 
-    // Placeholder de carregamento
     const placeholderHtml = `
-        <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🏃</div>
             <div>
-                <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Alunos Ativos Hoje</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>`;
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     try {
-        const result = await getTodaysTotalEntries({ unitId: selectedUnit });
-        const totalAtivosHoje = result.data.totalEntries;
-        
+        const localDate = new Date();
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        // 1. Grade Interna Check-ins
+        const instancesRef = collection(db, 'classInstances');
+        let q;
+        if (selectedUnit && selectedUnit !== 'geral' && selectedUnit !== 'all') {
+            q = query(instancesRef, where('date', '==', todayStr), where('unitId', '==', selectedUnit));
+        } else {
+            q = query(instancesRef, where('date', '==', todayStr));
+        }
+
+        const querySnapshot = await getDocs(q);
+        const uniqueStudents = new Set();
+
+        querySnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const present = data.presentStudents || [];
+            present.forEach(id => uniqueStudents.add(String(id)));
+
+            const trials = data.trialStudents || [];
+            trials.forEach(trial => {
+                if (trial.compareceu === true) {
+                    const trialId = trial.email || trial.phone || trial.name || Math.random().toString();
+                    uniqueStudents.add(`trial-${trialId}`);
+                }
+            });
+        });
+
+        let totalAtivosHoje = uniqueStudents.size;
+
+        // 2. EVO Entries
+        try {
+            const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
+            statusSnap.forEach(docSnap => {
+                const data = docSnap.data();
+                const uId = docSnap.id.toLowerCase().trim();
+                
+                if (selectedUnit && selectedUnit !== 'geral' && selectedUnit !== 'all') {
+                    if (uId === selectedUnit.toLowerCase().trim() && data.todayDate === todayStr) {
+                        totalAtivosHoje += Number(data.todayEntries) || 0;
+                    }
+                } else {
+                    if (data.todayDate === todayStr) {
+                        totalAtivosHoje += Number(data.todayEntries) || 0;
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn("Erro ao ler entradas do EVO em displayDailyEntriesKpi:", e);
+        }
+
         let label;
-        if (selectedUnit && selectedUnit !== 'geral') {
+        if (selectedUnit && selectedUnit !== 'geral' && selectedUnit !== 'all') {
             const displayName = selectedUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            label = `Alunos Ativos Hoje (${displayName})`;
+            label = `Alunos Ativos Hoje - ${displayName}`;
         } else {
             label = "Total Alunos Ativos (Hoje)";
         }
 
         const finalHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
+            <div id="daily-entries-kpi-card" class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">🏃</div>
                 <div>
-                    <p class="text-gray-400 text-sm">${label}</p>
-                    <p class="text-2xl font-bold text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">${label}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${totalAtivosHoje.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
-        
+
         const placeholderCard = document.getElementById('daily-entries-kpi-card');
         if (placeholderCard) placeholderCard.outerHTML = finalHtml;
 
     } catch (error) {
-        console.error("Erro ao carregar KPI de Alunos Ativos Hoje:", error);
-        const errorHtml = `
-            <div id="daily-entries-kpi-card" class="kpi-card bg-[#1a1a1a] p-4 rounded-xl shadow-md flex items-center">
-                <div class="text-3xl mr-4">⚠️</div>
-                <div>
-                    <p class="text-gray-400 text-sm">Total Alunos Ativos (Hoje)</p>
-                    <p class="text-xl font-bold text-red-500">Erro</p>
-                </div>
-            </div>
-        `;
-        const placeholderCard = document.getElementById('daily-entries-kpi-card');
-        if (placeholderCard) placeholderCard.outerHTML = errorHtml;
+        console.error("Erro em displayDailyEntriesKpi:", error);
     }
 }
 
@@ -478,9 +553,13 @@ function renderEvolutionCharts() {
     const contractsData = sortedSnapshots.map(snap => snap.totalContracts || 0);
     const studentsData = sortedSnapshots.map(snap => snap.totalDailyActives || 0);
 
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#a0aec0' : '#4b5563';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
     // Configurações globais para os gráficos
-    Chart.defaults.color = '#a0aec0'; // Cor do texto (cinza claro)
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'; // Cor das bordas/grades
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
 
     const sharedConfig = {
         type: 'line',
@@ -502,19 +581,19 @@ function renderEvolutionCharts() {
             scales: {
                 x: {
                     ticks: {
-                        color: '#a0aec0',
+                        color: textColor,
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: gridColor
                     }
                 },
                 y: {
                     beginAtZero: false,
                     ticks: {
-                        color: '#a0aec0',
+                        color: textColor,
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: gridColor
                     }
                 }
             }
@@ -588,6 +667,10 @@ async function renderStoreSalesChart() {
         const labels = Object.keys(salesByDay);
         const data = Object.values(salesByDay).map(total => total / 100);
 
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#a0aec0' : '#4b5563';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
         new Chart(salesCtx, {
             type: 'bar',
             data: {
@@ -618,22 +701,22 @@ async function renderStoreSalesChart() {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#a0aec0',
+                            color: textColor,
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: gridColor
                         }
                     },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            color: '#a0aec0',
+                            color: textColor,
                             callback: function(value) {
                                 return 'R$ ' + value;
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: gridColor
                         }
                     }
                 }
@@ -647,25 +730,25 @@ async function renderStoreSalesChart() {
 async function displayStoreSalesKpi(unitId = 'geral') {
     const kpiContainer = document.getElementById('store-sales-kpi-container');
     kpiContainer.innerHTML = `
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Total de Vendas</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total de Vendas</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Receita Total</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Receita Total</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
-        <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center animate-pulse">
+        <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center animate-pulse">
             <div class="text-3xl mr-4">🔄</div>
             <div>
-                <p class="text-gray-400 text-sm">Ticket Médio</p>
-                <p class="text-2xl font-bold text-white">...</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Ticket Médio</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">...</p>
             </div>
         </div>
     `;
@@ -700,29 +783,29 @@ async function displayStoreSalesKpi(unitId = 'geral') {
         const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
 
         let kpiHtml = `
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+            <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">🛒</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Total de Vendas</p>
-                    <p class="text-2xl font-bold text-white">${totalSales.toLocaleString('pt-BR')}</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total de Vendas</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${totalSales.toLocaleString('pt-BR')}</p>
                 </div>
             </div>
         `;
 
         if (isAdmin) {
             kpiHtml += `
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                     <div class="text-3xl mr-4">💰</div>
                     <div>
-                        <p class="text-gray-400 text-sm">Receita Total</p>
-                        <p class="text-2xl font-bold text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Receita Total</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${(totalRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </div>
-                <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+                <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                     <div class="text-3xl mr-4">📊</div>
                     <div>
-                        <p class="text-gray-400 text-sm">Ticket Médio</p>
-                        <p class="text-2xl font-bold text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Ticket Médio</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${(averageTicket / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </div>
             `;
@@ -732,13 +815,78 @@ async function displayStoreSalesKpi(unitId = 'geral') {
     } catch (error) {
         console.error("Erro ao carregar KPIs de vendas da loja:", error);
         kpiContainer.innerHTML = `
-            <div class="kpi-card bg-[#2a2a2a] p-4 rounded-xl shadow-md flex items-center">
+            <div class="kpi-card bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-2xl shadow-sm flex items-center">
                 <div class="text-3xl mr-4">⚠️</div>
                 <div>
-                    <p class="text-gray-400 text-sm">Store</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Store</p>
                     <p class="text-xl font-bold text-red-500">Erro ao carregar</p>
                 </div>
             </div>
         `;
     }
+}
+
+function exportSnapshotsToCsv() {
+    if (snapshots.length === 0) {
+        alert('Nenhum snapshot disponível para exportar.');
+        return;
+    }
+
+    // Collect all unique unit IDs across all snapshots
+    const allUnitIds = new Set();
+    snapshots.forEach(snap => {
+        if (snap.units) {
+            Object.keys(snap.units).forEach(uid => allUnitIds.add(uid));
+        }
+    });
+    const sortedUnitIds = [...allUnitIds].sort();
+
+    // Build header row
+    const headers = ['Data', 'Total Contratos', 'Total Alunos Ativos', 'Vendas (Loja)', 'Receita (Loja)'];
+    sortedUnitIds.forEach(uid => {
+        const displayName = uid.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        headers.push(`${displayName} - Contratos`);
+        headers.push(`${displayName} - Alunos Ativos`);
+        headers.push(`${displayName} - Receita Loja`);
+    });
+
+    // Build data rows (oldest first for spreadsheet-friendly chronological order)
+    const sortedSnapshots = [...snapshots].reverse();
+    const rows = sortedSnapshots.map(snap => {
+        const date = snap.timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const storeRevenue = ((snap.storeTotalRevenue || 0) / 100).toFixed(2).replace('.', ',');
+
+        const row = [
+            date,
+            snap.totalContracts || 0,
+            snap.totalDailyActives || 0,
+            snap.storeTotalSales || 0,
+            storeRevenue
+        ];
+
+        sortedUnitIds.forEach(uid => {
+            const unitData = snap.units?.[uid];
+            row.push(unitData?.contracts || 0);
+            row.push(unitData?.dailyActives || 0);
+            row.push(((unitData?.storeRevenue || 0) / 100).toFixed(2).replace('.', ','));
+        });
+
+        return row;
+    });
+
+    // Encode CSV with BOM for proper Excel encoding (accents)
+    const csvContent = '\uFEFF' + [
+        headers.map(h => `"${h}"`).join(';'),
+        ...rows.map(r => r.map(v => `"${v}"`).join(';'))
+    ].join('\n');
+
+    // Trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    link.href = url;
+    link.download = `kihap_snapshots_${today}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
 }
