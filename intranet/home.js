@@ -91,7 +91,8 @@ async function loadStats() {
     const KNOWN_SYNCED_UNITS = {
         'centro': { activeStudents: 33, todayEntries: 9 },
         'santa-monica': { activeStudents: 130, todayEntries: 0 },
-        'coqueiros': { activeStudents: 35, todayEntries: 0 }
+        'coqueiros': { activeStudents: 35, todayEntries: 0 },
+        'lago-sul': { activeStudents: 150, todayEntries: 0 }
     };
 
     let totalActiveContracts = 0;

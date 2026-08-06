@@ -27,7 +27,7 @@ const EVO_CREDENTIALS = {
     },
     "lago-sul": {
         dns: "atadf",
-        token: "3FABB904-BE55-474F-99CE-C1901962679B",
+        token: "7DE900D9-6FAA-40CB-B39E-C6F934295479",
     },
     "pontos-de-ensino": {
         dns: "atadf",
