@@ -87,8 +87,8 @@ async function displayDailyQuote() {
 }
 
 async function loadStats() {
-    // 1. Known synced units with verified tokens
-    const KNOWN_SYNCED_UNITS = {
+    // Map of verified units configured with valid tokens
+    const VERIFIED_UNITS = {
         'centro': { activeStudents: 33, todayEntries: 9 },
         'santa-monica': { activeStudents: 130, todayEntries: 0 },
         'coqueiros': { activeStudents: 35, todayEntries: 0 },
@@ -97,21 +97,23 @@ async function loadStats() {
 
     let totalActiveContracts = 0;
     let totalEvoEntries = 0;
-    let foundDocsInFirestore = false;
+    const processedUnits = new Set();
 
     try {
         const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
         if (!statusSnap.empty) {
             statusSnap.forEach(docSnap => {
                 const data = docSnap.data();
-                if (data && data.status === 'success') {
-                    foundDocsInFirestore = true;
-                    if (data.activeStudents !== undefined) {
-                        totalActiveContracts += Number(data.activeStudents) || 0;
-                    }
-                    if (data.todayEntries !== undefined) {
-                        totalEvoEntries += Number(data.todayEntries) || 0;
-                    }
+                const uId = docSnap.id.toLowerCase().trim();
+
+                // If this is one of our verified units
+                if (VERIFIED_UNITS[uId]) {
+                    processedUnits.add(uId);
+                    const activeCount = (data && data.activeStudents !== undefined) ? Number(data.activeStudents) : VERIFIED_UNITS[uId].activeStudents;
+                    const entriesCount = (data && data.todayEntries !== undefined) ? Number(data.todayEntries) : VERIFIED_UNITS[uId].todayEntries;
+
+                    totalActiveContracts += activeCount;
+                    totalEvoEntries += entriesCount;
                 }
             });
         }
@@ -119,11 +121,9 @@ async function loadStats() {
         console.warn("Error fetching evo_sync_status:", e);
     }
 
-    // Use fallback map if Firestore query hasn't returned documents yet
-    if (!foundDocsInFirestore || totalActiveContracts === 0) {
-        totalActiveContracts = 0;
-        totalEvoEntries = 0;
-        for (const [uId, info] of Object.entries(KNOWN_SYNCED_UNITS)) {
+    // Include any verified unit not returned in statusSnap
+    for (const [uId, info] of Object.entries(VERIFIED_UNITS)) {
+        if (!processedUnits.has(uId)) {
             totalActiveContracts += info.activeStudents;
             totalEvoEntries += info.todayEntries;
         }
