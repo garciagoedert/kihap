@@ -1417,6 +1417,50 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Atualiza as entradas (check-ins) ao vivo de hoje de todas as unidades no Firestore.
+ */
+exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
+    }
+
+    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const year = nowInSaoPaulo.getFullYear();
+    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const registerDateStart = `${todayStr}T00:00:00Z`;
+    const registerDateEnd = `${todayStr}T23:59:59Z`;
+
+    let grandTotalEntries = 0;
+    const unitResults = {};
+
+    for (const [unitId, creds] of Object.entries(EVO_CREDENTIALS)) {
+        try {
+            const apiClient = getEvoApiClient(unitId, 'v1');
+            const res = await apiClient.get("/entries", {
+                params: { registerDateStart, registerDateEnd, take: 1000 }
+            });
+            const entries = res.data || [];
+            const count = Array.isArray(entries) ? entries.length : 0;
+            grandTotalEntries += count;
+            unitResults[unitId] = count;
+
+            await db.collection('evo_sync_status').doc(unitId).set({
+                todayEntries: count,
+                todayDate: todayStr,
+                lastEntriesCheck: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        } catch (err) {
+            functions.logger.warn(`Erro ao atualizar entradas ao vivo para ${unitId}:`, err.message);
+        }
+    }
+
+    return { totalTodayEntries: grandTotalEntries, unitResults, todayDate: todayStr };
+});
+
+/**
  * Busca a evolução do número de contratos ativos ao longo do tempo.
  */
 exports.getContractsEvolution = functions.runWith({ timeoutSeconds: 120, memory: "1GB" }).https.onCall(async (data, context) => {

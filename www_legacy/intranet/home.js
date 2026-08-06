@@ -195,20 +195,22 @@ async function loadStats() {
         }
     }
 
-    // 4. Load EVO Daily Entries (Alunos Hoje EVO)
+    // 4. Load EVO Daily Entries (Alunos Hoje EVO em Tempo Real)
     const evoCheckinsEl = document.getElementById('daily-checkins-evo');
     if (evoCheckinsEl) {
-        // Exibe imediatamente o total das unidades sincronizadas
-        evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
-        evoCheckinsEl.classList.remove('animate-pulse');
+        const localDate = new Date();
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
 
-        // Escuta em tempo real se houver alteração nas unidades
+        // Listen in real-time to Firestore evo_sync_status updates
         try {
             onSnapshot(collection(db, 'evo_sync_status'), (snapshot) => {
                 let liveEntries = 0;
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data && data.todayEntries !== undefined) {
+                    if (data && data.todayDate === todayStr && data.todayEntries !== undefined) {
                         liveEntries += Number(data.todayEntries) || 0;
                     }
                 });
@@ -217,6 +219,29 @@ async function loadStats() {
             });
         } catch (err) {
             console.warn("Realtime listener error for evo_sync_status:", err);
+            evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
+            evoCheckinsEl.classList.remove('animate-pulse');
+        }
+
+        // Call Cloud Function to fetch latest live entries directly from EVO API
+        try {
+            const refreshLiveEvoEntries = httpsCallable(functions, 'refreshLiveEvoEntries');
+            refreshLiveEvoEntries().then(res => {
+                if (res.data && res.data.totalTodayEntries !== undefined) {
+                    evoCheckinsEl.textContent = res.data.totalTodayEntries.toLocaleString('pt-BR');
+                }
+            }).catch(err => {
+                console.warn("Silent background live EVO refresh notice:", err.message);
+            });
+
+            // Set up periodic 60s background refresh while user is on dashboard
+            if (!window.evoLiveRefreshInterval) {
+                window.evoLiveRefreshInterval = setInterval(() => {
+                    refreshLiveEvoEntries().catch(() => {});
+                }, 60000);
+            }
+        } catch (e) {
+            console.warn("Error setting up live EVO refresh:", e);
         }
     }
 
