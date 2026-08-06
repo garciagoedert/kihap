@@ -10,48 +10,44 @@ const db = admin.firestore();
 // Configuração das credenciais por unidade. No futuro, isso pode vir de secrets ou do Firestore.
 const EVO_CREDENTIALS = {
     centro: {
-        dns: "atadf",
-        token: "F894248D-1ECD-4DE2-8A34-2D41B0024BEA",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_CENTRO || "24E6D961-CAC8-4614-8E49-3087BB9E1FE2",
     },
     coqueiros: {
-        dns: "atadf",
-        token: "2DC18D28-4BF3-4C16-A579-DD89D873EE65",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_COQUEIROS || "26CCEC53-E254-4BD9-A67A-A998E9A136DF",
     },
     "asa-sul": {
-        dns: "atadf",
-        token: "79D29584-14EB-4E13-8C06-E55A4BC7FD8E",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_ASA_SUL || "826D4CB6-9D9B-4BC4-8D45-082890D7644A",
     },
     sudoeste: {
-        dns: "atadf",
-        token: "F33EBA37-367A-42A8-B598-3DDF0387F997",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_SUDOESTE || "FB0E542C-CBE4-43FE-A784-E5A7027134E7",
     },
     "lago-sul": {
-        dns: "atadf",
-        token: "7DE900D9-6FAA-40CB-B39E-C6F934295479",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_LAGO_SUL || "6BB08B7C-B52F-4B84-98D7-387EA11A0875",
     },
     "pontos-de-ensino": {
-        dns: "atadf",
-        token: "0543427D-8C44-4150-B5AB-F15761F63B8B",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_PONTOS_DE_ENSINO || "5502D9A9-CEDA-4313-9F1E-FCDFFA1EAE35",
     },
     "jardim-botanico": {
-        dns: "atadf",
-        token: "9F34BB72-1368-4E97-B933-323BE40C54CC",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_JARDIM_BOTANICO || "705B754D-E5BC-446E-8682-3ADC9FC31674",
     },
     dourados: {
-        dns: "atadf",
-        token: "7A515FA0-3C34-465C-B5B7-9D60DECB9882",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_DOURADOS || "69C18366-AE37-42EE-904C-69EDA3F810BB",
     },
     "santa-monica": {
-        dns: "atadf",
-        token: "4D224BA6-DD87-4F1E-BA16-AE17DCD4B18A",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_SANTA_MONICA || "A13D2C2E-CA5A-4946-9B8E-AFE9BB89FE93",
     },
     noroeste: {
-        dns: "atadf",
-        token: "EB5D8DDB-7263-476D-9491-2DD3F4BB7414",
-    },
-    store: {
-        dns: "atadf",
-        token: "F5389AF2-DEA8-49E4-850F-7365A5077CC6",
+        dns: process.env.EVO_DNS || "atadf",
+        token: process.env.EVO_TOKEN_NOROESTE || "696FFCC7-7B22-4F9D-BBC0-BC57C7FE0434",
     }
 };
 

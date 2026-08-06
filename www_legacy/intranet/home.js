@@ -87,12 +87,18 @@ async function displayDailyQuote() {
 }
 
 async function loadStats() {
-    // Map of verified units configured with valid tokens
+    // Map of all 10 verified units configured with valid tokens
     const VERIFIED_UNITS = {
-        'centro': { activeStudents: 33, todayEntries: 9 },
-        'santa-monica': { activeStudents: 130, todayEntries: 0 },
+        'lago-sul': { activeStudents: 150, todayEntries: 0 },
+        'centro': { activeStudents: 32, todayEntries: 0 },
+        'santa-monica': { activeStudents: 129, todayEntries: 0 },
         'coqueiros': { activeStudents: 35, todayEntries: 0 },
-        'lago-sul': { activeStudents: 150, todayEntries: 0 }
+        'asa-sul': { activeStudents: 150, todayEntries: 0 },
+        'sudoeste': { activeStudents: 148, todayEntries: 0 },
+        'pontos-de-ensino': { activeStudents: 46, todayEntries: 0 },
+        'jardim-botanico': { activeStudents: 81, todayEntries: 0 },
+        'dourados': { activeStudents: 53, todayEntries: 0 },
+        'noroeste': { activeStudents: 114, todayEntries: 5 }
     };
 
     let totalActiveContracts = 0;
