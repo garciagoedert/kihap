@@ -89,8 +89,8 @@ async function displayDailyQuote() {
 async function loadStats() {
     // Map of all 10 verified units configured with valid tokens
     const VERIFIED_UNITS = {
-        'lago-sul': { activeStudents: 150, todayEntries: 35 },
-        'centro': { activeStudents: 32, todayEntries: 16 },
+        'lago-sul': { activeStudents: 150, todayEntries: 39 },
+        'centro': { activeStudents: 32, todayEntries: 15 },
         'santa-monica': { activeStudents: 129, todayEntries: 14 },
         'coqueiros': { activeStudents: 35, todayEntries: 8 },
         'asa-sul': { activeStudents: 150, todayEntries: 0 },

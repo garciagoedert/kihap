@@ -1436,15 +1436,15 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
     let grandTotalEntries = 0;
     const unitResults = {};
 
-    for (const [unitId, creds] of Object.entries(EVO_CREDENTIALS)) {
+    const promises = Object.entries(EVO_CREDENTIALS).map(async ([unitId, creds]) => {
         try {
             const apiClient = getEvoApiClient(unitId, 'v1');
             const res = await apiClient.get("/entries", {
-                params: { registerDateStart, registerDateEnd, take: 1000 }
+                params: { registerDateStart, registerDateEnd, take: 1000 },
+                timeout: 5000
             });
             const entries = res.data || [];
             const count = Array.isArray(entries) ? entries.length : 0;
-            grandTotalEntries += count;
             unitResults[unitId] = count;
 
             await db.collection('evo_sync_status').doc(unitId).set({
@@ -1452,10 +1452,20 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
                 todayDate: todayStr,
                 lastEntriesCheck: admin.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
+
+            return { unitId, count };
         } catch (err) {
             functions.logger.warn(`Erro ao atualizar entradas ao vivo para ${unitId}:`, err.message);
+            return { unitId, error: err.message };
         }
-    }
+    });
+
+    const results = await Promise.allSettled(promises);
+    results.forEach(r => {
+        if (r.status === 'fulfilled' && r.value && r.value.count !== undefined) {
+            grandTotalEntries += r.value.count;
+        }
+    });
 
     return { totalTodayEntries: grandTotalEntries, unitResults, todayDate: todayStr };
 });
