@@ -88,16 +88,17 @@ async function displayDailyQuote() {
 
 async function loadStats() {
     // 1. Fetch synced units status from evo_sync_status first
-    let syncedUnits = new Set(['centro', 'santa-monica', 'coqueiros']);
+    let totalActiveContracts = 0;
     let totalEvoEntries = 0;
 
     try {
         const statusSnap = await getDocs(collection(db, 'evo_sync_status'));
         statusSnap.forEach(docSnap => {
             const data = docSnap.data();
-            const uId = docSnap.id.toLowerCase().trim();
-            if (data) {
-                if (data.status === 'success') syncedUnits.add(uId);
+            if (data && data.status === 'success') {
+                if (data.activeStudents !== undefined) {
+                    totalActiveContracts += Number(data.activeStudents) || 0;
+                }
                 if (data.todayEntries !== undefined) {
                     totalEvoEntries += Number(data.todayEntries) || 0;
                 }
@@ -107,38 +108,25 @@ async function loadStats() {
         console.warn("Error fetching evo_sync_status:", e);
     }
 
-    // 2. Load Active Contracts (Contratos Ativos - Apenas das Unidades Sincronizadas + Assinaturas Locais)
+    // Add local active tuition subscriptions if any
+    try {
+        const q = query(collection(db, 'evo_students'), where('isLocalOnly', '==', true));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach(docSnap => {
+            const student = docSnap.data();
+            if (['active', 'authorized'].includes(student.tuitionStatus)) {
+                totalActiveContracts++;
+            }
+        });
+    } catch (e) {
+        console.warn("Error checking local active tuitions:", e);
+    }
+
+    // 2. Display Active Contracts (Contratos Ativos - Exatos das Unidades Sincronizadas)
     const contractsEl = document.getElementById('total-contracts');
     if (contractsEl) {
-        try {
-            const q = query(collection(db, 'evo_students'));
-            const querySnapshot = await getDocs(q);
-            let totalActiveContracts = 0;
-
-            querySnapshot.forEach(docSnap => {
-                const student = docSnap.data();
-                const isEvoActive = student.status === 1 || student.status === 'Active' || student.status === 'Ativo' || student.status === 'ativo';
-                const isTuitionActive = ['active', 'authorized'].includes(student.tuitionStatus);
-                
-                const unitId = (student.unitId || '').toLowerCase().trim();
-                const branchName = (student.branchName || '').toLowerCase().trim();
-
-                // Check if student belongs to one of our synced units
-                const isFromSyncedUnit = Array.from(syncedUnits).some(synced => 
-                    unitId.includes(synced) || branchName.includes(synced)
-                );
-
-                if ((isEvoActive && isFromSyncedUnit) || isTuitionActive) {
-                    totalActiveContracts++;
-                }
-            });
-
-            contractsEl.textContent = totalActiveContracts.toLocaleString('pt-BR');
-            contractsEl.classList.remove('animate-pulse');
-        } catch (error) {
-            console.error("Error loading contracts:", error);
-            contractsEl.textContent = "-";
-        }
+        contractsEl.textContent = totalActiveContracts.toLocaleString('pt-BR');
+        contractsEl.classList.remove('animate-pulse');
     }
 
     // 3. Load Daily Check-ins (Grade Interna)
