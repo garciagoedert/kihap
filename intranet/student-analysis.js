@@ -339,16 +339,16 @@ async function displayEvoKpi() {
     kpiContainer.insertAdjacentHTML('beforeend', placeholderHtml);
 
     const VERIFIED_UNITS = {
-        'lago-sul': 150,
+        'lago-sul': 162,
         'centro': 32,
-        'santa-monica': 129,
+        'santa-monica': 128,
         'coqueiros': 35,
-        'asa-sul': 150,
-        'sudoeste': 148,
+        'asa-sul': 155,
+        'sudoeste': 149,
         'pontos-de-ensino': 46,
         'jardim-botanico': 81,
         'dourados': 53,
-        'noroeste': 114
+        'noroeste': 113
     };
 
     try {
