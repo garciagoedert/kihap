@@ -2142,3 +2142,105 @@ exports.milesInactivityReminder = functions.pubsub.schedule('every 1 hours').onR
         return null;
     }
 });
+
+// Agendador Diário de Mensagem Motivacional do Miles (às 06:00h da manhã BRT)
+exports.milesDailyMotivation = functions.pubsub.schedule('0 6 * * *').timeZone('America/Sao_Paulo').onRun(async (context) => {
+    console.log('[Miles Daily Motivation] Iniciando envio diário das 06h00...');
+
+    try {
+        const configSnap = await db.collection('public_config').doc('miles').get();
+        if (!configSnap.exists) {
+            console.error('[Miles Daily Motivation] Configuração public_config/miles não encontrada.');
+            return null;
+        }
+        const configData = configSnap.data();
+        const whatsappToken = configData.whatsappToken || WHATSAPP_TOKEN;
+        const phoneNumberId = configData.phoneNumberId || PHONE_NUMBER_ID;
+
+        // Busca números cadastrados no Firestore
+        const recipientsSnap = await db.collection('daily_motivation_recipients').where('active', '==', true).get();
+        let targetPhones = [];
+
+        recipientsSnap.forEach(d => {
+            const data = d.data();
+            if (data.phone) targetPhones.push(data.phone);
+        });
+
+        // Fallback: se houver lista no public_config/miles (campo dailyMotivationPhones)
+        if (targetPhones.length === 0 && Array.isArray(configData.dailyMotivationPhones)) {
+            targetPhones = configData.dailyMotivationPhones;
+        }
+
+        if (targetPhones.length === 0) {
+            console.log('[Miles Daily Motivation] Nenhum número ativo encontrado para o envio das 06h.');
+            return null;
+        }
+
+        const motivationalMessages = [
+            `🥋 *"Eu posso, eu consigo!"*\n\nBom dia! Que o seu dia comece com foco, energia positiva e a disciplina de um verdadeiro campeão. Vamos pra cima! 🔥\n\n— *Miles / Kihap*`,
+            `🥋 *"Eu posso, eu consigo!"*\n\nUm excelente dia pra você! Acredite no seu potencial e dê o seu melhor em cada desafio hoje. 🥋✨\n\n— *Miles / Kihap*`,
+            `🥋 *"Eu posso, eu consigo!"*\n\nBom dia! Lembre-se: o respeito, a disciplina e a determinação transformam qualquer dia em uma grande vitória. Tenha um dia incrível! 💪\n\n— *Miles / Kihap*`
+        ];
+
+        const messageBody = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+
+        for (const rawPhone of targetPhones) {
+            const cleanPhone = rawPhone.replace(/\D/g, '');
+            const targetPhone = cleanPhone.length <= 11 ? '55' + cleanPhone : cleanPhone;
+
+            try {
+                await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                    messaging_product: "whatsapp",
+                    to: targetPhone,
+                    type: "text",
+                    text: { body: messageBody }
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${whatsappToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log(`[Miles Daily Motivation] Mensagem motivacional enviada com sucesso para ${targetPhone}`);
+
+                // Atualiza histórico no chat do WhatsApp
+                const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
+                const chatSnap = await chatRef.get();
+                let history = chatSnap.exists() ? (chatSnap.data().history || []) : [];
+                history.push({ role: 'model', parts: [{ text: messageBody }] });
+
+                await chatRef.set({
+                    history,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+            } catch (sendErr) {
+                console.error(`[Miles Daily Motivation] Erro ao enviar para ${targetPhone}:`, sendErr.response?.data || sendErr.message);
+            }
+        }
+
+    } catch (e) {
+        console.error('[Miles Daily Motivation] Erro no agendador motivacional:', e);
+    }
+    return null;
+});
+
+// Registrar número para receber a motivação diária às 06h
+exports.registerDailyMotivation = functions.https.onCall(async (data, context) => {
+    const phone = data?.phone;
+    if (!phone) {
+        throw new functions.https.HttpsError('invalid-argument', 'O telefone é obrigatório.');
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const docId = cleanPhone.length <= 11 ? '55' + cleanPhone : cleanPhone;
+
+    await db.collection('daily_motivation_recipients').doc(docId).set({
+        phone: docId,
+        rawPhone: phone,
+        active: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    return { success: true, message: `Número ${phone} cadastrado com sucesso para receber a mensagem diária do Miles às 06h!` };
+});

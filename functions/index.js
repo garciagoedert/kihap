@@ -4291,6 +4291,8 @@ exports.onNotificationCreated = functions.firestore
 
 exports.whatsappWebhook = require('./whatsapp.js').whatsappWebhook;
 exports.milesInactivityReminder = require('./whatsapp.js').milesInactivityReminder;
+exports.milesDailyMotivation = require('./whatsapp.js').milesDailyMotivation;
+exports.registerDailyMotivation = require('./whatsapp.js').registerDailyMotivation;
 
 /**
  * Trigger de Firestore para disparar eventos de conversão no Meta CAPI quando o status do prospect muda
