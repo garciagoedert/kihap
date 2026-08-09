@@ -2435,14 +2435,22 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
 
     try {
         // Clean phone number
-        const cleanPhone = phone.replace(/\D/g, '');
-        let targetPhone = cleanPhone;
-        // Basic formatting for BR numbers
-        if (targetPhone.length >= 10 && targetPhone.length <= 11) {
-            targetPhone = '55' + targetPhone;
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+            cleanPhone = '55' + cleanPhone;
         }
 
-        console.log(`[sendWhatsAppMessage] Sending Meta message to ${targetPhone} for prospect ${prospectId}`);
+        const phoneVariations = [cleanPhone];
+        if (cleanPhone.length === 13 && cleanPhone.startsWith('55')) {
+            const ddd = cleanPhone.slice(2, 4);
+            const rest = cleanPhone.slice(5);
+            const altPhone = '55' + ddd + rest;
+            if (!phoneVariations.includes(altPhone)) {
+                phoneVariations.push(altPhone);
+            }
+        }
+
+        console.log(`[sendWhatsAppMessage] Sending Meta message to ${phoneVariations.join(' / ')} for prospect ${prospectId}`);
 
         // Fetch Meta credentials
         const configSnap = await db.collection('public_config').doc('miles').get();
@@ -2457,20 +2465,36 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
             throw new Error("Credenciais do WhatsApp (whatsappToken/phoneNumberId) ausentes no Firestore.");
         }
 
-        // Send via Meta Cloud API
-        const metaResponse = await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-            messaging_product: "whatsapp",
-            to: targetPhone,
-            type: "text",
-            text: { body: message }
-        }, {
-            headers: {
-                'Authorization': `Bearer ${whatsappToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        let metaResponse = null;
+        let lastError = null;
+        let targetPhoneUsed = cleanPhone;
 
-        console.log('[sendWhatsAppMessage] Meta Cloud API response:', metaResponse.data);
+        for (const targetPhone of phoneVariations) {
+            try {
+                metaResponse = await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                    messaging_product: "whatsapp",
+                    to: targetPhone,
+                    type: "text",
+                    text: { body: message }
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${whatsappToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                targetPhoneUsed = targetPhone;
+                console.log(`[sendWhatsAppMessage] Meta Cloud API response para ${targetPhone}:`, metaResponse.data);
+                break;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[sendWhatsAppMessage] Falha para ${targetPhone}:`, err.response?.data || err.message);
+            }
+        }
+
+        if (!metaResponse && lastError) {
+            throw lastError;
+        }
+
         const wamid = metaResponse.data?.messages?.[0]?.id || 'unknown';
 
         // Update the WhatsApp chat history in Firestore so chatbot knows we replied

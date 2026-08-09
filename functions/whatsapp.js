@@ -2185,37 +2185,54 @@ exports.milesDailyMotivation = functions.pubsub.schedule('0 6 * * *').timeZone('
         const messageBody = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
 
         for (const rawPhone of targetPhones) {
-            const cleanPhone = rawPhone.replace(/\D/g, '');
-            const targetPhone = cleanPhone.length <= 11 ? '55' + cleanPhone : cleanPhone;
+            let cleanPhone = rawPhone.replace(/\D/g, '');
+            if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+                cleanPhone = '55' + cleanPhone;
+            }
 
-            try {
-                await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-                    messaging_product: "whatsapp",
-                    to: targetPhone,
-                    type: "text",
-                    text: { body: messageBody }
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${whatsappToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+            // Telefones BR com 13 dígitos (55 + DDD + 9XXXX-XXXX) podem necessitar da variação de 12 dígitos sem o 9 inicial no Meta Cloud API
+            const phoneVariations = [cleanPhone];
+            if (cleanPhone.length === 13 && cleanPhone.startsWith('55')) {
+                const ddd = cleanPhone.slice(2, 4);
+                const rest = cleanPhone.slice(5);
+                const altPhone = '55' + ddd + rest;
+                if (!phoneVariations.includes(altPhone)) {
+                    phoneVariations.push(altPhone);
+                }
+            }
 
-                console.log(`[Miles Daily Motivation] Mensagem motivacional enviada com sucesso para ${targetPhone}`);
+            for (const targetPhone of phoneVariations) {
+                try {
+                    await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                        messaging_product: "whatsapp",
+                        to: targetPhone,
+                        type: "text",
+                        text: { body: messageBody }
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${whatsappToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
-                // Atualiza histórico no chat do WhatsApp
-                const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
-                const chatSnap = await chatRef.get();
-                let history = chatSnap.exists() ? (chatSnap.data().history || []) : [];
-                history.push({ role: 'model', parts: [{ text: messageBody }] });
+                    console.log(`[Miles Daily Motivation] Mensagem motivacional enviada com sucesso para ${targetPhone}`);
 
-                await chatRef.set({
-                    history,
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                    // Atualiza histórico no chat do WhatsApp
+                    const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
+                    const chatSnap = await chatRef.get();
+                    let history = chatSnap.exists() ? (chatSnap.data().history || []) : [];
+                    history.push({ role: 'model', parts: [{ text: messageBody }] });
 
-            } catch (sendErr) {
-                console.error(`[Miles Daily Motivation] Erro ao enviar para ${targetPhone}:`, sendErr.response?.data || sendErr.message);
+                    await chatRef.set({
+                        history,
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                    break; // Sucesso na variação de número
+
+                } catch (sendErr) {
+                    console.error(`[Miles Daily Motivation] Erro ao enviar para ${targetPhone}:`, sendErr.response?.data || sendErr.message);
+                }
             }
         }
 
