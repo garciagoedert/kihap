@@ -1,6 +1,6 @@
 import { getAllUsers, updateUser, addUser, deleteUser, updateUserPassword } from './auth.js';
 import { db, functions, storage } from './firebase-config.js';
-import { addDoc, collection, query, orderBy, getDocs, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { addDoc, setDoc, collection, query, orderBy, getDocs, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -519,8 +519,10 @@ function continueSetup() {
     }
 }
 
+let cachedMotivationRecipients = [];
+
 function setupTabs() {
-    const tabs = ['users', 'logs', 'quotes'];
+    const tabs = ['users', 'logs', 'quotes', 'motivation'];
     tabs.forEach(tab => {
         const btn = document.getElementById(`tab-${tab}`);
         if (btn) {
@@ -537,9 +539,164 @@ function setupTabs() {
                 btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-primary', 'shadow-sm');
                 btn.classList.remove('text-gray-500', 'dark:text-gray-400');
                 document.getElementById(`${tab}-content`)?.classList.remove('hidden');
+
+                if (tab === 'motivation') {
+                    renderMotivationRecipients();
+                }
             });
         }
     });
+
+    setupMotivationEvents();
+}
+
+function setupMotivationEvents() {
+    const addBtn = document.getElementById('add-motivation-btn');
+    const modal = document.getElementById('motivation-modal');
+    const closeBtn = document.getElementById('close-motivation-modal');
+    const cancelBtn = document.getElementById('cancel-motivation-modal-btn');
+    const form = document.getElementById('motivation-form');
+    const nameInput = document.getElementById('motivation-name-input');
+    const phoneInput = document.getElementById('motivation-phone-input');
+    const activeCheckbox = document.getElementById('motivation-active-checkbox');
+
+    if (addBtn && modal) {
+        addBtn.addEventListener('click', () => {
+            if (form) form.reset();
+            activeCheckbox.checked = true;
+            modal.classList.remove('hidden');
+        });
+    }
+
+    if (closeBtn && modal) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    if (cancelBtn && modal) cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rawPhone = phoneInput.value.trim();
+            const cleanPhone = rawPhone.replace(/\D/g, '');
+            if (!cleanPhone) {
+                alert('Digite um número de telefone válido.');
+                return;
+            }
+            const docId = cleanPhone.length <= 11 ? '55' + cleanPhone : cleanPhone;
+            const name = nameInput.value.trim() || 'Usuário / Aluno';
+            const isActive = activeCheckbox.checked;
+
+            try {
+                await setDoc(doc(db, "daily_motivation_recipients", docId), {
+                    phone: docId,
+                    rawPhone: rawPhone,
+                    nome: name,
+                    active: isActive,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                alert(`Número ${rawPhone} salvo com sucesso!`);
+                modal.classList.add('hidden');
+                renderMotivationRecipients(true);
+            } catch (err) {
+                console.error('[MotivationAdmin] Erro ao salvar:', err);
+                alert('Erro ao salvar destinatário.');
+            }
+        });
+    }
+}
+
+async function renderMotivationRecipients(forceRefresh = false) {
+    const tableBody = document.getElementById('motivation-table-body');
+    if (!tableBody) return;
+
+    try {
+        if (cachedMotivationRecipients.length === 0 || forceRefresh) {
+            console.log('[Admin] Carregando destinatários da motivação das 06h...');
+            const snapshot = await getDocs(collection(db, "daily_motivation_recipients"));
+            cachedMotivationRecipients = [];
+            snapshot.forEach(docSnap => cachedMotivationRecipients.push({ id: docSnap.id, ...docSnap.data() }));
+        }
+
+        const fragment = document.createDocumentFragment();
+        cachedMotivationRecipients.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = 'premium-row-hover';
+            
+            const isActive = item.active !== false;
+            const formattedPhone = item.rawPhone || item.phone || item.id;
+            const name = item.nome || item.name || 'Destinatário';
+
+            row.innerHTML = `
+                <td class="py-4 px-6 font-bold text-gray-900 dark:text-white text-sm">${name}</td>
+                <td class="py-4 px-6 text-sm text-emerald-600 dark:text-emerald-400 font-mono font-bold">${formattedPhone}</td>
+                <td class="py-4 px-6 text-sm">
+                    <button class="toggle-motivation-active-btn px-3 py-1 text-xs font-bold rounded-full transition-all ${isActive ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30' : 'bg-gray-500/10 text-gray-500 border border-gray-500/30'}" data-id="${item.id}" data-active="${isActive}">
+                        ${isActive ? '● Ativo (06h)' : '○ Inativo'}
+                    </button>
+                </td>
+                <td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+                    <button title="Enviar Teste Agora" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold test-motivation-btn" data-phone="${item.phone || item.id}">
+                        <i class="fab fa-whatsapp"></i> Testar
+                    </button>
+                    <button title="Excluir Número" class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-all delete-motivation-btn" data-id="${item.id}">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </td>
+            `;
+            fragment.appendChild(row);
+        });
+
+        tableBody.innerHTML = '';
+        if (cachedMotivationRecipients.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-sm text-gray-500">Nenhum número cadastrado ainda. Clique em "Novo Número" para adicionar.</td></tr>`;
+        } else {
+            tableBody.appendChild(fragment);
+        }
+
+        // Action Listeners
+        tableBody.querySelectorAll('.toggle-motivation-active-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const docId = e.currentTarget.dataset.id;
+                const currentActive = e.currentTarget.dataset.active === 'true';
+                await setDoc(doc(db, "daily_motivation_recipients", docId), { active: !currentActive }, { merge: true });
+                renderMotivationRecipients(true);
+            });
+        });
+
+        tableBody.querySelectorAll('.delete-motivation-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                if (confirm('Deseja remover este número da lista de motivação das 06h?')) {
+                    await deleteDoc(doc(db, "daily_motivation_recipients", e.currentTarget.dataset.id));
+                    renderMotivationRecipients(true);
+                }
+            });
+        });
+
+        tableBody.querySelectorAll('.test-motivation-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const rawPhone = e.currentTarget.dataset.phone;
+                const targetBtn = e.currentTarget;
+                targetBtn.disabled = true;
+                targetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                try {
+                    const sendFn = httpsCallable(functions, 'sendWhatsAppMessage');
+                    await sendFn({
+                        prospectId: 'test_motivation',
+                        phone: rawPhone,
+                        message: `🥋 *"Eu posso, eu consigo!"*\n\n[Mensagem Motivacional enviada pelo Painel Admin da Kihap!]\n\nQue o seu dia seja repleto de energia positiva, foco e conquistas! Vamos pra cima! 🔥\n\n— *Miles / Kihap*`
+                    });
+                    alert(`Mensagem motivacional de teste enviada com sucesso para ${rawPhone}!`);
+                } catch (err) {
+                    alert(`Erro ao enviar teste: ${err.message}`);
+                } finally {
+                    targetBtn.disabled = false;
+                    targetBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Testar';
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('[Admin] Erro ao carregar motivação:', error);
+    }
 }
 
 async function renderLoginLogs(forceRefresh = false) {

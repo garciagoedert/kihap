@@ -82,6 +82,11 @@
                             class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                             Frases
                         </button>
+                        <button id="tab-motivation"
+                            class="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2">
+                            <i class="fab fa-whatsapp text-emerald-500"></i>
+                            <span>Motivação 06h</span>
+                        </button>
                     </div>
                 </div>
 
@@ -188,6 +193,40 @@
                                 </thead>
                                 <tbody id="quotes-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
                                     <!-- Quote rows will be inserted here -->
+                                </tbody>
+                            </table>
+                </div>
+
+                <!-- Motivation 06h Tab Content -->
+                <div id="motivation-content" class="hidden">
+                    <div class="glass-panel premium-shadow rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/30">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                                    <i class="fab fa-whatsapp text-xl"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Mensagem Motivacional das 06h (Miles)</h2>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Cadastre e gerencie os números de WhatsApp que recebem a mensagem diária às 06h00 da manhã</p>
+                                </div>
+                            </div>
+                            <button id="add-motivation-btn"
+                                class="px-5 py-2.5 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-md flex items-center gap-2 text-sm">
+                                <i class="fas fa-plus text-xs"></i> Novo Número
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="bg-gray-50/50 dark:bg-gray-800/20">
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Nome / Descrição</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">WhatsApp</th>
+                                        <th class="py-4 px-6 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Status (06h)</th>
+                                        <th class="py-4 px-6 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="motivation-table-body" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                    <!-- Motivation rows will be inserted here -->
                                 </tbody>
                             </table>
                         </div>
@@ -421,9 +460,45 @@
                                 class="flex-1 px-4 py-3 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30">Salvar Senha</button>
                         </div>
                     </form>
+            <!-- Add/Edit Motivation Recipient Modal -->
+            <div id="motivation-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md p-4">
+                <div class="glass-card p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-md space-y-6">
+                    <div class="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                                <i class="fab fa-whatsapp text-lg"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="motivation-modal-title">Cadastrar Número para 06h</h3>
+                        </div>
+                        <button id="close-motivation-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <form id="motivation-form" class="space-y-4">
+                        <input type="hidden" id="motivation-doc-id">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nome / Identificador</label>
+                            <input type="text" id="motivation-name-input" required placeholder="Ex: Mestre Goedert"
+                                class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Número de WhatsApp (com DDD)</label>
+                            <input type="text" id="motivation-phone-input" required placeholder="Ex: (48) 98878-0389"
+                                class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all">
+                        </div>
+                        <div class="flex items-center gap-3 pt-2">
+                            <input type="checkbox" id="motivation-active-checkbox" checked class="w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500">
+                            <label for="motivation-active-checkbox" class="text-sm font-semibold text-gray-700 dark:text-gray-300">Ativo (Recebe diariamente às 06h00)</label>
+                        </div>
+                        <div class="mt-8 flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <button type="button" id="cancel-motivation-modal-btn"
+                                class="flex-1 px-4 py-3 font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancelar</button>
+                            <button type="submit"
+                                class="flex-1 px-4 py-3 font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20">Salvar Número</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
 
     </div>
     </main>
