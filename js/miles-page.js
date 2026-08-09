@@ -399,14 +399,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (role === 'model') {
             const avatar = document.createElement('div');
-            avatar.className = 'w-7 h-7 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-zinc-700/50 mt-1';
+            avatar.className = 'w-8 h-8 rounded-xl overflow-hidden bg-amber-50 shrink-0 border border-amber-300/40 shadow-sm mt-1';
             avatar.innerHTML = `<img src="imgs/personagens/perfilpersonagens/avatar_05.png" alt="Miles" class="w-full h-full object-cover">`;
             wrap.appendChild(avatar);
         }
 
         const bubble = document.createElement('div');
         bubble.className = role === 'user' 
-            ? 'miles-user-bubble px-4 py-3 rounded-2xl text-sm leading-relaxed font-medium'
+            ? 'miles-user-bubble px-4 py-3 rounded-2xl text-sm leading-relaxed font-semibold'
             : 'miles-bot-bubble px-4 py-3 rounded-2xl text-sm leading-relaxed font-normal';
         
         bubble.innerHTML = htmlText;
@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('[Miles Page] Erro:', e);
             hideTyping();
-            appendMessage('model', `<span class="text-red-400">Ops! Tive um contratempo de conexão: ${e.message}</span>`);
+            appendMessage('model', `<span class="text-red-500">Ops! Tive um contratempo de conexão: ${e.message}</span>`);
         } finally {
             sendBtn.disabled = false;
             input.focus();
@@ -513,23 +513,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window._milesLeadSaved = false;
         window._milesLeadWhatsapp = null;
         messagesContainer.innerHTML = `
-            <div class="flex flex-col items-center text-center my-4 p-5 rounded-3xl bg-zinc-900/60 border border-amber-400/20 shadow-inner">
-                <div class="w-16 h-16 rounded-3xl overflow-hidden ring-4 ring-amber-400/30 mb-3 bg-zinc-800 shadow-lg">
+            <div class="flex flex-col items-center text-center my-4 p-6 rounded-3xl bg-white/90 border border-amber-300/40 shadow-sm max-w-lg mx-auto">
+                <div class="w-20 h-20 rounded-3xl overflow-hidden ring-4 ring-amber-400/40 mb-3 bg-amber-50 shadow-md">
                     <img src="imgs/personagens/perfilpersonagens/avatar_05.png" alt="Miles" class="w-full h-full object-cover">
                 </div>
-                <h2 class="text-base font-bold text-white font-title uppercase tracking-tight">Conversa Reiniciada! 🥋</h2>
-                <p class="text-xs text-zinc-400 mt-1 max-w-sm leading-relaxed">
+                <h2 class="text-lg font-black text-gray-900 font-title uppercase tracking-tight">Conversa Reiniciada! 🥋</h2>
+                <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
                     Como posso te ajudar agora? Escolha uma opção abaixo ou digite sua dúvida.
                 </p>
             </div>
-            <div id="miles-typing-indicator" class="hidden flex items-start gap-2 max-w-[85%]">
-                <div class="w-7 h-7 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-zinc-700/50">
+            <div id="miles-typing-indicator" class="hidden flex items-start gap-2.5 max-w-[85%]">
+                <div class="w-8 h-8 rounded-xl overflow-hidden bg-amber-50 shrink-0 border border-amber-300/40 shadow-sm">
                     <img src="imgs/personagens/perfilpersonagens/avatar_05.png" alt="Miles" class="w-full h-full object-cover">
                 </div>
                 <div class="miles-bot-bubble px-4 py-3 rounded-2xl flex items-center gap-1.5">
-                    <span class="w-2 h-2 bg-zinc-400 rounded-full typing-dot"></span>
-                    <span class="w-2 h-2 bg-zinc-400 rounded-full typing-dot"></span>
-                    <span class="w-2 h-2 bg-zinc-400 rounded-full typing-dot"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></span>
                 </div>
             </div>
         `;
