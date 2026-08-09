@@ -333,11 +333,13 @@ async function _syncUnitData(currentUnitId) { // Added internal helper
         }
     }
 
+    const activeCount = unitMembers.filter(m => String(m.status) === '1' || m.status === 1 || m.status === 'Ativo' || m.statusMember === 'Ativo').length;
     await db.collection('evo_sync_status').doc(currentUnitId).set({
         lastSync: admin.firestore.FieldValue.serverTimestamp(),
         status: 'success',
-        totalStudents: unitMembers.length
-    });
+        totalStudents: unitMembers.length,
+        activeStudents: activeCount > 0 ? activeCount : unitMembers.length
+    }, { merge: true });
 
     return unitMembers.length;
 }
@@ -1434,40 +1436,80 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
     const registerDateEnd = `${todayStr}T23:59:59Z`;
 
     let grandTotalEntries = 0;
+    let grandTotalActiveContracts = 0;
     const unitResults = {};
 
     const promises = Object.entries(EVO_CREDENTIALS).map(async ([unitId, creds]) => {
         try {
-            const apiClient = getEvoApiClient(unitId, 'v1');
-            const res = await apiClient.get("/entries", {
+            const apiClientV1 = getEvoApiClient(unitId, 'v1');
+            const apiClientV2 = getEvoApiClient(unitId, 'v2');
+
+            // 1. Presenças Hoje (v1 /entries)
+            const entriesRes = await apiClientV1.get("/entries", {
                 params: { registerDateStart, registerDateEnd, take: 1000 },
                 timeout: 5000
             });
-            const entries = res.data || [];
-            const count = Array.isArray(entries) ? entries.length : 0;
-            unitResults[unitId] = count;
+            const entries = entriesRes.data || [];
+            const entriesCount = Array.isArray(entries) ? entries.length : 0;
 
-            await db.collection('evo_sync_status').doc(unitId).set({
-                todayEntries: count,
+            // 2. Contratos Ativos (v2 /members?status=1 com paginação completa)
+            let unitActiveContracts = 0;
+            try {
+                let skip = 0;
+                const take = 50;
+                let hasMore = true;
+                while (hasMore) {
+                    const membersRes = await apiClientV2.get("/members", {
+                        params: { status: 1, take, skip },
+                        timeout: 5000
+                    });
+                    const members = membersRes.data || [];
+                    const membersList = Array.isArray(members) ? members : (members.members || members.results || []);
+                    unitActiveContracts += membersList.length;
+                    if (membersList.length < take) {
+                        hasMore = false;
+                    } else {
+                        skip += take;
+                    }
+                }
+            } catch (e) {
+                functions.logger.warn(`Erro ao buscar contratos ativos para ${unitId}:`, e.message);
+            }
+
+            unitResults[unitId] = { entriesCount, unitActiveContracts };
+
+            const docData = {
+                todayEntries: entriesCount,
                 todayDate: todayStr,
                 lastEntriesCheck: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
+            };
+            if (unitActiveContracts > 0) {
+                docData.activeStudents = unitActiveContracts;
+            }
 
-            return { unitId, count };
+            await db.collection('evo_sync_status').doc(unitId).set(docData, { merge: true });
+
+            return { unitId, entriesCount, unitActiveContracts };
         } catch (err) {
-            functions.logger.warn(`Erro ao atualizar entradas ao vivo para ${unitId}:`, err.message);
+            functions.logger.warn(`Erro ao atualizar dados ao vivo para ${unitId}:`, err.message);
             return { unitId, error: err.message };
         }
     });
 
     const results = await Promise.allSettled(promises);
     results.forEach(r => {
-        if (r.status === 'fulfilled' && r.value && r.value.count !== undefined) {
-            grandTotalEntries += r.value.count;
+        if (r.status === 'fulfilled' && r.value) {
+            if (r.value.entriesCount !== undefined) grandTotalEntries += r.value.entriesCount;
+            if (r.value.unitActiveContracts !== undefined) grandTotalActiveContracts += r.value.unitActiveContracts;
         }
     });
 
-    return { totalTodayEntries: grandTotalEntries, unitResults, todayDate: todayStr };
+    return {
+        totalTodayEntries: grandTotalEntries,
+        totalActiveContracts: grandTotalActiveContracts,
+        unitResults,
+        todayDate: todayStr
+    };
 });
 
 /**

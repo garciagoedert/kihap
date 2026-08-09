@@ -91,7 +91,7 @@ async function loadStats() {
     // Map of all 10 verified units configured with valid tokens
     const VERIFIED_UNITS = {
         'lago-sul': { activeStudents: 162, todayEntries: 0 },
-        'centro': { activeStudents: 32, todayEntries: 0 },
+        'centro': { activeStudents: 33, todayEntries: 0 },
         'santa-monica': { activeStudents: 128, todayEntries: 0 },
         'coqueiros': { activeStudents: 35, todayEntries: 0 },
         'asa-sul': { activeStudents: 155, todayEntries: 0 },
@@ -196,54 +196,92 @@ async function loadStats() {
         }
     }
 
-    // 4. Load EVO Daily Entries (Alunos Hoje EVO em Tempo Real)
+    // 4. Load EVO Daily Entries e Contratos Ativos (Tempo Real)
     const evoCheckinsEl = document.getElementById('daily-checkins-evo');
-    if (evoCheckinsEl) {
-        const localDate = new Date();
-        const year = localDate.getFullYear();
-        const month = String(localDate.getMonth() + 1).padStart(2, '0');
-        const day = String(localDate.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+    const totalContractsEl = document.getElementById('total-contracts');
 
-        // Listen in real-time to Firestore evo_sync_status updates
-        try {
-            onSnapshot(collection(db, 'evo_sync_status'), (snapshot) => {
-                let liveEntries = 0;
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
+    const localDate = new Date();
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    // Listen in real-time to Firestore evo_sync_status updates
+    try {
+        onSnapshot(collection(db, 'evo_sync_status'), (snapshot) => {
+            let liveEntries = 0;
+            let liveContracts = 0;
+            const seenUnits = new Set();
+
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const uId = docSnap.id.toLowerCase().trim();
+
+                if (VERIFIED_UNITS[uId]) {
+                    seenUnits.add(uId);
                     if (data && data.todayDate === todayStr && data.todayEntries !== undefined) {
                         liveEntries += Number(data.todayEntries) || 0;
+                    } else {
+                        liveEntries += VERIFIED_UNITS[uId].todayEntries || 0;
                     }
-                });
+
+                    if (data && data.activeStudents !== undefined && Number(data.activeStudents) > 0) {
+                        liveContracts += Number(data.activeStudents) || 0;
+                    } else {
+                        liveContracts += VERIFIED_UNITS[uId].activeStudents || 0;
+                    }
+                }
+            });
+
+            // Fallback for any verified unit not in snapshot
+            for (const [uId, info] of Object.entries(VERIFIED_UNITS)) {
+                if (!seenUnits.has(uId)) {
+                    liveContracts += info.activeStudents || 0;
+                    liveEntries += info.todayEntries || 0;
+                }
+            }
+
+            if (evoCheckinsEl) {
                 evoCheckinsEl.textContent = liveEntries.toLocaleString('pt-BR');
                 evoCheckinsEl.classList.remove('animate-pulse');
-            });
-        } catch (err) {
-            console.warn("Realtime listener error for evo_sync_status:", err);
-            evoCheckinsEl.textContent = totalEvoEntries.toLocaleString('pt-BR');
-            evoCheckinsEl.classList.remove('animate-pulse');
-        }
+            }
 
-        // Call Cloud Function to fetch latest live entries directly from EVO API
-        try {
-            const refreshLiveEvoEntries = httpsCallable(functions, 'refreshLiveEvoEntries');
+            if (totalContractsEl && liveContracts > 0) {
+                totalContractsEl.textContent = liveContracts.toLocaleString('pt-BR');
+                totalContractsEl.classList.remove('animate-pulse');
+            }
+        });
+    } catch (err) {
+        console.warn("Realtime listener error for evo_sync_status:", err);
+    }
+
+    // Call Cloud Function to fetch latest live entries & active contracts directly from EVO API
+    try {
+        const refreshLiveEvoEntries = httpsCallable(functions, 'refreshLiveEvoEntries');
+        const triggerRefresh = () => {
             refreshLiveEvoEntries().then(res => {
-                if (res.data && res.data.totalTodayEntries !== undefined) {
-                    evoCheckinsEl.textContent = res.data.totalTodayEntries.toLocaleString('pt-BR');
+                if (res.data) {
+                    if (res.data.totalTodayEntries !== undefined && evoCheckinsEl) {
+                        evoCheckinsEl.textContent = res.data.totalTodayEntries.toLocaleString('pt-BR');
+                    }
+                    if (res.data.totalActiveContracts !== undefined && res.data.totalActiveContracts > 0 && totalContractsEl) {
+                        totalContractsEl.textContent = res.data.totalActiveContracts.toLocaleString('pt-BR');
+                    }
                 }
             }).catch(err => {
                 console.warn("Silent background live EVO refresh notice:", err.message);
             });
+        };
 
-            // Set up periodic 15s background refresh while user is on dashboard
-            if (!window.evoLiveRefreshInterval) {
-                window.evoLiveRefreshInterval = setInterval(() => {
-                    refreshLiveEvoEntries().catch(() => {});
-                }, 15000);
-            }
-        } catch (e) {
-            console.warn("Error setting up live EVO refresh:", e);
+        // Trigger immediately on load
+        triggerRefresh();
+
+        // Set up periodic 15s background refresh while user is on dashboard
+        if (!window.evoLiveRefreshInterval) {
+            window.evoLiveRefreshInterval = setInterval(triggerRefresh, 15000);
         }
+    } catch (e) {
+        console.warn("Error setting up live EVO refresh:", e);
     }
 
     // Hide Skeleton and Show Content

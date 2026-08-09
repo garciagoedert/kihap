@@ -25,6 +25,9 @@ exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 const { getInstagramStories } = require('./instagram.js');
 exports.getInstagramStories = functions.https.onCall(getInstagramStories);
 
+const { sendMetaCapiEvent } = require('./meta-capi.js');
+exports.sendMetaCapiEvent = sendMetaCapiEvent;
+
 exports.getStudentPurchases = functions.https.onCall(async (data, context) => {
     // Verifica autenticação
     if (!context.auth) {
@@ -2840,7 +2843,14 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
 
             const prospectTitle = fromName ? fromName : (messageText.substring(0, 100));
 
-            console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"`);
+            // Extract Meta Ads Referral data if available
+            const referral = message.referral || message.context?.referral || message.referral_info || (payload.referral ? payload.referral : null);
+            const ctwaClid = referral?.ctwa_clid || referral?.ctwaClid || message.ctwa_clid || payload.ctwa_clid || null;
+            const metaAdId = referral?.source_id || referral?.ad_id || null;
+            const metaHeadline = referral?.headline || null;
+            const isMetaReferral = !!(referral || ctwaClid || metaAdId);
+
+            console.log(`[whapiWebhook] Processing message from ${cleanPhone} (${fromName || 'No Name'}): "${messageText}"${isMetaReferral ? ` [Meta Ads Referral: ${ctwaClid || metaAdId}]` : ''}`);
             console.log(`[whapiWebhook] Config loaded. Extra Questions: ${config.extra_questions?.length || 0}`);
 
             // CHECK IF BOT IS ENABLED
@@ -2883,18 +2893,32 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         telefone: cleanPhone,
                         status: 'Novo',
                         prioridade: 3,
-                        origemLead: 'WhatsApp Inbound (Bot Off)',
-                        observacoes: `Mensagem recebida com bot desligado: ${messageText}`,
+                        origemLead: isMetaReferral ? 'Meta Ads WhatsApp (Bot Off)' : 'WhatsApp Inbound (Bot Off)',
+                        observacoes: `Mensagem recebida com bot desligado: ${messageText}${metaHeadline ? `\nAnúncio Meta: ${metaHeadline}` : ''}`,
                         ticketEstimado: 0,
                         unidade: '',
-                        tags: ['Bot Desligado'],
+                        tags: isMetaReferral ? ['Meta Ads', 'Bot Desligado'] : ['Bot Desligado'],
+                        ctwaClid: ctwaClid || null,
+                        metaAdId: metaAdId || null,
+                        metaHeadline: metaHeadline || null,
+                        metaReferral: referral || null,
                         contactLog: [logEntry],
                         unread: true,
                         createdAt: admin.firestore.FieldValue.serverTimestamp(),
                         createdBy: 'webhook_bot_off',
                         type: 'prospect'
                     };
-                    await db.collection('prospects').add(newProspect);
+                    const addedDoc = await db.collection('prospects').add(newProspect);
+                    
+                    if (isMetaReferral || ctwaClid) {
+                        sendMetaCapiEvent({
+                            db,
+                            eventName: 'Lead',
+                            prospectId: addedDoc.id,
+                            prospectData: { ...newProspect, ctwaClid }
+                        }).catch(e => console.error('[whapiWebhook] Erro ao enviar CAPI Lead (bot off):', e));
+                    }
+
                 }
 
                 continue; // Skip the rest of the loop for this message
@@ -3231,15 +3255,19 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     telefone: cleanPhone,
                     status: 'Novo',
                     prioridade: 3,
-                    origemLead: 'WhatsApp Inbound',
+                    origemLead: isMetaReferral ? 'Meta Ads WhatsApp' : 'WhatsApp Inbound',
                     setor: '',
                     email: '',
                     cpf: '',
                     redesSociais: '',
-                    observacoes: `Mensagem inicial: ${messageText}`,
+                    observacoes: `Mensagem inicial: ${messageText}${metaHeadline ? `\nAnúncio Meta: ${metaHeadline}` : ''}`,
                     ticketEstimado: 0,
                     unidade: '',
-                    tags: [],
+                    tags: isMetaReferral ? ['Meta Ads'] : [],
+                    ctwaClid: ctwaClid || null,
+                    metaAdId: metaAdId || null,
+                    metaHeadline: metaHeadline || null,
+                    metaReferral: referral || null,
                     contactLog: initialLog,
                     unread: true,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -3247,8 +3275,18 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     type: 'prospect'
                 };
 
-                await db.collection('prospects').add(newProspect);
+                const addedDoc = await db.collection('prospects').add(newProspect);
                 console.log(`[whapiWebhook] Created new prospect for ${cleanPhone} with routing invite`);
+
+                if (isMetaReferral || ctwaClid) {
+                    sendMetaCapiEvent({
+                        db,
+                        eventName: 'Lead',
+                        prospectId: addedDoc.id,
+                        prospectData: { ...newProspect, ctwaClid }
+                    }).catch(e => console.error('[whapiWebhook] Erro ao enviar CAPI Lead:', e));
+                }
+
             }
         }
 
@@ -4253,4 +4291,227 @@ exports.onNotificationCreated = functions.firestore
 
 exports.whatsappWebhook = require('./whatsapp.js').whatsappWebhook;
 exports.milesInactivityReminder = require('./whatsapp.js').milesInactivityReminder;
+
+/**
+ * Trigger de Firestore para disparar eventos de conversão no Meta CAPI quando o status do prospect muda
+ */
+exports.onProspectStatusChanged = functions.firestore
+    .document('prospects/{prospectId}')
+    .onWrite(async (change, context) => {
+        const prospectId = context.params.prospectId;
+        const beforeData = change.before.exists ? change.before.data() : null;
+        const afterData = change.after.exists ? change.after.data() : null;
+
+        if (!afterData) return null; // Prospect deletado
+
+        const prevStatus = beforeData ? beforeData.status : null;
+        const newStatus = afterData.status;
+
+        // Se o status não mudou e o documento já existia, ignora
+        if (prevStatus === newStatus && beforeData) return null;
+
+        console.log(`[onProspectStatusChanged] Prospect ${prospectId} alterou status de "${prevStatus}" para "${newStatus}"`);
+
+        // Evento 1: Lead criado (se for novo e possuir ctwaClid ou tag Meta Ads)
+        if (!beforeData && (newStatus === 'Novo' || !newStatus)) {
+            if (afterData.ctwaClid || afterData.metaAdId || (afterData.tags && afterData.tags.includes('Meta Ads'))) {
+                await sendMetaCapiEvent({
+                    db,
+                    eventName: 'Lead',
+                    prospectId,
+                    prospectData: afterData
+                });
+            }
+        }
+
+        // Evento 2: Status alterado para Agendado / Aula Agendada
+        if (newStatus && (newStatus.toLowerCase().includes('agendad') || newStatus === 'Agendado')) {
+            await sendMetaCapiEvent({
+                db,
+                eventName: 'Schedule',
+                prospectId,
+                prospectData: afterData
+            });
+        }
+
+        // Evento 3: Status alterado para Matriculado / Ganha
+        if (newStatus && (newStatus.toLowerCase().includes('matricula') || newStatus === 'Matriculado' || newStatus === 'Ganha')) {
+            // Envia CompleteRegistration
+            await sendMetaCapiEvent({
+                db,
+                eventName: 'CompleteRegistration',
+                prospectId,
+                prospectData: afterData
+            });
+
+            // Envia Purchase com valor do ticket estimado ou da matrícula
+            const ticketVal = parseFloat(afterData.ticketEstimado || afterData.valorMatricula || 0);
+            await sendMetaCapiEvent({
+                db,
+                eventName: 'Purchase',
+                prospectId,
+                prospectData: afterData,
+                customData: {
+                    value: ticketVal > 0 ? ticketVal : 199.00,
+                    currency: 'BRL'
+                }
+            });
+        }
+
+        return null;
+    });
+
+/**
+ * Callable Function para disparar eventos CAPI manualmente pelo painel da Intranet
+ */
+exports.triggerMetaCapiManual = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado.');
+    }
+
+    const { prospectId, eventName, testEventCode } = data;
+    if (!prospectId || !eventName) {
+        throw new functions.https.HttpsError('invalid-argument', 'Os campos prospectId e eventName são obrigatórios.');
+    }
+
+    const docSnap = await db.collection('prospects').doc(prospectId).get();
+    if (!docSnap.exists) {
+        throw new functions.https.HttpsError('not-found', `Prospect ${prospectId} não encontrado.`);
+    }
+
+    const prospectData = docSnap.data();
+    const result = await sendMetaCapiEvent({
+        db,
+        eventName,
+        prospectId,
+        prospectData,
+        testEventCode
+    });
+
+    return result;
+});
+
+/**
+ * Webhook HTTP para receber Leads dos Formulários Nativos do Facebook / Instagram (Meta Lead Ads)
+ */
+exports.metaLeadWebhook = functions.https.onRequest(async (req, res) => {
+    // 1. Verificação do Webhook (GET request enviado pelo Meta ao configurar o aplicativo)
+    if (req.method === 'GET') {
+        const mode = req.query['hub.mode'];
+        const token = req.query['hub.verify_token'];
+        const challenge = req.query['hub.challenge'];
+
+        const verifyToken = process.env.META_VERIFY_TOKEN || 'kihap_meta_lead_verify_token';
+
+        if (mode === 'subscribe' && token === verifyToken) {
+            console.log('[metaLeadWebhook] Webhook verificado com sucesso pelo Meta!');
+            return res.status(200).send(challenge);
+        } else {
+            console.warn('[metaLeadWebhook] Falha na verificação de token.');
+            return res.status(403).send('Forbidden');
+        }
+    }
+
+    // 2. Recebimento de novo Lead (POST request enviado pelo Meta quando um usuário envia o formulário)
+    if (req.method === 'POST') {
+        try {
+            const body = req.body;
+            if (body.object === 'page' && Array.isArray(body.entry)) {
+                for (const entry of body.entry) {
+                    if (Array.isArray(entry.changes)) {
+                        for (const change of entry.changes) {
+                            if (change.field === 'leadgen') {
+                                const leadgenId = change.value.leadgen_id;
+                                const adId = change.value.ad_id;
+                                const formId = change.value.form_id;
+
+                                console.log(`[metaLeadWebhook] Novo lead nativo recebido! Leadgen ID: ${leadgenId}`);
+
+                                // Buscar Access Token em public_config/miles
+                                const configSnap = await db.collection('public_config').doc('miles').get();
+                                const configData = configSnap.exists ? configSnap.data() : {};
+                                const accessToken = configData.metaAccessToken || configData.whatsappToken || process.env.META_ACCESS_TOKEN;
+
+                                if (accessToken) {
+                                    // Buscar detalhes completos do Lead na Meta Graph API
+                                    const leadRes = await axios.get(`https://graph.facebook.com/v19.0/${leadgenId}?access_token=${accessToken}`);
+                                    const leadData = leadRes.data;
+
+                                    // Parse dos campos de formulário (field_data)
+                                    let fullName = 'Lead Meta Form';
+                                    let phone = '';
+                                    let email = '';
+                                    let unit = '';
+
+                                    if (Array.isArray(leadData.field_data)) {
+                                        leadData.field_data.forEach(field => {
+                                            const name = field.name.toLowerCase();
+                                            const val = field.values ? field.values[0] : '';
+                                            if (name.includes('full_name') || name.includes('nome')) fullName = val;
+                                            if (name.includes('phone') || name.includes('telefone') || name.includes('celular')) phone = val;
+                                            if (name.includes('email')) email = val;
+                                            if (name.includes('unidade') || name.includes('city') || name.includes('cidade')) unit = val;
+                                        });
+                                    }
+
+                                    const cleanPhone = phone.replace(/\D/g, '');
+
+                                    // Salvar no Firestore
+                                    const newProspect = {
+                                        responsavel: fullName,
+                                        telefone: cleanPhone,
+                                        email: email,
+                                        status: 'Novo',
+                                        prioridade: 4, // Alta prioridade por vir de formulário nativo do anúncio
+                                        origemLead: 'Meta Lead Ads (Formulário Nativo)',
+                                        observacoes: `Lead recebido via Formulário Nativo Meta Ads (Form ID: ${formId}, Ad ID: ${adId})`,
+                                        ticketEstimado: 0,
+                                        unidade: unit,
+                                        tags: ['Meta Ads', 'Formulário Nativo'],
+                                        metaLeadId: leadgenId,
+                                        metaAdId: adId,
+                                        metaFormId: formId,
+                                        unread: true,
+                                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                                        createdBy: 'meta_lead_webhook',
+                                        type: 'prospect'
+                                    };
+
+                                    const docRef = await db.collection('prospects').add(newProspect);
+                                    console.log(`[metaLeadWebhook] Lead de formulário nativo salvo com sucesso! ID: ${docRef.id}`);
+
+                                    // Disparar CAPI Lead
+                                    sendMetaCapiEvent({
+                                        db,
+                                        eventName: 'Lead',
+                                        prospectId: docRef.id,
+                                        prospectData: newProspect
+                                    }).catch(e => console.error('[metaLeadWebhook] Erro CAPI:', e));
+
+                                    // Notificar gerentes/atendimento via sistema de notificações
+                                    await db.collection('notifications').add({
+                                        title: '🚨 Novo Lead Meta Ads!',
+                                        message: `Formulário enviado por: ${fullName} (${cleanPhone || 'Sem tel'}) - Unidade: ${unit || 'Geral'}`,
+                                        userId: 'all_managers',
+                                        link: '/intranet/prospeccao.html',
+                                        createdAt: admin.firestore.FieldValue.serverTimestamp()
+                                    }).catch(() => {});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return res.status(200).send('EVENT_RECEIVED');
+        } catch (error) {
+            console.error('[metaLeadWebhook] Erro ao processar webhook Meta Lead Ads:', error);
+            return res.status(200).send('EVENT_RECEIVED'); // 200 OK para evitar retentativa em loop da Meta
+        }
+    }
+
+    return res.status(405).send('Method Not Allowed');
+});
+
+
 

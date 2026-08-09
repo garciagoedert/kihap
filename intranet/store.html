@@ -1240,6 +1240,66 @@
                                 </div>
                             </div>
 
+                            <!-- CARD FISCAL: Dados Fiscais & Emissão de Nota Fiscal (Webmania / SEFAZ) -->
+                            <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-file-invoice text-emerald-500"></i> Dados Fiscais & Emissão de NF-e (Webmania)
+                                    </h3>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="product-emit-nfe" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        <span class="ml-2 text-xs font-bold text-gray-700 dark:text-gray-300">Emitir NF-e</span>
+                                    </label>
+                                </div>
+
+                                <div id="fiscal-fields-container" class="space-y-6">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                                        <div>
+                                            <label for="product-ncm" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Código NCM *</label>
+                                            <input type="text" id="product-ncm" placeholder="Ex: 61091000"
+                                                class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-mono text-sm">
+                                            <p class="text-[10px] text-gray-400 mt-1">8 dígitos (Sem pontos)</p>
+                                        </div>
+
+                                        <div>
+                                            <label for="product-origem" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Origem do Produto</label>
+                                            <select id="product-origem" class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-xs font-medium">
+                                                <option value="0" selected>0 - Nacional</option>
+                                                <option value="1">1 - Estrangeira - Importação Direta</option>
+                                                <option value="2">2 - Estrangeira - Mercado Interno</option>
+                                                <option value="3">3 - Nacional (Importação > 40%)</option>
+                                                <option value="4">4 - Nacional (Processo Produtivo Básico)</option>
+                                                <option value="5">5 - Nacional (Importação <= 40%)</option>
+                                                <option value="6">6 - Estrangeira (Sem Similar Nacional)</option>
+                                                <option value="7">7 - Estrangeira Mercado Interno (Sem Similar)</option>
+                                                <option value="8">8 - Nacional (Importação > 70%)</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label for="product-unit-fiscal" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Unidade Fiscal</label>
+                                            <select id="product-unit-fiscal" class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-xs font-medium">
+                                                <option value="UN" selected>UN - Unidade</option>
+                                                <option value="CX">CX - Caixa</option>
+                                                <option value="KG">KG - Quilograma</option>
+                                                <option value="PAR">PAR - Par</option>
+                                                <option value="PCT">PCT - Pacote</option>
+                                                <option value="JG">JG - Jogo</option>
+                                                <option value="KIT">KIT - Kit</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label for="product-cest" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">CEST (Opcional)</label>
+                                            <input type="text" id="product-cest" placeholder="Ex: 2803800"
+                                                class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-mono text-sm">
+                                            <p class="text-[10px] text-gray-400 mt-1">Substituição Tributária</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- CARD 5: Controle de Estoque & CD -->
                             <div class="glass-card bg-white dark:bg-[#1f1f1f] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
                                 <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-4">

@@ -26,6 +26,15 @@ export default function CheckoutScreen() {
   const [phone, setPhone] = useState(userData?.phoneNumber || '');
   const [cpf, setCpf] = useState(userData?.cpf || '');
   const [unit, setUnit] = useState(userData?.unit || '');
+  
+  // Address fields for NF-e / Delivery
+  const [cep, setCep] = useState(userData?.address?.cep || '');
+  const [logradouro, setLogradouro] = useState(userData?.address?.logradouro || '');
+  const [numero, setNumero] = useState(userData?.address?.numero || '');
+  const [complemento, setComplemento] = useState(userData?.address?.complemento || '');
+  const [bairro, setBairro] = useState(userData?.address?.bairro || '');
+  const [cidade, setCidade] = useState(userData?.address?.cidade || '');
+  const [estado, setEstado] = useState(userData?.address?.estado || '');
 
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
@@ -45,11 +54,30 @@ export default function CheckoutScreen() {
     fetchUnits();
   }, []);
 
+  const handleCepChange = async (text: string) => {
+    setCep(text);
+    const cleanCep = text.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setLogradouro(data.logradouro || '');
+          setBairro(data.bairro || '');
+          setCidade(data.localidade || '');
+          setEstado(data.uf || '');
+        }
+      } catch (e) {
+        console.warn('ViaCEP Error:', e);
+      }
+    }
+  };
+
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   const handlePayment = async () => {
-    if (!name || !email || !phone || !cpf || !unit) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+    if (!name || !email || !phone || !cpf || !unit || !cep || !logradouro || !numero || !bairro || !cidade || !estado) {
+      alert('Por favor, preencha todos os campos obrigatórios (incluindo o endereço completo para nota fiscal).');
       return;
     }
 
@@ -61,7 +89,16 @@ export default function CheckoutScreen() {
       userPhone: phone,
       userCpf: cpf,
       userUnit: unit,
-      userId: userData?.uid || null
+      userId: userData?.uid || null,
+      userAddress: {
+        cep: cep.replace(/\D/g, ''),
+        logradouro: logradouro.trim(),
+        numero: numero.trim(),
+        complemento: complemento.trim(),
+        bairro: bairro.trim(),
+        cidade: cidade.trim(),
+        estado: estado.trim().toUpperCase()
+      }
     };
 
     try {
@@ -264,6 +301,93 @@ export default function CheckoutScreen() {
                 keyboardType="phone-pad"
                 className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
               />
+            </View>
+          </View>
+
+          {/* Address for NF-e / Delivery */}
+          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Endereço (Nota Fiscal & Entrega)</Text>
+          
+          <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-100 dark:border-white/5 space-y-4 mb-6">
+            <View>
+              <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">CEP</Text>
+              <TextInput 
+                value={cep}
+                onChangeText={handleCepChange}
+                placeholder="00000-000"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+                maxLength={9}
+                className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white font-mono"
+              />
+            </View>
+
+            <View>
+              <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Rua / Endereço</Text>
+              <TextInput 
+                value={logradouro}
+                onChangeText={setLogradouro}
+                placeholder="Ex: Av. Paulista"
+                placeholderTextColor="#999"
+                className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
+              />
+            </View>
+
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Número</Text>
+                <TextInput 
+                  value={numero}
+                  onChangeText={setNumero}
+                  placeholder="Ex: 100"
+                  placeholderTextColor="#999"
+                  className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Complemento</Text>
+                <TextInput 
+                  value={complemento}
+                  onChangeText={setComplemento}
+                  placeholder="Apto 101"
+                  placeholderTextColor="#999"
+                  className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
+                />
+              </View>
+            </View>
+
+            <View>
+              <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Bairro</Text>
+              <TextInput 
+                value={bairro}
+                onChangeText={setBairro}
+                placeholder="Bairro"
+                placeholderTextColor="#999"
+                className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
+              />
+            </View>
+
+            <View className="flex-row gap-2">
+              <View className="flex-[2]">
+                <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Cidade</Text>
+                <TextInput 
+                  value={cidade}
+                  onChangeText={setCidade}
+                  placeholder="Cidade"
+                  placeholderTextColor="#999"
+                  className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white"
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">UF</Text>
+                <TextInput 
+                  value={estado}
+                  onChangeText={setEstado}
+                  placeholder="DF"
+                  placeholderTextColor="#999"
+                  maxLength={2}
+                  className="bg-gray-50 dark:bg-[#050505] p-4 rounded-2xl border border-gray-100 dark:border-white/5 text-gray-900 dark:text-white uppercase font-mono"
+                />
+              </View>
             </View>
           </View>
 

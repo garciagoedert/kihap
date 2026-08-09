@@ -589,6 +589,12 @@
                     <!-- Footer Action Buttons inside Details tab -->
                     <div class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-150 dark:border-gray-800">
                         <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
+                            <button type="button" id="sendCapiBtn"
+                                class="bg-blue-600/10 hover:bg-blue-600 text-blue-700 dark:text-blue-400 hover:text-white border border-blue-600/20 hover:border-blue-600 font-bold py-2 px-4 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
+                                title="Enviar evento de conversão manualmente para a Meta Conversions API">
+                                <i class="fab fa-facebook"></i>
+                                <span>Meta CAPI</span>
+                            </button>
                             <button type="button" id="archiveBtn"
                                 class="bg-amber-600/10 hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-white border border-amber-600/20 hover:border-amber-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
                                 <i class="fas fa-archive"></i>
@@ -1200,6 +1206,8 @@
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">P${prospect.prioridade}</span>
                     ${prospect.unread ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase tracking-wider">Novo</span>' : ''}
+                    ${(prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : ''}
+                    ${prospect.capiSyncedAt ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''}
                 </div>
                 <div class="flex items-center gap-1 mb-3 flex-wrap">
                     ${tagsHTML}
@@ -1885,6 +1893,34 @@
 
                 archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
                 deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
+
+                const sendCapiBtn = document.getElementById('sendCapiBtn');
+                if (sendCapiBtn) {
+                    sendCapiBtn.onclick = async () => {
+                        try {
+                            if (typeof showToast === 'function') showToast('Enviando evento para a Meta Conversions API...', 'info');
+                            const triggerMetaCapiManual = firebase.functions().httpsCallable('triggerMetaCapiManual');
+                            let eventToTrigger = 'Lead';
+                            if (prospect.status && prospect.status.toLowerCase().includes('agendad')) {
+                                eventToTrigger = 'Schedule';
+                            } else if (prospect.status && (prospect.status.toLowerCase().includes('matricula') || prospect.status === 'Ganha')) {
+                                eventToTrigger = 'CompleteRegistration';
+                            }
+                            
+                            const res = await triggerMetaCapiManual({ prospectId: prospect.id, eventName: eventToTrigger });
+                            if (res.data && res.data.success) {
+                                if (typeof showToast === 'function') showToast(`Evento ${eventToTrigger} enviado com sucesso para a Meta CAPI!`, 'success');
+                            } else {
+                                const errMsg = res.data?.error?.message || res.data?.error || 'Verifique as credenciais em public_config/miles';
+                                if (typeof showToast === 'function') showToast(`Aviso CAPI: ${errMsg}`, 'warning');
+                            }
+                        } catch (err) {
+                            console.error('[CAPI Manual] Erro ao disparar evento:', err);
+                            if (typeof showToast === 'function') showToast(`Erro ao conectar CAPI: ${err.message}`, 'error');
+                        }
+                    };
+                }
+
 
                 setFormEditable(false);
                 editBtn.onclick = () => setFormEditable(true);

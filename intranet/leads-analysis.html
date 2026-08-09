@@ -118,8 +118,9 @@
             </div>
 
             <!-- Main Stats Grid -->
-            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 <!-- Cards injected by JS -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm animate-pulse h-32"></div>
@@ -183,6 +184,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Third Row: Dedicated Meta Ads & CAPI Performance Section -->
+            <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm mb-8 transition-all duration-300 hover:shadow-md">
+                <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+                        <i class="fab fa-facebook text-blue-500 text-xl"></i> Performance Meta Ads & Conversions API (CAPI)
+                    </h2>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 inline-flex items-center gap-1.5">
+                        <i class="fas fa-check-circle text-emerald-500"></i> CAPI Sync Ativo
+                    </span>
+                </div>
+                <div id="meta-stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -366,8 +383,12 @@
             }
 
             if (origin) {
+                const lowerOrigin = origin.toLowerCase();
                 filtered = filtered.filter(p => {
                     const leadOrigin = (p.origemLead || p['origem do lead'] || p.origem || '').trim();
+                    if (lowerOrigin.includes('meta')) {
+                        return leadOrigin.toLowerCase().includes('meta') || p.ctwaClid || p.metaAdId || (p.tags && p.tags.includes('Meta Ads'));
+                    }
                     return leadOrigin === origin;
                 });
             }
@@ -397,15 +418,18 @@
 
         function updateDashboard(prospects) {
             const total = prospects.length;
+            const metaLeads = prospects.filter(p => p.ctwaClid || p.metaAdId || (p.origemLead && p.origemLead.toLowerCase().includes('meta')) || (p.tags && p.tags.includes('Meta Ads')));
+            const totalMeta = metaLeads.length;
             const highPriority = prospects.filter(p => Number(p.prioridade) >= 4).length;
             const totalPotential = prospects.reduce((sum, p) => sum + (Number(p.ticketEstimado) || Number(p.ticket) || 0), 0);
             
             const prospectsWithTicket = prospects.filter(p => (Number(p.ticketEstimado) || Number(p.ticket) || 0) > 0);
             const avgTicket = total > 0 ? totalPotential / total : 0;
 
-            // Render Main KPI Cards
+            // Render Main KPI Cards (5 Cards)
             document.getElementById('stats-grid').innerHTML = `
                 ${createBigStatCard('Total Leads', total, 'fa-users', 'text-blue-500', 'bg-blue-500/10')}
+                ${createBigStatCard('Leads Meta Ads', totalMeta, 'fa-brands fa-facebook', 'text-blue-600', 'bg-blue-600/10')}
                 ${createBigStatCard('Alta Prioridade', highPriority, 'fa-fire', 'text-red-500', 'bg-red-500/10')}
                 ${createBigStatCard('Potencial Total', formatCurrency(totalPotential), 'fa-wallet', 'text-green-500', 'bg-green-500/10')}
                 ${createBigStatCard('Ticket Médio', formatCurrency(avgTicket), 'fa-chart-pie', 'text-yellow-500', 'bg-yellow-500/10')}
@@ -416,6 +440,7 @@
             renderTeamContactStats(prospects);
             renderOriginStats(prospects);
             renderUnitStats(prospects);
+            renderMetaStats(prospects);
         }
 
         function createBigStatCard(label, value, icon, colorClass, bgClass) {
@@ -640,10 +665,96 @@
             }).join('');
         }
 
+        function renderMetaStats(prospects) {
+            const container = document.getElementById('meta-stats-container');
+            if (!container) return;
+
+            const metaLeads = prospects.filter(p => p.ctwaClid || p.metaAdId || (p.origemLead && p.origemLead.toLowerCase().includes('meta')) || (p.tags && p.tags.includes('Meta Ads')));
+            const totalMeta = metaLeads.length;
+            const capiSynced = metaLeads.filter(p => p.capiSyncedAt || p.capiLastEvent).length;
+
+            const pipelineCounts = { novo: 0, contactado: 0, aula_experimental: 0, matricula: 0 };
+            metaLeads.forEach(p => {
+                const key = normalizeStatusKey(p.status);
+                if (pipelineCounts[key] !== undefined) pipelineCounts[key]++;
+            });
+
+            const adHeadlines = {};
+            metaLeads.forEach(p => {
+                const headline = p.metaHeadline || 'Anúncio Direct WhatsApp (Meta)';
+                adHeadlines[headline] = (adHeadlines[headline] || 0) + 1;
+            });
+            const sortedHeadlines = Object.entries(adHeadlines).sort((a, b) => b[1] - a[1]);
+
+            const capiPercent = totalMeta > 0 ? Math.round((capiSynced / totalMeta) * 100) : 0;
+            const convertedCount = pipelineCounts.matricula;
+            const conversionRate = totalMeta > 0 ? Math.round((convertedCount / totalMeta) * 100) : 0;
+
+            container.innerHTML = `
+                <!-- Card 1: Visão Geral Meta CAPI -->
+                <div class="bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60 p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">Captação Meta Ads</span>
+                        <div class="flex items-baseline gap-2 mb-3">
+                            <span class="text-3xl font-extrabold text-blue-600 dark:text-blue-400">${totalMeta}</span>
+                            <span class="text-xs text-gray-500 font-semibold">leads totais</span>
+                        </div>
+                        <div class="space-y-2 border-t border-gray-200/50 dark:border-gray-700/50 pt-3">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">Entregues Meta CAPI:</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">${capiSynced} (${capiPercent}%)</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">Matrículas Realizadas:</span>
+                                <span class="font-bold text-gray-900 dark:text-white">${convertedCount} (${conversionRate}%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Funil Meta Ads -->
+                <div class="bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60 p-5 rounded-2xl">
+                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-3">Funil dos Leads Meta</span>
+                    <div class="space-y-2.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-700 dark:text-gray-300">Novo</span>
+                            <span class="font-bold text-gray-900 dark:text-white">${pipelineCounts.novo}</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-700 dark:text-gray-300">Contactado</span>
+                            <span class="font-bold text-gray-900 dark:text-white">${pipelineCounts.contactado}</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-700 dark:text-gray-300">Aula Experimental</span>
+                            <span class="font-bold text-gray-900 dark:text-white">${pipelineCounts.aula_experimental}</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            <span>Matrícula</span>
+                            <span>${pipelineCounts.matricula}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Anúncios Mais Convertidos -->
+                <div class="bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60 p-5 rounded-2xl">
+                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-3">Anúncios / Criativos</span>
+                    <div class="space-y-2 overflow-y-auto max-h-36 pr-1">
+                        ${sortedHeadlines.length > 0 ? sortedHeadlines.map(([headline, count]) => `
+                            <div class="flex justify-between items-center text-xs py-1 border-b border-gray-200/30 dark:border-gray-700/30 last:border-0">
+                                <span class="text-gray-700 dark:text-gray-300 truncate max-w-[180px]" title="${headline}">${headline}</span>
+                                <span class="font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-[10px]">${count} leads</span>
+                            </div>
+                        `).join('') : '<p class="text-xs text-gray-400 italic">Nenhum anúncio identificado ainda.</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
         function formatCurrency(value) {
             return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
         }
     </script>
+
 </body>
 
 </html>

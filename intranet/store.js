@@ -131,6 +131,11 @@ export async function setupStorePage() {
     const productLengthInput = document.getElementById('product-length');
     const productWidthInput = document.getElementById('product-width');
     const productHeightInput = document.getElementById('product-height');
+    const productEmitNfeInput = document.getElementById('product-emit-nfe');
+    const productNcmInput = document.getElementById('product-ncm');
+    const productOrigemInput = document.getElementById('product-origem');
+    const productUnitFiscalInput = document.getElementById('product-unit-fiscal');
+    const productCestInput = document.getElementById('product-cest');
     const productSeoKeywordsInput = document.getElementById('product-seo-keywords');
     const productUrlSlugInput = document.getElementById('product-url-slug');
     const generateKobeDescBtn = document.getElementById('generate-kobe-desc-btn');
@@ -1266,6 +1271,11 @@ Requisitos:
                         width: productWidthInput ? (parseInt(productWidthInput.value, 10) || null) : null,
                         height: productHeightInput ? (parseInt(productHeightInput.value, 10) || null) : null
                     },
+                    emitNfe: productEmitNfeInput ? productEmitNfeInput.checked : true,
+                    ncm: productNcmInput ? productNcmInput.value.trim().replace(/\D/g, '') : '',
+                    origem: productOrigemInput ? productOrigemInput.value : '0',
+                    unidadeFiscal: productUnitFiscalInput ? productUnitFiscalInput.value : 'UN',
+                    cest: productCestInput ? productCestInput.value.trim().replace(/\D/g, '') : '',
                     seoKeywords: productSeoKeywordsInput ? productSeoKeywordsInput.value.trim() : '',
                     urlSlug: productUrlSlugInput ? productUrlSlugInput.value.trim() : '',
                     visible: productVisibleInput.checked,
@@ -1445,6 +1455,11 @@ Requisitos:
                 if (productLengthInput) productLengthInput.value = product.dimensions?.length || '';
                 if (productWidthInput) productWidthInput.value = product.dimensions?.width || '';
                 if (productHeightInput) productHeightInput.value = product.dimensions?.height || '';
+                if (productEmitNfeInput) productEmitNfeInput.checked = product.emitNfe !== false;
+                if (productNcmInput) productNcmInput.value = product.ncm || '';
+                if (productOrigemInput) productOrigemInput.value = product.origem !== undefined ? String(product.origem) : '0';
+                if (productUnitFiscalInput) productUnitFiscalInput.value = product.unidadeFiscal || 'UN';
+                if (productCestInput) productCestInput.value = product.cest || '';
                 if (productSeoKeywordsInput) productSeoKeywordsInput.value = product.seoKeywords || '';
                 if (productUrlSlugInput) productUrlSlugInput.value = product.urlSlug || '';
                 updateProfitMarginCalculation();

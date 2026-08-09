@@ -203,6 +203,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
 
+    // Elements for Address & ViaCEP
+    const cepInput = document.getElementById('cep');
+    const logradouroInput = document.getElementById('logradouro');
+    const numeroInput = document.getElementById('numero');
+    const complementoInput = document.getElementById('complemento');
+    const bairroInput = document.getElementById('bairro');
+    const cidadeInput = document.getElementById('cidade');
+    const estadoInput = document.getElementById('estado');
+    const cepLoading = document.getElementById('cep-loading');
+
+    const searchViaCEP = async (cepRaw) => {
+        const cleanCep = cepRaw.replace(/\D/g, '');
+        if (cleanCep.length !== 8) return;
+
+        if (cepLoading) cepLoading.classList.remove('hidden');
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            if (!res.ok) throw new Error('Falha ao buscar CEP');
+            const data = await res.json();
+            if (!data.erro) {
+                if (logradouroInput) logradouroInput.value = data.logradouro || '';
+                if (bairroInput) bairroInput.value = data.bairro || '';
+                if (cidadeInput) cidadeInput.value = data.localidade || '';
+                if (estadoInput) estadoInput.value = data.uf || '';
+                if (numeroInput) numeroInput.focus();
+            }
+        } catch (e) {
+            console.warn('ViaCEP Error:', e);
+        } finally {
+            if (cepLoading) cepLoading.classList.add('hidden');
+        }
+    };
+
+    if (cepInput) {
+        cepInput.addEventListener('keyup', (e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            if (val.length === 8) {
+                searchViaCEP(val);
+            }
+        });
+        cepInput.addEventListener('blur', (e) => {
+            searchViaCEP(e.target.value);
+        });
+    }
+
     onAuthReady(async (user) => {
         if (user) {
             const userData = await getUserData(user.uid);
@@ -210,9 +255,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentUser = { uid: user.uid, ...userData };
                 const nameResp = document.getElementById('nome-responsavel');
                 if (nameResp) nameResp.value = currentUser.name || '';
-                document.getElementById('email').value = currentUser.email || '';
-                document.getElementById('telefone').value = currentUser.phoneNumber || '';
-                document.getElementById('cpf').value = currentUser.cpf || '';
+                if (document.getElementById('email')) document.getElementById('email').value = currentUser.email || '';
+                if (document.getElementById('telefone')) document.getElementById('telefone').value = currentUser.phoneNumber || '';
+                if (document.getElementById('cpf')) document.getElementById('cpf').value = currentUser.cpf || '';
+                
+                // Pre-fill address if user has address data saved
+                const addr = currentUser.address || {};
+                if (cepInput && addr.cep) cepInput.value = addr.cep;
+                if (logradouroInput && addr.logradouro) logradouroInput.value = addr.logradouro;
+                if (numeroInput && addr.numero) numeroInput.value = addr.numero;
+                if (complementoInput && addr.complemento) complementoInput.value = addr.complemento;
+                if (bairroInput && addr.bairro) bairroInput.value = addr.bairro;
+                if (cidadeInput && addr.cidade) cidadeInput.value = addr.cidade;
+                if (estadoInput && addr.estado) estadoInput.value = addr.estado;
+
                 if (currentUser.unit) {
                     // Wait for units to load then select
                     const checkUnits = setInterval(() => {
@@ -254,7 +310,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             userPhone: document.getElementById('telefone').value,
             userCpf: document.getElementById('cpf').value,
             userUnit: document.getElementById('unidade').value,
-            userId: currentUser ? currentUser.uid : null
+            userId: currentUser ? currentUser.uid : null,
+            userAddress: {
+                cep: cepInput ? cepInput.value.replace(/\D/g, '') : '',
+                logradouro: logradouroInput ? logradouroInput.value.trim() : '',
+                numero: numeroInput ? numeroInput.value.trim() : '',
+                complemento: complementoInput ? complementoInput.value.trim() : '',
+                bairro: bairroInput ? bairroInput.value.trim() : '',
+                cidade: cidadeInput ? cidadeInput.value.trim() : '',
+                estado: estadoInput ? estadoInput.value.trim().toUpperCase() : ''
+            }
         };
 
         try {
