@@ -25,16 +25,19 @@ const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const UNIDADES = {
-    'asa-sul':          { nome: 'Asa Sul (Brasília)',         whatsapp: 'https://wa.me/556183007146' },
-    'lago-sul':         { nome: 'Lago Sul (Brasília)',        whatsapp: 'https://wa.me/556192028980' },
-    'sudoeste':         { nome: 'Sudoeste (Brasília)',        whatsapp: 'https://wa.me/556182107146' },
-    'noroeste':         { nome: 'Noroeste (Brasília)',        whatsapp: 'https://wa.me/556184170472' },
-    'jardim-botanico':  { nome: 'Jardim Botânico (Brasília)', whatsapp: 'https://wa.me/556184171059' },
-    'pontos-de-ensino': { nome: 'Pontos de Ensino (Brasília)',whatsapp: 'https://wa.me/556182823380' },
-    'centro':           { nome: 'Centro (Florianópolis)',     whatsapp: 'https://wa.me/554892182423' },
-    'coqueiros':        { nome: 'Coqueiros (Florianópolis)',  whatsapp: 'https://wa.me/554896296941' },
-    'santa-monica':     { nome: 'Santa Mônica (Florianópolis)', whatsapp: 'https://wa.me/554892172423' },
-    'dourados':         { nome: 'Dourados (MS)',              whatsapp: 'https://wa.me/556799597001' },
+    'asa-sul':               { nome: 'Asa Sul (Brasília - DF)',            telefone: '(61) 98300-7146', whatsapp: 'https://wa.me/556183007146', endereco: 'Asa Sul CLS 115 BL C Lj 28 - Asa Sul, Brasília - DF' },
+    'sudoeste':              { nome: 'Sudoeste (Brasília - DF)',           telefone: '(61) 98210-7146', whatsapp: 'https://wa.me/556182107146', endereco: 'SIG Quadra 3 Bloco C Lote 38, Ed. Office 300 - Sudoeste, Brasília - DF' },
+    'lago-sul':              { nome: 'Lago Sul (Brasília - DF)',           telefone: '(61) 99202-8980', whatsapp: 'https://wa.me/556192028980', endereco: 'SHIS QI 9 - Lago Sul, Brasília - DF' },
+    'noroeste':              { nome: 'Noroeste (Brasília - DF)',           telefone: '(61) 98417-0472', whatsapp: 'https://wa.me/556184170472', endereco: 'CLNW 10/11 Bloco A - Noroeste, Brasília - DF' },
+    'jardim-botanico':       { nome: 'Jardim Botânico (Brasília - DF)',    telefone: '(61) 98417-1059', whatsapp: 'https://wa.me/556184171059', endereco: 'Av. das Castanheiras, Centro Comercial Jardim Botânico - Brasília - DF' },
+    'escola-eleva':          { nome: 'Escola Eleva (Brasília - DF)',       telefone: '(61) 98282-3380', whatsapp: 'https://wa.me/556182823380', endereco: 'SGAS 606 - Asa Sul, Brasília - DF' },
+    'escola-kingdom-kids':   { nome: 'Kingdom Kids (Brasília - DF)',       telefone: '(61) 98282-3380', whatsapp: 'https://wa.me/556182823380', endereco: 'SGAS 915 - Asa Sul, Brasília - DF' },
+    'escola-kingdom-school': { nome: 'Kingdom School (Brasília - DF)',     telefone: '(61) 98282-3380', whatsapp: 'https://wa.me/556182823380', endereco: 'SGAS 915 - Asa Sul, Brasília - DF' },
+    'pontos-de-ensino':      { nome: 'Pontos de Ensino (Brasília - DF)',   telefone: '(61) 98282-3380', whatsapp: 'https://wa.me/556182823380', endereco: 'Pontos parceiros em Brasília - DF' },
+    'centro':                { nome: 'Centro (Florianópolis - SC)',        telefone: '(48) 99218-2423', whatsapp: 'https://wa.me/554892182423', endereco: 'Rua Hermann Blumenau, 102 (Casarão) - Centro, Florianópolis - SC' },
+    'coqueiros':             { nome: 'Coqueiros (Florianópolis - SC)',     telefone: '(48) 99629-6941', whatsapp: 'https://wa.me/554896296941', endereco: 'Rua Desembargador Pedro Silva, 2644 - Coqueiros, Florianópolis - SC' },
+    'santa-monica':          { nome: 'Santa Mônica (Florianópolis - SC)',   telefone: '(48) 99217-2423', whatsapp: 'https://wa.me/554892172423', endereco: 'Av. Madre Benvenuta, 1157 - Santa Mônica, Florianópolis - SC' },
+    'dourados':              { nome: 'Dourados (Mato Grosso do Sul)',      telefone: '(67) 99959-7001', whatsapp: 'https://wa.me/556799597001', endereco: 'Rua Toshinobu Katayama, 1420 - Jardim América, Dourados - MS' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +46,7 @@ const UNIDADES = {
 
 const SYSTEM_INSTRUCTION = `Você é o Miles, o simpático, energético e acolhedor assistente virtual de primeiro atendimento da Kihap, uma renomada escola de artes marciais com unidades em Brasília, Florianópolis e Dourados (MS).
 
-Seu objetivo é fazer o PRIMEIRO ATENDIMENTO dos visitantes do site público, entender o que buscam, apresentar os programas e coletar os dados necessários (nome e telefone/WhatsApp, além da unidade de preferência) para que nossa equipe entre em contato e agende uma aula experimental GRATUITA.
+Seu objetivo é fazer o PRIMEIRO ATENDIMENTO dos visitantes do site público, responder dúvidas sobre a Kihap, horários, unidades, telefones e agendar aulas experimentais GRATUITAS.
 
 IDENTIDADE IMPORTANTE:
 - Você é simplesmente o "Miles".
@@ -55,8 +58,7 @@ DIRETRIZES DE COMUNICAÇÃO E TOM DE VOZ KIHAP:
 2. **Evite Palavras Negativas**: Evite termos como "não", "infelizmente" e "nunca". Use construções proativas e orientadas a soluções.
 3. **Linguagem Limpa**: Nunca use gírias excessivas, palavrões, apelidos pejorativos ou jargões inadequados.
 4. **Valores da Kihap**: Reflita os valores: **DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR**.
-5. **Foco no Relacionamento e Valor**: Vender significa gerar valor através do relacionamento, da experiência e da transformação proporcionada pela Arte Marcial. Foque em comunicar benefícios, transformação e propósito.
-6. **Linguagem Direta e Organizada**: Use negritos (**texto**) para destacar caminhos e termos importantes. Evite textos longos.
+5. **Linguagem Direta e Organizada**: Use negritos (**texto**) para destacar caminhos e termos importantes. Evite textos longos.
 
 PROGRAMAS DA KIHAP:
 - **Baby Littles** (1,5 a 3 anos): Desenvolvimento psicomotor, cognição e socialização no tatame.
@@ -66,29 +68,33 @@ PROGRAMAS DA KIHAP:
 - **Adultos** (18+): Defesa pessoal, redução de estresse, foco e alta performance física.
 - **Família**: Integração familiar e fortalecimento de laços através do esporte.
 
-UNIDADES DISPONÍVEIS:
-Brasília: Asa Sul, Lago Sul, Sudoeste, Noroeste, Jardim Botânico, Pontos de Ensino.
-Florianópolis: Centro, Coqueiros, Santa Mônica.
-Mato Grosso do Sul: Dourados.
+CONTATOS E WHATSAPP DAS UNIDADES KIHAP:
+Quando o usuário perguntar o número de WhatsApp, telefone ou localização de qualquer unidade, forneça com exatidão:
+• **Asa Sul (Brasília)**: WhatsApp/Tel: (61) 98300-7146 | Endereço: CLS 115 BL C Lj 28
+• **Sudoeste (Brasília)**: WhatsApp/Tel: (61) 98210-7146 | Endereço: SIG Quadra 3 Bloco C Lote 38
+• **Lago Sul (Brasília)**: WhatsApp/Tel: (61) 99202-8980 | Endereço: SHIS QI 9
+• **Noroeste (Brasília)**: WhatsApp/Tel: (61) 98417-0472 | Endereço: CLNW 10/11 Bloco A
+• **Jardim Botânico (Brasília)**: WhatsApp/Tel: (61) 98417-1059 | Endereço: Av. das Castanheiras
+• **Escolas Parceiras/Pontos de Ensino (DF)**: (61) 98282-3380
+• **Centro (Florianópolis)**: WhatsApp/Tel: (48) 99218-2423 | Endereço: Rua Hermann Blumenau, 102
+• **Coqueiros (Florianópolis)**: WhatsApp/Tel: (48) 99629-6941 | Endereço: Rua Desembargador Pedro Silva, 2644
+• **Santa Mônica (Florianópolis)**: WhatsApp/Tel: (48) 99217-2423 | Endereço: Av. Madre Benvenuta, 1157
+• **Dourados (MS)**: WhatsApp/Tel: (67) 99959-7001 | Endereço: Rua Toshinobu Katayama, 1420 - Jardim América
 
 FLUXO DE ATENDIMENTO OBRIGATÓRIO:
-1. Cumprimentar calorosamente e perguntar o que o visitante busca (para filho? adulto? família?)
-2. Identificar o programa mais adequado e apresentá-lo brevemente com entusiasmo
-3. Convidar para conhecer pessoalmente com uma aula experimental 100% gratuita
-4. Coletar o **nome completo** e **telefone (WhatsApp)** do visitante, e a **unidade de preferência**
-5. Quando tiver nome + telefone + unidade, chamar a ferramenta saveLead() imediatamente para registrar o interesse
-6. Após salvar o lead, OFERECER verificar a grade de horários: chame getSchedule(unidadeKey, categoria) para mostrar as aulas disponíveis com vagas
-7. Se o visitante escolher um horário específico e confirmar, chame bookTrialClass() para agendar a aula experimental diretamente
-8. Após o agendamento, confirmar o horário e informar que a equipe entrará em contato
+1. Cumprimentar calorosamente e perguntar o que o visitante busca.
+2. Responder dúvidas sobre programas ou contatos de unidades com precisão.
+3. Para agendar aula grátis: coletar **nome completo**, **telefone (WhatsApp)** e **unidade de preferência**.
+4. Quando tiver nome + telefone + unidade, chamar saveLead() imediatamente.
+5. Após salvar o lead, chamar getSchedule() para mostrar as aulas disponíveis.
+6. Se o visitante escolher um horário específico, chamar bookTrialClass() para agendar.
 
 IMPORTANTE:
 - Só chame saveLead() quando tiver coletado nome, telefone E unidade.
 - Só chame getSchedule() após salvar o lead (ou se o visitante pedir para ver os horários).
 - Só chame bookTrialClass() quando o visitante confirmar explicitamente que quer agendar naquele horário.
-- Para listar as unidades disponíveis, chame getAvailableUnits().
-- Seja proativo: se o visitante estiver em dúvida sobre qual unidade, pergunte a cidade ou bairro.
-- Mantenha respostas curtas e diretas — máximo 3 parágrafos por mensagem.
-- Ao exibir a grade de horários, mostre os dias e horários de forma organizada. NÃO mostre turmas sem vagas disponíveis.`;
+- Para listar as unidades disponíveis e seus telefones, chame getAvailableUnits().
+- Mantenha respostas curtas e diretas.`;
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,12 +211,8 @@ const MILES_TOOLS = [{
 
 function getAvailableUnits() {
     return {
-        unidades: {
-            "Brasília": ["Asa Sul", "Lago Sul", "Sudoeste", "Noroeste", "Jardim Botânico", "Pontos de Ensino"],
-            "Florianópolis": ["Centro", "Coqueiros", "Santa Mônica"],
-            "Mato Grosso do Sul": ["Dourados"]
-        },
-        message: "Temos unidades em Brasília, Florianópolis e Dourados (MS). Qual cidade fica mais próxima de você?"
+        unidades: UNIDADES,
+        message: "Temos 10 unidades ativas em Brasília, Florianópolis e Dourados (MS) com contatos diretos de WhatsApp disponíveis."
     };
 }
 
