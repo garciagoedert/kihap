@@ -1452,25 +1452,20 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
             const entries = entriesRes.data || [];
             const entriesCount = Array.isArray(entries) ? entries.length : 0;
 
-            // 2. Contratos Ativos (v2 /members?status=1 com paginação completa)
+            // 2. Contratos Ativos (v2 /members?status=1 via cabeçalho 'total')
             let unitActiveContracts = 0;
             try {
-                let skip = 0;
-                const take = 50;
-                let hasMore = true;
-                while (hasMore) {
-                    const membersRes = await apiClientV2.get("/members", {
-                        params: { status: 1, take, skip },
-                        timeout: 5000
-                    });
+                const membersRes = await apiClientV2.get("/members", {
+                    params: { status: 1, take: 1 },
+                    timeout: 5000
+                });
+                const totalHeader = membersRes.headers['total'] || membersRes.headers['x-total-count'];
+                if (totalHeader !== undefined && totalHeader !== null) {
+                    unitActiveContracts = parseInt(totalHeader, 10);
+                } else {
                     const members = membersRes.data || [];
                     const membersList = Array.isArray(members) ? members : (members.members || members.results || []);
-                    unitActiveContracts += membersList.length;
-                    if (membersList.length < take) {
-                        hasMore = false;
-                    } else {
-                        skip += take;
-                    }
+                    unitActiveContracts = membersList.length;
                 }
             } catch (e) {
                 functions.logger.warn(`Erro ao buscar contratos ativos para ${unitId}:`, e.message);

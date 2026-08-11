@@ -2498,7 +2498,7 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
         const wamid = metaResponse.data?.messages?.[0]?.id || 'unknown';
 
         // Update the WhatsApp chat history in Firestore so chatbot knows we replied
-        const chatRef = db.collection('whatsapp_chats').doc(targetPhone);
+        const chatRef = db.collection('whatsapp_chats').doc(targetPhoneUsed);
         const chatSnap = await chatRef.get();
         let history = [];
         let lastLeadId = prospectId; // fall back to prospectId if not in doc
@@ -2534,7 +2534,7 @@ exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
             timestamp: new Date(),
             type: 'whatsapp-sent',
             metadata: {
-                destination: targetPhone,
+                destination: targetPhoneUsed,
                 wamid: wamid
             }
         };
