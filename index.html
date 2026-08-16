@@ -252,11 +252,19 @@
     <main>
         <section class="relative min-h-[100svh] flex items-end justify-start text-left text-white hero-section overflow-hidden">
             <!-- Layered Overlays for depth -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/20"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
 
             <!-- Content -->
-            <div class="relative z-10 px-6 md:px-24 pb-12 pt-28 w-full max-w-4xl">
+            <div class="relative z-10 px-6 md:px-24 pb-14 pt-28 w-full max-w-4xl">
+                
+                <!-- Google Reviews Trust Badge -->
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/75 border border-yellow-500/40 text-xs font-bold text-white mb-6 backdrop-blur-md shadow-lg opacity-0 animate-fadeInUp">
+                    <span class="flex text-yellow-400 text-sm">★★★★★</span>
+                    <span class="text-yellow-400 font-black">4.9/5</span>
+                    <span class="text-white/80 hidden sm:inline">• +500 avaliações no Google</span>
+                    <span class="bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ml-1">Aula 100% Grátis</span>
+                </div>
 
                 <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-none tracking-tight font-title opacity-0 animate-fadeInUp delay-100">
                     Artes marciais<br>
@@ -264,192 +272,231 @@
                     <span class="text-yellow-400">família</span>
                 </h1>
 
-                <p class="mt-4 md:mt-6 text-base md:text-xl max-w-md text-white/75 leading-relaxed opacity-0 animate-fadeInUp delay-200">
-                    Descubra o poder das artes marciais na sua saúde física e mental.
+                <p class="mt-4 md:mt-6 text-base md:text-xl max-w-lg text-white/85 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    Desenvolva disciplina, foco, autoconfiança e saúde física na maior escola de artes marciais para crianças, jovens e adultos.
                 </p>
 
                 <div class="mt-6 md:mt-8 flex flex-wrap items-center gap-4 opacity-0 animate-fadeInUp delay-300">
                     <a href="#cta"
-                        class="group inline-flex items-center gap-2 btn-gradient text-black font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl text-sm md:text-base uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-transform hover:scale-105">
-                        <span class="md:hidden">Agendar Aula</span>
-                        <span class="hidden md:inline">Agendar Aula Experimental</span>
-                        <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        class="m3-btn-primary text-sm md:text-base uppercase tracking-wider">
+                        <span>🥋 Agendar Aula Experimental Grátis</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                     </a>
-                    <a href="miles.html" class="inline-flex items-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-yellow-400 font-bold py-3 md:py-4 px-5 md:px-6 rounded-xl border border-yellow-500/50 shadow-lg transition-transform hover:scale-105 text-sm md:text-base">
-                        <span>💬</span> Chat com o Miles
+                    <a href="https://wa.me/5548988694593?text=Ol%C3%A1!%20Vim%20pelo%20Google%20e%20gostaria%20de%20agendar%20uma%20aula%20experimental%20gratuita%20na%20Kihap." target="_blank" rel="noopener" class="m3-btn-outlined text-sm md:text-base">
+                        <span>💬 Falar no WhatsApp</span>
                     </a>
                 </div>
 
-                <!-- Inline Stats (Oculto no mobile) -->
-                <div class="mt-8 hidden md:flex flex-wrap gap-8 opacity-0 animate-fadeInUp delay-400">
+                <!-- Frictionless Micro-Trust -->
+                <div class="mt-4 flex items-center gap-2 text-xs text-white/80 font-medium opacity-0 animate-fadeInUp delay-300">
+                    <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <span>Vagas limitadas por turma • Sem compromisso • Atendimento imediato</span>
+                </div>
+
+                <!-- Inline Stats (Desktop) -->
+                <div class="mt-10 hidden md:flex flex-wrap gap-8 opacity-0 animate-fadeInUp delay-400">
                     <div class="flex flex-col">
                         <span class="text-3xl font-black text-yellow-400 font-title">+1000</span>
-                        <span class="text-xs uppercase tracking-widest text-white/60 mt-1">Alunos Formados</span>
+                        <span class="text-xs uppercase tracking-widest text-white/70 mt-1">Alunos Formados</span>
                     </div>
                     <div class="w-px bg-white/20 self-stretch"></div>
                     <div class="flex flex-col">
                         <span class="text-3xl font-black text-yellow-400 font-title">10</span>
-                        <span class="text-xs uppercase tracking-widest text-white/60 mt-1">Unidades</span>
+                        <span class="text-xs uppercase tracking-widest text-white/70 mt-1">Unidades</span>
                     </div>
                     <div class="w-px bg-white/20 self-stretch"></div>
                     <div class="flex flex-col">
                         <span class="text-3xl font-black text-yellow-400 font-title">3</span>
-                        <span class="text-xs uppercase tracking-widest text-white/60 mt-1">Estados</span>
+                        <span class="text-xs uppercase tracking-widest text-white/70 mt-1">Estados</span>
                     </div>
                 </div>
             </div>
-
-
         </section>
 
-        <!-- Stats Section (hidden on desktop since stats are now in hero) -->
-        <section class="bg-gray-50 py-8 md:hidden">
-            <div class="container mx-auto grid grid-cols-3 gap-2 text-center px-4">
-                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
-                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">+1000</p>
-                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Alunos</p>
+        <!-- Stats Section (Mobile M3 Cards) -->
+        <section class="bg-[#F8F7F4] py-6 md:hidden border-b border-gray-200/60">
+            <div class="container mx-auto grid grid-cols-3 gap-3 text-center px-4">
+                <div class="m3-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-black text-yellow-600 leading-none font-title">+1000</p>
+                    <p class="uppercase text-gray-700 mt-2 font-bold tracking-wider text-[10px]">Alunos</p>
                 </div>
-                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
-                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">03</p>
-                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Estados</p>
+                <div class="m3-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-black text-yellow-600 leading-none font-title">10</p>
+                    <p class="uppercase text-gray-700 mt-2 font-bold tracking-wider text-[10px]">Unidades</p>
                 </div>
-                <div class="glass-card p-3 py-4 flex flex-col items-center justify-center">
-                    <p class="text-xl sm:text-2xl font-bold text-yellow-500 leading-none">10</p>
-                    <p class="uppercase text-gray-600 mt-2 font-semibold tracking-wider text-[9px] sm:text-[10px]">Unidades</p>
+                <div class="m3-card p-3 py-4 flex flex-col items-center justify-center">
+                    <p class="text-xl sm:text-2xl font-black text-yellow-600 leading-none font-title">03</p>
+                    <p class="uppercase text-gray-700 mt-2 font-bold tracking-wider text-[10px]">Estados</p>
                 </div>
             </div>
         </section>
 
+        <!-- Journey Section (Open, Full-Flow Layout) -->
+        <section class="py-24 bg-gradient-to-br from-white via-[#FAF8F5] to-white border-b border-gray-100 relative overflow-hidden">
+            <div class="container mx-auto px-6 max-w-6xl">
+                <div class="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <!-- Left: Video Embed -->
+                    <div class="aspect-video rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/10 bg-black relative">
+                        <iframe src="https://www.youtube.com/embed/tzFSjF5h-zA" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen class="w-full h-full"></iframe>
+                    </div>
 
-        <!-- Programs Section -->
-        <section id="programas" class="py-24 bg-gradient-to-b from-white via-[#FAF7F2] to-white overflow-hidden relative">
+                    <!-- Right: Content & CTA -->
+                    <div>
+                        <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-3 block">Propósito & Metodologia</span>
+                        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black uppercase font-title text-gray-900 leading-[1.1] tracking-tight">
+                            Embarque nessa <br><span class="text-yellow-500">Jornada Conosco</span>
+                        </h2>
+                        <p class="mt-5 text-gray-600 text-base md:text-lg leading-relaxed">
+                            Nossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os
+                            desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente,
+                            há um lugar para você e sua família em nossa comunidade.
+                        </p>
+                        <div class="mt-8 flex flex-col sm:flex-row items-center gap-4">
+                            <a href="#cta"
+                                class="m3-btn-primary w-full sm:w-auto text-center">
+                                <span>Agende Sua Aula Grátis</span>
+                            </a>
+                            <a href="sobre.html"
+                                class="m3-btn-outlined w-full sm:w-auto text-center">
+                                <span>Conhecer a História</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Programs Section (M3 Filter Chips & Surfaces) -->
+        <section id="programas" class="py-20 bg-[#F8F7F4] overflow-hidden relative border-t border-b border-gray-200/50">
             <div class="container mx-auto px-6 text-center">
-                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-3 block">Nossos Programas</span>
-                <h2 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
-                    Programas para <br> <span class="text-yellow-500 italic">Todas as Idades</span>
+                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Metodologia Exclusiva</span>
+                <h2 class="text-3xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
+                    Programas para <span class="text-yellow-500">Todas as Idades</span>
                 </h2>
-                <p class="mt-4 max-w-xl mx-auto text-gray-500 text-sm md:text-base font-light">
-                    Metodologias exclusivas desenhadas para o desenvolvimento físico, mental e emocional de cada etapa da vida. Encontre o grupo ideal e agende uma aula.
+                <p class="mt-3 max-w-2xl mx-auto text-gray-600 text-sm md:text-base">
+                    Metodologias desenhadas para o desenvolvimento físico, mental e emocional em cada fase da vida. Encontre a turma ideal para você ou seu filho.
                 </p>
 
-
+                <!-- Material 3 Filter Chips -->
+                <div class="mt-8 flex items-center justify-start sm:justify-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide" id="program-filter-chips">
+                    <button class="m3-chip active" data-filter="all">🥋 Todos os Programas</button>
+                    <button class="m3-chip" data-filter="infantil">👶 Crianças (1.5 a 6 anos)</button>
+                    <button class="m3-chip" data-filter="juvenil">🧒 Juvenil (7 a 17 anos)</button>
+                    <button class="m3-chip" data-filter="adulto">🥋 Adultos & Família</button>
+                </div>
             </div>
             
-            <div class="mt-16 container mx-auto px-6 max-w-7xl">
-                <!-- Flex scroll container on mobile, Grid on desktop -->
-                <div class="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-x-auto sm:overflow-visible pt-3 pb-6 sm:py-0 scroll-snap-x scrollbar-hide" id="programs-grid-container">
+            <div class="mt-10 container mx-auto px-6 max-w-7xl">
+                <!-- Grid on Desktop, Flex on Mobile with Scroll -->
+                <div class="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-x-auto sm:overflow-visible pt-2 pb-6 sm:py-0 scrollbar-hide" id="programs-grid-container">
                     
                     <!-- Card 1: Baby Littles (Infantil) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="infantil">
-                        <a href="programas/baby-littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Baby Littles"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/babylittles.png" alt="Crianças de 1 a 3 anos praticando artes marciais no programa Baby Littles da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="infantil">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/babylittles.png" alt="Baby Littles Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">1.5 A 3 ANOS</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">BABY LITTLES</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">1.5 A 3 ANOS</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">BABY LITTLES</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Desenvolvimento psicomotor, foco, cognição e socialização em tatame seguro e acolhedor.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Desenvolvimento psicomotor, cognição e socialização em tatame.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/baby-littles.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Card 2: Littles (Infantil) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="infantil">
-                        <a href="programas/littles.html" class="absolute inset-0 z-10" aria-label="Ver programa Littles"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/littles.png" alt="Crianças de 3 a 6 anos treinando artes marciais no programa Littles da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="infantil">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/littles.png" alt="Littles Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">3 A 6 ANOS</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">LITTLES</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">3 A 6 ANOS</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">LITTLES</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Canalização saudável de energia, disciplina positiva, respeito e coordenação motora essencial.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Canalização de energia, disciplina positiva e coordenação motora.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/littles.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Card 3: Kids (Juvenil) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="juvenil">
-                        <a href="programas/kids.html" class="absolute inset-0 z-10" aria-label="Ver programa Kids"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/kids.png" alt="Crianças de 7 a 12 anos praticando artes marciais no programa Kids da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="juvenil">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/kids.png" alt="Kids Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">7 A 12 ANOS</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">KIDS</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">7 A 12 ANOS</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">KIDS</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Artes marciais completas, autodefesa, foco nos estudos escolares, liderança e autoconfiança.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Artes marciais, autodefesa, foco escolar e liderança para crianças.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/kids.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Card 4: Adolescentes (Juvenil) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="juvenil">
-                        <a href="programas/adolescentes.html" class="absolute inset-0 z-10" aria-label="Ver programa Adolescentes"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/adolescentes.png" alt="Adolescentes de 12 a 17 anos treinando artes marciais no programa Adolescentes da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="juvenil">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/adolescentes.png" alt="Adolescentes Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">12 A 17 ANOS</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">ADOLESCENTES</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">12 A 17 ANOS</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">ADOLESCENTES</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Condicionamento físico de alto nível, inteligência socioemocional, superação e amizades sólidas.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Condicionamento físico, superação e inteligência socioemocional.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/adolescentes.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Card 5: Adultos (Adulto) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="adulto">
-                        <a href="programas/adultos.html" class="absolute inset-0 z-10" aria-label="Ver programa Adultos"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/adultos.png" alt="Adultos praticando artes marciais e defesa pessoal no programa Adultos da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="adulto">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/adultos.png" alt="Adultos Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">18+ ANOS</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">ADULTOS</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">18+ ANOS</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">ADULTOS</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Defesa pessoal prática, alívio de estresse diário, queima calórica e alta performance mental.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Defesa pessoal, redução de estresse, foco e alta performance física.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/adultos.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Card 6: Família (Adulto) -->
-                    <div class="program-card-clean w-[280px] sm:w-auto shrink-0 sm:shrink group" data-category="adulto">
-                        <a href="programas/familia.html" class="absolute inset-0 z-10" aria-label="Ver programa Família"></a>
-                        <div class="program-card-clean-img-container">
-                            <img src="imgs/cards/familias.png" alt="Família treinando artes marciais juntos no programa Família da Kihap" class="program-card-clean-img">
+                    <div class="m3-card w-[290px] sm:w-auto shrink-0 sm:shrink flex flex-col justify-between overflow-hidden group program-card-clean" data-category="adulto">
+                        <div class="relative h-48 overflow-hidden bg-gray-100">
+                            <img src="imgs/cards/familias.png" alt="Família Kihap" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <span class="absolute top-3 right-3 badge-gold px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">TODAS AS IDADES</span>
                         </div>
-                        <div class="program-card-clean-panel">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-title text-gray-900 text-lg font-black uppercase tracking-tight">FAMÍLIA</h3>
-                                <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">TODAS AS IDADES</span>
+                        <div class="p-6 flex flex-col flex-1 justify-between">
+                            <div>
+                                <h3 class="font-title text-gray-900 text-xl font-black uppercase tracking-tight mb-2">FAMÍLIA</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed">Pais e filhos treinando juntos. Fortalecimento de laços familiares, disciplina e diversão esportiva.</p>
                             </div>
-                            <p class="text-xs text-gray-500 leading-relaxed font-light mb-4">Integração familiar e fortalecimento de laços através do esporte.</p>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 uppercase tracking-widest transition-colors hover:text-yellow-700">
-                                Saber Mais
-                                <svg class="w-3 h-3 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                            </span>
+                            <div class="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="programas/familia.html" class="text-xs font-bold text-gray-600 hover:text-black uppercase tracking-wider">Ver Detalhes &rarr;</a>
+                                <a href="#cta" class="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-transform active:scale-95">Aula Grátis</a>
+                            </div>
                         </div>
                     </div>
                     
@@ -457,150 +504,127 @@
             </div>
         </section>
 
-        <!-- Journey Section -->
-        <section class="py-20 bg-gradient-to-br from-gray-50 to-amber-50/40">
-            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-                <div class="aspect-video rounded-2xl overflow-hidden ring-2 ring-yellow-400/30 shadow-xl">
-                    <iframe src="https://www.youtube.com/embed/tzFSjF5h-zA" frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen class="w-full h-full"></iframe>
-                </div>
-                <div>
-                    <h2 class="section-title uppercase font-title text-gray-900">Embarque nessa <br><span
-                            class="text-yellow-500">Jornada Conosco</span></h2>
-                    <p class="mt-4 text-gray-600 text-lg">
-                        Nossa missão é formar indivíduos confiantes, disciplinados e preparados para enfrentar os
-                        desafios da vida com coragem e determinação. Seja você um iniciante ou um praticante experiente,
-                        há um lugar para você em nossa comunidade.
-                    </p>
-                    <div class="mt-8 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                        <a href="#cta"
-                            class="btn-gradient text-black font-bold py-3 px-8 rounded-lg w-full sm:w-auto text-center">
-                            Agende Sua Aula
-                        </a>
-                        <a href="sobre.html"
-                            class="border border-yellow-500 text-yellow-600 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 hover:text-black transition w-full sm:w-auto text-center">
-                            Saiba Mais
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Guiding Principles Section -->
+        <!-- Guiding Principles Section (Material Surfaces) -->
         <section id="principios" class="py-20 bg-white">
             <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title text-gray-900">O Que <span class="text-yellow-500">Nos Guia</span></h2>
-                <p class="mt-4 max-w-3xl mx-auto text-gray-500">Estes princípios constituem a base de tudo o que fazemos
-                    na Kihap, orientando nossos alunos em sua jornada de transformação pessoal.</p>
-                <div class="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    <div class="glass-card p-6 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Nossos Valores</span>
+                <h2 class="text-3xl md:text-5xl font-black uppercase font-title text-gray-900">O Que <span class="text-yellow-500">Nos Guia</span></h2>
+                <p class="mt-3 max-w-2xl mx-auto text-gray-600">Princípios fundamentais que formam o caráter e orientam a jornada de cada aluno além do tatame.</p>
+                <div class="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+                    <div class="m3-card p-6 flex flex-col items-center text-center">
+                        <div class="w-14 h-14 bg-amber-50 border border-amber-200/60 rounded-2xl flex items-center justify-center text-yellow-600 mb-4 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Comunidade</h3>
+                        <h3 class="text-base font-black uppercase font-title text-gray-900">Comunidade</h3>
                     </div>
-                    <div class="glass-card p-6 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="m3-card p-6 flex flex-col items-center text-center">
+                        <div class="w-14 h-14 bg-amber-50 border border-amber-200/60 rounded-2xl flex items-center justify-center text-yellow-600 mb-4 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Excelência</h3>
+                        <h3 class="text-base font-black uppercase font-title text-gray-900">Excelência</h3>
                     </div>
-                    <div class="glass-card p-6 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="m3-card p-6 flex flex-col items-center text-center">
+                        <div class="w-14 h-14 bg-amber-50 border border-amber-200/60 rounded-2xl flex items-center justify-center text-yellow-600 mb-4 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Integridade</h3>
+                        <h3 class="text-base font-black uppercase font-title text-gray-900">Integridade</h3>
                     </div>
-                    <div class="glass-card p-6 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                    <div class="m3-card p-6 flex flex-col items-center text-center">
+                        <div class="w-14 h-14 bg-amber-50 border border-amber-200/60 rounded-2xl flex items-center justify-center text-yellow-600 mb-4 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Respeito</h3>
+                        <h3 class="text-base font-black uppercase font-title text-gray-900">Respeito</h3>
                     </div>
-                    <div class="hidden lg:flex glass-card p-6 flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="hidden lg:flex m3-card p-6 flex-col items-center text-center">
+                        <div class="w-14 h-14 bg-amber-50 border border-amber-200/60 rounded-2xl flex items-center justify-center text-yellow-600 mb-4 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 text-lg font-bold uppercase font-title text-gray-900">Foco</h3>
+                        <h3 class="text-base font-black uppercase font-title text-gray-900">Foco</h3>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Locations Section -->
-        <section id="unidades" class="relative overflow-hidden py-20 bg-white">
-            <img src="imgs/icons/unidades.svg" alt=""
-                class="absolute top-0 right-0 w-2/3 md:w-1/2 lg:w-1/3 h-auto opacity-5 -translate-y-1/4 translate-x-1/4 pointer-events-none">
+        <!-- Locations Section (Material Elevated Cards) -->
+        <section id="unidades" class="py-20 bg-[#F8F7F4] border-t border-b border-gray-200/50">
             <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title text-gray-900">Nossas <span class="text-yellow-500">Unidades</span></h2>
-                <p class="mt-4 max-w-3xl mx-auto text-gray-500">Com unidades estrategicamente localizadas, oferecemos um
-                    ambiente seguro e motivador para a prática das artes marciais.</p>
+                <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Presença Nacional</span>
+                <h2 class="text-3xl md:text-5xl font-black uppercase font-title text-gray-900">Nossas <span class="text-yellow-500">Unidades</span></h2>
+                <p class="mt-3 max-w-2xl mx-auto text-gray-600">Estruturas completas, tatames de alta densidade e professores certificados para você treinar com segurança.</p>
+                
                 <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     <!-- Unidade Brasília -->
-                    <div class="relative overflow-hidden rounded-[24px] group min-h-[280px] flex flex-col justify-end p-8 text-left shadow-sm hover:shadow-md transition-all duration-300">
-                        <img src="imgs/unidades/asasul.jpg" class="absolute inset-0 w-full h-full object-cover opacity-45 group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Brasília">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 pointer-events-none"></div>
+                    <div class="m3-card overflow-hidden group min-h-[300px] flex flex-col justify-end p-8 text-left relative shadow-md">
+                        <img src="imgs/unidades/asasul.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Unidades Brasília">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none"></div>
                         <div class="relative z-10">
-                            <h3 class="text-3xl font-bold font-title text-white">BRASÍLIA</h3>
-                            <p class="mt-2 text-white/80 text-sm leading-relaxed">Encontre a unidade mais próxima na capital federal.</p>
-                            <a href="unidades/brasilia.html" class="mt-4 inline-block text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">Ver Unidades &rarr;</a>
+                            <span class="badge-gold px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block mb-2">DISTRITO FEDERAL</span>
+                            <h3 class="text-2xl font-black font-title text-white">BRASÍLIA</h3>
+                            <p class="mt-1 text-white/80 text-xs leading-relaxed">Asa Sul, Sudoeste, Lago Sul, Jardim Botânico e Noroeste.</p>
+                            <a href="unidades/brasilia.html" class="mt-4 inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all">Ver Unidades &rarr;</a>
                         </div>
                     </div>
+
                     <!-- Unidade Florianópolis -->
-                    <div class="relative overflow-hidden rounded-[24px] group min-h-[280px] flex flex-col justify-end p-8 text-left shadow-sm hover:shadow-md transition-all duration-300">
-                        <img src="imgs/unidades/centro.jpg" class="absolute inset-0 w-full h-full object-cover opacity-45 group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Florianópolis">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 pointer-events-none"></div>
+                    <div class="m3-card overflow-hidden group min-h-[300px] flex flex-col justify-end p-8 text-left relative shadow-md">
+                        <img src="imgs/unidades/centro.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Unidades Florianópolis">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none"></div>
                         <div class="relative z-10">
-                            <h3 class="text-3xl font-bold font-title text-white">FLORIANÓPOLIS</h3>
-                            <p class="mt-2 text-white/80 text-sm leading-relaxed">Treine conosco na ilha da magia.</p>
-                            <a href="unidades/florianopolis.html" class="mt-4 inline-block text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">Ver Unidades &rarr;</a>
+                            <span class="badge-gold px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block mb-2">SANTA CATARINA</span>
+                            <h3 class="text-2xl font-black font-title text-white">FLORIANÓPOLIS</h3>
+                            <p class="mt-1 text-white/80 text-xs leading-relaxed">Centro, Coqueiros e Santa Mônica.</p>
+                            <a href="unidades/florianopolis.html" class="mt-4 inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all">Ver Unidades &rarr;</a>
                         </div>
                     </div>
+
                     <!-- Unidade Dourados -->
-                    <div class="relative overflow-hidden rounded-[24px] group min-h-[280px] flex flex-col justify-end p-8 text-left shadow-sm hover:shadow-md transition-all duration-300">
-                        <img src="imgs/unidades/dourados.jpg" class="absolute inset-0 w-full h-full object-cover opacity-45 group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Dourados">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 pointer-events-none"></div>
+                    <div class="m3-card overflow-hidden group min-h-[300px] flex flex-col justify-end p-8 text-left relative shadow-md">
+                        <img src="imgs/unidades/dourados.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" alt="Unidade Dourados">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none"></div>
                         <div class="relative z-10">
-                            <h3 class="text-3xl font-bold font-title text-white">DOURADOS</h3>
-                            <p class="mt-2 text-white/80 text-sm leading-relaxed">Conheça nossa unidade no coração do MS.</p>
-                            <a href="unidades/dourados.html" class="mt-4 inline-block text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">Ver Unidades &rarr;</a>
+                            <span class="badge-gold px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block mb-2">MATO GROSSO DO SUL</span>
+                            <h3 class="text-2xl font-black font-title text-white">DOURADOS</h3>
+                            <p class="mt-1 text-white/80 text-xs leading-relaxed">Jardim América e região.</p>
+                            <a href="unidades/dourados.html" class="mt-4 inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all">Ver Unidade &rarr;</a>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Testimonials Section -->
-        <section class="py-20 bg-gray-50">
-            <div class="container mx-auto px-6">
-                <h2 class="text-3xl md:text-5xl uppercase text-center font-title text-gray-900 break-words">Histórias de <span
-                        class="text-yellow-500">Transformação</span></h2>
-                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+        <!-- Testimonials Section (Social Proof for Google Ads) -->
+        <section class="py-20 bg-white">
+            <div class="container mx-auto px-6 max-w-6xl text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-gray-900 mb-4 shadow-sm">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" class="w-4 h-4">
+                    <span>Avaliação 4.9 ★ com mais de 500 depoimentos de famílias</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl uppercase font-title text-gray-900">Histórias de <span class="text-yellow-500">Transformação</span></h2>
+                <p class="mt-3 max-w-2xl mx-auto text-gray-600 text-sm md:text-base">Veja como as artes marciais na Kihap impactam a rotina, foco e autoestima dos nossos alunos.</p>
+
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch text-left">
                     <!-- Video Testimonial: Sr. Lopacinski -->
-                    <div class="glass-card p-6 flex flex-col justify-between relative overflow-hidden border-2 border-yellow-400/30 shadow-lg">
+                    <div class="m3-card p-6 flex flex-col justify-between border-2 border-yellow-400/40 shadow-md">
                         <div>
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex text-yellow-500 text-sm">★★★★★</div>
                                 <span class="badge-gold px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest leading-none flex items-center gap-1">
-                                    <svg class="w-2.5 h-2.5 fill-current text-yellow-600" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                     VÍDEO
                                 </span>
                             </div>
-                            <!-- Shorts Video Embed (9:16 Aspect Ratio) -->
-                            <div class="aspect-[9/16] w-full rounded-2xl overflow-hidden ring-1 ring-black/10 shadow-md bg-black relative mb-4">
+                            <div class="aspect-[9/16] w-full rounded-2xl overflow-hidden shadow-sm bg-black relative mb-4">
                                 <iframe src="https://www.youtube.com/embed/aPXzQiWleX8" 
-                                    title="Depoimento Sr. Lopacinski - Kihap" 
+                                    title="Depoimento Aluno Kihap" 
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                     allowfullscreen 
@@ -609,69 +633,66 @@
                             </div>
                         </div>
                         <div class="flex items-center mt-2">
-                            <div class="w-12 h-12 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-base font-title flex-shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-sm font-title flex-shrink-0">
                                 SL
                             </div>
-                            <div class="ml-4">
-                                <p class="font-bold text-gray-900">Sr. Lopacinski</p>
-                                <p class="text-sm text-gray-500">Aluno Kihap</p>
+                            <div class="ml-3">
+                                <p class="font-bold text-gray-900 text-sm">Sr. Lopacinski</p>
+                                <p class="text-xs text-gray-500">Aluno Kihap</p>
                             </div>
                         </div>
                     </div>
+
                     <!-- Testimonial 1 -->
-                    <div class="glass-card p-8 flex flex-col justify-between">
+                    <div class="m3-card p-6 flex flex-col justify-between">
                         <div>
                             <div class="flex text-yellow-500 mb-2 text-sm">★★★★★</div>
-                            <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
-                            <p class="text-gray-600 break-words">A Kihap mudou não só o meu corpo, mas
-                                minha mente. Ganhei
-                                confiança e disciplina que levo para todas as áreas da minha vida.</p>
+                            <p class="text-3xl text-yellow-500 font-title leading-none mb-2">“</p>
+                            <p class="text-gray-700 text-sm leading-relaxed">A Kihap transformou não só o meu condicionamento físico, mas minha mente. Ganhei confiança e foco que levo para meu trabalho e minha vida pessoal.</p>
                         </div>
-                        <div class="mt-6 flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-base font-title flex-shrink-0">
+                        <div class="mt-6 flex items-center pt-4 border-t border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-sm font-title flex-shrink-0">
                                 JS
                             </div>
-                            <div class="ml-4">
-                                <p class="font-bold text-gray-900">João Silva</p>
-                                <p class="text-sm text-gray-500">Aluno há 2 anos</p>
+                            <div class="ml-3">
+                                <p class="font-bold text-gray-900 text-sm">João Silva</p>
+                                <p class="text-xs text-gray-500">Aluno há 2 anos</p>
                             </div>
                         </div>
                     </div>
+
                     <!-- Testimonial 2 -->
-                    <div class="glass-card p-8 flex flex-col justify-between">
+                    <div class="m3-card p-6 flex flex-col justify-between">
                         <div>
                             <div class="flex text-yellow-500 mb-2 text-sm">★★★★★</div>
-                            <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
-                            <p class="text-gray-600 break-words">Meu filho era tímido e hoje é muito
-                                mais sociável e focado
-                                nos estudos. Sou muito grata a toda a equipe da Kihap.</p>
+                            <p class="text-3xl text-yellow-500 font-title leading-none mb-2">“</p>
+                            <p class="text-gray-700 text-sm leading-relaxed">Meu filho era extremamente tímido e desatento na escola. Hoje ele é muito mais seguro, participativo e focado nos estudos. Os mestres são sensacionais!</p>
                         </div>
-                        <div class="mt-6 flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-base font-title flex-shrink-0">
+                        <div class="mt-6 flex items-center pt-4 border-t border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-sm font-title flex-shrink-0">
                                 MC
                             </div>
-                            <div class="ml-4">
-                                <p class="font-bold text-gray-900">Maria Costa</p>
-                                <p class="text-sm text-gray-500">Mãe de aluno</p>
+                            <div class="ml-3">
+                                <p class="font-bold text-gray-900 text-sm">Maria Costa</p>
+                                <p class="text-xs text-gray-500">Mãe de aluno Kids</p>
                             </div>
                         </div>
                     </div>
+
                     <!-- Testimonial 3 -->
-                    <div class="glass-card p-8 flex flex-col justify-between">
+                    <div class="m3-card p-6 flex flex-col justify-between">
                         <div>
                             <div class="flex text-yellow-500 mb-2 text-sm">★★★★★</div>
-                            <p class="text-4xl text-yellow-400 font-title leading-none mb-4">“</p>
-                            <p class="text-gray-600 break-words">Ambiente incrível, professores
-                                excelentes e uma comunidade
-                                que te acolhe. Recomendo para todos que buscam uma mudança.</p>
+                            <p class="text-3xl text-yellow-500 font-title leading-none mb-2">“</p>
+                            <p class="text-gray-700 text-sm leading-relaxed">Ambiente acolhedor, professores altamente preparados e turmas divididas por idade e nível. É o melhor lugar para treinar em família.</p>
                         </div>
-                        <div class="mt-6 flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-base font-title flex-shrink-0">
+                        <div class="mt-6 flex items-center pt-4 border-t border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-sm font-title flex-shrink-0">
                                 PA
                             </div>
-                            <div class="ml-4">
-                                <p class="font-bold text-gray-900">Pedro Almeida</p>
-                                <p class="text-sm text-gray-500">Aluno há 6 meses</p>
+                            <div class="ml-3">
+                                <p class="font-bold text-gray-900 text-sm">Pedro Almeida</p>
+                                <p class="text-xs text-gray-500">Programa Família</p>
                             </div>
                         </div>
                     </div>
@@ -679,103 +700,120 @@
             </div>
         </section>
 
+        <!-- Final CTA Section (High-Converting M3 Form for Google Ads) -->
+        <section id="cta" class="py-20 bg-gradient-to-b from-[#111111] to-[#1A1A1A] text-white">
+            <div class="container mx-auto px-6 max-w-3xl">
+                <div class="text-center">
+                    <span class="inline-block bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 shadow-sm">
+                        Aula Experimental 100% Gratuita
+                    </span>
+                    <h2 class="text-3xl md:text-5xl font-black uppercase font-title text-white">
+                        Sua Transformação Começa <span class="text-yellow-400">Hoje</span>
+                    </h2>
+                    <p class="mt-3 text-base md:text-lg text-white/80 max-w-xl mx-auto">
+                        Preencha seus dados abaixo. Nossa equipe entrará em contato via WhatsApp em minutos para reservar seu horário na unidade mais conveniente.
+                    </p>
+                </div>
 
-        <!-- Final CTA Section -->
-        <section id="cta" class="py-20 bg-yellow-500 text-black">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="text-4xl md:text-5xl font-black uppercase font-title">Sua Jornada Começa Aqui.</h2>
-                <p class="mt-4 text-lg max-w-2xl mx-auto">Dê o primeiro passo e agende uma aula experimental grátis.
-                    <br>A transformação além do tatame espera por você.
-                </p>
-                <form id="lead-form" class="mt-8 max-w-lg mx-auto grid grid-cols-1 gap-4">
-                    <input type="text" id="nome" placeholder="Nome Completo"
-                        class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-                        required>
-                    <input type="email" id="email" placeholder="Seu melhor e-mail"
-                        class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-                        required>
-                    <input type="tel" id="telefone" placeholder="Telefone (WhatsApp)"
-                        class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-                        required>
-                    <select id="unidade" title="Unidade de Interesse"
-                        class="w-full px-6 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-                        required>
-                        <option value="" disabled selected>Carregando unidades...</option>
-                    </select>
-                    <button type="submit"
-                        class="bg-black text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-800 transition w-full">
-                        AGENDAR AULA EXPERIMENTAL
-                    </button>
-                </form>
-                <p id="form-status" class="mt-4 text-lg"></p>
+                <div class="mt-10 bg-white rounded-3xl p-6 sm:p-10 shadow-2xl text-gray-900 border border-gray-100">
+                    <form id="lead-form" class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label for="nome" class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Nome Completo</label>
+                            <input type="text" id="nome" placeholder="Digite seu nome completo"
+                                class="m3-input text-gray-900 font-medium"
+                                required>
+                        </div>
+                        <div>
+                            <label for="email" class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">E-mail</label>
+                            <input type="email" id="email" placeholder="seuemail@exemplo.com"
+                                class="m3-input text-gray-900 font-medium"
+                                required>
+                        </div>
+                        <div>
+                            <label for="telefone" class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Telefone (WhatsApp)</label>
+                            <input type="tel" id="telefone" placeholder="(DDD) 99999-9999"
+                                class="m3-input text-gray-900 font-medium"
+                                required>
+                        </div>
+                        <div>
+                            <label for="unidade" class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Unidade Mais Próxima</label>
+                            <select id="unidade" title="Unidade de Interesse"
+                                class="m3-input text-gray-900 font-medium cursor-pointer"
+                                required>
+                                <option value="" disabled selected>Selecione a sua unidade...</option>
+                            </select>
+                        </div>
+                        <button type="submit"
+                            class="m3-btn-primary w-full py-4 text-base uppercase tracking-wider mt-2">
+                            <span>🥋 GARANTIR MINHA AULA EXPERIMENTAL GRATUITA</span>
+                        </button>
+                        <p class="text-center text-xs text-gray-500 mt-2 flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span>100% seguro. Entraremos em contato apenas para agendar sua aula.</span>
+                        </p>
+                    </form>
+                    <p id="form-status" class="mt-4 text-center font-bold text-sm"></p>
+                </div>
             </div>
         </section>
-        <!-- FAQ Section (GEO) -->
-        <style>
-            #faq .glass-card:hover {
-                transform: none;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-            }
-            #faq .glass-card {
-                transition: none;
-            }
-        </style>
+
+        <!-- FAQ Section -->
         <section id="faq" class="py-20 bg-white">
             <div class="container mx-auto px-6 max-w-3xl">
                 <div class="text-center mb-12">
-                    <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-3 block">Dúvidas Frequentes</span>
-                    <h2 class="text-4xl md:text-5xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
-                        Perguntas <span class="text-yellow-500 italic">Frequentes</span>
+                    <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Dúvidas Frequentes</span>
+                    <h2 class="text-3xl md:text-5xl font-black uppercase leading-tight tracking-tight font-title text-gray-900">
+                        Perguntas <span class="text-yellow-500">Frequentes</span>
                     </h2>
                 </div>
                 <div class="space-y-4" id="faq-accordion">
 
-                    <details class="glass-card p-6 group" open>
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer" open>
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             O que é a Kihap?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">A Kihap é uma rede brasileira de escolas de artes marciais com mais de 1000 alunos formados e 10 unidades em 3 estados: Distrito Federal (Brasília), Santa Catarina (Florianópolis) e Mato Grosso do Sul (Dourados). Oferecemos programas para todas as idades, do bebê ao adulto, com metodologia exclusiva focada no desenvolvimento físico, mental e emocional.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">A Kihap é uma rede brasileira de escolas de artes marciais com mais de 1000 alunos formados e 10 unidades em 3 estados: Distrito Federal (Brasília), Santa Catarina (Florianópolis) e Mato Grosso do Sul (Dourados). Oferecemos programas para todas as idades, do bebê ao adulto, com metodologia exclusiva focada no desenvolvimento físico, mental e emocional.</p>
                     </details>
 
-                    <details class="glass-card p-6 group">
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer">
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             Quais artes marciais a Kihap ensina?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">A Kihap possui metodologia própria que une elementos de diversas modalidades de artes marciais, com foco em defesa pessoal, condicionamento físico, disciplina e desenvolvimento socioemocional. Os programas são totalmente adaptados para cada faixa etária.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">A Kihap possui metodologia própria que une elementos de diversas modalidades de artes marciais, com foco em defesa pessoal, condicionamento físico, disciplina e desenvolvimento socioemocional. Os programas são totalmente adaptados para cada faixa etária.</p>
                     </details>
 
-                    <details class="glass-card p-6 group">
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer">
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             A partir de que idade meu filho pode começar?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">A partir de 1 ano e 6 meses! Temos o programa <strong>Baby Littles</strong> (1,5 a 3 anos), <strong>Littles</strong> (3 a 6 anos), <strong>Kids</strong> (7 a 12 anos) e <strong>Adolescentes</strong> (12 a 17 anos). Cada programa é desenhado especialmente para a fase de desenvolvimento da criança.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">A partir de 1 ano e 6 meses! Temos o programa <strong>Baby Littles</strong> (1,5 a 3 anos), <strong>Littles</strong> (3 a 6 anos), <strong>Kids</strong> (7 a 12 anos) e <strong>Adolescentes</strong> (12 a 17 anos). Cada programa é desenhado especialmente para a fase de desenvolvimento da criança.</p>
                     </details>
 
-                    <details class="glass-card p-6 group">
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer">
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             Onde ficam as unidades da Kihap?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">Temos unidades em <strong>Brasília (DF)</strong>: Asa Sul, Sudoeste, Lago Sul, Jardim Botânico, Noroeste, Escola Eleva, Kingdom Kids e Kingdom School. Em <strong>Florianópolis (SC)</strong>: Centro, Coqueiros e Santa Mônica. E em <strong>Dourados (MS)</strong>: Jardim América.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">Temos unidades em <strong>Brasília (DF)</strong>: Asa Sul, Sudoeste, Lago Sul, Jardim Botânico, Noroeste, Escola Eleva, Kingdom Kids e Kingdom School. Em <strong>Florianópolis (SC)</strong>: Centro, Coqueiros e Santa Mônica. E em <strong>Dourados (MS)</strong>: Jardim América.</p>
                     </details>
 
-                    <details class="glass-card p-6 group">
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer">
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             Como agendar uma aula experimental grátis?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">Basta preencher o formulário nesta página com seu nome, e-mail, telefone e a unidade de interesse. Nossa equipe entrará em contato pelo WhatsApp para confirmar. Você também pode nos chamar diretamente pelo <strong>WhatsApp (48) 98869-4593</strong>.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">Basta preencher o formulário nesta página com seu nome, e-mail, telefone e a unidade de interesse. Nossa equipe entrará em contato pelo WhatsApp para confirmar. Você também pode nos chamar diretamente pelo <strong>WhatsApp (48) 98869-4593</strong>.</p>
                     </details>
 
-                    <details class="glass-card p-6 group">
-                        <summary class="flex justify-between items-center cursor-pointer list-none font-bold text-gray-900 text-lg">
+                    <details class="m3-card p-6 group cursor-pointer">
+                        <summary class="flex justify-between items-center list-none font-bold text-gray-900 text-lg">
                             A Kihap tem aplicativo?
-                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 ml-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </summary>
-                        <p class="mt-4 text-gray-500 leading-relaxed">Sim! O app oficial da Kihap está disponível gratuitamente na <strong>App Store (iOS)</strong> e <strong>Google Play (Android)</strong>. Pelo app você acompanha sua evolução, acessa conteúdos exclusivos do Tatame, gerencia suas aulas e compra produtos oficiais.</p>
+                        <p class="mt-4 text-gray-600 leading-relaxed text-sm md:text-base">Sim! O app oficial da Kihap está disponível gratuitamente na <strong>App Store (iOS)</strong> e <strong>Google Play (Android)</strong>. Pelo app você acompanha sua evolução, acessa conteúdos exclusivos do Tatame, gerencia suas aulas e compra produtos oficiais.</p>
                     </details>
 
                 </div>
@@ -783,79 +821,41 @@
         </section>
     </main>
 
-
-    <!-- Newsletter Section -->
-    <section class="py-20 text-center bg-gradient-to-r from-amber-50 to-yellow-50">
-        <div class="container mx-auto px-6">
-            <h2 class="section-title uppercase font-title text-gray-900">Fique por <span class="text-yellow-500">Dentro</span></h2>
-            <p class="mt-4 max-w-2xl mx-auto text-gray-600">
-                Assine nossa newsletter para receber as últimas novidades, dicas de treino e ofertas especiais
-                diretamente no seu e-mail.
-            </p>
-            <form id="newsletter-form" class="mt-8 max-w-lg mx-auto flex flex-col sm:flex-row gap-4">
-                <input type="email" id="newsletter-email" placeholder="Seu melhor e-mail"
-                    class="flex-1 px-6 py-3 rounded-lg bg-white border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    required>
-                <button type="submit"
-                    class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition whitespace-nowrap">
-                    INSCREVER-SE
-                </button>
-            </form>
-            <p id="newsletter-status" class="mt-4 text-sm text-gray-500"></p>
-        </div>
-    </section>
-
-    <!-- Kihapcast Section -->
-    <section class="py-20 bg-gray-50 text-center">
-        <div class="container mx-auto px-6">
-            <h2 class="section-title uppercase font-title text-gray-900">Ouça nosso <span class="text-yellow-500">Kihapcast</span>
-            </h2>
-            <p class="mt-4 max-w-2xl mx-auto text-gray-500">
-                Mantenha-se inspirado e informado com o Kihapcast. Entrevistas, dicas e discussões sobre o universo das
-                artes marciais.
-            </p>
-            <div class="mt-8 max-w-3xl mx-auto flex justify-center">
-                <iframe data-testid="embed-iframe" style="border-radius:12px"
-                    src="https://open.spotify.com/embed/show/3KJ4q5Qx604Cbm782yMyqB/video?utm_source=generator"
-                    width="100%" height="351" frameBorder="0" allowfullscreen=""
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"></iframe>
-            </div>
-        </div>
-    </section>
-
     <!-- App Promotion Section -->
-    <section class="relative py-24 bg-yellow-500 overflow-hidden border-t border-black/10 text-center text-black">
+    <section class="relative py-20 bg-yellow-500 overflow-hidden text-center text-black">
         <div class="container mx-auto px-6 relative z-10">
             <div class="max-w-3xl mx-auto">
-                <h2 class="text-4xl md:text-5xl font-black uppercase font-title leading-tight">
-                    O Kihap na <br> <span class="text-white">Palma da Sua Mão</span>
+                <h2 class="text-3xl md:text-5xl font-black uppercase font-title leading-tight">
+                    O Kihap na <span class="text-white">Palma da Sua Mão</span>
                 </h2>
-                <p class="mt-6 text-black/80 text-lg leading-relaxed mx-auto">
+                <p class="mt-4 text-black/85 text-base md:text-lg leading-relaxed mx-auto">
                     Acompanhe sua evolução, acesse conteúdos exclusivos do Tatame, gerencie suas aulas e compre produtos oficiais diretamente pelo celular. Baixe agora o app oficial da Kihap.
                 </p>
                 
                 <!-- App Store Buttons -->
-                <div class="mt-10 flex flex-wrap justify-center gap-4">
-                    <!-- Apple Store -->
+                <div class="mt-8 flex flex-wrap justify-center gap-4">
                     <a href="https://apps.apple.com/br/app/kihap/id6761770657" target="_blank" class="transition-transform hover:scale-105">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Baixar na App Store" class="h-12">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Baixar na App Store" class="h-11">
                     </a>
-                    <!-- Google Play -->
                     <a href="https://play.google.com/store/apps/details?id=com.kihap.app" target="_blank" class="transition-transform hover:scale-105">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Baixar na Google Play" class="h-12">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Baixar na Google Play" class="h-11">
                     </a>
-                </div>
-
-                <div class="mt-8">
-                    <div class="text-sm text-black/60 flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <span>Prefere usar o computador?</span>
-                        <a href="intranet/login.html" class="text-white hover:underline font-semibold bg-black px-4 py-2 rounded-lg transition-transform hover:scale-105">Acesse a versão web &rarr;</a>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- Sticky Mobile Conversion Bottom Bar (M3 Floating Action Dock) -->
+    <div class="m3-mobile-bottom-bar" id="mobile-sticky-cta">
+        <a href="https://wa.me/5548988694593?text=Ol%C3%A1!%20Vim%20pelo%20Google%20e%20gostaria%20de%20agendar%20uma%20aula%20experimental%20gratuita%20na%20Kihap." target="_blank" rel="noopener" class="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-black font-black py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider shadow-md transition-transform active:scale-95">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            <span>WhatsApp</span>
+        </a>
+        <a href="#cta" class="flex-1 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-black font-black py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider shadow-md transition-transform active:scale-95">
+            <span>🥋</span>
+            <span>Aula Grátis</span>
+        </a>
+    </div>
 
 
     <!-- Footer -->
@@ -869,8 +869,8 @@
     <script type="module" src="js/miles-chatbot.js"></script>
 
     <!-- Academy Form Modal -->
-    <div id="academy-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
-        <div class="glass-card p-8 w-full max-w-lg relative mx-4">
+    <div id="academy-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000] hidden">
+        <div class="m3-card bg-white p-8 w-full max-w-lg relative mx-4 shadow-2xl">
             <button id="close-academy-modal" title="Fechar modal"
                 class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"

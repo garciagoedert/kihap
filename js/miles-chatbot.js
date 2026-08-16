@@ -867,6 +867,11 @@ function injectMilesStyles() {
             #miles-chat-toggle {
                 bottom: 16px;
                 right: 16px;
+                transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s, bottom 0.3s cubic-bezier(0.2, 0, 0, 1);
+            }
+            body.has-mobile-cta #miles-chat-toggle,
+            body:has(#mobile-sticky-cta.visible) #miles-chat-toggle {
+                bottom: calc(76px + env(safe-area-inset-bottom, 12px));
             }
             #miles-callout-bubble {
                 bottom: 90px;
@@ -874,6 +879,11 @@ function injectMilesStyles() {
                 left: auto;
                 max-width: 220px;
                 border-radius: 18px 18px 18px 4px;
+                transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.3s cubic-bezier(0.2, 0, 0, 1);
+            }
+            body.has-mobile-cta #miles-callout-bubble,
+            body:has(#mobile-sticky-cta.visible) #miles-callout-bubble {
+                bottom: calc(148px + env(safe-area-inset-bottom, 12px));
             }
             #miles-form {
                 padding-bottom: calc(10px + env(safe-area-inset-bottom));
