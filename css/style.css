@@ -611,12 +611,17 @@ body {
     background-color: #161616;
     z-index: 10001;
     transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    pointer-events: none;
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), visibility 0.3s ease, box-shadow 0.3s ease;
 }
 
 .mobile-menu.is-open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
 }
 
 .mobile-menu-overlay.is-open {
