@@ -899,7 +899,7 @@ function buildMilesHTML() {
     container.innerHTML = `
         <!-- Bolha de Chamada do Miles -->
         <div id="miles-callout-bubble" class="miles-callout-hidden">
-            <span>Oi! Posso ajudar você a encontrar a aula ideal e agendar sua aula gratuita? 🥋</span>
+            <span>Oi, posso ajudar você a encontrar a aula ideal?</span>
             <button id="miles-callout-close" aria-label="Fechar chamada">&times;</button>
         </div>
 
