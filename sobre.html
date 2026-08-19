@@ -110,103 +110,326 @@
 
     <!-- Hero Section -->
     <main>
-        <section class="relative h-[60vh] flex items-center justify-center text-center overflow-hidden">
+        <section class="relative h-[55vh] min-h-[380px] flex items-center justify-center text-center overflow-hidden">
             <!-- Background Image -->
             <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('imgs/fxpretas.JPG');"></div>
-            <!-- Layered Overlays for depth (igual ao index) -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent"></div>
+            <!-- Layered Overlays for depth -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/30"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60"></div>
  
-            <div class="relative z-10 px-4 md:px-24">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black uppercase leading-tight tracking-wide font-title text-white opacity-0 animate-fadeInUp delay-100">
-                    Nossa <span class="text-yellow-500">História</span>
+            <div class="relative z-10 px-6 max-w-4xl mx-auto">
+                <span class="text-xs uppercase tracking-widest text-yellow-400 font-bold mb-3 block opacity-0 animate-fadeInUp">Filosofia & Tradição</span>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-tight tracking-tight font-title text-white opacity-0 animate-fadeInUp delay-100">
+                    Sobre a <span class="text-yellow-500">Kihap</span>
                 </h1>
-                <p class="mt-4 text-lg md:text-xl max-w-2xl mx-auto text-white/75 leading-relaxed opacity-0 animate-fadeInUp delay-200">
-                    Conheça mais sobre a Kihap Martial Arts e o que nos move a transformar vidas através das artes marciais.
+                <p class="mt-4 text-base sm:text-lg md:text-xl text-white/85 leading-relaxed opacity-0 animate-fadeInUp delay-200">
+                    Transformando vidas de dentro para fora por meio das artes marciais, da disciplina positiva e do desenvolvimento humano integral.
                 </p>
             </div>
         </section>
 
-        <!-- Nossa Missão Section -->
-        <section class="py-20 bg-gradient-to-br from-gray-50 to-amber-50/40 text-gray-900">
-            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="section-title uppercase font-title leading-tight text-gray-900">Nossa <span
-                            class="text-yellow-500">Missão</span></h2>
-                    <p class="mt-6 text-gray-600 text-lg leading-relaxed">
-                        Acreditamos que as artes marciais vão muito além de socos e chutes. Nossa missão é formar
-                        indivíduos
-                        confiantes, disciplinados e preparados para enfrentar os desafios da vida com coragem e
-                        determinação.
-                    </p>
-                    <p class="mt-4 text-gray-600 text-lg leading-relaxed">
-                        Na Kihap, construímos uma comunidade acolhedora onde ensinamos não só a autodefesa, mas valores
-                        que acompanham nossos alunos por toda a vida. Nosso ambiente é feito para que todos possam
-                        desenvolver seu máximo potencial físico e mental.
-                    </p>
+        <!-- História & O Significado de Kihap -->
+        <section class="py-20 lg:py-28 bg-white text-gray-900 border-b border-gray-100">
+            <div class="container mx-auto px-6 max-w-6xl">
+                
+                <!-- História Header & Text -->
+                <div class="max-w-3xl mx-auto text-center mb-16">
+                    <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Nossa Origem</span>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black uppercase font-title leading-tight text-gray-900">
+                        Nossa <span class="text-yellow-500">História</span>
+                    </h2>
+                    <div class="mt-6 space-y-4 text-gray-600 text-base sm:text-lg leading-relaxed text-left sm:text-center">
+                        <p>
+                            A <strong>Kihap</strong> surgiu como uma escola de Artes Marciais com a missão de transformar e enriquecer a vida das pessoas, incentivando-as a reconhecer o poder de sua energia interior por meio da prática de exercício.
+                        </p>
+                        <p>
+                            Fundada na experiência de uma vida orientada pela filosofia positiva da disciplina, a Kihap foi criada para ajudar indivíduos a desenvolverem e encontrarem sinergia em seus ambientes e relações, começando sempre por si mesmos.
+                        </p>
+                    </div>
                 </div>
-                <div class="aspect-video w-full">
-                    <img src="imgs/fundogero.jpg" alt="Nossa Missão"
-                        class="w-full h-full object-cover rounded-2xl shadow-xl hover:scale-[1.02] transition-transform duration-500" loading="lazy">
+
+                <!-- O Significado de KI + HAP -->
+                <div class="m3-card bg-gradient-to-br from-[#FAF8F5] via-white to-[#FAF8F5] p-8 sm:p-12 rounded-3xl border border-amber-200/70 shadow-lg">
+                    <div class="text-center max-w-2xl mx-auto mb-10">
+                        <span class="text-xs font-black uppercase tracking-widest text-yellow-600 block mb-1">Etimologia e Filosofia</span>
+                        <h3 class="text-2xl sm:text-3xl font-black uppercase font-title text-gray-900">
+                            O Significado de <span class="text-yellow-500">KI + HAP</span>
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+                        <!-- KI Box -->
+                        <div class="p-6 bg-white rounded-2xl border border-amber-200 shadow-sm flex items-center gap-5">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-50 border border-yellow-400/40 flex items-center justify-center text-yellow-600 font-black text-2xl font-title shrink-0">
+                                KI
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-lg uppercase font-title">Energia Vital</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed mt-1">A força motriz interior presente em cada indivíduo, potencializada através do treino consciente.</p>
+                            </div>
+                        </div>
+
+                        <!-- HAP Box -->
+                        <div class="p-6 bg-white rounded-2xl border border-amber-200 shadow-sm flex items-center gap-5">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-50 border border-yellow-400/40 flex items-center justify-center text-yellow-600 font-black text-2xl font-title shrink-0">
+                                HAP
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-lg uppercase font-title">Harmonia</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed mt-1">O alinhamento perfeito entre corpo, mente, ambiente e propósito de vida.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="max-w-4xl mx-auto text-gray-700 text-base sm:text-lg leading-relaxed text-center space-y-4">
+                        <p>
+                            Assim, <strong>Kihap</strong> traduz-se em um <em>"grito de energia"</em>, simbolizando a entrega total da sua energia ao atingir um alvo.
+                        </p>
+                        <p class="text-gray-600 text-sm sm:text-base">
+                            No âmbito mental e emocional, acreditamos que estabelecer metas, usar a disciplina para alcançá-las e canalizar a energia necessária para isso são essenciais para viver uma vida de ações proativas, em vez de apenas reações.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Os Quatro Níveis de Consciência -->
+                <div class="mt-20">
+                    <div class="text-center max-w-3xl mx-auto mb-12">
+                        <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Transformação de Dentro para Fora</span>
+                        <h3 class="text-2xl sm:text-3xl md:text-4xl font-black uppercase font-title text-gray-900">
+                            Os Quatro Níveis de <span class="text-yellow-500">Consciência</span>
+                        </h3>
+                        <p class="mt-4 text-gray-600 text-base sm:text-lg leading-relaxed">
+                            Kihap representa a harmonização de nossa energia vital com o ambiente, promovendo uma transformação que ocorre de dentro para fora. Por essa razão, acreditamos nos quatro níveis de consciência:
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Nível 1: Eu -->
+                        <div class="m3-card bg-white p-7 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-yellow-600 font-black text-xl font-title mb-4">
+                                    01
+                                </div>
+                                <h4 class="font-title text-gray-900 text-xl font-black uppercase mb-2">Eu</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    O ponto de partida. Autoconhecimento, autocontrole, autoimagem positiva e cultivo da própria energia interior.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Nível 2: Próximo -->
+                        <div class="m3-card bg-white p-7 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-yellow-600 font-black text-xl font-title mb-4">
+                                    02
+                                </div>
+                                <h4 class="font-title text-gray-900 text-xl font-black uppercase mb-2">Próximo</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    Relações familiares e de amizade. Prática da empatia, respeito mútuo, escuta ativa e harmonia no convívio diário.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Nível 3: Sociedade -->
+                        <div class="m3-card bg-white p-7 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-yellow-600 font-black text-xl font-title mb-4">
+                                    03
+                                </div>
+                                <h4 class="font-title text-gray-900 text-xl font-black uppercase mb-2">Sociedade</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    Cidadania ativa, liderança inspiradora e impacto positivo no ambiente coletivo e na comunidade ao nosso redor.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Nível 4: Universo -->
+                        <div class="m3-card bg-white p-7 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-yellow-600 font-black text-xl font-title mb-4">
+                                    04
+                                </div>
+                                <h4 class="font-title text-gray-900 text-xl font-black uppercase mb-2">Universo</h4>
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    Conexão com o todo, respeito integral à vida, construção de um legado duradouro e harmonia com a totalidade.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Missão, Visão e Propósito -->
+        <section class="py-20 lg:py-28 bg-[#FAF8F5] border-b border-gray-200/60">
+            <div class="container mx-auto px-6 max-w-6xl">
+                <div class="text-center max-w-3xl mx-auto mb-14">
+                    <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Nossa Diretriz</span>
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-black uppercase font-title text-gray-900 leading-tight">
+                        Missão, Visão & <span class="text-yellow-500">Propósito</span>
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Missão -->
+                    <div class="m3-card bg-white p-8 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-100/80 border border-yellow-300/50 text-yellow-800 text-[11px] font-black uppercase tracking-wider mb-6">
+                                Missão
+                            </div>
+                            <h3 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Nossa Missão</h3>
+                            <p class="text-gray-600 text-base leading-relaxed">
+                                Despertar nas famílias o desejo pelo desenvolvimento pessoal e pela disciplina da arte marcial.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Visão -->
+                    <div class="m3-card bg-white p-8 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-100/80 border border-yellow-300/50 text-yellow-800 text-[11px] font-black uppercase tracking-wider mb-6">
+                                Visão
+                            </div>
+                            <h3 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Nossa Visão</h3>
+                            <p class="text-gray-600 text-base leading-relaxed">
+                                Ser referência na introjeção de valores através do exercício físico e desenvolvimento humano.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Propósito -->
+                    <div class="m3-card bg-gradient-to-br from-white to-amber-50/50 p-8 rounded-3xl border border-yellow-400/40 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500 text-black text-[11px] font-black uppercase tracking-wider mb-6 shadow-sm">
+                                Propósito
+                            </div>
+                            <h3 class="text-2xl font-black uppercase font-title text-gray-900 mb-4">Nosso Propósito</h3>
+                            <p class="text-gray-700 text-base leading-relaxed font-medium">
+                                Que as pessoas (re)conheçam o poder da energia interior e que, com disciplina positiva, entrem em harmonia com o objetivo definido e evoluam a sua própria realidade.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Nossos Valores Section -->
-        <section class="py-20 bg-gradient-to-b from-white via-[#FAF7F2] to-white">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="section-title uppercase font-title mb-12 text-gray-900">Nossos <span class="text-yellow-500">Valores</span></h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <!-- Valor: Disciplina -->
-                    <div class="glass-card p-8 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                            </svg>
+        <!-- Nossos Valores Section (6 Valores Detalhados) -->
+        <section class="py-20 lg:py-28 bg-white border-b border-gray-100">
+            <div class="container mx-auto px-6 max-w-6xl">
+                <!-- Section Header -->
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <span class="text-xs uppercase tracking-widest text-yellow-600 font-bold mb-2 block">Formação Integral</span>
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-black uppercase font-title text-gray-900 leading-tight">
+                        Nossos <span class="text-yellow-500">Valores</span>
+                    </h2>
+                    <p class="mt-5 text-gray-600 text-base sm:text-lg leading-relaxed">
+                        Na Kihap, acreditamos que o desenvolvimento de valores é essencial para a formação de indivíduos completos e preparados para enfrentar os desafios do mundo. Trabalhamos com um ciclo de seis valores fundamentais, abordando três deles a cada ano.
+                    </p>
+                    <p class="mt-3 text-sm text-gray-500 leading-relaxed">
+                        Cada valor é cuidadosamente integrado em nosso plano de aula unificado, garantindo que todas as nossas unidades compartilhem uma abordagem coesa e consistente.
+                    </p>
+                </div>
+
+                <!-- 6 Values Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    
+                    <!-- 1. Disciplina -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Disciplina</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">01</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “É obedecer o que é correto.”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Ensinamos que disciplina é obedecer o que é correto, sustentada por consistência, responsabilidade, planejamento e foco.
+                            </p>
                         </div>
-                        <h3 class="text-xl font-bold font-title text-gray-900 uppercase mb-2">Disciplina</h3>
-                        <p class="text-gray-600 text-sm leading-relaxed">Paciência e constância. A base para alcançar o sucesso dentro e fora do tatame.</p>
                     </div>
-                    <!-- Valor: Respeito -->
-                    <div class="glass-card p-8 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
+
+                    <!-- 2. Respeito -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Respeito</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">02</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “Não é o que você sabe, é o que você faz.”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Enfatizamos a importância de reconhecer a existência do próximo. A prática do respeito é sustentada por pilares como comunicação não violenta, empatia, honra e humildade.
+                            </p>
                         </div>
-                        <h3 class="text-xl font-bold font-title text-gray-900 uppercase mb-2">Respeito</h3>
-                        <p class="text-gray-600 text-sm leading-relaxed">Cuidamos uns dos outros, valorizamos nossos mestres, oponentes e nós mesmos.</p>
                     </div>
-                    <!-- Valor: Foco -->
-                    <div class="glass-card p-8 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+
+                    <!-- 3. Autoestima -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Autoestima</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">03</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “É a alegria de ser eu mesmo(a).”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Promovemos a alegria de ser você mesmo(a), incentivando uma autoimagem positiva e aceitação pessoal através de ciclo social, comunicação, saúde física e mental.
+                            </p>
                         </div>
-                        <h3 class="text-xl font-bold font-title text-gray-900 uppercase mb-2">Foco</h3>
-                        <p class="text-gray-600 text-sm leading-relaxed">Estar presente em cada ação, com a mente voltada para os objetivos que desejamos realizar.</p>
                     </div>
-                    <!-- Valor: Integridade -->
-                    <div class="glass-card p-8 flex flex-col items-center">
-                        <div class="bg-yellow-400/10 p-5 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+
+                    <!-- 4. Comunicação -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Comunicação</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">04</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “É o elo entre o mundo e eu.”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Vemos a comunicação como o elo entre o mundo e o indivíduo. Trabalhamos habilidades como tom de voz adequado, escuta ativa, assertividade e controle emocional.
+                            </p>
                         </div>
-                        <h3 class="text-xl font-bold font-title text-gray-900 uppercase mb-2">Integridade</h3>
-                        <p class="text-gray-600 text-sm leading-relaxed">Fazer a coisa certa quando ninguém está olhando, honrando sempre nossos princípios.</p>
                     </div>
+
+                    <!-- 5. Gratidão -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Gratidão</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">05</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “Reconhecer as coisas boas existentes na vida.”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Encorajamos o reconhecimento das coisas e pessoas pelas quais somos gratos. Este valor é explorado através de ações de gratidão e a contribuição sem esperar algo em troca.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 6. Acreditar -->
+                    <div class="m3-card bg-[#FAF8F5] p-8 rounded-3xl border border-gray-200/80 hover:border-yellow-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black font-title text-gray-900 uppercase">Acreditar</h3>
+                                <span class="w-8 h-8 rounded-full bg-yellow-400/20 text-yellow-700 font-bold text-xs flex items-center justify-center">06</span>
+                            </div>
+                            <blockquote class="text-yellow-700 font-bold text-sm italic mb-4 pb-3 border-b border-amber-200/60">
+                                “Eu posso, eu consigo.”
+                            </blockquote>
+                            <p class="text-gray-600 text-sm leading-relaxed">
+                                Estimulamos a crença pessoal com o lema "Eu posso, eu consigo". Os pilares incluem sonhar, definir metas, confiar no processo e celebrar conquistas.
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
