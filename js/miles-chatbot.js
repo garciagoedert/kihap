@@ -1279,6 +1279,10 @@ Seja curto e convidativo — máximo 3 frases.`;
 // ─────────────────────────────────────────────────────────────────────────────
 
 function initMilesChatbot() {
+    // Miles temporariamente desativado
+    console.log('[Miles] Chatbot temporariamente desativado.');
+    return;
+
     if (document.getElementById('miles-chatbot-container')) return; // Já iniciado
     injectMilesStyles();
     buildMilesHTML();

@@ -413,6 +413,7 @@ function formatText(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Miles Page] Assistente temporariamente em manutenção.');
     const messagesContainer = document.getElementById('miles-chat-messages');
     const typingIndicator   = document.getElementById('miles-typing-indicator');
     const form              = document.getElementById('miles-chat-form');
@@ -420,6 +421,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn           = document.getElementById('miles-send-btn');
     const resetBtn          = document.getElementById('miles-reset-btn');
     const chips             = document.querySelectorAll('.miles-chip');
+
+    if (!form || !input || !sendBtn) {
+        // Modo manutenção ativo - formulário não exibido
+        return;
+    }
 
     let chatHistory = [];
     let apiKey = null;
