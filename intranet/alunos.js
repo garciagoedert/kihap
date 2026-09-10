@@ -512,11 +512,28 @@ async function loadStudents() {
     tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8"><i class="fas fa-circle-notch fa-spin text-primary mr-2"></i>Carregando alunos...</td></tr>';
 
     try {
-        console.log("🚀 Buscando alunos nativamente através de Cloud Function (rápido)...", { selectedUnit, searchTerm });
+        console.log("🚀 Buscando alunos (Cloud Function com fallback para Firestore)...", { selectedUnit, searchTerm });
         const startTime = Date.now();
 
-        const result = await listAlunosLocais({ unitId: selectedUnit || 'all' });
-        let studentList = result.data || [];
+        let studentList = [];
+        try {
+            const result = await listAlunosLocais({ unitId: selectedUnit || 'all' });
+            studentList = result.data || [];
+        } catch (cfError) {
+            console.warn("⚠️ Cloud Function listAlunosLocais indisponível, buscando diretamente no Firestore:", cfError);
+            let q;
+            if (selectedUnit && selectedUnit !== 'all') {
+                q = query(collection(db, 'evo_students'), where('unitId', '==', selectedUnit));
+            } else {
+                q = query(collection(db, 'evo_students'));
+            }
+            const snap = await getDocs(q);
+            studentList = snap.docs.map(doc => {
+                const d = doc.data();
+                d.idMember = d.idMember || doc.id;
+                return d;
+            });
+        }
 
         // Search logic local no frontend
         if (searchTerm) {
@@ -527,7 +544,7 @@ async function loadStudents() {
             });
         }
 
-        console.log(`✅ Busca Cloud Function concluída em ${Date.now() - startTime}ms`);
+        console.log(`✅ Busca concluída em ${Date.now() - startTime}ms`);
         console.log(`📏 Total de alunos retornados: ${studentList.length}`);
 
         allStudents = studentList;
@@ -852,8 +869,14 @@ async function renderTuitionsTable() {
             const res = await getTuitionPlans({ unitId: 'all' });
             window.tuitionPlansCache = res.data || [];
         } catch (e) {
-            console.error("Erro ao buscar planos:", e);
-            window.tuitionPlansCache = [];
+            console.warn("⚠️ Cloud Function getTuitionPlans indisponível, buscando do Firestore:", e);
+            try {
+                const plansSnap = await getDocs(collection(db, 'tuitionPlans'));
+                window.tuitionPlansCache = plansSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (err) {
+                console.error("Erro ao buscar planos:", err);
+                window.tuitionPlansCache = [];
+            }
         }
     }
     

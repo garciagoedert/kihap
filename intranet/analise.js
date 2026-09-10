@@ -1,6 +1,7 @@
 import { onAuthReady, checkAdminStatus } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { app } from './firebase-config.js';
+import { app, db } from './firebase-config.js';
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showAlert, getUnidades } from './common-ui.js';
 
 const functions = getFunctions(app);
@@ -45,9 +46,20 @@ function initEvents() {
 async function loadFullData() {
     try {
         console.log("📊 Carregando dados para o Dashboard de Análise...");
-        const result = await listAlunosLocais({ unitId: 'all' });
-        allStudentsData = result.data || [];
-        
+        let studentList = [];
+        try {
+            const result = await listAlunosLocais({ unitId: 'all' });
+            studentList = result.data || [];
+        } catch (cfErr) {
+            console.warn("⚠️ Cloud Function listAlunosLocais indisponível, buscando direto do Firestore:", cfErr);
+            const snap = await getDocs(collection(db, 'evo_students'));
+            studentList = snap.docs.map(doc => {
+                const d = doc.data();
+                d.idMember = d.idMember || doc.id;
+                return d;
+            });
+        }
+        allStudentsData = studentList;
         renderDashboard('all');
     } catch (error) {
         console.error("Erro ao carregar dados analíticos:", error);

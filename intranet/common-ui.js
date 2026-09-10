@@ -37,9 +37,14 @@ let _unidadesCache = null; // Cache em memória (válido por sessão)
 async function getUnidades(includeInactive = false) {
     if (!_unidadesCache) {
         try {
-            const getUnitsCallable = httpsCallable(functions, 'getUnits');
-            const result = await getUnitsCallable();
-            _unidadesCache = result.data || UNITS_FALLBACK;
+            const unitsSnap = await getDocs(collection(db, 'units'));
+            if (!unitsSnap.empty) {
+                _unidadesCache = unitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } else {
+                const getUnitsCallable = httpsCallable(functions, 'getUnits');
+                const result = await getUnitsCallable();
+                _unidadesCache = result.data || UNITS_FALLBACK;
+            }
         } catch (error) {
             console.warn('[getUnidades] Erro ao buscar unidades do Firestore, usando fallback:', error);
             _unidadesCache = UNITS_FALLBACK;
