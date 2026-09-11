@@ -24,7 +24,15 @@ async function initializeHistory() {
     const searchInput = document.getElementById('search-input');
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
+    const periodFilter = document.getElementById('filter-period');
+    const monthFilter = document.getElementById('filter-month');
     const dateFilter = document.getElementById('filter-date');
+    const filterStartDate = document.getElementById('filter-start-date');
+    const filterEndDate = document.getElementById('filter-end-date');
+    const containerMonth = document.getElementById('filter-container-month');
+    const containerSingle = document.getElementById('filter-container-single');
+    const containerCustom = document.getElementById('filter-container-custom');
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
     const fulfillmentFilter = document.getElementById('filter-fulfillment');
     const paymentStatusFilter = document.getElementById('filter-payment-status');
     const resendMissingTicketsBtn = document.getElementById('resend-missing-tickets-btn');
@@ -34,20 +42,80 @@ async function initializeHistory() {
     const cancelExportBtn = document.getElementById('cancel-export-btn');
     const exportForm = document.getElementById('export-form');
 
+    // Period selector change logic
+    if (periodFilter) {
+        periodFilter.addEventListener('change', () => {
+            const val = periodFilter.value;
+            if (val === 'month') {
+                containerMonth?.classList.remove('hidden');
+                containerSingle?.classList.add('hidden');
+                containerCustom?.classList.add('hidden');
+                if (monthFilter && !monthFilter.value) {
+                    const now = new Date();
+                    const m = String(now.getMonth() + 1).padStart(2, '0');
+                    monthFilter.value = `${now.getFullYear()}-${m}`;
+                }
+            } else if (val === 'single') {
+                containerMonth?.classList.add('hidden');
+                containerSingle?.classList.remove('hidden');
+                containerCustom?.classList.add('hidden');
+                if (dateFilter && !dateFilter.value) {
+                    const now = new Date();
+                    const m = String(now.getMonth() + 1).padStart(2, '0');
+                    const d = String(now.getDate()).padStart(2, '0');
+                    dateFilter.value = `${now.getFullYear()}-${m}-${d}`;
+                }
+            } else if (val === 'custom') {
+                containerMonth?.classList.add('hidden');
+                containerSingle?.classList.add('hidden');
+                containerCustom?.classList.remove('hidden');
+            } else {
+                containerMonth?.classList.add('hidden');
+                containerSingle?.classList.add('hidden');
+                containerCustom?.classList.add('hidden');
+            }
+            currentPage = 1;
+            applyFilters();
+        });
+    }
+
     // Filter Listeners
-    [searchInput, unitFilter, productFilter, dateFilter, fulfillmentFilter, paymentStatusFilter].forEach(el => {
+    [searchInput, unitFilter, productFilter, monthFilter, dateFilter, filterStartDate, filterEndDate, fulfillmentFilter, paymentStatusFilter].forEach(el => {
         if (!el) return;
         el.addEventListener('change', () => {
             currentPage = 1;
             applyFilters();
         });
-        if (el === searchInput) {
+        if (el === searchInput || el === monthFilter || el === dateFilter || el === filterStartDate || el === filterEndDate) {
             el.addEventListener('input', () => {
                 currentPage = 1;
                 applyFilters();
             });
         }
     });
+
+    // Clear filters button logic
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            if (unitFilter) unitFilter.value = '';
+            if (productFilter) productFilter.value = '';
+            if (periodFilter) periodFilter.value = 'all';
+            if (monthFilter) monthFilter.value = '';
+            if (dateFilter) dateFilter.value = '';
+            if (filterStartDate) filterStartDate.value = '';
+            if (filterEndDate) filterEndDate.value = '';
+            if (fulfillmentFilter) fulfillmentFilter.value = '';
+            if (paymentStatusFilter) paymentStatusFilter.value = '';
+
+            containerMonth?.classList.add('hidden');
+            containerSingle?.classList.add('hidden');
+            containerCustom?.classList.add('hidden');
+
+            currentPage = 1;
+            applyFilters();
+        });
+    }
 
     // Reenviar todos logic
     if (resendMissingTicketsBtn) {
@@ -111,8 +179,28 @@ const openExportModal = () => {
     if (exportFilterProduct) exportFilterProduct.value = productFilter.value;
     if (exportFilterStatus) exportFilterStatus.value = '';
     if (exportFilterFulfillment) exportFilterFulfillment.value = fulfillmentFilter.value;
-    if (exportFilterStartDate) exportFilterStartDate.value = '';
-    if (exportFilterEndDate) exportFilterEndDate.value = '';
+    
+    const { startDate: activeStart, endDate: activeEnd } = getFilterDateRange();
+    if (exportFilterStartDate) {
+        if (activeStart) {
+            const y = activeStart.getFullYear();
+            const m = String(activeStart.getMonth() + 1).padStart(2, '0');
+            const d = String(activeStart.getDate()).padStart(2, '0');
+            exportFilterStartDate.value = `${y}-${m}-${d}`;
+        } else {
+            exportFilterStartDate.value = '';
+        }
+    }
+    if (exportFilterEndDate) {
+        if (activeEnd) {
+            const y = activeEnd.getFullYear();
+            const m = String(activeEnd.getMonth() + 1).padStart(2, '0');
+            const d = String(activeEnd.getDate()).padStart(2, '0');
+            exportFilterEndDate.value = `${y}-${m}-${d}`;
+        } else {
+            exportFilterEndDate.value = '';
+        }
+    }
 
     exportModal.classList.remove('hidden');
 };
@@ -547,20 +635,138 @@ async function fetchSales() {
     }
 }
 
+function getSaleDate(sale) {
+    if (!sale || !sale.created) return null;
+    if (typeof sale.created.toDate === 'function') {
+        return sale.created.toDate();
+    }
+    if (sale.created instanceof Date) {
+        return sale.created;
+    }
+    if (sale.created.seconds) {
+        return new Date(sale.created.seconds * 1000);
+    }
+    if (typeof sale.created === 'string' || typeof sale.created === 'number') {
+        const d = new Date(sale.created);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+}
+
+function getFilterDateRange() {
+    const periodFilter = document.getElementById('filter-period');
+    const selectedPeriod = periodFilter ? periodFilter.value : 'all';
+
+    if (selectedPeriod === 'all') {
+        return { startDate: null, endDate: null };
+    }
+
+    const now = new Date();
+
+    if (selectedPeriod === 'today') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === 'yesterday') {
+        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0, 0);
+        const end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === '7') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === '15') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 15, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === '30') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === 'this_month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === 'last_month') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === 'this_year') {
+        const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        return { startDate: start, endDate: end };
+    }
+
+    if (selectedPeriod === 'month') {
+        const monthInput = document.getElementById('filter-month');
+        if (monthInput && monthInput.value) {
+            const [year, month] = monthInput.value.split('-').map(Number);
+            const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+            const end = new Date(year, month, 0, 23, 59, 59, 999);
+            return { startDate: start, endDate: end };
+        }
+        return { startDate: null, endDate: null };
+    }
+
+    if (selectedPeriod === 'single') {
+        const dateInput = document.getElementById('filter-date');
+        if (dateInput && dateInput.value) {
+            const [year, month, day] = dateInput.value.split('-').map(Number);
+            const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+            const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+            return { startDate: start, endDate: end };
+        }
+        return { startDate: null, endDate: null };
+    }
+
+    if (selectedPeriod === 'custom') {
+        const startInput = document.getElementById('filter-start-date');
+        const endInput = document.getElementById('filter-end-date');
+        let start = null;
+        let end = null;
+        if (startInput && startInput.value) {
+            const [year, month, day] = startInput.value.split('-').map(Number);
+            start = new Date(year, month - 1, day, 0, 0, 0, 0);
+        }
+        if (endInput && endInput.value) {
+            const [year, month, day] = endInput.value.split('-').map(Number);
+            end = new Date(year, month - 1, day, 23, 59, 59, 999);
+        }
+        return { startDate: start, endDate: end };
+    }
+
+    return { startDate: null, endDate: null };
+}
+
 function applyFilters() {
     const searchInput = document.getElementById('search-input');
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
-    const dateFilter = document.getElementById('filter-date');
     const fulfillmentFilter = document.getElementById('filter-fulfillment');
     const paymentStatusFilter = document.getElementById('filter-payment-status');
 
-    const searchTerm = searchInput.value.toLowerCase();
-    const selectedUnit = unitFilter.value;
-    const selectedProduct = productFilter.value;
-    const selectedDate = dateFilter.value;
-    const selectedFulfillment = fulfillmentFilter.value;
-    const selectedPaymentStatus = paymentStatusFilter.value;
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const selectedUnit = unitFilter ? unitFilter.value : '';
+    const selectedProduct = productFilter ? productFilter.value : '';
+    const selectedFulfillment = fulfillmentFilter ? fulfillmentFilter.value : '';
+    const selectedPaymentStatus = paymentStatusFilter ? paymentStatusFilter.value : '';
+
+    const { startDate, endDate } = getFilterDateRange();
 
     let filteredGroups = allSales.filter(group => {
         return group.some(sale => {
@@ -572,9 +778,15 @@ function applyFilters() {
             const paymentStatusMatch = !selectedPaymentStatus || sale.paymentStatus === selectedPaymentStatus;
 
             let dateMatch = true;
-            if (selectedDate && sale.created) {
-                const saleDate = sale.created.toDate().toISOString().split('T')[0];
-                dateMatch = saleDate === selectedDate;
+            if (startDate || endDate) {
+                const saleDate = getSaleDate(sale);
+                if (!saleDate) {
+                    dateMatch = false;
+                } else {
+                    const saleTime = saleDate.getTime();
+                    if (startDate && saleTime < startDate.getTime()) dateMatch = false;
+                    if (endDate && saleTime > endDate.getTime()) dateMatch = false;
+                }
             }
 
             return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && fulfillmentMatch && paymentStatusMatch;
@@ -711,7 +923,8 @@ function populateFilters() {
     const unitFilter = document.getElementById('filter-unit');
     const productFilter = document.getElementById('filter-product');
 
-    const units = [...new Set(allSales.map(sale => sale.userUnit).filter(Boolean))];
+    const flatSales = allSales.flat();
+    const units = [...new Set(flatSales.map(sale => sale.userUnit).filter(Boolean))];
     unitFilter.innerHTML = '<option value="">Todas as Unidades</option>';
     units.sort().forEach(unit => {
         const option = document.createElement('option');

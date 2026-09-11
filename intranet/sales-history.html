@@ -84,8 +84,43 @@
                             </select>
                         </div>
                         <div>
-                            <label for="filter-date" class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Data:</label>
-                            <input type="date" id="filter-date" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <label for="filter-period" class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Período:</label>
+                            <select id="filter-period" class="w-full px-3 py-2 mt-1 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                <option value="all">Todas as Datas</option>
+                                <option value="today">Hoje</option>
+                                <option value="yesterday">Ontem</option>
+                                <option value="7">Últimos 7 dias</option>
+                                <option value="15">Últimos 15 dias</option>
+                                <option value="30">Últimos 30 dias</option>
+                                <option value="this_month">Este Mês</option>
+                                <option value="last_month">Mês Passado</option>
+                                <option value="this_year">Este Ano</option>
+                                <option value="month">Escolher Mês...</option>
+                                <option value="single">Dia Específico...</option>
+                                <option value="custom">Intervalo Personalizado...</option>
+                            </select>
+
+                            <!-- Sub-input para Escolher Mês -->
+                            <div id="filter-container-month" class="hidden mt-2">
+                                <input type="month" id="filter-month" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            </div>
+
+                            <!-- Sub-input para Dia Específico -->
+                            <div id="filter-container-single" class="hidden mt-2">
+                                <input type="date" id="filter-date" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            </div>
+
+                            <!-- Sub-input para Intervalo Personalizado -->
+                            <div id="filter-container-custom" class="hidden mt-2 grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-400 block mb-0.5">De:</span>
+                                    <input type="date" id="filter-start-date" class="w-full px-2 py-1.5 text-xs text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                </div>
+                                <div>
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-400 block mb-0.5">Até:</span>
+                                    <input type="date" id="filter-end-date" class="w-full px-2 py-1.5 text-xs text-gray-900 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label for="filter-fulfillment" class="text-sm font-medium text-gray-500 dark:text-gray-400">Status Entrega:</label>
@@ -107,6 +142,11 @@
                                 <option value="pending">Pendente</option>
                                 <option value="canceled">Cancelado</option>
                             </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" id="clear-filters-btn" class="w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md transition-all flex items-center justify-center gap-2" title="Limpar todos os filtros">
+                                <i class="fas fa-undo-alt text-xs"></i> Limpar Filtros
+                            </button>
                         </div>
                     </div>
                 </div>
