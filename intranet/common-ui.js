@@ -537,7 +537,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.0.7'; 
+    const CACHE_VERSION = '1.0.8'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -562,8 +562,16 @@ async function loadComponents(pageSpecificSetup) {
         'grade.html',
         'relatorios.html',
         'snapshots-history.html',
-        'sales-history.html',
         'gerenciar-emblemas.html'
+    ];
+
+    // Páginas específicas da Store
+    const storePages = [
+        'store.html',
+        'sales-history.html',
+        'pedidos.html',
+        'assinaturas.html',
+        'estoque.html'
     ];
 
     // Páginas específicas do Jurídico
@@ -623,7 +631,25 @@ async function loadComponents(pageSpecificSetup) {
         } else {
             // Se tem cache, valida em background
             getCurrentUser().then(fresh => {
-                if (fresh) localStorage.setItem('currentUser', JSON.stringify(fresh));
+                if (fresh) {
+                    localStorage.setItem('currentUser', JSON.stringify(fresh));
+                    const freshIsAdmin = fresh.isAdmin === true;
+                    const freshIsStore = fresh.isStore === true;
+
+                    if (storePages.includes(currentPage) && !freshIsAdmin && !freshIsStore) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+
+                    const storeMenuEl = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
+                    if (storeMenuEl) {
+                        if (freshIsAdmin || freshIsStore) {
+                            storeMenuEl.classList.remove('hidden');
+                        } else {
+                            storeMenuEl.classList.add('hidden');
+                        }
+                    }
+                }
             });
         }
 
@@ -639,8 +665,15 @@ async function loadComponents(pageSpecificSetup) {
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {
-            const isStorePage = ['sales-history.html', 'store.html'].includes(currentPage);
-            if (!isAdmin && !(isStore && isStorePage)) {
+            if (!isAdmin) {
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+
+        // Se for uma página da Store, valida acesso (apenas Admin ou permissão Store)
+        if (storePages.includes(currentPage)) {
+            if (!isAdmin && !isStore) {
                 window.location.href = 'index.html';
                 return;
             }
@@ -747,6 +780,16 @@ async function loadComponents(pageSpecificSetup) {
         // Marketing: Visível para Admin ou Marketing ou Instrutor ou Administrativo
         const marketingMenu = document.getElementById('prospeccao-menu-btn')?.parentElement;
         if (marketingMenu && !isAdmin && !isMarketing && !isInstructor && !isAdministrativo) marketingMenu.classList.add('hidden');
+
+        // Store: Visível apenas para Admin ou Store
+        const storeMenu = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
+        if (storeMenu) {
+            if (!isAdmin && !isStore) {
+                storeMenu.classList.add('hidden');
+            } else {
+                storeMenu.classList.remove('hidden');
+            }
+        }
 
 
         // Outras seções: Esconder apenas se for um usuário RESTRITO (Jurídico)

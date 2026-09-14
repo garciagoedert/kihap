@@ -48,9 +48,8 @@ export async function setupStorePage() {
     const subtabCoupons = document.getElementById('subtab-coupons');
 
     if (!isAdmin && !isStore) {
-        tabManageProducts.style.display = 'none';
-        tabMarketing.style.display = 'none';
-        tabEvents.style.display = 'none';
+        window.location.href = 'index.html';
+        return;
     }
 
     // Events Tab elements
