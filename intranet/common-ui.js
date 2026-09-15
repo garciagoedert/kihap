@@ -260,8 +260,10 @@ async function updateUserProfileUI() {
             }
             
             // Handle admin-only elements in dropdown
-            const isAdmin = currentUser.isAdmin === true;
+            const isAdmin = currentUser.isAdmin === true || currentUser.isAdmin === 'true';
+            const isStore = currentUser.isStore === true || currentUser.isStore === 'true';
             localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
+            localStorage.setItem('isStore', isStore ? 'true' : 'false');
             
             if (isAdmin) {
                 syncMilesPublicKey();
@@ -274,6 +276,16 @@ async function updateUserProfileUI() {
                     el.classList.add('hidden');
                 }
             });
+
+            // Atualiza visibilidade da Store no menu lateral com dados frescos
+            const storeMenuEl = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
+            if (storeMenuEl) {
+                if (isAdmin || isStore) {
+                    storeMenuEl.classList.remove('hidden');
+                } else {
+                    storeMenuEl.classList.add('hidden');
+                }
+            }
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
@@ -537,7 +549,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.0.8'; 
+    const CACHE_VERSION = '1.0.9'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -633,8 +645,8 @@ async function loadComponents(pageSpecificSetup) {
             getCurrentUser().then(fresh => {
                 if (fresh) {
                     localStorage.setItem('currentUser', JSON.stringify(fresh));
-                    const freshIsAdmin = fresh.isAdmin === true;
-                    const freshIsStore = fresh.isStore === true;
+                    const freshIsAdmin = fresh.isAdmin === true || fresh.isAdmin === 'true';
+                    const freshIsStore = fresh.isStore === true || fresh.isStore === 'true';
 
                     if (storePages.includes(currentPage) && !freshIsAdmin && !freshIsStore) {
                         window.location.href = 'index.html';
@@ -653,15 +665,15 @@ async function loadComponents(pageSpecificSetup) {
             });
         }
 
-        const isAdmin = userData.isAdmin === true;
-        const isJuridico = userData.isJuridico === true;
-        const isStore = userData.isStore === true;
-        const isRH = userData.isRH === true;
-        const isMarketing = userData.isMarketing === true;
-        const isInstructor = userData.isInstructor === true;
+        const isAdmin = userData.isAdmin === true || userData.isAdmin === 'true';
+        const isJuridico = userData.isJuridico === true || userData.isJuridico === 'true';
+        const isStore = userData.isStore === true || userData.isStore === 'true';
+        const isRH = userData.isRH === true || userData.isRH === 'true';
+        const isMarketing = userData.isMarketing === true || userData.isMarketing === 'true';
+        const isInstructor = userData.isInstructor === true || userData.isInstructor === 'true';
         const isColarinhoPreto = userData.isColarinhoPreto === true || userData.isBlackCollar === true || userData.colarinhoPreto === true;
-        const isAdministrativo = userData.isAdministrativo === true;
-        const isSuporte = userData.isSuporte === true;
+        const isAdministrativo = userData.isAdministrativo === true || userData.isAdministrativo === 'true';
+        const isSuporte = userData.isSuporte === true || userData.isSuporte === 'true';
 
         // Se for uma página administrativa, valida acesso
         if (adminPages.includes(currentPage)) {

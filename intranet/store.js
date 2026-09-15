@@ -27,7 +27,7 @@ const debounce = (func, delay) => {
 export async function setupStorePage() {
     const currentUser = await getCurrentUser();
     const isAdmin = await checkAdminStatus(currentUser);
-    const isStore = currentUser && currentUser.isStore === true;
+    const isStore = currentUser && (currentUser.isStore === true || currentUser.isStore === 'true');
 
     // Tab elements
     const tabDashboard = document.getElementById('tab-dashboard');

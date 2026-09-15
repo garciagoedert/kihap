@@ -20,3 +20,11 @@ RewriteRule ^(.*)$ $1.html [NC,L]
 
 # Optional: Handle 404s
 ErrorDocument 404 /404.html
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|js|css)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+</IfModule>
