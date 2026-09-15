@@ -228,6 +228,91 @@ function setupProfileMenu() {
     }
 }
 
+/**
+ * Retorna as permissões granulares da Store para um usuário.
+ * Compatibilidade retroativa: se o usuário tiver isStore=true mas nenhuma subpermissão explícita configurada,
+ * todas as 4 subpermissões retornam true.
+ */
+function getStorePermissions(user) {
+    if (!user) return { loja: false, pedidos: false, assinaturas: false, estoque: false, hasAny: false };
+    const isAdmin = user.isAdmin === true || user.isAdmin === 'true';
+    if (isAdmin) {
+        return { loja: true, pedidos: true, assinaturas: true, estoque: true, hasAny: true };
+    }
+
+    const isStore = user.isStore === true || user.isStore === 'true';
+    const hasExplicitSub = user.isStoreLoja !== undefined ||
+                           user.isStorePedidos !== undefined ||
+                           user.isStoreAssinaturas !== undefined ||
+                           user.isStoreEstoque !== undefined;
+
+    let loja = false;
+    let pedidos = false;
+    let assinaturas = false;
+    let estoque = false;
+
+    if (hasExplicitSub) {
+        loja = user.isStoreLoja === true || user.isStoreLoja === 'true';
+        pedidos = user.isStorePedidos === true || user.isStorePedidos === 'true';
+        assinaturas = user.isStoreAssinaturas === true || user.isStoreAssinaturas === 'true';
+        estoque = user.isStoreEstoque === true || user.isStoreEstoque === 'true';
+    } else if (isStore) {
+        // Usuário legado que tem isStore habilitado antes da existência das subpermissões
+        loja = true;
+        pedidos = true;
+        assinaturas = true;
+        estoque = true;
+    }
+
+    const hasAny = loja || pedidos || assinaturas || estoque;
+    return { loja, pedidos, assinaturas, estoque, hasAny };
+}
+
+/**
+ * Atualiza a visibilidade do botão principal da Store e de suas sub-opções no menu lateral.
+ */
+function updateStoreMenuUI(user) {
+    const storeBtn = document.getElementById('store-menu-btn');
+    const storeContainer = storeBtn?.parentElement;
+    const perms = getStorePermissions(user);
+
+    if (storeContainer) {
+        if (!perms.hasAny) {
+            storeContainer.classList.add('hidden');
+        } else {
+            storeContainer.classList.remove('hidden');
+        }
+    }
+
+    // Links específicos dentro do submenu
+    const sublinkLoja = document.getElementById('store-sublink-loja');
+    const sublinkPedidos = document.getElementById('store-sublink-pedidos');
+    const sublinkAssinaturas = document.getElementById('store-sublink-assinaturas');
+    const sublinkEstoque = document.getElementById('store-sublink-estoque');
+
+    if (sublinkLoja) {
+        if (perms.loja) sublinkLoja.classList.remove('hidden');
+        else sublinkLoja.classList.add('hidden');
+    }
+    if (sublinkPedidos) {
+        if (perms.pedidos) sublinkPedidos.classList.remove('hidden');
+        else sublinkPedidos.classList.add('hidden');
+    }
+    if (sublinkAssinaturas) {
+        if (perms.assinaturas) sublinkAssinaturas.classList.remove('hidden');
+        else sublinkAssinaturas.classList.add('hidden');
+    }
+    if (sublinkEstoque) {
+        if (perms.estoque) sublinkEstoque.classList.remove('hidden');
+        else sublinkEstoque.classList.add('hidden');
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.getStorePermissions = getStorePermissions;
+    window.updateStoreMenuUI = updateStoreMenuUI;
+}
+
 async function updateUserProfileUI() {
     const userNameEl = document.getElementById('header-user-name');
     const userUnitEl = document.getElementById('header-user-unit');
@@ -277,15 +362,8 @@ async function updateUserProfileUI() {
                 }
             });
 
-            // Atualiza visibilidade da Store no menu lateral com dados frescos
-            const storeMenuEl = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
-            if (storeMenuEl) {
-                if (isAdmin || isStore) {
-                    storeMenuEl.classList.remove('hidden');
-                } else {
-                    storeMenuEl.classList.add('hidden');
-                }
-            }
+            // Atualiza visibilidade dinâmica da Store e suas sub-abas no menu lateral com dados frescos
+            updateStoreMenuUI(currentUser);
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
@@ -549,7 +627,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.0.9'; 
+    const CACHE_VERSION = '1.1.0'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -645,22 +723,29 @@ async function loadComponents(pageSpecificSetup) {
             getCurrentUser().then(fresh => {
                 if (fresh) {
                     localStorage.setItem('currentUser', JSON.stringify(fresh));
-                    const freshIsAdmin = fresh.isAdmin === true || fresh.isAdmin === 'true';
-                    const freshIsStore = fresh.isStore === true || fresh.isStore === 'true';
+                    const freshPerms = getStorePermissions(fresh);
 
-                    if (storePages.includes(currentPage) && !freshIsAdmin && !freshIsStore) {
-                        window.location.href = 'index.html';
-                        return;
-                    }
-
-                    const storeMenuEl = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
-                    if (storeMenuEl) {
-                        if (freshIsAdmin || freshIsStore) {
-                            storeMenuEl.classList.remove('hidden');
-                        } else {
-                            storeMenuEl.classList.add('hidden');
+                    if (storePages.includes(currentPage)) {
+                        const lojaPages = ['store.html', 'sales-history.html'];
+                        if (lojaPages.includes(currentPage) && !freshPerms.loja) {
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                        if (currentPage === 'pedidos.html' && !freshPerms.pedidos) {
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                        if (currentPage === 'assinaturas.html' && !freshPerms.assinaturas) {
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                        if (currentPage === 'estoque.html' && !freshPerms.estoque) {
+                            window.location.href = 'index.html';
+                            return;
                         }
                     }
+
+                    updateStoreMenuUI(fresh);
                 }
             });
         }
@@ -683,9 +768,23 @@ async function loadComponents(pageSpecificSetup) {
             }
         }
 
-        // Se for uma página da Store, valida acesso (apenas Admin ou permissão Store)
+        // Validação granular de páginas da Store por subpermissão
         if (storePages.includes(currentPage)) {
-            if (!isAdmin && !isStore) {
+            const userStorePerms = getStorePermissions(userData);
+            const lojaPages = ['store.html', 'sales-history.html'];
+            if (lojaPages.includes(currentPage) && !userStorePerms.loja) {
+                window.location.href = 'index.html';
+                return;
+            }
+            if (currentPage === 'pedidos.html' && !userStorePerms.pedidos) {
+                window.location.href = 'index.html';
+                return;
+            }
+            if (currentPage === 'assinaturas.html' && !userStorePerms.assinaturas) {
+                window.location.href = 'index.html';
+                return;
+            }
+            if (currentPage === 'estoque.html' && !userStorePerms.estoque) {
                 window.location.href = 'index.html';
                 return;
             }
@@ -793,15 +892,8 @@ async function loadComponents(pageSpecificSetup) {
         const marketingMenu = document.getElementById('prospeccao-menu-btn')?.parentElement;
         if (marketingMenu && !isAdmin && !isMarketing && !isInstructor && !isAdministrativo) marketingMenu.classList.add('hidden');
 
-        // Store: Visível apenas para Admin ou Store
-        const storeMenu = document.getElementById('store-menu-container') || document.getElementById('store-menu-btn')?.parentElement;
-        if (storeMenu) {
-            if (!isAdmin && !isStore) {
-                storeMenu.classList.add('hidden');
-            } else {
-                storeMenu.classList.remove('hidden');
-            }
-        }
+        // Store e Sub-abas: Visibilidade controlada por subpermissões
+        updateStoreMenuUI(userData);
 
 
         // Outras seções: Esconder apenas se for um usuário RESTRITO (Jurídico)
@@ -2692,4 +2784,4 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     };
 }
 
-export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache };
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache, getStorePermissions, updateStoreMenuUI };

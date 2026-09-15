@@ -273,9 +273,9 @@
 
             <!-- Add/Edit User Modal -->
             <div id="user-modal"
-                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy">
-                <div class="bg-white dark:bg-[#1a1a1a] p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-800 transform transition-all">
-                    <div class="flex justify-between items-center mb-8">
+                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy p-4 sm:p-6 overflow-y-auto">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 sm:p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-800 transform transition-all my-auto max-h-[94vh] flex flex-col">
+                    <div class="flex justify-between items-center mb-6 shrink-0">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
                                 <i class="fas fa-user-plus text-2xl"></i>
@@ -288,7 +288,7 @@
                         </button>
                     </div>
 
-                    <form id="user-form" class="space-y-8">
+                    <form id="user-form" class="space-y-6 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar flex-1">
                         <input type="hidden" id="user-email-hidden">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -369,8 +369,8 @@
                             <!-- Roles Section -->
                             <div class="space-y-5">
                                 <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Atribuições & Permissões</h3>
-                                <div class="bg-gray-50/50 dark:bg-gray-900/30 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 max-h-[350px] overflow-y-auto custom-scrollbar">
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <!-- Checkboxes -->
                                         <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
                                             <input type="checkbox" id="isAdmin" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
@@ -401,8 +401,11 @@
                                             <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Administrativo</span>
                                         </label>
                                         <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
-                                            <input type="checkbox" id="isStore" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
-                                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Store</span>
+                                            <input type="checkbox" id="isStore" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-amber-500 focus:ring-amber-400 cursor-pointer">
+                                            <div class="flex items-center justify-between flex-1 min-w-0">
+                                                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Store</span>
+                                                <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">4 módulos</span>
+                                            </div>
                                         </label>
                                         <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
                                             <input type="checkbox" id="isAcademy" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
@@ -416,6 +419,72 @@
                                             <input type="checkbox" id="isSuporte" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
                                             <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">Suporte</span>
                                         </label>
+                                    </div>
+
+                                    <!-- Subpermissões da Store -->
+                                    <div id="store-subpermissions-container" class="hidden mt-4 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 dark:border-amber-500/30 transition-all duration-300 shadow-sm">
+                                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-amber-500/20">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs shadow-xs">
+                                                    <i class="fas fa-store"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="text-xs font-black text-gray-800 dark:text-gray-100 uppercase tracking-wider block">Módulos da Store</span>
+                                                    <span class="text-[10px] text-gray-500 dark:text-gray-400">Selecione as abas liberadas</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-[11px] font-bold">
+                                                <button type="button" id="store-sub-check-all" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-lg transition-all cursor-pointer">Todos</button>
+                                                <span class="text-gray-300 dark:text-gray-600">|</span>
+                                                <button type="button" id="store-sub-uncheck-all" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded-lg transition-all cursor-pointer">Nenhum</button>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            <!-- Loja -->
+                                            <label class="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-400 dark:hover:border-amber-500/50 cursor-pointer transition-all shadow-xs group">
+                                                <input type="checkbox" id="isStoreLoja" class="peer mt-0.5 h-4 w-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer shrink-0">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="fas fa-shopping-bag text-amber-500 text-xs"></i>
+                                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Loja</span>
+                                                    </div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">Catálogo & Vendas</p>
+                                                </div>
+                                            </label>
+                                            <!-- Pedidos -->
+                                            <label class="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-400 dark:hover:border-amber-500/50 cursor-pointer transition-all shadow-xs group">
+                                                <input type="checkbox" id="isStorePedidos" class="peer mt-0.5 h-4 w-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer shrink-0">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="fas fa-ribbon text-amber-500 text-xs"></i>
+                                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Pedidos</span>
+                                                    </div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">Gestão de Pedidos</p>
+                                                </div>
+                                            </label>
+                                            <!-- Assinaturas -->
+                                            <label class="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-400 dark:hover:border-amber-500/50 cursor-pointer transition-all shadow-xs group">
+                                                <input type="checkbox" id="isStoreAssinaturas" class="peer mt-0.5 h-4 w-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer shrink-0">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="fas fa-sync-alt text-amber-500 text-xs"></i>
+                                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Assinaturas</span>
+                                                    </div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">Planos & Mensalidades</p>
+                                                </div>
+                                            </label>
+                                            <!-- Estoque -->
+                                            <label class="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-400 dark:hover:border-amber-500/50 cursor-pointer transition-all shadow-xs group">
+                                                <input type="checkbox" id="isStoreEstoque" class="peer mt-0.5 h-4 w-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer shrink-0">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="fas fa-box-open text-amber-500 text-xs"></i>
+                                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Estoque</span>
+                                                    </div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5">Controle de Produtos</p>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

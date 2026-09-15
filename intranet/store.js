@@ -28,6 +28,13 @@ export async function setupStorePage() {
     const currentUser = await getCurrentUser();
     const isAdmin = await checkAdminStatus(currentUser);
     const isStore = currentUser && (currentUser.isStore === true || currentUser.isStore === 'true');
+    const hasExplicitSub = currentUser && (
+        currentUser.isStoreLoja !== undefined ||
+        currentUser.isStorePedidos !== undefined ||
+        currentUser.isStoreAssinaturas !== undefined ||
+        currentUser.isStoreEstoque !== undefined
+    );
+    const hasLojaAccess = isAdmin || (hasExplicitSub ? (currentUser.isStoreLoja === true || currentUser.isStoreLoja === 'true') : isStore);
 
     // Tab elements
     const tabDashboard = document.getElementById('tab-dashboard');
@@ -47,7 +54,7 @@ export async function setupStorePage() {
     const subtabBanners = document.getElementById('subtab-banners');
     const subtabCoupons = document.getElementById('subtab-coupons');
 
-    if (!isAdmin && !isStore) {
+    if (!hasLojaAccess) {
         window.location.href = 'index.html';
         return;
     }

@@ -34,6 +34,11 @@ function continueSetup() {
     const isFinanceiroInput = document.getElementById('isFinanceiro');
     const isAdministrativoInput = document.getElementById('isAdministrativo');
     const isStoreInput = document.getElementById('isStore');
+    const storeSubContainer = document.getElementById('store-subpermissions-container');
+    const isStoreLojaInput = document.getElementById('isStoreLoja');
+    const isStorePedidosInput = document.getElementById('isStorePedidos');
+    const isStoreAssinaturasInput = document.getElementById('isStoreAssinaturas');
+    const isStoreEstoqueInput = document.getElementById('isStoreEstoque');
     const isAcademyInput = document.getElementById('isAcademy');
     const isJuridicoInput = document.getElementById('isJuridico');
     const isSuporteInput = document.getElementById('isSuporte');
@@ -68,6 +73,58 @@ function continueSetup() {
         });
     }
 
+    // Controle de exibição e seleção de subpermissões da Store
+    if (isStoreInput && storeSubContainer) {
+        isStoreInput.addEventListener('change', () => {
+            if (isStoreInput.checked) {
+                storeSubContainer.classList.remove('hidden');
+                if (!isStoreLojaInput.checked && !isStorePedidosInput.checked && !isStoreAssinaturasInput.checked && !isStoreEstoqueInput.checked) {
+                    isStoreLojaInput.checked = true;
+                    isStorePedidosInput.checked = true;
+                    isStoreAssinaturasInput.checked = true;
+                    isStoreEstoqueInput.checked = true;
+                }
+            } else {
+                storeSubContainer.classList.add('hidden');
+                if (isStoreLojaInput) isStoreLojaInput.checked = false;
+                if (isStorePedidosInput) isStorePedidosInput.checked = false;
+                if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
+                if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+            }
+        });
+
+        const storeSubInputs = [isStoreLojaInput, isStorePedidosInput, isStoreAssinaturasInput, isStoreEstoqueInput];
+        storeSubInputs.forEach(input => {
+            input?.addEventListener('change', () => {
+                const anyChecked = storeSubInputs.some(inp => inp && inp.checked);
+                if (anyChecked) {
+                    isStoreInput.checked = true;
+                } else {
+                    isStoreInput.checked = false;
+                    storeSubContainer.classList.add('hidden');
+                }
+            });
+        });
+
+        const checkAllBtn = document.getElementById('store-sub-check-all');
+        const uncheckAllBtn = document.getElementById('store-sub-uncheck-all');
+        if (checkAllBtn) {
+            checkAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                storeSubInputs.forEach(inp => { if (inp) inp.checked = true; });
+                isStoreInput.checked = true;
+            });
+        }
+        if (uncheckAllBtn) {
+            uncheckAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                storeSubInputs.forEach(inp => { if (inp) inp.checked = false; });
+                isStoreInput.checked = false;
+                storeSubContainer.classList.add('hidden');
+            });
+        }
+    }
+
     async function renderUsers(filter = '', forceRefresh = false) {
         if (!userTableBody || !userMobileList) return;
 
@@ -96,7 +153,20 @@ function continueSetup() {
             if (user.isRH) roles.push('<span class="badge-soft bg-purple-500/10 text-purple-600 dark:text-purple-400">RH</span>');
             if (user.isFinanceiro) roles.push('<span class="badge-soft bg-green-500/10 text-green-600 dark:text-green-400">Financeiro</span>');
             if (user.isAdministrativo) roles.push('<span class="badge-soft bg-gray-500/10 text-gray-600 dark:text-gray-400">Admin.</span>');
-            if (user.isStore) roles.push('<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">Store</span>');
+            if (user.isStore) {
+                const subRoles = [];
+                const hasExplicitSub = user.isStoreLoja !== undefined || user.isStorePedidos !== undefined || user.isStoreAssinaturas !== undefined || user.isStoreEstoque !== undefined;
+                if (!hasExplicitSub) {
+                    subRoles.push('Geral');
+                } else {
+                    if (user.isStoreLoja) subRoles.push('Loja');
+                    if (user.isStorePedidos) subRoles.push('Pedidos');
+                    if (user.isStoreAssinaturas) subRoles.push('Assinaturas');
+                    if (user.isStoreEstoque) subRoles.push('Estoque');
+                }
+                const subDetail = (hasExplicitSub && subRoles.length < 4 && subRoles.length > 0) ? ` (${subRoles.join(', ')})` : '';
+                roles.push(`<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" title="Módulos: ${subRoles.join(', ')}">Store${subDetail}</span>`);
+            }
             if (user.isAcademy) roles.push('<span class="badge-soft bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">Academy</span>');
             if (user.isJuridico) roles.push('<span class="badge-soft bg-teal-500/10 text-teal-600 dark:text-teal-400">Jurídico</span>');
             if (user.isSuporte) roles.push('<span class="badge-soft bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">Suporte</span>');
@@ -213,6 +283,10 @@ function continueSetup() {
                 isFinanceiro: isFinanceiroInput.checked,
                 isAdministrativo: isAdministrativoInput.checked,
                 isStore: isStoreInput.checked,
+                isStoreLoja: isStoreInput.checked && isStoreLojaInput ? isStoreLojaInput.checked : false,
+                isStorePedidos: isStoreInput.checked && isStorePedidosInput ? isStorePedidosInput.checked : false,
+                isStoreAssinaturas: isStoreInput.checked && isStoreAssinaturasInput ? isStoreAssinaturasInput.checked : false,
+                isStoreEstoque: isStoreInput.checked && isStoreEstoqueInput ? isStoreEstoqueInput.checked : false,
                 isAcademy: isAcademyInput.checked,
                 isJuridico: isJuridicoInput.checked,
                 isSuporte: isSuporteInput.checked,
@@ -265,6 +339,13 @@ function continueSetup() {
             passwordInput.placeholder = "";
         }
         
+        // Reset subpermissões da Store
+        if (storeSubContainer) storeSubContainer.classList.add('hidden');
+        if (isStoreLojaInput) isStoreLojaInput.checked = false;
+        if (isStorePedidosInput) isStorePedidosInput.checked = false;
+        if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
+        if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+        
         // Reset profile preview
         const previewImg = document.getElementById('profile-preview-img');
         const previewInitials = document.getElementById('profile-preview-initials');
@@ -308,7 +389,24 @@ function continueSetup() {
                 isMarketingInput.checked = user.isMarketing || false;
                 isFinanceiroInput.checked = user.isFinanceiro || false;
                 isAdministrativoInput.checked = user.isAdministrativo || false;
-                isStoreInput.checked = user.isStore || false;
+                
+                const userIsStore = user.isStore || false;
+                isStoreInput.checked = userIsStore;
+                if (userIsStore) {
+                    if (storeSubContainer) storeSubContainer.classList.remove('hidden');
+                    const hasExplicitSub = user.isStoreLoja !== undefined || user.isStorePedidos !== undefined || user.isStoreAssinaturas !== undefined || user.isStoreEstoque !== undefined;
+                    if (isStoreLojaInput) isStoreLojaInput.checked = hasExplicitSub ? Boolean(user.isStoreLoja) : true;
+                    if (isStorePedidosInput) isStorePedidosInput.checked = hasExplicitSub ? Boolean(user.isStorePedidos) : true;
+                    if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = hasExplicitSub ? Boolean(user.isStoreAssinaturas) : true;
+                    if (isStoreEstoqueInput) isStoreEstoqueInput.checked = hasExplicitSub ? Boolean(user.isStoreEstoque) : true;
+                } else {
+                    if (storeSubContainer) storeSubContainer.classList.add('hidden');
+                    if (isStoreLojaInput) isStoreLojaInput.checked = false;
+                    if (isStorePedidosInput) isStorePedidosInput.checked = false;
+                    if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
+                    if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+                }
+
                 isAcademyInput.checked = user.isAcademy || false;
                 isJuridicoInput.checked = user.isJuridico || false;
                 isSuporteInput.checked = user.isSuporte || false;
