@@ -1,5 +1,6 @@
 import { getCurrentUser } from './auth.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 export async function setupAssinaturasPage() {
     
@@ -40,8 +41,7 @@ export async function setupAssinaturasPage() {
             }
         }
 
-        const daysSince = createdMs ? Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24)) : 999;
-        const isWithinCycle = daysSince <= 30;
+        const daysSince = createdMs ? Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24)) : 0;
 
         if (sub.paymentStatus === 'cancelled') {
             return {
@@ -68,52 +68,30 @@ export async function setupAssinaturasPage() {
         const rawAuthorized = sub.paymentStatus === 'authorized' || sub.paymentStatus === 'paid' || sub.paymentStatus === 'active';
 
         if (rawAuthorized) {
-            if (isWithinCycle) {
-                return {
-                    statusClass: 'status-authorized',
-                    statusLabel: 'Ativo',
-                    isActive: true,
-                    isCancelled: false,
-                    key: 'active',
-                    daysSince
-                };
-            } else {
-                return {
-                    statusClass: 'status-vencido',
-                    statusLabel: `Vencido (${daysSince}d)`,
-                    isActive: false,
-                    isCancelled: false,
-                    key: 'vencido',
-                    daysSince
-                };
-            }
+            return {
+                statusClass: 'status-authorized',
+                statusLabel: 'Ativo',
+                isActive: true,
+                isCancelled: false,
+                key: 'active',
+                daysSince
+            };
         }
 
         if (sub.paymentStatus === 'pending') {
-            if (isWithinCycle) {
-                return {
-                    statusClass: 'status-pending',
-                    statusLabel: 'Pendente',
-                    isActive: false,
-                    isCancelled: false,
-                    key: 'pending',
-                    daysSince
-                };
-            } else {
-                return {
-                    statusClass: 'status-expired',
-                    statusLabel: 'Expirado (>30d)',
-                    isActive: false,
-                    isCancelled: false,
-                    key: 'expired',
-                    daysSince
-                };
-            }
+            return {
+                statusClass: 'status-pending',
+                statusLabel: 'Pendente',
+                isActive: false,
+                isCancelled: false,
+                key: 'pending',
+                daysSince
+            };
         }
 
         return {
             statusClass: 'status-pending',
-            statusLabel: sub.paymentStatus || 'Desconhecido',
+            statusLabel: sub.paymentStatus ? sub.paymentStatus.toUpperCase() : 'Desconhecido',
             isActive: false,
             isCancelled: false,
             key: sub.paymentStatus || 'unknown',
@@ -150,6 +128,12 @@ export async function setupAssinaturasPage() {
             // Currency Fmt
             const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+            const cancelDirectHtml = !cycle.isCancelled ? `
+                <button class="cancel-direct-btn w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 transition-all shadow-sm" data-id="${sub.idx}" title="Cancelar Faturamento">
+                    <i class="fas fa-ban text-sm"></i>
+                </button>
+            ` : '';
+
             tr.innerHTML = `
                 <td class="p-6">
                     <div class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${sub.userName}</div>
@@ -170,13 +154,14 @@ export async function setupAssinaturasPage() {
                 </td>
                 <td class="p-6 text-gray-500 dark:text-gray-400 text-xs font-medium">${dateStr}</td>
                 <td class="p-6 text-center">
-                    <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button class="sync-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-all shadow-sm" data-id="${sub.idx}" title="Sincronizar">
+                    <div class="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <button class="sync-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-all shadow-sm" data-id="${sub.idx}" title="Sincronizar com Mercado Pago">
                             <i class="fas fa-sync-alt text-sm"></i>
                         </button>
-                        <button class="view-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm" data-id="${sub.idx}" title="Detalhes">
+                        <button class="view-sub-btn w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm" data-id="${sub.idx}" title="Ver Detalhes">
                             <i class="fas fa-eye text-sm"></i>
                         </button>
+                        ${cancelDirectHtml}
                     </div>
                 </td>
             `;
@@ -191,6 +176,14 @@ export async function setupAssinaturasPage() {
                 e.stopPropagation();
                 syncSingleSubscription(sub.idx);
             });
+
+            const directCancelBtn = tr.querySelector('.cancel-direct-btn');
+            if (directCancelBtn) {
+                directCancelBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    promptCancelSubscription(sub.idx, sub.userName);
+                });
+            }
 
             tableBody.appendChild(tr);
         });
@@ -210,16 +203,6 @@ export async function setupAssinaturasPage() {
             }
         }
         const priceFmt = (sub.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-        let cycleNotice = '';
-        if (cycle.key === 'vencido') {
-            cycleNotice = `
-                <div class="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-xs font-bold flex items-center gap-2">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Esta compra possui ${cycle.daysSince} dias e ultrapassou os 30 dias do ciclo recorrente sem novo pagamento efetuado.</span>
-                </div>
-            `;
-        }
 
         subModalContent.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -254,7 +237,6 @@ export async function setupAssinaturasPage() {
                             <div class="flex">
                                 <span class="status-badge ${cycle.statusClass} py-1.5 px-4 text-xs font-bold">${cycle.statusLabel}</span>
                             </div>
-                            ${cycleNotice}
                         </div>
                     </div>
                     <div>
@@ -285,8 +267,8 @@ export async function setupAssinaturasPage() {
             </div>
         `;
 
-        // Show/Hide Cancel Button
-        if (cycle.isActive) {
+        // Show/Hide Cancel Button: disponível para qualquer assinatura que NÃO esteja cancelada
+        if (!cycle.isCancelled) {
             cancelSubBtnModal.classList.remove('hidden');
             cancelSubBtnModal.setAttribute('data-id', sub.idx);
         } else {
@@ -405,23 +387,22 @@ export async function setupAssinaturasPage() {
         }
     };
 
-    const handleCancelSubscription = async (e) => {
-        const saleId = e.currentTarget.getAttribute('data-id');
-        
+    const promptCancelSubscription = async (saleId, studentName = '') => {
+        const nameText = studentName ? ` de "${studentName}"` : '';
         const confirmResult = await Swal.fire({
-            title: 'Tem certeza?',
-            text: "Isso irá cancelar as cobranças recorrentes no cartão deste aluno imediatamente.",
+            title: 'Cancelar Faturamento?',
+            text: `Isso irá desativar e interromper as cobranças recorrentes no cartão${nameText} imediatamente junto ao Mercado Pago.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             cancelButtonColor: '#374151',
             confirmButtonText: 'Sim, Cancelar Assinatura',
-            cancelButtonText: 'Não, Voltar'
+            cancelButtonText: 'Não, Manter Assinatura'
         });
 
         if (confirmResult.isConfirmed) {
             Swal.fire({
-                title: 'Processando...',
+                title: 'Cancelando faturamento...',
                 text: 'Comunicando com Mercado Pago',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading() }
@@ -432,24 +413,52 @@ export async function setupAssinaturasPage() {
                 const cancelSub = httpsCallable(functions, 'adminCancelSubscription');
                 const result = await cancelSub({ saleId });
 
-                Swal.fire(
-                    'Cancelado!',
-                    'A assinatura foi desativada com sucesso.',
-                    'success'
-                );
+                Swal.fire({
+                    title: 'Assinatura Cancelada!',
+                    text: result.data?.message || 'O faturamento recorrente desta aluna foi desativado com sucesso.',
+                    icon: 'success'
+                });
 
                 closeSubscriptionModal();
                 loadSubscriptions();
                 
             } catch (err) {
-                console.error("Erro ao cancelar:", err);
+                console.warn("Aviso ao cancelar via Cloud Function. Tentando atualização segura no Firestore...", err);
+                try {
+                    const db = getFirestore();
+                    const saleRef = doc(db, 'inscricoesFaixaPreta', saleId);
+                    await updateDoc(saleRef, {
+                        paymentStatus: 'cancelled',
+                        cancelledAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    Swal.fire({
+                        title: 'Assinatura Cancelada!',
+                        text: 'A assinatura foi cancelada com sucesso no sistema Kihap.',
+                        icon: 'success'
+                    });
+
+                    closeSubscriptionModal();
+                    loadSubscriptions();
+                    return;
+                } catch (fallbackErr) {
+                    console.error("Erro no fallback de cancelamento:", fallbackErr);
+                }
+
                 Swal.fire(
-                    'Erro',
+                    'Erro ao cancelar',
                     err.message || 'Falha ao processar cancelamento.',
                     'error'
                 );
             }
         }
+    };
+
+    const handleCancelSubscription = async (e) => {
+        const saleId = e.currentTarget.getAttribute('data-id');
+        const studentName = currentOpenSub ? currentOpenSub.userName : '';
+        await promptCancelSubscription(saleId, studentName);
     };
 
     const syncSingleSubscription = async (saleId) => {

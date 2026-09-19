@@ -1305,20 +1305,7 @@ exports.createCourseOneTimeCheckout = functions.https.onCall(async (data, contex
     }
 });
 
-exports.adminCancelSubscription = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
-    }
-
-    // Ideal: Check for admin claim
-    // if (!context.auth.token.admin) { ... }
-
-    const { userId, courseId } = data;
-
-    if (!userId || !courseId) {
-        throw new functions.https.HttpsError('invalid-argument', 'User ID e Course ID são obrigatórios.');
-    }
-
+async function handleCancelCoursePagarmeSubscription(userId, courseId) {
     try {
         const subsRef = db.collection('users').doc(userId).collection('subscriptions');
         const q = subsRef.where('courseId', '==', courseId).where('status', '==', 'active').limit(1);
@@ -1341,10 +1328,10 @@ exports.adminCancelSubscription = functions.https.onCall(async (data, context) =
         return { success: true, message: 'Assinatura cancelada pelo admin.' };
 
     } catch (error) {
-        console.error("Erro ao cancelar assinatura (admin):", error);
+        console.error("Erro ao cancelar assinatura de curso (admin):", error);
         throw new functions.https.HttpsError('internal', error.message);
     }
-});
+}
 
 exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -3666,11 +3653,20 @@ exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context)
                     if (prodSnap.exists) {
                         const prodData = prodSnap.data();
                         if (prodData.mpAccountId && prodData.mpAccountId !== 'default') {
-                            const accSnap = await db.collection('mercadopagoAccounts').doc(prodData.mpAccountId).get();
-                            if (accSnap.exists) customToken = accSnap.data().accessToken;
+                            customToken = await getAccessTokenForAccountId(prodData.mpAccountId);
                         }
                     }
                 } catch (e) { console.error(`Erro ao buscar Token do seller para o produto ${dataDoc.productId}`, e); }
+            }
+
+            if (!customToken) {
+                const targetUnit = dataDoc.unitId || dataDoc.userUnit;
+                if (targetUnit) {
+                    try {
+                        const accSnap = await db.collection('mercadopagoAccounts').doc(targetUnit).get();
+                        if (accSnap.exists) customToken = accSnap.data().accessToken;
+                    } catch (e) {}
+                }
             }
 
             if (dataDoc.mercadoPagoPreferenceId) {
@@ -3681,7 +3677,10 @@ exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context)
                         
                         if (liveStatus !== dataDoc.paymentStatus) {
                             console.log(`[adminGetLiveSubscriptions] Sincronizando status da assinatura ${doc.id}: ${dataDoc.paymentStatus} -> ${liveStatus}`);
-                            await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ paymentStatus: liveStatus });
+                            await db.collection('inscricoesFaixaPreta').doc(doc.id).update({ 
+                                paymentStatus: liveStatus,
+                                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                            });
                         }
                     }
                 } catch (mpError) {
@@ -3713,26 +3712,32 @@ exports.adminGetLiveSubscriptions = functions.https.onCall(async (data, context)
 });
 
 
-exports.adminCancelSubscription = functions.https.onCall(async (data, context) => {
-    const saleId = data.saleId;
-    
-    if (!saleId) {
-        throw new functions.https.HttpsError('invalid-argument', 'saleId obrigatório.');
+async function handleCancelMercadoPagoSubscription(saleId) {
+    const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
+    const snapshot = await docRef.get();
+
+    if (!snapshot.exists) {
+        throw new functions.https.HttpsError('not-found', 'Assinatura (Venda) não encontrada no Firestore.');
     }
 
-    try {
-        const docRef = db.collection('inscricoesFaixaPreta').doc(saleId);
-        const snapshot = await docRef.get();
+    const dataDoc = snapshot.data();
+    const prefId = dataDoc.mercadoPagoPreferenceId ? String(dataDoc.mercadoPagoPreferenceId).trim() : '';
 
-        if (!snapshot.exists) {
-            throw new functions.https.HttpsError('not-found', 'Assinatura (Venda) não encontrada no Firestore.');
-        }
+    if (!prefId) {
+        await docRef.update({ 
+            paymentStatus: 'cancelled',
+            cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        return { success: true, message: 'Assinatura cancelada no sistema Kihap.' };
+    }
 
-        const dataDoc = snapshot.data();
-        if (!dataDoc.mercadoPagoPreferenceId) {
-            throw new functions.https.HttpsError('failed-precondition', 'Esta venda não possuí um Preapproval ID associoado (mercadoPagoPreferenceId).');
-        }
+    // Se for formato de preferência de checkout (contém traço, ex: "3281804817-uuid"),
+    // trata-se de pagamento único e não de assinatura recorrente com preapproval_id no Mercado Pago.
+    const isCheckoutPreference = prefId.includes('-');
+    let mpCancelData = null;
 
+    if (!isCheckoutPreference) {
         let customToken = null;
         if (dataDoc.productId) {
             try {
@@ -3740,23 +3745,85 @@ exports.adminCancelSubscription = functions.https.onCall(async (data, context) =
                 if (prodSnap.exists) {
                     const prodData = prodSnap.data();
                     if (prodData.mpAccountId && prodData.mpAccountId !== 'default') {
-                        const accSnap = await db.collection('mercadopagoAccounts').doc(prodData.mpAccountId).get();
-                        if (accSnap.exists) customToken = accSnap.data().accessToken;
+                        customToken = await getAccessTokenForAccountId(prodData.mpAccountId);
                     }
                 }
             } catch (e) { console.error(`Erro ao buscar Token no cancelamento`, e); }
         }
 
-        const mpCancelData = await cancelPreapproval(dataDoc.mercadoPagoPreferenceId, customToken);
+        if (!customToken) {
+            const targetUnit = dataDoc.unitId || dataDoc.userUnit;
+            if (targetUnit) {
+                try {
+                    const accSnap = await db.collection('mercadopagoAccounts').doc(targetUnit).get();
+                    if (accSnap.exists) customToken = accSnap.data().accessToken;
+                } catch (e) {}
+            }
+        }
 
-        await docRef.update({ paymentStatus: 'cancelled' });
-
-        return { success: true, message: 'Assinatura cancelada com sucesso.', mpResponse: mpCancelData };
-    } catch (error) {
-        console.error('[adminCancelSubscription] Erro grave:', error.response?.data || error);
-        throw new functions.https.HttpsError('internal', error.message);
+        try {
+            mpCancelData = await cancelPreapproval(prefId, customToken);
+        } catch (mpError) {
+            const errorMsg = mpError.response?.data?.message || mpError.message || '';
+            console.warn(`[adminCancelSubscription] Aviso ao cancelar no MP (${prefId}):`, errorMsg);
+            
+            // Tratamento tolerante para 400, 404 ou se já estiver cancelado no gateway
+            mpCancelData = { 
+                status: 'cancelled', 
+                note: `Cancelamento concluído no sistema (${errorMsg || 'Sem assinatura recorrente ativa no gateway'})` 
+            };
+        }
+    } else {
+        mpCancelData = { 
+            status: 'cancelled', 
+            note: 'Venda criada como preferência avulsa (sem cobrança recorrente no Mercado Pago)' 
+        };
     }
+
+    await docRef.update({ 
+        paymentStatus: 'cancelled',
+        cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Se houver aluno em evo_students com o email da compra, sincroniza cancelamento de mensalidade
+    try {
+        if (dataDoc.userEmail) {
+            const studentSnap = await db.collection('evo_students').where('email', '==', dataDoc.userEmail).limit(1).get();
+            if (!studentSnap.empty) {
+                await studentSnap.docs[0].ref.update({
+                    tuitionStatus: 'cancelled',
+                    tuitionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }
+    } catch (e) {
+        console.warn('[adminCancelSubscription] Aviso: erro ao atualizar evo_students:', e.message);
+    }
+
+    return { success: true, message: 'Assinatura cancelada com sucesso.', mpResponse: mpCancelData };
+}
+
+exports.adminCancelSubscription = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Acesso negado.');
+    }
+
+    // 1. Assinatura do Mercado Pago (via saleId)
+    if (data && data.saleId) {
+        return await handleCancelMercadoPagoSubscription(data.saleId);
+    }
+
+    // 2. Assinatura de Curso Pagar.me (via userId + courseId)
+    if (data && data.userId && data.courseId) {
+        return await handleCancelCoursePagarmeSubscription(data.userId, data.courseId);
+    }
+
+    throw new functions.https.HttpsError('invalid-argument', 'Parâmetros inválidos. Informe saleId para assinaturas do Mercado Pago ou userId e courseId para cursos.');
 });
+
+exports.adminCancelMercadoPagoSubscription = exports.adminCancelSubscription;
+exports.adminCancelCourseSubscription = exports.adminCancelSubscription;
 
 /**
  * Permite que um administrador atualize manualmente o status de uma ou mais vendas (ex: pagamento em dinheiro).
