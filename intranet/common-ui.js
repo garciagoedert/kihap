@@ -627,7 +627,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.1.0'; 
+    const CACHE_VERSION = '1.1.2'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -648,6 +648,8 @@ async function loadComponents(pageSpecificSetup) {
         'analise.html',
         'contas-mp.html',
         'unidades-planos.html',
+        'expansao.html',
+        'abertura-unidades.html',
         'comunicados.html',
         'grade.html',
         'relatorios.html',

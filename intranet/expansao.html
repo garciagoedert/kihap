@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <title>Kihap - Expansão</title>
+    <link rel="icon" href="https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="log.css">
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-checkbox:checked + div {
+            background-color: #eab308;
+            border-color: #eab308;
+        }
+        .custom-checkbox:checked + div svg {
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 min-h-screen">
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col min-h-screen overflow-y-auto transition-all duration-300 ease-in-out">
+        <div id="header-container"></div>
+
+        <div class="flex-grow p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+            
+            <!-- Top Header & Unit Selector -->
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-400/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Expansão</h1>
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 uppercase tracking-wider">Admin</span>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Planejamento, checklist e implantação de novas unidades Kihap</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unit Selector & Actions -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="relative min-w-[240px]">
+                        <select id="unit-selector" class="w-full appearance-none bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl py-2.5 pl-4 pr-10 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                            <option value="">Carregando unidades...</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+
+                    <button id="btn-edit-unit" title="Editar dados da unidade" class="p-2.5 rounded-xl bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary border border-gray-200 dark:border-gray-700 shadow-sm transition-all active:scale-95">
+                        <i class="fas fa-cog"></i>
+                    </button>
+
+                    <button id="btn-new-unit" class="bg-primary hover:bg-yellow-500 text-black font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 text-sm">
+                        <i class="fas fa-plus"></i>
+                        <span>Nova Unidade</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="py-16 text-center">
+                <div class="inline-block animate-spin text-primary text-3xl mb-3">
+                    <i class="fas fa-circle-notch"></i>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Carregando checklist da unidade...</p>
+            </div>
+
+            <!-- Main Content Container -->
+            <div id="unit-content" class="hidden space-y-6">
+
+                <!-- Unit Info & Progress Card -->
+                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-lg">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-gray-100 dark:border-gray-800">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <h2 id="unit-display-name" class="text-2xl font-black text-gray-900 dark:text-white">...</h2>
+                                <span id="unit-status-badge" class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Em Andamento</span>
+                            </div>
+
+                            <!-- Responsibles & Metadata -->
+                            <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-user-shield text-primary"></i>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">Responsáveis:</span>
+                                    <span id="unit-responsibles" class="font-semibold text-gray-900 dark:text-white">...</span>
+                                </div>
+                                <div id="unit-target-date-wrapper" class="hidden items-center gap-2">
+                                    <i class="fas fa-calendar-day text-blue-500"></i>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">Previsão:</span>
+                                    <span id="unit-target-date" class="font-semibold text-gray-900 dark:text-white">--/--/----</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Buttons -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <a id="unit-drive-btn" href="#" target="_blank" class="hidden px-4 py-2 rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-semibold text-xs transition-all items-center gap-2 border border-blue-200 dark:border-blue-800">
+                                <i class="fab fa-google-drive text-sm"></i>
+                                <span>Abrir Drive da Unidade</span>
+                            </a>
+                            <button id="btn-add-task-top" class="px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-yellow-700 dark:text-yellow-400 font-bold text-xs transition-all flex items-center gap-2 border border-primary/20">
+                                <i class="fas fa-plus"></i>
+                                <span>Adicionar Tarefa</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Statistics Bar -->
+                    <div class="pt-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-gray-800 dark:text-gray-200">Progresso de Implantação</span>
+                                <span id="progress-percentage-label" class="text-sm font-extrabold text-primary">0%</span>
+                            </div>
+                            <span id="progress-count-label" class="text-xs font-semibold text-gray-500 dark:text-gray-400">0 de 0 concluídas</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Metric Counters -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                            <div class="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+                                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total de Tarefas</p>
+                                <p id="metric-total" class="text-xl font-black text-gray-900 dark:text-white mt-0.5">0</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-green-50/50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30">
+                                <p class="text-[11px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Concluídas</p>
+                                <p id="metric-done" class="text-xl font-black text-green-700 dark:text-green-300 mt-0.5">0</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                                <p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pendentes</p>
+                                <p id="metric-pending" class="text-xl font-black text-amber-700 dark:text-amber-300 mt-0.5">0</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30">
+                                <p class="text-[11px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Materiais</p>
+                                <p id="metric-materials" class="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">0/9</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters & Search Toolbar -->
+                <div class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="relative w-full md:w-80">
+                        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="task-search-input" placeholder="Buscar tarefa por nome..." class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                        <!-- Status Filter Pills -->
+                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl text-xs font-semibold">
+                            <button id="filter-all" class="filter-status-btn px-3 py-1.5 rounded-lg bg-white dark:bg-[#111] text-gray-900 dark:text-white shadow-sm transition-all" data-status="all">Todas</button>
+                            <button id="filter-pending" class="filter-status-btn px-3 py-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all" data-status="pending">Pendentes</button>
+                            <button id="filter-done" class="filter-status-btn px-3 py-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all" data-status="done">Concluídas</button>
+                        </div>
+
+                        <!-- Category Filter Dropdown -->
+                        <select id="filter-category" class="bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl py-2 px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Todas as Categorias</option>
+                        </select>
+
+                        <!-- Responsible Filter Dropdown -->
+                        <select id="filter-responsible" class="bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl py-2 px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Todos os Responsáveis</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Categorized Checklist Accordions -->
+                <div id="checklist-categories-container" class="space-y-4">
+                    <!-- Categories will be dynamically injected here via JS -->
+                </div>
+
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 text-center bg-white/60 dark:bg-[#1a1a1a]/60 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-8">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 dark:bg-amber-400/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl mb-4">
+                    <i class="fas fa-store-slash"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Nenhuma unidade em processo de expansão</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mt-1 mb-6">Cadastre uma nova unidade para acompanhar todo o processo de implantação.</p>
+                <button id="btn-empty-new-unit" class="bg-primary hover:bg-yellow-500 text-black font-bold py-2.5 px-6 rounded-xl shadow-md transition-all active:scale-95 inline-flex items-center gap-2 text-sm">
+                    <i class="fas fa-plus"></i>
+                    <span>Cadastrar Primeira Unidade</span>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ===== MODAL: NOVA UNIDADE ===== -->
+    <div id="modal-new-unit" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 transform transition-all">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-primary/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Nova Unidade em Expansão</h3>
+                </div>
+                <button class="close-modal text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-new-unit" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome da Unidade *</label>
+                    <input type="text" id="new-unit-name" required placeholder="Ex: [SC] SANTA MÔNICA" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Responsáveis (separados por vírgula) *</label>
+                    <input type="text" id="new-unit-responsibles" required placeholder="Ex: Master Cavenatti, Master Marques, Profa Cavenatti, Mr. Hadad" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data Prevista Inauguração</label>
+                        <input type="date" id="new-unit-target-date" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Status Inicial</label>
+                        <select id="new-unit-status" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+                            <option value="in_progress">Em Andamento</option>
+                            <option value="planning">Em Planejamento</option>
+                            <option value="paused">Pausada</option>
+                            <option value="completed">Inaugurada / Concluída</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Link da Pasta no Google Drive</label>
+                    <input type="url" id="new-unit-drive" placeholder="https://drive.google.com/drive/folders/..." class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <!-- Template Option -->
+                <div class="p-3.5 rounded-xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 flex items-start gap-3">
+                    <input type="checkbox" id="new-unit-use-template" checked class="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
+                    <label for="new-unit-use-template" class="text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <strong class="text-amber-800 dark:text-amber-400 block font-bold">Importar Checklist Padrão Kihap</strong>
+                        Gera automaticamente todas as 30+ tarefas essenciais (Documentos, EVO, Stone, Meta, Materiais, RH e Reformas).
+                    </label>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <button type="button" class="close-modal px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancelar</button>
+                    <button type="submit" id="btn-save-new-unit" class="px-6 py-2.5 rounded-xl bg-primary hover:bg-yellow-500 text-black font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2">
+                        <i class="fas fa-check"></i>
+                        <span>Criar Unidade</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: EDITAR DADOS DA UNIDADE ===== -->
+    <div id="modal-edit-unit" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Editar Unidade</h3>
+                </div>
+                <button class="close-modal text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-edit-unit" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome da Unidade</label>
+                    <input type="text" id="edit-unit-name" required class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Responsáveis (separados por vírgula)</label>
+                    <input type="text" id="edit-unit-responsibles" required class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data Prevista</label>
+                        <input type="date" id="edit-unit-target-date" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Status</label>
+                        <select id="edit-unit-status" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+                            <option value="in_progress">Em Andamento</option>
+                            <option value="planning">Em Planejamento</option>
+                            <option value="paused">Pausada</option>
+                            <option value="completed">Inaugurada / Concluída</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Link da Pasta no Google Drive</label>
+                    <input type="url" id="edit-unit-drive" placeholder="https://drive.google.com/..." class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <button type="button" id="btn-delete-unit" class="text-red-600 dark:text-red-400 hover:text-red-700 font-bold text-xs flex items-center gap-1.5 transition-colors">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Excluir Unidade</span>
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" class="close-modal px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancelar</button>
+                        <button type="submit" id="btn-save-edit-unit" class="px-5 py-2 rounded-xl bg-primary hover:bg-yellow-500 text-black font-bold text-sm shadow-md transition-all active:scale-95">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: ADICIONAR / EDITAR TAREFA ===== -->
+    <div id="modal-task" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 id="modal-task-title" class="text-lg font-bold text-gray-900 dark:text-white">Nova Tarefa</h3>
+                </div>
+                <button class="close-modal text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-task" class="space-y-4 mt-4">
+                <input type="hidden" id="task-edit-id">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Título da Tarefa *</label>
+                    <input type="text" id="task-input-title" required placeholder="Ex: Abertura conta Stone" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Categoria *</label>
+                        <input type="text" id="task-input-category" list="category-datalist" required placeholder="Ex: Financeiro & Contas" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+                        <datalist id="category-datalist">
+                            <option value="Documentação & Societário"></option>
+                            <option value="Sistemas EVO & TI"></option>
+                            <option value="Financeiro & Contas"></option>
+                            <option value="Marketing & Presença Digital"></option>
+                            <option value="Comercial & Metodologia"></option>
+                            <option value="Equipe & Onboarding"></option>
+                            <option value="Estrutura, Obra & Reforma"></option>
+                            <option value="Aquisição de Materiais"></option>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Responsável</label>
+                        <select id="task-input-responsible" class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+                            <option value="">Não atribuído</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Link de Referência / Arquivo (opcional)</label>
+                    <input type="url" id="task-input-link" placeholder="https://..." class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Observações / Notas</label>
+                    <textarea id="task-input-notes" rows="2" placeholder="Detalhes, contatos ou instruções sobre esta tarefa..." class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                </div>
+
+                <!-- Sub-items (checklist interno) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Subitens / Checklist Interno</label>
+                        <button type="button" id="btn-add-subitem-field" class="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                            <i class="fas fa-plus"></i>
+                            <span>Adicionar Item</span>
+                        </button>
+                    </div>
+                    <div id="subitems-container" class="space-y-2">
+                        <!-- Dynamic sub-item input fields -->
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-1">Ideal para listas compostas (ex: Tatame preto, Escudos, TV, Computador, etc).</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <button type="button" id="btn-delete-task" class="hidden text-red-600 dark:text-red-400 hover:text-red-700 font-bold text-xs items-center gap-1.5 transition-colors">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Excluir Tarefa</span>
+                    </button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" class="close-modal px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancelar</button>
+                        <button type="submit" id="btn-save-task" class="px-5 py-2 rounded-xl bg-primary hover:bg-yellow-500 text-black font-bold text-sm shadow-md transition-all active:scale-95">Salvar Tarefa</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Action Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 id="confirmTitle" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Confirmar Ação</h2>
+            <p id="confirmMessage" class="text-gray-600 dark:text-gray-300 text-sm mb-6">Você tem certeza?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelConfirmBtn" class="bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-700 font-semibold py-2 px-5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-sm">Cancelar</button>
+                <button id="confirmActionBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-xl transition-all active:scale-95 shadow-md text-sm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="notification-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2"></div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupExpansaoPage } from './expansao.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupExpansaoPage();
+            });
+        });
+    </script>
+</body>
+</html>

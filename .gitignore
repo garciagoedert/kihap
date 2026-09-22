@@ -37,3 +37,6 @@ set_admin.js
 debug_users.js
 check_prospects.js
 updateProduct.js
+scratch/
+*.aab
+*.csv
