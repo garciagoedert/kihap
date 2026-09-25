@@ -5,7 +5,7 @@ import { collection, query, where, onSnapshot, doc, getDoc, orderBy, limit, upda
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
-import { Search, Edit3, MessageCircle, Award, CreditCard, Bell } from 'lucide-react-native';
+import { Search, Edit3, MessageCircle, Award, CreditCard, Bell, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function ChatScreen() {
@@ -227,9 +227,18 @@ export default function ChatScreen() {
     <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-gray-50 dark:bg-[#050505]">
       {/* Header */}
       <View className="px-6 pt-8 pb-4 flex-row items-center justify-between">
-        <Text className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-          {activeTab === 'conversas' ? 'Mensagens' : 'Notificações'}
-        </Text>
+        <View className="flex-row items-center">
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            className="mr-3 p-1 -ml-1"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={isDark ? '#fff' : '#333'} />
+          </TouchableOpacity>
+          <Text className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+            {activeTab === 'conversas' ? 'Mensagens' : 'Notificações'}
+          </Text>
+        </View>
         {activeTab === 'conversas' && (
           <TouchableOpacity 
             onPress={() => router.push('/busca')}

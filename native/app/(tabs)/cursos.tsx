@@ -401,15 +401,19 @@ export default function CursosScreen() {
                 <SidebarItem icon={Home} label="Início" onPress={() => { setSidebarOpen(false); router.push('/(tabs)'); }} />
                 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Evolução</Text>
+                {/* Ocultados temporariamente por falta de uso:
                 <SidebarItem icon={BookOpen} label="Área do Aluno" onPress={() => setSidebarOpen(false)} />
                 <SidebarItem icon={UserCheck} label="Tatame" onPress={() => { setSidebarOpen(false); router.push('/tatame'); }} />
+                */}
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
 
                 <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
                 <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => { setSidebarOpen(false); router.push('/pedidos'); }} />
+                {/* Ocultado temporariamente por falta de uso:
                 <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => { setSidebarOpen(false); router.push('/assinatura'); }} />
+                */}
               </ScrollView>
 
               <View className="p-6 border-t border-gray-100 dark:border-white/5">

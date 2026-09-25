@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Home, Send, Heart, Search, Flame } from 'lucide-react-native';
+import { Home, Store, Flame, Search } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { View, Image } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
@@ -46,16 +46,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="store"
         options={{
-          title: 'Chat',
-          tabBarIcon: ({ color, focused }) => <Send size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
+          title: 'Loja',
+          tabBarIcon: ({ color, focused }) => <Store size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
         name="notificacoes"
         options={{
-          title: 'Notificações',
+          title: 'Ofensivas',
           tabBarIcon: ({ color, focused }) => <Flame size={22} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
@@ -81,9 +81,9 @@ export default function TabLayout() {
         }}
       />
       {/* Hide specific routes from tab bar but keep in layout */}
+      <Tabs.Screen name="chat" options={{ href: null }} />
       <Tabs.Screen name="user/[id]" options={{ href: null }} />
       <Tabs.Screen name="cursos" options={{ href: null }} />
-      <Tabs.Screen name="store" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );

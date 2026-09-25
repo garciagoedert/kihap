@@ -124,12 +124,7 @@ export default function StoreScreen() {
         className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 z-50"
       >
         <View className="flex-row items-center justify-between px-6 pb-4 pt-2">
-          <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
-              <ArrowLeft size={24} color={isDark ? '#fff' : '#333'} />
-            </TouchableOpacity>
-            <Text className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Loja</Text>
-          </View>
+          <Text className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Loja</Text>
           <TouchableOpacity className="w-10 h-10 rounded-full bg-gray-50 dark:bg-white/5 items-center justify-center border border-gray-100 dark:border-white/5">
             <Filter size={18} color={isDark ? '#999' : '#666'} />
           </TouchableOpacity>

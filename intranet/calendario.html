@@ -102,6 +102,23 @@
                                     <label for="event-image" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Foto de Capa</label>
                                     <input type="file" id="event-image" accept="image/*" required class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-yellow-500 file:text-black hover:file:bg-yellow-600 cursor-pointer">
                                 </div>
+
+                                <!-- Formulário de Check-in Customizado (Opcional) -->
+                                <div class="border-t border-gray-100 dark:border-gray-800 pt-5 mt-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">Perguntas de Check-in</h4>
+                                            <p class="text-[11px] text-gray-400">Campos opcionais para o aluno responder ao fazer check-in.</p>
+                                        </div>
+                                        <button type="button" id="add-form-field-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-[11px] font-bold py-1.5 px-3 rounded-xl transition flex items-center gap-1 active:scale-95">
+                                            <i class="fas fa-plus text-yellow-500"></i> Pergunta
+                                        </button>
+                                    </div>
+                                    <div id="custom-form-fields-container" class="space-y-3 mb-2">
+                                        <!-- Campos adicionados dinamicamente -->
+                                    </div>
+                                </div>
+
                                 <button type="submit" id="submit-event-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-black uppercase tracking-widest text-xs py-4 rounded-xl transition duration-200 active:scale-95 shadow-lg shadow-yellow-500/10">
                                     Salvar Evento
                                 </button>
@@ -128,7 +145,7 @@
 
     <!-- Modal Controle de Evento -->
     <div id="control-modal" class="fixed inset-0 z-50 flex justify-center items-center bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden">
-        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/5 shadow-2xl p-6 w-full max-w-4xl m-4 transform scale-95 transition-all duration-300 flex flex-col max-h-[85vh]">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/5 shadow-2xl p-6 w-full max-w-6xl m-4 transform scale-95 transition-all duration-300 flex flex-col max-h-[88vh]">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
                 <div>
                     <h2 id="modal-event-title" class="text-xl font-black text-gray-900 dark:text-white">Controle de Evento</h2>
@@ -156,7 +173,7 @@
             </div>
 
             <!-- Listas lado a lado -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-hidden min-h-[300px]">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-hidden min-h-[350px]">
                 <!-- Coluna de Inscritos (Compras Aprovadas) -->
                 <div class="flex flex-col bg-gray-50 dark:bg-[#111111]/50 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 overflow-hidden">
                     <h3 class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
@@ -166,19 +183,21 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                             <i class="fas fa-search text-gray-400 text-xs"></i>
                         </span>
-                        <input type="text" id="search-registered" placeholder="Buscar aluno..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <input type="text" id="search-registered" placeholder="Buscar por aluno, graduação ou unidade..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="overflow-y-auto flex-grow custom-scrollbar">
                         <table class="min-w-full text-left text-xs">
                             <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[11px]">
                                     <th class="pb-2">Nome</th>
+                                    <th class="pb-2">Graduação</th>
+                                    <th class="pb-2">Unidade</th>
                                     <th class="pb-2 text-right">Data Compra</th>
                                 </tr>
                             </thead>
                             <tbody id="modal-registered-list" class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                                 <tr>
-                                    <td colspan="2" class="text-center py-8 text-gray-500">Carregando inscritos...</td>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">Carregando inscritos...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -194,24 +213,45 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                             <i class="fas fa-search text-gray-400 text-xs"></i>
                         </span>
-                        <input type="text" id="search-checkins" placeholder="Buscar aluno..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <input type="text" id="search-checkins" placeholder="Buscar por aluno, graduação ou unidade..." class="w-full pl-8 pr-4 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500">
                     </div>
                     <div class="overflow-y-auto flex-grow custom-scrollbar">
                         <table class="min-w-full text-left text-xs">
                             <thead>
-                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider">
+                                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[11px]">
                                     <th class="pb-2">Nome</th>
+                                    <th class="pb-2">Graduação</th>
+                                    <th class="pb-2">Unidade</th>
                                     <th class="pb-2 text-right">Data Check-in</th>
+                                    <th class="pb-2 text-center">Info</th>
                                 </tr>
                             </thead>
                             <tbody id="modal-checkins-list" class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                                 <tr>
-                                    <td colspan="2" class="text-center py-8 text-gray-500">Nenhum check-in realizado ainda.</td>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">Nenhum check-in realizado ainda.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Respostas de Check-in -->
+    <div id="answers-modal" class="fixed inset-0 z-[60] flex justify-center items-center bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/5 shadow-2xl p-6 w-full max-w-lg m-4 transform scale-95 transition-all duration-300 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div>
+                    <h3 class="text-base font-black text-gray-900 dark:text-white">Respostas de Check-in</h3>
+                    <p id="answers-modal-subtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Aluno</p>
+                </div>
+                <button id="close-answers-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-8 h-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition active:scale-90">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <div id="answers-modal-content" class="overflow-y-auto space-y-4 py-2 custom-scrollbar">
+                <!-- Conteúdo das perguntas e respostas -->
             </div>
         </div>
     </div>
