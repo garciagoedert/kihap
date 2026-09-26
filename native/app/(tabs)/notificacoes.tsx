@@ -6,10 +6,7 @@ import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
 import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-
 export default function NotificacoesScreen() {
-  const router = useRouter();
   const { user, userData } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
