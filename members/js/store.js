@@ -6,7 +6,7 @@ export async function loadProducts() {
     productList.innerHTML = '<p>Carregando produtos...</p>';
 
     try {
-        const q = query(collection(db, 'products'), where('visible', '==', true), orderBy('name'));
+        const q = query(collection(db, 'products'), where('visible', '==', true));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -20,9 +20,16 @@ export async function loadProducts() {
 
         productList.innerHTML = ''; // Limpa a mensagem de "carregando"
 
-        querySnapshot.forEach(doc => {
-            const product = doc.data();
-            const productId = doc.id;
+        const loadedProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        loadedProducts.sort((a, b) => {
+            const orderA = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : 99999;
+            const orderB = (typeof b.order === 'number' && !isNaN(b.order)) ? b.order : 99999;
+            if (orderA !== orderB) return orderA - orderB;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+
+        loadedProducts.forEach(product => {
+            const productId = product.id;
             const isAvailable = product.available !== false;
             const productUrl = isAvailable ? `/produto.html?id=${productId}` : '#';
             const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

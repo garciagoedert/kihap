@@ -960,6 +960,12 @@
                                     <option value="inactive">Inativos</option>
                                 </select>
 
+                                <button id="reorder-products-btn"
+                                    class="px-3.5 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl flex items-center justify-center transition-all border border-gray-200 dark:border-gray-700 shadow-sm whitespace-nowrap"
+                                    title="Reorganiza a tabela pela ordem digitada">
+                                    <i class="fas fa-sort-numeric-down mr-1.5 text-blue-500"></i> Organizar Ordem
+                                </button>
+
                                 <button id="add-product-btn"
                                     class="px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap">
                                     <i class="fas fa-plus mr-2"></i> Novo Produto
@@ -971,6 +977,7 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-gray-200 dark:border-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                        <th class="p-4 text-center whitespace-nowrap w-24">Ordem</th>
                                         <th class="p-4 whitespace-nowrap">Produto</th>
                                         <th class="p-4 whitespace-nowrap">Categoria</th>
                                         <th class="p-4 whitespace-nowrap">Preço</th>
@@ -982,7 +989,7 @@
                                 </thead>
                                 <tbody id="products-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
                                     <tr>
-                                        <td colspan="7" class="text-center p-8 text-gray-400">Carregando produtos...</td>
+                                        <td colspan="8" class="text-center p-8 text-gray-400">Carregando produtos...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1030,7 +1037,7 @@
                                     <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Informações Básicas</span>
                                 </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <div class="md:col-span-2">
                                         <label for="product-name" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Nome do Produto *</label>
                                         <input type="text" id="product-name" placeholder="Ex: Dobok Colarinho Preto Mestre"
@@ -1043,6 +1050,14 @@
                                         <input type="text" id="product-category"
                                             placeholder="Ex: Uniforme, Equipamento, Graduação"
                                             class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                    </div>
+
+                                    <div>
+                                        <label for="product-order" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Ordem na Loja</label>
+                                        <input type="number" id="product-order" min="1"
+                                            placeholder="Ex: 1, 2, 3..."
+                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+                                            title="Posição na vitrine (menor número = primeiro)">
                                     </div>
                                 </div>
 
@@ -1589,9 +1604,28 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label for="banner-link" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Link (opcional)</label>
-                                    <input type="text" id="banner-link" placeholder="https://..."
+                                    <label for="banner-title" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Título do Banner (opcional)</label>
+                                    <input type="text" id="banner-title" placeholder="Ex: Equipamentos de Sparring Oficial"
+                                        class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium">
+                                </div>
+                                <div>
+                                    <label for="banner-placement" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Onde Exibir este Banner</label>
+                                    <select id="banner-placement"
+                                        class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
+                                        <option value="store" selected>🛍️ Loja (App e Web kihap.com.br/store)</option>
+                                        <option value="all">🌟 Loja & Feed Social (Ambos)</option>
+                                        <option value="feed">📱 Apenas Feed Social</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="banner-link" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Link de Destino (opcional)</label>
+                                    <input type="text" id="banner-link" placeholder="Ex: /(tabs)/store ou https://..."
                                         class="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                                    <div class="flex flex-wrap gap-1.5 mt-2">
+                                        <button type="button" class="banner-quick-link px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 transition-all" data-link="/(tabs)/store">🛍️ Loja App</button>
+                                        <button type="button" class="banner-quick-link px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 transition-all" data-link="/(tabs)/calendario">📅 Treinos</button>
+                                        <button type="button" class="banner-quick-link px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 transition-all" data-link="https://www.kihap.com.br/store">🌐 Loja Web</button>
+                                    </div>
                                 </div>
                                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700/50">
                                     <span class="text-sm font-bold text-gray-500">Status Ativo</span>

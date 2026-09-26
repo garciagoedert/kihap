@@ -1,6 +1,7 @@
 import { db, auth } from '../../intranet/firebase-config.js';
 import { collection, query, where, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { isItemForUserUnits, getUserUnitSlugs } from '../../intranet/feed.js';
 
 /**
  * Inicializa a barra de stories no feed buscando dados do Firestore.
@@ -20,11 +21,9 @@ export async function initStories() {
 
         try {
             // Obter dados do aluno para filtrar visibilidade
-            // (Assumindo que os dados básicos já foram carregados no feed.js, 
-            // mas buscaremos aqui para garantir isolamento se necessário)
             const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', user.uid)));
             const userData = !userDoc.empty ? userDoc.docs[0].data() : {};
-            const userUnit = userData.unidade || userData.unit || '';
+            const userUnitSlugs = getUserUnitSlugs(userData);
 
             // 1. Buscar Stories que ainda não expiraram
             const now = new Date();
@@ -41,13 +40,38 @@ export async function initStories() {
                 return;
             }
 
+            const batchUnitsMap = new Map();
+            querySnapshot.forEach(d => {
+                const data = d.data();
+                if (data.batchId && data.targetUnit) {
+                    if (!batchUnitsMap.has(data.batchId)) {
+                        batchUnitsMap.set(data.batchId, new Set());
+                    }
+                    batchUnitsMap.get(data.batchId).add(data.targetUnit);
+                }
+            });
+
+            const seenBatches = new Set();
             const allStories = [];
+
             querySnapshot.forEach(doc => {
                 const story = { id: doc.id, ...doc.data() };
+
+                if (story.batchId && batchUnitsMap.has(story.batchId)) {
+                    const batchUnits = Array.from(batchUnitsMap.get(story.batchId));
+                    if (!story.targetUnits || story.targetUnits.length === 0) {
+                        story.targetUnits = batchUnits;
+                    }
+                }
+
+                if (story.batchId) {
+                    if (seenBatches.has(story.batchId)) return;
+                    seenBatches.add(story.batchId);
+                }
                 
                 // 2. Filtro de Visibilidade (Lógica idêntica ao Feed)
                 const isForMe = story.targetStudents?.includes(user.uid);
-                const isForMyUnit = story.targetUnit === 'all' || story.targetUnit === userUnit;
+                const isForMyUnit = isItemForUserUnits(story, userUnitSlugs);
                 const isAuthor = story.authorId === user.uid; // Criador sempre vê
                 
                 if (isForMe || isForMyUnit || isAuthor) {

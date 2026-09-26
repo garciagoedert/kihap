@@ -1,21 +1,91 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, orderBy, limit, getDocs, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import FeedCard from '../../src/components/FeedCard';
 import StoriesBar from '../../src/components/StoriesBar';
+import BannerCarousel from '../../src/components/BannerCarousel';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Bell } from 'lucide-react-native';
+import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Send } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+
+export function normalizeUnitSlug(val: any): string {
+  if (!val || typeof val !== 'string') return '';
+  return val
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/^kihap\s*-\s*/i, '')
+    .replace(/^kihap\s+/i, '')
+    .replace(/^unidade\s+/i, '')
+    .replace(/\s*\(.*\)\s*/g, '')
+    .trim()
+    .replace(/[\s_]+/g, '-');
+}
+
+export function getUserUnitSlugs(userData: any): string[] {
+  if (!userData) return [];
+  const rawUnits: any[] = [
+    userData.unitId,
+    userData.unidade,
+    userData.unit,
+    userData.branchName,
+  ];
+  if (Array.isArray(userData.units)) rawUnits.push(...userData.units);
+  if (Array.isArray(userData.unidades)) rawUnits.push(...userData.unidades);
+  
+  const slugs = rawUnits.map(normalizeUnitSlug).filter(Boolean);
+  return Array.from(new Set(slugs));
+}
+
+export function isTargetForUser(
+  item: { targetUnit?: string; targetUnits?: string[]; targetStudents?: string[]; authorId?: string },
+  userId: string,
+  userUnitSlugs: string[]
+): boolean {
+  // If targeted to specific students
+  if (Array.isArray(item.targetStudents) && item.targetStudents.length > 0) {
+    if (item.targetStudents.includes(userId)) return true;
+    if (!item.targetUnit && (!item.targetUnits || item.targetUnits.length === 0)) {
+      return false;
+    }
+  }
+
+  // Check targetUnit
+  const targetUnitSlug = normalizeUnitSlug(item.targetUnit);
+  if (!targetUnitSlug || targetUnitSlug === 'all' || targetUnitSlug === 'todas') {
+    if (!item.targetStudents || item.targetStudents.length === 0) {
+      return true;
+    }
+  }
+
+  if (targetUnitSlug && userUnitSlugs.includes(targetUnitSlug)) {
+    return true;
+  }
+
+  // Check targetUnits array if present
+  if (Array.isArray(item.targetUnits) && item.targetUnits.length > 0) {
+    const targetSlugs = item.targetUnits.map(normalizeUnitSlug);
+    if (targetSlugs.includes('all') || targetSlugs.includes('todas')) {
+      return true;
+    }
+    if (targetSlugs.some(slug => userUnitSlugs.includes(slug))) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 export default function FeedScreen() {
   const { user, userData, linkedProfiles, switchProfile, signOut } = useAuth();
   const [isSwitching, setIsSwitching] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -26,7 +96,27 @@ export default function FeedScreen() {
 
   // Mapping real data with robust fallbacks and URL normalization
   const displayName = userData?.name || userData?.nome || userData?.displayName || 'Aluno';
-  const firstName = displayName.split(' ')[0];
+  
+  const formatShortName = (fullName: string): string => {
+    if (!fullName) return 'Aluno';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return parts[0];
+
+    const titles = ['mr.', 'mr', 'mrs.', 'mrs', 'ms.', 'ms', 'dr.', 'dr', 'dra.', 'dra', 'prof.', 'prof', 'mestre', 'instrutor', 'instrutora'];
+    const firstLower = parts[0].toLowerCase();
+
+    if (titles.includes(firstLower) || parts[0].length <= 2) {
+      return `${parts[0]} ${parts[1]}`;
+    }
+
+    if (parts.length === 2) {
+      return `${parts[0]} ${parts[1]}`;
+    }
+
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
+  const shortName = formatShortName(displayName);
   
   let rawPhoto = userData?.photoURL || userData?.profilePicture || userData?.photoUrl || userData?.avatar;
   if (rawPhoto && rawPhoto.startsWith('/')) {
@@ -35,10 +125,16 @@ export default function FeedScreen() {
   const defaultProfileImg = require('../../assets/images/default-profile.png');
   const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
   
-  const displayUnit = userData?.unidade || userData?.unit || 'Kihap Member';
+  const rawUnitName = userData?.unidade || userData?.unit || userData?.branchName || userData?.unitId;
+  const displayUnit = rawUnitName 
+    ? (typeof rawUnitName === 'string' && rawUnitName.includes('-') 
+        ? rawUnitName.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) 
+        : String(rawUnitName)) 
+    : 'Kihap Member';
 
   useEffect(() => {
     let unsubscribeFeed: any = null;
+    let unsubscribeBanners: any = null;
 
     const startDataFlow = async () => {
       if (!user) {
@@ -47,7 +143,7 @@ export default function FeedScreen() {
       }
       
       setLoading(true);
-      const userUnit = userData?.unidade || userData?.unit || '';
+      const userUnitSlugs = getUserUnitSlugs(userData);
 
       // 1. Fetch Stories (Static)
       try {
@@ -58,13 +154,38 @@ export default function FeedScreen() {
           orderBy('expiresAt', 'asc')
         );
         const storiesSnap = await getDocs(storiesQ);
-        const allStories: any[] = [];
+        
+        const storyBatchUnitsMap = new Map<string, Set<string>>();
+        const rawStories: any[] = [];
         storiesSnap.forEach(docSnap => {
-          const story = { id: docSnap.id, ...docSnap.data() };
-          const isForMe = story.targetStudents?.includes(user.uid);
-          const isForMyUnit = story.targetUnit === 'all' || story.targetUnit === userUnit;
+          const story: any = { id: docSnap.id, ...docSnap.data() };
+          rawStories.push(story);
+          if (story.batchId && story.targetUnit) {
+            if (!storyBatchUnitsMap.has(story.batchId)) {
+              storyBatchUnitsMap.set(story.batchId, new Set<string>());
+            }
+            storyBatchUnitsMap.get(story.batchId)!.add(story.targetUnit);
+          }
+        });
+
+        const allStories: any[] = [];
+        const seenStoryBatches = new Set<string>();
+        rawStories.forEach(story => {
+          if (story.batchId && storyBatchUnitsMap.has(story.batchId)) {
+            const batchUnits = Array.from(storyBatchUnitsMap.get(story.batchId)!);
+            if (!story.targetUnits || story.targetUnits.length === 0) {
+              story.targetUnits = batchUnits;
+            }
+          }
+
+          if (story.batchId) {
+            if (seenStoryBatches.has(story.batchId)) return;
+            seenStoryBatches.add(story.batchId);
+          }
+
           const isAuthor = story.authorId === user.uid;
-          if (isForMe || isForMyUnit || isAuthor) allStories.push(story);
+          const isTargeted = isTargetForUser(story, user.uid, userUnitSlugs);
+          if (isAuthor || isTargeted) allStories.push(story);
         });
 
         const groupedStories = allStories.reduce((acc, story) => {
@@ -87,27 +208,114 @@ export default function FeedScreen() {
       // 2. Subscribe to Feed (Real-time)
       const feedQ = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(50));
       unsubscribeFeed = onSnapshot(feedQ, (feedSnap) => {
-        const filteredPosts: any[] = [];
+        const postBatchUnitsMap = new Map<string, Set<string>>();
+        const rawPosts: any[] = [];
+        
         feedSnap.forEach(docSnap => {
-          const post = { id: docSnap.id, ...docSnap.data() };
-          const isAuthor = post.authorId === user.uid;
-          const isForMe = post.targetStudents?.includes(user.uid);
-          const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
-          const isPublic = !post.targetUnit || post.targetUnit === '' || post.targetUnit === 'all';
-          if (isAuthor || isForMe || isForMyUnit || isPublic) filteredPosts.push(post);
+          const post: any = { id: docSnap.id, ...docSnap.data() };
+          rawPosts.push(post);
+          if (post.batchId && post.targetUnit) {
+            if (!postBatchUnitsMap.has(post.batchId)) {
+              postBatchUnitsMap.set(post.batchId, new Set<string>());
+            }
+            postBatchUnitsMap.get(post.batchId)!.add(post.targetUnit);
+          }
         });
+
+        const filteredPosts: any[] = [];
+        const seenBatches = new Set<string>();
+
+        rawPosts.forEach(post => {
+          if (post.batchId && postBatchUnitsMap.has(post.batchId)) {
+            const batchUnits = Array.from(postBatchUnitsMap.get(post.batchId)!);
+            if (!post.targetUnits || post.targetUnits.length === 0) {
+              post.targetUnits = batchUnits;
+            }
+          }
+
+          if (post.batchId) {
+            if (seenBatches.has(post.batchId)) return;
+            seenBatches.add(post.batchId);
+          }
+
+          const isAuthor = post.authorId === user.uid;
+          const isTargeted = isTargetForUser(post, user.uid, userUnitSlugs);
+
+          if (isAuthor || isTargeted) filteredPosts.push(post);
+        });
+
         setPosts(filteredPosts);
         setLoading(false);
         setRefreshing(false);
       }, (err) => {
         console.error("Feed: Snapshot error:", err);
         setLoading(false);
+        setRefreshing(false);
       });
+
+      // 3. Subscribe to Banners (Real-time) - Sem orderBy para não exigir índice composto no Firestore
+      const bannersQ = query(collection(db, 'banners'), where('active', '==', true));
+      unsubscribeBanners = onSnapshot(bannersQ, (snap) => {
+        const bannerBatchUnitsMap = new Map<string, Set<string>>();
+        const rawBanners: any[] = [];
+        
+        snap.forEach(d => {
+          const b: any = { id: d.id, ...d.data() };
+          rawBanners.push(b);
+          if (b.batchId && b.targetUnit) {
+            if (!bannerBatchUnitsMap.has(b.batchId)) {
+              bannerBatchUnitsMap.set(b.batchId, new Set<string>());
+            }
+            bannerBatchUnitsMap.get(b.batchId)!.add(b.targetUnit);
+          }
+        });
+
+        const bList: any[] = [];
+        const seenBannerBatches = new Set<string>();
+
+        rawBanners.forEach(b => {
+          if (b.batchId && bannerBatchUnitsMap.has(b.batchId)) {
+            const batchUnits = Array.from(bannerBatchUnitsMap.get(b.batchId)!);
+            if (!b.targetUnits || b.targetUnits.length === 0) {
+              b.targetUnits = batchUnits;
+            }
+          }
+
+          if (b.batchId) {
+            if (seenBannerBatches.has(b.batchId)) return;
+            seenBannerBatches.add(b.batchId);
+          }
+
+          const isTargeted = isTargetForUser(b, user.uid, userUnitSlugs);
+          const isPlacementOk = !b.placement || b.placement === 'feed' || b.placement === 'all';
+          if (isTargeted && isPlacementOk) {
+            bList.push(b);
+          }
+        });
+
+        // Ordenação client-side por createdAt decrescente
+        bList.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0)).getTime());
+          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0)).getTime());
+          return timeB - timeA;
+        });
+        setBanners(bList);
+      }, (err) => {
+        console.error("Feed: Banners snapshot error:", err);
+      });
+
+      return () => {
+        if (unsubscribeFeed) unsubscribeFeed();
+        if (unsubscribeBanners) unsubscribeBanners();
+      };
     };
 
-    startDataFlow();
+    const cleanup = startDataFlow();
 
     return () => {
+      if (cleanup && typeof cleanup.then === 'function') {
+        cleanup.then((fn: any) => fn && fn());
+      }
       if (unsubscribeFeed) unsubscribeFeed();
     };
   }, [user, userData]);
@@ -142,18 +350,6 @@ export default function FeedScreen() {
     </TouchableOpacity>
   );
 
-  const renderHeader = () => (
-    <View className="bg-transparent pt-4">
-      {stories.length > 0 && (
-        <View className="py-4 mb-4">
-          <StoriesBar groups={stories} onPress={(group) => console.log('Story pressed', group)} />
-        </View>
-      )}
-      {/* Respiro extra se não houver stories */}
-      {stories.length === 0 && <View className="h-4" />}
-    </View>
-  );
-
   return (
     <View className="flex-1 bg-gray-50 dark:bg-[#050505]">
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -183,7 +379,7 @@ export default function FeedScreen() {
               className="p-2 -mr-2"
               activeOpacity={0.7}
             >
-              <Bell size={24} color={isDark ? '#fff' : '#333'} />
+              <Send size={22} color={isDark ? '#fff' : '#333'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -195,7 +391,21 @@ export default function FeedScreen() {
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <FeedCard post={item} />}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={
+          <View className="bg-transparent pt-4">
+            {stories.length > 0 && (
+              <View className="py-4 mb-2">
+                <StoriesBar groups={stories} onPress={(group) => console.log('Story pressed', group)} />
+              </View>
+            )}
+
+            {/* Banners em Destaque no Topo do Feed - Carrossel Horizontal Deslizável */}
+            <BannerCarousel banners={banners} />
+
+            {/* Respiro extra se não houver stories nem banners */}
+            {stories.length === 0 && banners.length === 0 && <View className="h-4" />}
+          </View>
+        }
         contentContainerStyle={{ paddingBottom: 100 }}
         scrollEventThrottle={16}
         refreshControl={
@@ -222,7 +432,7 @@ export default function FeedScreen() {
                 <View className="p-6 border-b border-gray-100 dark:border-white/5 flex-row items-center">
                   <Image source={displayPhoto} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
                   <View className="ml-3">
-                    <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{firstName}</Text>
+                    <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{shortName}</Text>
                     <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
                   </View>
                 </View>
@@ -231,7 +441,7 @@ export default function FeedScreen() {
                     <Text className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-3">Família / Alternar Perfil</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                       {linkedProfiles.map((profile) => {
-                        const profName = (profile.name || profile.nome || 'Dependente').split(' ')[0];
+                        const profName = formatShortName(profile.name || profile.nome || 'Dependente');
                         let profPhoto = profile.photoURL || profile.profilePicture || profile.photoUrl || profile.avatar;
                         if (profPhoto && profPhoto.startsWith('/')) {
                           profPhoto = `https://kihap.com.br${profPhoto}`;
@@ -258,21 +468,10 @@ export default function FeedScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => setSidebarOpen(false)} />
-                
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Evolução</Text>
-                {/* Ocultados temporariamente por falta de uso:
-                <SidebarItem icon={BookOpen} label="Área do Aluno" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/cursos'); }} />
-                <SidebarItem icon={UserCheck} label="Tatame" onPress={() => { setSidebarOpen(false); router.push('/tatame'); }} />
-                */}
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
-
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
                 <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => { setSidebarOpen(false); router.push('/pedidos'); }} />
-                {/* Ocultado temporariamente por falta de uso:
-                <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => { setSidebarOpen(false); router.push('/assinatura'); }} />
-                */}
               </ScrollView>
 
               <View className="p-6 border-t border-gray-100 dark:border-white/5">

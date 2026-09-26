@@ -125,6 +125,8 @@ export async function setupStorePage() {
     const productFormTitle = document.getElementById('product-form-title');
     const productIdInput = document.getElementById('product-id');
     const productNameInput = document.getElementById('product-name');
+    const productOrderInput = document.getElementById('product-order');
+    const reorderProductsBtn = document.getElementById('reorder-products-btn');
     const productPriceInput = document.getElementById('product-price');
     const productPromoPriceInput = document.getElementById('product-promo-price');
     const productCostPriceInput = document.getElementById('product-cost-price');
@@ -203,11 +205,23 @@ export async function setupStorePage() {
     const bannerFormTitle = document.getElementById('banner-form-title');
     const bannerIdInput = document.getElementById('banner-id');
     const bannerImageInput = document.getElementById('banner-image');
+    const bannerTitleInput = document.getElementById('banner-title');
+    const bannerPlacementSelect = document.getElementById('banner-placement');
     const bannerLinkInput = document.getElementById('banner-link');
     const bannerActiveInput = document.getElementById('banner-active');
     const saveBannerBtn = document.getElementById('save-banner-btn');
     const cancelBannerEditBtn = document.getElementById('cancel-banner-edit-btn');
     const bannersList = document.getElementById('banners-list');
+
+    // Quick links for banner
+    document.querySelectorAll('.banner-quick-link').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (bannerLinkInput) {
+                bannerLinkInput.value = btn.dataset.link;
+                bannerLinkInput.focus();
+            }
+        });
+    });
 
     // Coupon Management elements
     const couponForm = document.getElementById('coupon-form');
@@ -845,17 +859,28 @@ export async function setupStorePage() {
         }
     };
 
+    const sortProductsByOrder = (prods) => {
+        if (!Array.isArray(prods)) return prods;
+        return prods.sort((a, b) => {
+            const orderA = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : 99999;
+            const orderB = (typeof b.order === 'number' && !isNaN(b.order)) ? b.order : 99999;
+            if (orderA !== orderB) return orderA - orderB;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+    };
+
     const fetchProducts = async () => {
-        if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8">Carregando produtos...</td></tr>';
+        if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8">Carregando produtos...</td></tr>';
         try {
             await fetchDistributionCenters();
             const q = query(collection(db, 'products'), orderBy('name', 'asc'));
             const querySnapshot = await getDocs(q);
             allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            sortProductsByOrder(allProducts);
             applyProductsFilter();
         } catch (error) {
             console.error('Error fetching products:', error);
-            if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
+            if (productsTableBody) productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-red-500">Erro ao carregar produtos.</td></tr>';
         }
     };
 
@@ -934,7 +959,7 @@ export async function setupStorePage() {
         updateStoreKPIs(allProducts);
 
         if (productsToDisplay.length === 0) {
-            productsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500 italic">Nenhum produto encontrado.</td></tr>';
+            productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic">Nenhum produto encontrado.</td></tr>';
             return;
         }
 
@@ -968,6 +993,19 @@ export async function setupStorePage() {
             const isActive = isProductActive(product);
 
             row.innerHTML = `
+                <td class="p-4 text-center whitespace-nowrap">
+                    <div class="inline-flex items-center justify-center">
+                        <input 
+                            type="number" 
+                            min="1"
+                            class="product-order-input w-16 text-center py-1.5 px-1 text-xs font-black rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all shadow-sm"
+                            value="${product.order !== undefined && product.order !== null ? product.order : ''}"
+                            placeholder="-"
+                            data-id="${product.id}"
+                            title="Posição na vitrine. Digite o número e mude de campo ou dê Enter para salvar."
+                        />
+                    </div>
+                </td>
                 <td class="p-4">
                     <div class="flex items-center gap-3">
                         ${imgHtml}
@@ -1098,6 +1136,7 @@ export async function setupStorePage() {
         addProductBtn.addEventListener('click', () => {
             if (productFormTitle) productFormTitle.textContent = 'Adicionar Produto';
             productIdInput.value = '';
+            if (productOrderInput) productOrderInput.value = '';
             if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
             populateRecommendedProductsSelect();
             openProductEditor();
@@ -1263,6 +1302,7 @@ Requisitos:
                 const productData = {
                     name: productNameInput.value,
                     category: productCategoryInput.value || '',
+                    order: (productOrderInput && productOrderInput.value.trim() !== '') ? parseInt(productOrderInput.value.trim(), 10) : null,
                     description: productDescriptionInput.value,
                     imageUrl: imageUrl,
                     priceType: priceType,
@@ -1423,6 +1463,52 @@ Requisitos:
         });
     }
 
+    if (reorderProductsBtn) {
+        reorderProductsBtn.addEventListener('click', () => {
+            sortProductsByOrder(allProducts);
+            applyProductsFilter();
+        });
+    }
+
+    if (productsTableBody) {
+        productsTableBody.addEventListener('change', async (e) => {
+            const input = e.target.closest('.product-order-input');
+            if (!input) return;
+            const productId = input.dataset.id;
+            const rawVal = input.value.trim();
+            const orderVal = rawVal === '' ? null : parseInt(rawVal, 10);
+
+            input.classList.remove('border-gray-200', 'dark:border-gray-700');
+            input.classList.add('border-yellow-500', 'bg-yellow-50', 'dark:bg-yellow-900/30');
+
+            try {
+                await updateDoc(doc(db, 'products', productId), { order: orderVal });
+                const prod = allProducts.find(p => p.id === productId);
+                if (prod) prod.order = orderVal;
+
+                input.classList.remove('border-yellow-500', 'bg-yellow-50', 'dark:bg-yellow-900/30');
+                input.classList.add('border-green-500', 'bg-green-50', 'dark:bg-green-900/30');
+                setTimeout(() => {
+                    input.classList.remove('border-green-500', 'bg-green-50', 'dark:bg-green-900/30');
+                    input.classList.add('border-gray-200', 'dark:border-gray-700');
+                }, 1200);
+            } catch (err) {
+                console.error('Error updating product order:', err);
+                input.classList.remove('border-yellow-500', 'bg-yellow-50', 'dark:bg-yellow-900/30');
+                input.classList.add('border-red-500', 'bg-red-50');
+                alert('Erro ao atualizar a ordem do produto.');
+            }
+        });
+
+        productsTableBody.addEventListener('keydown', (e) => {
+            const input = e.target.closest('.product-order-input');
+            if (input && e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+            }
+        });
+    }
+
     if (productsTableBody) productsTableBody.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
@@ -1447,6 +1533,7 @@ Requisitos:
                 populateRecommendedProductsSelect(); // Repopulate to exclude current product
                 productNameInput.value = product.name;
                 if (productCategoryInput) productCategoryInput.value = product.category || '';
+                if (productOrderInput) productOrderInput.value = (product.order !== undefined && product.order !== null) ? product.order : '';
                 productDescriptionInput.value = product.description;
                 if (productImageInput) productImageInput.dataset.existingImageUrl = product.imageUrl || '';
                 if (deleteProductBtn) deleteProductBtn.classList.remove('hidden');
@@ -2784,6 +2871,7 @@ Requisitos:
         }
 
         banners.forEach(banner => {
+            const placementLabel = banner.placement === 'feed' ? 'Apenas Feed' : (banner.placement === 'all' ? 'Loja & Feed' : 'Loja (App & Web)');
             const bannerEl = document.createElement('div');
             bannerEl.className = 'glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-all group';
             bannerEl.innerHTML = `
@@ -2793,12 +2881,16 @@ Requisitos:
                         ${!banner.active ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><span class="text-[8px] text-white font-bold uppercase tracking-widest">Inativo</span></div>' : ''}
                     </div>
                     <div class="min-w-0">
-                        <a href="${banner.link}" target="_blank" class="text-xs font-bold text-primary hover:underline truncate block">
+                        ${banner.title ? `<div class="text-xs font-black text-gray-900 dark:text-white truncate">${banner.title}</div>` : ''}
+                        <a href="${banner.link || '#'}" target="_blank" class="text-xs font-bold text-primary hover:underline truncate block">
                             ${banner.link ? banner.link.replace(/^https?:\/\//, '') : 'Sem link de destino'}
                         </a>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${banner.active ? 'bg-green-500/10 text-green-600' : 'bg-gray-500/10 text-gray-500'}">
                                 ${banner.active ? 'Ativo' : 'Pausado'}
+                            </span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                ${placementLabel}
                             </span>
                         </div>
                     </div>
@@ -2821,6 +2913,8 @@ Requisitos:
     const resetBannerForm = () => {
         bannerForm.reset();
         bannerIdInput.value = '';
+        if (bannerTitleInput) bannerTitleInput.value = '';
+        if (bannerPlacementSelect) bannerPlacementSelect.value = 'store';
         bannerImageInput.dataset.existingImageUrl = '';
         bannerActiveInput.checked = false;
         bannerFormTitle.textContent = 'Adicionar Novo Banner';
@@ -2847,6 +2941,8 @@ Requisitos:
 
             const bannerData = {
                 imageUrl: imageUrl,
+                title: bannerTitleInput ? bannerTitleInput.value.trim() : '',
+                placement: bannerPlacementSelect ? bannerPlacementSelect.value : 'store',
                 link: bannerLinkInput.value,
                 active: bannerActiveInput.checked,
                 createdAt: serverTimestamp(),
@@ -2882,6 +2978,8 @@ Requisitos:
             if (banner) {
                 bannerFormTitle.textContent = 'Editar Banner';
                 bannerIdInput.value = banner.id;
+                if (bannerTitleInput) bannerTitleInput.value = banner.title || '';
+                if (bannerPlacementSelect) bannerPlacementSelect.value = banner.placement || 'store';
                 bannerLinkInput.value = banner.link || '';
                 bannerImageInput.dataset.existingImageUrl = banner.imageUrl || '';
                 bannerActiveInput.checked = banner.active || false;

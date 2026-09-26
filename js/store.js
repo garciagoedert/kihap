@@ -12,7 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const q = query(collection(db, 'banners'), where('active', '==', true));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
-                const banners = querySnapshot.docs.map(doc => doc.data());
+                const banners = querySnapshot.docs
+                    .map(doc => doc.data())
+                    .filter(b => !b.placement || b.placement === 'store' || b.placement === 'all');
                 displayBanners(banners);
             }
         } catch (error) {
@@ -63,6 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             const querySnapshot = await getDocs(q);
             allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Sort by order ascending, then name alphabetically
+            allProducts.sort((a, b) => {
+                const orderA = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : 99999;
+                const orderB = (typeof b.order === 'number' && !isNaN(b.order)) ? b.order : 99999;
+                if (orderA !== orderB) return orderA - orderB;
+                return (a.name || '').localeCompare(b.name || '');
+            });
             
             renderCategoryFilters();
             applyFilters();

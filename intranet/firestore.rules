@@ -498,6 +498,20 @@ service cloud.firestore {
       );
     }
 
+    // Regras para Banners em Destaque do Feed
+    match /banners/{bannerId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRH == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isFinanceiro == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStore == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAcademy == true
+      );
+    }
+
     // Regras para Expansão (Abertura de Novas Unidades)
     match /unit_openings/{openingId} {
       allow read, write: if request.auth != null && (

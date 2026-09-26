@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { Heart, ExternalLink } from 'lucide-react-native';
+import { Heart } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import RenderHtml from 'react-native-render-html';
 import { WebView } from 'react-native-webview';
@@ -349,10 +349,9 @@ export default function FeedCard({ post }: FeedCardProps) {
         <View className="px-4 py-4">
           <TouchableOpacity 
             onPress={handleCTA}
-            className="bg-[#014fa4] py-3 rounded-2xl flex-row items-center justify-center space-x-2 shadow-sm active:opacity-80"
+            className="bg-[#014fa4] py-3 rounded-2xl flex-row items-center justify-center shadow-sm active:opacity-80"
           >
             <Text className="text-white font-bold text-xs uppercase tracking-widest">{post.ctaButton.text}</Text>
-            <ExternalLink size={14} color="white" />
           </TouchableOpacity>
         </View>
       ) : null}

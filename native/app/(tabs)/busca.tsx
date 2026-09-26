@@ -1,11 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput, 
+  Image, 
+  ImageBackground,
+  ActivityIndicator, 
+  RefreshControl,
+  StyleSheet
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
-import { Search, ChevronRight } from 'lucide-react-native';
-import { collection, query, getDocs, limit } from 'firebase/firestore';
+import { 
+  Search, 
+  X, 
+  ChevronRight, 
+  Calendar as CalendarIcon, 
+  ArrowRight,
+  ShoppingBag,
+  MapPin,
+  Tag
+} from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { collection, query, getDocs, where, limit } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+type FilterType = 'all' | 'products' | 'events';
 
 export default function BuscaScreen() {
   const { colorScheme } = useColorScheme();
@@ -13,177 +38,557 @@ export default function BuscaScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [selectedProductCategory, setSelectedProductCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filters = [
-    { id: 'all', label: 'Todos' },
-    { id: 'Instrutor', label: 'Instrutores' },
-    { id: 'Preta', label: 'Faixas Pretas' },
-  ];
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // Content data: Products and Events only (no courses, no people)
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    applyFilters();
-  }, [searchQuery, activeFilter, allUsers]);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeFilter]);
 
-  const fetchUsers = async () => {
+  const fetchContent = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'users'), limit(100));
-      const snap = await getDocs(q);
-      const usersData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAllUsers(usersData);
+
+      const [productsRes, eventsRes] = await Promise.allSettled([
+        getDocs(query(collection(db, 'products'), where('visible', '==', true))),
+        getDocs(query(collection(db, 'events'), limit(30)))
+      ]);
+
+      if (productsRes.status === 'fulfilled') {
+        const pList = productsRes.value.docs.map(d => ({ id: d.id, ...d.data() }));
+        pList.sort((a: any, b: any) => {
+          const ordA = typeof a.order === 'number' ? a.order : 99999;
+          const ordB = typeof b.order === 'number' ? b.order : 99999;
+          return ordA - ordB;
+        });
+        setAllProducts(pList);
+      }
+
+      if (eventsRes.status === 'fulfilled') {
+        const eList = eventsRes.value.docs.map(d => ({ id: d.id, ...d.data() }));
+        setAllEvents(eList);
+      }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error loading discover content:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const applyFilters = () => {
-    const term = searchQuery.toLowerCase().trim();
-    
-    if (!term && activeFilter === 'all') {
-      const suggested = allUsers.filter(u => 
-        u.isCharacter === true || (u.name && u.name.toLowerCase().includes('kobe'))
-      );
-      setFilteredUsers(suggested);
-      return;
-    }
+  useEffect(() => {
+    fetchContent();
+  }, []);
 
-    const filtered = allUsers.filter(u => {
-      const name = (u.name || u.displayName || "").toLowerCase();
-      const unit = (u.unidade || u.unit || "").toLowerCase();
-      const belt = (u.belt || "").toLowerCase();
-      
-      const matchesTerm = name.includes(term) || unit.includes(term) || belt.includes(term);
-      
-      if (activeFilter === 'all') return matchesTerm;
-      if (activeFilter === 'Instrutor') return matchesTerm && (u.isInstructor === true || u.isAdmin === true);
-      if (activeFilter === 'Preta') return matchesTerm && belt.includes('preta');
-      return matchesTerm;
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchContent();
+  };
+
+  const term = searchQuery.toLowerCase().trim();
+
+  // Distinct product categories
+  const productCategories = useMemo(() => {
+    const set = new Set<string>();
+    allProducts.forEach(p => {
+      if (p.category && typeof p.category === 'string') {
+        set.add(p.category.trim());
+      }
     });
+    return Array.from(set);
+  }, [allProducts]);
 
-    setFilteredUsers(filtered);
-  };
+  // Filtered products
+  const filteredProducts = useMemo(() => {
+    let list = allProducts;
 
-  const defaultProfileImg = require('../../assets/images/default-profile.png');
-
-  const renderItem = ({ item }: { item: any }) => {
-    const isStaff = item.isInstructor === true || item.isAdmin === true;
-    const photoURL = item.photoURL || item.profilePicture || item.photoUrl;
-    let photoSource;
-    if (!photoURL || photoURL.includes('default-profile.svg') || photoURL.includes('default-profile.png')) {
-      photoSource = defaultProfileImg;
-    } else {
-      const uri = photoURL.startsWith('/') ? `https://kihap.com.br${photoURL}` : photoURL;
-      photoSource = { uri };
+    if (activeFilter === 'products' && selectedProductCategory !== 'all') {
+      list = list.filter(p => (p.category || '').toLowerCase() === selectedProductCategory.toLowerCase());
     }
 
-    return (
-      <TouchableOpacity 
-        onPress={() => router.push(`/user/${item.id}`)}
-        className="bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl flex-row items-center justify-between border border-gray-100 dark:border-white/5 mb-4 shadow-sm active:bg-gray-50 dark:active:bg-white/10"
-      >
-        <View className="flex-row items-center flex-1">
-          <View className="relative">
-            <Image 
-              source={photoSource} 
-              className="w-12 h-12 rounded-full border border-gray-200 dark:border-white/10 object-cover"
+    if (!term) return list;
+
+    return list.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      return name.includes(term) || cat.includes(term) || desc.includes(term);
+    });
+  }, [allProducts, term, activeFilter, selectedProductCategory]);
+
+  // Filtered events
+  const filteredEvents = useMemo(() => {
+    if (!term) return allEvents;
+    return allEvents.filter(e => {
+      const title = (e.title || e.name || '').toLowerCase();
+      const desc = (e.description || '').toLowerCase();
+      const loc = (e.location || e.address || '').toLowerCase();
+      return title.includes(term) || desc.includes(term) || loc.includes(term);
+    });
+  }, [allEvents, term]);
+
+  // Unified search results
+  const searchResults = useMemo(() => {
+    if (!term) return [];
+    const list: any[] = [];
+
+    if (activeFilter === 'all' || activeFilter === 'products') {
+      filteredProducts.forEach(p => list.push({ ...p, _type: 'product' }));
+    }
+    if (activeFilter === 'all' || activeFilter === 'events') {
+      filteredEvents.forEach(e => list.push({ ...e, _type: 'event' }));
+    }
+
+    return list;
+  }, [term, activeFilter, filteredProducts, filteredEvents]);
+
+  const filters: { id: FilterType; label: string }[] = [
+    { id: 'all', label: 'Tudo' },
+    { id: 'products', label: 'Loja Oficial' },
+    { id: 'events', label: 'Eventos & Exames' },
+  ];
+
+  // Render individual search result item
+  const renderSearchResultItem = ({ item }: { item: any }) => {
+    if (item._type === 'product') {
+      const price = (item.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      return (
+        <TouchableOpacity
+          onPress={() => router.push(`/store/${item.id}`)}
+          activeOpacity={0.8}
+          className="bg-white dark:bg-[#151517] rounded-2xl p-3.5 mb-3 border border-gray-100 dark:border-white/5 flex-row items-center justify-between shadow-sm"
+        >
+          <View className="flex-row items-center flex-1 mr-3">
+            <Image
+              source={{ uri: item.imageUrl || 'https://via.placeholder.com/200' }}
+              className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-black"
+              resizeMode="cover"
             />
-            <View className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full" />
-          </View>
-          
-          <View className="ml-4 flex-1">
-            <View className="flex-row items-center flex-wrap">
-              <Text className="font-bold text-[14px] text-gray-900 dark:text-white mr-2" numberOfLines={1}>
-                {item.name || item.displayName || 'Usuário Kihap'}
+            <View className="ml-3 flex-1">
+              <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">
+                {item.category || 'Loja Kihap'}
               </Text>
-              {isStaff && (
-                <View className="bg-[#014fa4]/10 px-1.5 py-0.5 rounded border border-[#014fa4]/20 mr-1">
-                  <Text className="text-[#014fa4] dark:text-[#58a6ff] text-[8px] font-black uppercase">Instrutor</Text>
-                </View>
-              )}
-              {item.isCharacter && (
-                <View className="bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20">
-                  <Text className="text-yellow-600 dark:text-yellow-400 text-[8px] font-black uppercase">Mascote</Text>
-                </View>
-              )}
-            </View>
-            <View className="flex-row items-center mt-0.5">
-              <Text className="text-[10px] text-gray-500 uppercase font-black tracking-tighter">{item.belt || 'Membro'}</Text>
-              <Text className="text-[10px] text-gray-400 mx-1.5">•</Text>
-              <Text className="text-[10px] text-gray-500 font-medium truncate flex-1">{item.unidade || item.unit || 'Kihap Unit'}</Text>
+              <Text className="font-bold text-[14px] text-gray-900 dark:text-white leading-snug" numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text className="text-[13px] font-black text-gray-900 dark:text-white mt-1">
+                {price}
+              </Text>
             </View>
           </View>
-        </View>
-        <ChevronRight size={16} color={isDark ? '#444' : '#ccc'} />
-      </TouchableOpacity>
-    );
+          <View className="bg-yellow-500 px-3.5 py-1.5 rounded-lg shadow-sm">
+            <Text className="text-[11px] font-black text-black">Ver</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    if (item._type === 'event') {
+      return (
+        <TouchableOpacity
+          onPress={() => router.push('/calendario')}
+          activeOpacity={0.8}
+          className="bg-white dark:bg-[#151517] rounded-2xl p-3.5 mb-3 border border-gray-100 dark:border-white/5 flex-row items-center justify-between shadow-sm"
+        >
+          <View className="flex-row items-center flex-1 mr-3">
+            <View className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-white/5 items-center justify-center border border-gray-200 dark:border-white/5">
+              <CalendarIcon size={22} color={isDark ? '#fff' : '#111'} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-500 mb-0.5">
+                {item.date ? String(item.date) : 'Evento Kihap'}
+              </Text>
+              <Text className="font-bold text-[14px] text-gray-900 dark:text-white leading-snug" numberOfLines={1}>
+                {item.title || item.name}
+              </Text>
+              <Text className="text-[11px] text-gray-400 mt-0.5" numberOfLines={1}>
+                {item.location || item.address || 'Kihap'}
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-gray-50 dark:bg-[#0a0a0a]">
-      <View className="px-6 pt-6 pb-2">
-        <Text className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1 uppercase tracking-tighter">Descobrir</Text>
-        <Text className="text-gray-500 text-sm font-medium mb-6">Encontre instrutores e membros da Kihap.</Text>
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-[#f8f9fa] dark:bg-[#000000]">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-        <View className="mb-6">
-          <View className="flex-row items-center bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 px-4 py-2.5 rounded-2xl shadow-sm">
-            <Search size={18} color="#999" />
-            <TextInput 
-              placeholder="Buscar por nome, unidade ou faixa..." 
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 ml-3 text-[15px] font-medium text-gray-950 dark:text-white p-0"
-            />
-          </View>
+      {/* Header with Title and Search */}
+      <View className="px-5 pt-3 pb-2">
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+            Descobrir
+          </Text>
         </View>
 
-        <View className="flex-row mb-6">
-          {filters.map((filter) => (
-            <TouchableOpacity 
-              key={filter.id}
-              onPress={() => setActiveFilter(filter.id)}
-              style={{ marginRight: 8 }}
-              className={`px-5 py-2.5 rounded-full border ${
-                activeFilter === filter.id 
-                  ? 'bg-[#014fa4] border-[#014fa4]' 
-                  : 'bg-white dark:bg-white/5 border-gray-100 dark:border-transparent shadow-sm'
+        {/* Search Input Bar (iOS Native Style) */}
+        <View className="flex-row items-center bg-gray-200/60 dark:bg-[#1c1c1e] px-3.5 py-2.5 rounded-xl border border-transparent">
+          <Search size={16} color={isDark ? '#8e8e93' : '#8e8e93'} />
+          <TextInput 
+            placeholder="Buscar produtos ou eventos..." 
+            placeholderTextColor="#8e8e93"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            className="flex-1 ml-2.5 text-[14px] text-gray-900 dark:text-white p-0 font-medium"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} className="p-0.5">
+              <X size={15} color="#8e8e93" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Minimalist Segmented Filters */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          className="mt-3.5 -mx-5 px-5"
+        >
+          {filters.map((filter) => {
+            const isSelected = activeFilter === filter.id;
+            return (
+              <TouchableOpacity 
+                key={filter.id}
+                onPress={() => {
+                  setActiveFilter(filter.id);
+                  setSelectedProductCategory('all');
+                }}
+                activeOpacity={0.7}
+                style={{ marginRight: 8 }}
+                className={`px-4 py-2 rounded-full transition-all ${
+                  isSelected 
+                    ? 'bg-gray-900 dark:bg-white shadow-sm' 
+                    : 'bg-white dark:bg-[#161618] border border-gray-200/70 dark:border-white/10'
+                }`}
+              >
+                <Text className={`text-[12px] font-semibold tracking-tight ${
+                  isSelected 
+                    ? 'text-white dark:text-black font-bold' 
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}>
+                  {filter.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Sub-category pills when in 'products' tab */}
+        {activeFilter === 'products' && productCategories.length > 0 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="mt-2.5 -mx-5 px-5"
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedProductCategory('all')}
+              style={{ marginRight: 6 }}
+              className={`px-3 py-1 rounded-lg ${
+                selectedProductCategory === 'all'
+                  ? 'bg-yellow-500'
+                  : 'bg-gray-200/70 dark:bg-white/5'
               }`}
             >
-              <Text className={`text-[11px] font-black uppercase tracking-widest ${activeFilter === filter.id ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                {filter.label}
+              <Text className={`text-[10px] font-bold uppercase ${
+                selectedProductCategory === 'all' ? 'text-black' : 'text-gray-600 dark:text-gray-400'
+              }`}>
+                Todos
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
+            {productCategories.map(cat => {
+              const isSelected = selectedProductCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => setSelectedProductCategory(cat)}
+                  style={{ marginRight: 6 }}
+                  className={`px-3 py-1 rounded-lg ${
+                    isSelected
+                      ? 'bg-yellow-500'
+                      : 'bg-gray-200/70 dark:bg-white/5'
+                  }`}
+                >
+                  <Text className={`text-[10px] font-bold uppercase ${
+                    isSelected ? 'text-black' : 'text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
 
-      {loading ? (
+      {/* Main Content Area */}
+      {loading && !refreshing ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#eab308" size="large" />
+          <ActivityIndicator color="#eab308" size="small" />
         </View>
-      ) : (
+      ) : term.length > 0 ? (
+        /* SEARCH RESULTS MODE */
         <FlatList
-          data={filteredUsers}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
-          ListEmptyComponent={() => (
-            <View className="items-center justify-center py-20">
-              <Text className="text-gray-400 font-medium">Nenhum membro encontrado.</Text>
+          data={searchResults}
+          keyExtractor={(item, idx) => `${item._type}_${item.id || idx}`}
+          renderItem={renderSearchResultItem}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 100 }}
+          ListHeaderComponent={
+            <View className="mb-3">
+              <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                {searchResults.length} {searchResults.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+              </Text>
+            </View>
+          }
+          ListEmptyComponent={
+            <View className="items-center justify-center py-20 px-8">
+              <Text className="text-gray-900 dark:text-white font-bold text-base text-center mb-1">
+                Nenhum resultado para "{searchQuery}"
+              </Text>
+              <Text className="text-gray-500 text-xs text-center leading-relaxed">
+                Tente buscar por termos como "faixa", "dobok", "luva" ou nomes de eventos e seminários.
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        /* DISCOVERY CONTENT VIEW (BY FILTER) */
+        <ScrollView 
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 }}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              tintColor="#eab308"
+            />
+          }
+        >
+          {/* ======================================================= */}
+          {/* 1. HERO EDITORIAL BANNER: Loja Oficial & Equipamentos   */}
+          {/* ======================================================= */}
+          {activeFilter === 'all' && (
+            <View className="px-5 mt-2.5 mb-6">
+              <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/store')}
+                activeOpacity={0.9}
+                className="rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10"
+              >
+                <ImageBackground 
+                  source={require('../../assets/images/todosjuntos.jpeg')}
+                  className="h-52 justify-end p-5"
+                  imageStyle={{ transform: [{ translateY: -25 }] }}
+                  resizeMode="cover"
+                >
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.85)']}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                  
+                  <View className="relative z-10">
+                    <View className="flex-row items-center mb-2">
+                      <View className="bg-yellow-500 px-2.5 py-0.5 rounded-full">
+                        <Text className="text-black text-[10px] font-black uppercase tracking-wider">
+                          Loja Oficial Kihap
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                      Equipamentos & Uniformes
+                    </Text>
+                    <Text className="text-gray-300 text-xs mt-1 font-medium leading-relaxed" numberOfLines={2}>
+                      Doboks oficiais, faixas, armas e proteções certificadas para o seu treino diário.
+                    </Text>
+                    
+                    <View className="flex-row items-center mt-3">
+                      <Text className="text-yellow-400 text-xs font-bold mr-1">
+                        Conhecer a Loja
+                      </Text>
+                      <ArrowRight size={14} color="#facc15" />
+                    </View>
+                  </View>
+                </ImageBackground>
+              </TouchableOpacity>
             </View>
           )}
-        />
+
+          {/* ======================================================= */}
+          {/* 2. SECTION: LOJA OFICIAL                               */}
+          {/* ======================================================= */}
+          {(activeFilter === 'all' || activeFilter === 'products') && allProducts.length > 0 && (
+            <View className="mb-7">
+              <View className="flex-row items-center justify-between px-5 mb-3">
+                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                  Loja Oficial
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/store')}>
+                  <Text className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                    Ir para loja
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {activeFilter === 'products' ? (
+                /* Grid display when Products tab is selected */
+                <View className="px-5 flex-row flex-wrap justify-between">
+                  {filteredProducts.map((product) => {
+                    const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    return (
+                      <TouchableOpacity
+                        key={product.id}
+                        onPress={() => router.push(`/store/${product.id}`)}
+                        activeOpacity={0.8}
+                        style={{ width: '48%' }}
+                        className="mb-4 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm"
+                      >
+                        <Image 
+                          source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
+                          className="w-full aspect-square bg-gray-50 dark:bg-black"
+                          resizeMode="cover"
+                        />
+                        <View className="p-3">
+                          <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider" numberOfLines={1}>
+                            {product.category || 'Oficial'}
+                          </Text>
+                          <Text className="font-bold text-[13px] text-gray-900 dark:text-white leading-tight mt-0.5 h-8" numberOfLines={2}>
+                            {product.name}
+                          </Text>
+                          <Text className="text-xs font-black text-gray-900 dark:text-white mt-1.5">
+                            {price}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : (
+                /* Horizontal carousel when in 'all' view */
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 20 }}
+                >
+                  {allProducts.slice(0, 10).map((product) => {
+                    const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    return (
+                      <TouchableOpacity
+                        key={product.id}
+                        onPress={() => router.push(`/store/${product.id}`)}
+                        activeOpacity={0.8}
+                        style={{ width: 145 }}
+                        className="mr-3 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm"
+                      >
+                        <Image 
+                          source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
+                          className="w-full aspect-square bg-gray-50 dark:bg-black"
+                          resizeMode="cover"
+                        />
+                        <View className="p-3">
+                          <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider" numberOfLines={1}>
+                            {product.category || 'Oficial'}
+                          </Text>
+                          <Text className="font-bold text-[12px] text-gray-900 dark:text-white leading-tight mt-0.5 h-7" numberOfLines={2}>
+                            {product.name}
+                          </Text>
+                          <Text className="text-xs font-black text-gray-900 dark:text-white mt-1.5">
+                            {price}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+          )}
+
+          {/* ======================================================= */}
+          {/* 3. SECTION: PRÓXIMOS EVENTOS & CALENDÁRIO               */}
+          {/* ======================================================= */}
+          {(activeFilter === 'all' || activeFilter === 'events') && allEvents.length > 0 && (
+            <View className="px-5 mb-7">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                  Próximos Eventos & Exames
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/calendario')}>
+                  <Text className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                    Ver calendário
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {allEvents.slice(0, activeFilter === 'events' ? 20 : 4).map((event) => (
+                <TouchableOpacity
+                  key={event.id}
+                  onPress={() => router.push('/calendario')}
+                  activeOpacity={0.8}
+                  className="bg-white dark:bg-[#151517] p-3.5 rounded-2xl border border-gray-100 dark:border-white/5 mb-2.5 flex-row items-center justify-between shadow-sm"
+                >
+                  <View className="flex-row items-center flex-1 mr-3">
+                    <View className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 items-center justify-center border border-gray-200/80 dark:border-white/5 mr-3">
+                      <CalendarIcon size={20} color={isDark ? '#fff' : '#000'} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-bold text-sm text-gray-900 dark:text-white leading-tight" numberOfLines={1}>
+                        {event.title || event.name}
+                      </Text>
+                      <View className="flex-row items-center mt-1">
+                        {event.date && (
+                          <Text className="text-[11px] text-yellow-600 dark:text-yellow-500 font-bold mr-2">{event.date}</Text>
+                        )}
+                        {event.location && (
+                          <Text className="text-[11px] text-gray-400 truncate flex-1" numberOfLines={1}>
+                            • {event.location}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color={isDark ? '#666' : '#bbb'} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Quick info card about calendar */}
+          {activeFilter === 'all' && (
+            <View className="px-5 mb-6">
+              <TouchableOpacity
+                onPress={() => router.push('/calendario')}
+                activeOpacity={0.8}
+                className="bg-yellow-500/10 dark:bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-2xl flex-row items-center justify-between"
+              >
+                <View className="flex-1 mr-3">
+                  <Text className="font-bold text-sm text-gray-900 dark:text-white">
+                    Fique por dentro das datas
+                  </Text>
+                  <Text className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                    Consulte exames de graduação, seminários e eventos do ano.
+                  </Text>
+                </View>
+                <View className="bg-yellow-500 px-3 py-1.5 rounded-lg">
+                  <Text className="text-xs font-black text-black">Acessar</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
       )}
     </View>
   );

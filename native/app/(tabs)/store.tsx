@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useColorScheme } from 'nativewind';
 import { ShoppingBag, Filter, ArrowLeft, Plus, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { BannerCarousel } from '../../src/components/BannerCarousel';
+import { useAuth } from '../../src/context/AuthContext';
+import { isTargetForUser, getUserUnitSlugs } from './index';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
 
 export default function StoreScreen() {
+  const { user, userData } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
@@ -25,14 +30,22 @@ export default function StoreScreen() {
       setLoading(true);
       const q = query(
         collection(db, 'products'), 
-        where('visible', '==', true), 
-        orderBy('name')
+        where('visible', '==', true)
       );
       const querySnapshot = await getDocs(q);
       const productsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      // Ordenar por ordem crescente (produtos com número menor aparecem primeiro)
+      productsData.sort((a: any, b: any) => {
+        const orderA = (typeof a.order === 'number' && !isNaN(a.order)) ? a.order : 99999;
+        const orderB = (typeof b.order === 'number' && !isNaN(b.order)) ? b.order : 99999;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
       setProducts(productsData);
     } catch (error) {
       console.error("Error loading products:", error);
@@ -44,7 +57,57 @@ export default function StoreScreen() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+
+    // Subscribe to active store banners in real-time
+    const bannersQ = query(collection(db, 'banners'), where('active', '==', true));
+    const unsubscribeBanners = onSnapshot(bannersQ, (snap) => {
+      const bannerBatchUnitsMap = new Map<string, Set<string>>();
+      const rawBanners: any[] = [];
+      snap.forEach(d => {
+        const b: any = { id: d.id, ...d.data() };
+        rawBanners.push(b);
+        if (b.batchId && b.targetUnit) {
+          if (!bannerBatchUnitsMap.has(b.batchId)) {
+            bannerBatchUnitsMap.set(b.batchId, new Set<string>());
+          }
+          bannerBatchUnitsMap.get(b.batchId)!.add(b.targetUnit);
+        }
+      });
+
+      const userUnitSlugs = getUserUnitSlugs(userData);
+      const bList: any[] = [];
+      const seenBannerBatches = new Set<string>();
+
+      rawBanners.forEach(b => {
+        if (b.batchId && bannerBatchUnitsMap.has(b.batchId)) {
+          const batchUnits = Array.from(bannerBatchUnitsMap.get(b.batchId)!);
+          if (!b.targetUnits || b.targetUnits.length === 0) {
+            b.targetUnits = batchUnits;
+          }
+        }
+
+        if (b.batchId) {
+          if (seenBannerBatches.has(b.batchId)) return;
+          seenBannerBatches.add(b.batchId);
+        }
+
+        const isTargeted = isTargetForUser(b, user?.uid || '', userUnitSlugs);
+        const isPlacementOk = !b.placement || b.placement === 'store' || b.placement === 'all';
+        if (isTargeted && isPlacementOk) {
+          bList.push(b);
+        }
+      });
+      // Sort client-side by createdAt descending
+      bList.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0)).getTime());
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0)).getTime());
+        return timeB - timeA;
+      });
+      setBanners(bList);
+    }, (err) => console.log('Error listening to store banners:', err));
+
+    return () => unsubscribeBanners();
+  }, [userData]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -144,6 +207,13 @@ export default function StoreScreen() {
           numColumns={2}
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           columnWrapperStyle={{ justifyContent: 'space-between' }}
+          ListHeaderComponent={
+            banners.length > 0 ? (
+              <View className="mb-4 -mx-4">
+                <BannerCarousel banners={banners} />
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 

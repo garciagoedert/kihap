@@ -2,6 +2,7 @@ import { db, auth } from '../../intranet/firebase-config.js';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getUserData } from '../../intranet/auth.js';
+import { isItemForUserUnits, getUserUnitSlugs } from '../../intranet/feed.js';
 import { initStories } from './kihap-stories.js';
 
 export const loadFeed = async () => {
@@ -19,11 +20,11 @@ export const loadFeed = async () => {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     const userData = userDoc.exists() ? userDoc.data() : {};
-                    const userUnit = userData.unidade || userData.unit || userData.unitId || '';
+                    const userUnitSlugs = getUserUnitSlugs(userData);
 
-                    // Buscar os 20 posts mais recentes e filtrar no cliente
+                    // Buscar os 50 posts mais recentes e filtrar no cliente
                     const { limit } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                    const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(20));
+                    const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(50));
                     const querySnapshot = await getDocs(q);
 
                     if (querySnapshot.empty) {
@@ -34,14 +35,39 @@ export const loadFeed = async () => {
 
                     feedList.innerHTML = '';
 
+                    const batchUnitsMap = new Map();
+                    querySnapshot.forEach(d => {
+                        const data = d.data();
+                        if (data.batchId && data.targetUnit) {
+                            if (!batchUnitsMap.has(data.batchId)) {
+                                batchUnitsMap.set(data.batchId, new Set());
+                            }
+                            batchUnitsMap.get(data.batchId).add(data.targetUnit);
+                        }
+                    });
+
+                    const seenBatches = new Set();
+
                     querySnapshot.forEach(docSnap => {
-                        const post = docSnap.data();
+                        const post = { id: docSnap.id, ...docSnap.data() };
                         const postId = docSnap.id;
+
+                        if (post.batchId && batchUnitsMap.has(post.batchId)) {
+                            const batchUnits = Array.from(batchUnitsMap.get(post.batchId));
+                            if (!post.targetUnits || post.targetUnits.length === 0) {
+                                post.targetUnits = batchUnits;
+                            }
+                        }
+
+                        if (post.batchId) {
+                            if (seenBatches.has(post.batchId)) return;
+                            seenBatches.add(post.batchId);
+                        }
                         
                         if (post.authorId !== user.uid) {
                             const isForMe = post.targetStudents?.includes(user.uid);
-                            const isForMyUnit = post.targetUnit === 'all' || post.targetUnit === userUnit;
-                            const isPublic = !post.targetUnit && (!post.targetStudents || post.targetStudents.length === 0);
+                            const isForMyUnit = isItemForUserUnits(post, userUnitSlugs);
+                            const isPublic = (!post.targetUnit || post.targetUnit === 'all') && (!post.targetStudents || post.targetStudents.length === 0);
                             
                             if (!isForMe && !isForMyUnit && !isPublic) return;
                         }
@@ -108,7 +134,7 @@ export const loadFeed = async () => {
                                 </div>
                             </div>
                             ${mediaHtml}
-                            ${post.ctaButton ? `<div class="px-5 pb-5"><a href="${post.ctaButton.url}" target="_blank" class="w-full flex items-center justify-center bg-primary hover:bg-primary-dark text-black font-bold py-2.5 rounded-xl transition-all shadow-md text-sm">${post.ctaButton.text} <i class="fas fa-external-link-alt ml-2 text-[10px]"></i></a></div>` : ''}
+                            ${post.ctaButton ? `<div class="px-5 pb-5"><a href="${post.ctaButton.url}" target="_blank" class="w-full flex items-center justify-center bg-primary hover:bg-primary-dark text-black font-bold py-2.5 rounded-xl transition-all shadow-md text-sm">${post.ctaButton.text}</a></div>` : ''}
                         `;
                         feedList.appendChild(postElement);
                     });

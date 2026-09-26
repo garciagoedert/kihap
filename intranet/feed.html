@@ -92,92 +92,166 @@
                 <!-- Formulário de Nova Postagem -->
                 <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm mb-10">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
-                        <h2 class="text-xl font-bold flex items-center text-gray-900 dark:text-white">
-                            <i class="fas fa-edit mr-3 text-primary"></i> 
-                            Criar Nova Postagem
+                        <h2 id="form-header-title" class="text-xl font-bold flex items-center text-gray-900 dark:text-white">
+                            <i class="fas fa-edit mr-3 text-primary" id="form-header-icon"></i> 
+                            <span id="form-header-text">Criar Nova Postagem</span>
                         </h2>
                         
-                        <!-- Toggle Modo Story -->
-                        <div class="flex items-center gap-3 bg-gray-50 dark:bg-[#252525] p-2 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Post Comum</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="story-mode-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r from-yellow-500 to-red-500"></div>
-                            </label>
-                            <span class="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Modo Story</span>
+                        <!-- Seletor de Modo: Post / Story / Banner -->
+                        <div class="flex items-center p-1 bg-gray-100 dark:bg-[#252525] rounded-xl border border-gray-200 dark:border-gray-700/60 text-xs font-bold gap-1">
+                            <button type="button" id="mode-post-btn" class="feed-mode-pill px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-white dark:bg-[#333] text-gray-900 dark:text-white shadow-sm">
+                                <i class="fas fa-newspaper text-primary"></i>
+                                <span>Post Comum</span>
+                            </button>
+                            <button type="button" id="mode-story-btn" class="feed-mode-pill px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                                <i class="fas fa-circle-notch text-orange-500"></i>
+                                <span>Modo Story</span>
+                            </button>
+                            <button type="button" id="mode-banner-btn" class="feed-mode-pill px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                                <i class="fas fa-image text-yellow-500"></i>
+                                <span>Banner em Destaque</span>
+                            </button>
                         </div>
                     </div>
 
                     <form id="post-form">
-                        <div class="mb-6 relative">
-                            <label class="block text-gray-400 text-sm font-medium mb-3">O que você quer compartilhar?</label>
-                            <div id="editor-wrapper" class="relative">
-                                <div id="post-editor"></div>
-                                <button type="button" id="emoji-trigger" class="absolute right-3 top-[10px] z-10 text-gray-400 hover:text-primary transition-colors">
-                                    <i class="far fa-laugh-beam text-xl"></i>
+                        <!-- Campos para Post Comum e Story -->
+                        <div id="post-fields">
+                            <div class="mb-6 relative">
+                                <label class="block text-gray-400 text-sm font-medium mb-3">O que você quer compartilhar?</label>
+                                <div id="editor-wrapper" class="relative">
+                                    <div id="post-editor"></div>
+                                    <button type="button" id="emoji-trigger" class="absolute right-3 top-[10px] z-10 text-gray-400 hover:text-primary transition-colors">
+                                        <i class="far fa-laugh-beam text-xl"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CTA Button Settings -->
+                            <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <button type="button" id="toggle-cta" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
+                                    <i class="fas fa-plus-circle mr-2"></i> Adicionar Botão de Link (Opcional)
                                 </button>
-                            </div>
-                        </div>
-
-                        <!-- CTA Button Settings -->
-                        <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <button type="button" id="toggle-cta" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
-                                <i class="fas fa-plus-circle mr-2"></i> Adicionar Botão de Link (Opcional)
-                            </button>
-                            <div id="cta-fields" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="cta-text" class="block text-xs text-gray-500 mb-1">Texto do Botão</label>
-                                    <input type="text" id="cta-text" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="Ex: Saiba Mais">
-                                </div>
-                                <div>
-                                    <label for="cta-url" class="block text-xs text-gray-500 mb-1">URL do Link</label>
-                                    <input type="url" id="cta-url" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="https://...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Schedule Settings -->
-                        <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <button type="button" id="toggle-schedule" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
-                                <i class="fas fa-clock mr-2"></i> Agendar Publicação (Opcional)
-                            </button>
-                            <div id="schedule-fields" class="hidden mt-4 max-w-xs">
-                                <label for="publish-date" class="block text-xs text-gray-500 mb-1">Data e Hora de Publicação</label>
-                                <input type="datetime-local" id="publish-date" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2.5 text-sm text-gray-900 dark:text-white focus:border-primary outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
-                            <div class="md:col-span-7">
-                                <label class="block text-gray-400 text-sm font-medium mb-3 text-left">Mídia em Destaque</label>
-                                <div class="flex items-center space-x-4 mb-3">
-                                    <label class="flex items-center cursor-pointer group">
-                                        <input type="radio" name="media-type" value="upload" checked class="hidden peer">
-                                        <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
-                                        <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Upload</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer group">
-                                        <input type="radio" name="media-type" value="url" class="hidden peer">
-                                        <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
-                                        <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Link Externo</span>
-                                    </label>
-                                </div>
-
-                                <div id="upload-container" class="flex items-center bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer group" onclick="document.getElementById('post-media').click()">
-                                    <div class="bg-gray-200 dark:bg-[#3a3a3a] p-2 rounded mr-3 group-hover:bg-primary transition-colors">
-                                        <i class="fas fa-cloud-upload-alt text-gray-600 dark:text-gray-300 group-hover:text-black"></i>
+                                <div id="cta-fields" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="cta-text" class="block text-xs text-gray-500 mb-1">Texto do Botão</label>
+                                        <input type="text" id="cta-text" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="Ex: Saiba Mais">
                                     </div>
-                                    <span id="file-name" class="text-sm text-gray-500 dark:text-gray-400 truncate">Escolher arquivo...</span>
-                                    <input type="file" id="post-media" class="hidden">
-                                </div>
-
-                                <div id="url-container" class="hidden">
-                                    <input type="text" id="media-url" class="w-full bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none" placeholder="Link YouTube ou Spotify">
+                                    <div>
+                                        <label for="cta-url" class="block text-xs text-gray-500 mb-1">URL do Link</label>
+                                        <input type="url" id="cta-url" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="https://...">
+                                    </div>
                                 </div>
                             </div>
 
+                            <!-- Schedule Settings -->
+                            <div class="mb-6 bg-gray-50 dark:bg-[#252525] p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <button type="button" id="toggle-schedule" class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
+                                    <i class="fas fa-clock mr-2"></i> Agendar Publicação (Opcional)
+                                </button>
+                                <div id="schedule-fields" class="hidden mt-4 max-w-xs">
+                                    <label for="publish-date" class="block text-xs text-gray-500 mb-1">Data e Hora de Publicação</label>
+                                    <input type="datetime-local" id="publish-date" class="w-full bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-600 rounded p-2.5 text-sm text-gray-900 dark:text-white focus:border-primary outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
+                                <div class="md:col-span-7">
+                                    <label class="block text-gray-400 text-sm font-medium mb-3 text-left">Mídia em Destaque</label>
+                                    <div class="flex items-center space-x-4 mb-3">
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="radio" name="media-type" value="upload" checked class="hidden peer">
+                                            <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
+                                            <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Upload</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="radio" name="media-type" value="url" class="hidden peer">
+                                            <div class="w-4 h-4 rounded-full border-2 border-gray-500 peer-checked:border-primary peer-checked:bg-primary mr-2 transition-all"></div>
+                                            <span class="text-sm peer-checked:text-gray-900 dark:peer-checked:text-white text-gray-400 transition-colors">Link Externo</span>
+                                        </label>
+                                    </div>
+
+                                    <div id="upload-container" class="flex items-center bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer group" onclick="document.getElementById('post-media').click()">
+                                        <div class="bg-gray-200 dark:bg-[#3a3a3a] p-2 rounded mr-3 group-hover:bg-primary transition-colors">
+                                            <i class="fas fa-cloud-upload-alt text-gray-600 dark:text-gray-300 group-hover:text-black"></i>
+                                        </div>
+                                        <span id="file-name" class="text-sm text-gray-500 dark:text-gray-400 truncate">Escolher arquivo...</span>
+                                        <input type="file" id="post-media" class="hidden">
+                                    </div>
+
+                                    <div id="url-container" class="hidden">
+                                        <input type="text" id="media-url" class="w-full bg-gray-50 dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary outline-none" placeholder="Link YouTube ou Spotify">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos Exclusivos para Banner em Destaque -->
+                        <div id="banner-fields" class="hidden space-y-6 mb-6">
+                            <!-- Upload do Banner com Preview Retangular -->
+                            <div>
+                                <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                                    Imagem do Banner (Formato Retangular)
+                                </label>
+                                <div id="banner-upload-box" class="relative group cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary rounded-2xl p-6 text-center transition-all bg-gray-50/50 dark:bg-[#202020]/50" onclick="document.getElementById('banner-image-input').click()">
+                                    <input type="file" id="banner-image-input" accept="image/*" class="hidden">
+                                    <div id="banner-placeholder" class="py-6 flex flex-col items-center justify-center">
+                                        <div class="w-14 h-14 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center mb-3 text-2xl group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-cloud-arrow-up"></i>
+                                        </div>
+                                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Clique para selecionar a imagem do banner</p>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Recomendado: proporção ~2.5:1 ou 16:9 (ex: 800×320px). PNG, JPG ou WebP.</p>
+                                    </div>
+                                    <div id="banner-preview-wrapper" class="hidden relative rounded-xl overflow-hidden aspect-[2.5/1] max-h-56 mx-auto bg-black shadow-lg">
+                                        <img id="banner-preview-img" src="" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-2">
+                                            <i class="fas fa-sync-alt"></i> Clique para trocar a imagem
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Título Interno / Identificação -->
+                            <div>
+                                <label for="banner-title" class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-1">
+                                    Título / Identificador do Banner <span class="text-xs font-normal text-gray-400">(Opcional)</span>
+                                </label>
+                                <input type="text" id="banner-title" class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:border-primary outline-none" placeholder="Ex: Novo Dobok na Loja, Campeonato Regional, etc.">
+                            </div>
+
+                            <!-- Link de Destino ao Clicar -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label for="banner-link" class="block text-gray-700 dark:text-gray-300 text-sm font-bold">
+                                        Link de Destino ao Clicar
+                                    </label>
+                                    <span class="text-[11px] text-gray-400 font-medium">Rota do app ou link externo https://</span>
+                                </div>
+                                <input type="text" id="banner-link" class="w-full bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:border-primary outline-none font-mono" placeholder="/(tabs)/store ou https://...">
+                                
+                                <!-- Atalhos rápidos para o app -->
+                                <div class="mt-2.5 flex flex-wrap items-center gap-2">
+                                    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-1">Atalhos do App:</span>
+                                    <button type="button" class="banner-quick-link px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] hover:bg-yellow-500/20 text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 text-xs font-semibold transition-colors flex items-center gap-1.5" data-route="/(tabs)/store">
+                                        <i class="fas fa-shopping-bag text-[10px]"></i> Loja
+                                    </button>
+                                    <button type="button" class="banner-quick-link px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] hover:bg-yellow-500/20 text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 text-xs font-semibold transition-colors flex items-center gap-1.5" data-route="/calendario">
+                                        <i class="fas fa-calendar-alt text-[10px]"></i> Calendário
+                                    </button>
+                                    <button type="button" class="banner-quick-link px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] hover:bg-yellow-500/20 text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 text-xs font-semibold transition-colors flex items-center gap-1.5" data-route="/atividades">
+                                        <i class="fas fa-clock text-[10px]"></i> Horários
+                                    </button>
+                                    <button type="button" class="banner-quick-link px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] hover:bg-yellow-500/20 text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 text-xs font-semibold transition-colors flex items-center gap-1.5" data-route="/pedidos">
+                                        <i class="fas fa-box text-[10px]"></i> Pedidos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Segmentação por Público / Unidades (Comum para todos os modos) -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
                             <div class="md:col-span-12 mb-4">
-                                <label class="block text-gray-400 text-sm font-medium mb-3 text-left italic">Para quem é esta postagem?</label>
+                                <label class="block text-gray-400 text-sm font-medium mb-3 text-left italic">Para quem é este conteúdo?</label>
                                 <div class="flex items-center space-x-6">
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="target-type" value="unit" checked class="hidden peer">
@@ -192,7 +266,6 @@
                                             <i class="fas fa-check text-[10px] text-black hidden peer-checked:block"></i>
                                         </div>
                                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Alunos Específicos</span>
-                                        
                                     </label>
                                 </div>
                             </div>
@@ -223,11 +296,35 @@
                         </div>
 
                         <div class="flex justify-end">
-                            <button type="submit" class="bg-primary hover:bg-primary-dark text-black font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center">
-                                <i class="fas fa-paper-plane mr-2"></i> Publicar
+                            <button type="submit" id="submit-post-btn" class="bg-primary hover:bg-primary-dark text-black font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center">
+                                <i class="fas fa-paper-plane mr-2" id="submit-btn-icon"></i>
+                                <span id="submit-btn-text">Publicar</span>
                             </button>
                         </div>
                     </form>
+                </div>
+
+                <!-- Seção de Banners em Destaque no App -->
+                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-gray-800/50 shadow-sm mb-10">
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Banners em Destaque no App</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Banners retangulares exibidos no topo do feed do aplicativo</p>
+                            </div>
+                        </div>
+                        <button type="button" id="refresh-banners-btn" class="text-xs font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#252525]">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                    <div id="banners-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-full text-center py-8 text-gray-400 text-sm">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> Carregando banners...
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lista de Postagens -->

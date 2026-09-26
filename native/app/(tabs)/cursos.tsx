@@ -75,7 +75,27 @@ export default function CursosScreen() {
 
   // Mapping real data with robust fallbacks and URL normalization
   const displayName = userData?.name || userData?.nome || userData?.displayName || 'Aluno';
-  const firstName = displayName.split(' ')[0];
+  
+  const formatShortName = (fullName: string): string => {
+    if (!fullName) return 'Aluno';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return parts[0];
+
+    const titles = ['mr.', 'mr', 'mrs.', 'mrs', 'ms.', 'ms', 'dr.', 'dr', 'dra.', 'dra', 'prof.', 'prof', 'mestre', 'instrutor', 'instrutora'];
+    const firstLower = parts[0].toLowerCase();
+
+    if (titles.includes(firstLower) || parts[0].length <= 2) {
+      return `${parts[0]} ${parts[1]}`;
+    }
+
+    if (parts.length === 2) {
+      return `${parts[0]} ${parts[1]}`;
+    }
+
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
+  const shortName = formatShortName(displayName);
   
   let rawPhoto = userData?.photoURL || userData?.profilePicture || userData?.photoUrl || userData?.avatar;
   if (rawPhoto && rawPhoto.startsWith('/')) {
@@ -391,7 +411,7 @@ export default function CursosScreen() {
                 <View className="p-6 border-b border-gray-100 dark:border-white/5 flex-row items-center">
                   <Image source={displayPhoto} className="w-12 h-12 rounded-full border-2 border-yellow-500/20" />
                   <View className="ml-3">
-                    <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{firstName}</Text>
+                    <Text className="text-base font-black text-gray-900 dark:text-white" numberOfLines={1}>{shortName}</Text>
                     <Text className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{displayUnit}</Text>
                   </View>
                 </View>
@@ -399,21 +419,10 @@ export default function CursosScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => { setSidebarOpen(false); router.push('/(tabs)'); }} />
-                
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Evolução</Text>
-                {/* Ocultados temporariamente por falta de uso:
-                <SidebarItem icon={BookOpen} label="Área do Aluno" onPress={() => setSidebarOpen(false)} />
-                <SidebarItem icon={UserCheck} label="Tatame" onPress={() => { setSidebarOpen(false); router.push('/tatame'); }} />
-                */}
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
-
-                <Text className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mt-6 mb-2 ml-4">Serviços</Text>
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
                 <SidebarItem icon={Layout} label="Meus Pedidos" onPress={() => { setSidebarOpen(false); router.push('/pedidos'); }} />
-                {/* Ocultado temporariamente por falta de uso:
-                <SidebarItem icon={CreditCard} label="Assinatura" onPress={() => { setSidebarOpen(false); router.push('/assinatura'); }} />
-                */}
               </ScrollView>
 
               <View className="p-6 border-t border-gray-100 dark:border-white/5">
