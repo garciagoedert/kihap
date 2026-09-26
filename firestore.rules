@@ -82,9 +82,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Regra para a coleção de Testes Físicos (alunos sem conta)
+    // Regra para a coleção de Testes Físicos
     match /physicalTests/{testId} {
-      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true
+      );
     }
 
     // Regra para Análise de Unidades

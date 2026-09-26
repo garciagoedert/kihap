@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
-import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft } from 'lucide-react-native';
+import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function NotificacoesScreen() {
@@ -14,7 +14,7 @@ export default function NotificacoesScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
-  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'ranking' | 'emblemas'>('ofensivas');
+  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'ranking' | 'emblemas' | 'teste-fisico'>('ofensivas');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -219,6 +219,167 @@ export default function NotificacoesScreen() {
     return () => unsubscribe();
   }, []);
 
+  // Physical Tests states & listeners
+  const [physicalTests, setPhysicalTests] = useState<any[]>([]);
+  const [physicalTestsLoading, setPhysicalTestsLoading] = useState(true);
+  const [testDateInput, setTestDateInput] = useState(() => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${now.getFullYear()}`;
+  });
+  const [testScoreInput, setTestScoreInput] = useState('');
+  const [savingTest, setSavingTest] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setPhysicalTestsLoading(false);
+      return;
+    }
+
+    const evoId = userData?.evoMemberId;
+    const evoIdNum = evoId && !isNaN(Number(evoId)) ? Number(evoId) : null;
+    const testsCol = collection(db, 'physicalTests');
+
+    let unsubEvo: (() => void) | null = null;
+    let unsubUser: (() => void) | null = null;
+
+    let evoTests: any[] = [];
+    let userTests: any[] = [];
+
+    const mergeAndSetTests = () => {
+      const map = new Map<string, any>();
+      [...evoTests, ...userTests].forEach(item => {
+        if (item.id) map.set(item.id, item);
+      });
+      const list = Array.from(map.values());
+      list.sort((a, b) => {
+        const dateA = a.date?.toMillis ? a.date.toMillis() : (a.date?.seconds ? a.date.seconds * 1000 : (a.date ? new Date(a.date).getTime() : 0));
+        const dateB = b.date?.toMillis ? b.date.toMillis() : (b.date?.seconds ? b.date.seconds * 1000 : (b.date ? new Date(b.date).getTime() : 0));
+        return dateB - dateA;
+      });
+      setPhysicalTests(list);
+      setPhysicalTestsLoading(false);
+    };
+
+    if (evoIdNum !== null) {
+      const qEvo = query(
+        testsCol,
+        where('evoMemberId', '==', evoIdNum),
+        limit(50)
+      );
+      unsubEvo = onSnapshot(qEvo, (snapshot) => {
+        evoTests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        mergeAndSetTests();
+      }, (err) => {
+        console.error("Error fetching evo physical tests:", err);
+        setPhysicalTestsLoading(false);
+      });
+    }
+
+    const qUser = query(
+      testsCol,
+      where('userId', '==', user.uid),
+      limit(50)
+    );
+    unsubUser = onSnapshot(qUser, (snapshot) => {
+      userTests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      mergeAndSetTests();
+    }, (err) => {
+      console.error("Error fetching user physical tests:", err);
+      setPhysicalTestsLoading(false);
+    });
+
+    return () => {
+      if (unsubEvo) unsubEvo();
+      if (unsubUser) unsubUser();
+    };
+  }, [user?.uid, userData?.evoMemberId]);
+
+  const handleSaveTest = async () => {
+    if (!testScoreInput.trim()) {
+      Alert.alert("Atenção", "Por favor, digite a pontuação do teste físico.");
+      return;
+    }
+
+    const scoreNum = parseFloat(testScoreInput.replace(',', '.'));
+    if (isNaN(scoreNum) || scoreNum < 0) {
+      Alert.alert("Pontuação inválida", "Por favor, digite um número válido para a pontuação.");
+      return;
+    }
+
+    const parts = testDateInput.trim().split('/');
+    if (parts.length !== 3) {
+      Alert.alert("Data inválida", "Informe a data no formato DD/MM/AAAA (ex: 26/09/2026).");
+      return;
+    }
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    const dateObj = new Date(year, month, day, 12, 0, 0);
+
+    if (isNaN(dateObj.getTime()) || year < 2000 || year > 2100 || month < 0 || month > 11 || day < 1 || day > 31) {
+      Alert.alert("Data inválida", "Verifique o dia, mês e ano informados.");
+      return;
+    }
+
+    setSavingTest(true);
+    try {
+      const evoId = userData?.evoMemberId;
+      const evoIdNum = evoId && !isNaN(Number(evoId)) ? Number(evoId) : null;
+
+      await addDoc(collection(db, 'physicalTests'), {
+        date: Timestamp.fromDate(dateObj),
+        score: scoreNum,
+        evoMemberId: evoIdNum,
+        userId: user?.uid || null,
+        studentName: userData?.name || userData?.nome || user?.displayName || 'Aluno',
+        createdBy: 'student',
+        createdAt: serverTimestamp()
+      });
+
+      setTestScoreInput('');
+      const now = new Date();
+      const d = String(now.getDate()).padStart(2, '0');
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      setTestDateInput(`${d}/${m}/${now.getFullYear()}`);
+      Alert.alert("Sucesso! 🥋", "Seu teste físico foi registrado com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao salvar teste físico:", err);
+      Alert.alert("Erro", `Não foi possível salvar o teste físico: ${err.message || 'Erro de permissão'}`);
+    } finally {
+      setSavingTest(false);
+    }
+  };
+
+  const formatTestDate = (rawDate: any) => {
+    if (!rawDate) return 'Data não informada';
+    let d: Date;
+    if (rawDate.toDate) {
+      d = rawDate.toDate();
+    } else if (rawDate.seconds) {
+      d = new Date(rawDate.seconds * 1000);
+    } else if (typeof rawDate === 'string') {
+      d = new Date(rawDate);
+    } else if (rawDate instanceof Date) {
+      d = rawDate;
+    } else {
+      return 'Data não informada';
+    }
+    return d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const maxPhysicalScore = physicalTests.length > 0
+    ? Math.max(...physicalTests.map(t => Number(t.score) || 0))
+    : 0;
+  const latestPhysicalTest = physicalTests.length > 0 ? physicalTests[0] : null;
+
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -311,11 +472,17 @@ export default function NotificacoesScreen() {
               </Text>
             </View>
           )}
+          {activeSubTab === 'teste-fisico' && (
+            <View className="bg-red-500/10 px-3.5 py-1.5 rounded-full border border-red-500/20">
+              <Text className="text-red-500 text-[10px] font-black uppercase tracking-wider">
+                {physicalTests.length} {physicalTests.length === 1 ? 'Avaliação' : 'Avaliações'}
+              </Text>
+            </View>
+          )}
         </View>
 
-
-        {/* Sub-tab Selectors (Three-way toggle) */}
-        <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1.5 rounded-2xl mb-4">
+        {/* Sub-tab Selectors (Four-way toggle) */}
+        <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-2xl mb-4">
           <TouchableOpacity 
             onPress={() => setActiveSubTab('ofensivas')}
             style={activeSubTab === 'ofensivas' ? {
@@ -326,12 +493,13 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-3 rounded-xl items-center justify-center flex-row"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
           >
-            <Flame size={16} color={activeSubTab === 'ofensivas' ? '#f97316' : '#888'} style={{ marginRight: 4 }} />
+            <Flame size={14} color={activeSubTab === 'ofensivas' ? '#f97316' : '#888'} style={{ marginRight: 3 }} />
             <Text 
               style={{ color: activeSubTab === 'ofensivas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[10px] font-black uppercase tracking-wider text-center"
+              className="text-[9px] font-black uppercase tracking-tight text-center"
+              numberOfLines={1}
             >
               Ofensivas
             </Text>
@@ -347,12 +515,13 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-3 rounded-xl items-center justify-center flex-row"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
           >
-            <Trophy size={16} color={activeSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
+            <Trophy size={14} color={activeSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 3 }} />
             <Text 
               style={{ color: activeSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[10px] font-black uppercase tracking-wider text-center"
+              className="text-[9px] font-black uppercase tracking-tight text-center"
+              numberOfLines={1}
             >
               Ranking
             </Text>
@@ -368,59 +537,40 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-3 rounded-xl items-center justify-center flex-row"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
           >
-            <Award size={16} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
+            <Award size={14} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 3 }} />
             <Text 
               style={{ color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[10px] font-black uppercase tracking-wider text-center"
+              className="text-[9px] font-black uppercase tracking-tight text-center"
+              numberOfLines={1}
             >
               Emblemas
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => setActiveSubTab('teste-fisico')}
+            style={activeSubTab === 'teste-fisico' ? {
+              backgroundColor: isDark ? '#2b2b2b' : '#fff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.15,
+              shadowRadius: 1.5,
+              elevation: 2,
+            } : null}
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
+          >
+            <Activity size={14} color={activeSubTab === 'teste-fisico' ? '#ef4444' : '#888'} style={{ marginRight: 3 }} />
+            <Text 
+              style={{ color: activeSubTab === 'teste-fisico' ? (isDark ? '#fff' : '#111') : '#999' }}
+              className="text-[9px] font-black uppercase tracking-tight text-center"
+              numberOfLines={1}
+            >
+              T. Físico
+            </Text>
+          </TouchableOpacity>
         </View>
-
-
-        {/* Category Filters for Notifications */}
-        {activeSubTab === 'notificacoes' && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-2">
-            {filters.map((filter) => {
-              const isActive = activeFilter === filter.id;
-              return (
-                <TouchableOpacity 
-                  key={filter.id}
-                  onPress={() => setActiveFilter(filter.id)}
-                  style={{
-                    backgroundColor: isActive 
-                      ? (isDark ? '#fff' : '#111') 
-                      : (isDark ? '#1a1a1a' : '#fff'),
-                    borderColor: isActive
-                      ? (isDark ? '#fff' : '#111')
-                      : (isDark ? '#333' : '#eee'),
-                    borderWidth: 1,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: isActive ? 0.15 : 0,
-                    shadowRadius: 1.5,
-                    elevation: isActive ? 2 : 0,
-                  }}
-                  className="px-6 py-2 rounded-full mr-2"
-                >
-                  <Text 
-                    style={{
-                      color: isActive 
-                        ? (isDark ? '#000' : '#fff') 
-                        : (isDark ? '#888' : '#666')
-                    }}
-                    className="text-xs font-bold"
-                  >
-                    {filter.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
       </View>
 
       {activeSubTab === 'ofensivas' ? (
@@ -761,7 +911,7 @@ export default function NotificacoesScreen() {
             />
           )}
         </View>
-      ) : (
+      ) : activeSubTab === 'emblemas' ? (
         badgesLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#eab308" />
@@ -773,8 +923,54 @@ export default function NotificacoesScreen() {
             numColumns={3}
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
             columnWrapperStyle={{ justifyContent: 'flex-start' }}
+            ListHeaderComponent={
+              <TouchableOpacity
+                onPress={() => setActiveSubTab('teste-fisico')}
+                activeOpacity={0.8}
+                style={{
+                  shadowColor: '#ef4444',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+                className="bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl mb-4 border border-red-500/25 dark:border-red-500/20"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1 pr-2">
+                    <View className="w-12 h-12 rounded-2xl bg-red-500/10 items-center justify-center mr-3 border border-red-500/20">
+                      <Activity size={24} color="#ef4444" />
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center mb-0.5">
+                        <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider mr-2">
+                          Emblema Teste Físico
+                        </Text>
+                        <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <Text className="text-emerald-500 text-[8px] font-black uppercase">Liberado</Text>
+                        </View>
+                      </View>
+                      <Text className="text-[11px] font-semibold text-gray-500 dark:text-gray-400" numberOfLines={1}>
+                        {latestPhysicalTest
+                          ? `Último registro: ${latestPhysicalTest.score} pts • Toque para ver histórico`
+                          : 'Disponível para todos • Toque para registrar'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="bg-red-500/10 px-3 py-1.5 rounded-full flex-row items-center border border-red-500/20">
+                    <Text className="text-red-500 text-[10px] font-black uppercase mr-1">Abrir</Text>
+                    <ChevronRight size={12} color="#ef4444" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            }
             renderItem={({ item: badge }) => {
-              const isEarned = (userData?.earnedBadges || []).includes(badge.id);
+              const isPhysicalTestBadge = 
+                badge.id === 'teste-fisico' || 
+                (badge.name && badge.name.toLowerCase().includes('teste f')) ||
+                (badge.name && badge.name.toLowerCase().includes('teste fisico'));
+
+              const isEarned = isPhysicalTestBadge || (userData?.earnedBadges || []).includes(badge.id);
               
               let imageUri = badge.imageUrl || '';
               if (imageUri && imageUri.startsWith('/')) {
@@ -784,6 +980,10 @@ export default function NotificacoesScreen() {
               return (
                 <TouchableOpacity
                   onPress={() => {
+                    if (isPhysicalTestBadge) {
+                      setActiveSubTab('teste-fisico');
+                      return;
+                    }
                     Alert.alert(
                       badge.name || "Emblema",
                       badge.description || "Sem descrição disponível para este emblema.",
@@ -795,7 +995,9 @@ export default function NotificacoesScreen() {
                     margin: '1.5%',
                   }}
                   className={`bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl items-center justify-center border ${
-                    isEarned
+                    isPhysicalTestBadge
+                      ? 'border-red-500/30 dark:border-red-500/20 shadow-sm shadow-red-500/10'
+                      : isEarned
                       ? 'border-yellow-500/30 dark:border-yellow-500/20 shadow-sm shadow-black/5'
                       : 'border-gray-100 dark:border-white/5 opacity-40'
                   }`}
@@ -808,12 +1010,18 @@ export default function NotificacoesScreen() {
                         resizeMode="contain"
                       />
                     ) : (
-                      <Award size={36} color={isEarned ? "#eab308" : "#888"} />
+                      <Award size={36} color={isPhysicalTestBadge ? "#ef4444" : isEarned ? "#eab308" : "#888"} />
                     )}
                     
-                    {!isEarned && (
+                    {!isEarned && !isPhysicalTestBadge && (
                       <View className="absolute bottom-0 right-0 bg-black/60 dark:bg-black/80 p-1 rounded-full border border-white/20">
                         <Lock size={10} color="#fff" />
+                      </View>
+                    )}
+
+                    {isPhysicalTestBadge && (
+                      <View className="absolute -bottom-1 -right-1 bg-red-500 p-1 rounded-full border border-white dark:border-[#1a1a1a]">
+                        <Activity size={9} color="#fff" />
                       </View>
                     )}
                   </View>
@@ -821,7 +1029,11 @@ export default function NotificacoesScreen() {
                   <Text
                     numberOfLines={1}
                     className={`text-[10px] text-center font-black uppercase tracking-wider ${
-                      isEarned ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'
+                      isPhysicalTestBadge 
+                        ? 'text-red-500 dark:text-red-400' 
+                        : isEarned 
+                        ? 'text-gray-900 dark:text-white' 
+                        : 'text-gray-400 dark:text-gray-500'
                     }`}
                   >
                     {badge.name || "Emblema"}
@@ -837,6 +1049,204 @@ export default function NotificacoesScreen() {
             }
           />
         )
+      ) : (
+        /* Teste Físico View */
+        <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+          {/* Hero Card com Emblema e Estatísticas */}
+          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm">
+            <View className="flex-row items-center justify-between mb-6">
+              <View className="flex-row items-center flex-1">
+                <View className="w-14 h-14 rounded-2xl bg-red-500/10 items-center justify-center mr-4 border border-red-500/20">
+                  <Activity size={30} color="#ef4444" />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center">
+                    <Text className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mr-2">
+                      Teste Físico
+                    </Text>
+                    <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <Text className="text-emerald-500 text-[9px] font-black uppercase">Liberado</Text>
+                    </View>
+                  </View>
+                  <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-0.5">
+                    Acompanhe seu condicionamento e evolução
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* 3 Metric Cards */}
+            <View className="flex-row justify-between">
+              {/* Recorde */}
+              <View className="flex-1 bg-amber-500/5 dark:bg-amber-500/10 p-3.5 rounded-2xl border border-amber-500/20 items-center mr-2">
+                <Trophy size={18} color="#eab308" style={{ marginBottom: 4 }} />
+                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Recorde</Text>
+                <Text className="text-base font-black text-amber-500 mt-0.5">{maxPhysicalScore} pts</Text>
+              </View>
+
+              {/* Último */}
+              <View className="flex-1 bg-red-500/5 dark:bg-red-500/10 p-3.5 rounded-2xl border border-red-500/20 items-center mr-2">
+                <Flame size={18} color="#ef4444" style={{ marginBottom: 4 }} />
+                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Último</Text>
+                <Text className="text-base font-black text-red-500 mt-0.5">{latestPhysicalTest ? `${latestPhysicalTest.score} pts` : '--'}</Text>
+              </View>
+
+              {/* Avaliações */}
+              <View className="flex-1 bg-blue-500/5 dark:bg-blue-500/10 p-3.5 rounded-2xl border border-blue-500/20 items-center">
+                <Calendar size={18} color="#3b82f6" style={{ marginBottom: 4 }} />
+                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Testes</Text>
+                <Text className="text-base font-black text-blue-500 mt-0.5">{physicalTests.length}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Card: Adicionar Novo Log de Teste Físico (estilo Intranet) */}
+          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center">
+                <View className="w-8 h-8 rounded-xl bg-emerald-500/10 items-center justify-center mr-2.5">
+                  <Plus size={16} color="#10b981" />
+                </View>
+                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                  Adicionar Novo Log
+                </Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setShowAddForm(!showAddForm)}
+                className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#252525]"
+              >
+                <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                  {showAddForm ? 'Ocultar' : 'Novo Teste'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showAddForm && (
+              <View className="pt-2 border-t border-gray-100 dark:border-white/5 mt-2">
+                {/* Campo Data */}
+                <View className="mb-4">
+                  <View className="flex-row justify-between items-center mb-1.5">
+                    <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                      DATA:
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        const now = new Date();
+                        const d = String(now.getDate()).padStart(2, '0');
+                        const m = String(now.getMonth() + 1).padStart(2, '0');
+                        setTestDateInput(`${d}/${m}/${now.getFullYear()}`);
+                      }}
+                      className="bg-blue-500/10 px-2 py-0.5 rounded-md"
+                    >
+                      <Text className="text-[10px] font-bold text-blue-500">Hoje</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    value={testDateInput}
+                    onChangeText={setTestDateInput}
+                    placeholder="DD/MM/AAAA"
+                    placeholderTextColor="#888"
+                    keyboardType="numbers-and-punctuation"
+                    className="bg-gray-50 dark:bg-[#111] p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white font-bold text-sm"
+                  />
+                </View>
+
+                {/* Campo Pontuação Total */}
+                <View className="mb-5">
+                  <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                    PONTUAÇÃO TOTAL:
+                  </Text>
+                  <TextInput
+                    value={testScoreInput}
+                    onChangeText={setTestScoreInput}
+                    placeholder="Ex: 180"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    className="bg-gray-50 dark:bg-[#111] p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white font-black text-lg"
+                  />
+                </View>
+
+                {/* Botão Salvar Log */}
+                <TouchableOpacity
+                  onPress={handleSaveTest}
+                  disabled={savingTest}
+                  activeOpacity={0.85}
+                  className="bg-emerald-500 py-3.5 rounded-2xl items-center justify-center flex-row shadow-md shadow-emerald-500/20"
+                >
+                  {savingTest ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Check size={16} color="#fff" style={{ marginRight: 6 }} />
+                      <Text className="text-white font-black uppercase text-xs tracking-wider">
+                        Adicionar Log
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Histórico de Testes */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-4 px-1">
+              <Text className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                📈 Histórico de Testes
+              </Text>
+              <Text className="text-[10px] font-bold text-gray-400">
+                {physicalTests.length} {physicalTests.length === 1 ? 'registro' : 'registros'}
+              </Text>
+            </View>
+
+            {physicalTestsLoading ? (
+              <View className="py-12 items-center justify-center">
+                <ActivityIndicator size="large" color="#ef4444" />
+              </View>
+            ) : physicalTests.length === 0 ? (
+              <View className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl border border-gray-100 dark:border-white/5 items-center justify-center">
+                <Activity size={40} color={isDark ? '#333' : '#ddd'} style={{ marginBottom: 12 }} />
+                <Text className="text-sm font-bold text-gray-800 dark:text-gray-200 text-center mb-1">
+                  Nenhum teste físico registrado.
+                </Text>
+                <Text className="text-xs text-gray-400 dark:text-gray-500 text-center leading-relaxed max-w-xs">
+                  Seus professores podem registrar seus testes na intranet ou você pode adicionar sua pontuação acima!
+                </Text>
+              </View>
+            ) : (
+              physicalTests.map((test, index) => {
+                const isFromStudent = test.createdBy === 'student';
+                return (
+                  <View
+                    key={test.id || index}
+                    className="bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl border border-gray-100 dark:border-white/5 mb-3 shadow-sm flex-row items-center justify-between"
+                  >
+                    <View className="flex-1 pr-3">
+                      <View className="flex-row items-center mb-1">
+                        <Calendar size={13} color="#888" style={{ marginRight: 5 }} />
+                        <Text className="text-xs font-bold text-gray-900 dark:text-white">
+                          {formatTestDate(test.date)}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <View className={`px-2 py-0.5 rounded-full ${isFromStudent ? 'bg-blue-500/10' : 'bg-purple-500/10'}`}>
+                          <Text className={`text-[9px] font-black uppercase ${isFromStudent ? 'text-blue-500' : 'text-purple-500'}`}>
+                            {isFromStudent ? 'Registrado por Você' : 'Registrado pelo Professor'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View className="bg-red-500/10 px-4 py-2 rounded-2xl border border-red-500/20 items-center">
+                      <Text className="text-[9px] font-black text-red-500 uppercase">Pontuação</Text>
+                      <Text className="text-lg font-black text-red-500">{test.score}</Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </ScrollView>
       )}
     </View>
   );
