@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, TextInput, Modal } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, where, onSnapshot, orderBy, limit, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, addDoc, serverTimestamp, Timestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, getDocs } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
-import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check } from 'lucide-react-native';
+import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check, Clock, ChevronDown } from 'lucide-react-native';
 export default function NotificacoesScreen() {
+  const router = useRouter();
   const { user, userData } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,14 @@ export default function NotificacoesScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+
+  // Check-in and Next Class states
+  const [classTemplates, setClassTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [todayInstances, setTodayInstances] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [checkinSubmitting, setCheckinSubmitting] = useState(false);
 
   const [weekDays, setWeekDays] = useState<any[]>([]);
   const [weekLoading, setWeekLoading] = useState(true);
@@ -128,6 +138,180 @@ export default function NotificacoesScreen() {
 
     return () => unsubscribe();
   }, [userData?.evoMemberId, weekDays.length]);
+
+  const getLocalDateStr = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const studentId = userData?.evoMemberId || user?.uid;
+  const rawUserUnit = (userData?.unitId || userData?.unidadeId || '').toLowerCase();
+  const effectiveUnit = (!rawUserUnit || rawUserUnit === 'staff' || rawUserUnit === 'todos') ? 'centro' : rawUserUnit;
+
+  // Listen to class templates for student's unit
+  useEffect(() => {
+    if (activeSubTab !== 'ofensivas') return;
+
+    setTemplatesLoading(true);
+    const templatesRef = collection(db, 'classTemplates');
+    const q = query(templatesRef, where('unitId', '==', effectiveUnit));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      setClassTemplates(list);
+      setTemplatesLoading(false);
+    }, (error) => {
+      console.error("Error fetching class templates:", error);
+      setTemplatesLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [activeSubTab, effectiveUnit]);
+
+  // Listen to today's class instances in real-time
+  useEffect(() => {
+    if (activeSubTab !== 'ofensivas') return;
+
+    const todayStr = getLocalDateStr(new Date());
+    const instancesCol = collection(db, 'classInstances');
+    const q = query(
+      instancesCol,
+      where('unitId', '==', effectiveUnit),
+      where('date', '==', todayStr)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setTodayInstances(list);
+    }, (error) => {
+      console.error("Error fetching today class instances:", error);
+    });
+
+    return () => unsubscribe();
+  }, [activeSubTab, effectiveUnit]);
+
+  const updateStreak = async (sId: string | number) => {
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    try {
+      const instancesCol = collection(db, 'classInstances');
+      const qNum = query(instancesCol, where('presentStudents', 'array-contains', Number(sId)));
+      const qStr = query(instancesCol, where('presentStudents', 'array-contains', sId.toString()));
+
+      const [snapNum, snapStr] = await Promise.all([getDocs(qNum), getDocs(qStr)]);
+      const uniqueDates = new Set<string>();
+      snapNum.forEach(d => { if (d.data().date) uniqueDates.add(d.data().date); });
+      snapStr.forEach(d => { if (d.data().date) uniqueDates.add(d.data().date); });
+
+      const sortedDates = Array.from(uniqueDates).sort();
+      let currentStreak = 0;
+      let longestStreak = 0;
+      let lastAttendanceDate = null;
+
+      if (sortedDates.length > 0) {
+        let current = 0;
+        let longest = 0;
+        let prevDateStr = null;
+
+        for (const dateStr of sortedDates) {
+          if (!prevDateStr) {
+            current = 1;
+          } else {
+            const prev = new Date(prevDateStr + 'T12:00:00');
+            const curr = new Date(dateStr + 'T12:00:00');
+            const diffTime = Math.abs(curr.getTime() - prev.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 5) {
+              current += 1;
+            } else {
+              current = 1;
+            }
+          }
+          if (current > longest) longest = current;
+          prevDateStr = dateStr;
+        }
+
+        const lastDateStr = sortedDates[sortedDates.length - 1];
+        const lastDate = new Date(lastDateStr + 'T12:00:00');
+        const todayStr = getLocalDateStr(new Date());
+        const todayDate = new Date(todayStr + 'T12:00:00');
+        const diffTimeToday = todayDate.getTime() - lastDate.getTime();
+        const diffDaysToday = Math.floor(diffTimeToday / (1000 * 60 * 60 * 24));
+
+        currentStreak = current;
+        if (diffDaysToday > 5) {
+          currentStreak = 0;
+        }
+        longestStreak = longest;
+        lastAttendanceDate = lastDateStr;
+      }
+
+      await updateDoc(userRef, {
+        currentStreak,
+        longestStreak,
+        lastAttendanceDate
+      });
+    } catch (err) {
+      console.error("Error updating streak in notificacoes:", err);
+    }
+  };
+
+  const handleCheckinClass = async (targetClass: any) => {
+    if (!studentId) {
+      Alert.alert('Atenção', 'Seu cadastro não possui identificador de aluno (EvoMemberId) configurado.');
+      return;
+    }
+    if (!targetClass) {
+      Alert.alert('Erro', 'Nenhuma turma selecionada para check-in.');
+      return;
+    }
+
+    setCheckinSubmitting(true);
+    try {
+      const dateString = getLocalDateStr(new Date());
+      const instanceId = `${targetClass.id}_${dateString}`;
+      const instanceRef = doc(db, 'classInstances', instanceId);
+
+      const instanceDoc = await getDoc(instanceRef);
+      const studentIdToSave = studentId.toString();
+
+      if (instanceDoc.exists()) {
+        await updateDoc(instanceRef, {
+          presentStudents: arrayUnion(studentIdToSave)
+        });
+      } else {
+        await setDoc(instanceRef, {
+          templateId: targetClass.id,
+          date: dateString,
+          unitId: effectiveUnit,
+          presentStudents: [studentIdToSave]
+        });
+      }
+
+      await updateStreak(studentId);
+
+      Alert.alert(
+        'Check-in Confirmado! 🔥',
+        `Presença registrada na aula "${targetClass.name}". Sua chama está garantida!`,
+        [{ text: 'Maravilha!' }]
+      );
+    } catch (err) {
+      console.error("Erro ao registrar presença:", err);
+      Alert.alert('Erro', 'Não foi possível confirmar sua presença. Tente novamente.');
+    } finally {
+      setCheckinSubmitting(false);
+      setShowClassModal(false);
+    }
+  };
 
   // Fetch ranking list from Firestore (filtered in memory by unit for safety against missing index crashes)
   useEffect(() => {
@@ -458,6 +642,68 @@ export default function NotificacoesScreen() {
     return true;
   });
 
+  // Next class and today checkin calculations
+  const today = new Date();
+  const todayDay = today.getDay(); // 0 = Dom, 1 = Seg...
+  const todayDateStr = getLocalDateStr(today);
+
+  // 1. Classes on today's schedule
+  const todayClasses = classTemplates.filter(t => Array.isArray(t.daysOfWeek) && t.daysOfWeek.includes(todayDay));
+
+  // 2. Check if student already checked in today
+  const studentAttendedInstanceToday = todayInstances.find(inst => {
+    const present = inst.presentStudents || [];
+    return studentId && (present.includes(studentId.toString()) || present.includes(Number(studentId)));
+  });
+  const isCheckedInToday = !!studentAttendedInstanceToday;
+
+  const attendedClassTemplate = studentAttendedInstanceToday
+    ? classTemplates.find(t => t.id === studentAttendedInstanceToday.templateId)
+    : null;
+
+  // 3. Classes suitable for this student today
+  const enrolledTodayClasses = todayClasses.filter(t => 
+    studentId && t.students && (t.students.includes(studentId.toString()) || t.students.includes(Number(studentId)))
+  );
+  const eligibleTodayClasses = enrolledTodayClasses.length > 0 ? enrolledTodayClasses : todayClasses;
+
+  const currentSelectedTodayClass = selectedClassId 
+    ? classTemplates.find(t => t.id === selectedClassId) || eligibleTodayClasses[0]
+    : eligibleTodayClasses[0];
+
+  // 4. Upcoming class on next days
+  let upcomingNextClass: any = null;
+  let upcomingDayLabel = '';
+  let upcomingDateLabel = '';
+
+  for (let offset = 1; offset <= 7; offset++) {
+    const nextD = new Date();
+    nextD.setDate(today.getDate() + offset);
+    const nextDayNum = nextD.getDay();
+
+    const classesOnNextDay = classTemplates.filter(t => Array.isArray(t.daysOfWeek) && t.daysOfWeek.includes(nextDayNum));
+    if (classesOnNextDay.length > 0) {
+      const enrolledOnNextDay = classesOnNextDay.filter(t => 
+        studentId && t.students && (t.students.includes(studentId.toString()) || t.students.includes(Number(studentId)))
+      );
+      upcomingNextClass = enrolledOnNextDay.length > 0 ? enrolledOnNextDay[0] : classesOnNextDay[0];
+
+      if (offset === 1) {
+        upcomingDayLabel = 'Amanhã';
+      } else {
+        const rawWd = nextD.toLocaleDateString('pt-BR', { weekday: 'long' });
+        upcomingDayLabel = rawWd.charAt(0).toUpperCase() + rawWd.slice(1);
+      }
+      upcomingDateLabel = nextD.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      break;
+    }
+  }
+
+  const isClassToday = !isCheckedInToday && !!currentSelectedTodayClass;
+  const activeClassToDisplay = isCheckedInToday 
+    ? (attendedClassTemplate || currentSelectedTodayClass) 
+    : (currentSelectedTodayClass || upcomingNextClass);
+
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white dark:bg-[#0a0a0a]">
       <View className="px-6 pt-8 pb-2">
@@ -667,6 +913,151 @@ export default function NotificacoesScreen() {
                     </View>
                   );
                 })}
+              </View>
+            )}
+          </View>
+
+          {/* Card Próxima Aula & Check-in */}
+          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm overflow-hidden">
+            {/* Header com Tag de Status */}
+            <View className="flex-row items-center justify-between mb-3.5">
+              <View className="flex-row items-center flex-1 mr-2">
+                <View className={`w-8 h-8 rounded-xl items-center justify-center mr-2.5 ${
+                  isCheckedInToday ? 'bg-emerald-500/10' : isClassToday ? 'bg-orange-500/10' : 'bg-blue-500/10'
+                }`}>
+                  {isCheckedInToday ? (
+                    <CheckCheck size={18} color="#10b981" />
+                  ) : (
+                    <Flame size={18} color={isClassToday ? '#f97316' : '#014fa4'} />
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Text className={`text-[9px] font-black uppercase tracking-widest ${
+                    isCheckedInToday ? 'text-emerald-500' : isClassToday ? 'text-orange-500' : 'text-[#014fa4]'
+                  }`}>
+                    {isCheckedInToday 
+                      ? 'PRESENÇA CONFIRMADA HOJE' 
+                      : isClassToday 
+                        ? 'AULA DISPONÍVEL HOJE' 
+                        : 'PRÓXIMA AULA'}
+                  </Text>
+                  <Text className="text-base font-black text-gray-900 dark:text-white leading-tight mt-0.5" numberOfLines={1}>
+                    {activeClassToDisplay ? activeClassToDisplay.name : 'Grade da Unidade'}
+                  </Text>
+                </View>
+              </View>
+
+              {isCheckedInToday ? (
+                <View className="bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 flex-row items-center">
+                  <Check size={11} color="#10b981" style={{ marginRight: 3 }} />
+                  <Text className="text-emerald-500 text-[8px] font-black uppercase tracking-wider">Feito</Text>
+                </View>
+              ) : isClassToday ? (
+                <View className="bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
+                  <Text className="text-orange-500 text-[8px] font-black uppercase tracking-wider">Hoje</Text>
+                </View>
+              ) : upcomingDayLabel ? (
+                <View className="bg-gray-100 dark:bg-white/5 px-2.5 py-1 rounded-full border border-gray-200 dark:border-white/5">
+                  <Text className="text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-wider">
+                    {upcomingDayLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Informações detalhadas da aula */}
+            {activeClassToDisplay ? (
+              <View className="bg-gray-50 dark:bg-[#151515] p-3.5 rounded-2xl mb-4 border border-gray-100 dark:border-white/5">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1 mr-2">
+                    <Clock size={13} color="#888" style={{ marginRight: 6 }} />
+                    <Text className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                      {isClassToday || isCheckedInToday ? 'Hoje' : `${upcomingDayLabel} (${upcomingDateLabel})`} às {activeClassToDisplay.time}
+                      {activeClassToDisplay.duration ? ` • ${activeClassToDisplay.duration} min` : ''}
+                    </Text>
+                  </View>
+                  {activeClassToDisplay.teacherName ? (
+                    <View className="flex-row items-center">
+                      <User size={13} color="#888" style={{ marginRight: 5 }} />
+                      <Text className="text-xs font-bold text-gray-500 dark:text-gray-400" numberOfLines={1}>
+                        {activeClassToDisplay.teacherName}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            ) : (
+              <View className="bg-gray-50 dark:bg-[#151515] p-3.5 rounded-2xl mb-4 border border-gray-100 dark:border-white/5">
+                <Text className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Nenhuma aula agendada no momento.
+                </Text>
+              </View>
+            )}
+
+            {/* Botões de Ação */}
+            {isCheckedInToday ? (
+              <View className="flex-row items-center justify-between pt-1">
+                <View className="flex-1 mr-3">
+                  <Text className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                    Sua presença já foi confirmada para hoje. Bom treino! 🔥
+                  </Text>
+                  {upcomingNextClass && (
+                    <Text className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                      Próxima aula: {upcomingDayLabel} às {upcomingNextClass.time}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity 
+                  onPress={() => router.push('/atividades')}
+                  className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5"
+                >
+                  <Text className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Grade</Text>
+                </TouchableOpacity>
+              </View>
+            ) : isClassToday ? (
+              <View className="space-y-2">
+                <TouchableOpacity
+                  onPress={() => handleCheckinClass(activeClassToDisplay)}
+                  disabled={checkinSubmitting}
+                  activeOpacity={0.8}
+                  className="w-full py-3.5 rounded-2xl bg-orange-500 items-center justify-center flex-row shadow-lg shadow-orange-500/25"
+                >
+                  {checkinSubmitting ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Flame size={18} color="#fff" style={{ marginRight: 8 }} />
+                      <Text className="text-white text-xs font-black uppercase tracking-wider">
+                        Fazer Check-in Agora
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {todayClasses.length > 1 && (
+                  <TouchableOpacity 
+                    onPress={() => setShowClassModal(true)}
+                    className="py-1.5 items-center justify-center flex-row"
+                  >
+                    <Text className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                      Irá em outro horário hoje? <Text className="text-orange-500 font-extrabold">Trocar turma ({todayClasses.length})</Text>
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View className="flex-row items-center justify-between pt-1">
+                <Text className="text-xs text-gray-400 dark:text-gray-500 font-medium flex-1 mr-3 leading-relaxed">
+                  O check-in fica disponível no dia de cada aula.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/atividades')}
+                  className="px-4 py-2.5 rounded-xl bg-[#014fa4] flex-row items-center"
+                >
+                  <Text className="text-white text-[11px] font-black uppercase tracking-wider">
+                    Ver Grade
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -1269,6 +1660,75 @@ export default function NotificacoesScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Modal para Escolher Outra Turma de Hoje */}
+      <Modal
+        visible={showClassModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowClassModal(false)}
+      >
+        <View className="flex-1 bg-black/60 items-center justify-center p-5">
+          <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 w-full max-w-sm border border-gray-100 dark:border-white/10 shadow-2xl">
+            <View className="flex-row items-center justify-between mb-4">
+              <View>
+                <Text className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                  Turmas de Hoje
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Selecione o horário para fazer check-in
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowClassModal(false)} className="p-1">
+                <Text className="text-gray-400 font-bold text-lg">✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="max-h-80" showsVerticalScrollIndicator={false}>
+              {todayClasses.map((cls) => {
+                const isSelected = (selectedClassId ? selectedClassId === cls.id : currentSelectedTodayClass?.id === cls.id);
+                return (
+                  <TouchableOpacity
+                    key={cls.id}
+                    onPress={() => {
+                      setSelectedClassId(cls.id);
+                      setShowClassModal(false);
+                    }}
+                    className={`p-3.5 rounded-2xl mb-2.5 border flex-row items-center justify-between ${
+                      isSelected
+                        ? 'bg-orange-500/10 border-orange-500/30'
+                        : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5'
+                    }`}
+                  >
+                    <View className="flex-1 mr-2">
+                      <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                        {cls.name}
+                      </Text>
+                      <Text className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        {cls.time} {cls.duration ? `(${cls.duration} min)` : ''} • {cls.teacherName || 'Instrutor Kihap'}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <View className="w-5 h-5 rounded-full bg-orange-500 items-center justify-center">
+                        <Check size={12} color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => setShowClassModal(false)}
+              className="mt-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 items-center justify-center"
+            >
+              <Text className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                Fechar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
