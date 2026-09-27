@@ -121,75 +121,6 @@ export default function ProfileScreen() {
 
   const earnedBadgesList = allBadges.filter(b => (userData?.earnedBadges || []).includes(b.id));
 
-  // Belt theme mapping
-  const getBeltTheme = (beltStr?: string) => {
-    const b = (beltStr || '').toLowerCase();
-    if (b.includes('preta') || b.includes('black')) {
-      return {
-        badgeBg: 'bg-neutral-900 border-yellow-500/40',
-        badgeText: 'text-yellow-400',
-        cardGradient: 'from-neutral-900 via-neutral-950 to-black',
-        accent: '#eab308',
-      };
-    }
-    if (b.includes('vermelha') || b.includes('red')) {
-      return {
-        badgeBg: 'bg-red-500/10 border-red-500/30',
-        badgeText: 'text-red-500',
-        cardGradient: 'from-red-950 via-neutral-900 to-black',
-        accent: '#ef4444',
-      };
-    }
-    if (b.includes('marrom') || b.includes('brown')) {
-      return {
-        badgeBg: 'bg-amber-900/15 border-amber-800/40',
-        badgeText: 'text-amber-500',
-        cardGradient: 'from-amber-950 via-neutral-900 to-black',
-        accent: '#b45309',
-      };
-    }
-    if (b.includes('roxa') || b.includes('purple')) {
-      return {
-        badgeBg: 'bg-purple-500/10 border-purple-500/30',
-        badgeText: 'text-purple-400',
-        cardGradient: 'from-purple-950 via-neutral-900 to-black',
-        accent: '#a855f7',
-      };
-    }
-    if (b.includes('azul') || b.includes('blue')) {
-      return {
-        badgeBg: 'bg-blue-500/10 border-blue-500/30',
-        badgeText: 'text-blue-400',
-        cardGradient: 'from-blue-950 via-neutral-900 to-black',
-        accent: '#3b82f6',
-      };
-    }
-    if (b.includes('verde') || b.includes('green')) {
-      return {
-        badgeBg: 'bg-emerald-500/10 border-emerald-500/30',
-        badgeText: 'text-emerald-400',
-        cardGradient: 'from-emerald-950 via-neutral-900 to-black',
-        accent: '#10b981',
-      };
-    }
-    if (b.includes('amarela') || b.includes('yellow')) {
-      return {
-        badgeBg: 'bg-yellow-500/10 border-yellow-500/30',
-        badgeText: 'text-yellow-500',
-        cardGradient: 'from-yellow-950/40 via-neutral-900 to-black',
-        accent: '#eab308',
-      };
-    }
-    return {
-      badgeBg: 'bg-gray-100 dark:bg-white/10 border-gray-200 dark:border-white/10',
-      badgeText: 'text-gray-700 dark:text-gray-300',
-      cardGradient: 'from-neutral-900 via-neutral-950 to-black',
-      accent: '#014fa4',
-    };
-  };
-
-  const beltTheme = getBeltTheme(studentBelt);
-
   // Unit WhatsApp router
   const getUnitWhatsApp = (unidadeStr?: string) => {
     const u = (unidadeStr || '').toLowerCase();
@@ -343,38 +274,44 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-[#0a0a0a]">
+    <View className="flex-1 bg-[#fbfbfa] dark:bg-[#0a0a0a]">
       <ScrollView 
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
         <View style={{ paddingTop: insets.top }}>
-          {/* Header Screen Title */}
+          {/* Header Screen Title with Neue Machina */}
           <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
             <View>
-              <Text className="text-[11px] font-black uppercase tracking-[2.5px] text-[#014fa4] dark:text-yellow-500">
-                Passaporte do Aluno
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-[11px] uppercase tracking-[3px] text-[#eab308] dark:text-[#f59e0b]"
+              >
+                KIHAP MARTIAL ARTS
               </Text>
-              <Text className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                Meu Perfil
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-3xl text-gray-900 dark:text-white tracking-tight mt-0.5"
+              >
+                MEU PERFIL
               </Text>
             </View>
 
             <View className="flex-row items-center space-x-2">
               <TouchableOpacity
                 onPress={() => router.push(`/user/${user?.uid}`)}
-                className="w-11 h-11 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center justify-center active:scale-95"
+                className="w-11 h-11 bg-white dark:bg-[#161616] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm items-center justify-center active:scale-95"
                 accessibilityLabel="Ver perfil público"
               >
-                <Eye size={20} color={isDark ? '#eab308' : '#014fa4'} />
+                <Eye size={20} color={isDark ? '#eab308' : '#111'} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setEditModalVisible(true)}
-                className="w-11 h-11 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center justify-center active:scale-95"
+                className="w-11 h-11 bg-white dark:bg-[#161616] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm items-center justify-center active:scale-95"
                 accessibilityLabel="Editar perfil"
               >
-                <Edit3 size={19} color={isDark ? '#fff' : '#333'} />
+                <Edit3 size={19} color={isDark ? '#fff' : '#111'} />
               </TouchableOpacity>
             </View>
           </View>
@@ -382,11 +319,14 @@ export default function ProfileScreen() {
           {/* Linked Family Profiles Selector (if multiple accounts linked) */}
           {linkedProfiles && linkedProfiles.length > 0 && (
             <View className="px-6 mb-4 mt-1">
-              <View className="bg-white dark:bg-[#1a1a1a] p-3.5 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+              <View className="bg-white dark:bg-[#161616] p-3.5 rounded-3xl border border-gray-200/60 dark:border-white/5 shadow-sm">
                 <View className="flex-row items-center justify-between mb-2.5">
                   <View className="flex-row items-center">
-                    <Users size={14} color={isDark ? '#eab308' : '#014fa4'} />
-                    <Text className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 ml-1.5">
+                    <Users size={14} color="#eab308" />
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 ml-1.5"
+                    >
                       Família / Perfis Vinculados
                     </Text>
                   </View>
@@ -394,10 +334,15 @@ export default function ProfileScreen() {
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                   {/* Current Active User */}
-                  <View className="flex-row items-center bg-[#014fa4]/10 border border-[#014fa4]/30 px-3 py-1.5 rounded-full mr-2">
+                  <View className="flex-row items-center bg-[#eab308]/15 border border-[#eab308] px-3.5 py-1.5 rounded-full mr-2">
                     <Image source={displayPhoto} className="w-5 h-5 rounded-full mr-2" />
-                    <Text className="text-xs font-black text-[#014fa4] dark:text-blue-400">{displayName}</Text>
-                    <Check size={12} color="#014fa4" style={{ marginLeft: 6 }} />
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-xs text-black dark:text-yellow-400"
+                    >
+                      {displayName}
+                    </Text>
+                    <Check size={12} color="#eab308" style={{ marginLeft: 6 }} />
                   </View>
                   {/* Linked Dependents */}
                   {linkedProfiles.map((p) => {
@@ -408,7 +353,7 @@ export default function ProfileScreen() {
                       <TouchableOpacity
                         key={p.uid}
                         onPress={() => switchProfile(p.uid)}
-                        className="flex-row items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-3 py-1.5 rounded-full mr-2 active:scale-95"
+                        className="flex-row items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-3.5 py-1.5 rounded-full mr-2 active:scale-95"
                       >
                         <Image source={pImg} className="w-5 h-5 rounded-full mr-2" />
                         <Text className="text-xs font-bold text-gray-700 dark:text-gray-300">
@@ -422,18 +367,57 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Student Martial Identity Passport Hero Card */}
+          {/* Student Martial Identity Passport Hero Card — Iconic Kihap Brand (Gold & Black) */}
           <View className="px-6 mb-5">
-            <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-white/5 relative overflow-hidden">
-              {/* Background watermark badge */}
-              <View className="absolute -right-6 -bottom-6 opacity-5 dark:opacity-10 pointer-events-none">
-                <ShieldCheck size={160} color="#014fa4" />
+            <View 
+              className={`rounded-3xl p-6 shadow-xl relative overflow-hidden border ${
+                isDark 
+                  ? 'bg-[#141414] border-yellow-500/30' 
+                  : 'bg-[#eab308] border-yellow-400 shadow-yellow-500/20'
+              }`}
+            >
+              {/* Subtle background watermark */}
+              <View className="absolute -right-4 -top-4 opacity-10 pointer-events-none">
+                <ShieldCheck size={140} color={isDark ? '#eab308' : '#000'} />
               </View>
 
+              {/* Card Top Row: Status (left) & Matrícula (right) */}
+              <View className="flex-row items-center justify-between mb-4">
+                <View className="flex-row items-center">
+                  <View className={`w-2 h-2 rounded-full mr-1.5 ${isDark ? 'bg-emerald-400' : 'bg-black'}`} />
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[10px] uppercase tracking-widest ${
+                      isDark ? 'text-emerald-400' : 'text-black/85'
+                    }`}
+                  >
+                    Aluno Ativo
+                  </Text>
+                </View>
+                {studentEvoId && (
+                  <View className={`px-2.5 py-0.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className={`text-[9px] uppercase tracking-widest ${
+                        isDark ? 'text-yellow-500' : 'text-black'
+                      }`}
+                    >
+                      MATRÍCULA #{studentEvoId}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Card Center: Avatar + Info */}
               <View className="flex-row items-center">
                 {/* Avatar with Camera badge */}
                 <View className="relative">
-                  <View className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/30 bg-gray-100 dark:bg-gray-800 shadow-md">
+                  <View 
+                    className={`w-22 h-22 rounded-full overflow-hidden border-3 shadow-lg ${
+                      isDark ? 'border-yellow-500/40 bg-gray-800' : 'border-black bg-white'
+                    }`}
+                    style={{ width: 88, height: 88 }}
+                  >
                     <Image 
                       source={displayPhoto} 
                       className={`w-full h-full object-cover ${uploading ? 'opacity-40' : ''}`}
@@ -442,125 +426,180 @@ export default function ProfileScreen() {
                   <TouchableOpacity 
                     onPress={handleSelectAndUploadImage}
                     disabled={uploading}
-                    className="absolute bottom-0 right-0 bg-[#014fa4] w-8 h-8 rounded-full items-center justify-center border-2 border-white dark:border-[#1a1a1a] shadow-lg active:scale-90"
+                    className={`absolute bottom-0 right-0 w-7 h-7 rounded-full items-center justify-center border-2 shadow-lg active:scale-90 ${
+                      isDark ? 'bg-[#eab308] border-black' : 'bg-black border-white'
+                    }`}
                     accessibilityLabel="Alterar foto de perfil"
                   >
                     {uploading ? (
-                      <ActivityIndicator size="small" color="white" />
+                      <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
                     ) : (
-                      <Camera size={14} color="white" />
+                      <Camera size={13} color={isDark ? '#000' : '#fff'} />
                     )}
                   </TouchableOpacity>
                 </View>
 
                 {/* Identity Info */}
-                <View className="flex-1 ml-5">
-                  <View className="flex-row items-center mb-1">
-                    <View className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                    <Text className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
-                      Aluno Ativo
-                    </Text>
-                  </View>
-
-                  <Text numberOfLines={1} className="text-2xl font-black text-gray-900 dark:text-white leading-tight">
+                <View className="flex-1 ml-4">
+                  <Text 
+                    numberOfLines={1} 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-2xl uppercase leading-tight ${
+                      isDark ? 'text-white' : 'text-black'
+                    }`}
+                  >
                     {displayName}
                   </Text>
 
-                  {/* Belt Tag */}
+                  {/* Belt Tag & Unit Tag */}
                   <View className="flex-row items-center mt-2 flex-wrap gap-1.5">
-                    <View className={`px-3 py-1 rounded-xl border ${beltTheme.badgeBg} flex-row items-center`}>
-                      <Text className={`text-[11px] font-black uppercase tracking-wider ${beltTheme.badgeText}`}>
+                    {/* Belt Badge */}
+                    <View 
+                      className={`px-3 py-1 rounded-xl flex-row items-center ${
+                        isDark 
+                          ? 'bg-yellow-500/15 border border-yellow-500/30' 
+                          : 'bg-black border border-black'
+                      }`}
+                    >
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className={`text-[11px] uppercase tracking-wider ${
+                          isDark ? 'text-yellow-400' : 'text-yellow-400'
+                        }`}
+                      >
                         🥋 {studentBelt}
                       </Text>
                     </View>
 
                     {/* Unit Pill */}
-                    <View className="px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex-row items-center">
-                      <MapPin size={10} color="#ef4444" fill="#ef4444" />
-                      <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300 ml-1">
+                    <View 
+                      className={`px-2.5 py-1 rounded-xl flex-row items-center ${
+                        isDark 
+                          ? 'bg-white/5 border border-white/10' 
+                          : 'bg-black/10 border border-black/15'
+                      }`}
+                    >
+                      <MapPin size={10} color={isDark ? '#ef4444' : '#000'} fill={isDark ? '#ef4444' : '#000'} />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className={`text-[10px] uppercase ml-1 ${
+                          isDark ? 'text-gray-300' : 'text-black'
+                        }`}
+                      >
                         {studentUnit}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Email & Matrícula */}
-                  <View className="flex-row items-center justify-between mt-2.5 pt-2 border-t border-gray-100 dark:border-white/5">
-                    <Text numberOfLines={1} className="text-[11px] text-gray-400 font-medium flex-1 mr-2">
-                      {displayEmail}
-                    </Text>
-                    {studentEvoId && (
-                      <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                        #{studentEvoId}
-                      </Text>
-                    )}
-                  </View>
+                  {/* Email */}
+                  <Text 
+                    numberOfLines={1} 
+                    className={`text-[11px] font-medium mt-2 ${
+                      isDark ? 'text-gray-400' : 'text-black/70'
+                    }`}
+                  >
+                    {displayEmail}
+                  </Text>
                 </View>
               </View>
 
-              {/* Edit info action bar */}
+              {/* Edit info action button */}
               <TouchableOpacity
                 onPress={() => setEditModalVisible(true)}
-                className="mt-5 w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 py-2.5 rounded-2xl items-center justify-center flex-row active:scale-[0.99]"
+                className={`mt-5 w-full py-3 rounded-2xl items-center justify-center flex-row active:scale-[0.99] shadow-md ${
+                  isDark 
+                    ? 'bg-yellow-500/15 border border-yellow-500/30' 
+                    : 'bg-black border border-black'
+                }`}
               >
-                <Edit3 size={13} color={isDark ? '#eab308' : '#014fa4'} style={{ marginRight: 6 }} />
-                <Text className="text-[11px] font-black uppercase tracking-wider text-[#014fa4] dark:text-yellow-500">
-                  Editar Dados & Senha
+                <Edit3 size={13} color={isDark ? '#eab308' : '#ffffff'} style={{ marginRight: 6 }} />
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className={`text-[11px] uppercase tracking-wider ${
+                    isDark ? 'text-yellow-400' : 'text-white'
+                  }`}
+                >
+                  EDITAR DADOS & SENHA
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Quick Stats Grid (4 Metrics) */}
+          {/* Quick Stats Grid (4 Metrics with Neue Machina) */}
           <View className="px-6 mb-6">
             <View className="flex-row justify-between">
               {/* Presenças / Aulas */}
-              <View className="w-[23%] bg-white dark:bg-[#1a1a1a] p-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center">
-                <View className="w-8 h-8 rounded-xl bg-blue-500/10 items-center justify-center mb-1.5">
-                  <ShieldCheck size={16} color="#3b82f6" />
+              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
+                <View className="w-8 h-8 rounded-xl bg-yellow-500/10 items-center justify-center mb-1.5">
+                  <ShieldCheck size={16} color="#eab308" />
                 </View>
-                <Text className="text-lg font-black text-gray-900 dark:text-white leading-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-lg text-gray-900 dark:text-white leading-tight"
+                >
                   {userData?.totalAulas || userData?.totalAttendances || userData?.attendancesCount || userData?.currentStreak || 0}
                 </Text>
-                <Text className="text-[8px] font-black uppercase tracking-widest text-gray-400 text-center mt-0.5">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[8px] uppercase tracking-widest text-gray-400 text-center mt-0.5"
+                >
                   Aulas
                 </Text>
               </View>
 
               {/* Emblemas Conquistados */}
-              <View className="w-[23%] bg-white dark:bg-[#1a1a1a] p-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center">
+              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
                 <View className="w-8 h-8 rounded-xl bg-yellow-500/10 items-center justify-center mb-1.5">
                   <Award size={16} color="#eab308" />
                 </View>
-                <Text className="text-lg font-black text-gray-900 dark:text-white leading-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-lg text-gray-900 dark:text-white leading-tight"
+                >
                   {earnedBadgesList.length}
                 </Text>
-                <Text className="text-[8px] font-black uppercase tracking-widest text-gray-400 text-center mt-0.5">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[8px] uppercase tracking-widest text-gray-400 text-center mt-0.5"
+                >
                   Emblemas
                 </Text>
               </View>
 
               {/* Último Teste Físico */}
-              <View className="w-[23%] bg-white dark:bg-[#1a1a1a] p-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center">
+              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
                 <View className="w-8 h-8 rounded-xl bg-red-500/10 items-center justify-center mb-1.5">
                   <Trophy size={16} color="#ef4444" />
                 </View>
-                <Text className="text-lg font-black text-gray-900 dark:text-white leading-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-lg text-gray-900 dark:text-white leading-tight"
+                >
                   {latestPhysical?.score !== undefined ? latestPhysical.score : '--'}
                 </Text>
-                <Text className="text-[8px] font-black uppercase tracking-widest text-gray-400 text-center mt-0.5">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[8px] uppercase tracking-widest text-gray-400 text-center mt-0.5"
+                >
                   Teste Fís.
                 </Text>
               </View>
 
               {/* Kihapcoins */}
-              <View className="w-[23%] bg-white dark:bg-[#1a1a1a] p-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm items-center">
+              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
                 <View className="w-8 h-8 rounded-xl bg-amber-500/10 items-center justify-center mb-1.5">
                   <Sparkles size={16} color="#f59e0b" />
                 </View>
-                <Text className="text-lg font-black text-yellow-500 leading-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-lg text-[#eab308] leading-tight"
+                >
                   {userData?.totalFitCoins || userData?.kihapcoins || userData?.fitCoins || 0}
                 </Text>
-                <Text className="text-[8px] font-black uppercase tracking-widest text-gray-400 text-center mt-0.5">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[8px] uppercase tracking-widest text-gray-400 text-center mt-0.5"
+                >
                   Coins
                 </Text>
               </View>
@@ -570,18 +609,24 @@ export default function ProfileScreen() {
           {/* Badges Preview Carousel / Grid */}
           {earnedBadgesList.length > 0 && (
             <View className="px-6 mb-6">
-              <View className="bg-white dark:bg-[#1a1a1a] p-5 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+              <View className="bg-white dark:bg-[#141414] p-5 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm">
                 <View className="flex-row items-center justify-between mb-4">
                   <View className="flex-row items-center">
                     <View className="w-8 h-8 rounded-xl bg-yellow-500/10 items-center justify-center mr-2.5">
                       <Award size={16} color="#eab308" />
                     </View>
-                    <Text className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-base text-gray-900 dark:text-white uppercase tracking-tight"
+                    >
                       Minhas Conquistas
                     </Text>
                   </View>
                   <View className="bg-gray-100 dark:bg-white/10 px-2.5 py-1 rounded-full">
-                    <Text className="text-[10px] font-black text-gray-600 dark:text-gray-300">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-[10px] text-gray-600 dark:text-gray-300 uppercase"
+                    >
                       {earnedBadgesList.length} {earnedBadgesList.length === 1 ? 'emblema' : 'emblemas'}
                     </Text>
                   </View>
@@ -618,26 +663,32 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Grouped Settings Menu (Apple iOS Style) */}
+          {/* Grouped Settings Menu (Apple iOS Style with Neue Machina headers) */}
           <View className="px-6 mb-4">
-            <Text className="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1">
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1"
+            >
               Matrícula & Benefícios
             </Text>
             
-            <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
+            <View className="bg-white dark:bg-[#141414] rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm overflow-hidden">
               {/* Plano & Assinatura */}
               <TouchableOpacity 
                 onPress={() => router.push('/assinatura')}
                 className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5"
               >
-                <View className="w-10 h-10 rounded-2xl bg-blue-500/10 items-center justify-center mr-3.5">
-                  <CreditCard size={18} color="#014fa4" />
+                <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                  <CreditCard size={18} color="#eab308" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-black text-gray-900 dark:text-white">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
                     Plano & Assinatura
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {userData?.planName || userData?.plano || 'Consultar plano ativo e mensalidades'}
                   </Text>
                 </View>
@@ -653,10 +704,13 @@ export default function ProfileScreen() {
                   <ShoppingBag size={18} color="#eab308" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-black text-gray-900 dark:text-white">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
                     Meus Pedidos & Eventos
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Histórico de compras e inscrições em exames
                   </Text>
                 </View>
@@ -667,11 +721,14 @@ export default function ProfileScreen() {
 
           {/* Group 2: Unidade & Academia */}
           <View className="px-6 mb-4">
-            <Text className="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1">
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1"
+            >
               Academia & Treinos
             </Text>
 
-            <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
+            <View className="bg-white dark:bg-[#141414] rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm overflow-hidden">
               {/* Contato WhatsApp da Unidade */}
               <TouchableOpacity 
                 onPress={handleContactUnit}
@@ -681,10 +738,13 @@ export default function ProfileScreen() {
                   <MessageCircle size={18} color="#10b981" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-black text-gray-900 dark:text-white">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
                     Falar com a Secretaria
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     WhatsApp oficial da {studentUnit}
                   </Text>
                 </View>
@@ -696,14 +756,17 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/calendario')}
                 className="flex-row items-center p-4 active:bg-gray-50 dark:active:bg-white/5"
               >
-                <View className="w-10 h-10 rounded-2xl bg-purple-500/10 items-center justify-center mr-3.5">
-                  <Calendar size={18} color="#9333ea" />
+                <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                  <Calendar size={18} color="#eab308" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-black text-gray-900 dark:text-white">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
                     Grade de Horários & Aulas
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Ver dias e horários dos treinos da semana
                   </Text>
                 </View>
@@ -714,22 +777,28 @@ export default function ProfileScreen() {
 
           {/* Group 3: Preferências & Sistema */}
           <View className="px-6 mb-8">
-            <Text className="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1">
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1"
+            >
               Preferências & Segurança
             </Text>
 
-            <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
+            <View className="bg-white dark:bg-[#141414] rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm overflow-hidden">
               {/* Tema Escuro / Claro */}
               <View className="flex-row items-center justify-between p-4 border-b border-gray-100 dark:border-white/5">
                 <View className="flex-row items-center flex-1 mr-3">
-                  <View className="w-10 h-10 rounded-2xl bg-amber-500/10 items-center justify-center mr-3.5">
-                    {isDark ? <Moon size={18} color="#f59e0b" /> : <Sun size={18} color="#f59e0b" />}
+                  <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                    {isDark ? <Moon size={18} color="#eab308" /> : <Sun size={18} color="#eab308" />}
                   </View>
                   <View className="flex-1">
-                    <Text className="text-sm font-black text-gray-900 dark:text-white">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                    >
                       Modo Escuro
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {isDark ? 'Tema escuro ativado' : 'Tema claro ativado'}
                     </Text>
                   </View>
@@ -743,7 +812,7 @@ export default function ProfileScreen() {
                       setColorScheme(isDark ? 'light' : 'dark');
                     }
                   }}
-                  trackColor={{ false: '#e2e8f0', true: '#014fa4' }}
+                  trackColor={{ false: '#e2e8f0', true: '#000000' }}
                   thumbColor={isDark ? '#eab308' : '#ffffff'}
                 />
               </View>
@@ -757,10 +826,13 @@ export default function ProfileScreen() {
                   <LogOut size={18} color="#ef4444" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-black text-red-500">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-red-500 uppercase tracking-tight"
+                  >
                     Encerrar Sessão
                   </Text>
-                  <Text className="text-xs text-gray-400 dark:text-gray-500">
+                  <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     Desconectar este dispositivo
                   </Text>
                 </View>
@@ -780,15 +852,18 @@ export default function ProfileScreen() {
         <View className="flex-1 bg-black/60 justify-end">
           <View 
             style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-            className="bg-white dark:bg-[#181818] rounded-t-[36px] p-6 max-h-[88%] border-t border-gray-100 dark:border-white/10"
+            className="bg-white dark:bg-[#141414] rounded-t-[36px] p-6 max-h-[88%] border-t border-gray-200/80 dark:border-white/10"
           >
             {/* Modal Header */}
             <View className="flex-row items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
               <View>
-                <Text className="text-xl font-black text-gray-900 dark:text-white">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-xl text-gray-900 dark:text-white uppercase tracking-tight"
+                >
                   Editar Informações
                 </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Atualize seu nome ou altere sua senha de acesso
                 </Text>
               </View>
@@ -818,8 +893,11 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={handleSelectAndUploadImage} className="mt-2">
-                  <Text className="text-xs font-bold text-[#014fa4] dark:text-yellow-500">
-                    Toque para trocar foto de perfil
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-xs text-black dark:text-yellow-500 uppercase tracking-wider"
+                  >
+                    Toque para trocar foto
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -827,7 +905,10 @@ export default function ProfileScreen() {
               {/* Form inputs */}
               <View className="space-y-4">
                 <View>
-                  <Text className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                  >
                     Nome Completo
                   </Text>
                   <TextInput 
@@ -840,7 +921,10 @@ export default function ProfileScreen() {
                 </View>
 
                 <View className="mt-3">
-                  <Text className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                  >
                     E-mail Cadastrado
                   </Text>
                   <View className="w-full bg-gray-100/70 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-2xl px-4 py-3.5 flex-row items-center justify-between">
@@ -855,7 +939,10 @@ export default function ProfileScreen() {
                 </View>
 
                 <View className="mt-3">
-                  <Text className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                  >
                     Nova Senha de Acesso
                   </Text>
                   <TextInput 
@@ -872,12 +959,15 @@ export default function ProfileScreen() {
                 <TouchableOpacity 
                   onPress={handleSaveChanges}
                   disabled={loadingSubmit}
-                  className="bg-[#014fa4] py-4 rounded-2xl items-center justify-center mt-6 shadow-md active:scale-[0.98]"
+                  className="bg-black dark:bg-[#eab308] py-4 rounded-2xl items-center justify-center mt-6 shadow-md active:scale-[0.98]"
                 >
                   {loadingSubmit ? (
-                    <ActivityIndicator color="white" />
+                    <ActivityIndicator color={isDark ? '#000' : '#fff'} />
                   ) : (
-                    <Text className="text-white font-black uppercase tracking-widest text-xs">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-white dark:text-black uppercase tracking-widest text-xs"
+                    >
                       Salvar Alterações
                     </Text>
                   )}
@@ -887,7 +977,10 @@ export default function ProfileScreen() {
                   onPress={() => setEditModalVisible(false)}
                   className="py-3 items-center justify-center mb-6"
                 >
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider"
+                  >
                     Cancelar
                   </Text>
                 </TouchableOpacity>

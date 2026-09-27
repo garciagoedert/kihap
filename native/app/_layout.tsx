@@ -46,9 +46,15 @@ function RootLayoutNav() {
 }
 
 import { CartProvider } from '../src/context/CartContext';
+import { useFonts } from 'expo-font';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  const [fontsLoaded] = useFonts({
+    'NeueMachina-Regular': require('../assets/fonts/NeueMachina-Regular.otf'),
+    'NeueMachina-Ultrabold': require('../assets/fonts/NeueMachina-Ultrabold.otf'),
+  });
 
   return (
     <SafeAreaProvider>

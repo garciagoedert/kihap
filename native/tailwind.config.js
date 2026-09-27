@@ -8,6 +8,12 @@ module.exports = {
       colors: {
         primary: "#014fa4",
         secondary: "#FF9800",
+        kihapYellow: "#eab308",
+        kihapGold: "#e5a700",
+      },
+      fontFamily: {
+        machina: ["NeueMachina-Regular", "sans-serif"],
+        machinaBold: ["NeueMachina-Ultrabold", "sans-serif"],
       },
     },
   },
