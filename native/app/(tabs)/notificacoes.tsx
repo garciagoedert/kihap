@@ -705,20 +705,39 @@ export default function NotificacoesScreen() {
     : (currentSelectedTodayClass || upcomingNextClass);
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white dark:bg-[#0a0a0a]">
-      <View className="px-6 pt-8 pb-2">
-        <View className="flex-row items-center justify-between mb-6">
-          <Text className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Atividade</Text>
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-[#fbfbfa] dark:bg-[#0a0a0a]">
+      <View className="px-6 pt-5 pb-2">
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-[11px] uppercase tracking-[3px] text-[#eab308] dark:text-[#f59e0b]"
+            >
+              KIHAP MARTIAL ARTS
+            </Text>
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-3xl text-gray-900 dark:text-white tracking-tight mt-0.5"
+            >
+              OFENSIVA & ATIVIDADE
+            </Text>
+          </View>
           {activeSubTab === 'emblemas' && (
             <View className="bg-yellow-500/10 px-3.5 py-1.5 rounded-full border border-yellow-500/20">
-              <Text className="text-yellow-605 dark:text-yellow-500 text-[10px] font-black uppercase tracking-wider">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-yellow-600 dark:text-yellow-500 text-[10px] uppercase tracking-wider"
+              >
                 {(userData?.earnedBadges || []).length} Conquistados
               </Text>
             </View>
           )}
           {activeSubTab === 'teste-fisico' && (
             <View className="bg-red-500/10 px-3.5 py-1.5 rounded-full border border-red-500/20">
-              <Text className="text-red-500 text-[10px] font-black uppercase tracking-wider">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-red-500 text-[10px] uppercase tracking-wider"
+              >
                 {physicalTests.length} {physicalTests.length === 1 ? 'Avaliação' : 'Avaliações'}
               </Text>
             </View>
@@ -726,23 +745,27 @@ export default function NotificacoesScreen() {
         </View>
 
         {/* Sub-tab Selectors (Three-way toggle) */}
-        <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-2xl mb-4">
+        <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl mb-4 border border-gray-200/50 dark:border-white/5">
           <TouchableOpacity 
             onPress={() => setActiveSubTab('ofensivas')}
             style={activeSubTab === 'ofensivas' ? {
-              backgroundColor: isDark ? '#2b2b2b' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#fff',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.12,
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Flame size={15} color={activeSubTab === 'ofensivas' ? '#f97316' : '#888'} style={{ marginRight: 4 }} />
+            <Flame size={14} color={activeSubTab === 'ofensivas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
             <Text 
-              style={{ color: activeSubTab === 'ofensivas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[11px] font-black uppercase tracking-tight text-center"
+              style={{ 
+                fontFamily: 'NeueMachina-Ultrabold',
+                color: activeSubTab === 'ofensivas' ? (isDark ? '#fff' : '#111') : '#888',
+                paddingRight: 2,
+              }}
+              className="text-[10px] uppercase tracking-normal text-center"
               numberOfLines={1}
             >
               Ofensivas
@@ -752,19 +775,23 @@ export default function NotificacoesScreen() {
           <TouchableOpacity 
             onPress={() => setActiveSubTab('emblemas')}
             style={activeSubTab === 'emblemas' ? {
-              backgroundColor: isDark ? '#2b2b2b' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#fff',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.12,
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Award size={15} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
+            <Award size={14} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
             <Text 
-              style={{ color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[11px] font-black uppercase tracking-tight text-center"
+              style={{ 
+                fontFamily: 'NeueMachina-Ultrabold',
+                color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#888',
+                paddingRight: 2,
+              }}
+              className="text-[10px] uppercase tracking-normal text-center"
               numberOfLines={1}
             >
               Emblemas
@@ -774,19 +801,23 @@ export default function NotificacoesScreen() {
           <TouchableOpacity 
             onPress={() => setActiveSubTab('teste-fisico')}
             style={activeSubTab === 'teste-fisico' ? {
-              backgroundColor: isDark ? '#2b2b2b' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#fff',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.12,
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Activity size={15} color={activeSubTab === 'teste-fisico' ? '#ef4444' : '#888'} style={{ marginRight: 4 }} />
+            <Activity size={14} color={activeSubTab === 'teste-fisico' ? '#ef4444' : '#888'} style={{ marginRight: 4 }} />
             <Text 
-              style={{ color: activeSubTab === 'teste-fisico' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[11px] font-black uppercase tracking-tight text-center"
+              style={{ 
+                fontFamily: 'NeueMachina-Ultrabold',
+                color: activeSubTab === 'teste-fisico' ? (isDark ? '#fff' : '#111') : '#888',
+                paddingRight: 2,
+              }}
+              className="text-[9.5px] uppercase tracking-normal text-center"
               numberOfLines={1}
             >
               Teste Físico
@@ -799,23 +830,26 @@ export default function NotificacoesScreen() {
         <View className="flex-1">
           {/* Sub-selector: Minha Ofensiva vs Ranking */}
           <View className="px-6 mb-3">
-            <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-2xl">
+            <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl border border-gray-200/50 dark:border-white/5">
               <TouchableOpacity
                 onPress={() => setOfensivaSubTab('ofensiva')}
                 style={ofensivaSubTab === 'ofensiva' ? {
-                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#fff',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.12,
                   shadowRadius: 1.5,
                   elevation: 2,
                 } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center flex-row"
+                className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
               >
-                <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#f97316' : '#888'} style={{ marginRight: 6 }} />
+                <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
                 <Text
-                  style={{ color: ofensivaSubTab === 'ofensiva' ? (isDark ? '#fff' : '#111') : '#888' }}
-                  className="text-xs font-black uppercase tracking-tight"
+                  style={{ 
+                    fontFamily: 'NeueMachina-Ultrabold',
+                    color: ofensivaSubTab === 'ofensiva' ? (isDark ? '#fff' : '#111') : '#888' 
+                  }}
+                  className="text-[11px] uppercase tracking-normal"
                 >
                   Minha Ofensiva
                 </Text>
@@ -824,19 +858,22 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setOfensivaSubTab('ranking')}
                 style={ofensivaSubTab === 'ranking' ? {
-                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#fff',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.12,
                   shadowRadius: 1.5,
                   elevation: 2,
                 } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center flex-row"
+                className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
               >
-                <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 6 }} />
+                <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
                 <Text
-                  style={{ color: ofensivaSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#888' }}
-                  className="text-xs font-black uppercase tracking-tight"
+                  style={{ 
+                    fontFamily: 'NeueMachina-Ultrabold',
+                    color: ofensivaSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#888' 
+                  }}
+                  className="text-[11px] uppercase tracking-normal"
                 >
                   Ranking
                 </Text>
@@ -850,44 +887,82 @@ export default function NotificacoesScreen() {
           <View className="items-center py-6">
             <View className="relative items-center justify-center">
               {/* Outer Glow Circles */}
-              <View className="w-44 h-44 rounded-full bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/10 items-center justify-center">
-                <View className="w-36 h-36 rounded-full bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/20 items-center justify-center">
-                  <Flame size={80} color="#f97316" />
+              <View className="w-52 h-52 rounded-full bg-yellow-500/5 dark:bg-yellow-500/10 border border-yellow-500/20 items-center justify-center">
+                <View className="w-40 h-40 rounded-full bg-yellow-500/10 dark:bg-yellow-500/15 border border-yellow-500/30 items-center justify-center">
+                  <View 
+                    style={{
+                      shadowColor: '#eab308',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 10,
+                      elevation: 4,
+                    }}
+                    className="w-28 h-28 rounded-full bg-white dark:bg-[#161616] border-2 border-yellow-500/40 items-center justify-center"
+                  >
+                    <Flame size={56} color="#eab308" />
+                  </View>
                 </View>
               </View>
             </View>
-            <Text className="text-5xl font-black text-gray-900 dark:text-white mt-6 mb-1">
-              {userData?.currentStreak || 0} {userData?.currentStreak === 1 ? 'Dia' : 'Dias'}
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-6xl text-gray-900 dark:text-white mt-5 mb-0.5 tracking-tight"
+            >
+              {userData?.currentStreak || 0} {userData?.currentStreak === 1 ? 'DIA' : 'DIAS'}
             </Text>
-            <Text className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[2px] text-center">
-              De Ofensiva de Aulas 🔥
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[3px] text-center"
+            >
+              DE OFENSIVA DE AULAS 🔥
             </Text>
           </View>
 
           {/* Week Attendance Visualizer */}
-          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm">
-            <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">
-              📅 Minha Semana
-            </Text>
+          <View className="bg-white dark:bg-[#141414] p-5 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-5 shadow-sm">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center">
+                <Calendar size={14} color="#eab308" />
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[10px] uppercase tracking-[2px] text-gray-400 dark:text-gray-500 ml-1.5"
+                >
+                  MINHA SEMANA
+                </Text>
+              </View>
+              <View className="bg-yellow-500/10 px-2.5 py-0.5 rounded-full border border-yellow-500/20">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[9px] text-[#ca8a04] dark:text-[#facc15] uppercase tracking-wider"
+                >
+                  {weekDays.filter(d => d.attended).length} DE 7 DIAS
+                </Text>
+              </View>
+            </View>
             {weekLoading ? (
-              <ActivityIndicator size="small" color="#f97316" className="py-4" />
+              <ActivityIndicator size="small" color="#eab308" className="py-4" />
             ) : (
               <View className="flex-row justify-between">
                 {weekDays.map((day) => {
                   let containerBg = 'transparent';
-                  let containerBorder = isDark ? '#333' : '#eee';
+                  let containerBorder = isDark ? '#262626' : '#f0f0f2';
                   
                   if (day.attended) {
-                    containerBg = isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)';
-                    containerBorder = 'rgba(249, 115, 22, 0.2)';
+                    containerBg = isDark ? 'rgba(234, 179, 8, 0.18)' : 'rgba(234, 179, 8, 0.12)';
+                    containerBorder = '#eab308';
                   } else if (day.isToday) {
-                    containerBg = isDark ? '#2b2b2b' : '#f3f4f6';
-                    containerBorder = isDark ? '#444' : '#d1d5db';
+                    containerBg = isDark ? '#262626' : '#f4f4f5';
+                    containerBorder = isDark ? '#52525b' : '#18181b';
                   }
 
                   return (
                     <View key={day.dateStr} className="items-center flex-1">
-                      <Text className="text-[10px] font-bold text-gray-400 uppercase mb-2">{day.label}</Text>
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-[10px] text-gray-400 dark:text-gray-500 uppercase mb-2"
+                      >
+                        {day.label}
+                      </Text>
                       <View 
                         style={{
                           backgroundColor: containerBg,
@@ -896,15 +971,16 @@ export default function NotificacoesScreen() {
                         className="w-10 h-10 rounded-full items-center justify-center border"
                       >
                         {day.attended ? (
-                          <Flame size={20} color="#f97316" />
+                          <Flame size={20} color="#eab308" />
                         ) : (
                           <Text 
                             style={{
+                              fontFamily: 'NeueMachina-Ultrabold',
                               color: day.isToday 
                                 ? (isDark ? '#fff' : '#111') 
-                                : (isDark ? '#444' : '#ccc')
+                                : (isDark ? '#444' : '#bbb')
                             }}
-                            className="text-xs font-extrabold"
+                            className="text-xs"
                           >
                             {day.dayNum}
                           </Text>
@@ -918,30 +994,41 @@ export default function NotificacoesScreen() {
           </View>
 
           {/* Card Próxima Aula & Check-in */}
-          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm overflow-hidden">
+          <View className="bg-white dark:bg-[#141414] p-5 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-5 shadow-sm overflow-hidden">
             {/* Header com Tag de Status */}
             <View className="flex-row items-center justify-between mb-3.5">
               <View className="flex-row items-center flex-1 mr-2">
-                <View className={`w-8 h-8 rounded-xl items-center justify-center mr-2.5 ${
-                  isCheckedInToday ? 'bg-emerald-500/10' : isClassToday ? 'bg-orange-500/10' : 'bg-blue-500/10'
+                <View className={`w-9 h-9 rounded-2xl items-center justify-center mr-2.5 border ${
+                  isCheckedInToday 
+                    ? 'bg-emerald-500/10 border-emerald-500/20' 
+                    : isClassToday 
+                      ? 'bg-yellow-500/15 border-yellow-500/30' 
+                      : 'bg-black/5 dark:bg-white/10 border-black/10 dark:border-white/10'
                 }`}>
                   {isCheckedInToday ? (
                     <CheckCheck size={18} color="#10b981" />
                   ) : (
-                    <Flame size={18} color={isClassToday ? '#f97316' : '#014fa4'} />
+                    <Flame size={18} color="#eab308" />
                   )}
                 </View>
                 <View className="flex-1">
-                  <Text className={`text-[9px] font-black uppercase tracking-widest ${
-                    isCheckedInToday ? 'text-emerald-500' : isClassToday ? 'text-orange-500' : 'text-[#014fa4]'
-                  }`}>
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[9px] uppercase tracking-wider ${
+                      isCheckedInToday ? 'text-emerald-500' : isClassToday ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
                     {isCheckedInToday 
                       ? 'PRESENÇA CONFIRMADA HOJE' 
                       : isClassToday 
                         ? 'AULA DISPONÍVEL HOJE' 
                         : 'PRÓXIMA AULA'}
                   </Text>
-                  <Text className="text-base font-black text-gray-900 dark:text-white leading-tight mt-0.5" numberOfLines={1}>
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-lg uppercase text-gray-900 dark:text-white leading-tight mt-0.5" 
+                    numberOfLines={1}
+                  >
                     {activeClassToDisplay ? activeClassToDisplay.name : 'Grade da Unidade'}
                   </Text>
                 </View>
@@ -950,15 +1037,28 @@ export default function NotificacoesScreen() {
               {isCheckedInToday ? (
                 <View className="bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 flex-row items-center">
                   <Check size={11} color="#10b981" style={{ marginRight: 3 }} />
-                  <Text className="text-emerald-500 text-[8px] font-black uppercase tracking-wider">Feito</Text>
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-emerald-500 text-[8px] uppercase tracking-wider"
+                  >
+                    Feito
+                  </Text>
                 </View>
               ) : isClassToday ? (
-                <View className="bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
-                  <Text className="text-orange-500 text-[8px] font-black uppercase tracking-wider">Hoje</Text>
+                <View className="bg-yellow-500/15 px-2.5 py-1 rounded-full border border-yellow-500/30">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[#ca8a04] dark:text-[#facc15] text-[8px] uppercase tracking-wider"
+                  >
+                    Hoje
+                  </Text>
                 </View>
               ) : upcomingDayLabel ? (
                 <View className="bg-gray-100 dark:bg-white/5 px-2.5 py-1 rounded-full border border-gray-200 dark:border-white/5">
-                  <Text className="text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-wider">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-gray-600 dark:text-gray-400 text-[8px] uppercase tracking-wider"
+                  >
                     {upcomingDayLabel}
                   </Text>
                 </View>
@@ -967,10 +1067,10 @@ export default function NotificacoesScreen() {
 
             {/* Informações detalhadas da aula */}
             {activeClassToDisplay ? (
-              <View className="bg-gray-50 dark:bg-[#151515] p-3.5 rounded-2xl mb-4 border border-gray-100 dark:border-white/5">
+              <View className="bg-gray-50 dark:bg-[#181818] p-3.5 rounded-2xl mb-4 border border-gray-200/60 dark:border-white/5">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1 mr-2">
-                    <Clock size={13} color="#888" style={{ marginRight: 6 }} />
+                    <Clock size={13} color={isDark ? '#aaa' : '#666'} style={{ marginRight: 6 }} />
                     <Text className="text-xs font-bold text-gray-800 dark:text-gray-200">
                       {isClassToday || isCheckedInToday ? 'Hoje' : `${upcomingDayLabel} (${upcomingDateLabel})`} às {activeClassToDisplay.time}
                       {activeClassToDisplay.duration ? ` • ${activeClassToDisplay.duration} min` : ''}
@@ -978,7 +1078,7 @@ export default function NotificacoesScreen() {
                   </View>
                   {activeClassToDisplay.teacherName ? (
                     <View className="flex-row items-center">
-                      <User size={13} color="#888" style={{ marginRight: 5 }} />
+                      <User size={13} color={isDark ? '#aaa' : '#666'} style={{ marginRight: 5 }} />
                       <Text className="text-xs font-bold text-gray-500 dark:text-gray-400" numberOfLines={1}>
                         {activeClassToDisplay.teacherName}
                       </Text>
@@ -987,7 +1087,7 @@ export default function NotificacoesScreen() {
                 </View>
               </View>
             ) : (
-              <View className="bg-gray-50 dark:bg-[#151515] p-3.5 rounded-2xl mb-4 border border-gray-100 dark:border-white/5">
+              <View className="bg-gray-50 dark:bg-[#181818] p-3.5 rounded-2xl mb-4 border border-gray-200/60 dark:border-white/5">
                 <Text className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                   Nenhuma aula agendada no momento.
                 </Text>
@@ -1011,7 +1111,12 @@ export default function NotificacoesScreen() {
                   onPress={() => router.push('/atividades')}
                   className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5"
                 >
-                  <Text className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Grade</Text>
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[10px] uppercase tracking-wider text-gray-700 dark:text-gray-300"
+                  >
+                    Grade
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : isClassToday ? (
@@ -1020,14 +1125,17 @@ export default function NotificacoesScreen() {
                   onPress={() => handleCheckinClass(activeClassToDisplay)}
                   disabled={checkinSubmitting}
                   activeOpacity={0.8}
-                  className="w-full py-3.5 rounded-2xl bg-orange-500 items-center justify-center flex-row shadow-lg shadow-orange-500/25"
+                  className="w-full py-3.5 rounded-2xl bg-[#eab308] items-center justify-center flex-row shadow-lg shadow-yellow-500/25 active:scale-98"
                 >
                   {checkinSubmitting ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <ActivityIndicator color="#000" size="small" />
                   ) : (
                     <>
-                      <Flame size={18} color="#fff" style={{ marginRight: 8 }} />
-                      <Text className="text-white text-xs font-black uppercase tracking-wider">
+                      <Flame size={18} color="#000" style={{ marginRight: 8 }} />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-black text-xs uppercase tracking-wider"
+                      >
                         Fazer Check-in Agora
                       </Text>
                     </>
@@ -1040,7 +1148,7 @@ export default function NotificacoesScreen() {
                     className="py-1.5 items-center justify-center flex-row"
                   >
                     <Text className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
-                      Irá em outro horário hoje? <Text className="text-orange-500 font-extrabold">Trocar turma ({todayClasses.length})</Text>
+                      Irá em outro horário hoje? <Text className="text-[#ca8a04] dark:text-[#facc15] font-extrabold">Trocar turma ({todayClasses.length})</Text>
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1052,9 +1160,12 @@ export default function NotificacoesScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push('/atividades')}
-                  className="px-4 py-2.5 rounded-xl bg-[#014fa4] flex-row items-center"
+                  className="px-4 py-2.5 rounded-xl bg-black dark:bg-white flex-row items-center active:scale-95"
                 >
-                  <Text className="text-white text-[11px] font-black uppercase tracking-wider">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-white dark:text-black text-[10px] uppercase tracking-wider"
+                  >
                     Ver Grade
                   </Text>
                 </TouchableOpacity>
@@ -1065,25 +1176,25 @@ export default function NotificacoesScreen() {
           {/* Streak Status Advice Alert */}
           {(() => {
             const status = getStreakStatus();
-            let bgCol = isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 246, 255, 0.2)';
-            let borderCol = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)';
-            let textCol = '#3b82f6';
+            let bgCol = isDark ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.08)';
+            let borderCol = isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.2)';
+            let textCol = '#ca8a04';
 
             if (status.urgencyColor.includes('emerald')) {
-              bgCol = isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(240, 253, 250, 0.2)';
-              borderCol = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)';
+              bgCol = isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.08)';
+              borderCol = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.2)';
               textCol = '#10b981';
             } else if (status.urgencyColor.includes('orange')) {
-              bgCol = isDark ? 'rgba(249, 115, 22, 0.1)' : 'rgba(255, 247, 237, 0.2)';
-              borderCol = isDark ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.15)';
+              bgCol = isDark ? 'rgba(249, 115, 22, 0.08)' : 'rgba(249, 115, 22, 0.08)';
+              borderCol = isDark ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.2)';
               textCol = '#f97316';
             } else if (status.urgencyColor.includes('rose')) {
-              bgCol = isDark ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255, 241, 242, 0.2)';
-              borderCol = isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.15)';
+              bgCol = isDark ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.08)';
+              borderCol = isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.2)';
               textCol = '#f43f5e';
             } else if (status.urgencyColor.includes('gray')) {
-              bgCol = isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(249, 250, 251, 0.2)';
-              borderCol = isDark ? 'rgba(107, 114, 128, 0.2)' : 'rgba(107, 114, 128, 0.15)';
+              bgCol = isDark ? 'rgba(107, 114, 128, 0.08)' : 'rgba(107, 114, 128, 0.08)';
+              borderCol = isDark ? 'rgba(107, 114, 128, 0.2)' : 'rgba(107, 114, 128, 0.2)';
               textCol = '#6b7280';
             }
 
@@ -1093,17 +1204,17 @@ export default function NotificacoesScreen() {
                   backgroundColor: bgCol,
                   borderColor: borderCol,
                 }}
-                className="p-5 rounded-3xl border flex-row items-center mb-6"
+                className="p-4 rounded-3xl border flex-row items-center mb-5"
               >
-                <AlertCircle size={24} color={status.iconColor} style={{ marginRight: 14 }} />
+                <AlertCircle size={22} color={status.iconColor} style={{ marginRight: 12 }} />
                 <View className="flex-1">
                   <Text 
-                    style={{ color: textCol }}
-                    className="text-[10px] font-black uppercase tracking-wider mb-0.5"
+                    style={{ fontFamily: 'NeueMachina-Ultrabold', color: textCol }}
+                    className="text-[10px] uppercase tracking-wider mb-0.5"
                   >
                     Status da Chama
                   </Text>
-                  <Text className="text-[13px] font-bold text-gray-750 dark:text-gray-300 leading-relaxed">
+                  <Text className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 leading-relaxed">
                     {status.message}
                   </Text>
                 </View>
@@ -1112,17 +1223,35 @@ export default function NotificacoesScreen() {
           })()}
 
           {/* Mini Stats Cards */}
-          <View className="flex-row justify-between mb-6">
-            <View className="w-[48%] bg-white dark:bg-[#1a1a1a] p-5 rounded-3xl border border-gray-100 dark:border-white/5 items-center">
-              <Trophy size={28} color="#eab308" style={{ marginBottom: 8 }} />
-              <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">Recorde Máximo</Text>
-              <Text className="text-xl font-black text-gray-900 dark:text-white">{userData?.longestStreak || 0} Dias</Text>
+          <View className="flex-row justify-between mb-5">
+            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center">
+              <Trophy size={26} color="#eab308" style={{ marginBottom: 6 }} />
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 text-center"
+              >
+                Recorde Máximo
+              </Text>
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-lg text-gray-900 dark:text-white uppercase"
+              >
+                {userData?.longestStreak || 0} {userData?.longestStreak === 1 ? 'Dia' : 'Dias'}
+              </Text>
             </View>
 
-            <View className="w-[48%] bg-white dark:bg-[#1a1a1a] p-5 rounded-3xl border border-gray-100 dark:border-white/5 items-center">
-              <Calendar size={28} color="#014fa4" style={{ marginBottom: 8 }} />
-              <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">Última Aula</Text>
-              <Text className="text-xs font-black text-gray-900 dark:text-white text-center mt-1">
+            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center">
+              <Calendar size={26} color="#eab308" style={{ marginBottom: 6 }} />
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 text-center"
+              >
+                Última Aula
+              </Text>
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-xs text-gray-900 dark:text-white text-center mt-1 uppercase"
+              >
                 {userData?.lastAttendanceDate 
                   ? new Date(userData.lastAttendanceDate + 'T12:00:00').toLocaleDateString('pt-BR') 
                   : 'Nenhuma'}
@@ -1131,10 +1260,15 @@ export default function NotificacoesScreen() {
           </View>
 
           {/* Gamified Explanation Banner */}
-          <View className="bg-blue-500/5 p-6 rounded-3xl border border-blue-500/10 mb-6">
-            <View className="flex-row items-center mb-3">
-              <Sparkles size={18} color="#014fa4" style={{ marginRight: 8 }} />
-              <Text className="text-xs font-black text-[#014fa4] uppercase tracking-wider">Como funciona?</Text>
+          <View className="bg-yellow-500/5 dark:bg-yellow-500/10 p-5 rounded-3xl border border-yellow-500/20 mb-6">
+            <View className="flex-row items-center mb-2.5">
+              <Sparkles size={16} color="#eab308" style={{ marginRight: 7 }} />
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-xs uppercase tracking-wider text-[#ca8a04] dark:text-[#facc15]"
+              >
+                Como funciona?
+              </Text>
             </View>
             <Text className="text-[12px] font-medium text-gray-600 dark:text-gray-400 leading-relaxed">
               Cada check-in de aula realizado acende a sua chama! Você precisa realizar uma nova aula a cada 5 dias para manter a sua chama acesa e aumentar sua ofensiva.
@@ -1146,22 +1280,25 @@ export default function NotificacoesScreen() {
           {/* Ranking Header Filters */}
           <View className="px-6 mb-4">
             {/* Filter 1: Current Streak vs Longest Streak */}
-            <View className="flex-row bg-gray-100 dark:bg-[#151515] p-1 rounded-xl mb-3 border border-gray-200/50 dark:border-white/5">
+            <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl mb-3 border border-gray-200/50 dark:border-white/5">
               <TouchableOpacity
                 onPress={() => setRankingFilter('current')}
                 style={rankingFilter === 'current' ? {
-                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#fff',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.1,
                   shadowRadius: 1,
                   elevation: 1,
                 } : null}
-                className="flex-1 py-2 rounded-lg items-center justify-center"
+                className="flex-1 py-2 rounded-xl items-center justify-center"
               >
                 <Text 
-                  style={{ color: rankingFilter === 'current' ? (isDark ? '#fff' : '#111') : '#777' }}
-                  className="text-xs font-bold"
+                  style={{ 
+                    fontFamily: 'NeueMachina-Ultrabold',
+                    color: rankingFilter === 'current' ? (isDark ? '#fff' : '#111') : '#888' 
+                  }}
+                  className="text-[11px] uppercase tracking-wider"
                 >
                   Ofensiva Atual
                 </Text>
@@ -1170,18 +1307,21 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setRankingFilter('longest')}
                 style={rankingFilter === 'longest' ? {
-                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#fff',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.1,
                   shadowRadius: 1,
                   elevation: 1,
                 } : null}
-                className="flex-1 py-2 rounded-lg items-center justify-center"
+                className="flex-1 py-2 rounded-xl items-center justify-center"
               >
                 <Text 
-                  style={{ color: rankingFilter === 'longest' ? (isDark ? '#fff' : '#111') : '#777' }}
-                  className="text-xs font-bold"
+                  style={{ 
+                    fontFamily: 'NeueMachina-Ultrabold',
+                    color: rankingFilter === 'longest' ? (isDark ? '#fff' : '#111') : '#888' 
+                  }}
+                  className="text-[11px] uppercase tracking-wider"
                 >
                   Recorde Histórico
                 </Text>
@@ -1198,22 +1338,23 @@ export default function NotificacoesScreen() {
                     onPress={() => setRankingUnit(unit.id)}
                     style={{
                       backgroundColor: isActive 
-                        ? (isDark ? '#fff' : '#111') 
-                        : (isDark ? '#1a1a1a' : '#fff'),
+                        ? (isDark ? '#fff' : '#000') 
+                        : (isDark ? '#161616' : '#fff'),
                       borderColor: isActive
-                        ? (isDark ? '#fff' : '#111')
-                        : (isDark ? '#333' : '#eee'),
+                        ? (isDark ? '#fff' : '#000')
+                        : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'),
                       borderWidth: 1,
                     }}
                     className="px-4 py-1.5 rounded-full mr-2"
                   >
                     <Text
                       style={{
+                        fontFamily: 'NeueMachina-Ultrabold',
                         color: isActive 
                           ? (isDark ? '#000' : '#fff') 
                           : (isDark ? '#888' : '#666')
                       }}
-                      className="text-[11px] font-bold"
+                      className="text-[10px] uppercase tracking-wider"
                     >
                       {unit.label}
                     </Text>
@@ -1233,7 +1374,9 @@ export default function NotificacoesScreen() {
               keyExtractor={(item) => item.uid}
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
               renderItem={({ item, index }) => {
-                const isMe = item.uid === user?.uid;
+                const isMe = item.uid === user?.uid || 
+                  (item.evoMemberId && (item.evoMemberId === userData?.evoMemberId || item.evoMemberId === userData?.matricula)) ||
+                  (item.email && item.email === (userData?.email || user?.email));
                 const score = rankingFilter === 'current' ? item.currentStreak : item.longestStreak;
                 
                 // Rank medal or display text
@@ -1266,11 +1409,11 @@ export default function NotificacoesScreen() {
                   <View
                     style={{
                       backgroundColor: isMe 
-                        ? (isDark ? '#2B2619' : '#FEFBF3')
-                        : (isDark ? '#1a1a1a' : '#fff'),
+                        ? (isDark ? '#1F1B12' : '#FEFDF8')
+                        : (isDark ? '#141414' : '#fff'),
                       borderColor: isMe 
                         ? '#eab308' 
-                        : (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6'),
+                        : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'),
                       borderWidth: isMe ? 1.5 : 1,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 1 },
@@ -1286,34 +1429,44 @@ export default function NotificacoesScreen() {
                         {isMedal ? (
                           <Text className="text-xl">{rankLabel}</Text>
                         ) : (
-                          <Text className="text-sm font-black text-gray-400 dark:text-gray-500">#{rankLabel}</Text>
+                          <Text 
+                            style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                            className="text-xs text-gray-400 dark:text-gray-500"
+                          >
+                            #{rankLabel}
+                          </Text>
                         )}
                       </View>
 
                       {/* Avatar */}
-                      <View className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 dark:border-white/5 mr-3">
+                      <View className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-white/10 mr-3">
                         <Image source={displayPhoto} className="w-full h-full object-cover" />
                       </View>
 
                       {/* Name & Unit info */}
                       <View className="flex-1 pr-2">
                         <Text 
-                          style={isMe ? { fontWeight: '900' } : { fontWeight: '700' }}
-                          className="text-[14px] text-gray-900 dark:text-white"
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className={`text-[13px] uppercase ${isMe ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-900 dark:text-white'}`}
                           numberOfLines={1}
                         >
                           {item.name || item.nome || 'Aluno'} {isMe && '(Você)'}
                         </Text>
-                        <Text className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                        <Text className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                           {capitalizedUnit}
                         </Text>
                       </View>
                     </View>
 
                     {/* Streak indicator */}
-                    <View className="flex-row items-center bg-orange-500/5 px-3 py-1.5 rounded-full border border-orange-500/10">
-                      <Flame size={14} color="#f97316" style={{ marginRight: 4 }} />
-                      <Text className="text-xs font-black text-orange-500">{score}</Text>
+                    <View className="flex-row items-center bg-yellow-500/10 dark:bg-yellow-500/15 px-3 py-1.5 rounded-full border border-yellow-500/25">
+                      <Flame size={14} color="#eab308" style={{ marginRight: 4 }} />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-xs text-[#ca8a04] dark:text-[#facc15]"
+                      >
+                        {score}
+                      </Text>
                     </View>
                   </View>
                 );
@@ -1321,7 +1474,7 @@ export default function NotificacoesScreen() {
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center pt-20 px-8">
                   <Trophy size={48} color={isDark ? '#333' : '#ddd'} style={{ marginBottom: 12 }} />
-                  <Text className="text-gray-450 text-center font-bold">Nenhum aluno com ofensiva nesta unidade.</Text>
+                  <Text className="text-gray-400 text-center font-bold">Nenhum aluno com ofensiva nesta unidade.</Text>
                 </View>
               }
             />
@@ -1352,7 +1505,7 @@ export default function NotificacoesScreen() {
                   shadowRadius: 4,
                   elevation: 2,
                 }}
-                className="bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl mb-4 border border-red-500/25 dark:border-red-500/20"
+                className="bg-white dark:bg-[#141414] p-4 rounded-3xl mb-4 border border-red-500/25 dark:border-red-500/20"
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1 pr-2">
@@ -1361,7 +1514,10 @@ export default function NotificacoesScreen() {
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center mb-0.5">
-                        <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider mr-2">
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-xs text-gray-900 dark:text-white uppercase tracking-wider mr-2"
+                        >
                           Teste Físico
                         </Text>
                       </View>
@@ -1373,7 +1529,12 @@ export default function NotificacoesScreen() {
                     </View>
                   </View>
                   <View className="bg-red-500/10 px-3 py-1.5 rounded-full flex-row items-center border border-red-500/20">
-                    <Text className="text-red-500 text-[10px] font-black uppercase mr-1">Abrir</Text>
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-red-500 text-[10px] uppercase mr-1"
+                    >
+                      Abrir
+                    </Text>
                     <ChevronRight size={12} color="#ef4444" />
                   </View>
                 </View>
@@ -1409,12 +1570,12 @@ export default function NotificacoesScreen() {
                     width: '30.33%',
                     margin: '1.5%',
                   }}
-                  className={`bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl items-center justify-center border ${
+                  className={`bg-white dark:bg-[#141414] p-4 rounded-3xl items-center justify-center border ${
                     isPhysicalTestBadge
                       ? 'border-red-500/30 dark:border-red-500/20 shadow-sm shadow-red-500/10'
                       : isEarned
                       ? 'border-yellow-500/30 dark:border-yellow-500/20 shadow-sm shadow-black/5'
-                      : 'border-gray-100 dark:border-white/5 opacity-40'
+                      : 'border-gray-200/60 dark:border-white/5 opacity-40'
                   }`}
                 >
                   <View className="relative w-14 h-14 items-center justify-center mb-2.5">
@@ -1435,7 +1596,7 @@ export default function NotificacoesScreen() {
                     )}
 
                     {isPhysicalTestBadge && (
-                      <View className="absolute -bottom-1 -right-1 bg-red-500 p-1 rounded-full border border-white dark:border-[#1a1a1a]">
+                      <View className="absolute -bottom-1 -right-1 bg-red-500 p-1 rounded-full border border-white dark:border-[#141414]">
                         <Activity size={9} color="#fff" />
                       </View>
                     )}
@@ -1443,7 +1604,8 @@ export default function NotificacoesScreen() {
                   
                   <Text
                     numberOfLines={1}
-                    className={`text-[10px] text-center font-black uppercase tracking-wider ${
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[10px] text-center uppercase tracking-wider ${
                       isPhysicalTestBadge 
                         ? 'text-red-500 dark:text-red-400' 
                         : isEarned 
@@ -1468,7 +1630,7 @@ export default function NotificacoesScreen() {
         /* Teste Físico View */
         <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           {/* Hero Card com Emblema e Estatísticas */}
-          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm">
+          <View className="bg-white dark:bg-[#141414] p-6 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-6 shadow-sm">
             <View className="flex-row items-center justify-between mb-6">
               <View className="flex-row items-center flex-1">
                 <View className="w-14 h-14 rounded-2xl bg-red-500/10 items-center justify-center mr-4 border border-red-500/20">
@@ -1476,7 +1638,10 @@ export default function NotificacoesScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center">
-                    <Text className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-lg text-gray-900 dark:text-white uppercase tracking-tight"
+                    >
                       Teste Físico
                     </Text>
                   </View>
@@ -1492,34 +1657,67 @@ export default function NotificacoesScreen() {
               {/* Recorde */}
               <View className="flex-1 bg-amber-500/5 dark:bg-amber-500/10 p-3.5 rounded-2xl border border-amber-500/20 items-center mr-2">
                 <Trophy size={18} color="#eab308" style={{ marginBottom: 4 }} />
-                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Recorde</Text>
-                <Text className="text-base font-black text-amber-500 mt-0.5">{maxPhysicalScore} pts</Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center"
+                >
+                  Recorde
+                </Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-base text-amber-500 mt-0.5"
+                >
+                  {maxPhysicalScore} pts
+                </Text>
               </View>
 
               {/* Último */}
               <View className="flex-1 bg-red-500/5 dark:bg-red-500/10 p-3.5 rounded-2xl border border-red-500/20 items-center mr-2">
                 <Flame size={18} color="#ef4444" style={{ marginBottom: 4 }} />
-                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Último</Text>
-                <Text className="text-base font-black text-red-500 mt-0.5">{latestPhysicalTest ? `${latestPhysicalTest.score} pts` : '--'}</Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center"
+                >
+                  Último
+                </Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-base text-red-500 mt-0.5"
+                >
+                  {latestPhysicalTest ? `${latestPhysicalTest.score} pts` : '--'}
+                </Text>
               </View>
 
               {/* Avaliações */}
               <View className="flex-1 bg-blue-500/5 dark:bg-blue-500/10 p-3.5 rounded-2xl border border-blue-500/20 items-center">
                 <Calendar size={18} color="#3b82f6" style={{ marginBottom: 4 }} />
-                <Text className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Testes</Text>
-                <Text className="text-base font-black text-blue-500 mt-0.5">{physicalTests.length}</Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center"
+                >
+                  Testes
+                </Text>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-base text-blue-500 mt-0.5"
+                >
+                  {physicalTests.length}
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* Card: Adicionar Novo Log de Teste Físico (estilo Intranet) */}
-          <View className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5 mb-6 shadow-sm">
+          {/* Card: Adicionar Novo Log de Teste Físico */}
+          <View className="bg-white dark:bg-[#141414] p-6 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-6 shadow-sm">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center">
                 <View className="w-8 h-8 rounded-xl bg-emerald-500/10 items-center justify-center mr-2.5">
                   <Plus size={16} color="#10b981" />
                 </View>
-                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-sm text-gray-900 dark:text-white uppercase tracking-wider"
+                >
                   Adicionar Novo Log
                 </Text>
               </View>
@@ -1527,7 +1725,10 @@ export default function NotificacoesScreen() {
                 onPress={() => setShowAddForm(!showAddForm)}
                 className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#252525]"
               >
-                <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-[10px] uppercase text-gray-600 dark:text-gray-300"
+                >
                   {showAddForm ? 'Ocultar' : 'Novo Teste'}
                 </Text>
               </TouchableOpacity>
@@ -1538,7 +1739,10 @@ export default function NotificacoesScreen() {
                 {/* Campo Data */}
                 <View className="mb-4">
                   <View className="flex-row justify-between items-center mb-1.5">
-                    <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+                    >
                       DATA:
                     </Text>
                     <TouchableOpacity 
@@ -1548,9 +1752,14 @@ export default function NotificacoesScreen() {
                         const m = String(now.getMonth() + 1).padStart(2, '0');
                         setTestDateInput(`${d}/${m}/${now.getFullYear()}`);
                       }}
-                      className="bg-blue-500/10 px-2 py-0.5 rounded-md"
+                      className="bg-yellow-500/10 px-2 py-0.5 rounded-md"
                     >
-                      <Text className="text-[10px] font-bold text-blue-500">Hoje</Text>
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-[10px] text-[#ca8a04] dark:text-[#facc15] uppercase"
+                      >
+                        Hoje
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <TextInput
@@ -1565,7 +1774,10 @@ export default function NotificacoesScreen() {
 
                 {/* Campo Pontuação Total */}
                 <View className="mb-5">
-                  <Text className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5"
+                  >
                     PONTUAÇÃO TOTAL:
                   </Text>
                   <TextInput
@@ -1574,7 +1786,8 @@ export default function NotificacoesScreen() {
                     placeholder="Ex: 180"
                     placeholderTextColor="#888"
                     keyboardType="numeric"
-                    className="bg-gray-50 dark:bg-[#111] p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white font-black text-lg"
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="bg-gray-50 dark:bg-[#111] p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-lg"
                   />
                 </View>
 
@@ -1583,14 +1796,17 @@ export default function NotificacoesScreen() {
                   onPress={handleSaveTest}
                   disabled={savingTest}
                   activeOpacity={0.85}
-                  className="bg-emerald-500 py-3.5 rounded-2xl items-center justify-center flex-row shadow-md shadow-emerald-500/20"
+                  className="bg-[#eab308] py-3.5 rounded-2xl items-center justify-center flex-row shadow-md shadow-yellow-500/20 active:scale-98"
                 >
                   {savingTest ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                    <ActivityIndicator size="small" color="#000" />
                   ) : (
                     <>
-                      <Check size={16} color="#fff" style={{ marginRight: 6 }} />
-                      <Text className="text-white font-black uppercase text-xs tracking-wider">
+                      <Check size={16} color="#000" style={{ marginRight: 6 }} />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-black uppercase text-xs tracking-wider"
+                      >
                         Adicionar Log
                       </Text>
                     </>
@@ -1603,10 +1819,16 @@ export default function NotificacoesScreen() {
           {/* Histórico de Testes */}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-4 px-1">
-              <Text className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+              >
                 📈 Histórico de Testes
               </Text>
-              <Text className="text-[10px] font-bold text-gray-400">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-[10px] text-gray-400 uppercase tracking-wider"
+              >
                 {physicalTests.length} {physicalTests.length === 1 ? 'registro' : 'registros'}
               </Text>
             </View>
@@ -1616,7 +1838,7 @@ export default function NotificacoesScreen() {
                 <ActivityIndicator size="large" color="#ef4444" />
               </View>
             ) : physicalTests.length === 0 ? (
-              <View className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl border border-gray-100 dark:border-white/5 items-center justify-center">
+              <View className="bg-white dark:bg-[#141414] p-8 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center justify-center">
                 <Activity size={40} color={isDark ? '#333' : '#ddd'} style={{ marginBottom: 12 }} />
                 <Text className="text-sm font-bold text-gray-800 dark:text-gray-200 text-center mb-1">
                   Nenhum teste físico registrado.
@@ -1631,18 +1853,21 @@ export default function NotificacoesScreen() {
                 return (
                   <View
                     key={test.id || index}
-                    className="bg-white dark:bg-[#1a1a1a] p-4 rounded-3xl border border-gray-100 dark:border-white/5 mb-3 shadow-sm flex-row items-center justify-between"
+                    className="bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-3 shadow-sm flex-row items-center justify-between"
                   >
                     <View className="flex-1 pr-3">
                       <View className="flex-row items-center mb-1">
-                        <Calendar size={13} color="#888" style={{ marginRight: 5 }} />
+                        <Calendar size={13} color={isDark ? '#aaa' : '#666'} style={{ marginRight: 5 }} />
                         <Text className="text-xs font-bold text-gray-900 dark:text-white">
                           {formatTestDate(test.date)}
                         </Text>
                       </View>
                       <View className="flex-row items-center">
-                        <View className={`px-2 py-0.5 rounded-full ${isFromStudent ? 'bg-blue-500/10' : 'bg-purple-500/10'}`}>
-                          <Text className={`text-[9px] font-black uppercase ${isFromStudent ? 'text-blue-500' : 'text-purple-500'}`}>
+                        <View className={`px-2 py-0.5 rounded-full ${isFromStudent ? 'bg-yellow-500/10' : 'bg-purple-500/10'}`}>
+                          <Text 
+                            style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                            className={`text-[9px] uppercase tracking-wider ${isFromStudent ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-purple-500'}`}
+                          >
                             {isFromStudent ? 'Registrado por Você' : 'Registrado pelo Professor'}
                           </Text>
                         </View>
@@ -1650,8 +1875,18 @@ export default function NotificacoesScreen() {
                     </View>
 
                     <View className="bg-red-500/10 px-4 py-2 rounded-2xl border border-red-500/20 items-center">
-                      <Text className="text-[9px] font-black text-red-500 uppercase">Pontuação</Text>
-                      <Text className="text-lg font-black text-red-500">{test.score}</Text>
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-[9px] text-red-500 uppercase tracking-wider"
+                      >
+                        Pontuação
+                      </Text>
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-lg text-red-500"
+                      >
+                        {test.score}
+                      </Text>
                     </View>
                   </View>
                 );
@@ -1669,10 +1904,13 @@ export default function NotificacoesScreen() {
         onRequestClose={() => setShowClassModal(false)}
       >
         <View className="flex-1 bg-black/60 items-center justify-center p-5">
-          <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 w-full max-w-sm border border-gray-100 dark:border-white/10 shadow-2xl">
+          <View className="bg-white dark:bg-[#141414] rounded-3xl p-6 w-full max-w-sm border border-gray-200/80 dark:border-white/10 shadow-2xl">
             <View className="flex-row items-center justify-between mb-4">
               <View>
-                <Text className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-base text-gray-900 dark:text-white uppercase tracking-tight"
+                >
                   Turmas de Hoje
                 </Text>
                 <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1696,12 +1934,15 @@ export default function NotificacoesScreen() {
                     }}
                     className={`p-3.5 rounded-2xl mb-2.5 border flex-row items-center justify-between ${
                       isSelected
-                        ? 'bg-orange-500/10 border-orange-500/30'
+                        ? 'bg-yellow-500/10 border-yellow-500/30'
                         : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5'
                     }`}
                   >
                     <View className="flex-1 mr-2">
-                      <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-xs text-gray-900 dark:text-white uppercase tracking-tight"
+                      >
                         {cls.name}
                       </Text>
                       <Text className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1709,8 +1950,8 @@ export default function NotificacoesScreen() {
                       </Text>
                     </View>
                     {isSelected && (
-                      <View className="w-5 h-5 rounded-full bg-orange-500 items-center justify-center">
-                        <Check size={12} color="#fff" />
+                      <View className="w-5 h-5 rounded-full bg-[#eab308] items-center justify-center">
+                        <Check size={12} color="#000" />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -1722,7 +1963,10 @@ export default function NotificacoesScreen() {
               onPress={() => setShowClassModal(false)}
               className="mt-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 items-center justify-center"
             >
-              <Text className="text-xs font-bold text-gray-600 dark:text-gray-300">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300"
+              >
                 Fechar
               </Text>
             </TouchableOpacity>
