@@ -5,7 +5,10 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import '../global.css';
 
+import { LogBox } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+LogBox.ignoreAllLogs();
 
 export const unstable_settings = {
   anchor: '(tabs)',

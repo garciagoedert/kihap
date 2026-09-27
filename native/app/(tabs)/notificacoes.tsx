@@ -749,11 +749,11 @@ export default function NotificacoesScreen() {
           <TouchableOpacity 
             onPress={() => setActiveSubTab('ofensivas')}
             style={activeSubTab === 'ofensivas' ? {
-              backgroundColor: isDark ? '#262626' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#000',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.12,
-              shadowRadius: 1.5,
+              shadowOpacity: 0.18,
+              shadowRadius: 2,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
@@ -762,7 +762,7 @@ export default function NotificacoesScreen() {
             <Text 
               style={{ 
                 fontFamily: 'NeueMachina-Ultrabold',
-                color: activeSubTab === 'ofensivas' ? (isDark ? '#fff' : '#111') : '#888',
+                color: activeSubTab === 'ofensivas' ? '#fff' : '#888',
                 paddingRight: 2,
               }}
               className="text-[10px] uppercase tracking-normal text-center"
@@ -775,11 +775,11 @@ export default function NotificacoesScreen() {
           <TouchableOpacity 
             onPress={() => setActiveSubTab('emblemas')}
             style={activeSubTab === 'emblemas' ? {
-              backgroundColor: isDark ? '#262626' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#000',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.12,
-              shadowRadius: 1.5,
+              shadowOpacity: 0.18,
+              shadowRadius: 2,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
@@ -788,7 +788,7 @@ export default function NotificacoesScreen() {
             <Text 
               style={{ 
                 fontFamily: 'NeueMachina-Ultrabold',
-                color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#888',
+                color: activeSubTab === 'emblemas' ? '#fff' : '#888',
                 paddingRight: 2,
               }}
               className="text-[10px] uppercase tracking-normal text-center"
@@ -801,11 +801,11 @@ export default function NotificacoesScreen() {
           <TouchableOpacity 
             onPress={() => setActiveSubTab('teste-fisico')}
             style={activeSubTab === 'teste-fisico' ? {
-              backgroundColor: isDark ? '#262626' : '#fff',
+              backgroundColor: isDark ? '#262626' : '#000',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.12,
-              shadowRadius: 1.5,
+              shadowOpacity: 0.18,
+              shadowRadius: 2,
               elevation: 2,
             } : null}
             className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
@@ -814,7 +814,7 @@ export default function NotificacoesScreen() {
             <Text 
               style={{ 
                 fontFamily: 'NeueMachina-Ultrabold',
-                color: activeSubTab === 'teste-fisico' ? (isDark ? '#fff' : '#111') : '#888',
+                color: activeSubTab === 'teste-fisico' ? '#fff' : '#888',
                 paddingRight: 2,
               }}
               className="text-[9.5px] uppercase tracking-normal text-center"
@@ -834,11 +834,11 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setOfensivaSubTab('ofensiva')}
                 style={ofensivaSubTab === 'ofensiva' ? {
-                  backgroundColor: isDark ? '#262626' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#000',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 1.5,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 2,
                   elevation: 2,
                 } : null}
                 className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
@@ -847,7 +847,8 @@ export default function NotificacoesScreen() {
                 <Text
                   style={{ 
                     fontFamily: 'NeueMachina-Ultrabold',
-                    color: ofensivaSubTab === 'ofensiva' ? (isDark ? '#fff' : '#111') : '#888' 
+                    color: ofensivaSubTab === 'ofensiva' ? '#fff' : '#888',
+                    paddingRight: 2,
                   }}
                   className="text-[11px] uppercase tracking-normal"
                 >
@@ -858,11 +859,11 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setOfensivaSubTab('ranking')}
                 style={ofensivaSubTab === 'ranking' ? {
-                  backgroundColor: isDark ? '#262626' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#000',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 1.5,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 2,
                   elevation: 2,
                 } : null}
                 className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
@@ -871,7 +872,8 @@ export default function NotificacoesScreen() {
                 <Text
                   style={{ 
                     fontFamily: 'NeueMachina-Ultrabold',
-                    color: ofensivaSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#888' 
+                    color: ofensivaSubTab === 'ranking' ? '#fff' : '#888',
+                    paddingRight: 4,
                   }}
                   className="text-[11px] uppercase tracking-normal"
                 >
@@ -883,39 +885,115 @@ export default function NotificacoesScreen() {
 
           {ofensivaSubTab === 'ofensiva' ? (
             <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-          {/* Flame Circle Visualizer */}
-          <View className="items-center py-6">
-            <View className="relative items-center justify-center">
-              {/* Outer Glow Circles */}
-              <View className="w-52 h-52 rounded-full bg-yellow-500/5 dark:bg-yellow-500/10 border border-yellow-500/20 items-center justify-center">
-                <View className="w-40 h-40 rounded-full bg-yellow-500/10 dark:bg-yellow-500/15 border border-yellow-500/30 items-center justify-center">
+          {/* Martial Streak Hero Card — Iconic Kihap Brand (Gold & Black) */}
+          <View 
+            className={`rounded-3xl p-6 shadow-xl relative overflow-hidden border mb-5 ${
+              isDark 
+                ? 'bg-[#141414] border-yellow-500/30' 
+                : 'bg-[#eab308] border-yellow-400 shadow-yellow-500/25'
+            }`}
+          >
+            {/* Top Row: Status (left) & Recorde (right) */}
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center">
+                <View className={`w-2 h-2 rounded-full mr-1.5 ${isDark ? 'bg-yellow-400' : 'bg-black'}`} />
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className={`text-[10px] uppercase tracking-widest ${
+                    isDark ? 'text-yellow-400' : 'text-black/85'
+                  }`}
+                >
+                  {userData?.currentStreak && userData.currentStreak > 0 ? 'OFENSIVA ATIVA' : 'OFENSIVA EM PAUSA'}
+                </Text>
+              </View>
+
+              <View className={`px-2.5 py-0.5 rounded-full ${isDark ? 'bg-yellow-500/15 border border-yellow-500/30' : 'bg-black/10'}`}>
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className={`text-[9px] uppercase tracking-widest ${
+                    isDark ? 'text-yellow-400' : 'text-black'
+                  }`}
+                >
+                  🏆 RECORDE: {userData?.longestStreak || 0} {userData?.longestStreak === 1 ? 'DIA' : 'DIAS'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Flame Visualizer Center */}
+            <View className="items-center py-2">
+              <View className="relative items-center justify-center">
+                {/* Outer concentric rings */}
+                <View 
+                  className={`w-44 h-44 rounded-full items-center justify-center border ${
+                    isDark 
+                      ? 'bg-yellow-500/10 border-yellow-500/20' 
+                      : 'bg-black/5 border-black/10'
+                  }`}
+                >
                   <View 
-                    style={{
-                      shadowColor: '#eab308',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 10,
-                      elevation: 4,
-                    }}
-                    className="w-28 h-28 rounded-full bg-white dark:bg-[#161616] border-2 border-yellow-500/40 items-center justify-center"
+                    className={`w-32 h-32 rounded-full items-center justify-center border ${
+                      isDark 
+                        ? 'bg-yellow-500/15 border-yellow-500/30' 
+                        : 'bg-black/10 border-black/15'
+                    }`}
                   >
-                    <Flame size={56} color="#eab308" />
+                    {/* Inner Badge Medal */}
+                    <View 
+                      style={{
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.4 : 0.25,
+                        shadowRadius: 8,
+                        elevation: 5,
+                      }}
+                      className={`w-20 h-20 rounded-full items-center justify-center border-2 ${
+                        isDark 
+                          ? 'bg-[#181818] border-yellow-500/40' 
+                          : 'bg-black border-black/30'
+                      }`}
+                    >
+                      <Flame size={44} color="#eab308" />
+                    </View>
                   </View>
                 </View>
               </View>
+
+              {/* Streak Counter */}
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className={`text-6xl mt-4 mb-0.5 tracking-tight ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
+                {userData?.currentStreak || 0} {userData?.currentStreak === 1 ? 'DIA' : 'DIAS'}
+              </Text>
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className={`text-[10px] uppercase tracking-[3px] text-center ${
+                  isDark ? 'text-gray-400' : 'text-black/75'
+                }`}
+              >
+                DE OFENSIVA DE AULAS 🔥
+              </Text>
             </View>
-            <Text 
-              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-              className="text-6xl text-gray-900 dark:text-white mt-5 mb-0.5 tracking-tight"
+
+            {/* Bottom Integrated Status Advice Bar */}
+            <View 
+              className={`mt-3 p-3 rounded-2xl flex-row items-center border ${
+                isDark 
+                  ? 'bg-white/5 border-white/10' 
+                  : 'bg-black/10 border-black/10'
+              }`}
             >
-              {userData?.currentStreak || 0} {userData?.currentStreak === 1 ? 'DIA' : 'DIAS'}
-            </Text>
-            <Text 
-              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-              className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[3px] text-center"
-            >
-              DE OFENSIVA DE AULAS 🔥
-            </Text>
+              <AlertCircle size={15} color={isDark ? '#eab308' : '#000'} style={{ marginRight: 8 }} />
+              <Text 
+                className={`text-[11px] font-semibold flex-1 leading-snug ${
+                  isDark ? 'text-gray-300' : 'text-black'
+                }`}
+              >
+                {getStreakStatus().message}
+              </Text>
+            </View>
           </View>
 
           {/* Week Attendance Visualizer */}
@@ -930,7 +1008,7 @@ export default function NotificacoesScreen() {
                   MINHA SEMANA
                 </Text>
               </View>
-              <View className="bg-yellow-500/10 px-2.5 py-0.5 rounded-full border border-yellow-500/20">
+              <View className="bg-yellow-500/15 dark:bg-yellow-500/20 px-2.5 py-0.5 rounded-full border border-yellow-500/30">
                 <Text 
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className="text-[9px] text-[#ca8a04] dark:text-[#facc15] uppercase tracking-wider"
@@ -948,18 +1026,20 @@ export default function NotificacoesScreen() {
                   let containerBorder = isDark ? '#262626' : '#f0f0f2';
                   
                   if (day.attended) {
-                    containerBg = isDark ? 'rgba(234, 179, 8, 0.18)' : 'rgba(234, 179, 8, 0.12)';
+                    containerBg = '#eab308';
                     containerBorder = '#eab308';
                   } else if (day.isToday) {
                     containerBg = isDark ? '#262626' : '#f4f4f5';
-                    containerBorder = isDark ? '#52525b' : '#18181b';
+                    containerBorder = '#eab308';
                   }
 
                   return (
                     <View key={day.dateStr} className="items-center flex-1">
                       <Text 
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                        className="text-[10px] text-gray-400 dark:text-gray-500 uppercase mb-2"
+                        className={`text-[10px] uppercase mb-2 ${
+                          day.isToday ? 'text-black dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500'
+                        }`}
                       >
                         {day.label}
                       </Text>
@@ -967,11 +1047,12 @@ export default function NotificacoesScreen() {
                         style={{
                           backgroundColor: containerBg,
                           borderColor: containerBorder,
+                          borderWidth: day.isToday && !day.attended ? 2 : 1,
                         }}
-                        className="w-10 h-10 rounded-full items-center justify-center border"
+                        className="w-10 h-10 rounded-full items-center justify-center shadow-xs"
                       >
                         {day.attended ? (
-                          <Flame size={20} color="#eab308" />
+                          <Flame size={19} color="#000" />
                         ) : (
                           <Text 
                             style={{
@@ -1002,11 +1083,13 @@ export default function NotificacoesScreen() {
                   isCheckedInToday 
                     ? 'bg-emerald-500/10 border-emerald-500/20' 
                     : isClassToday 
-                      ? 'bg-yellow-500/15 border-yellow-500/30' 
-                      : 'bg-black/5 dark:bg-white/10 border-black/10 dark:border-white/10'
+                      ? 'bg-[#eab308] border-yellow-400 shadow-sm shadow-yellow-500/20' 
+                      : 'bg-yellow-500/10 dark:bg-white/10 border-yellow-500/20 dark:border-white/10'
                 }`}>
                   {isCheckedInToday ? (
                     <CheckCheck size={18} color="#10b981" />
+                  ) : isClassToday ? (
+                    <Flame size={18} color="#000" />
                   ) : (
                     <Flame size={18} color="#eab308" />
                   )}
@@ -1045,10 +1128,10 @@ export default function NotificacoesScreen() {
                   </Text>
                 </View>
               ) : isClassToday ? (
-                <View className="bg-yellow-500/15 px-2.5 py-1 rounded-full border border-yellow-500/30">
+                <View className="bg-[#eab308] px-2.5 py-1 rounded-full border border-yellow-400">
                   <Text 
                     style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                    className="text-[#ca8a04] dark:text-[#facc15] text-[8px] uppercase tracking-wider"
+                    className="text-black text-[8px] uppercase tracking-wider"
                   >
                     Hoje
                   </Text>
@@ -1160,7 +1243,7 @@ export default function NotificacoesScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push('/atividades')}
-                  className="px-4 py-2.5 rounded-xl bg-black dark:bg-white flex-row items-center active:scale-95"
+                  className="px-4 py-2.5 rounded-xl bg-black dark:bg-[#eab308] flex-row items-center active:scale-95"
                 >
                   <Text 
                     style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -1173,59 +1256,12 @@ export default function NotificacoesScreen() {
             )}
           </View>
 
-          {/* Streak Status Advice Alert */}
-          {(() => {
-            const status = getStreakStatus();
-            let bgCol = isDark ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.08)';
-            let borderCol = isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.2)';
-            let textCol = '#ca8a04';
-
-            if (status.urgencyColor.includes('emerald')) {
-              bgCol = isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.08)';
-              borderCol = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.2)';
-              textCol = '#10b981';
-            } else if (status.urgencyColor.includes('orange')) {
-              bgCol = isDark ? 'rgba(249, 115, 22, 0.08)' : 'rgba(249, 115, 22, 0.08)';
-              borderCol = isDark ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.2)';
-              textCol = '#f97316';
-            } else if (status.urgencyColor.includes('rose')) {
-              bgCol = isDark ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.08)';
-              borderCol = isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.2)';
-              textCol = '#f43f5e';
-            } else if (status.urgencyColor.includes('gray')) {
-              bgCol = isDark ? 'rgba(107, 114, 128, 0.08)' : 'rgba(107, 114, 128, 0.08)';
-              borderCol = isDark ? 'rgba(107, 114, 128, 0.2)' : 'rgba(107, 114, 128, 0.2)';
-              textCol = '#6b7280';
-            }
-
-            return (
-              <View 
-                style={{
-                  backgroundColor: bgCol,
-                  borderColor: borderCol,
-                }}
-                className="p-4 rounded-3xl border flex-row items-center mb-5"
-              >
-                <AlertCircle size={22} color={status.iconColor} style={{ marginRight: 12 }} />
-                <View className="flex-1">
-                  <Text 
-                    style={{ fontFamily: 'NeueMachina-Ultrabold', color: textCol }}
-                    className="text-[10px] uppercase tracking-wider mb-0.5"
-                  >
-                    Status da Chama
-                  </Text>
-                  <Text className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {status.message}
-                  </Text>
-                </View>
-              </View>
-            );
-          })()}
-
           {/* Mini Stats Cards */}
           <View className="flex-row justify-between mb-5">
-            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center">
-              <Trophy size={26} color="#eab308" style={{ marginBottom: 6 }} />
+            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center shadow-xs">
+              <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/15 border border-yellow-500/20 items-center justify-center mb-2">
+                <Trophy size={20} color="#eab308" />
+              </View>
               <Text 
                 style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                 className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 text-center"
@@ -1240,8 +1276,10 @@ export default function NotificacoesScreen() {
               </Text>
             </View>
 
-            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center">
-              <Calendar size={26} color="#eab308" style={{ marginBottom: 6 }} />
+            <View className="w-[48%] bg-white dark:bg-[#141414] p-4 rounded-3xl border border-gray-200/70 dark:border-white/10 items-center shadow-xs">
+              <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/15 border border-yellow-500/20 items-center justify-center mb-2">
+                <Calendar size={20} color="#eab308" />
+              </View>
               <Text 
                 style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                 className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 text-center"
@@ -1284,19 +1322,20 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setRankingFilter('current')}
                 style={rankingFilter === 'current' ? {
-                  backgroundColor: isDark ? '#262626' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#000',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 1,
-                  elevation: 1,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 2,
+                  elevation: 2,
                 } : null}
                 className="flex-1 py-2 rounded-xl items-center justify-center"
               >
                 <Text 
                   style={{ 
                     fontFamily: 'NeueMachina-Ultrabold',
-                    color: rankingFilter === 'current' ? (isDark ? '#fff' : '#111') : '#888' 
+                    color: rankingFilter === 'current' ? '#fff' : '#888',
+                    paddingRight: 2,
                   }}
                   className="text-[11px] uppercase tracking-wider"
                 >
@@ -1307,19 +1346,20 @@ export default function NotificacoesScreen() {
               <TouchableOpacity
                 onPress={() => setRankingFilter('longest')}
                 style={rankingFilter === 'longest' ? {
-                  backgroundColor: isDark ? '#262626' : '#fff',
+                  backgroundColor: isDark ? '#262626' : '#000',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 1,
-                  elevation: 1,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 2,
+                  elevation: 2,
                 } : null}
                 className="flex-1 py-2 rounded-xl items-center justify-center"
               >
                 <Text 
                   style={{ 
                     fontFamily: 'NeueMachina-Ultrabold',
-                    color: rankingFilter === 'longest' ? (isDark ? '#fff' : '#111') : '#888' 
+                    color: rankingFilter === 'longest' ? '#fff' : '#888',
+                    paddingRight: 2,
                   }}
                   className="text-[11px] uppercase tracking-wider"
                 >
@@ -1414,7 +1454,7 @@ export default function NotificacoesScreen() {
                       borderColor: isMe 
                         ? '#eab308' 
                         : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'),
-                      borderWidth: isMe ? 1.5 : 1,
+                      borderWidth: isMe ? 2 : 1,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: isMe ? 0.08 : 0.02,
@@ -1445,13 +1485,25 @@ export default function NotificacoesScreen() {
 
                       {/* Name & Unit info */}
                       <View className="flex-1 pr-2">
-                        <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                          className={`text-[13px] uppercase ${isMe ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-900 dark:text-white'}`}
-                          numberOfLines={1}
-                        >
-                          {item.name || item.nome || 'Aluno'} {isMe && '(Você)'}
-                        </Text>
+                        <View className="flex-row items-center">
+                          <Text 
+                            style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                            className={`text-[13px] uppercase ${isMe ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-900 dark:text-white'}`}
+                            numberOfLines={1}
+                          >
+                            {item.name || item.nome || 'Aluno'}
+                          </Text>
+                          {isMe && (
+                            <View className="bg-[#eab308] px-2 py-0.5 rounded-full ml-1.5">
+                              <Text 
+                                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                                className="text-black text-[8px] uppercase tracking-wider"
+                              >
+                                Você
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                         <Text className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                           {capitalizedUnit}
                         </Text>
@@ -1459,7 +1511,7 @@ export default function NotificacoesScreen() {
                     </View>
 
                     {/* Streak indicator */}
-                    <View className="flex-row items-center bg-yellow-500/10 dark:bg-yellow-500/15 px-3 py-1.5 rounded-full border border-yellow-500/25">
+                    <View className="flex-row items-center bg-yellow-500/15 dark:bg-yellow-500/20 px-3 py-1.5 rounded-full border border-yellow-500/30">
                       <Flame size={14} color="#eab308" style={{ marginRight: 4 }} />
                       <Text 
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
