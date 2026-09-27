@@ -131,7 +131,7 @@ export default function NotificacoesScreen() {
 
   // Fetch ranking list from Firestore (filtered in memory by unit for safety against missing index crashes)
   useEffect(() => {
-    if (activeSubTab !== 'ranking') return;
+    if (activeSubTab !== 'ofensivas') return;
 
     setRankingLoading(true);
     const usersCol = collection(db, 'users');
