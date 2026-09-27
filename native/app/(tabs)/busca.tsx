@@ -159,19 +159,30 @@ export default function BuscaScreen() {
   // Render individual search result item
   const renderSearchResultItem = ({ item }: { item: any }) => {
     if (item._type === 'product') {
+      const isAvailable = item.available !== false;
       const price = (item.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       return (
         <TouchableOpacity
-          onPress={() => router.push(`/store/${item.id}`)}
+          key={item.id}
+          onPress={() => isAvailable && router.push(`/store/${item.id}`)}
           activeOpacity={0.8}
-          className="bg-white dark:bg-[#151517] rounded-2xl p-3.5 mb-3 border border-gray-100 dark:border-white/5 flex-row items-center justify-between shadow-sm"
+          className={`bg-white dark:bg-[#151517] rounded-2xl p-3.5 mb-3 border border-gray-100 dark:border-white/5 flex-row items-center justify-between shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
         >
           <View className="flex-row items-center flex-1 mr-3">
-            <Image
-              source={{ uri: item.imageUrl || 'https://via.placeholder.com/200' }}
-              className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-black"
-              resizeMode="cover"
-            />
+            <View className="relative">
+              <Image
+                source={{ uri: item.imageUrl || 'https://via.placeholder.com/200' }}
+                className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-black"
+                resizeMode="cover"
+              />
+              {!isAvailable && (
+                <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-xl">
+                  <View className="bg-red-600 px-1.5 py-0.5 rounded shadow border border-white/30 -rotate-6">
+                    <Text className="text-white text-[7px] font-black uppercase tracking-tighter">ESGOTADO</Text>
+                  </View>
+                </View>
+              )}
+            </View>
             <View className="ml-3 flex-1">
               <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">
                 {item.category || 'Loja Kihap'}
@@ -184,9 +195,15 @@ export default function BuscaScreen() {
               </Text>
             </View>
           </View>
-          <View className="bg-yellow-500 px-3.5 py-1.5 rounded-lg shadow-sm">
-            <Text className="text-[11px] font-black text-black">Ver</Text>
-          </View>
+          {isAvailable ? (
+            <View className="bg-yellow-500 px-3.5 py-1.5 rounded-lg shadow-sm">
+              <Text className="text-[11px] font-black text-black">Ver</Text>
+            </View>
+          ) : (
+            <View className="bg-gray-100 dark:bg-white/5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
+              <Text className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase">Esgotado</Text>
+            </View>
+          )}
         </TouchableOpacity>
       );
     }
@@ -447,20 +464,37 @@ export default function BuscaScreen() {
                 /* Grid display when Products tab is selected */
                 <View className="px-5 flex-row flex-wrap justify-between">
                   {filteredProducts.map((product) => {
+                    const isAvailable = product.available !== false;
                     const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     return (
                       <TouchableOpacity
                         key={product.id}
-                        onPress={() => router.push(`/store/${product.id}`)}
+                        onPress={() => isAvailable && router.push(`/store/${product.id}`)}
                         activeOpacity={0.8}
                         style={{ width: '48%' }}
-                        className="mb-4 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm"
+                        className={`mb-4 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
                       >
-                        <Image 
-                          source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
-                          className="w-full aspect-square bg-gray-50 dark:bg-black"
-                          resizeMode="cover"
-                        />
+                        <View className="relative">
+                          <Image 
+                            source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
+                            className="w-full aspect-square bg-gray-50 dark:bg-black"
+                            resizeMode="cover"
+                          />
+                          {product.category && (
+                            <View className="absolute top-2.5 left-2.5">
+                              <View className="bg-yellow-500 px-2 py-0.5 rounded-lg shadow-lg">
+                                <Text className="text-black text-[8px] font-black uppercase tracking-widest">{product.category}</Text>
+                              </View>
+                            </View>
+                          )}
+                          {!isAvailable && (
+                            <View className="absolute inset-0 bg-black/40 items-center justify-center p-2 backdrop-blur-[2px]">
+                              <View className="bg-red-600 px-2.5 py-0.5 rounded shadow-2xl border-2 border-white/30 -rotate-6">
+                                <Text className="text-white text-[9px] font-black uppercase tracking-tighter">ESGOTADO</Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
                         <View className="p-3">
                           <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider" numberOfLines={1}>
                             {product.category || 'Oficial'}
@@ -484,20 +518,37 @@ export default function BuscaScreen() {
                   contentContainerStyle={{ paddingHorizontal: 20 }}
                 >
                   {allProducts.slice(0, 10).map((product) => {
+                    const isAvailable = product.available !== false;
                     const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     return (
                       <TouchableOpacity
                         key={product.id}
-                        onPress={() => router.push(`/store/${product.id}`)}
+                        onPress={() => isAvailable && router.push(`/store/${product.id}`)}
                         activeOpacity={0.8}
                         style={{ width: 145 }}
-                        className="mr-3 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm"
+                        className={`mr-3 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
                       >
-                        <Image 
-                          source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
-                          className="w-full aspect-square bg-gray-50 dark:bg-black"
-                          resizeMode="cover"
-                        />
+                        <View className="relative">
+                          <Image 
+                            source={{ uri: product.imageUrl || 'https://via.placeholder.com/200' }} 
+                            className="w-full aspect-square bg-gray-50 dark:bg-black"
+                            resizeMode="cover"
+                          />
+                          {product.category && (
+                            <View className="absolute top-2 left-2">
+                              <View className="bg-yellow-500 px-1.5 py-0.5 rounded-md shadow-lg">
+                                <Text className="text-black text-[7px] font-black uppercase tracking-widest">{product.category}</Text>
+                              </View>
+                            </View>
+                          )}
+                          {!isAvailable && (
+                            <View className="absolute inset-0 bg-black/40 items-center justify-center p-1 backdrop-blur-[2px]">
+                              <View className="bg-red-600 px-2.5 py-0.5 rounded shadow-2xl border-2 border-white/30 -rotate-6">
+                                <Text className="text-white text-[8px] font-black uppercase tracking-tighter">ESGOTADO</Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
                         <View className="p-3">
                           <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider" numberOfLines={1}>
                             {product.category || 'Oficial'}
