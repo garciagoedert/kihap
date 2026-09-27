@@ -412,7 +412,7 @@ export default function BuscaScreen() {
                       Equipamentos & Uniformes
                     </Text>
                     <Text className="text-gray-300 text-xs mt-1 font-medium leading-relaxed" numberOfLines={2}>
-                      Doboks oficiais, armas e proteções certificadas para o seu treino diário.
+                      Doboks oficiais, armas e proteções certificadas.
                     </Text>
                     
                     <View className="flex-row items-center mt-3">
