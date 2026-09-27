@@ -778,26 +778,6 @@ export default function NotificacoesScreen() {
               OFENSIVA & ATIVIDADE
             </Text>
           </View>
-          {activeSubTab === 'emblemas' && (
-            <View className="bg-yellow-500/10 px-3.5 py-1.5 rounded-full border border-yellow-500/20">
-              <Text 
-                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                className="text-yellow-600 dark:text-yellow-500 text-[10px] uppercase tracking-wider"
-              >
-                {(userData?.earnedBadges || []).length} Conquistados
-              </Text>
-            </View>
-          )}
-          {activeSubTab === 'teste-fisico' && (
-            <View className="bg-red-500/10 px-3.5 py-1.5 rounded-full border border-red-500/20">
-              <Text 
-                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                className="text-red-500 text-[10px] uppercase tracking-wider"
-              >
-                {physicalTests.length} {physicalTests.length === 1 ? 'Avaliação' : 'Avaliações'}
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Sub-tab Selectors (Three-way toggle) */}
