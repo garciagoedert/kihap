@@ -704,6 +704,62 @@ export default function NotificacoesScreen() {
     ? (attendedClassTemplate || currentSelectedTodayClass) 
     : (currentSelectedTodayClass || upcomingNextClass);
 
+  const renderOfensivaSubSelector = () => (
+    <View className="mb-4">
+      <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl border border-gray-200/50 dark:border-white/5">
+        <TouchableOpacity
+          onPress={() => setOfensivaSubTab('ofensiva')}
+          style={ofensivaSubTab === 'ofensiva' ? {
+            backgroundColor: isDark ? '#262626' : '#000',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.18,
+            shadowRadius: 2,
+            elevation: 2,
+          } : null}
+          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
+        >
+          <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
+          <Text
+            style={{ 
+              fontFamily: 'NeueMachina-Ultrabold',
+              color: ofensivaSubTab === 'ofensiva' ? '#fff' : '#888',
+              paddingRight: 2,
+            }}
+            className="text-[11px] uppercase tracking-normal"
+          >
+            Minha Ofensiva
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setOfensivaSubTab('ranking')}
+          style={ofensivaSubTab === 'ranking' ? {
+            backgroundColor: isDark ? '#262626' : '#000',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.18,
+            shadowRadius: 2,
+            elevation: 2,
+          } : null}
+          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
+        >
+          <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
+          <Text
+            style={{ 
+              fontFamily: 'NeueMachina-Ultrabold',
+              color: ofensivaSubTab === 'ranking' ? '#fff' : '#888',
+              paddingRight: 4,
+            }}
+            className="text-[11px] uppercase tracking-normal"
+          >
+            Ranking
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-[#fbfbfa] dark:bg-[#0a0a0a]">
       <View className="px-6 pt-5 pb-2">
@@ -828,64 +884,12 @@ export default function NotificacoesScreen() {
 
       {activeSubTab === 'ofensivas' ? (
         <View className="flex-1">
-          {/* Sub-selector: Minha Ofensiva vs Ranking */}
-          <View className="px-6 mb-3">
-            <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl border border-gray-200/50 dark:border-white/5">
-              <TouchableOpacity
-                onPress={() => setOfensivaSubTab('ofensiva')}
-                style={ofensivaSubTab === 'ofensiva' ? {
-                  backgroundColor: isDark ? '#262626' : '#000',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 2,
-                  elevation: 2,
-                } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
-              >
-                <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
-                <Text
-                  style={{ 
-                    fontFamily: 'NeueMachina-Ultrabold',
-                    color: ofensivaSubTab === 'ofensiva' ? '#fff' : '#888',
-                    paddingRight: 2,
-                  }}
-                  className="text-[11px] uppercase tracking-normal"
-                >
-                  Minha Ofensiva
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setOfensivaSubTab('ranking')}
-                style={ofensivaSubTab === 'ranking' ? {
-                  backgroundColor: isDark ? '#262626' : '#000',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 2,
-                  elevation: 2,
-                } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
-              >
-                <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
-                <Text
-                  style={{ 
-                    fontFamily: 'NeueMachina-Ultrabold',
-                    color: ofensivaSubTab === 'ranking' ? '#fff' : '#888',
-                    paddingRight: 4,
-                  }}
-                  className="text-[11px] uppercase tracking-normal"
-                >
-                  Ranking
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {ofensivaSubTab === 'ofensiva' ? (
             <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-          {/* Martial Streak Hero Card — Iconic Kihap Brand (Gold & Black) */}
+              {/* Sub-selector: Minha Ofensiva vs Ranking (rolagem conjunta com o conteúdo) */}
+              {renderOfensivaSubSelector()}
+
+              {/* Martial Streak Hero Card — Iconic Kihap Brand (Gold & Black) */}
           <View 
             className={`rounded-3xl p-6 shadow-xl relative overflow-hidden border mb-5 ${
               isDark 
@@ -1315,104 +1319,110 @@ export default function NotificacoesScreen() {
         </ScrollView>
       ) : (
         <View className="flex-1">
-          {/* Ranking Header Filters */}
-          <View className="px-6 mb-4">
-            {/* Filter 1: Current Streak vs Longest Streak */}
-            <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl mb-3 border border-gray-200/50 dark:border-white/5">
-              <TouchableOpacity
-                onPress={() => setRankingFilter('current')}
-                style={rankingFilter === 'current' ? {
-                  backgroundColor: isDark ? '#262626' : '#000',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 2,
-                  elevation: 2,
-                } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center"
-              >
-                <Text 
-                  style={{ 
-                    fontFamily: 'NeueMachina-Ultrabold',
-                    color: rankingFilter === 'current' ? '#fff' : '#888',
-                    paddingRight: 2,
-                  }}
-                  className="text-[11px] uppercase tracking-wider"
-                >
-                  Ofensiva Atual
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setRankingFilter('longest')}
-                style={rankingFilter === 'longest' ? {
-                  backgroundColor: isDark ? '#262626' : '#000',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 2,
-                  elevation: 2,
-                } : null}
-                className="flex-1 py-2 rounded-xl items-center justify-center"
-              >
-                <Text 
-                  style={{ 
-                    fontFamily: 'NeueMachina-Ultrabold',
-                    color: rankingFilter === 'longest' ? '#fff' : '#888',
-                    paddingRight: 2,
-                  }}
-                  className="text-[11px] uppercase tracking-wider"
-                >
-                  Recorde Histórico
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Filter 2: Unit scroll list */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-              {units.map((unit) => {
-                const isActive = rankingUnit === unit.id;
-                return (
-                  <TouchableOpacity
-                    key={unit.id}
-                    onPress={() => setRankingUnit(unit.id)}
-                    style={{
-                      backgroundColor: isActive 
-                        ? (isDark ? '#fff' : '#000') 
-                        : (isDark ? '#161616' : '#fff'),
-                      borderColor: isActive
-                        ? (isDark ? '#fff' : '#000')
-                        : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'),
-                      borderWidth: 1,
-                    }}
-                    className="px-4 py-1.5 rounded-full mr-2"
-                  >
-                    <Text
-                      style={{
-                        fontFamily: 'NeueMachina-Ultrabold',
-                        color: isActive 
-                          ? (isDark ? '#000' : '#fff') 
-                          : (isDark ? '#888' : '#666')
-                      }}
-                      className="text-[10px] uppercase tracking-wider"
-                    >
-                      {unit.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
           {rankingLoading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color="#eab308" />
+            <View className="flex-1 px-6">
+              {renderOfensivaSubSelector()}
+              <View className="flex-1 items-center justify-center pt-20">
+                <ActivityIndicator size="large" color="#eab308" />
+              </View>
             </View>
           ) : (
             <FlatList
               data={ranking}
               keyExtractor={(item) => item.uid}
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+              ListHeaderComponent={
+                <View className="mb-4">
+                  {/* Sub-selector: Minha Ofensiva vs Ranking (rolagem conjunta com a lista) */}
+                  {renderOfensivaSubSelector()}
+
+                  {/* Filter 1: Current Streak vs Longest Streak */}
+                  <View className="flex-row bg-gray-100 dark:bg-[#161616] p-1.5 rounded-2xl mb-3 border border-gray-200/50 dark:border-white/5">
+                    <TouchableOpacity
+                      onPress={() => setRankingFilter('current')}
+                      style={rankingFilter === 'current' ? {
+                        backgroundColor: isDark ? '#262626' : '#000',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.18,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      } : null}
+                      className="flex-1 py-2 rounded-xl items-center justify-center"
+                    >
+                      <Text 
+                        style={{ 
+                          fontFamily: 'NeueMachina-Ultrabold',
+                          color: rankingFilter === 'current' ? '#fff' : '#888',
+                          paddingRight: 2,
+                        }}
+                        className="text-[11px] uppercase tracking-wider"
+                      >
+                        Ofensiva Atual
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setRankingFilter('longest')}
+                      style={rankingFilter === 'longest' ? {
+                        backgroundColor: isDark ? '#262626' : '#000',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.18,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      } : null}
+                      className="flex-1 py-2 rounded-xl items-center justify-center"
+                    >
+                      <Text 
+                        style={{ 
+                          fontFamily: 'NeueMachina-Ultrabold',
+                          color: rankingFilter === 'longest' ? '#fff' : '#888',
+                          paddingRight: 2,
+                        }}
+                        className="text-[11px] uppercase tracking-wider"
+                      >
+                        Recorde Histórico
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Filter 2: Unit scroll list */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
+                    {units.map((unit) => {
+                      const isActive = rankingUnit === unit.id;
+                      return (
+                        <TouchableOpacity
+                          key={unit.id}
+                          onPress={() => setRankingUnit(unit.id)}
+                          style={{
+                            backgroundColor: isActive 
+                              ? (isDark ? '#fff' : '#000') 
+                              : (isDark ? '#161616' : '#fff'),
+                            borderColor: isActive
+                              ? (isDark ? '#fff' : '#000')
+                              : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'),
+                            borderWidth: 1,
+                          }}
+                          className="px-4 py-1.5 rounded-full mr-2"
+                        >
+                          <Text
+                            style={{
+                              fontFamily: 'NeueMachina-Ultrabold',
+                              color: isActive 
+                                ? (isDark ? '#000' : '#fff') 
+                                : (isDark ? '#888' : '#666')
+                            }}
+                            className="text-[10px] uppercase tracking-wider"
+                          >
+                            {unit.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              }
               renderItem={({ item, index }) => {
                 const isMe = item.uid === user?.uid || 
                   (item.evoMemberId && (item.evoMemberId === userData?.evoMemberId || item.evoMemberId === userData?.matricula)) ||
