@@ -298,22 +298,13 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
-            <View className="flex-row items-center space-x-2">
-              <TouchableOpacity
-                onPress={() => router.push(`/user/${user?.uid}`)}
-                className="w-11 h-11 bg-white dark:bg-[#161616] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm items-center justify-center active:scale-95"
-                accessibilityLabel="Ver perfil público"
-              >
-                <Eye size={20} color={isDark ? '#eab308' : '#111'} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setEditModalVisible(true)}
-                className="w-11 h-11 bg-white dark:bg-[#161616] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm items-center justify-center active:scale-95"
-                accessibilityLabel="Editar perfil"
-              >
-                <Edit3 size={19} color={isDark ? '#fff' : '#111'} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={() => setEditModalVisible(true)}
+              className="w-11 h-11 bg-white dark:bg-[#161616] rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm items-center justify-center active:scale-95"
+              accessibilityLabel="Editar perfil"
+            >
+              <Edit3 size={19} color={isDark ? '#fff' : '#111'} />
+            </TouchableOpacity>
           </View>
 
           {/* Linked Family Profiles Selector (if multiple accounts linked) */}
@@ -376,11 +367,6 @@ export default function ProfileScreen() {
                   : 'bg-[#eab308] border-yellow-400 shadow-yellow-500/20'
               }`}
             >
-              {/* Subtle background watermark */}
-              <View className="absolute -right-4 -top-4 opacity-10 pointer-events-none">
-                <ShieldCheck size={140} color={isDark ? '#eab308' : '#000'} />
-              </View>
-
               {/* Card Top Row: Status (left) & Matrícula (right) */}
               <View className="flex-row items-center justify-between mb-4">
                 <View className="flex-row items-center">
@@ -467,7 +453,7 @@ export default function ProfileScreen() {
                           isDark ? 'text-yellow-400' : 'text-yellow-400'
                         }`}
                       >
-                        🥋 {studentBelt}
+                        {studentBelt}
                       </Text>
                     </View>
 
