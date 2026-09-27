@@ -11,7 +11,8 @@ export default function NotificacoesScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
-  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'ranking' | 'emblemas' | 'teste-fisico'>('ofensivas');
+  const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'emblemas' | 'teste-fisico'>('ofensivas');
+  const [ofensivaSubTab, setOfensivaSubTab] = useState<'ofensiva' | 'ranking'>('ofensiva');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -478,7 +479,7 @@ export default function NotificacoesScreen() {
           )}
         </View>
 
-        {/* Sub-tab Selectors (Four-way toggle) */}
+        {/* Sub-tab Selectors (Three-way toggle) */}
         <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-2xl mb-4">
           <TouchableOpacity 
             onPress={() => setActiveSubTab('ofensivas')}
@@ -490,37 +491,15 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Flame size={14} color={activeSubTab === 'ofensivas' ? '#f97316' : '#888'} style={{ marginRight: 3 }} />
+            <Flame size={15} color={activeSubTab === 'ofensivas' ? '#f97316' : '#888'} style={{ marginRight: 4 }} />
             <Text 
               style={{ color: activeSubTab === 'ofensivas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[9px] font-black uppercase tracking-tight text-center"
+              className="text-[11px] font-black uppercase tracking-tight text-center"
               numberOfLines={1}
             >
               Ofensivas
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            onPress={() => setActiveSubTab('ranking')}
-            style={activeSubTab === 'ranking' ? {
-              backgroundColor: isDark ? '#2b2b2b' : '#fff',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.15,
-              shadowRadius: 1.5,
-              elevation: 2,
-            } : null}
-            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
-          >
-            <Trophy size={14} color={activeSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 3 }} />
-            <Text 
-              style={{ color: activeSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[9px] font-black uppercase tracking-tight text-center"
-              numberOfLines={1}
-            >
-              Ranking
             </Text>
           </TouchableOpacity>
 
@@ -534,12 +513,12 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Award size={14} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 3 }} />
+            <Award size={15} color={activeSubTab === 'emblemas' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
             <Text 
               style={{ color: activeSubTab === 'emblemas' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[9px] font-black uppercase tracking-tight text-center"
+              className="text-[11px] font-black uppercase tracking-tight text-center"
               numberOfLines={1}
             >
               Emblemas
@@ -556,22 +535,71 @@ export default function NotificacoesScreen() {
               shadowRadius: 1.5,
               elevation: 2,
             } : null}
-            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-0.5"
+            className="flex-1 py-2.5 rounded-xl items-center justify-center flex-row px-1"
           >
-            <Activity size={14} color={activeSubTab === 'teste-fisico' ? '#ef4444' : '#888'} style={{ marginRight: 3 }} />
+            <Activity size={15} color={activeSubTab === 'teste-fisico' ? '#ef4444' : '#888'} style={{ marginRight: 4 }} />
             <Text 
               style={{ color: activeSubTab === 'teste-fisico' ? (isDark ? '#fff' : '#111') : '#999' }}
-              className="text-[9px] font-black uppercase tracking-tight text-center"
+              className="text-[11px] font-black uppercase tracking-tight text-center"
               numberOfLines={1}
             >
-              T. Físico
+              Teste Físico
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {activeSubTab === 'ofensivas' ? (
-        <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <View className="flex-1">
+          {/* Sub-selector: Minha Ofensiva vs Ranking */}
+          <View className="px-6 mb-3">
+            <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-2xl">
+              <TouchableOpacity
+                onPress={() => setOfensivaSubTab('ofensiva')}
+                style={ofensivaSubTab === 'ofensiva' ? {
+                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 1.5,
+                  elevation: 2,
+                } : null}
+                className="flex-1 py-2 rounded-xl items-center justify-center flex-row"
+              >
+                <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#f97316' : '#888'} style={{ marginRight: 6 }} />
+                <Text
+                  style={{ color: ofensivaSubTab === 'ofensiva' ? (isDark ? '#fff' : '#111') : '#888' }}
+                  className="text-xs font-black uppercase tracking-tight"
+                >
+                  Minha Ofensiva
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setOfensivaSubTab('ranking')}
+                style={ofensivaSubTab === 'ranking' ? {
+                  backgroundColor: isDark ? '#2b2b2b' : '#fff',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 1.5,
+                  elevation: 2,
+                } : null}
+                className="flex-1 py-2 rounded-xl items-center justify-center flex-row"
+              >
+                <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 6 }} />
+                <Text
+                  style={{ color: ofensivaSubTab === 'ranking' ? (isDark ? '#fff' : '#111') : '#888' }}
+                  className="text-xs font-black uppercase tracking-tight"
+                >
+                  Ranking
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {ofensivaSubTab === 'ofensiva' ? (
+            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           {/* Flame Circle Visualizer */}
           <View className="items-center py-6">
             <View className="relative items-center justify-center">
@@ -722,7 +750,7 @@ export default function NotificacoesScreen() {
             </Text>
           </View>
         </ScrollView>
-      ) : activeSubTab === 'ranking' ? (
+      ) : (
         <View className="flex-1">
           {/* Ranking Header Filters */}
           <View className="px-6 mb-4">
@@ -908,7 +936,9 @@ export default function NotificacoesScreen() {
             />
           )}
         </View>
-      ) : activeSubTab === 'emblemas' ? (
+      )}
+    </View>
+  ) : activeSubTab === 'emblemas' ? (
         badgesLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#eab308" />
@@ -941,16 +971,13 @@ export default function NotificacoesScreen() {
                     <View className="flex-1">
                       <View className="flex-row items-center mb-0.5">
                         <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider mr-2">
-                          Emblema Teste Físico
+                          Teste Físico
                         </Text>
-                        <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                          <Text className="text-emerald-500 text-[8px] font-black uppercase">Liberado</Text>
-                        </View>
                       </View>
                       <Text className="text-[11px] font-semibold text-gray-500 dark:text-gray-400" numberOfLines={1}>
                         {latestPhysicalTest
                           ? `Último registro: ${latestPhysicalTest.score} pts • Toque para ver histórico`
-                          : 'Disponível para todos • Toque para registrar'}
+                          : 'Toque para registrar ou ver seu histórico'}
                       </Text>
                     </View>
                   </View>
@@ -1058,12 +1085,9 @@ export default function NotificacoesScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center">
-                    <Text className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mr-2">
+                    <Text className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">
                       Teste Físico
                     </Text>
-                    <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      <Text className="text-emerald-500 text-[9px] font-black uppercase">Liberado</Text>
-                    </View>
                   </View>
                   <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-0.5">
                     Acompanhe seu condicionamento e evolução
