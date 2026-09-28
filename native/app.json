@@ -12,11 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kihap.app",
-      "buildNumber": "38"
+      "buildNumber": "39"
     },
     "android": {
       "package": "com.kihap.app",
-      "versionCode": 38,
+      "versionCode": 39,
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-safe.png"

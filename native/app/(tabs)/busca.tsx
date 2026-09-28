@@ -7,11 +7,11 @@ import {
   TouchableOpacity, 
   TextInput, 
   Image, 
-  ImageBackground,
   ActivityIndicator, 
   RefreshControl,
   StyleSheet
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { 
@@ -407,47 +407,47 @@ export default function BuscaScreen() {
               <TouchableOpacity 
                 onPress={() => router.push('/(tabs)/store')}
                 activeOpacity={0.9}
-                className="rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10"
+                className="h-52 rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 relative justify-end p-5"
               >
-                <ImageBackground 
-                  source={require('../../assets/images/todosjuntos.jpg')}
-                  className="h-52 justify-end p-5"
-                  resizeMode="cover"
-                >
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                  
-                  <View className="relative z-10">
-                    <View className="flex-row items-center mb-2">
-                      <View className="bg-yellow-500 px-2.5 py-0.5 rounded-full">
-                        <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                          className="text-black text-[10px] font-black uppercase tracking-wider"
-                        >
-                          Loja Oficial Kihap
-                        </Text>
-                      </View>
-                    </View>
-                    <Text 
-                      style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                      className="text-2xl font-black text-white uppercase tracking-tight leading-tight"
-                    >
-                      Equipamentos & Uniformes
-                    </Text>
-                    <Text className="text-gray-300 text-xs mt-1 font-medium leading-relaxed" numberOfLines={2}>
-                      Doboks oficiais, armas e proteções certificadas.
-                    </Text>
-                    
-                    <View className="flex-row items-center mt-3">
-                      <Text className="text-yellow-400 text-xs font-bold mr-1">
-                        Conhecer a Loja
+                <ExpoImage 
+                  source={require('../../assets/images/todosjuntos.png')}
+                  style={StyleSheet.absoluteFillObject}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                
+                <View className="relative z-10">
+                  <View className="flex-row items-center mb-2">
+                    <View className="bg-yellow-500 px-2.5 py-0.5 rounded-full">
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                        className="text-black text-[10px] font-black uppercase tracking-wider"
+                      >
+                        Loja Oficial Kihap
                       </Text>
-                      <ArrowRight size={14} color="#facc15" />
                     </View>
                   </View>
-                </ImageBackground>
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                    className="text-2xl font-black text-white uppercase tracking-tight leading-tight"
+                  >
+                    Equipamentos & Uniformes
+                  </Text>
+                  <Text className="text-gray-300 text-xs mt-1 font-medium leading-relaxed" numberOfLines={2}>
+                    Doboks oficiais, armas e proteções certificadas.
+                  </Text>
+                  
+                  <View className="flex-row items-center mt-3">
+                    <Text className="text-yellow-400 text-xs font-bold mr-1">
+                      Conhecer a Loja
+                    </Text>
+                    <ArrowRight size={14} color="#facc15" />
+                  </View>
+                </View>
               </TouchableOpacity>
             </View>
           )}
