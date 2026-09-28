@@ -12,11 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kihap.app",
-      "buildNumber": "37"
+      "buildNumber": "38"
     },
     "android": {
       "package": "com.kihap.app",
-      "versionCode": 37,
+      "versionCode": 38,
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-safe.png"
@@ -45,7 +45,15 @@
           }
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/NeueMachina-Regular.otf",
+            "./assets/fonts/NeueMachina-Ultrabold.otf"
+          ]
+        }
+      ],
       [
         "expo-image-picker",
         {

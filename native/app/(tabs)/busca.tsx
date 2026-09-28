@@ -246,7 +246,10 @@ export default function BuscaScreen() {
       {/* Header with Title and Search */}
       <View className="px-5 pt-3 pb-2">
         <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+          <Text 
+            style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+            className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"
+          >
             Descobrir
           </Text>
         </View>
@@ -407,25 +410,30 @@ export default function BuscaScreen() {
                 className="rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10"
               >
                 <ImageBackground 
-                  source={require('../../assets/images/todosjuntos.jpeg')}
+                  source={require('../../assets/images/todosjuntos.jpg')}
                   className="h-52 justify-end p-5"
-                  imageStyle={{ transform: [{ translateY: -25 }] }}
                   resizeMode="cover"
                 >
                   <LinearGradient
-                    colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.85)']}
+                    colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
                     style={StyleSheet.absoluteFillObject}
                   />
                   
                   <View className="relative z-10">
                     <View className="flex-row items-center mb-2">
                       <View className="bg-yellow-500 px-2.5 py-0.5 rounded-full">
-                        <Text className="text-black text-[10px] font-black uppercase tracking-wider">
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                          className="text-black text-[10px] font-black uppercase tracking-wider"
+                        >
                           Loja Oficial Kihap
                         </Text>
                       </View>
                     </View>
-                    <Text className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                      className="text-2xl font-black text-white uppercase tracking-tight leading-tight"
+                    >
                       Equipamentos & Uniformes
                     </Text>
                     <Text className="text-gray-300 text-xs mt-1 font-medium leading-relaxed" numberOfLines={2}>
@@ -450,7 +458,10 @@ export default function BuscaScreen() {
           {(activeFilter === 'all' || activeFilter === 'products') && allProducts.length > 0 && (
             <View className="mb-7">
               <View className="flex-row items-center justify-between px-5 mb-3">
-                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                  className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight"
+                >
                   Loja Oficial
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/store')}>
@@ -574,7 +585,10 @@ export default function BuscaScreen() {
           {(activeFilter === 'all' || activeFilter === 'events') && allEvents.length > 0 && (
             <View className="px-5 mb-7">
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
+                  className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight"
+                >
                   Próximos Eventos & Exames
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/calendario')}>
