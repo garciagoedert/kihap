@@ -134,7 +134,7 @@ export const loadFeed = async () => {
                                 </div>
                             </div>
                             ${mediaHtml}
-                            ${post.ctaButton ? `<div class="px-5 pb-5"><a href="${post.ctaButton.url}" target="_blank" class="w-full flex items-center justify-center bg-primary hover:bg-primary-dark text-black font-bold py-2.5 rounded-xl transition-all shadow-md text-sm">${post.ctaButton.text}</a></div>` : ''}
+                            ${(post.ctaButton && post.ctaButton.text && post.ctaButton.url) ? `<div class="px-5 pb-5"><a href="${post.ctaButton.url}" target="_blank" class="w-full flex items-center justify-center bg-primary hover:bg-primary-dark text-black font-bold py-2.5 rounded-xl transition-all shadow-md text-sm">${post.ctaButton.text}</a></div>` : ''}
                         `;
                         feedList.appendChild(postElement);
                     });

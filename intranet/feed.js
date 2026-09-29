@@ -1,5 +1,5 @@
 import { db, storage, functions, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { EmojiButton } from 'https://cdn.skypack.dev/@joeattardi/emoji-button@4.6.4';
@@ -91,10 +91,57 @@ export const initFeedPage = () => {
     const closeEditModalBtn = document.getElementById('close-edit-modal');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const saveEditBtn = document.getElementById('save-edit-btn');
+
+    // Elementos de CTA no Modal de Edição
+    const editCtaFields = document.getElementById('edit-cta-fields');
+    const editCtaEmpty = document.getElementById('edit-cta-empty');
+    const editCtaTextInput = document.getElementById('edit-cta-text');
+    const editCtaUrlInput = document.getElementById('edit-cta-url');
+    const editRemoveCtaBtn = document.getElementById('edit-remove-cta-btn');
+    const editAddCtaBtn = document.getElementById('edit-add-cta-btn');
+    let editHasCta = false;
+
+    const setupEditCtaUI = (cta) => {
+        if (cta && (cta.text || cta.url)) {
+            editHasCta = true;
+            if (editCtaTextInput) editCtaTextInput.value = cta.text || '';
+            if (editCtaUrlInput) editCtaUrlInput.value = cta.url || '';
+            editCtaFields?.classList.remove('hidden');
+            editCtaEmpty?.classList.add('hidden');
+            editRemoveCtaBtn?.classList.remove('hidden');
+        } else {
+            editHasCta = false;
+            if (editCtaTextInput) editCtaTextInput.value = '';
+            if (editCtaUrlInput) editCtaUrlInput.value = '';
+            editCtaFields?.classList.add('hidden');
+            editCtaEmpty?.classList.remove('hidden');
+            editRemoveCtaBtn?.classList.add('hidden');
+        }
+    };
+
+    editAddCtaBtn?.addEventListener('click', () => {
+        editHasCta = true;
+        editCtaEmpty?.classList.add('hidden');
+        editCtaFields?.classList.remove('hidden');
+        editRemoveCtaBtn?.classList.remove('hidden');
+        editCtaTextInput?.focus();
+    });
+
+    editRemoveCtaBtn?.addEventListener('click', () => {
+        if (confirm('Deseja realmente remover o botão deste post?')) {
+            editHasCta = false;
+            if (editCtaTextInput) editCtaTextInput.value = '';
+            if (editCtaUrlInput) editCtaUrlInput.value = '';
+            editCtaFields?.classList.add('hidden');
+            editCtaEmpty?.classList.remove('hidden');
+            editRemoveCtaBtn?.classList.add('hidden');
+        }
+    });
     
     const closeEditModal = () => {
         editModal.classList.add('hidden');
         currentEditingPost = null;
+        setupEditCtaUI(null);
     };
     
     closeEditModalBtn?.addEventListener('click', closeEditModal);
@@ -111,8 +158,23 @@ export const initFeedPage = () => {
             return;
         }
 
+        const ctaText = editCtaTextInput ? editCtaTextInput.value.trim() : '';
+        const ctaUrl = editCtaUrlInput ? editCtaUrlInput.value.trim() : '';
+
+        if (editHasCta && ((ctaText && !ctaUrl) || (!ctaText && ctaUrl))) {
+            alert('Para incluir um botão, preencha tanto o texto quanto a URL do link.');
+            return;
+        }
+
+        const updatedCta = (editHasCta && ctaText && ctaUrl) ? { text: ctaText, url: ctaUrl } : null;
+
         saveEditBtn.disabled = true;
         saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        const updatePayload = {
+            content: newContent,
+            ctaButton: updatedCta ? updatedCta : deleteField()
+        };
 
         try {
             if (currentEditingPost.batchId) {
@@ -120,15 +182,11 @@ export const initFeedPage = () => {
                 const snapUpdate = await getDocs(qUpdate);
                 const updatePromises = [];
                 snapUpdate.forEach(docUpdate => {
-                    updatePromises.push(updateDoc(doc(db, 'feed', docUpdate.id), {
-                        content: newContent
-                    }));
+                    updatePromises.push(updateDoc(doc(db, 'feed', docUpdate.id), updatePayload));
                 });
                 await Promise.all(updatePromises);
             } else {
-                await updateDoc(doc(db, 'feed', currentEditingPost.id), {
-                    content: newContent
-                });
+                await updateDoc(doc(db, 'feed', currentEditingPost.id), updatePayload);
             }
             closeEditModal();
             loadPosts();
@@ -562,7 +620,7 @@ export const initFeedPage = () => {
                     </div>
                 </div>
                 ${mediaHtml}
-                ${post.ctaButton ? `
+                ${(post.ctaButton && post.ctaButton.text && post.ctaButton.url) ? `
                     <div class="px-6 pb-6 flex justify-center">
                         <a href="${post.ctaButton.url}" target="_blank" class="w-full md:w-auto px-6 py-2.5 bg-primary text-black font-bold rounded-xl hover:scale-[1.02] transition-transform shadow-md flex items-center justify-center text-sm">
                             ${post.ctaButton.text}
@@ -601,8 +659,13 @@ export const initFeedPage = () => {
             const editBtn = postElement.querySelector('.edit-btn');
             if (editBtn) {
                 editBtn.onclick = () => {
-                    currentEditingPost = { id: docRef.id, batchId: post.batchId };
+                    currentEditingPost = { 
+                        id: docRef.id, 
+                        batchId: post.batchId,
+                        ctaButton: post.ctaButton || null 
+                    };
                     editQuill.clipboard.dangerouslyPasteHTML(post.content || '');
+                    setupEditCtaUI(post.ctaButton);
                     editModal.classList.remove('hidden');
                 };
             }

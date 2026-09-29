@@ -345,7 +345,7 @@ export default function FeedCard({ post }: FeedCardProps) {
       ) : null}
 
       {/* CTA Button */}
-      {post.ctaButton ? (
+      {post.ctaButton && post.ctaButton.text && post.ctaButton.url ? (
         <View className="px-4 py-4">
           <TouchableOpacity 
             onPress={handleCTA}

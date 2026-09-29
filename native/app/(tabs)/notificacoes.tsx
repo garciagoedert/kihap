@@ -1063,13 +1063,14 @@ export default function NotificacoesScreen() {
             {/* Header com Tag de Status */}
             <View className="flex-row items-center justify-between mb-3.5">
               <View className="flex-row items-center flex-1 mr-2">
-                <View className={`w-9 h-9 rounded-2xl items-center justify-center mr-2.5 border ${
-                  isCheckedInToday 
-                    ? 'bg-emerald-500/10 border-emerald-500/20' 
-                    : isClassToday 
-                      ? 'bg-[#eab308] border-yellow-400 shadow-sm shadow-yellow-500/20' 
-                      : 'bg-yellow-500/10 dark:bg-white/10 border-yellow-500/20 dark:border-white/10'
-                }`}>
+                <View 
+                  style={{
+                    backgroundColor: isCheckedInToday ? 'rgba(16,185,129,0.1)' : isClassToday ? '#eab308' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(234,179,8,0.1)'),
+                    borderColor: isCheckedInToday ? 'rgba(16,185,129,0.2)' : isClassToday ? '#facc15' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(234,179,8,0.2)'),
+                    borderWidth: 1,
+                  }}
+                  className="w-9 h-9 rounded-2xl items-center justify-center mr-2.5"
+                >
                   {isCheckedInToday ? (
                     <CheckCheck size={18} color="#10b981" />
                   ) : isClassToday ? (
@@ -1176,6 +1177,7 @@ export default function NotificacoesScreen() {
                 </View>
                 <TouchableOpacity 
                   onPress={() => router.push('/atividades')}
+                  activeOpacity={0.8}
                   className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5"
                 >
                   <Text 
@@ -1192,7 +1194,7 @@ export default function NotificacoesScreen() {
                   onPress={() => handleCheckinClass(activeClassToDisplay)}
                   disabled={checkinSubmitting}
                   activeOpacity={0.8}
-                  className="w-full py-3.5 rounded-2xl bg-[#eab308] items-center justify-center flex-row shadow-lg shadow-yellow-500/25 active:scale-98"
+                  className="w-full py-3.5 rounded-2xl bg-[#eab308] items-center justify-center flex-row shadow-lg shadow-yellow-500/25"
                 >
                   {checkinSubmitting ? (
                     <ActivityIndicator color="#000" size="small" />
@@ -1212,6 +1214,7 @@ export default function NotificacoesScreen() {
                 {todayClasses.length > 1 && (
                   <TouchableOpacity 
                     onPress={() => setShowClassModal(true)}
+                    activeOpacity={0.7}
                     className="py-1.5 items-center justify-center flex-row"
                   >
                     <Text className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
@@ -1227,7 +1230,8 @@ export default function NotificacoesScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push('/atividades')}
-                  className="px-4 py-2.5 rounded-xl bg-black dark:bg-[#eab308] flex-row items-center active:scale-95"
+                  activeOpacity={0.8}
+                  className="px-4 py-2.5 rounded-xl bg-black dark:bg-[#eab308] flex-row items-center"
                 >
                   <Text 
                     style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -1838,7 +1842,7 @@ export default function NotificacoesScreen() {
                   onPress={handleSaveTest}
                   disabled={savingTest}
                   activeOpacity={0.85}
-                  className="bg-[#eab308] py-3.5 rounded-2xl items-center justify-center flex-row shadow-md shadow-yellow-500/20 active:scale-98"
+                  className="bg-[#eab308] py-3.5 rounded-2xl items-center justify-center flex-row shadow-md shadow-yellow-500/20"
                 >
                   {savingTest ? (
                     <ActivityIndicator size="small" color="#000" />
