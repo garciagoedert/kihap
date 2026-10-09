@@ -1,6 +1,6 @@
 import { db, storage, functions, auth } from './firebase-config.js';
 import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, deleteDoc, doc, getDoc, where, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { EmojiButton } from 'https://cdn.skypack.dev/@joeattardi/emoji-button@4.6.4';
 import { getAllUsers, getUserData } from './auth.js';
@@ -859,6 +859,8 @@ export const initFeedPage = () => {
             updateTags();
             document.getElementById('file-name').textContent = 'Escolher arquivo...';
             loadPosts();
+            loadBanners();
+            loadStories();
 
         } catch (err) {
             console.error(err);
@@ -990,9 +992,17 @@ export const initFeedPage = () => {
                 // Delete banner
                 card.querySelector('.delete-banner-btn').addEventListener('click', async (e) => {
                     const bId = e.currentTarget.getAttribute('data-id');
+                    const batchId = banner.batchId;
                     if (confirm('Tem certeza que deseja excluir este banner?')) {
                         try {
-                            await deleteDoc(doc(db, 'banners', bId));
+                            if (batchId) {
+                                const qDel = query(collection(db, 'banners'), where('batchId', '==', batchId));
+                                const snapDel = await getDocs(qDel);
+                                const delPromises = snapDel.docs.map(d => deleteDoc(d.ref));
+                                await Promise.all(delPromises);
+                            } else {
+                                await deleteDoc(doc(db, 'banners', bId));
+                            }
                             loadBanners();
                         } catch (err) {
                             console.error('Erro ao excluir banner:', err);
@@ -1011,4 +1021,236 @@ export const initFeedPage = () => {
 
     refreshBannersBtn?.addEventListener('click', loadBanners);
     loadBanners();
+
+    // Carregar e Gerenciar Stories no App
+    const storiesListContainer = document.getElementById('stories-list-container');
+    const refreshStoriesBtn = document.getElementById('refresh-stories-btn');
+
+    const loadStories = async () => {
+        if (!storiesListContainer) return;
+        storiesListContainer.innerHTML = '<div class="col-span-full text-center py-6 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando stories...</div>';
+
+        try {
+            const snap = await getDocs(collection(db, 'stories'));
+
+            if (snap.empty) {
+                storiesListContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8 bg-gray-50/50 dark:bg-[#202020]/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+                        <i class="fas fa-circle-notch text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-sm font-bold text-gray-600 dark:text-gray-300">Nenhum story publicado</p>
+                        <p class="text-xs text-gray-400 mt-1">Publique um story acima selecionando o "Modo Story".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const batchUnitsMap = new Map();
+            const batchStudentsMap = new Map();
+            snap.forEach(d => {
+                const data = d.data();
+                if (data.batchId && data.targetUnit) {
+                    if (!batchUnitsMap.has(data.batchId)) {
+                        batchUnitsMap.set(data.batchId, new Set());
+                    }
+                    batchUnitsMap.get(data.batchId).add(data.targetUnit);
+                }
+                if (data.batchId && Array.isArray(data.targetStudents)) {
+                    if (!batchStudentsMap.has(data.batchId)) {
+                        batchStudentsMap.set(data.batchId, new Set());
+                    }
+                    data.targetStudents.forEach(id => batchStudentsMap.get(data.batchId).add(id));
+                }
+            });
+
+            const seenStoryBatches = new Set();
+            const storyList = [];
+            snap.forEach(docSnap => {
+                const s = { id: docSnap.id, ...docSnap.data() };
+                if (s.batchId && batchUnitsMap.has(s.batchId)) {
+                    const batchUnits = Array.from(batchUnitsMap.get(s.batchId));
+                    if (!s.targetUnits || s.targetUnits.length === 0) {
+                        s.targetUnits = batchUnits;
+                    }
+                }
+                if (s.batchId && batchStudentsMap.has(s.batchId)) {
+                    const batchStudents = Array.from(batchStudentsMap.get(s.batchId));
+                    if (!s.targetStudents || s.targetStudents.length === 0) {
+                        s.targetStudents = batchStudents;
+                    }
+                }
+                if (s.batchId) {
+                    if (seenStoryBatches.has(s.batchId)) return;
+                    seenStoryBatches.add(s.batchId);
+                }
+                storyList.push(s);
+            });
+
+            storyList.sort((a, b) => {
+                const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt).getTime() || 0));
+                const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt).getTime() || 0));
+                return timeB - timeA;
+            });
+
+            storiesListContainer.innerHTML = '';
+            const now = new Date();
+
+            storyList.forEach(story => {
+                let expiresDate = null;
+                if (story.expiresAt?.toDate) {
+                    expiresDate = story.expiresAt.toDate();
+                } else if (story.expiresAt?.seconds) {
+                    expiresDate = new Date(story.expiresAt.seconds * 1000);
+                } else if (story.expiresAt) {
+                    expiresDate = new Date(story.expiresAt);
+                }
+
+                const isExpired = expiresDate ? expiresDate < now : false;
+
+                let expiresText = 'Expirado';
+                if (!isExpired && expiresDate) {
+                    const diffMs = expiresDate - now;
+                    const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
+                    const minsLeft = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    if (hoursLeft > 0) {
+                        expiresText = `Resta ${hoursLeft}h`;
+                    } else if (minsLeft > 0) {
+                        expiresText = `Resta ${minsLeft}m`;
+                    } else {
+                        expiresText = 'Expirando';
+                    }
+                }
+
+                let createdDate = null;
+                if (story.createdAt?.toDate) {
+                    createdDate = story.createdAt.toDate();
+                } else if (story.createdAt?.seconds) {
+                    createdDate = new Date(story.createdAt.seconds * 1000);
+                } else if (story.createdAt) {
+                    createdDate = new Date(story.createdAt);
+                }
+                const dateFormatted = createdDate ? createdDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+
+                let unitLabel = 'Todas as Unidades';
+                if (story.targetStudents?.length > 0) {
+                    unitLabel = `${story.targetStudents.length} Aluno(s)`;
+                } else if (story.targetUnits?.length > 0 && !story.targetUnits.includes('all')) {
+                    unitLabel = story.targetUnits.map(u => u.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ');
+                } else if (story.targetUnit && story.targetUnit !== 'all') {
+                    unitLabel = story.targetUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+
+                const isStoryVideo = story.mediaType === 'VIDEO' || 
+                    (story.mediaType && story.mediaType.toLowerCase().includes('video')) ||
+                    (story.mediaUrl && (story.mediaUrl.includes('.mp4') || story.mediaUrl.includes('.mov') || story.mediaUrl.includes('.webm')));
+
+                const card = document.createElement('div');
+                card.className = `relative rounded-2xl overflow-hidden aspect-[9/16] bg-black shadow-md border transition-all flex flex-col justify-between p-3 group ${isExpired ? 'opacity-65 border-gray-200/50 dark:border-gray-800' : 'border-gray-200 dark:border-gray-700/80 hover:border-amber-500/50 hover:shadow-lg'}`;
+
+                card.innerHTML = `
+                    <!-- Media background -->
+                    <div class="absolute inset-0 z-0 bg-gray-900 overflow-hidden">
+                        ${isStoryVideo ? `
+                            <video src="${story.mediaUrl}" class="w-full h-full object-cover" preload="metadata" muted playsinline></video>
+                        ` : `
+                            <img src="${story.mediaUrl}" class="w-full h-full object-cover" loading="lazy">
+                        `}
+                    </div>
+
+                    <!-- Gradient overlay for text contrast -->
+                    <div class="absolute inset-0 z-[1] bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
+
+                    <!-- Top info: Author, status badge, video icon -->
+                    <div class="relative z-10 flex items-start justify-between gap-1 w-full">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="w-6 h-6 rounded-full ring-2 ring-primary/80 overflow-hidden bg-gray-700 flex-shrink-0">
+                                <img src="${story.authorPhotoURL || 'assets/default-avatar.png'}" class="w-full h-full rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(story.authorName || 'K')}&background=random'">
+                            </div>
+                            <span class="text-[11px] font-bold text-white truncate drop-shadow-md">${story.authorName || 'Kihap'}</span>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            ${isStoryVideo ? `
+                                <span class="w-5 h-5 rounded-full bg-black/60 backdrop-blur-xs text-white flex items-center justify-center text-[9px]" title="Vídeo">
+                                    <i class="fas fa-play"></i>
+                                </span>
+                            ` : ''}
+                            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${!isExpired ? 'bg-emerald-500 text-white shadow-sm flex items-center gap-1' : 'bg-gray-600 text-gray-200'}">
+                                ${!isExpired ? '<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Ativo' : 'Expirado'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom info: Unit/Target, Time remaining / Date, Excluir button -->
+                    <div class="relative z-10 flex flex-col gap-1.5 w-full mt-auto">
+                        <div class="text-white text-[10px] space-y-1">
+                            <div class="flex items-center justify-between text-[10px] text-gray-200">
+                                <span class="truncate max-w-[70%] flex items-center gap-1 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded text-[10px]" title="${unitLabel}">
+                                    <i class="fas fa-location-dot text-[9px] text-yellow-400"></i> ${unitLabel}
+                                </span>
+                                <span class="text-gray-300 font-mono text-[9px] bg-black/50 px-1 py-0.5 rounded">
+                                    ${expiresText}
+                                </span>
+                            </div>
+                            <div class="text-[9px] text-gray-400 flex items-center justify-between">
+                                <span>${dateFormatted}</span>
+                                <a href="${story.mediaUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-1 text-[10px] text-gray-300 hover:text-white" title="Abrir mídia original">
+                                    <i class="fas fa-external-link-alt text-[9px]"></i> Ver
+                                </a>
+                            </div>
+                        </div>
+
+                        <button type="button" class="delete-story-btn w-full py-1.5 px-2 bg-red-600/85 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer mt-0.5" data-id="${story.id}" ${story.batchId ? `data-batch-id="${story.batchId}"` : ''} title="Excluir Story">
+                            <i class="fas fa-trash-alt text-[10px]"></i> Excluir
+                        </button>
+                    </div>
+                `;
+
+                // Delete story handler
+                card.querySelector('.delete-story-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const btn = e.currentTarget;
+                    const sId = btn.getAttribute('data-id');
+                    const batchId = btn.getAttribute('data-batch-id');
+
+                    if (confirm('Tem certeza que deseja excluir permanentemente este story?')) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin text-[10px]"></i> Excluindo...';
+                        try {
+                            if (batchId) {
+                                const qDel = query(collection(db, 'stories'), where('batchId', '==', batchId));
+                                const snapDel = await getDocs(qDel);
+                                const delPromises = snapDel.docs.map(d => deleteDoc(d.ref));
+                                await Promise.all(delPromises);
+                            } else {
+                                await deleteDoc(doc(db, 'stories', sId));
+                            }
+
+                            if (story.mediaUrl && story.mediaUrl.includes('firebasestorage.googleapis.com')) {
+                                try {
+                                    const sRef = ref(storage, story.mediaUrl);
+                                    await deleteObject(sRef).catch(err => console.warn('Aviso: Falha ao deletar arquivo do Storage:', err));
+                                } catch (err) {
+                                    // ignore
+                                }
+                            }
+
+                            loadStories();
+                        } catch (err) {
+                            console.error('Erro ao excluir story:', err);
+                            alert('Erro ao excluir story. Verifique se você tem permissão.');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-trash-alt text-[10px]"></i> Excluir';
+                        }
+                    }
+                });
+
+                storiesListContainer.appendChild(card);
+            });
+        } catch (err) {
+            console.error('Erro ao carregar stories:', err);
+            storiesListContainer.innerHTML = '<div class="col-span-full text-center py-6 text-red-500 text-sm">Erro ao carregar stories.</div>';
+        }
+    };
+
+    refreshStoriesBtn?.addEventListener('click', loadStories);
+    loadStories();
 };

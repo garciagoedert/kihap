@@ -11,7 +11,6 @@ import {
   RefreshControl,
   StyleSheet
 } from 'react-native';
-import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { 
@@ -28,6 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { collection, query, getDocs, where, limit } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 
 type FilterType = 'all' | 'products' | 'events';
@@ -36,6 +36,7 @@ export default function BuscaScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const router = useRouter();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
   const scrollRef = useRef<ScrollView>(null);
@@ -164,7 +165,7 @@ export default function BuscaScreen() {
       return (
         <TouchableOpacity
           key={item.id}
-          onPress={() => isAvailable && router.push(`/store/${item.id}`)}
+          onPress={() => isAvailable && router.push({ pathname: '/store/[id]', params: { id: item.id } })}
           activeOpacity={0.8}
           className={`bg-white dark:bg-[#151517] rounded-2xl p-3.5 mb-3 border border-gray-100 dark:border-white/5 flex-row items-center justify-between shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
         >
@@ -247,8 +248,8 @@ export default function BuscaScreen() {
       <View className="px-5 pt-3 pb-2">
         <View className="flex-row items-center justify-between mb-3">
           <Text 
-            style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-            className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"
+            style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }} 
+            className="text-2xl text-gray-900 dark:text-white tracking-tight"
           >
             Descobrir
           </Text>
@@ -405,15 +406,14 @@ export default function BuscaScreen() {
           {activeFilter === 'all' && (
             <View className="px-5 mt-2.5 mb-6">
               <TouchableOpacity 
-                onPress={() => router.push('/(tabs)/store')}
+                onPress={() => navigation.navigate('store')}
                 activeOpacity={0.9}
-                className="h-52 rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 relative justify-end p-5"
+                className="h-52 rounded-3xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 relative justify-end p-5 bg-black"
               >
-                <ExpoImage 
+                <Image 
                   source={require('../../assets/images/todosjuntos.png')}
-                  style={StyleSheet.absoluteFillObject}
-                  contentFit="cover"
-                  transition={200}
+                  style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]}
+                  resizeMode="cover"
                 />
                 <LinearGradient
                   colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
@@ -424,16 +424,16 @@ export default function BuscaScreen() {
                   <View className="flex-row items-center mb-2">
                     <View className="bg-yellow-500 px-2.5 py-0.5 rounded-full">
                       <Text 
-                        style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                        className="text-black text-[10px] font-black uppercase tracking-wider"
+                        style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }} 
+                        className="text-black text-[10px] uppercase tracking-wider"
                       >
                         Loja Oficial Kihap
                       </Text>
                     </View>
                   </View>
                   <Text 
-                    style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                    className="text-2xl font-black text-white uppercase tracking-tight leading-tight"
+                    style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }} 
+                    className="text-2xl text-white uppercase tracking-tight leading-tight"
                   >
                     Equipamentos & Uniformes
                   </Text>
@@ -459,12 +459,12 @@ export default function BuscaScreen() {
             <View className="mb-7">
               <View className="flex-row items-center justify-between px-5 mb-3">
                 <Text 
-                  style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                  className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight"
+                  style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }} 
+                  className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
                 >
                   Loja Oficial
                 </Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/store')}>
+                <TouchableOpacity onPress={() => navigation.navigate('store')}>
                   <Text className="text-xs font-bold text-gray-500 dark:text-gray-400">
                     Ir para loja
                   </Text>
@@ -480,7 +480,7 @@ export default function BuscaScreen() {
                     return (
                       <TouchableOpacity
                         key={product.id}
-                        onPress={() => isAvailable && router.push(`/store/${product.id}`)}
+                        onPress={() => isAvailable && router.push({ pathname: '/store/[id]', params: { id: product.id } })}
                         activeOpacity={0.8}
                         style={{ width: '48%' }}
                         className={`mb-4 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
@@ -534,7 +534,7 @@ export default function BuscaScreen() {
                     return (
                       <TouchableOpacity
                         key={product.id}
-                        onPress={() => isAvailable && router.push(`/store/${product.id}`)}
+                        onPress={() => isAvailable && router.push({ pathname: '/store/[id]', params: { id: product.id } })}
                         activeOpacity={0.8}
                         style={{ width: 145 }}
                         className={`mr-3 bg-white dark:bg-[#151517] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm ${!isAvailable ? 'opacity-60' : ''}`}
@@ -586,8 +586,8 @@ export default function BuscaScreen() {
             <View className="px-5 mb-7">
               <View className="flex-row items-center justify-between mb-3">
                 <Text 
-                  style={{ fontFamily: 'NeueMachina-Ultrabold' }} 
-                  className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight"
+                  style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }} 
+                  className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
                 >
                   Próximos Eventos & Exames
                 </Text>

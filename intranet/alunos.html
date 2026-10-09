@@ -246,11 +246,22 @@
                 <div class="glass-panel p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
                     <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white tracking-tight">🛡️ Adicionar Novo Emblema</h2>
                     <form id="add-badge-form" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema</label>
-                                <input type="text" id="badge-name" placeholder="Ex: Guerreiro de Elite" required
-                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema *</label>
+                                <input type="text" id="badge-name" placeholder="Ex: Faixa Roxa" required
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold">
+                            </div>
+                            <div>
+                                <label for="badge-category" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Categoria</label>
+                                <select id="badge-category"
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium">
+                                    <option value="Graduação">🥋 Graduação / Faixa</option>
+                                    <option value="Ofensiva">🔥 Ofensiva / Frequência</option>
+                                    <option value="Desafio">⚔️ Desafio / Conquista</option>
+                                    <option value="Competição">🏆 Competição / Torneio</option>
+                                    <option value="Especial">✨ Especial / Filosofia</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Imagem do Emblema</label>
@@ -264,12 +275,32 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="badge-description"
+                                    class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição Curta / Resumo</label>
+                                <textarea id="badge-description" rows="2" placeholder="Resumo exibido nos cards rápidos do app..."
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
+                            </div>
+                            <div>
+                                <label for="badge-how-to-earn"
+                                    class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Como Conquistar (Requisitos / Critérios)</label>
+                                <textarea id="badge-how-to-earn" rows="2" placeholder="O que o aluno precisa cumprir para conquistar este emblema..."
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
+                            </div>
+                        </div>
+
                         <div>
-                            <label for="badge-description"
-                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição da Conquista</label>
-                            <textarea id="badge-description" rows="3" placeholder="Descreva o que o aluno precisa fazer para ganhar este emblema..."
+                            <label for="badge-story"
+                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2 flex items-center justify-between">
+                                <span>História & Significado Marcial (Página do Emblema no App)</span>
+                                <span class="text-xs text-primary font-normal">Exibido na página completa do aluno</span>
+                            </label>
+                            <textarea id="badge-story" rows="4" placeholder="Conte a história, os ensinamentos, a filosofia e o simbolismo deste emblema para inspirar os alunos..."
                                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
                         </div>
+
                         <div class="flex justify-end">
                             <button type="submit" id="submit-badge-btn"
                                 class="bg-primary hover:bg-primary-dark text-white font-bold py-4 px-12 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs">

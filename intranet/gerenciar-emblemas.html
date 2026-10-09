@@ -60,30 +60,88 @@
                         <i class="fas fa-shield-halved text-primary"></i> Adicionar Novo Emblema
                     </h2>
                     <form id="add-badge-form" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div>
-                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema</label>
-                                <input type="text" id="badge-name" placeholder="Ex: Guerreiro de Elite" required
-                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all">
+                                <label for="badge-name" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Nome do Emblema *</label>
+                                <input type="text" id="badge-name" placeholder="Ex: Faixa Roxa" required
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold">
                             </div>
                             <div>
-                                <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Imagem do Emblema</label>
-                                <div class="flex flex-col gap-3">
+                                <label for="badge-category" class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Categoria</label>
+                                <select id="badge-category"
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium">
+                                    <option value="Graduação">🥋 Graduação / Faixa</option>
+                                    <option value="Ofensiva">🔥 Ofensiva / Frequência</option>
+                                    <option value="Desafio">⚔️ Desafio / Conquista</option>
+                                    <option value="Competição">🏆 Competição / Torneio</option>
+                                    <option value="Especial">✨ Especial / Filosofia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Ícone do Emblema *</label>
+                                <div class="flex flex-col gap-2">
                                     <input type="file" id="badge-image" accept="image/*" class="hidden" required>
-                                    <button type="button" onclick="document.getElementById('badge-image').click()" 
+                                    <button type="button" id="badge-image-btn" onclick="document.getElementById('badge-image').click()" 
                                         class="px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 w-full">
                                         <i class="fas fa-cloud-upload-alt"></i>
                                         <span>Escolher ícone</span>
                                     </button>
+                                    <div id="badge-image-preview" class="hidden items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 p-1.5 px-2 rounded-xl border border-gray-150 dark:border-gray-700/60">
+                                        <img id="badge-image-preview-img" src="" class="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-gray-600">
+                                        <span id="badge-image-name" class="truncate font-medium text-[11px]"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2 flex items-center justify-between">
+                                    <span>Imagem "Hero" (Fundo)</span>
+                                    <span class="text-gray-400 font-normal">Opcional</span>
+                                </label>
+                                <div class="flex flex-col gap-2">
+                                    <input type="file" id="badge-hero-image" accept="image/*" class="hidden">
+                                    <button type="button" id="badge-hero-image-btn" onclick="document.getElementById('badge-hero-image').click()" 
+                                        class="px-4 py-3 bg-gray-100 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-sm hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-black transition-all flex items-center justify-center gap-2 w-full">
+                                        <i class="fas fa-image"></i>
+                                        <span>Escolher fundo hero</span>
+                                    </button>
+                                    <div id="badge-hero-preview" class="hidden items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 p-1.5 px-2 rounded-xl border border-gray-150 dark:border-gray-700/60">
+                                        <div class="flex items-center gap-2 overflow-hidden">
+                                            <img id="badge-hero-preview-img" src="" class="w-8 h-5 rounded object-cover border border-gray-200 dark:border-gray-600">
+                                            <span id="badge-hero-name" class="truncate font-medium text-[11px]"></span>
+                                        </div>
+                                        <button type="button" id="remove-hero-btn" class="text-red-500 hover:text-red-700 p-0.5" title="Remover imagem hero">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="badge-description"
+                                    class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição Curta / Resumo</label>
+                                <textarea id="badge-description" rows="2" placeholder="Resumo exibido nos cards rápidos do app..."
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
+                            </div>
+                            <div>
+                                <label for="badge-how-to-earn"
+                                    class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Como Conquistar (Requisitos / Critérios)</label>
+                                <textarea id="badge-how-to-earn" rows="2" placeholder="O que o aluno precisa cumprir para conquistar este emblema..."
+                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
+                            </div>
+                        </div>
+
                         <div>
-                            <label for="badge-description"
-                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2">Descrição da Conquista</label>
-                            <textarea id="badge-description" rows="3" placeholder="Descreva o que o aluno precisa fazer para ganhar este emblema..."
+                            <label for="badge-story"
+                                class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-2 flex items-center justify-between">
+                                <span>História & Significado Marcial (Página do Emblema no App)</span>
+                                <span class="text-xs text-primary font-normal">Exibido na página completa do aluno</span>
+                            </label>
+                            <textarea id="badge-story" rows="4" placeholder="Conte a história, os ensinamentos, a filosofia e o simbolismo deste emblema para inspirar os alunos..."
                                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"></textarea>
                         </div>
+
                         <div class="flex justify-end">
                             <button type="submit" id="submit-badge-btn"
                                 class="bg-primary hover:bg-primary-dark text-white font-bold py-4 px-12 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs">
@@ -95,9 +153,14 @@
 
                 <!-- Lista de Emblemas Existentes -->
                 <div class="glass-panel p-6 md:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm flex-grow">
-                    <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                        <i class="fas fa-award text-primary"></i> Emblemas Existentes
-                    </h2>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                            <i class="fas fa-award text-primary"></i> Emblemas Existentes
+                        </h2>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-3.5 py-1.5 rounded-full flex items-center gap-2 self-start sm:self-auto border border-gray-200 dark:border-gray-700/60 shadow-sm">
+                            <i class="fas fa-arrows-alt text-primary"></i> Arraste os cards ou clique em <b>Antes</b> / <b>Depois</b> para alterar a ordem no app
+                        </span>
+                    </div>
                     <div id="badges-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         <!-- Emblemas serão carregados aqui -->
                         <p class="col-span-full text-center text-gray-400 italic p-12">Carregando emblemas...</p>

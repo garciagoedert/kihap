@@ -43,6 +43,7 @@ function continueSetup() {
     const isJuridicoInput = document.getElementById('isJuridico');
     const isSuporteInput = document.getElementById('isSuporte');
     const userUnitSelect = document.getElementById('user-unit');
+    const userBeltSelect = document.getElementById('user-belt');
     const profilePhotoInput = document.getElementById('profile-photo-input');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
@@ -145,8 +146,20 @@ function continueSetup() {
         const tableFragment = document.createDocumentFragment();
         const listFragment = document.createDocumentFragment();
 
+        const normalizeDanBelt = (b) => {
+            if (!b) return '';
+            const trimmed = b.trim();
+            const m = trimmed.match(/^(\d+)(?:º|o)?\s*Dan\s*(?:Preta)?$/i);
+            if (m) return `Preta ${m[1]}º Dan`;
+            const m2 = trimmed.match(/^Preta\s*(\d+)(?:º|o)?\s*Dan$/i);
+            if (m2) return `Preta ${m2[1]}º Dan`;
+            return trimmed;
+        };
+
         filteredUsers.forEach(user => {
             const roles = [];
+            const userBelt = normalizeDanBelt(user.belt || user.graduacao || '');
+            if (userBelt) roles.push(`<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold border border-yellow-500/25"><i class="fas fa-medal mr-1"></i>${userBelt}</span>`);
             if (user.isAdmin) roles.push('<span class="badge-soft bg-red-500/10 text-red-600 dark:text-red-400">Admin</span>');
             if (user.isInstructor) roles.push('<span class="badge-soft bg-blue-500/10 text-blue-600 dark:text-blue-400">Instrutor</span>');
             if (user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto) roles.push('<span class="badge-soft bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-extrabold">🥋 Colarinho Preto</span>');
@@ -290,7 +303,9 @@ function continueSetup() {
                 isAcademy: isAcademyInput.checked,
                 isJuridico: isJuridicoInput.checked,
                 isSuporte: isSuporteInput.checked,
-                unitId: userUnitSelect ? userUnitSelect.value : ''
+                unitId: userUnitSelect ? userUnitSelect.value : '',
+                belt: userBeltSelect ? userBeltSelect.value.trim() : '',
+                graduacao: userBeltSelect ? userBeltSelect.value.trim() : ''
             };
 
             const userId = hiddenEmailInput.value;
@@ -332,6 +347,7 @@ function continueSetup() {
         if (formTitle) formTitle.textContent = 'Adicionar Novo Usuário';
         if (userForm) userForm.reset();
         if (userUnitSelect) userUnitSelect.value = '';
+        if (userBeltSelect) userBeltSelect.value = '';
         if (hiddenEmailInput) hiddenEmailInput.value = '';
         if (emailInput) emailInput.disabled = false;
         if (passwordInput) {
@@ -411,6 +427,19 @@ function continueSetup() {
                 isJuridicoInput.checked = user.isJuridico || false;
                 isSuporteInput.checked = user.isSuporte || false;
                 if (userUnitSelect) userUnitSelect.value = user.unitId || '';
+
+                if (userBeltSelect) {
+                    const currentBelt = normalizeDanBelt(user.belt || user.graduacao || '');
+                    userBeltSelect.value = currentBelt;
+                    if (currentBelt && userBeltSelect.value !== currentBelt) {
+                        const customOpt = document.createElement('option');
+                        customOpt.value = currentBelt;
+                        customOpt.textContent = currentBelt;
+                        userBeltSelect.appendChild(customOpt);
+                        userBeltSelect.value = currentBelt;
+                    }
+                }
+
                 hiddenEmailInput.value = user.id;
                 passwordInput.placeholder = "Não editável aqui";
                 passwordInput.disabled = true;

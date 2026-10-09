@@ -2,16 +2,18 @@ import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import '../global.css';
 
-import { LogBox } from 'react-native';
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
+
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-LogBox.ignoreAllLogs();
-
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: '(tabs)',
 };
 
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
@@ -39,10 +41,18 @@ function RootLayoutNav() {
   }, [user, loading, segments]);
 
   return (
-    <Stack>
+    <Stack initialRouteName="(tabs)" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)/forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="emblema/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="store/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="calendario" options={{ headerShown: false }} />
+      <Stack.Screen name="cart" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false }} />
+      <Stack.Screen name="pedidos" options={{ headerShown: false }} />
+      <Stack.Screen name="atividades" options={{ headerShown: false }} />
+      <Stack.Screen name="player" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );
@@ -54,9 +64,11 @@ import { useFonts } from 'expo-font';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  const [fontsLoaded] = useFonts({
+  useFonts({
     'NeueMachina-Regular': require('../assets/fonts/NeueMachina-Regular.otf'),
     'NeueMachina-Ultrabold': require('../assets/fonts/NeueMachina-Ultrabold.otf'),
+    'NeueMachina-Ultrabold_bold': require('../assets/fonts/NeueMachina-Ultrabold_bold.otf'),
+    'NeueMachina-Regular_bold': require('../assets/fonts/NeueMachina-Regular_bold.otf'),
   });
 
   return (

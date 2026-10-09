@@ -50,7 +50,9 @@
         {
           "fonts": [
             "./assets/fonts/NeueMachina-Regular.otf",
-            "./assets/fonts/NeueMachina-Ultrabold.otf"
+            "./assets/fonts/NeueMachina-Ultrabold.otf",
+            "./assets/fonts/NeueMachina-Ultrabold_bold.otf",
+            "./assets/fonts/NeueMachina-Regular_bold.otf"
           ]
         }
       ],

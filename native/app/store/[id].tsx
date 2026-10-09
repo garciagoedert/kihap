@@ -19,8 +19,8 @@ const GRADUACOES: { [key: string]: string[] } = {
     'Camuflada recomendada', 'Camuflada decidida', 'Verde recomendada', 'Verde decidida',
     'Roxa recomendada', 'Roxa decidida', 'Azul recomendada', 'Azul decidida',
     'Marrom recomendada', 'Marrom decidida', 'Vermelha recomendada', 'Vermelha decidida',
-    'Vermelha e preta', '1º Dan Preta', '2º Dan Preta', '3º Dan Preta', '4º Dan Preta',
-    '5º Dan Preta', '6º Dan Preta', '7º Dan Preta', '8º Dan Preta', '9º Dan Preta'
+    'Vermelha e preta', 'Preta 1º Dan', 'Preta 2º Dan', 'Preta 3º Dan', 'Preta 4º Dan',
+    'Preta 5º Dan', 'Preta 6º Dan', 'Preta 7º Dan', 'Preta 8º Dan', 'Preta 9º Dan'
   ],
   littles: [
     'Littles Branca', 'Littles Panda', 'Littles Leão', 'Littles Girafa', 'Littles Borboleta',
@@ -181,6 +181,8 @@ export default function ProductDetailScreen() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-[#050505]">
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <ActivityIndicator size="large" color="#eab308" />
       </View>
     );
@@ -189,6 +191,8 @@ export default function ProductDetailScreen() {
   if (!product) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-[#050505] p-6">
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <Text className="text-gray-900 dark:text-white font-bold text-center">Produto não encontrado.</Text>
         <TouchableOpacity 
           onPress={() => router.back()}

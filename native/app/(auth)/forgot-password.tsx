@@ -1,36 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
-import { auth, functions, db } from '../../src/services/firebase';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Image, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  ActivityIndicator,
+  StyleSheet
+} from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
+import { auth, functions } from '../../src/services/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'nativewind';
-import { ArrowLeft } from 'lucide-react-native';
-
-const MASCOTS = [
-  'arara.png', 'borboleta.png', 'fenix.png', 'girafa.png', 
-  'jacare.png', 'leao.png', 'macaco.png', 'panda.png'
-];
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1); // 1: Email, 2: New Password
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isFocusedEmail, setIsFocusedEmail] = useState(false);
+  const [isFocusedPassword, setIsFocusedPassword] = useState(false);
+  const [isFocusedConfirmPassword, setIsFocusedConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [studentData, setStudentData] = useState<any>(null);
-  const [mascot, setMascot] = useState(MASCOTS[0]);
-  const { colorScheme } = useColorScheme();
   const router = useRouter();
-
-  useEffect(() => {
-    const randomMascot = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
-    setMascot(randomMascot);
-  }, []);
 
   const handleVerifyEmail = async () => {
     if (!email) {
@@ -90,149 +93,262 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const isDark = colorScheme === 'dark';
-
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-[#050505]">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      
-      {/* Background Glows */}
-      <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-[#014fa4] rounded-full opacity-10 dark:opacity-20 blur-[100px]" />
-      <View className="absolute bottom-[-50] left-[-50] w-64 h-64 bg-[#014fa4] rounded-full opacity-5 dark:opacity-10 blur-[100px]" />
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
+
+      {/* Foto Marcial Kihap de fundo */}
+      <Image 
+        source={require('../../assets/images/fundogero.jpg')}
+        style={[
+          StyleSheet.absoluteFillObject,
+          { width: '100%', height: '100%', opacity: 0.42 }
+        ]}
+        resizeMode="cover"
+      />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View className="flex-1 justify-center px-6">
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1 }} 
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="flex-1 justify-center px-6 py-12">
             
-            <View className="relative w-full max-w-[400px] self-center">
+            <View className="w-full max-w-[400px] self-center relative">
               
-              {/* Back Button */}
+              {/* Botão Voltar */}
               <TouchableOpacity 
                 onPress={() => router.back()}
-                className="absolute top-[-100] left-0 p-2 rounded-full bg-white dark:bg-[#1a1a1a] shadow-sm z-30"
+                className="mb-4 self-start p-3 rounded-full bg-white/90 border border-gray-200 shadow-md"
               >
-                <ArrowLeft size={20} color={isDark ? '#fff' : '#000'} />
+                <ArrowLeft size={20} color="#000" />
               </TouchableOpacity>
 
-              {/* Mascot */}
-              <View className="absolute top-[-70] right-0 w-28 h-28 z-20">
-                <Image 
-                  source={{ uri: `https://kihap.com.br/imgs/personagens/${mascot}` }} 
-                  className="w-full h-full"
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* Card */}
-              <View className="bg-white dark:bg-[#1a1a1a]/80 p-8 rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden">
-                
-                {/* Header */}
-                <View className="items-center mb-8">
+              {/* Card Principal */}
+              <View 
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 16 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 32,
+                  elevation: 14,
+                }}
+                className="bg-[#141417] p-8 rounded-[36px] overflow-hidden"
+              >
+                {/* Header com Logo */}
+                <View className="items-center mb-6 pt-2">
                   <Image 
-                    source={{ uri: isDark ? 'https://kihap.com.br/wp-content/uploads/2021/02/logo-wh.png' : 'https://kihap.com.br/imgs/logo.png' }} 
-                    className="w-40 h-10 mb-4"
+                    source={{ uri: 'https://kihap.com.br/imgs/logo.png' }} 
+                    className="w-44 h-12 mb-3"
                     resizeMode="contain"
                   />
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest text-center">
-                    Recuperar Senha
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-yellow-400 text-[11px] uppercase tracking-[2px]"
+                  >
+                    RECUPERAR SENHA
                   </Text>
                 </View>
 
                 {error ? (
-                  <View className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-6">
-                    <Text className="text-red-500 text-center text-xs font-bold">{error}</Text>
+                  <View className="bg-red-500/15 border border-red-500/30 p-3.5 rounded-2xl mb-5 items-center justify-center">
+                    <Text className="text-red-400 text-center text-xs font-bold">{error}</Text>
                   </View>
                 ) : null}
 
                 {success ? (
-                  <View className="bg-green-500/10 border border-green-500/20 p-4 rounded-xl mb-6">
-                    <Text className="text-green-500 text-center text-xs font-bold">{success}</Text>
+                  <View className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-2xl mb-5 items-center justify-center flex-row gap-2">
+                    <CheckCircle size={15} color="#34d399" />
+                    <Text className="text-emerald-400 text-center text-xs font-bold flex-1">{success}</Text>
                   </View>
                 ) : null}
 
                 {step === 1 ? (
                   <View className="space-y-4">
                     <View>
-                      <Text className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Email Cadastrado</Text>
-                      <TextInput
-                        className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-xl text-gray-900 dark:text-white text-[16px]"
-                        placeholder="seu@email.com"
-                        placeholderTextColor={isDark ? '#666' : '#999'}
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        editable={!loading}
-                      />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                      >
+                        E-MAIL CADASTRADO
+                      </Text>
+                      <View 
+                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                          isFocusedEmail 
+                            ? 'border-yellow-400 bg-[#22222a]' 
+                            : 'border-white/10'
+                        }`}
+                      >
+                        <Mail size={18} color={isFocusedEmail ? '#facc15' : '#71717a'} />
+                        <TextInput
+                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          placeholder="seu@email.com"
+                          placeholderTextColor="#52525b"
+                          value={email}
+                          onChangeText={setEmail}
+                          onFocus={() => setIsFocusedEmail(true)}
+                          onBlur={() => setIsFocusedEmail(false)}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                          editable={!loading}
+                        />
+                      </View>
                     </View>
 
                     <TouchableOpacity 
-                      onPress={handleVerifyEmail}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                        handleVerifyEmail();
+                      }}
                       disabled={loading}
-                      className="bg-[#014fa4] p-5 rounded-2xl items-center shadow-lg shadow-blue-500/20 active:opacity-90 mt-4"
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: '#eab308',
+                        borderRadius: 16,
+                        paddingVertical: 16,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                      }}
+                      className="w-full mt-4 active:scale-[0.99]"
                     >
                       {loading ? (
-                        <ActivityIndicator color="#white" />
+                        <ActivityIndicator color="#000" />
                       ) : (
-                        <Text className="text-white font-extrabold text-sm uppercase tracking-widest">Verificar E-mail</Text>
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-black text-sm uppercase tracking-[2px] font-black text-center"
+                        >
+                          VERIFICAR E-MAIL
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <View className="space-y-4">
                     <View>
-                      <Text className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Nova Senha</Text>
-                      <TextInput
-                        className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-xl text-gray-900 dark:text-white text-[16px]"
-                        placeholder="Mínimo 6 caracteres"
-                        placeholderTextColor={isDark ? '#666' : '#999'}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        editable={!loading}
-                      />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                      >
+                        NOVA SENHA
+                      </Text>
+                      <View 
+                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                          isFocusedPassword 
+                            ? 'border-yellow-400 bg-[#22222a]' 
+                            : 'border-white/10'
+                        }`}
+                      >
+                        <Lock size={18} color={isFocusedPassword ? '#facc15' : '#71717a'} />
+                        <TextInput
+                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          placeholder="Mínimo 6 caracteres"
+                          placeholderTextColor="#52525b"
+                          value={password}
+                          onChangeText={setPassword}
+                          onFocus={() => setIsFocusedPassword(true)}
+                          onBlur={() => setIsFocusedPassword(false)}
+                          secureTextEntry={!showPassword}
+                          editable={!loading}
+                        />
+                        <TouchableOpacity 
+                          onPress={() => setShowPassword(!showPassword)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          className="p-1"
+                        >
+                          {showPassword ? (
+                            <EyeOff size={18} color="#a1a1aa" />
+                          ) : (
+                            <Eye size={18} color="#71717a" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
                     <View className="mt-4">
-                      <Text className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Confirmar Senha</Text>
-                      <TextInput
-                        className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-xl text-gray-900 dark:text-white text-[16px]"
-                        placeholder="Repita a nova senha"
-                        placeholderTextColor={isDark ? '#666' : '#999'}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        editable={!loading}
-                      />
+                      <Text 
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                      >
+                        CONFIRMAR SENHA
+                      </Text>
+                      <View 
+                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                          isFocusedConfirmPassword 
+                            ? 'border-yellow-400 bg-[#22222a]' 
+                            : 'border-white/10'
+                        }`}
+                      >
+                        <Lock size={18} color={isFocusedConfirmPassword ? '#facc15' : '#71717a'} />
+                        <TextInput
+                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          placeholder="Repita a nova senha"
+                          placeholderTextColor="#52525b"
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          onFocus={() => setIsFocusedConfirmPassword(true)}
+                          onBlur={() => setIsFocusedConfirmPassword(false)}
+                          secureTextEntry={!showConfirmPassword}
+                          editable={!loading}
+                        />
+                        <TouchableOpacity 
+                          onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          className="p-1"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff size={18} color="#a1a1aa" />
+                          ) : (
+                            <Eye size={18} color="#71717a" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
                     <TouchableOpacity 
-                      onPress={handleSetPassword}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                        handleSetPassword();
+                      }}
                       disabled={loading}
-                      className="bg-green-600 p-5 rounded-2xl items-center shadow-lg shadow-green-500/20 active:opacity-90 mt-6"
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: '#eab308',
+                        borderRadius: 16,
+                        paddingVertical: 16,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                      }}
+                      className="w-full mt-6 active:scale-[0.99]"
                     >
                       {loading ? (
-                        <ActivityIndicator color="#white" />
+                        <ActivityIndicator color="#000" />
                       ) : (
-                        <Text className="text-white font-extrabold text-sm uppercase tracking-widest">Definir Senha e Acessar</Text>
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-black text-sm uppercase tracking-[2px] font-black text-center"
+                        >
+                          DEFINIR SENHA E ACESSAR
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </View>
                 )}
-
-                <View className="pt-8 mt-4 border-t border-gray-100 dark:border-white/5 items-center">
-                  <Text className="text-gray-400 dark:text-gray-600 text-[9px] font-bold uppercase tracking-widest">
-                    Área Restrita Kihap
-                  </Text>
-                </View>
               </View>
 
-              <View className="mt-8 items-center opacity-40">
-                <Text className="text-gray-500 dark:text-gray-400 text-[9px] font-bold uppercase tracking-widest">
-                  © 2026 Kihap Martial Arts
+              {/* Rodapé */}
+              <View className="mt-8 items-center">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-gray-700 text-[9px] uppercase tracking-[2px] font-bold"
+                >
+                  © 2026 KIHAP MARTIAL ARTS
                 </Text>
               </View>
 

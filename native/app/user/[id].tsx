@@ -103,6 +103,11 @@ export default function PublicProfileScreen() {
         id: docSnap.id,
         ...docSnap.data()
       }));
+      list.sort((a: any, b: any) => {
+        const orderA = a.order !== undefined && a.order !== null ? Number(a.order) : 9999;
+        const orderB = b.order !== undefined && b.order !== null ? Number(b.order) : 9999;
+        return orderA - orderB || (a.name || '').localeCompare(b.name || '');
+      });
       setAllBadges(list);
       setBadgesLoading(false);
     }, (error) => {
@@ -408,7 +413,7 @@ export default function PublicProfileScreen() {
                   return (
                     <TouchableOpacity
                       key={badge.id}
-                      onPress={() => Alert.alert(badge.name, badge.description || 'Emblema conquistado!')}
+                      onPress={() => router.push(`/emblema/${badge.id}`)}
                       className="w-[21%] items-center mb-2"
                     >
                       <View className="w-14 h-14 bg-yellow-500/5 dark:bg-yellow-500/10 rounded-full items-center justify-center border border-yellow-500/20 shadow-sm mb-1 overflow-hidden">

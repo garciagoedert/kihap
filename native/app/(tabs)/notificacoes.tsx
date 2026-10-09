@@ -391,6 +391,11 @@ export default function NotificacoesScreen() {
         id: docSnap.id,
         ...docSnap.data()
       }));
+      list.sort((a: any, b: any) => {
+        const orderA = a.order !== undefined && a.order !== null ? Number(a.order) : 9999;
+        const orderB = b.order !== undefined && b.order !== null ? Number(b.order) : 9999;
+        return orderA - orderB || (a.name || '').localeCompare(b.name || '');
+      });
       setAllBadges(list);
       setBadgesLoading(false);
     }, (error) => {
@@ -1606,11 +1611,7 @@ export default function NotificacoesScreen() {
                       setActiveSubTab('teste-fisico');
                       return;
                     }
-                    Alert.alert(
-                      badge.name || "Emblema",
-                      badge.description || "Sem descrição disponível para este emblema.",
-                      [{ text: "Entendido", style: "default" }]
-                    );
+                    router.push(`/emblema/${badge.id}`);
                   }}
                   style={{
                     width: '30.33%',

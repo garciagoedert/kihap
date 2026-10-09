@@ -49,6 +49,26 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 
+const ALL_STAFF_BELTS = [
+  'Preta 1º Dan', 'Preta 2º Dan', 'Preta 3º Dan', 'Preta 4º Dan', 'Preta 5º Dan',
+  'Preta 6º Dan', 'Preta 7º Dan', 'Preta 8º Dan', 'Preta 9º Dan', 'Preta',
+  'Vermelha e Preta', 'Vermelha Decidida', 'Vermelha Recomendada', 'Marrom Decidida',
+  'Marrom Recomendada', 'Azul Decidida', 'Azul Recomendada', 'Roxa Decidida',
+  'Roxa Recomendada', 'Verde Decidida', 'Verde Recomendada', 'Camuflada Decidida',
+  'Camuflada Recomendada', 'Amarela Decidida', 'Amarela Recomendada', 'Laranja Decidida',
+  'Laranja Recomendada', 'Branca Decidida', 'Branca Recomendada', 'Faixa Branca'
+];
+
+function normalizeBeltName(beltStr?: string): string {
+  if (!beltStr) return '';
+  const trimmed = beltStr.trim();
+  const m = trimmed.match(/^(\d+)(?:º|o)?\s*Dan\s*(?:Preta)?$/i);
+  if (m) return `Preta ${m[1]}º Dan`;
+  const m2 = trimmed.match(/^Preta\s*(\d+)(?:º|o)?\s*Dan$/i);
+  if (m2) return `Preta ${m2[1]}º Dan`;
+  return trimmed;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, userData, signOut, linkedProfiles, switchProfile } = useAuth();
@@ -57,10 +77,12 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState('');
+  const [belt, setBelt] = useState('');
   const [password, setPassword] = useState('');
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [showBeltSelector, setShowBeltSelector] = useState(false);
 
   // Badges & physical test states
   const [allBadges, setAllBadges] = useState<any[]>([]);
@@ -70,6 +92,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (userData) {
       setName(userData.name || userData.nome || userData.displayName || '');
+      setBelt(normalizeBeltName(userData.belt || userData.graduacao || userData.graduation || userData.userGraduacao || ''));
     }
   }, [userData]);
 
@@ -84,7 +107,8 @@ export default function ProfileScreen() {
   const displayPhoto = rawPhoto && !rawPhoto.includes('default-profile.svg') ? { uri: rawPhoto } : defaultProfileImg;
   
   const displayEmail = userData?.email || user?.email || 'carregando...';
-  const studentBelt = userData?.belt || userData?.graduacao || userData?.graduation || userData?.userGraduacao || 'Faixa Branca';
+  const rawStudentBelt = userData?.belt || userData?.graduacao || userData?.graduation || userData?.userGraduacao || 'Faixa Branca';
+  const studentBelt = normalizeBeltName(rawStudentBelt) || 'Faixa Branca';
   const studentUnit = userData?.unidade || userData?.unit || userData?.unitName || userData?.unidadeNome || 'Kihap';
   const studentEvoId = userData?.evoMemberId || userData?.matricula;
 
@@ -93,6 +117,11 @@ export default function ProfileScreen() {
     const badgesCol = collection(db, 'badges');
     const unsub = onSnapshot(badgesCol, (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => {
+        const orderA = a.order !== undefined && a.order !== null ? Number(a.order) : 9999;
+        const orderB = b.order !== undefined && b.order !== null ? Number(b.order) : 9999;
+        return orderA - orderB || (a.name || '').localeCompare(b.name || '');
+      });
       setAllBadges(list);
     }, (err) => console.log('Badges error:', err));
     return () => unsub();
@@ -241,7 +270,26 @@ export default function ProfileScreen() {
       // 2. Update Firestore
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, { name: name.trim() });
+        const updateData: any = { name: name.trim() };
+        const isInstructorUser = userData?.isInstructor === true || userData?.isInstructor === 'true';
+        const isAdminUser = userData?.isAdmin === true || userData?.isAdmin === 'true';
+        const isColarinhoPretoUser = userData?.isColarinhoPreto === true || userData?.isColarinhoPreto === 'true' || userData?.isBlackCollar || userData?.colarinhoPreto;
+        const isStaffUser = Boolean(
+          isInstructorUser ||
+          isAdminUser ||
+          isColarinhoPretoUser ||
+          userData?.isRH ||
+          userData?.isMarketing ||
+          userData?.isFinanceiro ||
+          userData?.isAdministrativo ||
+          userData?.isStore
+        );
+        if (isStaffUser && belt) {
+          const normalized = normalizeBeltName(belt);
+          updateData.belt = normalized;
+          updateData.graduacao = normalized;
+        }
+        await updateDoc(userRef, updateData);
       } else {
         throw new Error('Usuário não autenticado no Firebase Firestore.');
       }
@@ -377,7 +425,7 @@ export default function ProfileScreen() {
                       isDark ? 'text-emerald-400' : 'text-black/85'
                     }`}
                   >
-                    Aluno Ativo
+                    {(userData?.isInstructor === true || userData?.isInstructor === 'true') ? 'Instrutor' : (userData?.isAdmin === true || userData?.isAdmin === 'true') ? 'Staff / Admin' : (userData?.isColarinhoPreto === true || userData?.isColarinhoPreto === 'true' || userData?.isBlackCollar || userData?.colarinhoPreto) ? 'Colarinho Preto' : 'Aluno Ativo'}
                   </Text>
                 </View>
                 {studentEvoId && (
@@ -627,7 +675,7 @@ export default function ProfileScreen() {
                     return (
                       <TouchableOpacity
                         key={badge.id}
-                        onPress={() => Alert.alert(badge.name, badge.description || 'Emblema conquistado com sucesso!')}
+                        onPress={() => router.push(`/emblema/${badge.id}`)}
                         className="items-center mr-3 active:scale-95"
                         style={{ width: 72 }}
                       >
@@ -906,6 +954,29 @@ export default function ProfileScreen() {
                   />
                 </View>
 
+                {(userData?.isAdmin || userData?.isInstructor || userData?.isColarinhoPreto || userData?.isStaff || userData?.isRH || userData?.isMarketing || userData?.isFinanceiro || userData?.isAdministrativo || userData?.isStore) && (
+                  <View className="mt-3">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                    >
+                      Graduação / Faixa
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowBeltSelector(true)}
+                      className="w-full bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 flex-row items-center justify-between"
+                    >
+                      <View className="flex-row items-center flex-1">
+                        <Award size={18} color="#eab308" style={{ marginRight: 8 }} />
+                        <Text className="text-base text-gray-900 dark:text-white font-medium">
+                          {belt || 'Selecione a faixa...'}
+                        </Text>
+                      </View>
+                      <ChevronRight size={18} color="#999" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <View className="mt-3">
                   <Text 
                     style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -971,6 +1042,52 @@ export default function ProfileScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Belt Selection Modal for Staff / Instructors */}
+      <Modal
+        visible={showBeltSelector}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowBeltSelector(false)}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center p-5">
+          <View className="bg-white dark:bg-[#181818] rounded-3xl p-5 w-full max-w-sm max-h-[80%] border border-gray-200 dark:border-white/10 shadow-2xl">
+            <View className="flex-row items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5">
+              <Text 
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-base text-gray-900 dark:text-white uppercase tracking-tight"
+              >
+                Selecione a Faixa
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowBeltSelector(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 items-center justify-center"
+              >
+                <X size={16} color={isDark ? '#fff' : '#333'} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView className="mt-2" showsVerticalScrollIndicator={false}>
+              {ALL_STAFF_BELTS.map((b) => (
+                <TouchableOpacity
+                  key={b}
+                  onPress={() => {
+                    setBelt(b);
+                    setShowBeltSelector(false);
+                  }}
+                  className={`py-3 px-3.5 rounded-xl my-1 flex-row items-center justify-between ${
+                    belt === b ? 'bg-yellow-500/20 border border-yellow-500/40' : 'bg-transparent'
+                  }`}
+                >
+                  <Text className={`text-sm font-bold ${belt === b ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {b}
+                  </Text>
+                  {belt === b && <Check size={16} color="#eab308" />}
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
         </View>
