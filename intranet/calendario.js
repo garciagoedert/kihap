@@ -18,6 +18,8 @@ let allCheckins = [];
 // State for editing events
 let editingEventId = null;
 let currentEventCoverUrl = '';
+let currentEventHeroUrl = '';
+let currentEventGalleryUrls = [];
 
 /**
  * Fetch student profile (graduation and unit) with in-memory caching
@@ -134,6 +136,116 @@ function setCustomFormData(fields) {
     }
 }
 
+/**
+ * Render a schedule row in the builder
+ */
+function renderScheduleItem(item = {}) {
+    const container = document.getElementById('schedule-container');
+    if (!container) return;
+
+    const time = item.time || '';
+    const title = item.title || '';
+    const description = item.description || '';
+
+    const row = document.createElement('div');
+    row.className = 'schedule-item bg-gray-50 dark:bg-gray-900/60 p-3 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2';
+    row.innerHTML = `
+        <div class="flex items-center gap-2">
+            <input type="text" class="schedule-time-input w-28 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-yellow-600 dark:text-yellow-400 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="ex: 08:30" value="${time.replace(/"/g, '&quot;')}">
+            <input type="text" class="schedule-title-input flex-1 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="Atividade (ex: Abertura e Aquecimento)" value="${title.replace(/"/g, '&quot;')}" required>
+            <button type="button" class="remove-schedule-btn text-gray-400 hover:text-red-500 p-1.5 rounded-lg transition active:scale-90" title="Remover etapa">
+                <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+        </div>
+        <input type="text" class="schedule-desc-input w-full px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="Detalhes opcionais (ex: Tatame 1, Trazer protetor bucal...)" value="${description.replace(/"/g, '&quot;')}">
+    `;
+
+    row.querySelector('.remove-schedule-btn').addEventListener('click', () => {
+        row.remove();
+    });
+
+    container.appendChild(row);
+}
+
+function getScheduleData() {
+    const items = document.querySelectorAll('#schedule-container .schedule-item');
+    const schedule = [];
+    items.forEach(item => {
+        const time = item.querySelector('.schedule-time-input').value.trim();
+        const title = item.querySelector('.schedule-title-input').value.trim();
+        const description = item.querySelector('.schedule-desc-input').value.trim();
+        if (title) {
+            schedule.push({ time, title, description });
+        }
+    });
+    return schedule;
+}
+
+function setScheduleData(schedule) {
+    const container = document.getElementById('schedule-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (Array.isArray(schedule)) {
+        schedule.forEach(item => renderScheduleItem(item));
+    }
+}
+
+function renderGalleryPreviews() {
+    const container = document.getElementById('gallery-preview-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    currentEventGalleryUrls.forEach((url, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'relative group aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800';
+        thumb.innerHTML = `
+            <img src="${url}" class="w-full h-full object-cover">
+            <button type="button" data-idx="${idx}" class="remove-gallery-img-btn absolute top-1 right-1 bg-red-600/90 hover:bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow transition">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        thumb.querySelector('.remove-gallery-img-btn').addEventListener('click', () => {
+            currentEventGalleryUrls.splice(idx, 1);
+            renderGalleryPreviews();
+        });
+        container.appendChild(thumb);
+    });
+}
+
+function openNfcModal(eventId, eventTitle) {
+    const modal = document.getElementById('nfc-modal');
+    if (!modal) return;
+    const subtitle = document.getElementById('nfc-modal-subtitle');
+    const appInput = document.getElementById('nfc-app-link-input');
+    const webInput = document.getElementById('nfc-web-link-input');
+    const qrImg = document.getElementById('nfc-qrcode-img');
+
+    const appLink = `native://evento/${eventId}?checkin=true`;
+    const webLink = `https://kihap.com.br/evento?id=${eventId}&checkin=true`;
+
+    if (subtitle) subtitle.textContent = eventTitle || 'Evento';
+    if (appInput) appInput.value = appLink;
+    if (webInput) webInput.value = webLink;
+    if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(webLink)}`;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+async function copyToClipboard(text, btnElement, defaultHtml) {
+    try {
+        await navigator.clipboard.writeText(text);
+        btnElement.innerHTML = '<i class="fas fa-check text-emerald-500"></i> Copiado!';
+        setTimeout(() => {
+            btnElement.innerHTML = defaultHtml;
+        }, 2000);
+    } catch (err) {
+        console.error('Falha ao copiar:', err);
+        prompt('Copie o link abaixo:', text);
+    }
+}
+
 function filterAndRenderRegistered() {
     const queryStr = document.getElementById('search-registered').value.toLowerCase().trim();
     const registeredList = document.getElementById('modal-registered-list');
@@ -242,7 +354,9 @@ function openAnswersModal(checkinId) {
 
 function startEditEvent(eventId, data) {
     editingEventId = eventId;
-    currentEventCoverUrl = data.coverUrl;
+    currentEventCoverUrl = data.coverUrl || '';
+    currentEventHeroUrl = data.heroUrl || '';
+    currentEventGalleryUrls = Array.isArray(data.gallery) ? [...data.gallery] : [];
 
     document.getElementById('event-form-title').textContent = 'Editar Evento';
     document.getElementById('submit-event-btn').textContent = 'Salvar Alterações';
@@ -254,17 +368,27 @@ function startEditEvent(eventId, data) {
     document.getElementById('event-location').value = data.location || '';
     document.getElementById('event-product').value = data.productId || '';
     document.getElementById('event-description').value = data.description || '';
+    document.getElementById('event-guidelines').value = data.guidelines || '';
+
+    // Load schedule and gallery previews
+    setScheduleData(data.schedule || []);
+    renderGalleryPreviews();
 
     // Load custom form questions
     setCustomFormData(data.customForm || []);
 
     document.getElementById('event-image').required = false;
+    document.getElementById('event-hero-image').value = '';
+    document.getElementById('event-gallery-files').value = '';
+
     document.getElementById('event-form').scrollIntoView({ behavior: 'smooth' });
 }
 
 function cancelEditEvent() {
     editingEventId = null;
     currentEventCoverUrl = '';
+    currentEventHeroUrl = '';
+    currentEventGalleryUrls = [];
 
     document.getElementById('event-form-title').textContent = 'Adicionar Novo Evento';
     document.getElementById('submit-event-btn').textContent = 'Salvar Evento';
@@ -273,6 +397,8 @@ function cancelEditEvent() {
     document.getElementById('event-form').reset();
     document.getElementById('event-image').required = true;
 
+    setScheduleData([]);
+    renderGalleryPreviews();
     setCustomFormData([]);
 }
 
@@ -291,7 +417,15 @@ export function setupCalendarioPage() {
                 });
             }
 
-            // Setup List Interactions (Delete, Control and Edit buttons)
+            // Setup Add Schedule Item button
+            const addScheduleBtn = document.getElementById('add-schedule-item-btn');
+            if (addScheduleBtn) {
+                addScheduleBtn.addEventListener('click', () => {
+                    renderScheduleItem();
+                });
+            }
+
+            // Setup List Interactions (Delete, Control, NFC and Edit buttons)
             const listContainer = document.getElementById('events-list-container');
             listContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
@@ -306,6 +440,10 @@ export function setupCalendarioPage() {
                     const productId = btn.dataset.productId;
                     const title = btn.dataset.title;
                     openControlModal(eventId, productId, title);
+                } else if (btn.classList.contains('nfc-event-btn')) {
+                    const eventId = btn.dataset.id;
+                    const title = btn.dataset.title;
+                    openNfcModal(eventId, title);
                 } else if (btn.classList.contains('edit-event-btn')) {
                     const eventId = btn.dataset.id;
                     const eventData = eventsMap.get(eventId) || {
@@ -321,6 +459,31 @@ export function setupCalendarioPage() {
                     startEditEvent(eventId, eventData);
                 }
             });
+
+            // Setup NFC Modal Listeners
+            const closeNfcModalBtn = document.getElementById('close-nfc-modal-btn');
+            const nfcModal = document.getElementById('nfc-modal');
+            if (closeNfcModalBtn && nfcModal) {
+                closeNfcModalBtn.addEventListener('click', () => {
+                    nfcModal.classList.add('hidden');
+                });
+            }
+
+            const copyNfcAppBtn = document.getElementById('copy-nfc-app-link-btn');
+            const nfcAppInput = document.getElementById('nfc-app-link-input');
+            if (copyNfcAppBtn && nfcAppInput) {
+                copyNfcAppBtn.addEventListener('click', () => {
+                    copyToClipboard(nfcAppInput.value, copyNfcAppBtn, '<i class="fas fa-copy"></i> Copiar');
+                });
+            }
+
+            const copyNfcWebBtn = document.getElementById('copy-nfc-web-link-btn');
+            const nfcWebInput = document.getElementById('nfc-web-link-input');
+            if (copyNfcWebBtn && nfcWebInput) {
+                copyNfcWebBtn.addEventListener('click', () => {
+                    copyToClipboard(nfcWebInput.value, copyNfcWebBtn, '<i class="fas fa-copy"></i> Copiar');
+                });
+            }
 
             // Setup Modal Close Handlers
             const closeModalBtn = document.getElementById('close-modal-btn');
@@ -432,6 +595,8 @@ async function loadEvents() {
             const escapedLocation = (event.location || '').replace(/"/g, '&quot;');
             const escapedDescription = (event.description || '').replace(/"/g, '&quot;');
             const customQuestionsCount = (event.customForm || []).length;
+            const scheduleCount = (event.schedule || []).length;
+            const galleryCount = (event.gallery || []).length;
 
             eventsHtml += `
                 <div class="bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl overflow-hidden event-card flex flex-col">
@@ -440,17 +605,29 @@ async function loadEvents() {
                         <div class="absolute top-4 left-4 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
                             ${formattedDate}
                         </div>
-                        ${customQuestionsCount > 0 ? `
-                            <div class="absolute top-4 right-4 bg-black/70 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">
-                                <i class="fas fa-list-check text-yellow-500 mr-1"></i> ${customQuestionsCount} ${customQuestionsCount === 1 ? 'pergunta' : 'perguntas'}
-                            </div>
-                        ` : ''}
+                        <div class="absolute top-4 right-4 flex flex-col items-end gap-1">
+                            ${customQuestionsCount > 0 ? `
+                                <div class="bg-black/75 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/10">
+                                    <i class="fas fa-list-check text-yellow-500 mr-1"></i> ${customQuestionsCount} ${customQuestionsCount === 1 ? 'pergunta' : 'perguntas'}
+                                </div>
+                            ` : ''}
+                            ${scheduleCount > 0 ? `
+                                <div class="bg-black/75 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/10">
+                                    <i class="fas fa-clock text-yellow-500 mr-1"></i> ${scheduleCount} ${scheduleCount === 1 ? 'etapa' : 'etapas'}
+                                </div>
+                            ` : ''}
+                            ${galleryCount > 0 ? `
+                                <div class="bg-black/75 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/10">
+                                    <i class="fas fa-images text-yellow-500 mr-1"></i> ${galleryCount} fotos
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                     <div class="p-5 flex-grow flex flex-col">
                         <h3 class="font-black text-lg text-gray-900 dark:text-white leading-tight mb-2">${event.title}</h3>
                         
                         <div class="space-y-1.5 text-xs text-gray-500 dark:text-gray-400 mb-4">
-                            <p><i class="fas fa-clock w-5"></i> <strong>Horário:</strong> ${event.time || 'N/D'}</p>
+                            ${(event.time && event.time.trim() && event.time !== '00') ? `<p><i class="fas fa-clock w-5"></i> <strong>Horário:</strong> ${event.time}</p>` : ''}
                             <p><i class="fas fa-map-marker-alt w-5"></i> <strong>Local:</strong> ${event.location || 'N/D'}</p>
                             <p><i class="fas fa-shopping-bag w-5"></i> <strong>Produto:</strong> ${linkedProductName}</p>
                         </div>
@@ -460,13 +637,16 @@ async function loadEvents() {
                         </p>
 
                         <div class="flex gap-2">
-                            <button data-id="${eventId}" data-product-id="${event.productId || ''}" data-title="${escapedTitle}" class="control-event-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
+                            <button data-id="${eventId}" data-product-id="${event.productId || ''}" data-title="${escapedTitle}" class="control-event-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2.5 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
                                 <i class="fas fa-chart-line"></i> Controle
                             </button>
-                            <button data-id="${eventId}" class="edit-event-btn bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-white font-bold p-2 px-3.5 rounded-xl text-xs transition active:scale-95" title="Editar Evento">
+                            <button data-id="${eventId}" data-title="${escapedTitle}" class="nfc-event-btn bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-black font-bold p-2 px-3 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1" title="Tag NFC e Link de Check-in">
+                                <i class="fas fa-rss"></i> NFC
+                            </button>
+                            <button data-id="${eventId}" class="edit-event-btn bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-white font-bold p-2 px-3 rounded-xl text-xs transition active:scale-95" title="Editar Evento">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button data-id="${eventId}" data-image-url="${event.coverUrl || ''}" class="delete-event-btn bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white font-bold p-2 px-3.5 rounded-xl text-xs transition active:scale-95" title="Excluir Evento">
+                            <button data-id="${eventId}" data-image-url="${event.coverUrl || ''}" class="delete-event-btn bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white font-bold p-2 px-3 rounded-xl text-xs transition active:scale-95" title="Excluir Evento">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -493,10 +673,14 @@ async function handleAddEvent(e) {
     const productId = document.getElementById('event-product').value;
     const description = document.getElementById('event-description').value.trim();
     const imageFile = document.getElementById('event-image').files[0];
+    const heroFile = document.getElementById('event-hero-image').files[0];
+    const guidelines = document.getElementById('event-guidelines').value.trim();
+    const schedule = getScheduleData();
+    const galleryFiles = document.getElementById('event-gallery-files').files;
     const customForm = getCustomFormData();
 
-    if (!title || !date || !time || !location || !description) {
-        alert("Por favor, preencha todos os campos obrigatórios.");
+    if (!title || !date || !location || !description) {
+        alert("Por favor, preencha todos os campos obrigatórios (Título, Data, Local e Descrição).");
         return;
     }
 
@@ -510,8 +694,9 @@ async function handleAddEvent(e) {
 
     try {
         let coverUrl = currentEventCoverUrl;
+        let heroUrl = currentEventHeroUrl || null;
 
-        // Upload new image if chosen
+        // 1. Upload new cover image if chosen
         if (imageFile) {
             const fileExtension = imageFile.name.split('.').pop();
             const storageRef = ref(storage, `events/${Date.now()}_cover.${fileExtension}`);
@@ -525,6 +710,32 @@ async function handleAddEvent(e) {
             }
         }
 
+        // 2. Upload new hero image if chosen
+        if (heroFile) {
+            const heroExtension = heroFile.name.split('.').pop();
+            const heroRef = ref(storage, `events/${Date.now()}_hero.${heroExtension}`);
+            const heroSnapshot = await uploadBytes(heroRef, heroFile);
+            heroUrl = await getDownloadURL(heroSnapshot.ref);
+
+            // Delete old storage hero if editing and there was one
+            if (editingEventId && currentEventHeroUrl) {
+                const oldHeroRef = ref(storage, currentEventHeroUrl);
+                await deleteObject(oldHeroRef).catch(err => console.warn("Storage deletion warning (old hero):", err));
+            }
+        }
+
+        // 3. Upload new gallery images if selected
+        if (galleryFiles && galleryFiles.length > 0) {
+            for (let i = 0; i < galleryFiles.length; i++) {
+                const gFile = galleryFiles[i];
+                const gExt = gFile.name.split('.').pop();
+                const gRef = ref(storage, `events/${Date.now()}_gallery_${i}.${gExt}`);
+                const gSnap = await uploadBytes(gRef, gFile);
+                const gUrl = await getDownloadURL(gSnap.ref);
+                currentEventGalleryUrls.push(gUrl);
+            }
+        }
+
         const eventData = {
             title,
             date,
@@ -533,6 +744,10 @@ async function handleAddEvent(e) {
             productId: productId || null,
             description,
             coverUrl,
+            heroUrl: heroUrl || null,
+            guidelines: guidelines || null,
+            schedule: schedule.length > 0 ? schedule : [],
+            gallery: currentEventGalleryUrls.length > 0 ? currentEventGalleryUrls : [],
             customForm: customForm.length > 0 ? customForm : []
         };
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, CheckCircle2, ShoppingBag, ChevronDown, ChevronUp, X, HelpCircle } from 'lucide-react-native';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, CheckCircle2, ShoppingBag, ChevronDown, ChevronUp, ChevronRight, X, HelpCircle, Info } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
@@ -11,12 +11,22 @@ import { useAuth } from '../src/context/AuthContext';
 
 export default function CalendarioScreen() {
   const router = useRouter();
+  const { eventId, autoFirst } = useLocalSearchParams<{ eventId?: string; autoFirst?: string }>();
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const { user, userData } = useAuth();
+
   const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (eventId) {
+      router.push(`/evento/${eventId}`);
+    } else if (autoFirst === 'true' && events.length > 0) {
+      router.push(`/evento/${events[0].id}`);
+    }
+  }, [eventId, autoFirst, events]);
   const [purchasedProductIds, setPurchasedProductIds] = useState<Set<string>>(new Set());
   const [checkedInEventIds, setCheckedInEventIds] = useState<Set<string>>(new Set());
   
@@ -214,10 +224,14 @@ export default function CalendarioScreen() {
     return (
       <View 
         key={event.id}
-        className="bg-white dark:bg-[#1a1a1a] rounded-[28px] border border-gray-100 dark:border-white/5 shadow-sm mb-5 overflow-hidden"
+        className="bg-white dark:bg-[#1a1a1a] rounded-[28px] border border-gray-100 dark:border-white/5 shadow-sm mb-6 overflow-hidden"
       >
         {/* Cover Image */}
-        <View className="relative bg-gray-100 dark:bg-black/20">
+        <TouchableOpacity 
+          activeOpacity={0.9}
+          onPress={() => router.push(`/evento/${event.id}`)}
+          className="relative bg-gray-100 dark:bg-black/20"
+        >
           <Image 
             source={{ uri: event.coverUrl || 'https://via.placeholder.com/600x300.png?text=Sem+Imagem' }} 
             className="w-full"
@@ -233,20 +247,27 @@ export default function CalendarioScreen() {
             <Text className="text-[10px] font-black text-black uppercase tracking-wider">{monthName}</Text>
             <Text className="text-lg font-black text-black leading-none mt-0.5">{dayNum}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Card Body */}
         <View className="p-6">
-          <Text className="text-xl font-black text-gray-900 dark:text-white leading-tight mb-3">
-            {event.title}
-          </Text>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => router.push(`/evento/${event.id}`)}
+          >
+            <Text className="text-xl font-black text-gray-900 dark:text-white leading-tight mb-3">
+              {event.title}
+            </Text>
+          </TouchableOpacity>
 
           {/* Details list */}
-          <View className="space-y-2 mb-4">
-            <View className="flex-row items-center">
-              <Clock size={14} color="#eab308" />
-              <Text className="text-[12px] text-gray-500 dark:text-gray-400 font-semibold ml-2">{event.time}</Text>
-            </View>
+          <View className="mb-4" style={{ gap: 8 }}>
+            {!!(event.time && event.time.trim() && event.time !== '00') && (
+              <View className="flex-row items-center">
+                <Clock size={14} color="#eab308" />
+                <Text className="text-[12px] text-gray-500 dark:text-gray-400 font-semibold ml-2">{event.time}</Text>
+              </View>
+            )}
             <View className="flex-row items-center">
               <MapPin size={14} color="#eab308" />
               <Text className="text-[12px] text-gray-500 dark:text-gray-400 font-semibold ml-2" numberOfLines={1}>{event.location}</Text>
@@ -271,8 +292,23 @@ export default function CalendarioScreen() {
             </Text>
           )}
 
+          {/* Link to Full Event Page */}
+          <TouchableOpacity
+            onPress={() => router.push(`/evento/${event.id}`)}
+            activeOpacity={0.7}
+            className="flex-row items-center justify-between bg-gray-50 dark:bg-white/5 px-4 py-2.5 rounded-xl border border-gray-200/60 dark:border-white/5 mb-3"
+          >
+            <View className="flex-row items-center">
+              <Info size={14} color="#eab308" />
+              <Text className="text-xs font-bold text-gray-800 dark:text-gray-200 ml-2">
+                Ver página do evento & programação
+              </Text>
+            </View>
+            <ChevronRight size={14} color={isDark ? '#888' : '#666'} />
+          </TouchableOpacity>
+
           {/* Dynamic CTA Button */}
-          <View className="mt-2">
+          <View className="mt-1">
             {!isPurchased ? (
               // Option 1: Not purchased the linked product yet
               <TouchableOpacity 
@@ -313,6 +349,50 @@ export default function CalendarioScreen() {
     );
   };
 
+  const renderSubTabs = () => (
+    <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1.5 rounded-2xl mb-6">
+      <TouchableOpacity
+        onPress={() => setActiveTab('proximos')}
+        style={activeTab === 'proximos' ? {
+          backgroundColor: isDark ? '#2b2b2b' : '#fff',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 1.5,
+          elevation: 2,
+        } : null}
+        className="flex-1 py-3 rounded-xl items-center justify-center"
+      >
+        <Text 
+          style={{ color: activeTab === 'proximos' ? (isDark ? '#fff' : '#111') : '#999' }}
+          className="text-[11px] font-black uppercase tracking-wider text-center"
+        >
+          Próximos
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => setActiveTab('passados')}
+        style={activeTab === 'passados' ? {
+          backgroundColor: isDark ? '#2b2b2b' : '#fff',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 1.5,
+          elevation: 2,
+        } : null}
+        className="flex-1 py-3 rounded-xl items-center justify-center"
+      >
+        <Text 
+          style={{ color: activeTab === 'passados' ? (isDark ? '#fff' : '#111') : '#999' }}
+          className="text-[11px] font-black uppercase tracking-wider text-center"
+        >
+          Passados
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -322,36 +402,40 @@ export default function CalendarioScreen() {
       );
     }
 
-    if (sortedEvents.length === 0) {
-      return (
-        <View className="flex-1 items-center justify-center px-10 py-20">
-          <CalendarIcon size={48} color={isDark ? '#333' : '#ddd'} className="mb-4" />
-          <Text className="text-gray-400 text-center font-bold text-[14px]">
-            Nenhum evento encontrado nesta categoria.
-          </Text>
-        </View>
-      );
-    }
-
     return (
       <ScrollView 
         className="flex-1 px-6" 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: 100 }}
       >
-        {sortedEvents.map(renderEventCard)}
+        {/* Sub-tab Selector rola naturalmente junto com a página */}
+        {renderSubTabs()}
+
+        {sortedEvents.length === 0 ? (
+          <View className="items-center justify-center px-10 py-20">
+            <CalendarIcon size={48} color={isDark ? '#333' : '#ddd'} className="mb-4" />
+            <Text className="text-gray-400 text-center font-bold text-[14px]">
+              Nenhum evento encontrado nesta categoria.
+            </Text>
+          </View>
+        ) : (
+          sortedEvents.map(renderEventCard)
+        )}
       </ScrollView>
     );
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-gray-50 dark:bg-[#050505]">
+    <View className="flex-1 bg-gray-50 dark:bg-[#050505]">
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
-      <View className="px-6 pt-8 pb-4 flex-row items-center justify-between">
-        <View className="flex-row items-center">
+      {/* Header com Voltar e Título */}
+      <View 
+        style={{ paddingTop: insets.top || 44 }}
+        className="px-6 pb-2"
+      >
+        <View className="flex-row items-center pt-2 pb-1">
           <TouchableOpacity onPress={() => router.back()} className="mr-3 p-2 -ml-2">
             <ArrowLeft size={24} color={isDark ? '#fff' : '#333'} />
           </TouchableOpacity>
@@ -361,50 +445,7 @@ export default function CalendarioScreen() {
         </View>
       </View>
 
-      {/* Sub-tab Selector */}
-      <View className="flex-row bg-gray-100 dark:bg-[#1a1a1a] p-1.5 rounded-2xl mx-6 mb-6">
-        <TouchableOpacity
-          onPress={() => setActiveTab('proximos')}
-          style={activeTab === 'proximos' ? {
-            backgroundColor: isDark ? '#2b2b2b' : '#fff',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.15,
-            shadowRadius: 1.5,
-            elevation: 2,
-          } : null}
-          className="flex-1 py-3 rounded-xl items-center justify-center"
-        >
-          <Text 
-            style={{ color: activeTab === 'proximos' ? (isDark ? '#fff' : '#111') : '#999' }}
-            className="text-[11px] font-black uppercase tracking-wider text-center"
-          >
-            Próximos
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setActiveTab('passados')}
-          style={activeTab === 'passados' ? {
-            backgroundColor: isDark ? '#2b2b2b' : '#fff',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.15,
-            shadowRadius: 1.5,
-            elevation: 2,
-          } : null}
-          className="flex-1 py-3 rounded-xl items-center justify-center"
-        >
-          <Text 
-            style={{ color: activeTab === 'passados' ? (isDark ? '#fff' : '#111') : '#999' }}
-            className="text-[11px] font-black uppercase tracking-wider text-center"
-          >
-            Passados
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Page Content */}
+      {/* Conteúdo com Rolagem (Abas + Cards) */}
       {renderContent()}
 
       {/* Custom Form Check-in Modal */}

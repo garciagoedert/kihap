@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
@@ -6,6 +6,7 @@ import { db } from '../../src/services/firebase';
 import { useColorScheme } from 'nativewind';
 import { ShoppingBag, ShoppingCart, ArrowLeft, Plus, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useScrollToTop } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { BannerCarousel } from '../../src/components/BannerCarousel';
 import { useAuth } from '../../src/context/AuthContext';
@@ -27,6 +28,8 @@ export default function StoreScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
+  useScrollToTop(flatListRef);
 
   // Extrai e normaliza as categorias disponíveis dos produtos
   const categories = useMemo(() => {
@@ -256,12 +259,17 @@ export default function StoreScreen() {
         className="bg-white/80 dark:bg-[#1a1a1a]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 z-50"
       >
         <View className="flex-row items-center justify-between px-6 pb-4 pt-2">
-          <Text 
-            style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
-            className="text-2xl text-gray-900 dark:text-white uppercase tracking-tighter"
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
           >
-            Loja
-          </Text>
+            <Text 
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-2xl text-gray-900 dark:text-white uppercase tracking-tighter"
+            >
+              Loja
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => router.push('/cart')}
             activeOpacity={0.7}
@@ -272,7 +280,7 @@ export default function StoreScreen() {
             {itemCount > 0 && (
               <View className="absolute -top-1 -right-1 bg-yellow-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1 border-2 border-white dark:border-[#1a1a1a] shadow-sm">
                 <Text 
-                  style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className="text-black text-[9px] leading-none"
                 >
                   {itemCount > 99 ? '99+' : itemCount}
@@ -290,6 +298,7 @@ export default function StoreScreen() {
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={filteredProducts}
           renderItem={renderProduct}
           keyExtractor={item => item.id}

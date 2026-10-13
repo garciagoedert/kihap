@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Send } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useScrollToTop } from '@react-navigation/native';
 
 export function normalizeUnitSlug(val: any): string {
   if (!val || typeof val !== 'string') return '';
@@ -93,6 +94,8 @@ export default function FeedScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const flatListRef = useRef<FlatList>(null);
+  useScrollToTop(flatListRef);
 
   // Mapping real data with robust fallbacks and URL normalization
   const displayName = userData?.name || userData?.nome || userData?.displayName || 'Aluno';
@@ -365,14 +368,18 @@ export default function FeedScreen() {
               <Menu size={24} color={isDark ? '#fff' : '#333'} />
             </TouchableOpacity>
           </View>
-          <View className="flex-1 items-center justify-center">
+          <TouchableOpacity 
+            className="flex-1 items-center justify-center"
+            activeOpacity={0.8}
+            onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          >
             <Image 
               source={{ uri: 'https://kihap.com.br/imgs/favicon.png' }} 
               className="h-9 w-9 mt-1"
               resizeMode="contain"
               style={{ tintColor: isDark ? '#ffffff' : '#000000' }}
             />
-          </View>
+          </TouchableOpacity>
           <View className="w-10 items-end">
             <TouchableOpacity 
               onPress={() => router.push('/(tabs)/chat')} 
@@ -386,6 +393,7 @@ export default function FeedScreen() {
       </View>
 
       <FlatList
+        ref={flatListRef}
         className="flex-1"
         style={{ flex: 1 }}
         data={posts}

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
+    <title>Kihap - Evento</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kihap: {
+                            gold: '#fbbf24',
+                            yellow: '#f59e0b',
+                            dark: '#0a0a0c',
+                            card: '#121215',
+                            border: '#1f1f23'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="antialiased bg-[#0a0a0c] text-gray-100 min-h-screen flex flex-col font-sans selection:bg-yellow-500 selection:text-black">
+
+    <!-- Header Container -->
+    <div id="header-container"></div>
+
+    <main class="flex-grow">
+        <!-- Loading State -->
+        <div id="loading-state" class="py-32 text-center space-y-4">
+            <div class="inline-block p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20 text-yellow-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl"></i>
+            </div>
+            <p class="text-sm font-semibold text-gray-400">Carregando detalhes do evento...</p>
+        </div>
+
+        <!-- Not Found State -->
+        <div id="not-found-state" class="hidden py-32 text-center space-y-4 px-4">
+            <div class="inline-block p-4 bg-red-500/10 rounded-2xl border border-red-500/20 text-red-400">
+                <i class="fas fa-calendar-xmark text-3xl"></i>
+            </div>
+            <h2 class="text-xl font-black text-white">Evento não encontrado</h2>
+            <p class="text-xs text-gray-400 max-w-sm mx-auto">O evento pode ter sido removido ou o link está incorreto.</p>
+            <a href="/" class="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition">Voltar ao Início</a>
+        </div>
+
+        <!-- Event Content -->
+        <div id="event-content" class="hidden">
+            <!-- Hero Banner -->
+            <section class="relative w-full h-[380px] sm:h-[480px] bg-black overflow-hidden flex items-end">
+                <img id="event-hero-img" src="" alt="Capa do Evento" class="absolute inset-0 w-full h-full object-cover opacity-80">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/60 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent"></div>
+
+                <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 w-full">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span id="event-date-badge" class="bg-yellow-500 text-black px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider">
+                            --/--
+                        </span>
+                    </div>
+                    <h1 id="event-title" class="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight leading-tight mb-4">
+                        Carregando...
+                    </h1>
+
+                    <!-- Quick Meta Pills -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <div id="event-date-pill" class="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 px-3.5 py-1.5 rounded-xl text-gray-200">
+                            <i class="fas fa-calendar text-yellow-500"></i>
+                            <span id="event-date-text">--/--/----</span>
+                        </div>
+                        <div id="event-time-pill" class="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 px-3.5 py-1.5 rounded-xl text-gray-200">
+                            <i class="fas fa-clock text-yellow-500"></i>
+                            <span id="event-time-text">--:--</span>
+                        </div>
+                        <div id="event-location-pill" class="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 px-3.5 py-1.5 rounded-xl text-gray-200">
+                            <i class="fas fa-map-marker-alt text-yellow-500"></i>
+                            <span id="event-location-text">Kihap</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Details & Actions -->
+            <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <!-- Check-in & App Callout Card -->
+                <div class="bg-gradient-to-r from-yellow-500/15 via-yellow-500/10 to-transparent border border-yellow-500/30 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                    <div class="space-y-1.5 text-center md:text-left">
+                        <div class="inline-flex items-center gap-2 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-1">
+                            <i class="fas fa-bolt"></i> Check-in & Inscrição
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white">Confirme sua presença no App Kihap</h2>
+                        <p class="text-xs sm:text-sm text-gray-300 max-w-xl">
+                            Faça o check-in rápido pelo aplicativo oficial para registrar sua presença, receber atualizações e acumular pontos na sua graduação!
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+                        <a id="open-app-checkin-btn" href="#" class="bg-yellow-500 hover:bg-yellow-600 text-black font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-yellow-500/20 active:scale-95 text-center">
+                            <i class="fas fa-check-circle text-base"></i> Abrir no App & Check-in
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Left: Description, Schedule & Guidelines (2 cols) -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Sobre o Evento -->
+                        <div class="bg-[#121215] border border-white/5 rounded-3xl p-6 sm:p-7 space-y-4">
+                            <h3 class="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2.5">
+                                <i class="fas fa-info-circle text-yellow-500"></i> Sobre o Evento
+                            </h3>
+                            <p id="event-description-text" class="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                                --
+                            </p>
+                        </div>
+
+                        <!-- Programação / Cronograma -->
+                        <div id="schedule-section" class="bg-[#121215] border border-white/5 rounded-3xl p-6 sm:p-7 space-y-5 hidden">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2.5">
+                                    <i class="fas fa-clock text-yellow-500"></i> Programação
+                                </h3>
+                                <span id="schedule-count-badge" class="bg-white/5 text-gray-400 px-3 py-0.5 rounded-full text-xs font-bold uppercase">
+                                    --
+                                </span>
+                            </div>
+                            <div id="schedule-timeline" class="space-y-4 pl-2">
+                                <!-- Etapas renderizadas dinamicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Orientações Importantes -->
+                        <div id="guidelines-section" class="bg-amber-500/10 border border-amber-500/25 rounded-3xl p-6 sm:p-7 space-y-3 hidden">
+                            <h3 class="text-base font-black text-amber-400 uppercase tracking-tight flex items-center gap-2.5">
+                                <i class="fas fa-exclamation-triangle"></i> Orientações Importantes
+                            </h3>
+                            <p id="event-guidelines-text" class="text-xs sm:text-sm text-gray-200 leading-relaxed font-medium whitespace-pre-line">
+                                --
+                            </p>
+                        </div>
+
+                        <!-- Galeria do Evento -->
+                        <div id="gallery-section" class="bg-[#121215] border border-white/5 rounded-3xl p-6 sm:p-7 space-y-4 hidden">
+                            <h3 class="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2.5">
+                                <i class="fas fa-images text-yellow-500"></i> Galeria de Fotos
+                            </h3>
+                            <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <!-- Fotos renderizadas dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Card do Local e Produto da Loja (1 col) -->
+                    <div class="space-y-6">
+                        <!-- Local Card -->
+                        <div class="bg-[#121215] border border-white/5 rounded-3xl p-6 space-y-3">
+                            <h4 class="text-xs font-black uppercase tracking-wider text-gray-400">Local do Evento</h4>
+                            <p id="card-location-text" class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-yellow-500"></i> Kihap
+                            </p>
+                            <p class="text-xs text-gray-400">
+                                Apresente-se na recepção com antecedência. Totens e tags NFC estarão disponíveis para check-in por aproximação.
+                            </p>
+                        </div>
+
+                        <!-- Produto Vinculado -->
+                        <div id="product-card" class="bg-[#121215] border border-yellow-500/20 rounded-3xl p-6 space-y-4 hidden">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 font-bold text-[10px] uppercase">
+                                <i class="fas fa-shopping-bag"></i> Loja Oficial
+                            </span>
+                            <h4 class="text-sm font-bold text-white">Inscrição / Kit do Evento</h4>
+                            <p class="text-xs text-gray-400">Adquira sua inscrição ou produto oficial com desconto de aluno.</p>
+                            <a id="product-card-link" href="#" class="block text-center bg-white/10 hover:bg-yellow-500 hover:text-black text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition">
+                                Ver Produto na Loja
+                            </a>
+                        </div>
+
+                        <!-- App Download Box -->
+                        <div class="bg-gray-900/60 border border-white/5 rounded-3xl p-6 space-y-3 text-center">
+                            <div class="w-12 h-12 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 mx-auto text-xl">
+                                <i class="fas fa-mobile-screen"></i>
+                            </div>
+                            <h4 class="text-sm font-bold text-white">Baixe o App Kihap</h4>
+                            <p class="text-xs text-gray-400">Disponível gratuitamente para iOS e Android com histórico de treinos, graduação e eventos.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal para Imagem Fullscreen -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <button id="close-image-modal" class="absolute top-6 right-6 text-white text-2xl w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="image-modal-img" src="" class="max-w-full max-h-[90vh] object-contain rounded-2xl">
+    </div>
+
+    <script src="js/script.js?v=3.2"></script>
+    <script type="module">
+        import { db } from './intranet/firebase-config.js';
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        function formatDateBR(dateStr) {
+            if (!dateStr) return '';
+            const match = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                const [, y, m, d] = match;
+                return `${d}/${m}/${y}`;
+            }
+            return dateStr;
+        }
+
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('id');
+            const shouldCheckin = urlParams.get('checkin') === 'true' || urlParams.get('nfc') === 'true';
+
+            if (!eventId) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('not-found-state').classList.remove('hidden');
+                return;
+            }
+
+            // Deep link attempt immediately if on mobile and requested via checkin/nfc
+            const appDeepLink = `native://evento/${eventId}${shouldCheckin ? '?checkin=true' : ''}`;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile && shouldCheckin) {
+                window.location.href = appDeepLink;
+            }
+
+            try {
+                const docSnap = await getDoc(doc(db, "events", eventId));
+                if (!docSnap.exists()) {
+                    document.getElementById('loading-state').classList.add('hidden');
+                    document.getElementById('not-found-state').classList.remove('hidden');
+                    return;
+                }
+
+                const event = docSnap.data();
+                document.title = `Kihap - ${event.title}`;
+
+                // Populate Hero & Info
+                const heroImgUrl = event.heroUrl || event.coverUrl || 'https://via.placeholder.com/1200x600.png?text=Kihap';
+                document.getElementById('event-hero-img').src = heroImgUrl;
+                document.getElementById('event-title').textContent = event.title;
+
+                const formattedDate = formatDateBR(event.date);
+                document.getElementById('event-date-badge').textContent = formattedDate;
+                document.getElementById('event-date-text').textContent = formattedDate;
+
+                if (event.time && event.time.trim() && event.time !== '00') {
+                    document.getElementById('event-time-text').textContent = event.time;
+                } else {
+                    document.getElementById('event-time-pill').classList.add('hidden');
+                }
+
+                if (event.location) {
+                    document.getElementById('event-location-text').textContent = event.location;
+                    document.getElementById('card-location-text').innerHTML = `<i class="fas fa-map-marker-alt text-yellow-500"></i> ${event.location}`;
+                }
+
+                // CTA Button
+                const openAppBtn = document.getElementById('open-app-checkin-btn');
+                openAppBtn.href = appDeepLink;
+
+                // Description
+                document.getElementById('event-description-text').textContent = event.description || 'Sem descrição cadastrada.';
+
+                // Schedule
+                if (Array.isArray(event.schedule) && event.schedule.length > 0) {
+                    const scheduleSection = document.getElementById('schedule-section');
+                    const scheduleTimeline = document.getElementById('schedule-timeline');
+                    const scheduleBadge = document.getElementById('schedule-count-badge');
+                    scheduleBadge.textContent = `${event.schedule.length} etapas`;
+
+                    scheduleTimeline.innerHTML = event.schedule.map((item, idx) => `
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-3.5 h-3.5 rounded-full bg-yellow-500 border-2 border-[#121215] shadow-sm z-10"></div>
+                                ${idx < event.schedule.length - 1 ? '<div class="w-0.5 flex-1 bg-yellow-500/30 my-0.5"></div>' : ''}
+                            </div>
+                            <div class="pb-4 flex-1">
+                                <div class="flex items-center gap-2">
+                                    ${item.time ? `<span class="bg-yellow-500/15 text-yellow-400 font-black text-xs px-2 py-0.5 rounded-md">${item.time}</span>` : ''}
+                                    <h5 class="font-bold text-white text-sm">${item.title}</h5>
+                                </div>
+                                ${item.description ? `<p class="text-xs text-gray-400 mt-1 leading-relaxed">${item.description}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    scheduleSection.classList.remove('hidden');
+                }
+
+                // Guidelines
+                if (event.guidelines && event.guidelines.trim()) {
+                    const guidelinesSection = document.getElementById('guidelines-section');
+                    document.getElementById('event-guidelines-text').textContent = event.guidelines;
+                    guidelinesSection.classList.remove('hidden');
+                }
+
+                // Gallery
+                if (Array.isArray(event.gallery) && event.gallery.length > 0) {
+                    const gallerySection = document.getElementById('gallery-section');
+                    const galleryGrid = document.getElementById('gallery-grid');
+                    galleryGrid.innerHTML = event.gallery.map(url => `
+                        <div class="aspect-square rounded-2xl overflow-hidden bg-white/5 border border-white/5 cursor-pointer group relative">
+                            <img src="${url}" class="w-full h-full object-cover transition duration-300 group-hover:scale-105 gallery-thumb" data-src="${url}">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
+                                <i class="fas fa-expand text-lg"></i>
+                            </div>
+                        </div>
+                    `).join('');
+                    gallerySection.classList.remove('hidden');
+
+                    // Setup lightbox
+                    galleryGrid.querySelectorAll('.gallery-thumb').forEach(img => {
+                        img.addEventListener('click', () => {
+                            document.getElementById('image-modal-img').src = img.dataset.src;
+                            document.getElementById('image-modal').classList.remove('hidden');
+                        });
+                    });
+                }
+
+                // Product Card
+                if (event.productId) {
+                    const productCard = document.getElementById('product-card');
+                    const productCardLink = document.getElementById('product-card-link');
+                    productCardLink.href = `/produto.html?id=${event.productId}`;
+                    productCard.classList.remove('hidden');
+                }
+
+                // Toggle views
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('event-content').classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Erro ao carregar evento:", err);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('not-found-state').classList.remove('hidden');
+            }
+        }
+
+        // Close image modal handler
+        const closeImageModal = document.getElementById('close-image-modal');
+        const imageModal = document.getElementById('image-modal');
+        if (closeImageModal && imageModal) {
+            closeImageModal.addEventListener('click', () => imageModal.classList.add('hidden'));
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) imageModal.classList.add('hidden');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

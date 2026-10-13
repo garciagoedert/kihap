@@ -1545,52 +1545,6 @@ export default function NotificacoesScreen() {
             numColumns={3}
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
             columnWrapperStyle={{ justifyContent: 'flex-start' }}
-            ListHeaderComponent={
-              <TouchableOpacity
-                onPress={() => setActiveSubTab('teste-fisico')}
-                activeOpacity={0.8}
-                style={{
-                  shadowColor: '#ef4444',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
-                className="bg-white dark:bg-[#141414] p-4 rounded-3xl mb-4 border border-red-500/25 dark:border-red-500/20"
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1 pr-2">
-                    <View className="w-12 h-12 rounded-2xl bg-red-500/10 items-center justify-center mr-3 border border-red-500/20">
-                      <Activity size={24} color="#ef4444" />
-                    </View>
-                    <View className="flex-1">
-                      <View className="flex-row items-center mb-0.5">
-                        <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                          className="text-xs text-gray-900 dark:text-white uppercase tracking-wider mr-2"
-                        >
-                          Teste Físico
-                        </Text>
-                      </View>
-                      <Text className="text-[11px] font-semibold text-gray-500 dark:text-gray-400" numberOfLines={1}>
-                        {latestPhysicalTest
-                          ? `Último registro: ${latestPhysicalTest.score} pts • Toque para ver histórico`
-                          : 'Toque para registrar ou ver seu histórico'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="bg-red-500/10 px-3 py-1.5 rounded-full flex-row items-center border border-red-500/20">
-                    <Text 
-                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                      className="text-red-500 text-[10px] uppercase mr-1"
-                    >
-                      Abrir
-                    </Text>
-                    <ChevronRight size={12} color="#ef4444" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            }
             renderItem={({ item: badge }) => {
               const isPhysicalTestBadge = 
                 badge.id === 'teste-fisico' || 

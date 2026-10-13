@@ -19,6 +19,7 @@ import { auth } from '../../src/services/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -93,8 +94,7 @@ export default function LoginScreen() {
         pointerEvents="none" 
         className="overflow-hidden"
       >
-        <Animated.Image 
-          source={require('../../assets/images/flor-de-lotus-01.png')}
+        <Animated.View 
           style={{
             position: 'absolute',
             width: 450,
@@ -104,8 +104,15 @@ export default function LoginScreen() {
             opacity: 0.36,
             transform: [{ rotate: spin }],
           }}
-          resizeMode="contain"
-        />
+        >
+          <ExpoImage 
+            source={{ uri: 'https://kihap.com.br/imgs/flor-de-lotus-01.png' }}
+            placeholder={require('../../assets/images/flor-de-lotus-01.png')}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+        </Animated.View>
       </View>
 
       <KeyboardAvoidingView 

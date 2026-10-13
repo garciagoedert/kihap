@@ -80,8 +80,8 @@
                                         <input type="date" id="event-date" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                     </div>
                                     <div>
-                                        <label for="event-time" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário</label>
-                                        <input type="text" id="event-time" placeholder="ex: 19:00" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                        <label for="event-time" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Horário <span class="text-gray-400 font-normal lowercase">(opcional)</span></label>
+                                        <input type="text" id="event-time" placeholder="ex: 19:00" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                     </div>
                                 </div>
                                 <div>
@@ -99,15 +99,60 @@
                                     <textarea id="event-description" rows="4" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
                                 </div>
                                 <div>
-                                    <label for="event-image" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Foto de Capa</label>
+                                    <label for="event-image" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Foto de Capa (Card)</label>
                                     <input type="file" id="event-image" accept="image/*" required class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-yellow-500 file:text-black hover:file:bg-yellow-600 cursor-pointer">
+                                    <p class="text-[11px] text-gray-400 mt-1">Capa exibida nos cards do calendário e de busca.</p>
+                                </div>
+                                <div>
+                                    <label for="event-hero-image" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Foto do Hero (Topo da Página - Opcional)</label>
+                                    <input type="file" id="event-hero-image" accept="image/*" class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-gray-200 dark:file:bg-gray-800 file:text-gray-800 dark:file:text-gray-200 hover:file:bg-gray-300 cursor-pointer">
+                                    <p class="text-[11px] text-gray-400 mt-1">Banner panorâmico para a página exclusiva do evento. Se vazio, usará a foto de capa.</p>
+                                </div>
+
+                                <div>
+                                    <label for="event-guidelines" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Orientações Importantes (Opcional)</label>
+                                    <textarea id="event-guidelines" rows="3" placeholder="Ex: Uso obrigatório do Dobok oficial completo. Chegar com 15 minutos de antecedência. Trazer garrafa de água..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-xs"></textarea>
+                                </div>
+
+                                <!-- Programação / Cronograma (Opcional) -->
+                                <div class="border-t border-gray-100 dark:border-gray-800 pt-5 mt-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                <i class="fas fa-clock text-yellow-500"></i> Programação / Cronograma
+                                            </h4>
+                                            <p class="text-[11px] text-gray-400">Etapas e horários exibidos em timeline na página do evento.</p>
+                                        </div>
+                                        <button type="button" id="add-schedule-item-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-[11px] font-bold py-1.5 px-3 rounded-xl transition flex items-center gap-1 active:scale-95">
+                                            <i class="fas fa-plus text-yellow-500"></i> Etapa
+                                        </button>
+                                    </div>
+                                    <div id="schedule-container" class="space-y-3 mb-2">
+                                        <!-- Etapas dinâmicas adicionadas aqui -->
+                                    </div>
+                                </div>
+
+                                <!-- Galeria de Fotos Extras (Opcional) -->
+                                <div class="border-t border-gray-100 dark:border-gray-800 pt-5 mt-4">
+                                    <div class="mb-3">
+                                        <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <i class="fas fa-images text-yellow-500"></i> Galeria de Imagens
+                                        </h4>
+                                        <p class="text-[11px] text-gray-400">Fotos adicionais do local, edições anteriores ou atrações.</p>
+                                    </div>
+                                    <input type="file" id="event-gallery-files" accept="image/*" multiple class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-gray-200 dark:file:bg-gray-800 file:text-gray-800 dark:file:text-gray-200 hover:file:bg-gray-300 cursor-pointer">
+                                    <div id="gallery-preview-container" class="grid grid-cols-4 gap-2 mt-3 empty:hidden">
+                                        <!-- Miniaturas de fotos existentes/carregadas -->
+                                    </div>
                                 </div>
 
                                 <!-- Formulário de Check-in Customizado (Opcional) -->
                                 <div class="border-t border-gray-100 dark:border-gray-800 pt-5 mt-4">
                                     <div class="flex items-center justify-between mb-3">
                                         <div>
-                                            <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">Perguntas de Check-in</h4>
+                                            <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                <i class="fas fa-clipboard-question text-yellow-500"></i> Perguntas de Check-in
+                                            </h4>
                                             <p class="text-[11px] text-gray-400">Campos opcionais para o aluno responder ao fazer check-in.</p>
                                         </div>
                                         <button type="button" id="add-form-field-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-[11px] font-bold py-1.5 px-3 rounded-xl transition flex items-center gap-1 active:scale-95">
@@ -252,6 +297,83 @@
             </div>
             <div id="answers-modal-content" class="overflow-y-auto space-y-4 py-2 custom-scrollbar">
                 <!-- Conteúdo das perguntas e respostas -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal NFC & Link Rápido -->
+    <div id="nfc-modal" class="fixed inset-0 z-[60] flex justify-center items-center bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/5 shadow-2xl p-6 w-full max-w-lg m-4 transform scale-95 transition-all duration-300 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                        <i class="fas fa-rss text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900 dark:text-white">Tag NFC & Link Rápido</h3>
+                        <p id="nfc-modal-subtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Nome do Evento</p>
+                    </div>
+                </div>
+                <button id="close-nfc-modal-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-8 h-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition active:scale-90">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto space-y-4 py-2 custom-scrollbar flex-grow">
+                <!-- QR Code e visualização -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 dark:bg-gray-900/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <div class="bg-white p-2.5 rounded-xl shadow-sm border border-gray-150">
+                        <img id="nfc-qrcode-img" src="" alt="QR Code" class="w-32 h-32 object-contain rounded-lg">
+                    </div>
+                    <div class="flex-1 text-center sm:text-left">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-[10px] uppercase tracking-wider mb-1.5">
+                            <i class="fas fa-bolt"></i> Check-in Instantâneo
+                        </span>
+                        <h4 class="text-xs font-bold text-gray-900 dark:text-white mb-1">Aproximação ou Leitura</h4>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                            Ao aproximar a tag ou escanear, o aluno é levado direto para a página do evento com a confirmação de presença disparada.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Link App (Nativo) -->
+                <div class="space-y-1.5">
+                    <label class="block text-[11px] font-black uppercase tracking-wider text-gray-400">
+                        Link Direto para App (Recomendado para NFC)
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="nfc-app-link-input" readonly class="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs font-mono text-gray-800 dark:text-gray-200 focus:outline-none select-all">
+                        <button type="button" id="copy-nfc-app-link-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-black text-xs px-3.5 py-2 rounded-xl transition active:scale-95 flex items-center gap-1.5 shrink-0">
+                            <i class="fas fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Link Web Universal -->
+                <div class="space-y-1.5">
+                    <label class="block text-[11px] font-black uppercase tracking-wider text-gray-400">
+                        Link Web Universal
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="nfc-web-link-input" readonly class="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs font-mono text-gray-800 dark:text-gray-200 focus:outline-none select-all">
+                        <button type="button" id="copy-nfc-web-link-btn" class="bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-3.5 py-2 rounded-xl transition active:scale-95 flex items-center gap-1.5 shrink-0">
+                            <i class="fas fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Passo a passo NFC -->
+                <div class="bg-amber-500/10 dark:bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20 text-xs space-y-2">
+                    <p class="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                        <i class="fas fa-mobile-screen"></i> Como gravar na tag NFC (adesivo/totem):
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-300 text-[11px] leading-relaxed">
+                        <li>Baixe o app <strong>NFC Tools</strong> (grátis para iOS e Android).</li>
+                        <li>Abra o app, vá em <strong>Escrever (Write)</strong> &gt; <strong>Adicionar um registro (Add record)</strong>.</li>
+                        <li>Escolha <strong>URL / URI</strong> e cole o Link acima.</li>
+                        <li>Toque em <strong>Escrever (Write)</strong> e encoste na tag NFC (adesivo). Pronto!</li>
+                    </ol>
+                </div>
             </div>
         </div>
     </div>
