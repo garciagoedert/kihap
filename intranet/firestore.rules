@@ -520,5 +520,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == 'true'
       );
     }
+
+    // Regras para Métricas e Logs de Acesso do App Mobile
+    match /app_access_logs/{logId} {
+      allow create: if request.auth != null;
+      allow read, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdministrativo == true
+      );
+    }
   }
 }

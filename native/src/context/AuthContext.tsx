@@ -3,6 +3,7 @@ import { onAuthStateChanged, User, signInWithCustomToken } from 'firebase/auth';
 import { auth, db, functions } from '../services/firebase';
 import { doc, onSnapshot, query, collection, where, documentId } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { trackAppAccess } from '../services/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = docSnap.data();
             console.log("Auth: User Firestore data found.");
             setUserData({ uid: firebaseUser.uid, ...data });
+            trackAppAccess(firebaseUser, data);
           } else {
             console.log("Auth: No user document found in Firestore.");
             setUserData(null);
