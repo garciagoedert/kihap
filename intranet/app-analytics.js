@@ -8,7 +8,7 @@ import {
     limit, 
     onSnapshot 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getUnidadesAtivas } from './common-ui.js';
+import { loadComponents, getUnidades } from './common-ui.js';
 
 // Estado global do Analytics
 let allLogs = [];
@@ -68,7 +68,7 @@ function getUnitName(unitId) {
 async function initUnitFilter() {
     const unitSelect = document.getElementById('unit-filter');
     try {
-        unitsList = await getUnidadesAtivas();
+        unitsList = await getUnidades();
         unitsList.forEach(unit => {
             const opt = document.createElement('option');
             opt.value = unit.id;
@@ -661,6 +661,7 @@ function exportToCSV() {
 
 // Inicializa a página assim que a autenticação estiver pronta
 onAuthReady(async () => {
+    await loadComponents();
     await initUnitFilter();
     await loadData();
 });
