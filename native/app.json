@@ -3,7 +3,7 @@
     "name": "Kihap",
     "slug": "kihap",
     "owner": "kihap",
-    "version": "3.9",
+    "version": "4.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "native",
@@ -12,11 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kihap.app",
-      "buildNumber": "40"
+      "buildNumber": "41"
     },
     "android": {
       "package": "com.kihap.app",
-      "versionCode": 40,
+      "versionCode": 41,
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-safe.png"
