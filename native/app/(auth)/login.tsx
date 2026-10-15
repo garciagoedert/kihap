@@ -276,11 +276,14 @@ export default function LoginScreen() {
 
                   {/* Divisor */}
                   <View className="flex-row items-center my-5">
-                    <View className="flex-1 h-[1px] bg-white/10" />
-                    <Text className="text-gray-500 text-[9px] uppercase tracking-widest px-3 font-semibold">
+                    <View className="flex-1 h-[1px] bg-gray-200" />
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                      className="text-gray-400 text-[9px] uppercase tracking-widest px-3"
+                    >
                       Primeiro acesso?
                     </Text>
-                    <View className="flex-1 h-[1px] bg-white/10" />
+                    <View className="flex-1 h-[1px] bg-gray-200" />
                   </View>
 
                   {/* Botão Primeiro Acesso */}
@@ -289,22 +292,22 @@ export default function LoginScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                       router.push('/(auth)/forgot-password');
                     }}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     style={{
-                      borderColor: 'rgba(234, 179, 8, 0.35)',
-                      borderWidth: 1.2,
+                      borderColor: '#ca8a04',
+                      borderWidth: 1.5,
                       borderRadius: 16,
-                      paddingVertical: 13,
+                      paddingVertical: 14,
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexDirection: 'row',
-                      backgroundColor: 'rgba(234, 179, 8, 0.06)'
+                      backgroundColor: 'rgba(234, 179, 8, 0.08)'
                     }}
                     className="w-full active:scale-[0.99]"
                   >
                     <Text 
-                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                      className="text-yellow-400 text-xs uppercase tracking-[1.5px] text-center"
+                      style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                      className="text-yellow-700 text-xs uppercase tracking-[2px] text-center"
                     >
                       PRIMEIRO ACESSO DO ALUNO
                     </Text>

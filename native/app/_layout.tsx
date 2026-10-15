@@ -64,12 +64,16 @@ import { useFonts } from 'expo-font';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'NeueMachina-Regular': require('../assets/fonts/NeueMachina-Regular.otf'),
     'NeueMachina-Ultrabold': require('../assets/fonts/NeueMachina-Ultrabold.otf'),
     'NeueMachina-Ultrabold_bold': require('../assets/fonts/NeueMachina-Ultrabold_bold.otf'),
     'NeueMachina-Regular_bold': require('../assets/fonts/NeueMachina-Regular_bold.otf'),
   });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
