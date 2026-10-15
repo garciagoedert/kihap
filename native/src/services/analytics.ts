@@ -25,7 +25,7 @@ export async function trackAppAccess(user: any, userData?: any): Promise<void> {
     }
 
     const todayDateStr = new Date().toISOString().split('T')[0];
-    const appVersion = Constants.expoConfig?.version || '4.0';
+    const appVersion = Constants.expoConfig?.version || '4.1';
     const platform = Platform.OS; // 'ios' | 'android'
 
     const userName = userData?.name || user.displayName || 'Aluno Kihap';
