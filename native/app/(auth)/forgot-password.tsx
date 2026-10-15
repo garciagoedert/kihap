@@ -9,8 +9,11 @@ import {
   Platform, 
   ScrollView, 
   ActivityIndicator,
-  StyleSheet
+  StyleSheet,
+  Animated,
+  Easing
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { 
   ArrowLeft, 
@@ -19,11 +22,8 @@ import {
   Eye, 
   EyeOff, 
   CheckCircle, 
-  KeyRound, 
   RefreshCw, 
-  AlertCircle,
-  ShieldCheck,
-  ChevronRight
+  AlertCircle 
 } from 'lucide-react-native';
 import { auth, functions } from '../../src/services/firebase';
 import { httpsCallable } from 'firebase/functions';
@@ -53,6 +53,39 @@ export default function ForgotPasswordScreen() {
 
   const codeInputRef = useRef<TextInput>(null);
   const router = useRouter();
+
+  // Animação de rotação contínua e suave da Flor de Lótus (idêntica à tela de login)
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const runSpin = () => {
+      spinAnim.setValue(0);
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 26000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished && isMounted) {
+          runSpin();
+        }
+      });
+    };
+
+    runSpin();
+
+    return () => {
+      isMounted = false;
+      spinAnim.stopAnimation();
+    };
+  }, [spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   // Contador de reenvio do código (60 segundos)
   useEffect(() => {
@@ -205,18 +238,35 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#09090b]">
-      <StatusBar style="light" />
+    <View className="flex-1 bg-[#f4f5f8]" style={{ overflow: 'hidden' }}>
+      <StatusBar style="dark" />
 
-      {/* Foto Marcial Kihap de fundo */}
-      <Image 
-        source={require('../../assets/images/fundogero.jpg')}
-        style={[
-          StyleSheet.absoluteFillObject,
-          { width: '100%', height: '100%', opacity: 0.35 }
-        ]}
-        resizeMode="cover"
-      />
+      {/* Flor de Lótus Kihap no Canto Inferior Direito com Rotação Contínua */}
+      <View 
+        style={StyleSheet.absoluteFillObject} 
+        pointerEvents="none" 
+        className="overflow-hidden"
+      >
+        <Animated.View 
+          style={{
+            position: 'absolute',
+            width: 450,
+            height: 410,
+            bottom: -190,
+            right: -140,
+            opacity: 0.36,
+            transform: [{ rotate: spin }],
+          }}
+        >
+          <ExpoImage 
+            source={{ uri: 'https://kihap.com.br/imgs/flor-de-lotus-01.png' }}
+            placeholder={require('../../assets/images/flor-de-lotus-01.png')}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+        </Animated.View>
+      </View>
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -246,32 +296,33 @@ export default function ForgotPasswordScreen() {
                     router.back();
                   }
                 }}
-                className="mb-4 self-start p-3 rounded-full bg-[#1c1c21]/90 border border-white/10 shadow-lg active:scale-95"
+                className="mb-4 self-start p-3 rounded-full bg-white border border-gray-200/90 shadow-sm active:scale-95"
               >
-                <ArrowLeft size={20} color="#facc15" />
+                <ArrowLeft size={19} color="#111827" />
               </TouchableOpacity>
 
-              {/* Card Principal */}
+              {/* Card Principal Claro (Idêntico ao Card de Login) */}
               <View 
                 style={{
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 16 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 32,
-                  elevation: 16,
+                  shadowOffset: { width: 0, height: 18 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 36,
+                  elevation: 10,
                 }}
-                className="bg-[#141417]/95 border border-white/10 p-7 rounded-[36px] overflow-hidden"
+                className="bg-white border border-gray-200/90 p-8 rounded-[36px] overflow-hidden"
               >
-                {/* Header com Logo e Indicador de Passos */}
-                <View className="items-center mb-5 pt-1">
+                {/* Header com Logo Kihap Preto e Indicador de Passos */}
+                <View className="items-center mb-6 pt-1">
                   <Image 
                     source={{ uri: 'https://kihap.com.br/imgs/logo.png' }} 
-                    className="w-40 h-11 mb-2"
+                    style={{ tintColor: '#111827' }}
+                    className="w-44 h-12 mb-2"
                     resizeMode="contain"
                   />
                   <Text 
-                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                    className="text-yellow-400 text-[10px] uppercase tracking-[2px]"
+                    style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                    className="text-yellow-600 text-[10px] uppercase tracking-[2px]"
                   >
                     {step === 1 && 'PRIMEIRO ACESSO OU RECUPERAÇÃO'}
                     {step === 2 && 'CÓDIGO DE VERIFICAÇÃO'}
@@ -280,54 +331,54 @@ export default function ForgotPasswordScreen() {
 
                   {/* Linha de progresso dos 3 passos */}
                   <View className="flex-row items-center gap-2 mt-3">
-                    <View className={`h-1.5 rounded-full ${step >= 1 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
-                    <View className={`h-1.5 rounded-full ${step >= 2 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
-                    <View className={`h-1.5 rounded-full ${step >= 3 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
+                    <View className={`h-1.5 rounded-full ${step >= 1 ? 'w-8 bg-yellow-500' : 'w-4 bg-gray-200'}`} />
+                    <View className={`h-1.5 rounded-full ${step >= 2 ? 'w-8 bg-yellow-500' : 'w-4 bg-gray-200'}`} />
+                    <View className={`h-1.5 rounded-full ${step >= 3 ? 'w-8 bg-yellow-500' : 'w-4 bg-gray-200'}`} />
                   </View>
                 </View>
 
                 {/* Feedback de Erro */}
                 {error ? (
-                  <View className="bg-red-500/15 border border-red-500/30 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
-                    <AlertCircle size={16} color="#f87171" />
-                    <Text className="text-red-400 text-xs font-semibold flex-1 leading-5">{error}</Text>
+                  <View className="bg-red-50 border border-red-200 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
+                    <AlertCircle size={16} color="#dc2626" />
+                    <Text className="text-red-600 text-xs font-semibold flex-1 leading-5">{error}</Text>
                   </View>
                 ) : null}
 
                 {/* Feedback de Sucesso */}
                 {success ? (
-                  <View className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
-                    <CheckCircle size={16} color="#34d399" />
-                    <Text className="text-emerald-400 text-xs font-semibold flex-1 leading-5">{success}</Text>
+                  <View className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
+                    <CheckCircle size={16} color="#059669" />
+                    <Text className="text-emerald-700 text-xs font-semibold flex-1 leading-5">{success}</Text>
                   </View>
                 ) : null}
 
                 {/* ===================== PASSO 1: DIGITAR E-MAIL ===================== */}
                 {step === 1 && (
                   <View className="space-y-4">
-                    <Text className="text-gray-300 text-xs leading-5 mb-2 text-center">
+                    <Text className="text-gray-600 text-xs leading-5 mb-2 text-center font-medium">
                       Digite o e-mail cadastrado na sua matrícula para receber um código de segurança.
                     </Text>
 
                     <View>
                       <Text 
-                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                        style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                        className="text-gray-700 text-[10px] uppercase tracking-widest mb-2 ml-1"
                       >
                         E-MAIL DO ALUNO
                       </Text>
                       <View 
-                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                        className={`flex-row items-center border rounded-2xl px-4 py-3.5 ${
                           isFocusedEmail 
-                            ? 'border-yellow-400 bg-[#22222a]' 
-                            : 'border-white/10'
+                            ? 'border-yellow-500 bg-white' 
+                            : 'border-gray-200 bg-[#f8f9fc]'
                         }`}
                       >
-                        <Mail size={18} color={isFocusedEmail ? '#facc15' : '#71717a'} />
+                        <Mail size={18} color={isFocusedEmail ? '#eab308' : '#6b7280'} />
                         <TextInput
-                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          className="flex-1 ml-3 text-gray-900 text-[15px] p-0 font-medium"
                           placeholder="seu@email.com"
-                          placeholderTextColor="#52525b"
+                          placeholderTextColor="#9ca3af"
                           value={email}
                           onChangeText={(text) => {
                             setEmail(text);
@@ -365,7 +416,7 @@ export default function ForgotPasswordScreen() {
                         <ActivityIndicator color="#000" />
                       ) : (
                         <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
                           className="text-black text-sm uppercase tracking-[2px] font-black text-center"
                         >
                           ENVIAR CÓDIGO
@@ -378,16 +429,16 @@ export default function ForgotPasswordScreen() {
                 {/* ===================== PASSO 2: DIGITAR CÓDIGO OTP ===================== */}
                 {step === 2 && (
                   <View className="space-y-4">
-                    <Text className="text-gray-300 text-xs leading-5 text-center">
+                    <Text className="text-gray-600 text-xs leading-5 text-center font-medium">
                       Enviamos um código de 6 números para:{'\n'}
-                      <Text className="text-yellow-400 font-bold">{maskedEmail}</Text>
+                      <Text className="text-yellow-700 font-bold">{maskedEmail}</Text>
                     </Text>
 
                     {/* Caixas visuais dos 6 dígitos */}
                     <TouchableOpacity 
                       activeOpacity={1}
                       onPress={() => codeInputRef.current?.focus()}
-                      className="relative my-2"
+                      className="relative my-3"
                     >
                       <View className="flex-row justify-between gap-1.5">
                         {[0, 1, 2, 3, 4, 5].map((index) => {
@@ -401,13 +452,20 @@ export default function ForgotPasswordScreen() {
                                 height: 54,
                                 borderRadius: 14,
                                 borderWidth: 1.5,
-                                borderColor: digit ? '#facc15' : isCurrent ? '#facc15' : 'rgba(255,255,255,0.12)',
-                                backgroundColor: digit ? 'rgba(250, 204, 21, 0.08)' : '#1c1c21',
+                                borderColor: digit ? '#eab308' : isCurrent ? '#eab308' : '#e5e7eb',
+                                backgroundColor: digit ? 'rgba(234, 179, 8, 0.08)' : '#f8f9fc',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                               }}
                             >
-                              <Text style={{ fontFamily: 'NeueMachina-Ultrabold', fontSize: 22, color: digit ? '#facc15' : '#ffffff' }}>
+                              <Text 
+                                style={{ 
+                                  fontFamily: 'NeueMachina-Ultrabold', 
+                                  fontWeight: 'normal', 
+                                  fontSize: 22, 
+                                  color: digit ? '#111827' : '#9ca3af' 
+                                }}
+                              >
                                 {digit}
                               </Text>
                             </View>
@@ -441,7 +499,7 @@ export default function ForgotPasswordScreen() {
                       disabled={loading || code.length < 6}
                       activeOpacity={0.85}
                       style={{
-                        backgroundColor: code.length === 6 ? '#eab308' : '#71717a',
+                        backgroundColor: code.length === 6 ? '#eab308' : '#e5e7eb',
                         borderRadius: 16,
                         paddingVertical: 16,
                         alignItems: 'center',
@@ -454,8 +512,10 @@ export default function ForgotPasswordScreen() {
                         <ActivityIndicator color="#000" />
                       ) : (
                         <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                          className="text-black text-sm uppercase tracking-[2px] font-black text-center"
+                          style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                          className={`text-sm uppercase tracking-[2px] font-black text-center ${
+                            code.length === 6 ? 'text-black' : 'text-gray-400'
+                          }`}
                         >
                           VALIDAR CÓDIGO
                         </Text>
@@ -463,7 +523,7 @@ export default function ForgotPasswordScreen() {
                     </TouchableOpacity>
 
                     {/* Ações auxiliares: Reenviar e Trocar e-mail */}
-                    <View className="flex-row items-center justify-between pt-2">
+                    <View className="flex-row items-center justify-between pt-3">
                       <TouchableOpacity
                         onPress={() => {
                           setStep(1);
@@ -472,7 +532,7 @@ export default function ForgotPasswordScreen() {
                         }}
                         className="py-1"
                       >
-                        <Text className="text-gray-400 text-xs underline">
+                        <Text className="text-gray-500 text-xs font-semibold underline">
                           Alterar e-mail
                         </Text>
                       </TouchableOpacity>
@@ -482,8 +542,8 @@ export default function ForgotPasswordScreen() {
                         disabled={cooldown > 0 || loading}
                         className="flex-row items-center gap-1.5 py-1"
                       >
-                        <RefreshCw size={13} color={cooldown > 0 ? '#71717a' : '#facc15'} />
-                        <Text className={cooldown > 0 ? 'text-gray-500 text-xs' : 'text-yellow-400 text-xs font-semibold'}>
+                        <RefreshCw size={13} color={cooldown > 0 ? '#9ca3af' : '#ca8a04'} />
+                        <Text className={cooldown > 0 ? 'text-gray-400 text-xs font-medium' : 'text-yellow-700 text-xs font-bold'}>
                           {cooldown > 0 ? `Reenviar (${cooldown}s)` : 'Reenviar código'}
                         </Text>
                       </TouchableOpacity>
@@ -494,29 +554,29 @@ export default function ForgotPasswordScreen() {
                 {/* ===================== PASSO 3: CRIAR NOVA SENHA ===================== */}
                 {step === 3 && (
                   <View className="space-y-4">
-                    <Text className="text-gray-300 text-xs leading-5 mb-1 text-center">
+                    <Text className="text-gray-600 text-xs leading-5 mb-1 text-center font-medium">
                       {studentName ? `Olá, ${studentName}! ` : ''}Crie sua senha de acesso ao aplicativo.
                     </Text>
 
                     <View>
                       <Text 
-                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                        style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                        className="text-gray-700 text-[10px] uppercase tracking-widest mb-2 ml-1"
                       >
                         NOVA SENHA
                       </Text>
                       <View 
-                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                        className={`flex-row items-center border rounded-2xl px-4 py-3.5 ${
                           isFocusedPassword 
-                            ? 'border-yellow-400 bg-[#22222a]' 
-                            : 'border-white/10'
+                            ? 'border-yellow-500 bg-white' 
+                            : 'border-gray-200 bg-[#f8f9fc]'
                         }`}
                       >
-                        <Lock size={18} color={isFocusedPassword ? '#facc15' : '#71717a'} />
+                        <Lock size={18} color={isFocusedPassword ? '#eab308' : '#6b7280'} />
                         <TextInput
-                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          className="flex-1 ml-3 text-gray-900 text-[15px] p-0 font-medium"
                           placeholder="Mínimo 6 caracteres"
-                          placeholderTextColor="#52525b"
+                          placeholderTextColor="#9ca3af"
                           value={password}
                           onChangeText={(text) => {
                             setPassword(text);
@@ -533,9 +593,9 @@ export default function ForgotPasswordScreen() {
                           className="p-1"
                         >
                           {showPassword ? (
-                            <EyeOff size={18} color="#a1a1aa" />
+                            <EyeOff size={18} color="#4b5563" />
                           ) : (
-                            <Eye size={18} color="#71717a" />
+                            <Eye size={18} color="#9ca3af" />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -543,23 +603,23 @@ export default function ForgotPasswordScreen() {
 
                     <View className="mt-3">
                       <Text 
-                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                        className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
+                        style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                        className="text-gray-700 text-[10px] uppercase tracking-widest mb-2 ml-1"
                       >
                         CONFIRMAR SENHA
                       </Text>
                       <View 
-                        className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
+                        className={`flex-row items-center border rounded-2xl px-4 py-3.5 ${
                           isFocusedConfirmPassword 
-                            ? 'border-yellow-400 bg-[#22222a]' 
-                            : 'border-white/10'
+                            ? 'border-yellow-500 bg-white' 
+                            : 'border-gray-200 bg-[#f8f9fc]'
                         }`}
                       >
-                        <Lock size={18} color={isFocusedConfirmPassword ? '#facc15' : '#71717a'} />
+                        <Lock size={18} color={isFocusedConfirmPassword ? '#eab308' : '#6b7280'} />
                         <TextInput
-                          className="flex-1 ml-3 text-white text-[15px] p-0"
+                          className="flex-1 ml-3 text-gray-900 text-[15px] p-0 font-medium"
                           placeholder="Repita a nova senha"
-                          placeholderTextColor="#52525b"
+                          placeholderTextColor="#9ca3af"
                           value={confirmPassword}
                           onChangeText={(text) => {
                             setConfirmPassword(text);
@@ -578,9 +638,9 @@ export default function ForgotPasswordScreen() {
                           className="p-1"
                         >
                           {showConfirmPassword ? (
-                            <EyeOff size={18} color="#a1a1aa" />
+                            <EyeOff size={18} color="#4b5563" />
                           ) : (
-                            <Eye size={18} color="#71717a" />
+                            <Eye size={18} color="#9ca3af" />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -607,7 +667,7 @@ export default function ForgotPasswordScreen() {
                         <ActivityIndicator color="#000" />
                       ) : (
                         <Text 
-                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
                           className="text-black text-sm uppercase tracking-[2px] font-black text-center"
                         >
                           CRIAR SENHA E ENTRAR
@@ -621,8 +681,8 @@ export default function ForgotPasswordScreen() {
               {/* Rodapé */}
               <View className="mt-8 items-center">
                 <Text 
-                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                  className="text-gray-600 text-[9px] uppercase tracking-[2px] font-bold"
+                  style={{ fontFamily: 'NeueMachina-Ultrabold', fontWeight: 'normal' }}
+                  className="text-gray-400 text-[9px] uppercase tracking-[2px] font-bold"
                 >
                   © 2026 KIHAP MARTIAL ARTS
                 </Text>
