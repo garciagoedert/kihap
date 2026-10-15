@@ -273,6 +273,42 @@ export default function LoginScreen() {
                       </Text>
                     )}
                   </TouchableOpacity>
+
+                  {/* Divisor */}
+                  <View className="flex-row items-center my-5">
+                    <View className="flex-1 h-[1px] bg-white/10" />
+                    <Text className="text-gray-500 text-[9px] uppercase tracking-widest px-3 font-semibold">
+                      Primeiro acesso?
+                    </Text>
+                    <View className="flex-1 h-[1px] bg-white/10" />
+                  </View>
+
+                  {/* Botão Primeiro Acesso */}
+                  <TouchableOpacity 
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                      router.push('/(auth)/forgot-password');
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      borderColor: 'rgba(234, 179, 8, 0.35)',
+                      borderWidth: 1.2,
+                      borderRadius: 16,
+                      paddingVertical: 13,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                      backgroundColor: 'rgba(234, 179, 8, 0.06)'
+                    }}
+                    className="w-full active:scale-[0.99]"
+                  >
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-yellow-400 text-xs uppercase tracking-[1.5px] text-center"
+                    >
+                      PRIMEIRO ACESSO DO ALUNO
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 

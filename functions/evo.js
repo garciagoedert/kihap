@@ -3,6 +3,7 @@ const axios = require("axios");
 const admin = require("firebase-admin");
 // const cors = require("cors")({origin: true}); // Replaced with manual CORS handling
 const https = require("https");
+const nodemailer = require("nodemailer");
 
 // A inicialização do Admin SDK é feita no index.js
 const db = admin.firestore();
@@ -993,6 +994,409 @@ exports.getActiveContractsCountHttp = functions.runWith({ timeoutSeconds: 120 })
             res.status(500).send({ error: { message } });
         }
     })();
+});
+
+/**
+ * Mascara o e-mail para exibição segura na interface (ex: pe***s@gmail.com)
+ */
+function maskEmail(email) {
+    if (!email || !email.includes('@')) return email || '';
+    const [name, domain] = email.split('@');
+    if (name.length <= 2) {
+        return `${name[0]}*@${domain}`;
+    }
+    return `${name.substring(0, 2)}***${name.substring(name.length - 1)}@${domain}`;
+}
+
+/**
+ * Busca dados do aluno:
+ * 1. Primeiro no Firestore (coleção 'users')
+ * 2. Em seguida no Firebase Auth
+ * 3. Se não encontrar, busca nas unidades da API EVO
+ */
+async function findStudentByEmail(normalizedEmail) {
+    // 1. Busca no Firestore users
+    try {
+        const userSnap = await db.collection('users').where('email', '==', normalizedEmail).limit(1).get();
+        if (!userSnap.empty) {
+            const uData = userSnap.docs[0].data();
+            const fullName = uData.name || uData.displayName || '';
+            const firstName = fullName ? fullName.split(' ')[0] : 'Aluno';
+            const lastName = fullName ? fullName.split(' ').slice(1).join(' ') : '';
+            return {
+                exists: true,
+                source: 'firestore',
+                evoMemberId: uData.evoMemberId || null,
+                firstName: firstName,
+                lastName: lastName,
+                name: fullName || 'Aluno',
+                email: normalizedEmail,
+                unitId: uData.unitId || null,
+                uid: userSnap.docs[0].id
+            };
+        }
+    } catch (e) {
+        functions.logger.warn(`[findStudentByEmail] Erro ao consultar Firestore: ${e.message}`);
+    }
+
+    // 2. Busca no Firebase Auth
+    try {
+        const authUser = await admin.auth().getUserByEmail(normalizedEmail);
+        if (authUser) {
+            const fullName = authUser.displayName || '';
+            const firstName = fullName ? fullName.split(' ')[0] : 'Aluno';
+            const lastName = fullName ? fullName.split(' ').slice(1).join(' ') : '';
+            return {
+                exists: true,
+                source: 'auth',
+                evoMemberId: null,
+                firstName: firstName,
+                lastName: lastName,
+                name: fullName || 'Aluno',
+                email: normalizedEmail,
+                unitId: null,
+                uid: authUser.uid
+            };
+        }
+    } catch (e) {
+        // Usuário não encontrado no Auth
+    }
+
+    // 3. Busca nas unidades do EVO em paralelo
+    const unitIds = Object.keys(EVO_CREDENTIALS);
+    const searches = unitIds.map(async (unitId) => {
+        try {
+            const apiClientV2 = getEvoApiClient(unitId, 'v2');
+            const PAGE_SIZE = 500;
+            let currentPage = 1;
+            let hasMorePages = true;
+
+            while (hasMorePages) {
+                const response = await apiClientV2.get("/members", {
+                    params: { page: currentPage, take: PAGE_SIZE, status: 0 }
+                });
+                const members = response.data || [];
+
+                const foundMember = members.find(member =>
+                    member.contacts?.some(contact =>
+                        (contact.idContactType === 4 || contact.contactType === 'E-mail') &&
+                        contact.description?.toLowerCase().trim() === normalizedEmail
+                    )
+                );
+
+                if (foundMember) {
+                    return {
+                        exists: true,
+                        source: 'evo',
+                        evoMemberId: foundMember.idMember,
+                        firstName: foundMember.firstName || '',
+                        lastName: foundMember.lastName || '',
+                        name: `${foundMember.firstName || ''} ${foundMember.lastName || ''}`.trim() || 'Aluno',
+                        email: normalizedEmail,
+                        unitId: unitId
+                    };
+                }
+
+                if (members.length < PAGE_SIZE || currentPage >= 4) {
+                    hasMorePages = false;
+                }
+                currentPage++;
+            }
+        } catch (error) {
+            functions.logger.warn(`[findStudentByEmail] Erro EVO na unidade ${unitId}: ${error.message}`);
+        }
+        return null;
+    });
+
+    const results = await Promise.all(searches);
+    const found = results.find(r => r && r.exists);
+    if (found) return found;
+
+    return { exists: false };
+}
+
+/**
+ * Gera o template de e-mail estilizado com o código de 6 dígitos
+ */
+function generateAccessEmailHtml(student, code) {
+    const firstName = student.firstName || 'Aluno';
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de Acesso Kihap</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0c0c0e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0c0c0e; padding: 40px 15px;">
+        <tr>
+            <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #141417; border: 1px solid #27272a; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.6);">
+                    <!-- Header -->
+                    <tr>
+                        <td align="center" style="padding: 38px 30px 24px; background: linear-gradient(180deg, #1f1f26 0%, #141417 100%); border-bottom: 1px solid #27272a;">
+                            <img src="https://kihap.com.br/imgs/logo.png" width="160" alt="Kihap Martial Arts" style="display: block; border: 0;" />
+                            <div style="margin-top: 14px; font-size: 11px; font-weight: 800; letter-spacing: 3px; color: #facc15; text-transform: uppercase;">
+                                ACESSO AO APLICATIVO
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 34px 30px 28px;">
+                            <h2 style="margin: 0 0 12px; font-size: 21px; font-weight: 700; color: #ffffff;">
+                                Olá, ${firstName}!
+                            </h2>
+                            <p style="margin: 0 0 22px; font-size: 14px; line-height: 1.6; color: #a1a1aa;">
+                                Você solicitou a validação de acesso para entrar ou definir sua senha no <strong>App Kihap</strong>. Digite o código de 6 dígitos no aplicativo:
+                            </p>
+
+                            <!-- Code Box -->
+                            <div style="background-color: #1a1a20; border: 2px dashed #facc15; border-radius: 18px; padding: 20px; text-align: center; margin: 26px 0;">
+                                <span style="display: inline-block; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #facc15; font-family: 'Courier New', Courier, monospace;">
+                                    ${code}
+                                </span>
+                            </div>
+
+                            <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
+                                ⏱️ Este código expira em <strong>15 minutos</strong>.
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #52525b; text-align: center; line-height: 1.5;">
+                                Se você não realizou esta solicitação, apenas ignore este e-mail. Por segurança, nunca compartilhe este código com outras pessoas.
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" style="padding: 20px; background-color: #0d0d10; border-top: 1px solid #222227; font-size: 11px; color: #52525b; letter-spacing: 0.5px;">
+                            © ${new Date().getFullYear()} Kihap Martial Arts. Todos os direitos reservados.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+}
+
+/**
+ * Envia um código de 6 dígitos para o e-mail do aluno se ele existir na base.
+ */
+exports.sendAccessVerificationCode = functions.https.onCall(async (data, context) => {
+    const { email } = data || {};
+    if (!email) {
+        throw new functions.https.HttpsError("invalid-argument", "O e-mail é obrigatório.");
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Busca o aluno na base
+    const student = await findStudentByEmail(normalizedEmail);
+    if (!student || !student.exists) {
+        return {
+            success: false,
+            code: 'STUDENT_NOT_FOUND',
+            message: 'E-mail não encontrado em nossa base de alunos. Verifique se digitou o e-mail cadastrado na sua matrícula ou procure a recepção da sua unidade.'
+        };
+    }
+
+    // 2. Gera código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutos
+
+    // 3. Salva no Firestore na coleção accessVerificationCodes
+    await db.collection('accessVerificationCodes').doc(normalizedEmail).set({
+        code: code,
+        email: normalizedEmail,
+        studentData: student,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: expiresAt,
+        attempts: 0,
+        verified: false
+    });
+
+    // 4. Envia o e-mail via Nodemailer
+    const gmailEmail = process.env.GMAIL_EMAIL;
+    const gmailPassword = process.env.GMAIL_PASSWORD;
+    if (!gmailEmail || !gmailPassword) {
+        functions.logger.error('[sendAccessVerificationCode] Credenciais de e-mail não configuradas no backend.');
+        throw new functions.https.HttpsError('internal', 'Serviço de e-mail temporariamente indisponível. Contate a recepção.');
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: gmailEmail, pass: gmailPassword },
+        });
+
+        await transporter.sendMail({
+            from: `Kihap Martial Arts <${gmailEmail}>`,
+            to: normalizedEmail,
+            subject: `Seu código de acesso Kihap: ${code}`,
+            html: generateAccessEmailHtml(student, code)
+        });
+
+        functions.logger.info(`[sendAccessVerificationCode] Código de acesso enviado com sucesso para ${normalizedEmail}`);
+
+        return {
+            success: true,
+            message: 'Código enviado com sucesso!',
+            maskedEmail: maskEmail(normalizedEmail),
+            firstName: student.firstName || 'Aluno'
+        };
+    } catch (mailErr) {
+        functions.logger.error(`[sendAccessVerificationCode] Falha ao enviar e-mail para ${normalizedEmail}:`, mailErr);
+        throw new functions.https.HttpsError('internal', 'Falha ao enviar o e-mail com o código. Tente novamente em instantes.');
+    }
+});
+
+/**
+ * Valida o código digitado pelo usuário.
+ */
+exports.verifyAccessCode = functions.https.onCall(async (data, context) => {
+    const { email, code } = data || {};
+    if (!email || !code) {
+        throw new functions.https.HttpsError("invalid-argument", "E-mail e código são obrigatórios.");
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+    const cleanCode = code.toString().trim();
+
+    const docRef = db.collection('accessVerificationCodes').doc(normalizedEmail);
+    const snap = await docRef.get();
+
+    if (!snap.exists) {
+        return {
+            valid: false,
+            message: 'Nenhum código ativo encontrado para este e-mail. Solicite um novo código.'
+        };
+    }
+
+    const docData = snap.data();
+    if (Date.now() > docData.expiresAt) {
+        return {
+            valid: false,
+            message: 'O código de verificação expirou. Por favor, solicite um novo código.'
+        };
+    }
+
+    if (docData.attempts >= 5) {
+        return {
+            valid: false,
+            message: 'Muitas tentativas incorretas. Por segurança, solicite um novo código.'
+        };
+    }
+
+    if (docData.code !== cleanCode) {
+        await docRef.update({
+            attempts: admin.firestore.FieldValue.increment(1)
+        });
+        const remaining = 4 - docData.attempts;
+        return {
+            valid: false,
+            message: `Código incorreto. Você tem mais ${Math.max(remaining, 1)} tentativa(s).`
+        };
+    }
+
+    // Marca como verificado
+    await docRef.update({
+        verified: true
+    });
+
+    return {
+        valid: true,
+        message: 'Código validado com sucesso!'
+    };
+});
+
+/**
+ * Conclui a definição da senha do aluno e cria/atualiza seu perfil.
+ */
+exports.completeAccessWithCode = functions.https.onCall(async (data, context) => {
+    const { email, code, newPassword } = data || {};
+    if (!email || !code || !newPassword) {
+        throw new functions.https.HttpsError("invalid-argument", "E-mail, código e nova senha são obrigatórios.");
+    }
+    if (newPassword.length < 6) {
+        throw new functions.https.HttpsError("invalid-argument", "A senha deve ter no mínimo 6 caracteres.");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const cleanCode = code.toString().trim();
+
+    const docRef = db.collection('accessVerificationCodes').doc(normalizedEmail);
+    const snap = await docRef.get();
+
+    if (!snap.exists) {
+        throw new functions.https.HttpsError("failed-precondition", "Código expirado ou inválido. Inicie o processo novamente.");
+    }
+
+    const docData = snap.data();
+    if (Date.now() > docData.expiresAt) {
+        throw new functions.https.HttpsError("failed-precondition", "O código expirou. Solicite um novo código.");
+    }
+
+    if (docData.code !== cleanCode) {
+        throw new functions.https.HttpsError("invalid-argument", "Código de verificação incorreto.");
+    }
+
+    const studentData = docData.studentData || {};
+    const firstName = studentData.firstName || '';
+    const lastName = studentData.lastName || '';
+    const evoMemberId = studentData.evoMemberId || null;
+    const unitId = studentData.unitId || null;
+
+    try {
+        let userRecord;
+        try {
+            userRecord = await admin.auth().getUserByEmail(normalizedEmail);
+            functions.logger.info(`[completeAccessWithCode] Atualizando senha do usuário existente: ${userRecord.uid}`);
+            await admin.auth().updateUser(userRecord.uid, {
+                password: newPassword,
+            });
+        } catch (authErr) {
+            if (authErr.code === 'auth/user-not-found') {
+                functions.logger.info(`[completeAccessWithCode] Criando novo usuário Auth para: ${normalizedEmail}`);
+                const displayName = (`${firstName} ${lastName}`.trim()) || normalizedEmail.split('@')[0];
+                userRecord = await admin.auth().createUser({
+                    email: normalizedEmail,
+                    password: newPassword,
+                    displayName: displayName,
+                    emailVerified: true,
+                });
+            } else {
+                throw authErr;
+            }
+        }
+
+        // Atualiza Firestore users
+        const userDocRef = db.collection('users').doc(userRecord.uid);
+        const name = (`${firstName} ${lastName}`.trim()) || normalizedEmail.split('@')[0];
+        
+        const updatePayload = {
+            name: name,
+            email: normalizedEmail,
+            isAdmin: false,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        if (evoMemberId) updatePayload.evoMemberId = evoMemberId;
+        if (unitId) updatePayload.unitId = unitId;
+
+        await userDocRef.set(updatePayload, { merge: true });
+
+        // Remove o código de verificação para não ser reutilizado
+        await docRef.delete();
+
+        functions.logger.info(`[completeAccessWithCode] Senha redefinida/criada com sucesso para ${normalizedEmail} (UID: ${userRecord.uid})`);
+
+        return {
+            success: true,
+            uid: userRecord.uid,
+            message: 'Senha definida com sucesso!'
+        };
+    } catch (err) {
+        functions.logger.error(`[completeAccessWithCode] Erro ao concluir acesso para ${normalizedEmail}:`, err);
+        throw new functions.https.HttpsError("internal", err.message || "Erro ao definir senha.");
+    }
 });
 
 /**

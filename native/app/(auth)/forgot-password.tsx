@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -12,7 +12,19 @@ import {
   StyleSheet
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
+import { 
+  ArrowLeft, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  CheckCircle, 
+  KeyRound, 
+  RefreshCw, 
+  AlertCircle,
+  ShieldCheck,
+  ChevronRight
+} from 'lucide-react-native';
 import { auth, functions } from '../../src/services/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -20,89 +32,188 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 export default function ForgotPasswordScreen() {
-  const [step, setStep] = useState(1); // 1: Email, 2: New Password
+  const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Email, 2: Código OTP, 3: Nova Senha
   const [email, setEmail] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [isFocusedEmail, setIsFocusedEmail] = useState(false);
   const [isFocusedPassword, setIsFocusedPassword] = useState(false);
   const [isFocusedConfirmPassword, setIsFocusedConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [studentData, setStudentData] = useState<any>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  const codeInputRef = useRef<TextInput>(null);
   const router = useRouter();
 
-  const handleVerifyEmail = async () => {
-    if (!email) {
-      setError('Por favor, insira um e-mail.');
+  // Contador de reenvio do código (60 segundos)
+  useEffect(() => {
+    let timer: any;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  // Foco no input de código ao mudar para o passo 2
+  useEffect(() => {
+    if (step === 2) {
+      setTimeout(() => {
+        codeInputRef.current?.focus();
+      }, 300);
+    }
+  }, [step]);
+
+  // PASSO 1: Enviar Código por E-mail
+  const handleSendCode = async () => {
+    if (!email || !email.trim()) {
+      setError('Por favor, informe seu e-mail cadastrado.');
       return;
     }
 
     setLoading(true);
     setError('');
-    
+    setSuccess('');
+
     try {
-      const getStudentDataByEmail = httpsCallable(functions, 'getStudentDataByEmail');
-      const result: any = await getStudentDataByEmail({ email: email.trim() });
-      
-      if (result.data.exists) {
-        setStudentData(result.data);
+      const sendAccessVerificationCode = httpsCallable(functions, 'sendAccessVerificationCode');
+      const result: any = await sendAccessVerificationCode({ email: email.trim() });
+
+      if (result.data.success) {
+        setMaskedEmail(result.data.maskedEmail || email.trim());
+        setStudentName(result.data.firstName || 'Aluno');
+        setCooldown(60);
         setStep(2);
-        setSuccess('E-mail verificado! Agora, crie sua nova senha.');
+        setSuccess(`Código enviado para ${result.data.maskedEmail || email.trim()}.`);
       } else {
-        setError('O e-mail não foi encontrado em nosso sistema.');
+        setError(result.data.message || 'E-mail não encontrado em nossa base de alunos.');
       }
     } catch (err: any) {
       console.error(err);
-      setError('Erro ao verificar e-mail. Tente novamente.');
+      setError(err.message || 'Erro ao consultar e-mail. Tente novamente em instantes.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSetPassword = async () => {
-    if (password.length < 6) {
-      setError('A senha deve ter no mínimo 6 caracteres.');
-      return;
+  // Reenviar código
+  const handleResendCode = async () => {
+    if (cooldown > 0 || loading) return;
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const sendAccessVerificationCode = httpsCallable(functions, 'sendAccessVerificationCode');
+      const result: any = await sendAccessVerificationCode({ email: email.trim() });
+
+      if (result.data.success) {
+        setCooldown(60);
+        setCode('');
+        setSuccess('Um novo código de 6 dígitos foi enviado para seu e-mail.');
+      } else {
+        setError(result.data.message || 'Não foi possível reenviar o código.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Erro ao reenviar código. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+  };
+
+  // PASSO 2: Validar Código de 6 dígitos
+  const handleVerifyCode = async () => {
+    const cleanCode = code.replace(/[^0-9]/g, '');
+    if (cleanCode.length !== 6) {
+      setError('Digite o código completo com 6 números.');
       return;
     }
 
     setLoading(true);
     setError('');
-    
+    setSuccess('');
+
     try {
-      const setStudentPassword = httpsCallable(functions, 'setStudentPassword');
-      await setStudentPassword({ ...studentData, newPassword: password });
-      
-      setSuccess('Senha definida com sucesso! Fazendo login...');
-      
-      // Auto login
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.replace('/(tabs)');
+      const verifyAccessCode = httpsCallable(functions, 'verifyAccessCode');
+      const result: any = await verifyAccessCode({ 
+        email: email.trim(), 
+        code: cleanCode 
+      });
+
+      if (result.data.valid) {
+        setStep(3);
+        setSuccess('Código verificado com sucesso! Agora crie sua nova senha.');
+      } else {
+        setError(result.data.message || 'Código incorreto. Verifique seu e-mail.');
+      }
     } catch (err: any) {
       console.error(err);
-      setError('Erro ao definir senha. Tente novamente.');
+      setError(err.message || 'Erro ao validar código. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // PASSO 3: Salvar Senha e Fazer Login Automático
+  const handleSetPassword = async () => {
+    if (password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('As senhas digitadas não coincidem.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const completeAccessWithCode = httpsCallable(functions, 'completeAccessWithCode');
+      const result: any = await completeAccessWithCode({ 
+        email: email.trim(), 
+        code: code.replace(/[^0-9]/g, ''), 
+        newPassword: password 
+      });
+
+      if (result.data.success) {
+        setSuccess('Senha criada com sucesso! Conectando ao aplicativo...');
+        
+        // Login automático no Firebase Auth
+        await signInWithEmailAndPassword(auth as any, email.trim(), password);
+        router.replace('/(tabs)');
+      } else {
+        setError(result.data.message || 'Erro ao definir senha.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao definir senha. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-[#09090b]">
+      <StatusBar style="light" />
 
       {/* Foto Marcial Kihap de fundo */}
       <Image 
         source={require('../../assets/images/fundogero.jpg')}
         style={[
           StyleSheet.absoluteFillObject,
-          { width: '100%', height: '100%', opacity: 0.42 }
+          { width: '100%', height: '100%', opacity: 0.35 }
         ]}
         resizeMode="cover"
       />
@@ -122,10 +233,22 @@ export default function ForgotPasswordScreen() {
               
               {/* Botão Voltar */}
               <TouchableOpacity 
-                onPress={() => router.back()}
-                className="mb-4 self-start p-3 rounded-full bg-white/90 border border-gray-200 shadow-md"
+                onPress={() => {
+                  if (step === 2) {
+                    setStep(1);
+                    setError('');
+                    setSuccess('');
+                  } else if (step === 3) {
+                    setStep(2);
+                    setError('');
+                    setSuccess('');
+                  } else {
+                    router.back();
+                  }
+                }}
+                className="mb-4 self-start p-3 rounded-full bg-[#1c1c21]/90 border border-white/10 shadow-lg active:scale-95"
               >
-                <ArrowLeft size={20} color="#000" />
+                <ArrowLeft size={20} color="#facc15" />
               </TouchableOpacity>
 
               {/* Card Principal */}
@@ -133,48 +256,65 @@ export default function ForgotPasswordScreen() {
                 style={{
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 16 },
-                  shadowOpacity: 0.25,
+                  shadowOpacity: 0.4,
                   shadowRadius: 32,
-                  elevation: 14,
+                  elevation: 16,
                 }}
-                className="bg-[#141417] p-8 rounded-[36px] overflow-hidden"
+                className="bg-[#141417]/95 border border-white/10 p-7 rounded-[36px] overflow-hidden"
               >
-                {/* Header com Logo */}
-                <View className="items-center mb-6 pt-2">
+                {/* Header com Logo e Indicador de Passos */}
+                <View className="items-center mb-5 pt-1">
                   <Image 
                     source={{ uri: 'https://kihap.com.br/imgs/logo.png' }} 
-                    className="w-44 h-12 mb-3"
+                    className="w-40 h-11 mb-2"
                     resizeMode="contain"
                   />
                   <Text 
                     style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                    className="text-yellow-400 text-[11px] uppercase tracking-[2px]"
+                    className="text-yellow-400 text-[10px] uppercase tracking-[2px]"
                   >
-                    RECUPERAR SENHA
+                    {step === 1 && 'PRIMEIRO ACESSO OU RECUPERAÇÃO'}
+                    {step === 2 && 'CÓDIGO DE VERIFICAÇÃO'}
+                    {step === 3 && 'DEFINIR NOVA SENHA'}
                   </Text>
+
+                  {/* Linha de progresso dos 3 passos */}
+                  <View className="flex-row items-center gap-2 mt-3">
+                    <View className={`h-1.5 rounded-full ${step >= 1 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
+                    <View className={`h-1.5 rounded-full ${step >= 2 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
+                    <View className={`h-1.5 rounded-full ${step >= 3 ? 'w-8 bg-yellow-400' : 'w-4 bg-white/10'}`} />
+                  </View>
                 </View>
 
+                {/* Feedback de Erro */}
                 {error ? (
-                  <View className="bg-red-500/15 border border-red-500/30 p-3.5 rounded-2xl mb-5 items-center justify-center">
-                    <Text className="text-red-400 text-center text-xs font-bold">{error}</Text>
+                  <View className="bg-red-500/15 border border-red-500/30 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
+                    <AlertCircle size={16} color="#f87171" />
+                    <Text className="text-red-400 text-xs font-semibold flex-1 leading-5">{error}</Text>
                   </View>
                 ) : null}
 
+                {/* Feedback de Sucesso */}
                 {success ? (
-                  <View className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-2xl mb-5 items-center justify-center flex-row gap-2">
-                    <CheckCircle size={15} color="#34d399" />
-                    <Text className="text-emerald-400 text-center text-xs font-bold flex-1">{success}</Text>
+                  <View className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-2xl mb-5 flex-row items-center gap-2.5">
+                    <CheckCircle size={16} color="#34d399" />
+                    <Text className="text-emerald-400 text-xs font-semibold flex-1 leading-5">{success}</Text>
                   </View>
                 ) : null}
 
-                {step === 1 ? (
+                {/* ===================== PASSO 1: DIGITAR E-MAIL ===================== */}
+                {step === 1 && (
                   <View className="space-y-4">
+                    <Text className="text-gray-300 text-xs leading-5 mb-2 text-center">
+                      Digite o e-mail cadastrado na sua matrícula para receber um código de segurança.
+                    </Text>
+
                     <View>
                       <Text 
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                         className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
                       >
-                        E-MAIL CADASTRADO
+                        E-MAIL DO ALUNO
                       </Text>
                       <View 
                         className={`flex-row items-center bg-[#1c1c21] border rounded-2xl px-4 py-3.5 ${
@@ -189,12 +329,17 @@ export default function ForgotPasswordScreen() {
                           placeholder="seu@email.com"
                           placeholderTextColor="#52525b"
                           value={email}
-                          onChangeText={setEmail}
+                          onChangeText={(text) => {
+                            setEmail(text);
+                            if (error) setError('');
+                          }}
                           onFocus={() => setIsFocusedEmail(true)}
                           onBlur={() => setIsFocusedEmail(false)}
                           autoCapitalize="none"
                           keyboardType="email-address"
                           editable={!loading}
+                          returnKeyType="send"
+                          onSubmitEditing={handleSendCode}
                         />
                       </View>
                     </View>
@@ -202,7 +347,7 @@ export default function ForgotPasswordScreen() {
                     <TouchableOpacity 
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-                        handleVerifyEmail();
+                        handleSendCode();
                       }}
                       disabled={loading}
                       activeOpacity={0.85}
@@ -223,13 +368,136 @@ export default function ForgotPasswordScreen() {
                           style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                           className="text-black text-sm uppercase tracking-[2px] font-black text-center"
                         >
-                          VERIFICAR E-MAIL
+                          ENVIAR CÓDIGO
                         </Text>
                       )}
                     </TouchableOpacity>
                   </View>
-                ) : (
+                )}
+
+                {/* ===================== PASSO 2: DIGITAR CÓDIGO OTP ===================== */}
+                {step === 2 && (
                   <View className="space-y-4">
+                    <Text className="text-gray-300 text-xs leading-5 text-center">
+                      Enviamos um código de 6 números para:{'\n'}
+                      <Text className="text-yellow-400 font-bold">{maskedEmail}</Text>
+                    </Text>
+
+                    {/* Caixas visuais dos 6 dígitos */}
+                    <TouchableOpacity 
+                      activeOpacity={1}
+                      onPress={() => codeInputRef.current?.focus()}
+                      className="relative my-2"
+                    >
+                      <View className="flex-row justify-between gap-1.5">
+                        {[0, 1, 2, 3, 4, 5].map((index) => {
+                          const digit = code[index] || '';
+                          const isCurrent = code.length === index;
+                          return (
+                            <View
+                              key={index}
+                              style={{
+                                flex: 1,
+                                height: 54,
+                                borderRadius: 14,
+                                borderWidth: 1.5,
+                                borderColor: digit ? '#facc15' : isCurrent ? '#facc15' : 'rgba(255,255,255,0.12)',
+                                backgroundColor: digit ? 'rgba(250, 204, 21, 0.08)' : '#1c1c21',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text style={{ fontFamily: 'NeueMachina-Ultrabold', fontSize: 22, color: digit ? '#facc15' : '#ffffff' }}>
+                                {digit}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+
+                      {/* TextInput oculto que captura os números */}
+                      <TextInput
+                        ref={codeInputRef}
+                        style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%' }}
+                        value={code}
+                        onChangeText={(text) => {
+                          const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+                          setCode(cleaned);
+                          if (error) setError('');
+                        }}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        editable={!loading}
+                        returnKeyType="done"
+                        onSubmitEditing={handleVerifyCode}
+                      />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                        handleVerifyCode();
+                      }}
+                      disabled={loading || code.length < 6}
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: code.length === 6 ? '#eab308' : '#71717a',
+                        borderRadius: 16,
+                        paddingVertical: 16,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                      }}
+                      className="w-full mt-3 active:scale-[0.99]"
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="#000" />
+                      ) : (
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-black text-sm uppercase tracking-[2px] font-black text-center"
+                        >
+                          VALIDAR CÓDIGO
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Ações auxiliares: Reenviar e Trocar e-mail */}
+                    <View className="flex-row items-center justify-between pt-2">
+                      <TouchableOpacity
+                        onPress={() => {
+                          setStep(1);
+                          setCode('');
+                          setError('');
+                        }}
+                        className="py-1"
+                      >
+                        <Text className="text-gray-400 text-xs underline">
+                          Alterar e-mail
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={handleResendCode}
+                        disabled={cooldown > 0 || loading}
+                        className="flex-row items-center gap-1.5 py-1"
+                      >
+                        <RefreshCw size={13} color={cooldown > 0 ? '#71717a' : '#facc15'} />
+                        <Text className={cooldown > 0 ? 'text-gray-500 text-xs' : 'text-yellow-400 text-xs font-semibold'}>
+                          {cooldown > 0 ? `Reenviar (${cooldown}s)` : 'Reenviar código'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* ===================== PASSO 3: CRIAR NOVA SENHA ===================== */}
+                {step === 3 && (
+                  <View className="space-y-4">
+                    <Text className="text-gray-300 text-xs leading-5 mb-1 text-center">
+                      {studentName ? `Olá, ${studentName}! ` : ''}Crie sua senha de acesso ao aplicativo.
+                    </Text>
+
                     <View>
                       <Text 
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -250,7 +518,10 @@ export default function ForgotPasswordScreen() {
                           placeholder="Mínimo 6 caracteres"
                           placeholderTextColor="#52525b"
                           value={password}
-                          onChangeText={setPassword}
+                          onChangeText={(text) => {
+                            setPassword(text);
+                            if (error) setError('');
+                          }}
                           onFocus={() => setIsFocusedPassword(true)}
                           onBlur={() => setIsFocusedPassword(false)}
                           secureTextEntry={!showPassword}
@@ -270,7 +541,7 @@ export default function ForgotPasswordScreen() {
                       </View>
                     </View>
 
-                    <View className="mt-4">
+                    <View className="mt-3">
                       <Text 
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                         className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 ml-1"
@@ -290,11 +561,16 @@ export default function ForgotPasswordScreen() {
                           placeholder="Repita a nova senha"
                           placeholderTextColor="#52525b"
                           value={confirmPassword}
-                          onChangeText={setConfirmPassword}
+                          onChangeText={(text) => {
+                            setConfirmPassword(text);
+                            if (error) setError('');
+                          }}
                           onFocus={() => setIsFocusedConfirmPassword(true)}
                           onBlur={() => setIsFocusedConfirmPassword(false)}
                           secureTextEntry={!showConfirmPassword}
                           editable={!loading}
+                          returnKeyType="done"
+                          onSubmitEditing={handleSetPassword}
                         />
                         <TouchableOpacity 
                           onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -325,7 +601,7 @@ export default function ForgotPasswordScreen() {
                         justifyContent: 'center',
                         flexDirection: 'row',
                       }}
-                      className="w-full mt-6 active:scale-[0.99]"
+                      className="w-full mt-5 active:scale-[0.99]"
                     >
                       {loading ? (
                         <ActivityIndicator color="#000" />
@@ -334,7 +610,7 @@ export default function ForgotPasswordScreen() {
                           style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                           className="text-black text-sm uppercase tracking-[2px] font-black text-center"
                         >
-                          DEFINIR SENHA E ACESSAR
+                          CRIAR SENHA E ENTRAR
                         </Text>
                       )}
                     </TouchableOpacity>
@@ -346,7 +622,7 @@ export default function ForgotPasswordScreen() {
               <View className="mt-8 items-center">
                 <Text 
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                  className="text-gray-700 text-[9px] uppercase tracking-[2px] font-bold"
+                  className="text-gray-600 text-[9px] uppercase tracking-[2px] font-bold"
                 >
                   © 2026 KIHAP MARTIAL ARTS
                 </Text>
