@@ -67,7 +67,8 @@ export const loadFeed = async () => {
                         if (post.authorId !== user.uid) {
                             const isForMe = post.targetStudents?.includes(user.uid);
                             const isForMyUnit = isItemForUserUnits(post, userUnitSlugs);
-                            const isPublic = (!post.targetUnit || post.targetUnit === 'all') && (!post.targetStudents || post.targetStudents.length === 0);
+                            const isStaffPost = post.targetAudience === 'staff' || post.targetUnit === 'staff' || (Array.isArray(post.targetUnits) && post.targetUnits.includes('staff'));
+                            const isPublic = !isStaffPost && (!post.targetUnit || post.targetUnit === 'all') && (!post.targetStudents || post.targetStudents.length === 0);
                             
                             if (!isForMe && !isForMyUnit && !isPublic) return;
                         }

@@ -252,7 +252,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
                             <div class="md:col-span-12 mb-4">
                                 <label class="block text-gray-400 text-sm font-medium mb-3 text-left italic">Para quem é este conteúdo?</label>
-                                <div class="flex items-center space-x-6">
+                                <div class="flex flex-wrap items-center gap-6">
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="target-type" value="unit" checked class="hidden peer">
                                         <div class="w-5 h-5 rounded border-2 border-gray-600 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
@@ -267,6 +267,27 @@
                                         </div>
                                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Alunos Específicos</span>
                                     </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="target-type" value="staff" class="hidden peer">
+                                        <div class="w-5 h-5 rounded border-2 border-gray-600 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center transition-all">
+                                            <i class="fas fa-check text-[10px] text-black hidden peer-checked:block"></i>
+                                        </div>
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5 font-semibold text-amber-500 dark:text-amber-400">
+                                            <i class="fas fa-user-shield text-xs"></i> Apenas Staff / Equipe
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="staff-target-container" class="md:col-span-12 hidden">
+                                <div class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl max-w-xl flex items-start gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="fas fa-lock text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Comunicado Exclusivo para Staff / Colaboradores</h4>
+                                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">Esta publicação será visível <strong>apenas para a equipe interna</strong> (administradores, gerentes, professores, instrutores e recepção). <strong>Nenhum aluno comum</strong> terá acesso a este post.</p>
+                                    </div>
                                 </div>
                             </div>
 

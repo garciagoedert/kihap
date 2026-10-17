@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
@@ -11,6 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 const { width } = Dimensions.get('window');
 
 import { useCart } from '../../src/context/CartContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { getEffectiveProductPrice, getEffectiveVariantPrice, formatCentsToCurrency } from '../../src/utils/pricing';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const GRADUACOES: { [key: string]: string[] } = {
@@ -36,6 +38,7 @@ export default function ProductDetailScreen() {
   const [participants, setParticipants] = useState<any[]>([]);
   const [instructors, setInstructors] = useState<any[]>([]);
   
+  const { userData } = useAuth();
   const { addItem } = useCart();
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
@@ -43,44 +46,52 @@ export default function ProductDetailScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!id) return;
+    if (!id) return;
+    setLoading(true);
+    const docRef = doc(db, 'products', id as string);
+    const unsubscribeProduct = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.id ? { id: docSnap.id, ...docSnap.data() } : docSnap.data();
+        setProduct(data);
+        
+        const defaultVariant = data.priceType === 'variable' && data.priceVariants && data.priceVariants.length > 0
+          ? data.priceVariants[0]
+          : null;
+
+        setParticipants(prev => {
+          if (prev.length === 0) {
+            return [{ 
+              userName: '', 
+              userPrograma: '', 
+              userGraduacao: '', 
+              userProfessor: '',
+              userSize: '',
+              selectedVariant: defaultVariant
+            }];
+          }
+          return prev;
+        });
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error listening to product:", error);
+      setLoading(false);
+    });
+
+    // Fetch instructors for professor selection
+    const fetchInstructors = async () => {
       try {
-        const docRef = doc(db, 'products', id as string);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.id ? { id: docSnap.id, ...docSnap.data() } : docSnap.data();
-          setProduct(data);
-          
-          const defaultVariant = data.priceType === 'variable' && data.priceVariants && data.priceVariants.length > 0
-            ? data.priceVariants[0]
-            : null;
-
-          // Initial participants list
-          setParticipants([{ 
-            userName: '', 
-            userPrograma: '', 
-            userGraduacao: '', 
-            userProfessor: '',
-            userSize: '',
-            selectedVariant: defaultVariant
-          }]);
-        }
-
-        // Fetch instructors for professor selection
         const q = query(collection(db, 'users'), where('isInstructor', '==', true));
         const instructorSnap = await getDocs(q);
         const instList = instructorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setInstructors(instList.sort((a: any, b: any) => (a.name || '').localeCompare(b.name || '')));
-
-      } catch (error) {
-        console.error("Error fetching product:", error);
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching instructors:", err);
       }
     };
+    fetchInstructors();
 
-    fetchProduct();
+    return () => unsubscribeProduct();
   }, [id]);
 
   useEffect(() => {
@@ -122,11 +133,13 @@ export default function ProductDetailScreen() {
     if (!product) return 0;
     if (product.priceType === 'variable') {
       return participants.reduce((sum, p) => {
-        const pPrice = p.selectedVariant ? p.selectedVariant.price : (product.priceVariants?.[0]?.price || product.price || 0);
+        const pVariant = p.selectedVariant || product.priceVariants?.[0];
+        const pPrice = pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : 0;
         return sum + pPrice;
       }, 0);
     }
-    return product.price * quantity;
+    const effective = getEffectiveProductPrice(product, userData);
+    return effective.price * quantity;
   };
 
   const handleAddToCart = () => {
@@ -145,9 +158,12 @@ export default function ProductDetailScreen() {
       return;
     }
 
+    const effective = getEffectiveProductPrice(product, userData);
+
     const formDataList = participants.map(p => {
-      const selectedAmount = product.priceType === 'variable' && p.selectedVariant ? p.selectedVariant.price : product.price;
-      const selectedVariantName = product.priceType === 'variable' && p.selectedVariant ? p.selectedVariant.name : undefined;
+      const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
+      const selectedAmount = pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price;
+      const selectedVariantName = pVariant ? pVariant.name : undefined;
       
       const priceData = {
         amount: selectedAmount,
@@ -163,6 +179,10 @@ export default function ProductDetailScreen() {
 
     const totalAmount = calculateTotal();
 
+    const firstVariantPrice = product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0
+      ? getEffectiveVariantPrice(participants[0]?.selectedVariant || product.priceVariants[0], userData, product).price
+      : effective.price;
+
     addItem({
       id: product.id,
       productId: product.id,
@@ -170,7 +190,7 @@ export default function ProductDetailScreen() {
       productName: product.name,
       imageUrl: product.imageUrl,
       priceType: product.priceType || 'fixed',
-      price: product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0 ? product.priceVariants[0].price : product.price,
+      price: firstVariantPrice,
       totalAmount,
       formDataList
     }, quantity);
@@ -204,18 +224,32 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const effective = getEffectiveProductPrice(product, userData);
   let priceText = '';
+  let originalPriceText = '';
+
   if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
-    const prices = product.priceVariants.map((v: any) => v.price);
+    const prices = product.priceVariants.map((v: any) => getEffectiveVariantPrice(v, userData, product).price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     if (minPrice === maxPrice) {
-      priceText = (minPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      priceText = formatCentsToCurrency(minPrice);
     } else {
-      priceText = `A partir de ${(minPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+      priceText = `A partir de ${formatCentsToCurrency(minPrice)}`;
+    }
+    if (effective.isStaffPrice && effective.basePrice > effective.price) {
+      originalPriceText = formatCentsToCurrency(effective.basePrice);
+    }
+  } else if (effective.isStaffPrice) {
+    priceText = formatCentsToCurrency(effective.price);
+    if (effective.basePrice > effective.price) {
+      originalPriceText = formatCentsToCurrency(effective.basePrice);
     }
   } else {
-    priceText = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    priceText = formatCentsToCurrency(effective.price);
+    if (effective.promoPrice && effective.promoPrice < effective.basePrice) {
+      originalPriceText = formatCentsToCurrency(effective.basePrice);
+    }
   }
 
   return (
@@ -260,9 +294,23 @@ export default function ProductDetailScreen() {
             <Text className="text-gray-400 text-xs font-bold">(48 avaliações)</Text>
           </View>
 
-          <Text className="text-2xl font-black text-yellow-600 dark:text-yellow-500 mb-6">
-            {priceText}
-          </Text>
+          <View className="mb-6">
+            {originalPriceText ? (
+              <Text className="text-sm font-semibold text-gray-400 line-through mb-0.5">
+                {originalPriceText}
+              </Text>
+            ) : null}
+            <View className="flex-row items-center gap-2">
+              <Text className="text-3xl font-black text-yellow-600 dark:text-yellow-500">
+                {priceText}
+              </Text>
+              {effective.isStaffPrice && (
+                <View className="bg-purple-500/20 px-2.5 py-1 rounded-lg border border-purple-500/30">
+                  <Text className="text-[10px] font-black text-purple-600 dark:text-purple-300 uppercase tracking-wider">🔒 Preço Staff</Text>
+                </View>
+              )}
+            </View>
+          </View>
 
           <View className="h-[1px] bg-gray-100 dark:bg-white/5 w-full mb-6" />
 
@@ -298,10 +346,8 @@ export default function ProductDetailScreen() {
                     <View className="flex-row flex-wrap">
                       {product.priceVariants.map((variant: any) => {
                         const isSelected = participant.selectedVariant?.name === variant.name;
-                        const variantPriceFormatted = (variant.price / 100).toLocaleString('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL' 
-                        });
+                        const variantEff = getEffectiveVariantPrice(variant, userData, product);
+                        const variantPriceFormatted = formatCentsToCurrency(variantEff.price);
                         return (
                           <TouchableOpacity 
                             key={variant.name}

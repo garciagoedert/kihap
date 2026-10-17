@@ -21,15 +21,45 @@ export function normalizeUnitSlug(val) {
         .replace(/[\s_]+/g, '-');
 }
 
+export function isStaffUser(userData) {
+    if (!userData) return false;
+    return !!(
+        userData.isAdmin === true ||
+        userData.isInstructor === true ||
+        userData.isStaff === true ||
+        userData.isRH === true ||
+        userData.isFinanceiro === true ||
+        userData.isAdministrativo === true ||
+        userData.isStore === true ||
+        userData.isAcademy === true ||
+        userData.isJuridico === true ||
+        userData.isSuporte === true ||
+        userData.unitId === 'staff' ||
+        userData.unidadeId === 'staff'
+    );
+}
+
 export function getUserUnitSlugs(userData) {
     if (!userData) return [];
     const rawUnits = [userData.unitId, userData.unidade, userData.unit, userData.branchName];
     if (Array.isArray(userData.units)) rawUnits.push(...userData.units);
     if (Array.isArray(userData.unidades)) rawUnits.push(...userData.unidades);
+    if (isStaffUser(userData)) {
+        rawUnits.push('staff');
+    }
     return Array.from(new Set(rawUnits.map(normalizeUnitSlug).filter(Boolean)));
 }
 
 export function isItemForUserUnits(item, userUnitSlugs) {
+    const isStaffPost = 
+        item.targetAudience === 'staff' || 
+        item.targetUnit === 'staff' || 
+        (Array.isArray(item.targetUnits) && item.targetUnits.includes('staff'));
+
+    if (isStaffPost) {
+        return userUnitSlugs.includes('staff');
+    }
+
     const targetUnit = normalizeUnitSlug(item.targetUnit);
     if (!targetUnit || targetUnit === 'all' || targetUnit === 'todas') {
         return true;
@@ -308,6 +338,7 @@ export const initFeedPage = () => {
     const targetTypeRadios = document.querySelectorAll('input[name="target-type"]');
     const unitContainer = document.getElementById('unit-target-container');
     const studentContainer = document.getElementById('student-target-container');
+    const staffContainer = document.getElementById('staff-target-container');
     const studentSearchInput = document.getElementById('student-search');
     const studentResultsList = document.getElementById('student-search-results');
     const selectedTagsContainer = document.getElementById('selected-students-tags');
@@ -315,12 +346,18 @@ export const initFeedPage = () => {
     targetTypeRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             if (e.target.value === 'unit') {
-                unitContainer.classList.remove('hidden');
-                studentContainer.classList.add('hidden');
-            } else {
-                unitContainer.classList.add('hidden');
-                studentContainer.classList.remove('hidden');
+                unitContainer?.classList.remove('hidden');
+                studentContainer?.classList.add('hidden');
+                staffContainer?.classList.add('hidden');
+            } else if (e.target.value === 'students') {
+                unitContainer?.classList.add('hidden');
+                studentContainer?.classList.remove('hidden');
+                staffContainer?.classList.add('hidden');
                 if (allUsersCache.length === 0) loadAllUsers();
+            } else if (e.target.value === 'staff') {
+                unitContainer?.classList.add('hidden');
+                studentContainer?.classList.add('hidden');
+                staffContainer?.classList.remove('hidden');
             }
         });
     });
@@ -533,7 +570,8 @@ export const initFeedPage = () => {
                 if (!isAdmin && post.authorId !== user.uid) {
                     const isForMe = post.targetStudents?.includes(user.uid);
                     const isForMyUnit = isItemForUserUnits(post, userUnitSlugs);
-                    const isPublic = (!post.targetUnit || post.targetUnit === 'all') && (!post.targetStudents || post.targetStudents.length === 0);
+                    const isStaffPost = post.targetAudience === 'staff' || post.targetUnit === 'staff' || (Array.isArray(post.targetUnits) && post.targetUnits.includes('staff'));
+                    const isPublic = !isStaffPost && (!post.targetUnit || post.targetUnit === 'all') && (!post.targetStudents || post.targetStudents.length === 0);
                     
                     if (!isForMe && !isForMyUnit && !isPublic) return;
                 }
@@ -580,7 +618,11 @@ export const initFeedPage = () => {
 
             // Montar badge descritivo de público/unidades
             let targetBadgeText = 'Público';
-            if (post.targetStudents?.length > 0) {
+            let isStaffBadge = false;
+            if (post.targetAudience === 'staff' || post.targetUnit === 'staff' || (Array.isArray(post.targetUnits) && post.targetUnits.includes('staff'))) {
+                targetBadgeText = 'Apenas Staff';
+                isStaffBadge = true;
+            } else if (post.targetStudents?.length > 0) {
                 targetBadgeText = 'Privado';
             } else if (post.targetUnits?.length > 0) {
                 if (post.targetUnits.includes('all')) {
@@ -608,7 +650,10 @@ export const initFeedPage = () => {
                         <div class="flex items-center space-x-2">
                              ${isScheduled ? '<span class="text-[8px] bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 py-0.5 px-2 rounded-full border border-yellow-500/25 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fas fa-clock text-[9px]"></i> Agendado</span>' : ''}
                              ${post.targetStudents?.length > 0 ? '<span class="text-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0.5 px-2 rounded-full border border-blue-500/20 font-bold uppercase tracking-widest">Privado</span>' : ''}
-                             <span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200/50 dark:border-gray-700/50 font-bold uppercase tracking-widest">${targetBadgeText}</span>
+                             ${isStaffBadge 
+                                ? '<span class="text-[8px] bg-amber-500/15 text-amber-600 dark:text-amber-400 py-0.5 px-2.5 rounded-full border border-amber-500/30 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fas fa-user-shield text-[9px]"></i> Staff</span>' 
+                                : `<span class="text-[8px] bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 py-0.5 px-2 rounded-full border border-gray-200/50 dark:border-gray-700/50 font-bold uppercase tracking-widest">${targetBadgeText}</span>`
+                             }
                              ${(isAdmin || post.authorId === user.uid) ? `
                                  <button class="edit-btn p-2 text-gray-400 hover:text-blue-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-edit text-xs"></i></button>
                                  <button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" data-id="${docRef.id}"><i class="fas fa-trash-alt text-xs"></i></button>
@@ -707,6 +752,8 @@ export const initFeedPage = () => {
                 alert('Selecione pelo menos uma unidade!');
                 return;
             }
+        } else if (targetType === 'staff') {
+            targetUnits = ['staff'];
         }
 
         const isBannerMode = currentFeedMode === 'banner';
@@ -736,7 +783,7 @@ export const initFeedPage = () => {
             const uDoc = await getDoc(doc(db, 'users', user.uid));
             const uData = uDoc.exists() ? uDoc.data() : {};
             const batchId = targetType === 'unit' && targetUnits.length > 1 ? `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : null;
-            const targetList = targetType === 'unit' ? targetUnits : [null];
+            const targetList = targetType === 'unit' ? targetUnits : (targetType === 'staff' ? ['staff'] : [null]);
             const writePromises = [];
 
             if (isBannerMode) {
@@ -754,9 +801,10 @@ export const initFeedPage = () => {
                         imageUrl: bannerImageUrl,
                         title: bannerTitle,
                         link: bannerLink,
-                        targetUnit: unit || 'all',
-                        targetUnits: targetType === 'unit' ? targetUnits : ['all'],
+                        targetUnit: unit || (targetType === 'staff' ? 'staff' : 'all'),
+                        targetUnits: targetType === 'unit' ? targetUnits : (targetType === 'staff' ? ['staff'] : ['all']),
                         targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                        targetAudience: targetType,
                         active: true,
                         createdAt: serverTimestamp()
                     };
@@ -809,8 +857,9 @@ export const initFeedPage = () => {
                             mediaUrl,
                             mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
                             targetUnit: unit,
-                            targetUnits: targetType === 'unit' ? targetUnits : [],
+                            targetUnits: targetType === 'unit' ? targetUnits : (targetType === 'staff' ? ['staff'] : []),
                             targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                            targetAudience: targetType,
                             createdAt: publishTimestamp || serverTimestamp(),
                             expiresAt: new Date((publishTimestamp ? publishTimestamp.getTime() : Date.now()) + 24 * 60 * 60 * 1000)
                         };
@@ -827,8 +876,9 @@ export const initFeedPage = () => {
                             mediaType,
                             ctaButton: ctaText && ctaUrl ? { text: ctaText, url: ctaUrl } : null,
                             targetUnit: unit,
-                            targetUnits: targetType === 'unit' ? targetUnits : [],
+                            targetUnits: targetType === 'unit' ? targetUnits : (targetType === 'staff' ? ['staff'] : []),
                             targetStudents: targetType === 'students' ? targetStudentsIds : [],
+                            targetAudience: targetType,
                             createdAt: publishTimestamp || serverTimestamp()
                         };
                         if (batchId) feedData.batchId = batchId;
@@ -937,7 +987,9 @@ export const initFeedPage = () => {
                 card.className = `p-4 rounded-2xl border transition-all ${isActive ? 'bg-white dark:bg-[#252525] border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-100/60 dark:bg-[#1a1a1a]/60 border-gray-200/50 dark:border-gray-800 opacity-60'}`;
                 
                 let unitLabel = 'Todas as Unidades';
-                if (banner.targetUnits?.length > 0 && !banner.targetUnits.includes('all')) {
+                if (banner.targetAudience === 'staff' || banner.targetUnit === 'staff' || (banner.targetUnits?.includes('staff'))) {
+                    unitLabel = '🔒 Apenas Staff';
+                } else if (banner.targetUnits?.length > 0 && !banner.targetUnits.includes('all')) {
                     unitLabel = banner.targetUnits.map(u => u.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ');
                 } else if (banner.targetUnit && banner.targetUnit !== 'all') {
                     unitLabel = banner.targetUnit.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -1131,7 +1183,9 @@ export const initFeedPage = () => {
                 const dateFormatted = createdDate ? createdDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
 
                 let unitLabel = 'Todas as Unidades';
-                if (story.targetStudents?.length > 0) {
+                if (story.targetAudience === 'staff' || story.targetUnit === 'staff' || (story.targetUnits?.includes('staff'))) {
+                    unitLabel = '🔒 Apenas Staff';
+                } else if (story.targetStudents?.length > 0) {
                     unitLabel = `${story.targetStudents.length} Aluno(s)`;
                 } else if (story.targetUnits?.length > 0 && !story.targetUnits.includes('all')) {
                     unitLabel = story.targetUnits.map(u => u.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ');

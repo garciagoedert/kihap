@@ -27,6 +27,24 @@ export function normalizeUnitSlug(val: any): string {
     .replace(/[\s_]+/g, '-');
 }
 
+export function isStaffUser(userData: any): boolean {
+  if (!userData) return false;
+  return !!(
+    userData.isAdmin === true ||
+    userData.isInstructor === true ||
+    userData.isStaff === true ||
+    userData.isRH === true ||
+    userData.isFinanceiro === true ||
+    userData.isAdministrativo === true ||
+    userData.isStore === true ||
+    userData.isAcademy === true ||
+    userData.isJuridico === true ||
+    userData.isSuporte === true ||
+    userData.unitId === 'staff' ||
+    userData.unidadeId === 'staff'
+  );
+}
+
 export function getUserUnitSlugs(userData: any): string[] {
   if (!userData) return [];
   const rawUnits: any[] = [
@@ -37,16 +55,29 @@ export function getUserUnitSlugs(userData: any): string[] {
   ];
   if (Array.isArray(userData.units)) rawUnits.push(...userData.units);
   if (Array.isArray(userData.unidades)) rawUnits.push(...userData.unidades);
+  if (isStaffUser(userData)) {
+    rawUnits.push('staff');
+  }
   
   const slugs = rawUnits.map(normalizeUnitSlug).filter(Boolean);
   return Array.from(new Set(slugs));
 }
 
 export function isTargetForUser(
-  item: { targetUnit?: string; targetUnits?: string[]; targetStudents?: string[]; authorId?: string },
+  item: { targetUnit?: string; targetUnits?: string[]; targetStudents?: string[]; authorId?: string; targetAudience?: string },
   userId: string,
   userUnitSlugs: string[]
 ): boolean {
+  const isStaffPost = 
+    item.targetAudience === 'staff' || 
+    item.targetUnit === 'staff' || 
+    (Array.isArray(item.targetUnits) && item.targetUnits.includes('staff'));
+
+  // Posts exclusivos para a equipe só aparecem para quem tiver a permissão 'staff'
+  if (isStaffPost) {
+    return userUnitSlugs.includes('staff');
+  }
+
   // If targeted to specific students
   if (Array.isArray(item.targetStudents) && item.targetStudents.length > 0) {
     if (item.targetStudents.includes(userId)) return true;

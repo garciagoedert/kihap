@@ -163,6 +163,203 @@ export async function setupStorePage() {
     const addKitItemBtn = document.getElementById('add-kit-item-btn');
     const kitItemsList = document.getElementById('kit-items-list');
 
+    // Differential pricing elements (Staff & Unit prices)
+    const toggleDifferentialPricingBtn = document.getElementById('toggle-differential-pricing-btn');
+    const differentialPricingContainer = document.getElementById('differential-pricing-container');
+    const differentialPricingToggleText = document.getElementById('differential-pricing-toggle-text');
+    const differentialPricingChevron = document.getElementById('differential-pricing-chevron');
+    const productStaffPriceInput = document.getElementById('product-staff-price');
+    const unitPricesGrid = document.getElementById('unit-prices-grid');
+
+    const STORE_UNITS = [
+        { id: 'asa-sul', name: 'Asa Sul' },
+        { id: 'centro', name: 'Centro (Matriz)' },
+        { id: 'coqueiros', name: 'Coqueiros' },
+        { id: 'dourados', name: 'Dourados' },
+        { id: 'jardim-botanico', name: 'Jardim Botânico' },
+        { id: 'lago-sul', name: 'Lago Sul' },
+        { id: 'noroeste', name: 'Noroeste' },
+        { id: 'pontos-de-ensino', name: 'Pontos de Ensino' },
+        { id: 'santa-monica', name: 'Santa Mônica' },
+        { id: 'sudoeste', name: 'Sudoeste' },
+        { id: 'atadf', name: 'ATADF' }
+    ];
+
+    const renderUnitPricesGrid = (unitPrices = {}) => {
+        if (!unitPricesGrid) return;
+        unitPricesGrid.innerHTML = STORE_UNITS.map(unit => {
+            const rawVal = unitPrices ? unitPrices[unit.id] : undefined;
+            const val = (rawVal !== undefined && rawVal !== null)
+                ? (typeof rawVal === 'object' ? (rawVal.price || '') : rawVal)
+                : '';
+            return `
+                <div class="p-3 bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700/80 shadow-sm flex flex-col justify-between">
+                    <label class="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 truncate" title="${unit.name}">
+                        ${unit.name}
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-xs font-bold text-gray-400">R$</span>
+                        <input type="number" 
+                            data-unit-id="${unit.id}" 
+                            value="${val}" 
+                            placeholder="Padrão" 
+                            class="unit-price-input w-full pl-9 pr-3 py-1.5 text-xs font-mono font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all">
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    let isDifferentialPricingOpen = false;
+    const setDifferentialPricingOpen = (isOpen) => {
+        isDifferentialPricingOpen = isOpen;
+        if (!differentialPricingContainer) return;
+        if (isOpen) {
+            differentialPricingContainer.classList.remove('hidden');
+            if (differentialPricingToggleText) differentialPricingToggleText.textContent = 'Ocultar';
+            if (differentialPricingChevron) differentialPricingChevron.classList.add('rotate-180');
+        } else {
+            differentialPricingContainer.classList.add('hidden');
+            if (differentialPricingToggleText) differentialPricingToggleText.textContent = 'Configurar';
+            if (differentialPricingChevron) differentialPricingChevron.classList.remove('rotate-180');
+        }
+    };
+
+    if (toggleDifferentialPricingBtn) {
+        toggleDifferentialPricingBtn.addEventListener('click', () => {
+            setDifferentialPricingOpen(!isDifferentialPricingOpen);
+        });
+    }
+
+    renderUnitPricesGrid({});
+
+    // --- Differential Pricing per Variation Management ---
+    const diffPricingVariantSelectorContainer = document.getElementById('diff-pricing-variant-selector-container');
+    const diffPricingVariantTabs = document.getElementById('diff-pricing-variant-tabs');
+    const activeVariantBadgeLabel = document.getElementById('active-variant-badge-label');
+    let activeDiffVariantIndex = 0;
+
+    const saveActiveVariantDiffPricing = () => {
+        const priceTypeRadio = document.querySelector('input[name="price-type"]:checked');
+        if (!priceTypeRadio || priceTypeRadio.value !== 'variable') return;
+        const variantItems = priceVariantsList ? priceVariantsList.querySelectorAll('.price-variant-item') : [];
+        if (!variantItems[activeDiffVariantIndex]) return;
+
+        const currentItem = variantItems[activeDiffVariantIndex];
+        const staffPrice = (productStaffPriceInput && productStaffPriceInput.value.trim() !== '') 
+            ? parseInt(productStaffPriceInput.value.trim(), 10) 
+            : null;
+        const unitPrices = {};
+        if (unitPricesGrid) {
+            unitPricesGrid.querySelectorAll('.unit-price-input').forEach(input => {
+                const uid = input.dataset.unitId;
+                const val = input.value.trim();
+                if (val !== '' && !isNaN(parseInt(val, 10))) {
+                    unitPrices[uid] = parseInt(val, 10);
+                }
+            });
+        }
+        currentItem._variantDiffPricing = { staffPrice, unitPrices };
+    };
+
+    const loadVariantDiffPricingToInputs = (index) => {
+        const variantItems = priceVariantsList ? priceVariantsList.querySelectorAll('.price-variant-item') : [];
+        if (!variantItems[index]) return;
+        activeDiffVariantIndex = index;
+        const item = variantItems[index];
+        const diff = item._variantDiffPricing || { staffPrice: null, unitPrices: {} };
+
+        if (productStaffPriceInput) {
+            productStaffPriceInput.value = (diff.staffPrice !== undefined && diff.staffPrice !== null) ? diff.staffPrice : '';
+        }
+        renderUnitPricesGrid(diff.unitPrices || {});
+
+        if (diffPricingVariantTabs) {
+            diffPricingVariantTabs.querySelectorAll('.diff-variant-tab-btn').forEach((btn, idx) => {
+                const isActive = idx === activeDiffVariantIndex;
+                btn.className = `diff-variant-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isActive 
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-gray-900' 
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60'
+                }`;
+            });
+        }
+
+        const nameInput = item.querySelector('input[name="variant-name"]');
+        const activeName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `Variação ${index + 1}`;
+        if (activeVariantBadgeLabel) {
+            activeVariantBadgeLabel.textContent = `Variação Ativa: ${activeName}`;
+        }
+    };
+
+    const refreshDiffPricingVariantTabs = () => {
+        const priceTypeRadio = document.querySelector('input[name="price-type"]:checked');
+        const isVariable = priceTypeRadio && priceTypeRadio.value === 'variable';
+        if (!diffPricingVariantSelectorContainer) return;
+
+        if (!isVariable) {
+            diffPricingVariantSelectorContainer.classList.add('hidden');
+            return;
+        }
+        diffPricingVariantSelectorContainer.classList.remove('hidden');
+
+        const variantItems = priceVariantsList ? priceVariantsList.querySelectorAll('.price-variant-item') : [];
+        if (variantItems.length === 0) {
+            if (diffPricingVariantTabs) diffPricingVariantTabs.innerHTML = '<p class="text-xs text-gray-400 italic">Adicione variações de preço acima para configurar valores específicos por unidade.</p>';
+            return;
+        }
+
+        if (activeDiffVariantIndex >= variantItems.length) {
+            activeDiffVariantIndex = 0;
+        }
+
+        if (diffPricingVariantTabs) {
+            diffPricingVariantTabs.innerHTML = Array.from(variantItems).map((item, idx) => {
+                const nameInput = item.querySelector('input[name="variant-name"]');
+                const priceInput = item.querySelector('input[name="variant-price"]');
+                const name = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `Variação ${idx + 1}`;
+                const priceCentavos = priceInput && priceInput.value.trim() ? parseInt(priceInput.value.trim(), 10) : null;
+                const formattedPrice = priceCentavos ? ` (R$ ${(priceCentavos / 100).toFixed(2).replace('.', ',')})` : '';
+                const isActive = idx === activeDiffVariantIndex;
+                const diff = item._variantDiffPricing || {};
+                const hasOverrides = (diff.staffPrice !== null && diff.staffPrice !== undefined && diff.staffPrice !== '') ||
+                                     (diff.unitPrices && Object.keys(diff.unitPrices).length > 0);
+                const badgeDot = hasOverrides ? `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-sm"></span>` : '';
+                return `
+                    <button type="button" 
+                        data-variant-tab-index="${idx}" 
+                        class="diff-variant-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isActive 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-gray-900' 
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60'
+                        }">
+                        <span>${name}${formattedPrice}</span>
+                        ${badgeDot}
+                    </button>
+                `;
+            }).join('');
+
+            diffPricingVariantTabs.querySelectorAll('.diff-variant-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetIdx = parseInt(btn.dataset.variantTabIndex, 10);
+                    if (targetIdx !== activeDiffVariantIndex) {
+                        saveActiveVariantDiffPricing();
+                        loadVariantDiffPricingToInputs(targetIdx);
+                    }
+                });
+            });
+        }
+
+        const currentItem = variantItems[activeDiffVariantIndex];
+        if (currentItem) {
+            const nameInput = currentItem.querySelector('input[name="variant-name"]');
+            const activeName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `Variação ${activeDiffVariantIndex + 1}`;
+            if (activeVariantBadgeLabel) {
+                activeVariantBadgeLabel.textContent = `Variação Ativa: ${activeName}`;
+            }
+        }
+    };
+
     const addonsContainer = document.getElementById('addons-container');
     const addAddonBtn = document.getElementById('add-addon-btn');
     const addonsList = document.getElementById('addons-list');
@@ -992,6 +1189,15 @@ export async function setupStorePage() {
 
             const isActive = isProductActive(product);
 
+            let priceDiffBadge = '';
+            if (product.staffPrice || (product.unitPrices && Object.keys(product.unitPrices).length > 0)) {
+                const countUnits = product.unitPrices ? Object.keys(product.unitPrices).length : 0;
+                const details = [];
+                if (product.staffPrice) details.push('Staff');
+                if (countUnits > 0) details.push(`${countUnits} un`);
+                priceDiffBadge = `<div class="text-[10px] text-purple-600 dark:text-purple-400 font-sans font-semibold flex items-center gap-1 mt-0.5"><i class="fas fa-tags text-[9px]"></i> ${details.join(' + ')}</div>`;
+            }
+
             row.innerHTML = `
                 <td class="p-4 text-center whitespace-nowrap">
                     <div class="inline-flex items-center justify-center">
@@ -1023,7 +1229,10 @@ export async function setupStorePage() {
                         ${product.category || 'Geral'}
                     </span>
                 </td>
-                <td class="p-4 font-mono text-sm text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">${price}</td>
+                <td class="p-4 font-mono text-sm text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">
+                    ${price}
+                    ${priceDiffBadge}
+                </td>
                 <td class="p-4">${renderCDStockBadges(product)}</td>
                 <td class="p-4 text-center whitespace-nowrap">
                     ${product.controlStock ? `
@@ -1122,6 +1331,12 @@ export async function setupStorePage() {
         if (productEditorView) productEditorView.classList.add('hidden');
         if (productsCatalogView) productsCatalogView.classList.remove('hidden');
         if (productForm) productForm.reset();
+        if (productStaffPriceInput) productStaffPriceInput.value = '';
+        renderUnitPricesGrid({});
+        setDifferentialPricingOpen(false);
+        activeDiffVariantIndex = 0;
+        if (diffPricingVariantSelectorContainer) diffPricingVariantSelectorContainer.classList.add('hidden');
+        if (diffPricingVariantTabs) diffPricingVariantTabs.innerHTML = '';
         if (eventConfigContainer) eventConfigContainer.classList.add('hidden');
         if (eventSlotsList) eventSlotsList.innerHTML = '';
         if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
@@ -1343,7 +1558,21 @@ Requisitos:
                     variantsLabel: productVariantsLabelInput ? productVariantsLabelInput.value : '',
                     isEvent: eventConfigData.isEvent,
                     eventAddress: eventConfigData.eventAddress,
-                    eventConfig: eventConfigData.eventConfig
+                    eventConfig: eventConfigData.eventConfig,
+                    staffPrice: (productStaffPriceInput && productStaffPriceInput.value.trim() !== '') ? parseInt(productStaffPriceInput.value.trim(), 10) : null,
+                    unitPrices: (() => {
+                        const prices = {};
+                        if (unitPricesGrid) {
+                            unitPricesGrid.querySelectorAll('.unit-price-input').forEach(input => {
+                                const uid = input.dataset.unitId;
+                                const val = input.value.trim();
+                                if (val !== '' && !isNaN(parseInt(val, 10))) {
+                                    prices[uid] = parseInt(val, 10);
+                                }
+                            });
+                        }
+                        return Object.keys(prices).length > 0 ? prices : null;
+                    })()
                 };
 
                 // Handle stock fields
@@ -1388,17 +1617,31 @@ Requisitos:
                 if (priceType === 'fixed') {
                     productData.price = parseInt(productPriceInput.value, 10) || 0;
                 } else if (priceType === 'variable') {
+                    saveActiveVariantDiffPricing();
                     const variants = [];
                     const variantElements = priceVariantsList.querySelectorAll('.price-variant-item');
                     variantElements.forEach(item => {
                         const name = item.querySelector('input[name="variant-name"]').value;
                         const price = parseInt(item.querySelector('input[name="variant-price"]').value, 10);
+                        const diffPricing = item._variantDiffPricing || { staffPrice: null, unitPrices: {} };
                         if (name && !isNaN(price)) {
-                            variants.push({ name, price });
+                            const vData = { name, price };
+                            if (diffPricing.staffPrice !== undefined && diffPricing.staffPrice !== null && diffPricing.staffPrice !== '') {
+                                vData.staffPrice = parseInt(diffPricing.staffPrice, 10);
+                            }
+                            if (diffPricing.unitPrices && Object.keys(diffPricing.unitPrices).length > 0) {
+                                vData.unitPrices = diffPricing.unitPrices;
+                            }
+                            variants.push(vData);
                         }
                     });
                     productData.priceVariants = variants;
                     productData.price = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 0;
+
+                    // Para produtos variáveis, os preços específicos ficam nas próprias variações,
+                    // mantendo o root limpo para não travar nem sobrepor as variações.
+                    productData.staffPrice = null;
+                    productData.unitPrices = null;
                 } else if (priceType === 'lotes') {
                     const lotes = [];
                     const loteElements = lotesList.querySelectorAll('.lote-item');
@@ -1555,6 +1798,16 @@ Requisitos:
                 if (productCestInput) productCestInput.value = product.cest || '';
                 if (productSeoKeywordsInput) productSeoKeywordsInput.value = product.seoKeywords || '';
                 if (productUrlSlugInput) productUrlSlugInput.value = product.urlSlug || '';
+                
+                // Populate differential prices
+                if (productStaffPriceInput) {
+                    productStaffPriceInput.value = (product.staffPrice !== undefined && product.staffPrice !== null) ? product.staffPrice : '';
+                }
+                renderUnitPricesGrid(product.unitPrices || {});
+                const hasDiffPricing = (product.staffPrice !== undefined && product.staffPrice !== null) ||
+                                       (product.unitPrices && Object.keys(product.unitPrices).length > 0);
+                setDifferentialPricingOpen(Boolean(hasDiffPricing));
+
                 updateProfitMarginCalculation();
 
                 openProductEditor(product.id);
@@ -1567,7 +1820,20 @@ Requisitos:
                     kitContainer.classList.add('hidden');
                     priceVariantsList.innerHTML = '';
                     if (productVariantsLabelInput) productVariantsLabelInput.value = product.variantsLabel || '';
-                    product.priceVariants.forEach(variant => addPriceVariant(variant.name, variant.price));
+                    product.priceVariants.forEach(variant => {
+                        const vStaff = (variant.staffPrice !== undefined && variant.staffPrice !== null) 
+                            ? variant.staffPrice 
+                            : null;
+                        const vUnits = (variant.unitPrices && typeof variant.unitPrices === 'object') 
+                            ? variant.unitPrices 
+                            : {};
+                        addPriceVariant(variant.name, variant.price, vStaff, vUnits);
+                    });
+                    activeDiffVariantIndex = 0;
+                    refreshDiffPricingVariantTabs();
+                    loadVariantDiffPricingToInputs(0);
+                    const hasAnyDiffPricing = product.priceVariants.some(v => (v.staffPrice || (v.unitPrices && Object.keys(v.unitPrices).length > 0)));
+                    setDifferentialPricingOpen(Boolean(hasAnyDiffPricing));
                 } else if (product.priceType === 'lotes' && product.lotes) {
                     document.querySelector('input[name="price-type"][value="lotes"]').checked = true;
                     fixedPriceContainer.classList.add('hidden');
@@ -1788,18 +2054,23 @@ Requisitos:
 
             if (radio.value === 'fixed') {
                 fixedPriceContainer.classList.remove('hidden');
+                refreshDiffPricingVariantTabs();
             } else if (radio.value === 'variable') {
                 variablePricesContainer.classList.remove('hidden');
                 if (priceVariantsList.children.length === 0) {
                     addPriceVariant(); // Add one by default
                 }
+                refreshDiffPricingVariantTabs();
+                loadVariantDiffPricingToInputs(activeDiffVariantIndex);
             } else if (radio.value === 'lotes') {
                 lotesContainer.classList.remove('hidden');
+                refreshDiffPricingVariantTabs();
                 if (lotesList.children.length === 0) {
                     addLote(); // Add one by default
                 }
             } else if (radio.value === 'kit') {
                 kitContainer.classList.remove('hidden');
+                refreshDiffPricingVariantTabs();
                 if (kitItemsList.children.length === 0) {
                     addKitItemRow();
                 }
@@ -1882,11 +2153,16 @@ Requisitos:
         renderSizeStockInputs();
     });
 
-    const addPriceVariant = (name = '', price = '') => {
+    const addPriceVariant = (name = '', price = '', staffPrice = null, unitPrices = {}) => {
         const variantId = Date.now();
         const variantItem = document.createElement('div');
         variantItem.className = 'price-variant-item flex items-center space-x-2';
         const isVariablePrice = document.querySelector('input[name="price-type"]:checked').value === 'variable';
+
+        variantItem._variantDiffPricing = {
+            staffPrice: (staffPrice !== undefined && staffPrice !== null && staffPrice !== '') ? parseInt(staffPrice, 10) : null,
+            unitPrices: (unitPrices && typeof unitPrices === 'object') ? { ...unitPrices } : {}
+        };
 
         variantItem.innerHTML = `
             <input type="text" name="variant-name" placeholder="Nome da Variação" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
@@ -1894,13 +2170,25 @@ Requisitos:
             <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
         `;
         priceVariantsList.appendChild(variantItem);
+        refreshDiffPricingVariantTabs();
     };
 
     if (addPriceVariantBtn) addPriceVariantBtn.addEventListener('click', () => addPriceVariant());
 
     if (priceVariantsList) priceVariantsList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-price-variant-btn')) {
-            e.target.closest('.price-variant-item').remove();
+        if (e.target.classList.contains('remove-price-variant-btn') || e.target.closest('.remove-price-variant-btn')) {
+            const btn = e.target.classList.contains('remove-price-variant-btn') ? e.target : e.target.closest('.remove-price-variant-btn');
+            btn.closest('.price-variant-item').remove();
+            setTimeout(() => {
+                const remaining = priceVariantsList.querySelectorAll('.price-variant-item');
+                if (activeDiffVariantIndex >= remaining.length) {
+                    activeDiffVariantIndex = Math.max(0, remaining.length - 1);
+                }
+                refreshDiffPricingVariantTabs();
+                if (remaining.length > 0) {
+                    loadVariantDiffPricingToInputs(activeDiffVariantIndex);
+                }
+            }, 50);
         }
     });
 
@@ -1989,10 +2277,13 @@ Requisitos:
     // Listeners for real-time sync with price variations
     if (priceVariantsList) {
         priceVariantsList.addEventListener('input', (e) => {
+            if (e.target.name === 'variant-name' || e.target.name === 'variant-price') {
+                refreshDiffPricingVariantTabs();
+            }
             if (e.target.name === 'variant-name') refreshAllEventSlotDropdowns();
         });
         priceVariantsList.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-price-variant-btn')) {
+            if (e.target.classList.contains('remove-price-variant-btn') || e.target.closest('.remove-price-variant-btn')) {
                 setTimeout(refreshAllEventSlotDropdowns, 50);
             }
         });

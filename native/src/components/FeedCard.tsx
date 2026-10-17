@@ -46,6 +46,9 @@ interface FeedCardProps {
     authorId: string;
     isHtml?: boolean;
     likes?: string[];
+    targetUnit?: string;
+    targetUnits?: string[];
+    targetAudience?: string;
   };
 }
 
@@ -57,6 +60,11 @@ export default function FeedCard({ post }: FeedCardProps) {
   const isDark = colorScheme === 'dark';
   const { width } = useWindowDimensions();
   const router = useRouter();
+
+  const isStaffPost = 
+    post.targetAudience === 'staff' || 
+    post.targetUnit === 'staff' || 
+    (Array.isArray(post.targetUnits) && post.targetUnits.includes('staff'));
 
   const [isLiked, setIsLiked] = useState(
     Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false
@@ -243,7 +251,16 @@ export default function FeedCard({ post }: FeedCardProps) {
             <View className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#1a1a1a] rounded-full" />
           </View>
           <View className="ml-3">
-            <Text className="text-gray-900 dark:text-white font-bold text-[13px]">{post.authorName}</Text>
+            <View className="flex-row items-center gap-1.5">
+              <Text className="text-gray-900 dark:text-white font-bold text-[13px]">{post.authorName}</Text>
+              {isStaffPost && (
+                <View className="px-1.5 py-0.5 bg-amber-500/15 dark:bg-amber-400/15 rounded border border-amber-500/30">
+                  <Text className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    🔒 Staff
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text className="text-gray-400 text-[10px] uppercase font-bold tracking-tight">{formattedDate}</Text>
           </View>
         </View>

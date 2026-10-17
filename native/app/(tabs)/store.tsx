@@ -12,6 +12,7 @@ import { BannerCarousel } from '../../src/components/BannerCarousel';
 import { useAuth } from '../../src/context/AuthContext';
 import { useCart } from '../../src/context/CartContext';
 import { isTargetForUser, getUserUnitSlugs } from './index';
+import { getEffectiveProductPrice, formatCentsToCurrency } from '../../src/utils/pricing';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -97,14 +98,13 @@ export default function StoreScreen() {
     });
   }, [products, selectedCategory]);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const q = query(
-        collection(db, 'products'), 
-        where('visible', '==', true)
-      );
-      const querySnapshot = await getDocs(q);
+  useEffect(() => {
+    setLoading(true);
+    const q = query(
+      collection(db, 'products'), 
+      where('visible', '==', true)
+    );
+    const unsubscribeProducts = onSnapshot(q, (querySnapshot) => {
       const productsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -119,16 +119,13 @@ export default function StoreScreen() {
       });
 
       setProducts(productsData);
-    } catch (error) {
-      console.error("Error loading products:", error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
+    }, (error) => {
+      console.error("Error loading products:", error);
+      setLoading(false);
+      setRefreshing(false);
+    });
 
     // Subscribe to active store banners in real-time
     const bannersQ = query(collection(db, 'banners'), where('active', '==', true));
@@ -178,20 +175,23 @@ export default function StoreScreen() {
       setBanners(bList);
     }, (err) => console.log('Error listening to store banners:', err));
 
-    return () => unsubscribeBanners();
+    return () => {
+      unsubscribeProducts();
+      unsubscribeBanners();
+    };
   }, [userData]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchProducts();
+    setTimeout(() => setRefreshing(false), 800);
   };
 
   const renderProduct = ({ item }: { item: any }) => {
     const isAvailable = item.available !== false;
-    const price = (item.price / 100).toLocaleString('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    });
+    const effective = getEffectiveProductPrice(item, userData);
+    const price = formatCentsToCurrency(effective.price);
+    const hasDiscount = (effective.isStaffPrice || (effective.promoPrice && effective.promoPrice < effective.basePrice)) && effective.basePrice > effective.price;
+    const originalPrice = hasDiscount ? formatCentsToCurrency(effective.basePrice) : null;
 
     return (
       <TouchableOpacity 
@@ -237,9 +237,23 @@ export default function StoreScreen() {
             {item.name}
           </Text>
           <View className="flex-row items-center justify-between mt-auto">
-            <Text className="text-sm font-black text-yellow-600 dark:text-yellow-500">
-              {price}
-            </Text>
+            <View>
+              {originalPrice && (
+                <Text className="text-[10px] text-gray-400 line-through">
+                  {originalPrice}
+                </Text>
+              )}
+              <View className="flex-row items-center gap-1">
+                <Text className="text-sm font-black text-yellow-600 dark:text-yellow-500">
+                  {price}
+                </Text>
+                {effective.isStaffPrice && (
+                  <View className="bg-purple-500/20 px-1 py-0.5 rounded">
+                    <Text className="text-[7px] font-black text-purple-600 dark:text-purple-300">STAFF</Text>
+                  </View>
+                )}
+              </View>
+            </View>
             <View className="bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-lg border border-gray-200 dark:border-white/5">
               <Text className="text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ver</Text>
             </View>
