@@ -928,6 +928,68 @@ export const initFeedPage = () => {
     const bannersListContainer = document.getElementById('banners-list-container');
     const refreshBannersBtn = document.getElementById('refresh-banners-btn');
 
+    let isSavingBannersOrder = false;
+
+    function showBannerOrderToast(msg, isError = false) {
+        let toast = document.getElementById('banner-order-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'banner-order-toast';
+            toast.className = 'fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+            document.body.appendChild(toast);
+        }
+        toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all duration-300 transform translate-y-0 opacity-100 ${isError ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`;
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+        
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => {
+            toast.className = 'fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+        }, 2500);
+    }
+
+    const saveBannersOrder = async () => {
+        if (!bannersListContainer || isSavingBannersOrder) return;
+        const cards = Array.from(bannersListContainer.querySelectorAll('.banner-card'));
+        if (cards.length === 0) return;
+
+        // Atualização visual imediata das badges de posição (#1, #2, ...)
+        cards.forEach((card, index) => {
+            const badge = card.querySelector('.banner-order-badge');
+            if (badge) badge.textContent = `#${index + 1}`;
+        });
+
+        isSavingBannersOrder = true;
+        showBannerOrderToast('Salvando nova ordem...');
+
+        try {
+            const updatePromises = [];
+            cards.forEach((card, index) => {
+                const bId = card.dataset.id;
+                let docIds = [bId];
+                if (card.dataset.batchDocIds) {
+                    try {
+                        docIds = JSON.parse(card.dataset.batchDocIds);
+                    } catch (e) {
+                        docIds = [bId];
+                    }
+                }
+                docIds.forEach(id => {
+                    if (id) {
+                        updatePromises.push(updateDoc(doc(db, 'banners', id), { order: index }));
+                    }
+                });
+            });
+
+            await Promise.all(updatePromises);
+            showBannerOrderToast('Ordem dos banners atualizada!');
+        } catch (err) {
+            console.error('Erro ao salvar ordem dos banners:', err);
+            showBannerOrderToast('Erro ao salvar ordem dos banners.', true);
+        } finally {
+            isSavingBannersOrder = false;
+        }
+    };
+
     const loadBanners = async () => {
         if (!bannersListContainer) return;
         bannersListContainer.innerHTML = '<div class="col-span-full text-center py-6 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando banners...</div>';
@@ -947,13 +1009,16 @@ export const initFeedPage = () => {
             }
 
             const batchUnitsMap = new Map();
+            const batchDocsMap = new Map();
             snap.forEach(d => {
                 const data = d.data();
-                if (data.batchId && data.targetUnit) {
+                if (data.batchId) {
                     if (!batchUnitsMap.has(data.batchId)) {
                         batchUnitsMap.set(data.batchId, new Set());
+                        batchDocsMap.set(data.batchId, []);
                     }
-                    batchUnitsMap.get(data.batchId).add(data.targetUnit);
+                    if (data.targetUnit) batchUnitsMap.get(data.batchId).add(data.targetUnit);
+                    batchDocsMap.get(data.batchId).push(d.id);
                 }
             });
 
@@ -968,23 +1033,37 @@ export const initFeedPage = () => {
                     }
                 }
                 if (b.batchId) {
+                    b.batchDocIds = batchDocsMap.get(b.batchId) || [b.id];
                     if (seenBannerBatches.has(b.batchId)) return;
                     seenBannerBatches.add(b.batchId);
+                } else {
+                    b.batchDocIds = [b.id];
                 }
                 bannerList.push(b);
             });
+
+            // Ordenação: primeiro por `order` ascendente, fallback por `createdAt` decrescente
             bannerList.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : 9999;
+                const orderB = typeof b.order === 'number' ? b.order : 9999;
+                if (orderA !== orderB) return orderA - orderB;
                 const timeA = a.createdAt?.seconds || 0;
                 const timeB = b.createdAt?.seconds || 0;
                 return timeB - timeA;
             });
 
             bannersListContainer.innerHTML = '';
-            bannerList.forEach(banner => {
+            bannerList.forEach((banner, index) => {
                 const isActive = banner.active !== false;
 
                 const card = document.createElement('div');
-                card.className = `p-4 rounded-2xl border transition-all ${isActive ? 'bg-white dark:bg-[#252525] border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-100/60 dark:bg-[#1a1a1a]/60 border-gray-200/50 dark:border-gray-800 opacity-60'}`;
+                card.className = `banner-card p-4 rounded-2xl border transition-all relative ${isActive ? 'bg-white dark:bg-[#252525] border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-100/60 dark:bg-[#1a1a1a]/60 border-gray-200/50 dark:border-gray-800 opacity-60'}`;
+                card.dataset.id = banner.id;
+                card.dataset.batchId = banner.batchId || '';
+                if (banner.batchDocIds) {
+                    card.dataset.batchDocIds = JSON.stringify(banner.batchDocIds);
+                }
+                card.draggable = true;
                 
                 let unitLabel = 'Todas as Unidades';
                 if (banner.targetAudience === 'staff' || banner.targetUnit === 'staff' || (banner.targetUnits?.includes('staff'))) {
@@ -996,9 +1075,21 @@ export const initFeedPage = () => {
                 }
 
                 card.innerHTML = `
-                    <div class="relative rounded-xl overflow-hidden aspect-[2.5/1] bg-black mb-3 border border-gray-200 dark:border-white/10">
-                        <img src="${banner.imageUrl}" class="w-full h-full object-cover">
-                        <div class="absolute top-2 right-2">
+                    <div class="relative rounded-xl overflow-hidden aspect-[2.5/1] bg-black mb-3 border border-gray-200 dark:border-white/10 select-none">
+                        <img src="${banner.imageUrl}" class="w-full h-full object-cover pointer-events-none" alt="${banner.title || 'Banner'}">
+                        
+                        <!-- Posição e Alça de Arrasto -->
+                        <div class="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+                            <span class="banner-drag-handle cursor-grab active:cursor-grabbing w-7 h-7 rounded-lg bg-black/65 backdrop-blur-md text-white flex items-center justify-center text-xs shadow hover:bg-black/85 transition-colors" title="Arraste para reordenar">
+                                <i class="fas fa-grip-vertical text-gray-300 text-[11px]"></i>
+                            </span>
+                            <span class="banner-order-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-yellow-500 text-gray-950 shadow">
+                                #${index + 1}
+                            </span>
+                        </div>
+
+                        <!-- Status Ativo/Inativo -->
+                        <div class="absolute top-2 right-2 z-10">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'}">
                                 ${isActive ? 'Ativo' : 'Inativo'}
                             </span>
@@ -1017,7 +1108,17 @@ export const initFeedPage = () => {
                         <span class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
                             <i class="fas fa-location-dot text-[10px]"></i> ${unitLabel}
                         </span>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <!-- Botões de Reordenação Rápida (Setas) -->
+                            <div class="flex items-center bg-gray-100 dark:bg-[#1f1f1f] rounded-lg p-0.5 border border-gray-200 dark:border-gray-700/60 mr-1 shadow-sm">
+                                <button type="button" class="move-banner-prev-btn w-6 h-6 rounded flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#333] hover:text-black dark:hover:text-white transition-colors" title="Mover para a esquerda/anterior">
+                                    <i class="fas fa-chevron-left text-[10px]"></i>
+                                </button>
+                                <button type="button" class="move-banner-next-btn w-6 h-6 rounded flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#333] hover:text-black dark:hover:text-white transition-colors" title="Mover para a direita/próximo">
+                                    <i class="fas fa-chevron-right text-[10px]"></i>
+                                </button>
+                            </div>
+
                             <button type="button" class="toggle-banner-btn px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors ${isActive ? 'bg-gray-100 dark:bg-[#333] hover:bg-gray-200 text-gray-700 dark:text-gray-300' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'}" data-id="${banner.id}" data-active="${isActive}">
                                 ${isActive ? 'Pausar' : 'Ativar'}
                             </button>
@@ -1030,6 +1131,7 @@ export const initFeedPage = () => {
 
                 // Toggle active
                 card.querySelector('.toggle-banner-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
                     const bId = e.currentTarget.getAttribute('data-id');
                     const currentActive = e.currentTarget.getAttribute('data-active') === 'true';
                     try {
@@ -1043,6 +1145,7 @@ export const initFeedPage = () => {
 
                 // Delete banner
                 card.querySelector('.delete-banner-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
                     const bId = e.currentTarget.getAttribute('data-id');
                     const batchId = banner.batchId;
                     if (confirm('Tem certeza que deseja excluir este banner?')) {
@@ -1070,6 +1173,89 @@ export const initFeedPage = () => {
             bannersListContainer.innerHTML = '<div class="col-span-full text-center py-6 text-red-500 text-sm">Erro ao carregar banners.</div>';
         }
     };
+
+    // Eventos de Drag & Drop e de Setas no Container de Banners (delegados)
+    if (bannersListContainer) {
+        let draggedBannerCard = null;
+
+        bannersListContainer.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.banner-card');
+            if (!card) return;
+            draggedBannerCard = card;
+            card.classList.add('opacity-40', 'scale-[0.98]');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.id || '');
+        });
+
+        bannersListContainer.addEventListener('dragend', () => {
+            if (draggedBannerCard) {
+                draggedBannerCard.classList.remove('opacity-40', 'scale-[0.98]');
+                draggedBannerCard = null;
+            }
+            bannersListContainer.querySelectorAll('.banner-card').forEach(c => {
+                c.classList.remove('border-yellow-500', 'ring-2', 'ring-yellow-500/50');
+            });
+        });
+
+        bannersListContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const card = e.target.closest('.banner-card');
+            if (card && card !== draggedBannerCard) {
+                card.classList.add('border-yellow-500', 'ring-2', 'ring-yellow-500/50');
+            }
+        });
+
+        bannersListContainer.addEventListener('dragleave', (e) => {
+            const card = e.target.closest('.banner-card');
+            if (card) {
+                card.classList.remove('border-yellow-500', 'ring-2', 'ring-yellow-500/50');
+            }
+        });
+
+        bannersListContainer.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const targetCard = e.target.closest('.banner-card');
+            if (targetCard && draggedBannerCard && targetCard !== draggedBannerCard) {
+                const cards = Array.from(bannersListContainer.querySelectorAll('.banner-card'));
+                const fromIndex = cards.indexOf(draggedBannerCard);
+                const toIndex = cards.indexOf(targetCard);
+
+                if (fromIndex < toIndex) {
+                    targetCard.after(draggedBannerCard);
+                } else {
+                    targetCard.before(draggedBannerCard);
+                }
+                targetCard.classList.remove('border-yellow-500', 'ring-2', 'ring-yellow-500/50');
+                await saveBannersOrder();
+            }
+        });
+
+        bannersListContainer.addEventListener('click', async (e) => {
+            const prevBtn = e.target.closest('.move-banner-prev-btn');
+            if (prevBtn) {
+                e.stopPropagation();
+                const card = prevBtn.closest('.banner-card');
+                const prevCard = card?.previousElementSibling;
+                if (card && prevCard && prevCard.classList.contains('banner-card')) {
+                    prevCard.before(card);
+                    await saveBannersOrder();
+                }
+                return;
+            }
+
+            const nextBtn = e.target.closest('.move-banner-next-btn');
+            if (nextBtn) {
+                e.stopPropagation();
+                const card = nextBtn.closest('.banner-card');
+                const nextCard = card?.nextElementSibling;
+                if (card && nextCard && nextCard.classList.contains('banner-card')) {
+                    nextCard.after(card);
+                    await saveBannersOrder();
+                }
+                return;
+            }
+        });
+    }
 
     refreshBannersBtn?.addEventListener('click', loadBanners);
     loadBanners();

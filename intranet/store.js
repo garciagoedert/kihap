@@ -3147,6 +3147,14 @@ Requisitos:
             const q = query(collection(db, 'banners'), orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
             allBanners = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allBanners.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : 9999;
+                const orderB = typeof b.order === 'number' ? b.order : 9999;
+                if (orderA !== orderB) return orderA - orderB;
+                const timeA = a.createdAt?.seconds || 0;
+                const timeB = b.createdAt?.seconds || 0;
+                return timeB - timeA;
+            });
             displayBanners(allBanners);
         } catch (error) {
             console.error('Error fetching banners:', error);

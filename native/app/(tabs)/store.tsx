@@ -166,8 +166,12 @@ export default function StoreScreen() {
           bList.push(b);
         }
       });
-      // Sort client-side by createdAt descending
+      // Sort client-side: first by order asc (if present), fallback to createdAt desc
       bList.sort((a, b) => {
+        const orderA = typeof a.order === 'number' ? a.order : 9999;
+        const orderB = typeof b.order === 'number' ? b.order : 9999;
+        if (orderA !== orderB) return orderA - orderB;
+
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0)).getTime());
         const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0)).getTime());
         return timeB - timeA;
