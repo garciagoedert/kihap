@@ -419,6 +419,7 @@ export default function CursosScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => { setSidebarOpen(false); router.push('/(tabs)'); }} />
+                <SidebarItem icon={Sparkles} label="Littles" onPress={() => { setSidebarOpen(false); router.push('/littles'); }} color="#eab308" />
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
