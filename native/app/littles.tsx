@@ -4,12 +4,16 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Image,
   TextInput,
   Modal,
   Platform,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
   Sparkles,
@@ -19,24 +23,33 @@ import {
   Heart,
   Shield,
   Smile,
-  Compass,
+  Zap,
+  Flame,
+  ChevronRight,
+  BookOpen,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface LittleCharacter {
   id: string;
   name: string;
   belt: string;
   beltShort: string;
+  step: string;
   beltHex: string;
-  beltDarkBg: string;
-  beltLightBg: string;
+  accentColor: string;
+  gradientColors: [string, string];
+  cardGradient: [string, string];
   animal: string;
+  animalEmoji: string;
   meaning: string;
-  traits: string;
+  challenge: string;
+  virtue: string;
   teaching: string;
+  parentTip: string;
   image: any;
 }
 
@@ -46,13 +59,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Miles',
     belt: 'Faixa Branca',
     beltShort: 'Branca',
-    beltHex: '#e5e7eb',
-    beltDarkBg: 'rgba(255,255,255,0.08)',
-    beltLightBg: '#f3f4f6',
+    step: '1º Passo',
+    beltHex: '#f1f5f9',
+    accentColor: '#94a3b8',
+    gradientColors: ['rgba(241, 245, 249, 0.25)', 'rgba(148, 163, 184, 0.05)'],
+    cardGradient: ['#1c202a', '#12151d'],
     animal: 'Panda',
-    meaning: 'O nome Miles possui simbologia relacionada a "amoroso" e "bondoso".',
-    traits: 'Agitado e ansioso.',
-    teaching: 'No tatame, Miles aprende a canalizar sua agitação em foco, respiração e disciplina para dar os primeiros passos no caminho marcial.',
+    animalEmoji: '🐼',
+    meaning: 'Simbologia relacionada a "amoroso" e "bondoso".',
+    challenge: 'Agitado e ansioso',
+    virtue: 'Foco, Calma & Respiração',
+    teaching:
+      'No tatame, Miles aprende a desacelerar a mente e canalizar sua agitação em disciplina. Ele descobre que a faixa branca é a semente de onde nasce o futuro faixa preta!',
+    parentTip:
+      'Incentive momentos de respiração calma quando a criança estiver agitada, lembrando das pausas do Miles no tatame.',
     image: require('../assets/images/littles/miles.png'),
   },
   {
@@ -60,13 +80,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Jun',
     belt: 'Faixa Laranja',
     beltShort: 'Laranja',
-    beltHex: '#ea580c',
-    beltDarkBg: 'rgba(234,88,12,0.15)',
-    beltLightBg: '#ffedd5',
+    step: '2º Passo',
+    beltHex: '#f97316',
+    accentColor: '#ea580c',
+    gradientColors: ['rgba(249, 115, 22, 0.35)', 'rgba(234, 88, 12, 0.05)'],
+    cardGradient: ['#231815', '#161113'],
     animal: 'Leão',
-    meaning: 'Nome originalmente chinês que quer dizer "rei, governante". Em coreano, o significado se altera para "belo, talentoso".',
-    traits: 'Inseguro e medroso.',
-    teaching: 'Apesar de ser o rei da floresta, Jun sente medo dos desafios. No tatame, descobre que a verdadeira coragem é tentar mesmo com receio!',
+    animalEmoji: '🦁',
+    meaning: 'Origem chinesa ("rei, governante") e coreana ("belo, talentoso").',
+    challenge: 'Inseguro e medroso',
+    virtue: 'Coragem & Autoconfiança',
+    teaching:
+      'Apesar de ser o rei da floresta, Jun sentia receio de errar novos movimentos. No tatame, aprendeu que coragem não é a ausência de medo, mas a força de tentar mesmo com frio na barriga!',
+    parentTip:
+      'Elogie a coragem de tentar novas atividades em família, comemorando cada pequeno progresso.',
     image: require('../assets/images/littles/jun.png'),
   },
   {
@@ -74,13 +101,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Eddy',
     belt: 'Faixa Amarela',
     beltShort: 'Amarela',
+    step: '3º Passo',
     beltHex: '#eab308',
-    beltDarkBg: 'rgba(234,179,8,0.15)',
-    beltLightBg: '#fef9c3',
+    accentColor: '#ca8a04',
+    gradientColors: ['rgba(234, 179, 8, 0.35)', 'rgba(202, 138, 4, 0.05)'],
+    cardGradient: ['#231f13', '#151410'],
     animal: 'Girafa',
-    meaning: '"Guardião das riquezas", "protetor das riquezas" ou "guardião rico".',
-    traits: 'Impulsivo e falante.',
-    teaching: 'Eddy é muito curioso e adora falar! No tatame, ele treina a disciplina de ouvir com atenção e pensar antes de agir.',
+    animalEmoji: '🦒',
+    meaning: '"Guardião das riquezas", "protetor rico" e valoroso.',
+    challenge: 'Impulsivo e falante',
+    virtue: 'Atenção & Saber Ouvir',
+    teaching:
+      'Eddy é muito curioso e adora falar! No tatame, ele treina o poder do silêncio marcial: ouvir os mestres com atenção para absorver os detalhes de cada golpe.',
+    parentTip:
+      'Crie brincadeiras de escuta atenta em casa, incentivando a criança a ouvir até o final antes de falar.',
     image: require('../assets/images/littles/eddy.png'),
   },
   {
@@ -88,13 +122,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Sachi',
     belt: 'Faixa Camuflada',
     beltShort: 'Camuflada',
-    beltHex: '#4d7c0f',
-    beltDarkBg: 'rgba(77,124,15,0.18)',
-    beltLightBg: '#ecfccb',
+    step: '4º Passo',
+    beltHex: '#22c55e',
+    accentColor: '#15803d',
+    gradientColors: ['rgba(34, 197, 94, 0.35)', 'rgba(21, 128, 61, 0.05)'],
+    cardGradient: ['#142119', '#0d1611'],
     animal: 'Borboleta',
-    meaning: 'Originário da cultura japonesa, significa "criança de felicidade e alegria".',
-    traits: 'Egoísta e convencida.',
-    teaching: 'Sachi aprende a importância da humildade, do espírito de equipe e de apoiar os colegas, descobrindo que vencer juntos é mais bonito.',
+    animalEmoji: '🦋',
+    meaning: 'Origem japonesa: "criança de felicidade e alegria plena".',
+    challenge: 'Egoísta e convencida',
+    virtue: 'Humildade & Cooperação',
+    teaching:
+      'Sachi é talentosa, mas queria sempre ser o centro de tudo. Na faixa camuflada, ela aprende a camuflar o ego e descobre que a maior alegria é ajudar os colegas a crescerem juntos!',
+    parentTip:
+      'Mostre como é gratificante compartilhar e parabenizar os amigos e irmãos pelas conquistas deles.',
     image: require('../assets/images/littles/sachi.png'),
   },
   {
@@ -102,13 +143,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Kobe',
     belt: 'Faixa Verde',
     beltShort: 'Verde',
-    beltHex: '#16a34a',
-    beltDarkBg: 'rgba(22,163,74,0.18)',
-    beltLightBg: '#dcfce7',
+    step: '5º Passo',
+    beltHex: '#10b981',
+    accentColor: '#059669',
+    gradientColors: ['rgba(16, 185, 129, 0.40)', 'rgba(5, 150, 105, 0.05)'],
+    cardGradient: ['#12221b', '#0b1612'],
     animal: 'Jacaré',
-    meaning: 'Significa "pequeno que vence", "pequeno vencedor" ou "pequeno suplantador".',
-    traits: 'Teimoso e respondão.',
-    teaching: 'O famoso Kobe tem uma determinação sem igual, mas precisava aprender a ouvir. Com as artes marciais, ele vence com respeito e gentileza!',
+    animalEmoji: '🐊',
+    meaning: '"Pequeno que vence", "vencedor" e "suplantador".',
+    challenge: 'Teimoso e respondão',
+    virtue: 'Respeito & Disciplina Positiva',
+    teaching:
+      'Kobe tem determinação sem igual, mas adorava teimar com regras. Nas artes marciais, canalizou sua garra para vencer com respeito aos mestres, família e adversários!',
+    parentTip:
+      'Quando houver teimosia, use o "código do Kobe": faça uma pausa rápida, respire e conversem olhando nos olhos.',
     image: require('../assets/images/littles/kobe.png'),
   },
   {
@@ -116,13 +164,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Hye',
     belt: 'Faixa Roxa',
     beltShort: 'Roxa',
-    beltHex: '#9333ea',
-    beltDarkBg: 'rgba(147,51,234,0.18)',
-    beltLightBg: '#f3e8ff',
+    step: '6º Passo',
+    beltHex: '#a855f7',
+    accentColor: '#9333ea',
+    gradientColors: ['rgba(168, 85, 247, 0.35)', 'rgba(147, 51, 234, 0.05)'],
+    cardGradient: ['#1d1425', '#120d18'],
     animal: 'Coruja',
-    meaning: 'Nome de origem coreana que significa "brilhante" ou "inteligente".',
-    traits: 'Esquecida e avoada.',
-    teaching: 'Hye tem uma inteligência admirável, mas vivia distraída. As formas e movimentos do Kihap a ajudam a praticar foco, presença e memória.',
+    animalEmoji: '🦉',
+    meaning: 'Origem coreana: "mente brilhante" e "inteligente".',
+    challenge: 'Esquecida e avoada',
+    virtue: 'Presença & Memória Marcial',
+    teaching:
+      'Hye tem raciocínio rápido, mas vivia no mundo da lua. As sequências e formas do Kihap treinam seu cérebro para manter atenção total no momento presente.',
+    parentTip:
+      'Ajude a criança a criar checklists divertidos (como preparar a mochila do treino), fortalecendo sua memória e rotina.',
     image: require('../assets/images/littles/hye.png'),
   },
   {
@@ -130,13 +185,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Hope',
     belt: 'Faixa Azul',
     beltShort: 'Azul',
-    beltHex: '#2563eb',
-    beltDarkBg: 'rgba(37,99,235,0.18)',
-    beltLightBg: '#dbeafe',
+    step: '7º Passo',
+    beltHex: '#3b82f6',
+    accentColor: '#2563eb',
+    gradientColors: ['rgba(59, 130, 246, 0.35)', 'rgba(37, 99, 235, 0.05)'],
+    cardGradient: ['#131c2c', '#0d131f'],
     animal: 'Arara',
-    meaning: 'Nome de origem indígena norte-americana, relacionado ao povo originário "Hopi" (povo pacífico).',
-    traits: 'Tímida e indecisa.',
-    teaching: 'Hope tinha receio de se expressar. Com os treinos de força e o grito de energia (Kihap!), ela desenvolve voz firme e confiança inabalável.',
+    animalEmoji: '🦜',
+    meaning: 'Origem indígena norte-americana "Hopi" (povo pacífico).',
+    challenge: 'Tímida e indecisa',
+    virtue: 'Expressão, Atitude & Voz Firme',
+    teaching:
+      'Hope tinha receio de se expressar em público. No tatame, soltar o grito "KIHAP!" deu asas à sua voz e autoconfiança, ensinando-a a se defender e decidir com firmeza.',
+    parentTip:
+      'Estimule a criança a dar opiniões em pequenas decisões do dia a dia, validando suas ideias com entusiasmo.',
     image: require('../assets/images/littles/hope.png'),
   },
   {
@@ -144,13 +206,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Jeong',
     belt: 'Faixa Marrom',
     beltShort: 'Marrom',
-    beltHex: '#854d0e',
-    beltDarkBg: 'rgba(133,77,14,0.22)',
-    beltLightBg: '#fef3c7',
+    step: '8º Passo',
+    beltHex: '#b45309',
+    accentColor: '#78350f',
+    gradientColors: ['rgba(180, 83, 9, 0.35)', 'rgba(120, 53, 15, 0.05)'],
+    cardGradient: ['#221812', '#150f0b'],
     animal: 'Macaco',
-    meaning: 'Nome que vem do coreano e quer dizer "correto", "apropriado", "bondoso".',
-    traits: 'Mal-humorado e individualista.',
-    teaching: 'Jeong se irritava quando errava. Rumo à faixa preta, ele aprende resiliência emocional, paciência e a alegria de treinar em comunidade.',
+    animalEmoji: '🐒',
+    meaning: 'Termo coreano que significa "correto", "afetuoso", "bondoso".',
+    challenge: 'Mal-humorado e individualista',
+    virtue: 'Resiliência, Empatia & Alegria',
+    teaching:
+      'Jeong se chateava quando os movimentos não saíam perfeitos de primeira. No caminho para a faixa preta, aprendeu que errar faz parte do treino e que a empatia une a turma!',
+    parentTip:
+      'Ensine que o bom humor é um superpoder que alivia frustrações quando as coisas ficam difíceis.',
     image: require('../assets/images/littles/jeong.png'),
   },
   {
@@ -158,13 +227,20 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Benny',
     belt: 'Faixa Vermelha',
     beltShort: 'Vermelha',
-    beltHex: '#dc2626',
-    beltDarkBg: 'rgba(220,38,38,0.18)',
-    beltLightBg: '#fee2e2',
+    step: '9º Passo',
+    beltHex: '#ef4444',
+    accentColor: '#dc2626',
+    gradientColors: ['rgba(239, 68, 68, 0.38)', 'rgba(220, 38, 38, 0.06)'],
+    cardGradient: ['#261314', '#170b0c'],
     animal: 'Fênix',
-    meaning: 'Possui simbologia relacionada a "bento", "abençoado" e "filho da fortuna e riqueza".',
-    traits: 'Acomodado e desconfiado.',
-    teaching: 'Na reta final para a Faixa Preta, a Fênix Benny aprende a renascer da zona de conforto com esforço máximo e confiança no mestre!',
+    animalEmoji: '🦅',
+    meaning: '"Bento", "abençoado" e "filho da fortuna e riqueza".',
+    challenge: 'Acomodado e desconfiado',
+    virtue: 'Superação & Renascimento',
+    teaching:
+      'Na última faixa antes da Faixa Preta, a Fênix Benny renasce do comodismo! Ele abraça o esforço máximo e confia no mestre para se tornar um líder exemplar.',
+    parentTip:
+      'Mostre que o verdadeiro campeão não para quando está confortável, mas se desafia a ser 1% melhor a cada dia.',
     image: require('../assets/images/littles/benny.png'),
   },
 ];
@@ -172,8 +248,6 @@ const LITTLES_DATA: LittleCharacter[] = [
 export default function LittlesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   const [selectedBelt, setSelectedBelt] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -181,15 +255,17 @@ export default function LittlesScreen() {
 
   const beltFilters = useMemo(() => {
     return [
-      { id: 'todos', label: 'Todos' },
-      ...LITTLES_DATA.map((c) => ({ id: c.id, label: c.beltShort })),
+      { id: 'todos', label: 'Todos', hex: '#eab308' },
+      ...LITTLES_DATA.map((c) => ({ id: c.id, label: c.beltShort, hex: c.beltHex })),
     ];
   }, []);
 
   const filteredCharacters = useMemo(() => {
     return LITTLES_DATA.filter((c) => {
       const matchBelt =
-        selectedBelt === 'todos' || c.id === selectedBelt || c.beltShort.toLowerCase() === selectedBelt.toLowerCase();
+        selectedBelt === 'todos' ||
+        c.id === selectedBelt ||
+        c.beltShort.toLowerCase() === selectedBelt.toLowerCase();
 
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
@@ -197,64 +273,79 @@ export default function LittlesScreen() {
         c.name.toLowerCase().includes(q) ||
         c.animal.toLowerCase().includes(q) ||
         c.belt.toLowerCase().includes(q) ||
-        c.traits.toLowerCase().includes(q);
+        c.challenge.toLowerCase().includes(q) ||
+        c.virtue.toLowerCase().includes(q);
 
       return matchBelt && matchSearch;
     });
   }, [selectedBelt, searchQuery]);
 
+  const handleOpenModal = (char: LittleCharacter) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+    setActiveModalChar(char);
+  };
+
   return (
-    <View className="flex-1 bg-[#f8f7f4] dark:bg-[#0c0c0c]">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+    <View style={styles.container}>
+      <StatusBar style="light" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* HEADER */}
+      {/* AMBIENT BACKGROUND GLOW */}
+      <View style={styles.ambientTopGlow} pointerEvents="none">
+        <LinearGradient
+          colors={['rgba(234, 179, 8, 0.12)', 'rgba(234, 88, 12, 0.04)', 'transparent']}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </View>
+
+      {/* FLOATING TOP APP BAR */}
       <View
-        style={{ paddingTop: insets.top + (Platform.OS === 'ios' ? 8 : 14) }}
-        className="px-5 pb-4 bg-white/95 dark:bg-[#141414]/95 border-b border-gray-150 dark:border-white/5 backdrop-blur-md"
+        style={[
+          styles.headerContainer,
+          { paddingTop: insets.top + (Platform.OS === 'ios' ? 6 : 14) },
+        ]}
       >
-        <View className="flex-row items-center justify-between mb-3">
+        <View style={styles.headerTopRow}>
           <TouchableOpacity
             onPress={() => router.back()}
-            className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-white/10 items-center justify-center active:scale-95 transition-transform"
+            style={styles.backButton}
+            activeOpacity={0.8}
             accessibilityLabel="Voltar"
           >
-            <ArrowLeft size={20} color={isDark ? '#ffffff' : '#111827'} />
+            <ArrowLeft size={20} color="#ffffff" />
           </TouchableOpacity>
 
-          <View className="items-center flex-1 px-3">
-            <View className="flex-row items-center gap-1.5">
+          <View style={styles.headerTitleCenter}>
+            <View style={styles.headerTitleRow}>
               <Sparkles size={16} color="#eab308" />
-              <Text className="text-base font-black text-gray-900 dark:text-white tracking-tight">
-                Turma dos Littles
-              </Text>
+              <Text style={styles.headerTitleText}>UNIVERSO LITTLES</Text>
             </View>
-            <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-              Mascotes & Graduação Kihap
+            <Text style={styles.headerSubtitleText}>
+              COLEÇÃO DE MASCOTES & GRADUAÇÃO
             </Text>
           </View>
 
-          <View className="w-10 h-10 items-center justify-center">
-            <View className="w-8 h-8 rounded-full bg-yellow-500/10 dark:bg-yellow-500/20 items-center justify-center">
-              <Smile size={18} color="#eab308" />
-            </View>
+          <View style={styles.headerCounterBadge}>
+            <Text style={styles.headerCounterText}>9</Text>
           </View>
         </View>
 
-        {/* SEARCH BAR */}
-        <View className="flex-row items-center bg-gray-100 dark:bg-white/5 rounded-2xl px-3.5 py-2.5 border border-gray-200/50 dark:border-white/5">
-          <Search size={16} color={isDark ? '#9ca3af' : '#6b7280'} />
+        {/* SEARCH INPUT */}
+        <View style={styles.searchBar}>
+          <Search size={16} color="#94a3b8" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Buscar por nome, animal ou faixa..."
-            placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
-            className="flex-1 ml-2.5 text-xs text-gray-900 dark:text-white font-medium"
+            placeholder="Buscar por mascote, animal ou faixa..."
+            placeholderTextColor="#64748b"
+            style={styles.searchInput}
             clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={15} color={isDark ? '#9ca3af' : '#6b7280'} />
+              <X size={15} color="#94a3b8" />
             </TouchableOpacity>
           )}
         </View>
@@ -262,152 +353,220 @@ export default function LittlesScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 48,
+        }}
       >
-        {/* HERO BANNER EXPLICATIVO */}
-        <View className="mx-5 mt-4 p-5 rounded-3xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-orange-500/15 border border-yellow-500/20 dark:border-yellow-500/10">
-          <View className="flex-row items-center gap-2 mb-1.5">
-            <View className="w-6 h-6 rounded-lg bg-yellow-500 items-center justify-center">
-              <Award size={14} color="#000" />
+        {/* HERO PEDAGOGICAL CARD */}
+        <View style={styles.heroBanner}>
+          <LinearGradient
+            colors={['rgba(234, 179, 8, 0.18)', 'rgba(15, 17, 23, 0.95)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroBannerGradient}
+          />
+          <View style={styles.heroBannerContent}>
+            <View style={styles.heroBannerBadgeRow}>
+              <View style={styles.heroIconBox}>
+                <Award size={15} color="#000000" />
+              </View>
+              <Text style={styles.heroBadgeText}>O MÉTODO MARCIAL LITTLES</Text>
             </View>
-            <Text className="text-xs font-black text-gray-900 dark:text-yellow-400 uppercase tracking-wider">
-              A Jornada dos Littles
+            <Text style={styles.heroDescriptionText}>
+              Cada faixa do Kihap é representada por um mascote e um desafio comportamental real. Conforme a criança treina e avança nas faixas, ela transforma dificuldades em virtudes para a vida!
             </Text>
           </View>
-          <Text className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-            Cada personagem representa uma faixa e traz um desafio de comportamento que toda criança vivencia. No tatame, transformamos desafios em virtudes marciais!
+        </View>
+
+        {/* HORIZONTAL BELT TABS */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.beltTabsContainer}
+          style={styles.beltTabsScroll}
+        >
+          {beltFilters.map((tab) => {
+            const active = selectedBelt === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => {
+                  try {
+                    Haptics.selectionAsync();
+                  } catch (_) {}
+                  setSelectedBelt(tab.id);
+                }}
+                activeOpacity={0.8}
+                style={[
+                  styles.beltTab,
+                  active && styles.beltTabActive,
+                  active && { borderColor: tab.hex },
+                ]}
+              >
+                {tab.id !== 'todos' && (
+                  <View
+                    style={[
+                      styles.beltTabDot,
+                      { backgroundColor: tab.hex },
+                    ]}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.beltTabText,
+                    active && styles.beltTabTextActive,
+                    active && tab.id !== 'todos' && { color: '#ffffff' },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* SECTION HEADER */}
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionTitleWithIcon}>
+            <Flame size={15} color="#eab308" />
+            <Text style={styles.sectionTitleText}>
+              {selectedBelt === 'todos'
+                ? 'TODOS OS 9 MASCOTES'
+                : `FAIXA ${selectedBelt.toUpperCase()}`}
+            </Text>
+          </View>
+          <Text style={styles.sectionSubtitleCount}>
+            {filteredCharacters.length}{' '}
+            {filteredCharacters.length === 1 ? 'personagem' : 'personagens'}
           </Text>
         </View>
 
-        {/* BELT FILTER TABS */}
-        <View className="mt-4">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-            className="flex-row"
-          >
-            {beltFilters.map((tab) => {
-              const active = selectedBelt === tab.id;
-              return (
-                <TouchableOpacity
-                  key={tab.id}
-                  onPress={() => setSelectedBelt(tab.id)}
-                  activeOpacity={0.8}
-                  className={`px-3.5 py-1.5 rounded-full border transition-all ${
-                    active
-                      ? 'bg-yellow-500 border-yellow-500'
-                      : 'bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10'
-                  }`}
-                >
-                  <Text
-                    className={`text-[11px] font-bold ${
-                      active ? 'text-black' : 'text-gray-600 dark:text-gray-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* CHARACTERS LIST */}
-        <View className="px-5 mt-5">
+        {/* CHARACTERS SHOWCASE (HERO TRADING CARDS) */}
+        <View style={styles.cardsListContainer}>
           {filteredCharacters.length === 0 ? (
-            <View className="py-14 items-center justify-center bg-white dark:bg-[#141414] rounded-3xl border border-dashed border-gray-200 dark:border-white/10 mt-2">
-              <Smile size={36} color="#9ca3af" />
-              <Text className="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
-                Nenhum personagem encontrado
-              </Text>
-              <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Tente buscar por outro termo ou selecione "Todos".
+            <View style={styles.emptyContainer}>
+              <Smile size={42} color="#64748b" />
+              <Text style={styles.emptyTitle}>Nenhum mascote encontrado</Text>
+              <Text style={styles.emptySubtitle}>
+                Tente buscar por outro termo ou selecione a aba "Todos".
               </Text>
             </View>
           ) : (
-            filteredCharacters.map((char, index) => {
+            filteredCharacters.map((char) => {
               return (
                 <TouchableOpacity
                   key={char.id}
                   activeOpacity={0.92}
-                  onPress={() => setActiveModalChar(char)}
-                  className="mb-4 rounded-3xl p-5 bg-white dark:bg-[#171717] border border-gray-150 dark:border-white/5 shadow-sm overflow-hidden relative"
+                  onPress={() => handleOpenModal(char)}
+                  style={styles.heroCard}
                 >
-                  {/* Subtle color highlight top bar */}
-                  <View
-                    style={{ backgroundColor: char.beltHex }}
-                    className="absolute top-0 left-0 right-0 h-1.5"
+                  <LinearGradient
+                    colors={char.cardGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
                   />
 
-                  <View className="flex-row items-center gap-4">
-                    {/* Character Avatar Showcase */}
+                  {/* TOP MARTIAL BELT STRIPE */}
+                  <View style={styles.beltStripeContainer}>
                     <View
-                      style={{
-                        backgroundColor: isDark ? char.beltDarkBg : char.beltLightBg,
-                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                      }}
-                      className="w-24 h-24 rounded-2xl items-center justify-center p-1.5 border relative overflow-hidden"
-                    >
-                      <Image
+                      style={[
+                        styles.beltStripeMain,
+                        { backgroundColor: char.beltHex },
+                      ]}
+                    />
+                    <View style={styles.beltStripeTip} />
+                  </View>
+
+                  <View style={styles.cardMainBody}>
+                    {/* CHARACTER STAGE WITH AMBIENT HALO */}
+                    <View style={styles.characterStage}>
+                      <LinearGradient
+                        colors={char.gradientColors}
+                        style={styles.characterAmbientHalo}
+                      />
+                      <ExpoImage
                         source={char.image}
-                        className="w-full h-full"
-                        resizeMode="contain"
+                        style={styles.characterImage}
+                        contentFit="contain"
+                        transition={150}
                       />
                     </View>
 
-                    {/* Character Basic Info */}
-                    <View className="flex-1">
-                      <View className="flex-row items-center justify-between mb-1">
+                    {/* CHARACTER DETAILS */}
+                    <View style={styles.characterContent}>
+                      {/* STEP & BELT PILL */}
+                      <View style={styles.characterMetaRow}>
                         <View
-                          style={{
-                            backgroundColor: isDark ? char.beltDarkBg : char.beltLightBg,
-                            borderColor: char.beltHex,
-                          }}
-                          className="px-2.5 py-0.5 rounded-full border flex-row items-center gap-1"
+                          style={[
+                            styles.characterBeltBadge,
+                            { borderColor: char.beltHex },
+                          ]}
                         >
                           <View
-                            style={{ backgroundColor: char.beltHex }}
-                            className="w-2 h-2 rounded-full"
+                            style={[
+                              styles.characterBeltDot,
+                              { backgroundColor: char.beltHex },
+                            ]}
                           />
                           <Text
-                            style={{
-                              color: isDark && char.belt === 'Faixa Branca' ? '#ffffff' : char.beltHex,
-                            }}
-                            className="text-[10px] font-black uppercase tracking-wider"
+                            style={[
+                              styles.characterBeltText,
+                              { color: char.beltHex },
+                            ]}
                           >
                             {char.belt}
                           </Text>
                         </View>
-
-                        <Text className="text-[10px] font-bold text-gray-400">
-                          #{index + 1}
-                        </Text>
+                        <Text style={styles.stepBadgeText}>{char.step}</Text>
                       </View>
 
-                      <Text className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                        {char.name}
-                      </Text>
-                      <Text className="text-xs font-bold text-gray-500 dark:text-gray-400 mt-0.5">
-                        Animal: <Text className="text-yellow-600 dark:text-yellow-400">{char.animal}</Text>
+                      {/* NAME */}
+                      <Text style={styles.characterNameText}>{char.name}</Text>
+
+                      {/* ANIMAL TAG */}
+                      <Text style={styles.characterAnimalText}>
+                        {char.animalEmoji} {char.animal} • {char.meaning}
                       </Text>
 
-                      <View className="mt-2 flex-row items-center gap-1">
-                        <Text className="text-[11px] font-medium text-gray-600 dark:text-gray-300" numberOfLines={2}>
-                          <Text className="font-bold text-gray-700 dark:text-gray-200">Desafio: </Text>
-                          {char.traits}
-                        </Text>
+                      {/* CHALLENGE VS VIRTUE PILLS */}
+                      <View style={styles.traitsContainer}>
+                        <View style={styles.traitBoxChallenge}>
+                          <View style={styles.traitHeaderRow}>
+                            <Zap size={11} color="#f97316" />
+                            <Text style={styles.traitLabelChallenge}>
+                              DESAFIO
+                            </Text>
+                          </View>
+                          <Text
+                            style={styles.traitValueChallenge}
+                            numberOfLines={1}
+                          >
+                            {char.challenge}
+                          </Text>
+                        </View>
+
+                        <View style={styles.traitBoxVirtue}>
+                          <View style={styles.traitHeaderRow}>
+                            <Shield size={11} color="#eab308" />
+                            <Text style={styles.traitLabelVirtue}>
+                              NO TATAME
+                            </Text>
+                          </View>
+                          <Text style={styles.traitValueVirtue} numberOfLines={1}>
+                            {char.virtue}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </View>
 
-                  {/* Quick Expand / Tap CTA */}
-                  <View className="mt-3.5 pt-3 border-t border-gray-100 dark:border-white/5 flex-row items-center justify-between">
-                    <Text className="text-[10px] font-bold text-gray-400 dark:text-gray-400 flex-row items-center gap-1">
-                      <Compass size={12} color={isDark ? '#9ca3af' : '#6b7280'} /> Toque para ver o ensinamento no tatame
-                    </Text>
-                    <View className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 items-center justify-center">
-                      <Sparkles size={11} color="#eab308" />
+                      {/* EXPLORE BUTTON */}
+                      <View style={styles.exploreLinkRow}>
+                        <Text style={styles.exploreLinkText}>
+                          Ver história e ensinamento
+                        </Text>
+                        <ChevronRight size={13} color="#eab308" />
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -417,124 +576,164 @@ export default function LittlesScreen() {
         </View>
       </ScrollView>
 
-      {/* CHARACTER DETAIL MODAL */}
+      {/* IMMERSIVE CHARACTER MODAL */}
       <Modal
         visible={!!activeModalChar}
         transparent
         animationType="fade"
         onRequestClose={() => setActiveModalChar(null)}
       >
-        <View className="flex-1 bg-black/75 justify-center items-center p-5">
-          <View className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-2xl">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCardWrapper}>
             {activeModalChar && (
               <>
-                {/* Modal Top Belt Color Stripe */}
-                <View
-                  style={{ backgroundColor: activeModalChar.beltHex }}
-                  className="h-2 w-full"
+                <LinearGradient
+                  colors={activeModalChar.cardGradient}
+                  style={StyleSheet.absoluteFillObject}
                 />
 
-                <View className="p-6">
-                  {/* Close button */}
-                  <View className="flex-row items-center justify-between mb-4">
-                    <View
-                      style={{
-                        backgroundColor: isDark ? activeModalChar.beltDarkBg : activeModalChar.beltLightBg,
-                        borderColor: activeModalChar.beltHex,
-                      }}
-                      className="px-3 py-1 rounded-full border flex-row items-center gap-1.5"
-                    >
-                      <View
-                        style={{ backgroundColor: activeModalChar.beltHex }}
-                        className="w-2.5 h-2.5 rounded-full"
-                      />
-                      <Text
-                        style={{
-                          color: isDark && activeModalChar.belt === 'Faixa Branca' ? '#ffffff' : activeModalChar.beltHex,
-                        }}
-                        className="text-xs font-black uppercase tracking-wider"
-                      >
-                        {activeModalChar.belt}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() => setActiveModalChar(null)}
-                      className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 items-center justify-center active:scale-95"
-                    >
-                      <X size={16} color={isDark ? '#fff' : '#111827'} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Character Large Visual */}
+                {/* MODAL BELT HEADER ACCENT */}
+                <View style={styles.modalBeltStripe}>
                   <View
-                    style={{
-                      backgroundColor: isDark ? activeModalChar.beltDarkBg : activeModalChar.beltLightBg,
-                    }}
-                    className="w-full h-44 rounded-2xl items-center justify-center p-3 mb-4 overflow-hidden border border-gray-100 dark:border-white/5"
-                  >
-                    <Image
+                    style={[
+                      styles.modalBeltStripeFill,
+                      { backgroundColor: activeModalChar.beltHex },
+                    ]}
+                  />
+                  <View style={styles.modalBeltStripeBlackTip} />
+                </View>
+
+                {/* MODAL CLOSE BUTTON */}
+                <TouchableOpacity
+                  onPress={() => setActiveModalChar(null)}
+                  style={styles.modalCloseButton}
+                  activeOpacity={0.8}
+                >
+                  <X size={18} color="#ffffff" />
+                </TouchableOpacity>
+
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.modalScrollContent}
+                >
+                  {/* HERO CHARACTER STAGE IN MODAL */}
+                  <View style={styles.modalHeroStage}>
+                    <LinearGradient
+                      colors={activeModalChar.gradientColors}
+                      style={styles.modalHeroHalo}
+                    />
+                    <ExpoImage
                       source={activeModalChar.image}
-                      className="w-full h-full"
-                      resizeMode="contain"
+                      style={styles.modalHeroImage}
+                      contentFit="contain"
                     />
                   </View>
 
-                  <Text className="text-2xl font-black text-gray-900 dark:text-white tracking-tight text-center">
+                  {/* BADGE */}
+                  <View
+                    style={[
+                      styles.modalBeltBadge,
+                      { borderColor: activeModalChar.beltHex },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.modalBeltBadgeDot,
+                        { backgroundColor: activeModalChar.beltHex },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.modalBeltBadgeText,
+                        { color: activeModalChar.beltHex },
+                      ]}
+                    >
+                      {activeModalChar.belt} • {activeModalChar.step}
+                    </Text>
+                  </View>
+
+                  {/* NAME & ANIMAL */}
+                  <Text style={styles.modalNameText}>
                     {activeModalChar.name}
                   </Text>
-                  <Text className="text-xs font-bold text-yellow-600 dark:text-yellow-400 text-center uppercase tracking-widest mt-0.5">
-                    Mascote {activeModalChar.animal}
+                  <Text style={styles.modalAnimalText}>
+                    {activeModalChar.animalEmoji} Mascote{' '}
+                    {activeModalChar.animal}
                   </Text>
 
-                  {/* Information Blocks */}
-                  <View className="mt-5 space-y-3">
-                    <View className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#222222] border border-gray-100 dark:border-white/5">
-                      <View className="flex-row items-center gap-1.5 mb-1">
+                  {/* LORE BLOCKS */}
+                  <View style={styles.modalBlocksList}>
+                    {/* BLOCK 1: MEANING */}
+                    <View style={styles.modalInfoCard}>
+                      <View style={styles.modalInfoCardHeader}>
                         <Heart size={14} color="#eab308" />
-                        <Text className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                          Significado do Nome
+                        <Text style={styles.modalInfoCardTitle}>
+                          SIGNIFICADO DO NOME
                         </Text>
                       </View>
-                      <Text className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                      <Text style={styles.modalInfoCardBody}>
                         {activeModalChar.meaning}
                       </Text>
                     </View>
 
-                    <View className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#222222] border border-gray-100 dark:border-white/5">
-                      <View className="flex-row items-center gap-1.5 mb-1">
-                        <Shield size={14} color="#f97316" />
-                        <Text className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                          Desafio Comportamental
+                    {/* BLOCK 2: CHALLENGE */}
+                    <View style={styles.modalInfoCard}>
+                      <View style={styles.modalInfoCardHeader}>
+                        <Zap size={14} color="#f97316" />
+                        <Text style={styles.modalInfoCardTitle}>
+                          O DESAFIO DE COMPORTAMENTO
                         </Text>
                       </View>
-                      <Text className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                        {activeModalChar.traits}
+                      <Text style={styles.modalInfoCardBody}>
+                        {activeModalChar.challenge}
                       </Text>
                     </View>
 
-                    <View className="p-3.5 rounded-2xl bg-yellow-500/10 dark:bg-yellow-500/15 border border-yellow-500/25">
-                      <View className="flex-row items-center gap-1.5 mb-1">
-                        <Award size={14} color="#eab308" />
-                        <Text className="text-[11px] font-black text-yellow-700 dark:text-yellow-400 uppercase tracking-wider">
-                          Evolução no Tatame
+                    {/* BLOCK 3: MARTIAL VIRTUE ON TATAME */}
+                    <View style={styles.modalGoldenCard}>
+                      <LinearGradient
+                        colors={[
+                          'rgba(234, 179, 8, 0.22)',
+                          'rgba(234, 179, 8, 0.05)',
+                        ]}
+                        style={StyleSheet.absoluteFillObject}
+                      />
+                      <View style={styles.modalInfoCardHeader}>
+                        <Shield size={14} color="#facc15" />
+                        <Text style={styles.modalGoldenCardTitle}>
+                          A TRANSFORMAÇÃO NO TATAME
                         </Text>
                       </View>
-                      <Text className="text-xs text-gray-700 dark:text-gray-200 leading-relaxed font-medium">
+                      <Text style={styles.modalGoldenCardBody}>
                         {activeModalChar.teaching}
+                      </Text>
+                    </View>
+
+                    {/* BLOCK 4: PARENT TIP */}
+                    <View style={styles.modalInfoCard}>
+                      <View style={styles.modalInfoCardHeader}>
+                        <BookOpen size={14} color="#38bdf8" />
+                        <Text style={styles.modalInfoCardTitle}>
+                          DICA DOS MESTRES PARA A FAMÍLIA
+                        </Text>
+                      </View>
+                      <Text style={styles.modalInfoCardBody}>
+                        {activeModalChar.parentTip}
                       </Text>
                     </View>
                   </View>
 
+                  {/* CLOSE BUTTON */}
                   <TouchableOpacity
                     onPress={() => setActiveModalChar(null)}
-                    className="mt-5 w-full py-3 rounded-2xl bg-yellow-500 items-center justify-center active:scale-98 shadow-sm"
+                    style={styles.modalPrimaryButton}
+                    activeOpacity={0.85}
                   >
-                    <Text className="text-xs font-black text-black uppercase tracking-wider">
-                      Fechar
+                    <Text style={styles.modalPrimaryButtonText}>
+                      VOLTAR PARA A TURMA
                     </Text>
                   </TouchableOpacity>
-                </View>
+                </ScrollView>
               </>
             )}
           </View>
@@ -543,3 +742,552 @@ export default function LittlesScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0c0d12',
+  },
+  ambientTopGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 320,
+  },
+  headerContainer: {
+    backgroundColor: 'rgba(12, 13, 18, 0.92)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+  },
+  headerTitleCenter: {
+    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerTitleText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 16,
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
+  headerSubtitleText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94a3b8',
+    letterSpacing: 1.5,
+    marginTop: 2,
+  },
+  headerCounterBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(234, 179, 8, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.40)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCounterText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 13,
+    color: '#eab308',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 13,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  heroBanner: {
+    marginHorizontal: 18,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.30)',
+    marginBottom: 16,
+  },
+  heroBannerGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBannerContent: {
+    padding: 16,
+  },
+  heroBannerBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  heroIconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: '#eab308',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroBadgeText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 11,
+    color: '#facc15',
+    letterSpacing: 1,
+  },
+  heroDescriptionText: {
+    fontSize: 12,
+    color: '#cbd5e1',
+    lineHeight: 18,
+    fontWeight: '400',
+  },
+  beltTabsScroll: {
+    marginBottom: 16,
+  },
+  beltTabsContainer: {
+    paddingHorizontal: 18,
+    gap: 8,
+  },
+  beltTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    gap: 6,
+  },
+  beltTabActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1.5,
+  },
+  beltTabDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  beltTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94a3b8',
+  },
+  beltTabTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    marginBottom: 12,
+  },
+  sectionTitleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sectionTitleText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 12,
+    color: '#ffffff',
+    letterSpacing: 1,
+  },
+  sectionSubtitleCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  cardsListContainer: {
+    paddingHorizontal: 18,
+    gap: 14,
+  },
+  heroCard: {
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  beltStripeContainer: {
+    height: 6,
+    width: '100%',
+    flexDirection: 'row',
+  },
+  beltStripeMain: {
+    flex: 1,
+  },
+  beltStripeTip: {
+    width: 22,
+    backgroundColor: '#000000',
+  },
+  cardMainBody: {
+    flexDirection: 'row',
+    padding: 14,
+    gap: 14,
+  },
+  characterStage: {
+    width: 120,
+    height: 150,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  characterAmbientHalo: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+  },
+  characterImage: {
+    width: 105,
+    height: 135,
+  },
+  characterContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  characterMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  characterBeltBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.40)',
+    gap: 5,
+  },
+  characterBeltDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  characterBeltText: {
+    fontSize: 10,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  stepBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  characterNameText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 20,
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  characterAnimalText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#cbd5e1',
+    marginTop: 1,
+  },
+  traitsContainer: {
+    gap: 5,
+    marginTop: 8,
+  },
+  traitBoxChallenge: {
+    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.20)',
+  },
+  traitHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 1,
+  },
+  traitLabelChallenge: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#f97316',
+    letterSpacing: 0.5,
+  },
+  traitValueChallenge: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fdba74',
+  },
+  traitBoxVirtue: {
+    backgroundColor: 'rgba(234, 179, 8, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.22)',
+  },
+  traitLabelVirtue: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#eab308',
+    letterSpacing: 0.5,
+  },
+  traitValueVirtue: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fef08a',
+  },
+  exploreLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  exploreLinkText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#eab308',
+    letterSpacing: 0.3,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  emptyTitle: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 15,
+    color: '#ffffff',
+    marginTop: 10,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  modalCardWrapper: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    position: 'relative',
+    backgroundColor: '#12151d',
+  },
+  modalBeltStripe: {
+    height: 8,
+    width: '100%',
+    flexDirection: 'row',
+  },
+  modalBeltStripeFill: {
+    flex: 1,
+  },
+  modalBeltStripeBlackTip: {
+    width: 28,
+    backgroundColor: '#000000',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.60)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    zIndex: 10,
+  },
+  modalScrollContent: {
+    padding: 22,
+    alignItems: 'center',
+  },
+  modalHeroStage: {
+    width: 170,
+    height: 190,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  modalHeroHalo: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+  },
+  modalHeroImage: {
+    width: 160,
+    height: 180,
+  },
+  modalBeltBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    gap: 6,
+    marginBottom: 8,
+  },
+  modalBeltBadgeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  modalBeltBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalNameText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 26,
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  modalAnimalText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#eab308',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: 2,
+    marginBottom: 18,
+  },
+  modalBlocksList: {
+    width: '100%',
+    gap: 10,
+  },
+  modalInfoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  modalInfoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  modalInfoCardTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 0.8,
+  },
+  modalInfoCardBody: {
+    fontSize: 12,
+    color: '#cbd5e1',
+    lineHeight: 18,
+    fontWeight: '400',
+  },
+  modalGoldenCard: {
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.40)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  modalGoldenCardTitle: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 11,
+    color: '#facc15',
+    letterSpacing: 0.8,
+  },
+  modalGoldenCardBody: {
+    fontSize: 12,
+    color: '#fef08a',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  modalPrimaryButton: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: '#eab308',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+    shadowColor: '#eab308',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  modalPrimaryButtonText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 12,
+    color: '#000000',
+    letterSpacing: 1,
+  },
+});
