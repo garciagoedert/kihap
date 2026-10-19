@@ -9,24 +9,21 @@ import {
   Platform,
   StyleSheet,
   Dimensions,
+  Image as RNImage,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
-  Sparkles,
   Search,
   X,
-  Award,
-  Heart,
-  Shield,
-  Smile,
-  Zap,
-  Flame,
   ChevronRight,
   BookOpen,
+  Heart,
+  Smile,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -38,11 +35,13 @@ interface LittleCharacter {
   name: string;
   belt: string;
   beltShort: string;
+  stepNumber: number;
   step: string;
   beltHex: string;
-  accentColor: string;
-  gradientColors: [string, string];
-  cardGradient: [string, string];
+  beltBorder: string;
+  softBg: string;
+  pillBg: string;
+  pillText: string;
   animal: string;
   animalEmoji: string;
   meaning: string;
@@ -59,20 +58,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Miles',
     belt: 'Faixa Branca',
     beltShort: 'Branca',
+    stepNumber: 1,
     step: '1º Passo',
-    beltHex: '#f1f5f9',
-    accentColor: '#94a3b8',
-    gradientColors: ['rgba(241, 245, 249, 0.25)', 'rgba(148, 163, 184, 0.05)'],
-    cardGradient: ['#1c202a', '#12151d'],
+    beltHex: '#e2e8f0',
+    beltBorder: '#cbd5e1',
+    softBg: '#f8fafc',
+    pillBg: '#f1f5f9',
+    pillText: '#334155',
     animal: 'Panda',
     animalEmoji: '🐼',
-    meaning: 'Simbologia relacionada a "amoroso" e "bondoso".',
+    meaning: 'Nome ligado a bondade, afeto e calma.',
     challenge: 'Agitado e ansioso',
-    virtue: 'Foco, Calma & Respiração',
+    virtue: 'Foco, calma e respiração',
     teaching:
-      'No tatame, Miles aprende a desacelerar a mente e canalizar sua agitação em disciplina. Ele descobre que a faixa branca é a semente de onde nasce o futuro faixa preta!',
+      'No tatame da Kihap, o Miles aprende a desacelerar a mente e canalizar toda a sua energia em atenção. A faixa branca é o início onde a semente da disciplina é plantada.',
     parentTip:
-      'Incentive momentos de respiração calma quando a criança estiver agitada, lembrando das pausas do Miles no tatame.',
+      'Quando seu filho estiver agitado em casa, convide-o a fazer três respirações profundas, lembrando das pausas do Miles no início de cada aula.',
     image: require('../assets/images/littles/miles.png'),
   },
   {
@@ -80,20 +81,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Jun',
     belt: 'Faixa Laranja',
     beltShort: 'Laranja',
+    stepNumber: 2,
     step: '2º Passo',
     beltHex: '#f97316',
-    accentColor: '#ea580c',
-    gradientColors: ['rgba(249, 115, 22, 0.35)', 'rgba(234, 88, 12, 0.05)'],
-    cardGradient: ['#231815', '#161113'],
+    beltBorder: '#ea580c',
+    softBg: '#fff7ed',
+    pillBg: '#ffedd5',
+    pillText: '#9a3412',
     animal: 'Leão',
     animalEmoji: '🦁',
-    meaning: 'Origem chinesa ("rei, governante") e coreana ("belo, talentoso").',
+    meaning: 'Origem oriental ligada a talento e liderança.',
     challenge: 'Inseguro e medroso',
-    virtue: 'Coragem & Autoconfiança',
+    virtue: 'Coragem e autoconfiança',
     teaching:
-      'Apesar de ser o rei da floresta, Jun sentia receio de errar novos movimentos. No tatame, aprendeu que coragem não é a ausência de medo, mas a força de tentar mesmo com frio na barriga!',
+      'Mesmo sendo um leãozinho, Jun tinha receio de tentar novos movimentos. No tatame, ele descobre que coragem não é não sentir medo, mas sim tentar com o coração aberto!',
     parentTip:
-      'Elogie a coragem de tentar novas atividades em família, comemorando cada pequeno progresso.',
+      'Elogie o esforço e a iniciativa em casa antes do resultado. Comemore cada pequena superação para fortalecer a autoconfiança.',
     image: require('../assets/images/littles/jun.png'),
   },
   {
@@ -101,20 +104,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Eddy',
     belt: 'Faixa Amarela',
     beltShort: 'Amarela',
+    stepNumber: 3,
     step: '3º Passo',
     beltHex: '#eab308',
-    accentColor: '#ca8a04',
-    gradientColors: ['rgba(234, 179, 8, 0.35)', 'rgba(202, 138, 4, 0.05)'],
-    cardGradient: ['#231f13', '#151410'],
+    beltBorder: '#ca8a04',
+    softBg: '#fefce8',
+    pillBg: '#fef9c3',
+    pillText: '#854d0e',
     animal: 'Girafa',
     animalEmoji: '🦒',
-    meaning: '"Guardião das riquezas", "protetor rico" e valoroso.',
+    meaning: 'Guardião generoso e atento.',
     challenge: 'Impulsivo e falante',
-    virtue: 'Atenção & Saber Ouvir',
+    virtue: 'Atenção e saber ouvir',
     teaching:
-      'Eddy é muito curioso e adora falar! No tatame, ele treina o poder do silêncio marcial: ouvir os mestres com atenção para absorver os detalhes de cada golpe.',
+      'Eddy quer falar o tempo todo! No treino da Kihap, ele aprende o superpoder do silêncio marcial: ouvir os mestres com atenção para absorver cada detalhe.',
     parentTip:
-      'Crie brincadeiras de escuta atenta em casa, incentivando a criança a ouvir até o final antes de falar.',
+      'Pratique momentos de escuta ativa à mesa: cada membro da família fala na sua vez sem interrupções.',
     image: require('../assets/images/littles/eddy.png'),
   },
   {
@@ -122,20 +127,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Sachi',
     belt: 'Faixa Camuflada',
     beltShort: 'Camuflada',
+    stepNumber: 4,
     step: '4º Passo',
-    beltHex: '#22c55e',
-    accentColor: '#15803d',
-    gradientColors: ['rgba(34, 197, 94, 0.35)', 'rgba(21, 128, 61, 0.05)'],
-    cardGradient: ['#142119', '#0d1611'],
+    beltHex: '#65a30d',
+    beltBorder: '#4d7c0f',
+    softBg: '#f7fee7',
+    pillBg: '#ecfccb',
+    pillText: '#3f6212',
     animal: 'Borboleta',
     animalEmoji: '🦋',
-    meaning: 'Origem japonesa: "criança de felicidade e alegria plena".',
-    challenge: 'Egoísta e convencida',
-    virtue: 'Humildade & Cooperação',
+    meaning: 'Origem japonesa: alegria e plenitude.',
+    challenge: 'Egoísta e competitiva',
+    virtue: 'Humildade e cooperação',
     teaching:
-      'Sachi é talentosa, mas queria sempre ser o centro de tudo. Na faixa camuflada, ela aprende a camuflar o ego e descobre que a maior alegria é ajudar os colegas a crescerem juntos!',
+      'Sachi é muito talentosa, mas queria vencer sempre sozinha. Na faixa camuflada, ela camufla o ego e entende que a maior vitória é ajudar os colegas a crescerem juntos.',
     parentTip:
-      'Mostre como é gratificante compartilhar e parabenizar os amigos e irmãos pelas conquistas deles.',
+      'Incentive brincadeiras em equipe onde o objetivo seja ajudar o irmão ou colega, reforçando o valor da cooperação.',
     image: require('../assets/images/littles/sachi.png'),
   },
   {
@@ -143,20 +150,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Kobe',
     belt: 'Faixa Verde',
     beltShort: 'Verde',
+    stepNumber: 5,
     step: '5º Passo',
     beltHex: '#10b981',
-    accentColor: '#059669',
-    gradientColors: ['rgba(16, 185, 129, 0.40)', 'rgba(5, 150, 105, 0.05)'],
-    cardGradient: ['#12221b', '#0b1612'],
+    beltBorder: '#059669',
+    softBg: '#ecfdf5',
+    pillBg: '#d1fae5',
+    pillText: '#065f46',
     animal: 'Jacaré',
     animalEmoji: '🐊',
-    meaning: '"Pequeno que vence", "vencedor" e "suplantador".',
+    meaning: 'Determinação e força de superação.',
     challenge: 'Teimoso e respondão',
-    virtue: 'Respeito & Disciplina Positiva',
+    virtue: 'Respeito e disciplina positiva',
     teaching:
-      'Kobe tem determinação sem igual, mas adorava teimar com regras. Nas artes marciais, canalizou sua garra para vencer com respeito aos mestres, família e adversários!',
+      'Kobe tem uma força enorme, mas insistia em teimar. No tatame, ele canaliza essa determinação para treinar com respeito aos mestres, aos pais e às regras.',
     parentTip:
-      'Quando houver teimosia, use o "código do Kobe": faça uma pausa rápida, respire e conversem olhando nos olhos.',
+      'Quando surgir uma teimosia, estabeleça um combinativo calmo olhando nos olhos, reafirmando as regras com carinho e firmeza.',
     image: require('../assets/images/littles/kobe.png'),
   },
   {
@@ -164,20 +173,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Hye',
     belt: 'Faixa Roxa',
     beltShort: 'Roxa',
+    stepNumber: 6,
     step: '6º Passo',
     beltHex: '#a855f7',
-    accentColor: '#9333ea',
-    gradientColors: ['rgba(168, 85, 247, 0.35)', 'rgba(147, 51, 234, 0.05)'],
-    cardGradient: ['#1d1425', '#120d18'],
+    beltBorder: '#9333ea',
+    softBg: '#faf5ff',
+    pillBg: '#f3e8ff',
+    pillText: '#6b21a8',
     animal: 'Coruja',
     animalEmoji: '🦉',
-    meaning: 'Origem coreana: "mente brilhante" e "inteligente".',
-    challenge: 'Esquecida e avoada',
-    virtue: 'Presença & Memória Marcial',
+    meaning: 'Origem coreana: inteligência e mente brilhante.',
+    challenge: 'Distraída e esquecida',
+    virtue: 'Presença e memória marcial',
     teaching:
-      'Hye tem raciocínio rápido, mas vivia no mundo da lua. As sequências e formas do Kihap treinam seu cérebro para manter atenção total no momento presente.',
+      'Hye tem pensamento ágil, mas vivia esquecendo suas coisas. As formas e movimentos do Kihap exercitam a memória e ensinam a estar 100% presente no momento.',
     parentTip:
-      'Ajude a criança a criar checklists divertidos (como preparar a mochila do treino), fortalecendo sua memória e rotina.',
+      'Envolva a criança na organização dos seus pertences (como preparar o dobok ou a mochila escolar) com uma pequena rotina visual.',
     image: require('../assets/images/littles/hye.png'),
   },
   {
@@ -185,20 +196,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Hope',
     belt: 'Faixa Azul',
     beltShort: 'Azul',
+    stepNumber: 7,
     step: '7º Passo',
     beltHex: '#3b82f6',
-    accentColor: '#2563eb',
-    gradientColors: ['rgba(59, 130, 246, 0.35)', 'rgba(37, 99, 235, 0.05)'],
-    cardGradient: ['#131c2c', '#0d131f'],
+    beltBorder: '#2563eb',
+    softBg: '#eff6ff',
+    pillBg: '#dbeafe',
+    pillText: '#1e40af',
     animal: 'Arara',
     animalEmoji: '🦜',
-    meaning: 'Origem indígena norte-americana "Hopi" (povo pacífico).',
+    meaning: 'Esperança e harmonia.',
     challenge: 'Tímida e indecisa',
-    virtue: 'Expressão, Atitude & Voz Firme',
+    virtue: 'Expressão, atitude e voz firme',
     teaching:
-      'Hope tinha receio de se expressar em público. No tatame, soltar o grito "KIHAP!" deu asas à sua voz e autoconfiança, ensinando-a a se defender e decidir com firmeza.',
+      'Hope tinha vergonha de falar na frente dos outros. O grito do "KIHAP!" deu asas à sua voz, ensinando que expressar o que sente com firmeza é um ato de coragem.',
     parentTip:
-      'Estimule a criança a dar opiniões em pequenas decisões do dia a dia, validando suas ideias com entusiasmo.',
+      'Peça a opinião do seu filho em pequenas escolhas do dia (como qual refeição preparar) e celebre quando ele expressar suas vontades com firmeza.',
     image: require('../assets/images/littles/hope.png'),
   },
   {
@@ -206,20 +219,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Jeong',
     belt: 'Faixa Marrom',
     beltShort: 'Marrom',
+    stepNumber: 8,
     step: '8º Passo',
     beltHex: '#b45309',
-    accentColor: '#78350f',
-    gradientColors: ['rgba(180, 83, 9, 0.35)', 'rgba(120, 53, 15, 0.05)'],
-    cardGradient: ['#221812', '#150f0b'],
+    beltBorder: '#92400e',
+    softBg: '#fffbeb',
+    pillBg: '#fef3c7',
+    pillText: '#78350f',
     animal: 'Macaco',
     animalEmoji: '🐒',
-    meaning: 'Termo coreano que significa "correto", "afetuoso", "bondoso".',
-    challenge: 'Mal-humorado e individualista',
-    virtue: 'Resiliência, Empatia & Alegria',
+    meaning: 'Conceito coreano de afeto, lealdade e empatia.',
+    challenge: 'Frustrado e impaciente',
+    virtue: 'Resiliência e empatia',
     teaching:
-      'Jeong se chateava quando os movimentos não saíam perfeitos de primeira. No caminho para a faixa preta, aprendeu que errar faz parte do treino e que a empatia une a turma!',
+      'Jeong ficava chateado quando um golpe não dava certo de primeira. Ele aprendeu que errar faz parte do aprendizado e que manter o bom humor ajuda a vencer qualquer desafio.',
     parentTip:
-      'Ensine que o bom humor é um superpoder que alivia frustrações quando as coisas ficam difíceis.',
+      'Diante de um erro ou frustração, lembre seu filho de que "o mestre é quem mais tentou e mais errou até acertar". Abrace o processo.',
     image: require('../assets/images/littles/jeong.png'),
   },
   {
@@ -227,20 +242,22 @@ const LITTLES_DATA: LittleCharacter[] = [
     name: 'Benny',
     belt: 'Faixa Vermelha',
     beltShort: 'Vermelha',
+    stepNumber: 9,
     step: '9º Passo',
     beltHex: '#ef4444',
-    accentColor: '#dc2626',
-    gradientColors: ['rgba(239, 68, 68, 0.38)', 'rgba(220, 38, 38, 0.06)'],
-    cardGradient: ['#261314', '#170b0c'],
+    beltBorder: '#dc2626',
+    softBg: '#fef2f2',
+    pillBg: '#fee2e2',
+    pillText: '#991b1b',
     animal: 'Fênix',
     animalEmoji: '🦅',
-    meaning: '"Bento", "abençoado" e "filho da fortuna e riqueza".',
-    challenge: 'Acomodado e desconfiado',
-    virtue: 'Superação & Renascimento',
+    meaning: 'Força renovadora e liderança inspiradora.',
+    challenge: 'Acomodado e relutante',
+    virtue: 'Superação e liderança',
     teaching:
-      'Na última faixa antes da Faixa Preta, a Fênix Benny renasce do comodismo! Ele abraça o esforço máximo e confia no mestre para se tornar um líder exemplar.',
+      'Na última faixa antes da Faixa Preta, Benny supera a zona de conforto. Ele se dedica ao máximo e se torna um exemplo inspirador para todos os outros Littles.',
     parentTip:
-      'Mostre que o verdadeiro campeão não para quando está confortável, mas se desafia a ser 1% melhor a cada dia.',
+      'Desafie seu filho a dar um passo além daquilo que já domina, parabenizando o espírito de liderança dentro de casa.',
     image: require('../assets/images/littles/benny.png'),
   },
 ];
@@ -289,63 +306,54 @@ export default function LittlesScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* AMBIENT BACKGROUND GLOW */}
-      <View style={styles.ambientTopGlow} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(234, 179, 8, 0.12)', 'rgba(234, 88, 12, 0.04)', 'transparent']}
-          style={StyleSheet.absoluteFillObject}
-        />
-      </View>
-
-      {/* FLOATING TOP APP BAR */}
+      {/* HEADER LIMPO DA KIHAP */}
       <View
         style={[
           styles.headerContainer,
-          { paddingTop: insets.top + (Platform.OS === 'ios' ? 6 : 14) },
+          { paddingTop: insets.top + (Platform.OS === 'ios' ? 8 : 14) },
         ]}
       >
-        <View style={styles.headerTopRow}>
+        <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             accessibilityLabel="Voltar"
           >
-            <ArrowLeft size={20} color="#ffffff" />
+            <ArrowLeft size={22} color="#111827" />
           </TouchableOpacity>
 
-          <View style={styles.headerTitleCenter}>
-            <View style={styles.headerTitleRow}>
-              <Sparkles size={16} color="#eab308" />
-              <Text style={styles.headerTitleText}>UNIVERSO LITTLES</Text>
-            </View>
-            <Text style={styles.headerSubtitleText}>
-              COLEÇÃO DE MASCOTES & GRADUAÇÃO
-            </Text>
+          <View style={styles.headerTitleBox}>
+            <Text style={styles.headerTitle}>Mascotes Littles</Text>
+            <Text style={styles.headerSubtitle}>Programa Infantil Kihap</Text>
           </View>
 
-          <View style={styles.headerCounterBadge}>
-            <Text style={styles.headerCounterText}>9</Text>
+          <View style={styles.headerLogoBox}>
+            <RNImage
+              source={{ uri: 'https://kihap.com.br/imgs/favicon.png' }}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
           </View>
         </View>
 
-        {/* SEARCH INPUT */}
-        <View style={styles.searchBar}>
-          <Search size={16} color="#94a3b8" />
+        {/* CAMPO DE BUSCA LIMPO */}
+        <View style={styles.searchContainer}>
+          <Search size={18} color="#9ca3af" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Buscar por mascote, animal ou faixa..."
-            placeholderTextColor="#64748b"
+            placeholder="Buscar por nome, animal ou faixa..."
+            placeholderTextColor="#9ca3af"
             style={styles.searchInput}
             clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={15} color="#94a3b8" />
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={10}>
+              <X size={16} color="#9ca3af" />
             </TouchableOpacity>
           )}
         </View>
@@ -354,37 +362,29 @@ export default function LittlesScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: 12,
-          paddingBottom: insets.bottom + 48,
+          paddingBottom: insets.bottom + 40,
         }}
       >
-        {/* HERO PEDAGOGICAL CARD */}
-        <View style={styles.heroBanner}>
-          <LinearGradient
-            colors={['rgba(234, 179, 8, 0.18)', 'rgba(15, 17, 23, 0.95)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroBannerGradient}
-          />
-          <View style={styles.heroBannerContent}>
-            <View style={styles.heroBannerBadgeRow}>
-              <View style={styles.heroIconBox}>
-                <Award size={15} color="#000000" />
-              </View>
-              <Text style={styles.heroBadgeText}>O MÉTODO MARCIAL LITTLES</Text>
-            </View>
-            <Text style={styles.heroDescriptionText}>
-              Cada faixa do Kihap é representada por um mascote e um desafio comportamental real. Conforme a criança treina e avança nas faixas, ela transforma dificuldades em virtudes para a vida!
+        {/* CARD INFORMATIVO KIHAP */}
+        <View style={styles.infoBanner}>
+          <View style={styles.infoBannerIcon}>
+            <Smile size={20} color="#854d0e" />
+          </View>
+          <View style={styles.infoBannerContent}>
+            <Text style={styles.infoBannerTitle}>Como funciona o programa</Text>
+            <Text style={styles.infoBannerText}>
+              Cada faixa acompanha um personagem e um desafio de comportamento.
+              No tatame, as crianças aprendem valores essenciais para a vida com os mestres.
             </Text>
           </View>
         </View>
 
-        {/* HORIZONTAL BELT TABS */}
+        {/* FILTROS POR FAIXA */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.beltTabsContainer}
-          style={styles.beltTabsScroll}
+          contentContainerStyle={styles.filtersScrollContent}
+          style={styles.filtersScroll}
         >
           {beltFilters.map((tab) => {
             const active = selectedBelt === tab.id;
@@ -399,24 +399,23 @@ export default function LittlesScreen() {
                 }}
                 activeOpacity={0.8}
                 style={[
-                  styles.beltTab,
-                  active && styles.beltTabActive,
-                  active && { borderColor: tab.hex },
+                  styles.filterPill,
+                  active && styles.filterPillActive,
                 ]}
               >
                 {tab.id !== 'todos' && (
                   <View
                     style={[
-                      styles.beltTabDot,
+                      styles.filterDot,
                       { backgroundColor: tab.hex },
+                      tab.id === 'miles' && { borderWidth: 1, borderColor: '#cbd5e1' },
                     ]}
                   />
                 )}
                 <Text
                   style={[
-                    styles.beltTabText,
-                    active && styles.beltTabTextActive,
-                    active && tab.id !== 'todos' && { color: '#ffffff' },
+                    styles.filterPillText,
+                    active && styles.filterPillTextActive,
                   ]}
                 >
                   {tab.label}
@@ -426,30 +425,25 @@ export default function LittlesScreen() {
           })}
         </ScrollView>
 
-        {/* SECTION HEADER */}
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionTitleWithIcon}>
-            <Flame size={15} color="#eab308" />
-            <Text style={styles.sectionTitleText}>
-              {selectedBelt === 'todos'
-                ? 'TODOS OS 9 MASCOTES'
-                : `FAIXA ${selectedBelt.toUpperCase()}`}
-            </Text>
-          </View>
-          <Text style={styles.sectionSubtitleCount}>
-            {filteredCharacters.length}{' '}
-            {filteredCharacters.length === 1 ? 'personagem' : 'personagens'}
+        {/* CONTADOR DE ITENS */}
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listHeaderTitle}>
+            {selectedBelt === 'todos'
+              ? 'Todos os Personagens'
+              : `Faixa ${selectedBelt.charAt(0).toUpperCase() + selectedBelt.slice(1)}`}
+          </Text>
+          <Text style={styles.listHeaderCount}>
+            {filteredCharacters.length} {filteredCharacters.length === 1 ? 'mascote' : 'mascotes'}
           </Text>
         </View>
 
-        {/* CHARACTERS SHOWCASE (HERO TRADING CARDS) */}
-        <View style={styles.cardsListContainer}>
+        {/* LISTA DE CARDS DOS PERSONAGENS */}
+        <View style={styles.cardsContainer}>
           {filteredCharacters.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Smile size={42} color="#64748b" />
+            <View style={styles.emptyBox}>
               <Text style={styles.emptyTitle}>Nenhum mascote encontrado</Text>
               <Text style={styles.emptySubtitle}>
-                Tente buscar por outro termo ou selecione a aba "Todos".
+                Tente buscar por outro termo ou escolha a opção "Todos".
               </Text>
             </View>
           ) : (
@@ -457,117 +451,87 @@ export default function LittlesScreen() {
               return (
                 <TouchableOpacity
                   key={char.id}
-                  activeOpacity={0.92}
+                  activeOpacity={0.9}
                   onPress={() => handleOpenModal(char)}
-                  style={styles.heroCard}
+                  style={styles.card}
                 >
-                  <LinearGradient
-                    colors={char.cardGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-
-                  {/* TOP MARTIAL BELT STRIPE */}
-                  <View style={styles.beltStripeContainer}>
-                    <View
-                      style={[
-                        styles.beltStripeMain,
-                        { backgroundColor: char.beltHex },
-                      ]}
-                    />
-                    <View style={styles.beltStripeTip} />
+                  {/* FAIXA MARCIAL NO TOPO DO CARD */}
+                  <View style={styles.cardBeltHeader}>
+                    <View style={styles.beltStripeContainer}>
+                      <View
+                        style={[
+                          styles.beltStripeMain,
+                          { backgroundColor: char.beltHex },
+                          char.id === 'miles' && styles.beltWhiteBorder,
+                        ]}
+                      />
+                      <View style={styles.beltStripeTip}>
+                        {Array.from({ length: Math.min(char.stepNumber, 4) }).map((_, i) => (
+                          <View key={i} style={styles.beltStripeRankLine} />
+                        ))}
+                      </View>
+                    </View>
+                    <View style={[styles.stepBadge, { backgroundColor: char.pillBg }]}>
+                      <Text style={[styles.stepBadgeText, { color: char.pillText }]}>
+                        {char.step.toUpperCase()} • {char.belt.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
 
-                  <View style={styles.cardMainBody}>
-                    {/* CHARACTER STAGE WITH AMBIENT HALO */}
-                    <View style={styles.characterStage}>
-                      <LinearGradient
-                        colors={char.gradientColors}
-                        style={styles.characterAmbientHalo}
-                      />
+                  {/* CORPO DO CARD COM IMAGEM DO PERSONAGEM E DADOS */}
+                  <View style={styles.cardBody}>
+                    <View style={[styles.characterStage, { backgroundColor: char.softBg }]}>
                       <ExpoImage
                         source={char.image}
                         style={styles.characterImage}
                         contentFit="contain"
-                        transition={150}
+                        transition={200}
                       />
                     </View>
 
-                    {/* CHARACTER DETAILS */}
-                    <View style={styles.characterContent}>
-                      {/* STEP & BELT PILL */}
-                      <View style={styles.characterMetaRow}>
-                        <View
-                          style={[
-                            styles.characterBeltBadge,
-                            { borderColor: char.beltHex },
-                          ]}
-                        >
-                          <View
-                            style={[
-                              styles.characterBeltDot,
-                              { backgroundColor: char.beltHex },
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.characterBeltText,
-                              { color: char.beltHex },
-                            ]}
-                          >
-                            {char.belt}
+                    <View style={styles.cardInfo}>
+                      <View style={styles.cardNameRow}>
+                        <Text style={styles.characterName}>{char.name}</Text>
+                        <View style={styles.animalTag}>
+                          <Text style={styles.animalTagText}>
+                            {char.animalEmoji} {char.animal}
                           </Text>
                         </View>
-                        <Text style={styles.stepBadgeText}>{char.step}</Text>
                       </View>
 
-                      {/* NAME */}
-                      <Text style={styles.characterNameText}>{char.name}</Text>
-
-                      {/* ANIMAL TAG */}
-                      <Text style={styles.characterAnimalText}>
-                        {char.animalEmoji} {char.animal} • {char.meaning}
+                      <Text style={styles.meaningText} numberOfLines={1}>
+                        {char.meaning}
                       </Text>
 
-                      {/* CHALLENGE VS VIRTUE PILLS */}
-                      <View style={styles.traitsContainer}>
-                        <View style={styles.traitBoxChallenge}>
-                          <View style={styles.traitHeaderRow}>
-                            <Zap size={11} color="#f97316" />
-                            <Text style={styles.traitLabelChallenge}>
-                              DESAFIO
-                            </Text>
+                      {/* BLOCOS LIMPOS: DESAFIO & TATAME */}
+                      <View style={styles.pillsBox}>
+                        <View style={styles.challengeRow}>
+                          <View style={styles.iconCircleRed}>
+                            <Zap size={11} color="#b91c1c" />
                           </View>
-                          <Text
-                            style={styles.traitValueChallenge}
-                            numberOfLines={1}
-                          >
+                          <Text style={styles.challengeLabel}>Desafio:</Text>
+                          <Text style={styles.challengeValue} numberOfLines={1}>
                             {char.challenge}
                           </Text>
                         </View>
 
-                        <View style={styles.traitBoxVirtue}>
-                          <View style={styles.traitHeaderRow}>
-                            <Shield size={11} color="#eab308" />
-                            <Text style={styles.traitLabelVirtue}>
-                              NO TATAME
-                            </Text>
+                        <View style={styles.virtueRow}>
+                          <View style={styles.iconCircleGreen}>
+                            <ShieldCheck size={11} color="#15803d" />
                           </View>
-                          <Text style={styles.traitValueVirtue} numberOfLines={1}>
+                          <Text style={styles.virtueLabel}>No Tatame:</Text>
+                          <Text style={styles.virtueValue} numberOfLines={1}>
                             {char.virtue}
                           </Text>
                         </View>
                       </View>
-
-                      {/* EXPLORE BUTTON */}
-                      <View style={styles.exploreLinkRow}>
-                        <Text style={styles.exploreLinkText}>
-                          Ver história e ensinamento
-                        </Text>
-                        <ChevronRight size={13} color="#eab308" />
-                      </View>
                     </View>
+                  </View>
+
+                  {/* RODAPÉ DO CARD */}
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.cardFooterAction}>Conhecer história completa</Text>
+                    <ChevronRight size={16} color="#ca8a04" />
                   </View>
                 </TouchableOpacity>
               );
@@ -576,167 +540,110 @@ export default function LittlesScreen() {
         </View>
       </ScrollView>
 
-      {/* IMMERSIVE CHARACTER MODAL */}
+      {/* MODAL LIMPO COM DETALHES DO PERSONAGEM */}
       <Modal
         visible={!!activeModalChar}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setActiveModalChar(null)}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCardWrapper}>
-            {activeModalChar && (
-              <>
-                <LinearGradient
-                  colors={activeModalChar.cardGradient}
-                  style={StyleSheet.absoluteFillObject}
-                />
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setActiveModalChar(null)}
+          />
 
-                {/* MODAL BELT HEADER ACCENT */}
-                <View style={styles.modalBeltStripe}>
-                  <View
-                    style={[
-                      styles.modalBeltStripeFill,
-                      { backgroundColor: activeModalChar.beltHex },
-                    ]}
-                  />
-                  <View style={styles.modalBeltStripeBlackTip} />
+          {activeModalChar && (
+            <View style={styles.modalSheet}>
+              {/* INDICADOR DE ARRASTE */}
+              <View style={styles.modalHandle} />
+
+              {/* CABEÇALHO DO MODAL */}
+              <View style={styles.modalHeaderRow}>
+                <View style={[styles.modalStepBadge, { backgroundColor: activeModalChar.pillBg }]}>
+                  <Text style={[styles.modalStepBadgeText, { color: activeModalChar.pillText }]}>
+                    {activeModalChar.step} • {activeModalChar.belt}
+                  </Text>
                 </View>
 
-                {/* MODAL CLOSE BUTTON */}
                 <TouchableOpacity
                   onPress={() => setActiveModalChar(null)}
                   style={styles.modalCloseButton}
-                  activeOpacity={0.8}
+                  hitSlop={12}
                 >
-                  <X size={18} color="#ffffff" />
+                  <X size={20} color="#4b5563" />
                 </TouchableOpacity>
+              </View>
 
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.modalScrollContent}
-                >
-                  {/* HERO CHARACTER STAGE IN MODAL */}
-                  <View style={styles.modalHeroStage}>
-                    <LinearGradient
-                      colors={activeModalChar.gradientColors}
-                      style={styles.modalHeroHalo}
-                    />
-                    <ExpoImage
-                      source={activeModalChar.image}
-                      style={styles.modalHeroImage}
-                      contentFit="contain"
-                    />
-                  </View>
-
-                  {/* BADGE */}
-                  <View
-                    style={[
-                      styles.modalBeltBadge,
-                      { borderColor: activeModalChar.beltHex },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.modalBeltBadgeDot,
-                        { backgroundColor: activeModalChar.beltHex },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.modalBeltBadgeText,
-                        { color: activeModalChar.beltHex },
-                      ]}
-                    >
-                      {activeModalChar.belt} • {activeModalChar.step}
-                    </Text>
-                  </View>
-
-                  {/* NAME & ANIMAL */}
-                  <Text style={styles.modalNameText}>
-                    {activeModalChar.name}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+              >
+                {/* DESTAQUE DO PERSONAGEM */}
+                <View style={[styles.modalStage, { backgroundColor: activeModalChar.softBg }]}>
+                  <ExpoImage
+                    source={activeModalChar.image}
+                    style={styles.modalImage}
+                    contentFit="contain"
+                    transition={200}
+                  />
+                  <Text style={styles.modalName}>{activeModalChar.name}</Text>
+                  <Text style={styles.modalAnimal}>
+                    {activeModalChar.animalEmoji} {activeModalChar.animal}
                   </Text>
-                  <Text style={styles.modalAnimalText}>
-                    {activeModalChar.animalEmoji} Mascote{' '}
-                    {activeModalChar.animal}
-                  </Text>
+                </View>
 
-                  {/* LORE BLOCKS */}
-                  <View style={styles.modalBlocksList}>
-                    {/* BLOCK 1: MEANING */}
-                    <View style={styles.modalInfoCard}>
-                      <View style={styles.modalInfoCardHeader}>
-                        <Heart size={14} color="#eab308" />
-                        <Text style={styles.modalInfoCardTitle}>
-                          SIGNIFICADO DO NOME
-                        </Text>
-                      </View>
-                      <Text style={styles.modalInfoCardBody}>
-                        {activeModalChar.meaning}
-                      </Text>
+                {/* BLOCOS INFORMATIVOS */}
+                <View style={styles.modalContent}>
+                  {/* SIGNIFICADO DO NOME */}
+                  <View style={styles.infoCard}>
+                    <View style={styles.infoCardHeader}>
+                      <BookOpen size={16} color="#3b82f6" />
+                      <Text style={styles.infoCardTitle}>Origem & Significado</Text>
                     </View>
-
-                    {/* BLOCK 2: CHALLENGE */}
-                    <View style={styles.modalInfoCard}>
-                      <View style={styles.modalInfoCardHeader}>
-                        <Zap size={14} color="#f97316" />
-                        <Text style={styles.modalInfoCardTitle}>
-                          O DESAFIO DE COMPORTAMENTO
-                        </Text>
-                      </View>
-                      <Text style={styles.modalInfoCardBody}>
-                        {activeModalChar.challenge}
-                      </Text>
-                    </View>
-
-                    {/* BLOCK 3: MARTIAL VIRTUE ON TATAME */}
-                    <View style={styles.modalGoldenCard}>
-                      <LinearGradient
-                        colors={[
-                          'rgba(234, 179, 8, 0.22)',
-                          'rgba(234, 179, 8, 0.05)',
-                        ]}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-                      <View style={styles.modalInfoCardHeader}>
-                        <Shield size={14} color="#facc15" />
-                        <Text style={styles.modalGoldenCardTitle}>
-                          A TRANSFORMAÇÃO NO TATAME
-                        </Text>
-                      </View>
-                      <Text style={styles.modalGoldenCardBody}>
-                        {activeModalChar.teaching}
-                      </Text>
-                    </View>
-
-                    {/* BLOCK 4: PARENT TIP */}
-                    <View style={styles.modalInfoCard}>
-                      <View style={styles.modalInfoCardHeader}>
-                        <BookOpen size={14} color="#38bdf8" />
-                        <Text style={styles.modalInfoCardTitle}>
-                          DICA DOS MESTRES PARA A FAMÍLIA
-                        </Text>
-                      </View>
-                      <Text style={styles.modalInfoCardBody}>
-                        {activeModalChar.parentTip}
-                      </Text>
-                    </View>
+                    <Text style={styles.infoCardBody}>{activeModalChar.meaning}</Text>
                   </View>
 
-                  {/* CLOSE BUTTON */}
+                  {/* O DESAFIO */}
+                  <View style={styles.infoCardRed}>
+                    <View style={styles.infoCardHeader}>
+                      <Zap size={16} color="#dc2626" />
+                      <Text style={styles.infoCardTitleRed}>O Desafio Comportamental</Text>
+                    </View>
+                    <Text style={styles.infoCardBodyRed}>{activeModalChar.challenge}</Text>
+                  </View>
+
+                  {/* A LIÇÃO NO TATAME */}
+                  <View style={styles.infoCardGreen}>
+                    <View style={styles.infoCardHeader}>
+                      <ShieldCheck size={16} color="#16a34a" />
+                      <Text style={styles.infoCardTitleGreen}>A Lição no Tatame da Kihap</Text>
+                    </View>
+                    <Text style={styles.infoCardBodyGreen}>{activeModalChar.teaching}</Text>
+                  </View>
+
+                  {/* DICA PARA A FAMÍLIA (DESTAQUE AMARELO KIHAP) */}
+                  <View style={styles.parentTipCard}>
+                    <View style={styles.infoCardHeader}>
+                      <Heart size={16} color="#ca8a04" />
+                      <Text style={styles.parentTipTitle}>Dica dos Mestres para a Família</Text>
+                    </View>
+                    <Text style={styles.parentTipBody}>{activeModalChar.parentTip}</Text>
+                  </View>
+
+                  {/* BOTÃO FECHAR */}
                   <TouchableOpacity
-                    onPress={() => setActiveModalChar(null)}
                     style={styles.modalPrimaryButton}
+                    onPress={() => setActiveModalChar(null)}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.modalPrimaryButtonText}>
-                      VOLTAR PARA A TURMA
-                    </Text>
+                    <Text style={styles.modalPrimaryButtonText}>Entendi, Mestre!</Text>
                   </TouchableOpacity>
-                </ScrollView>
-              </>
-            )}
-          </View>
+                </View>
+              </ScrollView>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
@@ -746,548 +653,544 @@ export default function LittlesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0c0d12',
-  },
-  ambientTopGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 320,
+    backgroundColor: '#f8fafc',
   },
   headerContainer: {
-    backgroundColor: 'rgba(12, 13, 18, 0.92)',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-    paddingHorizontal: 18,
+    borderBottomColor: '#f1f5f9',
+    paddingHorizontal: 16,
     paddingBottom: 14,
   },
-  headerTopRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-  },
-  headerTitleCenter: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerTitleText: {
-    fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 16,
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
-  headerSubtitleText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#94a3b8',
-    letterSpacing: 1.5,
-    marginTop: 2,
-  },
-  headerCounterBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(234, 179, 8, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.40)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCounterText: {
-    fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 13,
-    color: '#eab308',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 13,
-    color: '#ffffff',
-    fontWeight: '500',
-  },
-  heroBanner: {
-    marginHorizontal: 18,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.30)',
-    marginBottom: 16,
-  },
-  heroBannerGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroBannerContent: {
-    padding: 16,
-  },
-  heroBannerBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  heroIconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    backgroundColor: '#eab308',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroBadgeText: {
-    fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 11,
-    color: '#facc15',
-    letterSpacing: 1,
-  },
-  heroDescriptionText: {
-    fontSize: 12,
-    color: '#cbd5e1',
-    lineHeight: 18,
-    fontWeight: '400',
-  },
-  beltTabsScroll: {
-    marginBottom: 16,
-  },
-  beltTabsContainer: {
-    paddingHorizontal: 18,
-    gap: 8,
-  },
-  beltTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    gap: 6,
-  },
-  beltTabActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
-    borderWidth: 1.5,
-  },
-  beltTabDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  beltTabText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94a3b8',
-  },
-  beltTabTextActive: {
-    color: '#ffffff',
-    fontWeight: '800',
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    marginBottom: 12,
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
   },
-  sectionTitleWithIcon: {
-    flexDirection: 'row',
+  headerTitleBox: {
+    flex: 1,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
   },
-  sectionTitleText: {
+  headerTitle: {
     fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 12,
-    color: '#ffffff',
-    letterSpacing: 1,
+    fontSize: 18,
+    color: '#0f172a',
+    letterSpacing: 0.3,
   },
-  sectionSubtitleCount: {
+  headerSubtitle: {
     fontSize: 11,
     fontWeight: '600',
     color: '#64748b',
+    marginTop: 1,
   },
-  cardsListContainer: {
-    paddingHorizontal: 18,
+  headerLogoBox: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogo: {
+    width: 28,
+    height: 28,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 42,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0f172a',
+    paddingVertical: 0,
+  },
+  infoBanner: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 12,
+    backgroundColor: '#fefce8',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#fef08a',
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  infoBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fef08a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  infoBannerContent: {
+    flex: 1,
+  },
+  infoBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#713f12',
+    marginBottom: 2,
+  },
+  infoBannerText: {
+    fontSize: 12,
+    color: '#854d0e',
+    lineHeight: 17,
+  },
+  filtersScroll: {
+    marginBottom: 8,
+  },
+  filtersScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  filterPillActive: {
+    backgroundColor: '#eab308',
+    borderColor: '#ca8a04',
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  filterPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  filterPillTextActive: {
+    color: '#000000',
+    fontWeight: '800',
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  listHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  listHeaderCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  cardsContainer: {
+    paddingHorizontal: 16,
     gap: 14,
   },
-  heroCard: {
-    borderRadius: 26,
-    overflow: 'hidden',
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardBeltHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    backgroundColor: '#fafafa',
   },
   beltStripeContainer: {
-    height: 6,
-    width: '100%',
     flexDirection: 'row',
+    alignItems: 'center',
+    height: 14,
+    borderRadius: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   beltStripeMain: {
-    flex: 1,
+    width: 44,
+    height: '100%',
+  },
+  beltWhiteBorder: {
+    borderRightWidth: 1,
+    borderColor: '#cbd5e1',
   },
   beltStripeTip: {
     width: 22,
-    backgroundColor: '#000000',
+    height: '100%',
+    backgroundColor: '#0f172a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 2,
   },
-  cardMainBody: {
+  beltStripeRankLine: {
+    width: 2,
+    height: '70%',
+    backgroundColor: '#ffffff',
+    borderRadius: 1,
+  },
+  stepBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  stepBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  cardBody: {
     flexDirection: 'row',
     padding: 14,
     gap: 14,
   },
   characterStage: {
-    width: 120,
-    height: 150,
-    borderRadius: 20,
+    width: 105,
+    height: 125,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  characterAmbientHalo: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    padding: 6,
   },
   characterImage: {
-    width: 105,
-    height: 135,
+    width: '100%',
+    height: '100%',
   },
-  characterContent: {
+  cardInfo: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
-  characterMetaRow: {
+  cardNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 2,
   },
-  characterBeltBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.40)',
-    gap: 5,
-  },
-  characterBeltDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  characterBeltText: {
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  stepBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748b',
-    textTransform: 'uppercase',
-  },
-  characterNameText: {
+  characterName: {
     fontFamily: 'NeueMachina-Ultrabold',
     fontSize: 20,
-    color: '#ffffff',
-    letterSpacing: 0.5,
-    marginTop: 2,
+    color: '#0f172a',
   },
-  characterAnimalText: {
+  animalTag: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  animalTagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#cbd5e1',
-    marginTop: 1,
+    color: '#475569',
   },
-  traitsContainer: {
+  meaningText: {
+    fontSize: 11,
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  pillsBox: {
     gap: 5,
-    marginTop: 8,
   },
-  traitBoxChallenge: {
-    backgroundColor: 'rgba(249, 115, 22, 0.12)',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(249, 115, 22, 0.20)',
-  },
-  traitHeaderRow: {
+  challengeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 1,
-  },
-  traitLabelChallenge: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#f97316',
-    letterSpacing: 0.5,
-  },
-  traitValueChallenge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#fdba74',
-  },
-  traitBoxVirtue: {
-    backgroundColor: 'rgba(234, 179, 8, 0.12)',
-    borderRadius: 10,
+    backgroundColor: '#fef2f2',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.22)',
+    borderRadius: 8,
+    gap: 5,
   },
-  traitLabelVirtue: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#eab308',
-    letterSpacing: 0.5,
-  },
-  traitValueVirtue: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#fef08a',
-  },
-  exploreLinkRow: {
-    flexDirection: 'row',
+  iconCircleRed: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#fee2e2',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    justifyContent: 'center',
   },
-  exploreLinkText: {
+  challengeLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#eab308',
-    letterSpacing: 0.3,
+    color: '#991b1b',
   },
-  emptyContainer: {
+  challengeValue: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#7f1d1d',
+    flex: 1,
+  },
+  virtueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 5,
+  },
+  iconCircleGreen: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#dcfce7',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 24,
+  },
+  virtueLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  virtueValue: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#14532d',
+    flex: 1,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fafafa',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  cardFooterAction: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#854d0e',
+  },
+  emptyBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#e2e8f0',
   },
   emptyTitle: {
-    fontFamily: 'NeueMachina-Ultrabold',
     fontSize: 15,
-    color: '#ffffff',
-    marginTop: 10,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748b',
-    marginTop: 4,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  modalCardWrapper: {
-    width: '100%',
-    maxHeight: '90%',
-    borderRadius: 30,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    position: 'relative',
-    backgroundColor: '#12151d',
-  },
-  modalBeltStripe: {
-    height: 8,
-    width: '100%',
-    flexDirection: 'row',
-  },
-  modalBeltStripeFill: {
-    flex: 1,
-  },
-  modalBeltStripeBlackTip: {
-    width: 28,
-    backgroundColor: '#000000',
-  },
-  modalCloseButton: {
-    position: 'absolute',
-    top: 18,
-    right: 18,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.60)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    zIndex: 10,
-  },
-  modalScrollContent: {
-    padding: 22,
-    alignItems: 'center',
-  },
-  modalHeroStage: {
-    width: 170,
-    height: 190,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    position: 'relative',
-  },
-  modalHeroHalo: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-  },
-  modalHeroImage: {
-    width: 160,
-    height: 180,
-  },
-  modalBeltBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
-    gap: 6,
-    marginBottom: 8,
-  },
-  modalBeltBadgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  modalBeltBadgeText: {
-    fontSize: 11,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  modalNameText: {
-    fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 26,
-    color: '#ffffff',
-    letterSpacing: 0.5,
     textAlign: 'center',
   },
-  modalAnimalText: {
-    fontSize: 13,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalSheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '90%',
+    paddingTop: 12,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#cbd5e1',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  modalStepBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  modalStepBadgeText: {
+    fontSize: 11,
     fontWeight: '800',
-    color: '#eab308',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalStage: {
+    alignItems: 'center',
+    paddingVertical: 18,
+    marginHorizontal: 20,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  modalImage: {
+    width: 150,
+    height: 170,
+    marginBottom: 10,
+  },
+  modalName: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 26,
+    color: '#0f172a',
+  },
+  modalAnimal: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748b',
     marginTop: 2,
-    marginBottom: 18,
   },
-  modalBlocksList: {
-    width: '100%',
-    gap: 10,
+  modalContent: {
+    paddingHorizontal: 20,
+    gap: 12,
   },
-  modalInfoCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 18,
+  infoCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#e2e8f0',
   },
-  modalInfoCardHeader: {
+  infoCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
   },
-  modalInfoCardTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: 0.8,
+  infoCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1e40af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  modalInfoCardBody: {
-    fontSize: 12,
-    color: '#cbd5e1',
+  infoCardBody: {
+    fontSize: 13,
+    color: '#334155',
     lineHeight: 18,
-    fontWeight: '400',
   },
-  modalGoldenCard: {
-    borderRadius: 18,
+  infoCardRed: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.40)',
-    overflow: 'hidden',
-    position: 'relative',
+    borderColor: '#fecaca',
   },
-  modalGoldenCardTitle: {
-    fontFamily: 'NeueMachina-Ultrabold',
+  infoCardTitleRed: {
     fontSize: 11,
-    color: '#facc15',
-    letterSpacing: 0.8,
+    fontWeight: '800',
+    color: '#b91c1c',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  modalGoldenCardBody: {
-    fontSize: 12,
-    color: '#fef08a',
+  infoCardBodyRed: {
+    fontSize: 13,
+    color: '#7f1d1d',
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  infoCardGreen: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  infoCardTitleGreen: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803d',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoCardBodyGreen: {
+    fontSize: 13,
+    color: '#14532d',
+    lineHeight: 19,
+  },
+  parentTipCard: {
+    backgroundColor: '#fefce8',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#fef08a',
+  },
+  parentTipTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#854d0e',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  parentTipBody: {
+    fontSize: 13,
+    color: '#713f12',
+    lineHeight: 19,
   },
   modalPrimaryButton: {
-    width: '100%',
-    paddingVertical: 14,
-    borderRadius: 18,
     backgroundColor: '#eab308',
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 18,
-    shadowColor: '#eab308',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
+    marginTop: 6,
   },
   modalPrimaryButtonText: {
     fontFamily: 'NeueMachina-Ultrabold',
-    fontSize: 12,
+    fontSize: 14,
     color: '#000000',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
 });
