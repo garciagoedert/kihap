@@ -21,7 +21,6 @@ import {
   ChevronRight,
   BookOpen,
   Heart,
-  Smile,
   ShieldCheck,
   Zap,
 } from 'lucide-react-native';
@@ -266,36 +265,22 @@ export default function LittlesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [selectedBelt, setSelectedBelt] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeModalChar, setActiveModalChar] = useState<LittleCharacter | null>(null);
 
-  const beltFilters = useMemo(() => {
-    return [
-      { id: 'todos', label: 'Todos', hex: '#eab308' },
-      ...LITTLES_DATA.map((c) => ({ id: c.id, label: c.beltShort, hex: c.beltHex })),
-    ];
-  }, []);
-
   const filteredCharacters = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return LITTLES_DATA;
     return LITTLES_DATA.filter((c) => {
-      const matchBelt =
-        selectedBelt === 'todos' ||
-        c.id === selectedBelt ||
-        c.beltShort.toLowerCase() === selectedBelt.toLowerCase();
-
-      const q = searchQuery.toLowerCase().trim();
-      const matchSearch =
-        !q ||
+      return (
         c.name.toLowerCase().includes(q) ||
         c.animal.toLowerCase().includes(q) ||
         c.belt.toLowerCase().includes(q) ||
         c.challenge.toLowerCase().includes(q) ||
-        c.virtue.toLowerCase().includes(q);
-
-      return matchBelt && matchSearch;
+        c.virtue.toLowerCase().includes(q)
+      );
     });
-  }, [selectedBelt, searchQuery]);
+  }, [searchQuery]);
 
   const handleOpenModal = (char: LittleCharacter) => {
     try {
@@ -362,75 +347,14 @@ export default function LittlesScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
+          paddingTop: 16,
           paddingBottom: insets.bottom + 40,
         }}
       >
-        {/* CARD INFORMATIVO KIHAP */}
-        <View style={styles.infoBanner}>
-          <View style={styles.infoBannerIcon}>
-            <Smile size={20} color="#854d0e" />
-          </View>
-          <View style={styles.infoBannerContent}>
-            <Text style={styles.infoBannerTitle}>Como funciona o programa</Text>
-            <Text style={styles.infoBannerText}>
-              Cada faixa acompanha um personagem e um desafio de comportamento.
-              No tatame, as crianças aprendem valores essenciais para a vida com os mestres.
-            </Text>
-          </View>
-        </View>
-
-        {/* FILTROS POR FAIXA */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersScrollContent}
-          style={styles.filtersScroll}
-        >
-          {beltFilters.map((tab) => {
-            const active = selectedBelt === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                onPress={() => {
-                  try {
-                    Haptics.selectionAsync();
-                  } catch (_) {}
-                  setSelectedBelt(tab.id);
-                }}
-                activeOpacity={0.8}
-                style={[
-                  styles.filterPill,
-                  active && styles.filterPillActive,
-                ]}
-              >
-                {tab.id !== 'todos' && (
-                  <View
-                    style={[
-                      styles.filterDot,
-                      { backgroundColor: tab.hex },
-                      tab.id === 'miles' && { borderWidth: 1, borderColor: '#cbd5e1' },
-                    ]}
-                  />
-                )}
-                <Text
-                  style={[
-                    styles.filterPillText,
-                    active && styles.filterPillTextActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
         {/* CONTADOR DE ITENS */}
         <View style={styles.listHeaderRow}>
           <Text style={styles.listHeaderTitle}>
-            {selectedBelt === 'todos'
-              ? 'Todos os Personagens'
-              : `Faixa ${selectedBelt.charAt(0).toUpperCase() + selectedBelt.slice(1)}`}
+            {searchQuery ? 'Resultados da Busca' : 'Todos os Personagens'}
           </Text>
           <Text style={styles.listHeaderCount}>
             {filteredCharacters.length} {filteredCharacters.length === 1 ? 'mascote' : 'mascotes'}
@@ -718,84 +642,11 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     paddingVertical: 0,
   },
-  infoBanner: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 12,
-    backgroundColor: '#fefce8',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#fef08a',
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  infoBannerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#fef08a',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  infoBannerContent: {
-    flex: 1,
-  },
-  infoBannerTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#713f12',
-    marginBottom: 2,
-  },
-  infoBannerText: {
-    fontSize: 12,
-    color: '#854d0e',
-    lineHeight: 17,
-  },
-  filtersScroll: {
-    marginBottom: 8,
-  },
-  filtersScrollContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  filterPillActive: {
-    backgroundColor: '#eab308',
-    borderColor: '#ca8a04',
-  },
-  filterDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  filterPillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  filterPillTextActive: {
-    color: '#000000',
-    fontWeight: '800',
-  },
   listHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginTop: 10,
     marginBottom: 12,
   },
   listHeaderTitle: {
