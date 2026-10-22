@@ -102,6 +102,7 @@ export async function setupStorePage() {
     const closeProductEditorBtn = document.getElementById('close-product-editor-btn');
     const productPageTitle = document.getElementById('product-page-title');
     const deleteProductPageBtn = document.getElementById('delete-product-page-btn');
+    const editorQrCodeBtn = document.getElementById('editor-qr-code-btn');
     const saveProductPageTrigger = document.getElementById('save-product-page-trigger');
     const productsSearchInput = document.getElementById('products-search-input') || document.getElementById('product-search-input');
     const productsCategoryFilter = document.getElementById('products-category-filter');
@@ -1252,6 +1253,9 @@ export async function setupStorePage() {
                 </td>
                 <td class="p-4 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-2">
+                        <button title="Gerar Plaqueta com QR Code para Vitrine / Prateleira" class="w-8 h-8 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-black dark:hover:bg-amber-500 dark:hover:text-black transition-all qr-code-btn border border-amber-200 dark:border-amber-800/40 shadow-sm" data-id="${product.id}">
+                            <i class="fas fa-qrcode text-xs"></i>
+                        </button>
                         <button title="Copiar Link de Compra" class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all copy-link-btn border border-gray-200 dark:border-gray-700 shadow-sm" 
                             data-link="https://www.kihap.com.br/checkout?product=${product.id}">
                             <i class="fas fa-link text-xs"></i>
@@ -1319,9 +1323,14 @@ export async function setupStorePage() {
             const product = allProducts.find(p => p.id === productId);
             if (product && productPageTitle) productPageTitle.textContent = `Editar Produto: ${product.name}`;
             if (deleteProductPageBtn) deleteProductPageBtn.classList.remove('hidden');
+            if (editorQrCodeBtn) {
+                editorQrCodeBtn.classList.remove('hidden');
+                editorQrCodeBtn.dataset.id = productId;
+            }
         } else {
             if (productPageTitle) productPageTitle.textContent = 'Cadastrar Novo Produto';
             if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
+            if (editorQrCodeBtn) editorQrCodeBtn.classList.add('hidden');
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1341,6 +1350,7 @@ export async function setupStorePage() {
         if (eventSlotsList) eventSlotsList.innerHTML = '';
         if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
         if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
+        if (editorQrCodeBtn) editorQrCodeBtn.classList.add('hidden');
     };
 
     // Alias old modal functions for full backwards compatibility
@@ -1756,6 +1766,16 @@ Requisitos:
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
         const copyLinkBtn = e.target.closest('.copy-link-btn');
+        const qrCodeBtn = e.target.closest('.qr-code-btn');
+
+        if (qrCodeBtn) {
+            const id = qrCodeBtn.dataset.id;
+            const product = allProducts.find(p => p.id === id);
+            if (product) {
+                openProductQrModal(product);
+            }
+            return;
+        }
 
         if (copyLinkBtn) {
             const link = copyLinkBtn.dataset.link;
@@ -2042,7 +2062,205 @@ Requisitos:
         }
     });
 
+    // ==========================================
+    // MÓDULO: Plaqueta de Vitrine com QR Code
+    // ==========================================
+    let currentQrProduct = null;
+    let currentQrFormat = 'display'; // 'display' (10x15cm) ou 'label' (7x5cm)
 
+    const productQrModal = document.getElementById('product-qr-modal');
+    const closeProductQrModalBtn = document.getElementById('close-product-qr-modal-btn');
+    const qrFormatDisplayBtn = document.getElementById('qr-format-display-btn');
+    const qrFormatLabelBtn = document.getElementById('qr-format-label-btn');
+    const qrDestinationSelect = document.getElementById('qr-destination-select');
+    const qrEncodedUrlInput = document.getElementById('qr-encoded-url-input');
+    const copyQrUrlBtn = document.getElementById('copy-qr-url-btn');
+    const printPlacardBtn = document.getElementById('print-placard-btn');
+    const downloadPlacardImgBtn = document.getElementById('download-placard-img-btn');
+
+    const getQrCodeUrl = (productId, destinationType) => {
+        if (destinationType === 'native') {
+            return `native://store/${productId}`;
+        }
+        if (destinationType === 'web') {
+            return `https://kihap.com.br/produto.html?id=${productId}`;
+        }
+        // smart (default): abre no app com fallback web automático
+        return `https://kihap.com.br/produto.html?id=${productId}&app=1`;
+    };
+
+    const updateQrCodePreview = () => {
+        if (!currentQrProduct) return;
+        const destType = qrDestinationSelect ? qrDestinationSelect.value : 'smart';
+        const targetUrl = getQrCodeUrl(currentQrProduct.id, destType);
+
+        if (qrEncodedUrlInput) qrEncodedUrlInput.value = targetUrl;
+
+        const qrImg = document.getElementById('placard-qrcode-img');
+        if (qrImg) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(targetUrl)}&margin=8&format=png`;
+        }
+    };
+
+    const updatePlacardFormatUI = () => {
+        const placardArea = document.getElementById('printable-placard-area');
+        const imgContainer = document.getElementById('placard-product-image-container');
+
+        if (!placardArea) return;
+
+        if (currentQrFormat === 'display') {
+            // Display de Mesa (10x15cm)
+            placardArea.className = 'w-[280px] bg-white text-gray-900 rounded-2xl border-2 border-gray-900 shadow-xl p-5 flex flex-col items-center text-center transition-all';
+            if (imgContainer && currentQrProduct?.imageUrl) {
+                imgContainer.classList.remove('hidden');
+            }
+
+            if (qrFormatDisplayBtn) {
+                qrFormatDisplayBtn.className = 'px-3 py-2.5 rounded-xl border-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/20 text-gray-900 dark:text-white font-bold text-xs flex flex-col items-center gap-1 transition-all';
+            }
+            if (qrFormatLabelBtn) {
+                qrFormatLabelBtn.className = 'px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold text-xs flex flex-col items-center gap-1 hover:border-gray-300 transition-all';
+            }
+        } else {
+            // Etiqueta de Arara (7x5cm compacto)
+            placardArea.className = 'w-[240px] bg-white text-gray-900 rounded-xl border-2 border-dashed border-gray-900 shadow-xl p-3 flex flex-col items-center text-center transition-all';
+            if (imgContainer) {
+                imgContainer.classList.add('hidden');
+            }
+
+            if (qrFormatLabelBtn) {
+                qrFormatLabelBtn.className = 'px-3 py-2.5 rounded-xl border-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/20 text-gray-900 dark:text-white font-bold text-xs flex flex-col items-center gap-1 transition-all';
+            }
+            if (qrFormatDisplayBtn) {
+                qrFormatDisplayBtn.className = 'px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold text-xs flex flex-col items-center gap-1 hover:border-gray-300 transition-all';
+            }
+        }
+    };
+
+    const openProductQrModal = (product) => {
+        if (!product || !productQrModal) return;
+        currentQrProduct = product;
+
+        const nameEl = document.getElementById('placard-product-name');
+        const categoryEl = document.getElementById('placard-product-category');
+        const priceEl = document.getElementById('placard-product-price');
+        const imgEl = document.getElementById('placard-product-image');
+        const imgContainer = document.getElementById('placard-product-image-container');
+
+        if (nameEl) nameEl.textContent = product.name || 'Produto Sem Nome';
+        if (categoryEl) categoryEl.textContent = (product.category || 'Geral').toUpperCase();
+
+        // Calcular Preço
+        let formattedPrice = 'Consulte';
+        if (product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0) {
+            const lowestPrice = Math.min(...product.priceVariants.map(v => v.price || 0));
+            formattedPrice = (lowestPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        } else if (product.price) {
+            formattedPrice = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        if (priceEl) priceEl.textContent = formattedPrice;
+
+        // Imagem do Produto
+        if (imgEl && imgContainer) {
+            if (product.imageUrl) {
+                imgEl.src = product.imageUrl;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+        }
+
+        if (qrDestinationSelect) qrDestinationSelect.value = 'smart';
+        currentQrFormat = 'display';
+        updatePlacardFormatUI();
+        updateQrCodePreview();
+
+        productQrModal.classList.remove('hidden');
+    };
+
+    const closeProductQrModal = () => {
+        if (productQrModal) productQrModal.classList.add('hidden');
+        currentQrProduct = null;
+    };
+
+    if (closeProductQrModalBtn) closeProductQrModalBtn.addEventListener('click', closeProductQrModal);
+    if (productQrModal) {
+        const backdrop = productQrModal.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.addEventListener('click', closeProductQrModal);
+    }
+
+    if (qrFormatDisplayBtn) {
+        qrFormatDisplayBtn.addEventListener('click', () => {
+            currentQrFormat = 'display';
+            updatePlacardFormatUI();
+        });
+    }
+
+    if (qrFormatLabelBtn) {
+        qrFormatLabelBtn.addEventListener('click', () => {
+            currentQrFormat = 'label';
+            updatePlacardFormatUI();
+        });
+    }
+
+    if (qrDestinationSelect) {
+        qrDestinationSelect.addEventListener('change', updateQrCodePreview);
+    }
+
+    if (copyQrUrlBtn) {
+        copyQrUrlBtn.addEventListener('click', () => {
+            if (qrEncodedUrlInput && qrEncodedUrlInput.value) {
+                navigator.clipboard.writeText(qrEncodedUrlInput.value).then(() => {
+                    alert('Link do QR Code copiado para a área de transferência!');
+                }).catch(() => {
+                    alert('Não foi possível copiar o link.');
+                });
+            }
+        });
+    }
+
+    if (printPlacardBtn) {
+        printPlacardBtn.addEventListener('click', () => {
+            window.print();
+        });
+    }
+
+    if (downloadPlacardImgBtn) {
+        downloadPlacardImgBtn.addEventListener('click', async () => {
+            if (!currentQrProduct) return;
+            const qrImg = document.getElementById('placard-qrcode-img');
+            if (!qrImg || !qrImg.src) return;
+
+            try {
+                const response = await fetch(qrImg.src);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                const safeName = (currentQrProduct.name || 'produto')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]/g, '-');
+                a.download = `qrcode-${safeName}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                console.error('Erro ao baixar imagem:', err);
+                window.open(qrImg.src, '_blank');
+            }
+        });
+    }
+
+    if (editorQrCodeBtn) {
+        editorQrCodeBtn.addEventListener('click', () => {
+            const id = editorQrCodeBtn.dataset.id;
+            const product = allProducts.find(p => p.id === id);
+            if (product) openProductQrModal(product);
+        });
+    }
 
     // --- Price Type Switching Logic ---
     priceTypeRadios.forEach(radio => {

@@ -731,8 +731,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const checkAppDeepLink = () => {
+        const params = new URLSearchParams(window.location.search);
+        const shouldOpenApp = params.get('app') === '1';
+        const id = params.get('id');
+        if (!id) return;
+
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const nativeUrl = `native://store/${id}`;
+
+        if (shouldOpenApp && isMobile) {
+            // Tenta abrir o app nativo caso o aluno tenha o app instalado
+            window.location.href = nativeUrl;
+        }
+
+        const mainEl = document.querySelector('main');
+        if (mainEl && isMobile) {
+            const banner = document.createElement('div');
+            banner.className = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4';
+            banner.innerHTML = `
+                <a href="${nativeUrl}" class="flex items-center justify-between p-3.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 rounded-2xl text-white hover:border-amber-400 transition-all shadow-md">
+                    <div class="flex items-center gap-3">
+                        <img src="https://kihap.com.br/imgs/favicon.png" class="w-8 h-8 object-contain">
+                        <div>
+                            <div class="text-xs font-black text-amber-400 uppercase tracking-wider">Tem o App Kihap instalado?</div>
+                            <div class="text-xs text-gray-300">Toque aqui para abrir e comprar direto pelo aplicativo</div>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1.5 bg-amber-500 text-black text-xs font-black rounded-xl whitespace-nowrap ml-2">Abrir no App</span>
+                </a>
+            `;
+            mainEl.prepend(banner);
+        }
+    };
+
     const init = async () => {
         productId = getProductId();
+        checkAppDeepLink();
         await fetchInstructors();
         await fetchProduct(productId);
         paymentForm.addEventListener('submit', handleFormSubmit);
