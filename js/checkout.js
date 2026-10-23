@@ -61,12 +61,98 @@ document.addEventListener('DOMContentLoaded', async () => {
     const checkoutError = document.getElementById('checkout-error');
     const payBtn = document.getElementById('final-pay-btn');
 
+    // Payment method & discount elements
+    const pixDiscountRow = document.getElementById('pix-discount-row');
+    const pixDiscountLabel = document.getElementById('pix-discount-label');
+    const summaryPixDiscount = document.getElementById('summary-pix-discount');
+    const pixBadge = document.getElementById('pix-badge');
+    const pixSubtitle = document.getElementById('pix-subtitle');
+    const paymentPixCard = document.getElementById('payment-method-pix-card');
+    const paymentCardCard = document.getElementById('payment-method-card-card');
+    const paymentMethodInputs = document.querySelectorAll('input[name="payment-method"]');
+
     let currentUser = null;
     let unitsCache = [];
     let instructors = [];
+    let paymentSettings = { pixDiscountEnabled: false, pixDiscountPercentage: 0 };
+    let selectedPaymentMethod = 'pix';
 
     const formatCurrency = (amount) => {
         return (amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const updatePaymentMethodUI = () => {
+        const baseTotal = cart.getTotalAmount();
+        let finalTotal = baseTotal;
+
+        paymentMethodInputs.forEach(input => {
+            if (input.checked) selectedPaymentMethod = input.value;
+        });
+
+        if (paymentPixCard && paymentCardCard) {
+            const pixDot = paymentPixCard.querySelector('.radio-dot');
+            const cardDot = paymentCardCard.querySelector('.radio-dot');
+            const pixIndicator = paymentPixCard.querySelector('.radio-indicator');
+            const cardIndicator = paymentCardCard.querySelector('.radio-indicator');
+
+            if (selectedPaymentMethod === 'pix') {
+                paymentPixCard.className = 'relative flex items-center p-4 rounded-xl border-2 border-yellow-500 bg-gray-700/60 cursor-pointer transition-all';
+                paymentCardCard.className = 'relative flex items-center p-4 rounded-xl border-2 border-gray-700 bg-gray-800/40 cursor-pointer transition-all hover:bg-gray-700/30';
+                if (pixDot) pixDot.classList.remove('hidden');
+                if (pixIndicator) { pixIndicator.classList.add('border-yellow-500'); pixIndicator.classList.remove('border-gray-600'); }
+                if (cardDot) cardDot.classList.add('hidden');
+                if (cardIndicator) { cardIndicator.classList.remove('border-yellow-500'); cardIndicator.classList.add('border-gray-600'); }
+            } else {
+                paymentCardCard.className = 'relative flex items-center p-4 rounded-xl border-2 border-yellow-500 bg-gray-700/60 cursor-pointer transition-all';
+                paymentPixCard.className = 'relative flex items-center p-4 rounded-xl border-2 border-gray-700 bg-gray-800/40 cursor-pointer transition-all hover:bg-gray-700/30';
+                if (cardDot) cardDot.classList.remove('hidden');
+                if (cardIndicator) { cardIndicator.classList.add('border-yellow-500'); cardIndicator.classList.remove('border-gray-600'); }
+                if (pixDot) pixDot.classList.add('hidden');
+                if (pixIndicator) { pixIndicator.classList.remove('border-yellow-500'); pixIndicator.classList.add('border-gray-600'); }
+            }
+        }
+
+        if (selectedPaymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0) {
+            const pct = Number(paymentSettings.pixDiscountPercentage);
+            const discountAmount = Math.round(baseTotal * (pct / 100));
+            finalTotal = Math.max(0, baseTotal - discountAmount);
+            if (pixDiscountRow) {
+                pixDiscountRow.classList.remove('hidden');
+                if (pixDiscountLabel) pixDiscountLabel.textContent = `⚡ Desconto Pix (${pct}%)`;
+                if (summaryPixDiscount) summaryPixDiscount.textContent = `- ${formatCurrency(discountAmount)}`;
+            }
+        } else {
+            if (pixDiscountRow) pixDiscountRow.classList.add('hidden');
+        }
+
+        if (summaryTotal) summaryTotal.textContent = formatCurrency(finalTotal);
+    };
+
+    paymentMethodInputs.forEach(input => {
+        input.addEventListener('change', updatePaymentMethodUI);
+    });
+
+    const fetchPaymentSettings = async () => {
+        try {
+            const snap = await getDoc(doc(db, 'settings', 'payment'));
+            if (snap.exists()) {
+                paymentSettings = snap.data();
+                if (paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0) {
+                    const pct = Number(paymentSettings.pixDiscountPercentage);
+                    if (pixBadge) {
+                        pixBadge.textContent = `${pct}% de Desconto`;
+                        pixBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-green-500 text-black uppercase tracking-wider animate-pulse';
+                    }
+                    if (pixSubtitle) {
+                        pixSubtitle.textContent = `Pague via Pix e ganhe ${pct}% de desconto imediato`;
+                        pixSubtitle.className = 'text-xs text-green-400 font-semibold mt-0.5';
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Error loading payment settings:', e);
+        }
+        updatePaymentMethodUI();
     };
 
     const renderSummary = () => {
@@ -109,7 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         summarySubtotal.textContent = formatCurrency(cart.getTotalAmount());
-        summaryTotal.textContent = formatCurrency(cart.getTotalAmount());
+        updatePaymentMethodUI();
         
         renderParticipantFields();
     };
@@ -356,10 +442,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            const totalAmount = cart.getTotalAmount();
+            const baseTotal = cart.getTotalAmount();
+            let finalTotal = baseTotal;
+            let isPixDiscountApplied = false;
+
+            if (selectedPaymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0) {
+                const pct = Number(paymentSettings.pixDiscountPercentage);
+                const discountAmount = Math.round(baseTotal * (pct / 100));
+                finalTotal = Math.max(0, baseTotal - discountAmount);
+                isPixDiscountApplied = true;
+            }
+
             // Robust check for free purchases (handles potential float precision issues)
-            const isFree = totalAmount <= 0;
-            console.log(`[Checkout] Processing ${isFree ? 'FREE' : 'PAID'} purchase. Total: ${totalAmount/100}`);
+            const isFree = finalTotal <= 0;
+            console.log(`[Checkout] Processing ${isFree ? 'FREE' : 'PAID'} purchase with ${selectedPaymentMethod}. Total: ${finalTotal/100}`);
             
             const endpoint = isFree 
                 ? 'https://us-central1-intranet-kihap.cloudfunctions.net/processCartFreePurchase'
@@ -371,7 +467,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({
                     cartItems: items,
                     globalUserData: globalUserData,
-                    totalAmount: totalAmount
+                    totalAmount: finalTotal,
+                    paymentMethod: selectedPaymentMethod,
+                    isPixDiscountApplied: isPixDiscountApplied
                 }),
             });
 
@@ -403,6 +501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkoutForm.addEventListener('submit', handleCheckout);
 
     renderSummary();
+    await fetchPaymentSettings();
     await fetchInstructors();
     fetchUnits();
 });

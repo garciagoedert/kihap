@@ -10,7 +10,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../src/services/firebase';
+import { functions, db } from '../src/services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function CheckoutScreen() {
   const { total, items, clearCart, subtotal, discount, coupon } = useCart();
@@ -19,6 +20,8 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [units, setUnits] = useState<string[]>([]);
+  const [paymentSettings, setPaymentSettings] = useState<{ pixDiscountEnabled?: boolean; pixDiscountPercentage?: number }>({});
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
   
   // Form fields
   const [name, setName] = useState(userData?.name || '');
@@ -51,7 +54,18 @@ export default function CheckoutScreen() {
         console.error("Error fetching units:", error);
       }
     };
+    const fetchPaymentSettings = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'payment'));
+        if (snap.exists()) {
+          setPaymentSettings(snap.data() as any);
+        }
+      } catch (error) {
+        console.warn("Error fetching payment settings:", error);
+      }
+    };
     fetchUnits();
+    fetchPaymentSettings();
   }, []);
 
   const handleCepChange = async (text: string) => {
@@ -102,7 +116,13 @@ export default function CheckoutScreen() {
     };
 
     try {
-      const isFree = total <= 0;
+      const isPix = paymentMethod === 'pix';
+      const hasPixDiscount = isPix && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0;
+      const pixDiscountPercent = hasPixDiscount ? Number(paymentSettings.pixDiscountPercentage) : 0;
+      const pixDiscountAmount = hasPixDiscount ? Math.round(total * (pixDiscountPercent / 100)) : 0;
+      const finalTotal = Math.max(0, total - pixDiscountAmount);
+
+      const isFree = finalTotal <= 0;
       const endpoint = isFree 
         ? 'https://us-central1-intranet-kihap.cloudfunctions.net/processCartFreePurchase'
         : 'https://us-central1-intranet-kihap.cloudfunctions.net/createCartCheckoutSession';
@@ -113,7 +133,9 @@ export default function CheckoutScreen() {
         body: JSON.stringify({
           cartItems: items,
           globalUserData: globalUserData,
-          totalAmount: total,
+          totalAmount: finalTotal,
+          paymentMethod: paymentMethod,
+          isPixDiscountApplied: hasPixDiscount,
           couponCode: coupon ? coupon.code : null
         }),
       });
@@ -241,12 +263,67 @@ export default function CheckoutScreen() {
                 </Text>
               </View>
             )}
+            {paymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 && (
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-[10px] font-black text-green-500 uppercase">⚡ Desconto Pix ({paymentSettings.pixDiscountPercentage}%)</Text>
+                <Text className="text-sm font-black text-green-500">
+                  - {((Math.round(total * (Number(paymentSettings.pixDiscountPercentage) / 100))) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </Text>
+              </View>
+            )}
             <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-white/5">
               <Text className="text-sm font-black text-gray-900 dark:text-white uppercase">Total</Text>
               <Text className="text-xl font-black text-yellow-600 dark:text-yellow-500">
-                {(total / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {((paymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 
+                  ? Math.max(0, total - Math.round(total * (Number(paymentSettings.pixDiscountPercentage) / 100))) 
+                  : total) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </Text>
             </View>
+          </View>
+
+          {/* Forma de Pagamento */}
+          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Forma de Pagamento</Text>
+          <View className="flex-row gap-3 mb-6">
+            {/* Pix Card */}
+            <TouchableOpacity
+              onPress={() => setPaymentMethod('pix')}
+              activeOpacity={0.8}
+              className={`flex-1 p-4 rounded-3xl border ${paymentMethod === 'pix' ? 'bg-green-500/10 border-green-500' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5'}`}
+            >
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="w-9 h-9 rounded-2xl bg-green-500/20 items-center justify-center">
+                  <QrCode size={18} color="#22c55e" />
+                </View>
+                {paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 && (
+                  <View className="bg-green-500 px-2 py-0.5 rounded-full">
+                    <Text className="text-[9px] font-black text-black uppercase tracking-wider">
+                      -{paymentSettings.pixDiscountPercentage}%
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className={`font-black text-sm uppercase ${paymentMethod === 'pix' ? 'text-green-500' : 'text-gray-900 dark:text-white'}`}>
+                Pix
+              </Text>
+              <Text className="text-[10px] text-gray-400 mt-0.5">Aprovação imediata</Text>
+            </TouchableOpacity>
+
+            {/* Credit Card Card */}
+            <TouchableOpacity
+              onPress={() => setPaymentMethod('credit_card')}
+              activeOpacity={0.8}
+              className={`flex-1 p-4 rounded-3xl border ${paymentMethod === 'credit_card' ? 'bg-blue-500/10 border-blue-500' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5'}`}
+            >
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="w-9 h-9 rounded-2xl bg-blue-500/20 items-center justify-center">
+                  <CreditCard size={18} color="#3b82f6" />
+                </View>
+              </View>
+              <Text className={`font-black text-sm uppercase ${paymentMethod === 'credit_card' ? 'text-blue-500' : 'text-gray-900 dark:text-white'}`}>
+                Cartão
+              </Text>
+              <Text className="text-[10px] text-gray-400 mt-0.5">Crédito parcelado</Text>
+            </TouchableOpacity>
           </View>
 
           {/* User Data */}

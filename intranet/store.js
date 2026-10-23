@@ -48,11 +48,19 @@ export async function setupStorePage() {
     const contentMarketing = document.getElementById('content-marketing');
     const contentManageBanners = document.getElementById('content-manage-banners');
     const contentManageCoupons = document.getElementById('content-manage-coupons');
+    const contentManagePayments = document.getElementById('content-manage-payments');
     const contentEvents = document.getElementById('content-events');
 
     // Marketing sub-tab elements
     const subtabBanners = document.getElementById('subtab-banners');
     const subtabCoupons = document.getElementById('subtab-coupons');
+    const subtabPayments = document.getElementById('subtab-payments');
+    const pixDiscountForm = document.getElementById('pix-discount-form');
+    const pixDiscountEnabled = document.getElementById('pix-discount-enabled');
+    const pixDiscountPercentage = document.getElementById('pix-discount-percentage');
+    const pixDiscountSimulation = document.getElementById('pix-discount-simulation');
+    const pixDiscountStatusMsg = document.getElementById('pix-discount-status-msg');
+    const savePixDiscountBtn = document.getElementById('save-pix-discount-btn');
 
     if (!hasLojaAccess) {
         window.location.href = 'index.html';
@@ -509,7 +517,8 @@ export async function setupStorePage() {
     function switchMarketingSubTab(activeSubTab) {
         const subtabs = [
             { id: 'banners', el: subtabBanners },
-            { id: 'coupons', el: subtabCoupons }
+            { id: 'coupons', el: subtabCoupons },
+            { id: 'payments', el: subtabPayments }
         ];
 
         subtabs.forEach(tab => {
@@ -523,7 +532,7 @@ export async function setupStorePage() {
             }
         });
 
-        [contentManageBanners, contentManageCoupons].forEach(content => {
+        [contentManageBanners, contentManageCoupons, contentManagePayments].forEach(content => {
             if (content) content.classList.add('hidden');
         });
 
@@ -533,6 +542,9 @@ export async function setupStorePage() {
         } else if (activeSubTab === 'coupons' && contentManageCoupons) {
             contentManageCoupons.classList.remove('hidden');
             fetchCoupons();
+        } else if (activeSubTab === 'payments' && contentManagePayments) {
+            contentManagePayments.classList.remove('hidden');
+            fetchPaymentSettings();
         }
     }
 
@@ -564,6 +576,7 @@ export async function setupStorePage() {
 
     if (subtabBanners) subtabBanners.addEventListener('click', () => switchMarketingSubTab('banners'));
     if (subtabCoupons) subtabCoupons.addEventListener('click', () => switchMarketingSubTab('coupons'));
+    if (subtabPayments) subtabPayments.addEventListener('click', () => switchMarketingSubTab('payments'));
     
 
 
@@ -3648,6 +3661,82 @@ Requisitos:
     };
 
     if (cancelCouponEditBtn) cancelCouponEditBtn.addEventListener('click', resetCouponForm);
+
+    // --- Payment / Pix Discount Management ---
+    const updatePixSimulation = () => {
+        if (!pixDiscountSimulation) return;
+        const isEnabled = pixDiscountEnabled ? pixDiscountEnabled.checked : false;
+        const pct = pixDiscountPercentage ? (parseFloat(pixDiscountPercentage.value) || 0) : 0;
+        if (!isEnabled || pct <= 0) {
+            pixDiscountSimulation.textContent = 'O desconto via Pix está desativado. Clientes pagarão o valor integral no Pix e no Cartão.';
+        } else {
+            const discountVal = 100 * (pct / 100);
+            const finalVal = 100 - discountVal;
+            pixDiscountSimulation.textContent = `Em uma compra de R$ 100,00, o cliente terá R$ ${discountVal.toFixed(2).replace('.', ',')} (${pct}%) de desconto e pagará R$ ${finalVal.toFixed(2).replace('.', ',')} via Pix.`;
+        }
+    };
+
+    if (pixDiscountPercentage) {
+        pixDiscountPercentage.addEventListener('input', updatePixSimulation);
+    }
+    if (pixDiscountEnabled) {
+        pixDiscountEnabled.addEventListener('change', updatePixSimulation);
+    }
+
+    const fetchPaymentSettings = async () => {
+        try {
+            const docRef = doc(db, 'settings', 'payment');
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (pixDiscountEnabled) pixDiscountEnabled.checked = !!data.pixDiscountEnabled;
+                if (pixDiscountPercentage) pixDiscountPercentage.value = data.pixDiscountPercentage !== undefined ? data.pixDiscountPercentage : 5;
+            } else {
+                if (pixDiscountEnabled) pixDiscountEnabled.checked = false;
+                if (pixDiscountPercentage) pixDiscountPercentage.value = 5;
+            }
+            updatePixSimulation();
+        } catch (err) {
+            console.error('Error fetching payment settings:', err);
+        }
+    };
+
+    if (pixDiscountForm) {
+        pixDiscountForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!savePixDiscountBtn) return;
+            savePixDiscountBtn.disabled = true;
+            savePixDiscountBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Salvando...</span>';
+            
+            try {
+                const isEnabled = pixDiscountEnabled ? pixDiscountEnabled.checked : false;
+                const percentage = pixDiscountPercentage ? (parseFloat(pixDiscountPercentage.value) || 0) : 0;
+                
+                await setDoc(doc(db, 'settings', 'payment'), {
+                    pixDiscountEnabled: isEnabled,
+                    pixDiscountPercentage: percentage,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                if (pixDiscountStatusMsg) {
+                    pixDiscountStatusMsg.className = 'p-3 rounded-xl text-xs font-bold text-center bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20';
+                    pixDiscountStatusMsg.textContent = 'Configurações de desconto Pix salvas com sucesso!';
+                    pixDiscountStatusMsg.classList.remove('hidden');
+                    setTimeout(() => pixDiscountStatusMsg.classList.add('hidden'), 4000);
+                }
+            } catch (error) {
+                console.error('Error saving payment settings:', error);
+                if (pixDiscountStatusMsg) {
+                    pixDiscountStatusMsg.className = 'p-3 rounded-xl text-xs font-bold text-center bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20';
+                    pixDiscountStatusMsg.textContent = 'Erro ao salvar configurações. Tente novamente.';
+                    pixDiscountStatusMsg.classList.remove('hidden');
+                }
+            } finally {
+                savePixDiscountBtn.disabled = false;
+                savePixDiscountBtn.innerHTML = '<i class="fas fa-save"></i> <span>Salvar Configurações</span>';
+            }
+        });
+    }
 
     async function displayStoreKpis(sales = allSales) {
         const kpiContainer = document.getElementById('store-kpi-container');

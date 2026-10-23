@@ -73,6 +73,51 @@
                             <!-- JS will inject participant forms here -->
                         </div>
 
+                        <!-- Forma de Pagamento -->
+                        <div id="payment-methods-container" class="pt-8 border-t border-gray-700 space-y-4">
+                            <label class="block text-sm font-bold text-gray-300 uppercase tracking-wider">
+                                Forma de Pagamento
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Pix Option Card -->
+                                <label id="payment-method-pix-card" class="relative flex items-center p-4 rounded-xl border-2 border-yellow-500 bg-gray-700/50 cursor-pointer transition-all hover:bg-gray-700">
+                                    <input type="radio" name="payment-method" value="pix" class="hidden" checked>
+                                    <div class="flex items-center gap-3 w-full">
+                                        <div class="w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center font-bold text-lg">
+                                            ⚡
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-white text-sm">Pix</span>
+                                                <span id="pix-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-green-500/20 text-green-400 uppercase tracking-wider">Aprovação Imediata</span>
+                                            </div>
+                                            <p id="pix-subtitle" class="text-xs text-gray-400 mt-0.5">Pague e aprove na hora</p>
+                                        </div>
+                                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-yellow-500 flex items-center justify-center flex-shrink-0">
+                                            <div class="radio-dot w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <!-- Credit Card Option Card -->
+                                <label id="payment-method-card-card" class="relative flex items-center p-4 rounded-xl border-2 border-gray-700 bg-gray-800/40 cursor-pointer transition-all hover:bg-gray-700/50">
+                                    <input type="radio" name="payment-method" value="credit_card" class="hidden">
+                                    <div class="flex items-center gap-3 w-full">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+                                            💳
+                                        </div>
+                                        <div class="flex-1">
+                                            <span class="font-bold text-white text-sm block">Cartão de Crédito</span>
+                                            <p class="text-xs text-gray-400 mt-0.5">Parcele suas compras</p>
+                                        </div>
+                                        <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center flex-shrink-0">
+                                            <div class="radio-dot w-2.5 h-2.5 rounded-full bg-yellow-500 hidden"></div>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         <div id="checkout-error" class="hidden p-4 bg-red-900/30 border border-red-700 text-red-400 rounded-lg text-sm text-center">
                             <!-- Erro aparecerá aqui -->
                         </div>
@@ -101,10 +146,14 @@
                                 <span id="summary-subtotal" class="font-semibold text-white">R$ 0,00</span>
                             </div>
                             <div id="discount-row" class="hidden flex justify-between text-green-400">
-                                <span>Desconto</span>
+                                <span>Desconto Cupom</span>
                                 <span id="summary-discount">- R$ 0,00</span>
                             </div>
-                            <div class="flex justify-between items-center pt-4">
+                            <div id="pix-discount-row" class="hidden flex justify-between text-green-400">
+                                <span id="pix-discount-label">⚡ Desconto Pix</span>
+                                <span id="summary-pix-discount">- R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-4 border-t border-gray-700/60">
                                 <span class="text-xl font-bold text-white">Total</span>
                                 <span id="summary-total" class="text-3xl font-black text-yellow-500">R$ 0,00</span>
                             </div>

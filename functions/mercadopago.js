@@ -36,7 +36,7 @@ const exchangeOAuthCode = async (code, redirectUri) => {
     return response.data;
 };
 
-const createMercadoPagoPreference = async (product, formDataList, totalAmount, saleDocIds, notificationUrl = null) => {
+const createMercadoPagoPreference = async (product, formDataList, totalAmount, saleDocIds, notificationUrl = null, paymentMethod = null) => {
     console.log('[createMercadoPagoPreference] Iniciando criação da preferência...');
     
     // Suporte a Split / Multi-Contas
@@ -135,6 +135,17 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
 
         if (notificationUrl) preferenceData.notification_url = notificationUrl;
 
+        if (paymentMethod === 'pix' && !product.isSubscription) {
+            preferenceData.payment_methods = {
+                default_payment_method_id: 'pix',
+                excluded_payment_types: [
+                    { id: 'credit_card' },
+                    { id: 'debit_card' },
+                    { id: 'ticket' }
+                ]
+            };
+        }
+
         if (marketplaceFee > 0) {
             preferenceData.marketplace_fee = marketplaceFee;
         }
@@ -150,7 +161,7 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
     }
 };
 
-const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null, globalUserData = null, mpAccountId = 'default') => {
+const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocIds, notificationUrl = null, globalUserData = null, mpAccountId = 'default', paymentMethod = null) => {
     console.log(`[createCartMercadoPagoPreference] Iniciando para conta: ${mpAccountId}`);
     
     let clientToken = null;
@@ -246,6 +257,17 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
     };
 
     if (notificationUrl) preferenceData.notification_url = notificationUrl;
+
+    if (paymentMethod === 'pix') {
+        preferenceData.payment_methods = {
+            default_payment_method_id: 'pix',
+            excluded_payment_types: [
+                { id: 'credit_card' },
+                { id: 'debit_card' },
+                { id: 'ticket' }
+            ]
+        };
+    }
 
     try {
         const response = await client.post('/checkout/preferences', preferenceData);

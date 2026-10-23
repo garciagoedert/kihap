@@ -559,14 +559,33 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { return res.status(405).send('Method Not Allowed'); }
 
-    const { cartItems, globalUserData, totalAmount, couponCode } = req.body;
+    const { cartItems, globalUserData, totalAmount, couponCode, paymentMethod, isPixDiscountApplied } = req.body;
     
     if (!cartItems || cartItems.length === 0 || totalAmount === undefined || !globalUserData) {
         return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData, totalAmount.' });
     }
 
+    let finalTotalAmount = Number(totalAmount);
+    let appliedPixDiscountPercentage = 0;
+    const selectedPaymentMethod = paymentMethod || 'credit_card';
+
+    try {
+        const paymentSettingsDoc = await db.collection('settings').doc('payment').get();
+        if (paymentSettingsDoc.exists) {
+            const pData = paymentSettingsDoc.data();
+            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0 && selectedPaymentMethod === 'pix') {
+                appliedPixDiscountPercentage = Number(pData.pixDiscountPercentage);
+                if (!isPixDiscountApplied) {
+                    finalTotalAmount = Math.round(finalTotalAmount * (1 - appliedPixDiscountPercentage / 100));
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[createCartCheckoutSession] Erro ao buscar configurações de pagamento:', err);
+    }
+
     // FAIL-SAFE: Se o valor for zero ou negativo (cupom 100%), processa como gratuito imediatamente
-    if (totalAmount <= 0) {
+    if (finalTotalAmount <= 0) {
         console.log('[createCartCheckoutSession] Valor zero ou negativo detectado. Redirecionando para processamento gratuito.');
         // Aqui podemos ou redirecionar internamente ou processar. Vamos processar para garantir.
         try {
@@ -626,7 +645,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                 }
             }
         }
-        const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+        const discountRatio = subtotalCents > 0 ? (finalTotalAmount / subtotalCents) : 1;
 
         const saleDocIds = [];
         let mpAccountId = 'default';
@@ -659,6 +678,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     amountTotal: Math.round((itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length)) * discountRatio),
                     currency: 'brl',
                     paymentStatus: 'pending',
+                    paymentMethod: selectedPaymentMethod,
+                    pixDiscountPercentage: appliedPixDiscountPercentage,
                     couponCode: couponCode || null,
                     isSubscription: productData.isSubscription || false,
                     subscriptionFrequency: productData.subscriptionFrequency || null,
@@ -708,11 +729,11 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             const subscriptionFormDataList = subscriptionItem.formDataList.map((fd, idx) =>
                 idx === 0 ? { ...globalUserData, ...fd } : fd
             );
-            mpPreference = await createMercadoPagoPreference(subscriptionProduct, subscriptionFormDataList, totalAmount, saleDocIds, notificationUrl);
+            mpPreference = await createMercadoPagoPreference(subscriptionProduct, subscriptionFormDataList, finalTotalAmount, saleDocIds, notificationUrl, selectedPaymentMethod);
         } else {
             console.log('[createCartCheckoutSession] Nenhum produto de assinatura. Criando preferência de carrinho normal.');
             const notificationUrl = getNotificationUrl('mercadopagoWebhook', mpAccountId);
-            mpPreference = await createCartMercadoPagoPreference(cartItems, totalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId);
+            mpPreference = await createCartMercadoPagoPreference(cartItems, finalTotalAmount, saleDocIds, notificationUrl, globalUserData, mpAccountId, selectedPaymentMethod);
         }
 
         for (const docId of saleDocIds) {
@@ -852,13 +873,31 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         return res.status(405).send('Method Not Allowed');
     }
 
-    const { formDataList, productId, totalAmount, couponCode, recommendedItems } = req.body;
+    const { formDataList, productId, totalAmount, couponCode, recommendedItems, paymentMethod, isPixDiscountApplied } = req.body;
     console.log('[createCheckoutSession] Corpo da requisição (req.body):', JSON.stringify(req.body, null, 2));
-
 
     if (!formDataList || !totalAmount || formDataList.length === 0) {
         console.error('[createCheckoutSession] Erro: Campos obrigatórios ausentes (formDataList ou totalAmount).');
         return res.status(400).json({ error: 'Missing required fields: formDataList, totalAmount.' });
+    }
+
+    let finalTotalAmount = Number(totalAmount);
+    let appliedPixDiscountPercentage = 0;
+    const selectedPaymentMethod = paymentMethod || 'credit_card';
+
+    try {
+        const paymentSettingsDoc = await db.collection('settings').doc('payment').get();
+        if (paymentSettingsDoc.exists) {
+            const pData = paymentSettingsDoc.data();
+            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0 && selectedPaymentMethod === 'pix') {
+                appliedPixDiscountPercentage = Number(pData.pixDiscountPercentage);
+                if (!isPixDiscountApplied) {
+                    finalTotalAmount = Math.round(finalTotalAmount * (1 - appliedPixDiscountPercentage / 100));
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[createCheckoutSession] Erro ao buscar configurações de pagamento:', err);
     }
 
     // Validação robusta do productId
@@ -891,7 +930,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 subtotalCents += item.amount;
             }
         }
-        const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
+        const discountRatio = subtotalCents > 0 ? (finalTotalAmount / subtotalCents) : 1;
 
         const saleDocIds = [];
         for (const formData of formDataList) {
@@ -902,6 +941,8 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
                 amountTotal: Math.round(formData.priceData.amount * discountRatio),
                 currency: currency,
                 paymentStatus: 'pending',
+                paymentMethod: selectedPaymentMethod,
+                pixDiscountPercentage: appliedPixDiscountPercentage,
                 couponCode: couponCode || null,
                 isSubscription: product.isSubscription || false,
                 subscriptionFrequency: product.subscriptionFrequency || null,
@@ -948,7 +989,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
 
         console.log('[createCheckoutSession] Criando preferência no Mercado Pago...');
         const notificationUrl = getNotificationUrl('mercadopagoWebhook', product.mpAccountId);
-        const mpPreference = await createMercadoPagoPreference(product, formDataList, totalAmount, saleDocIds, notificationUrl);
+        const mpPreference = await createMercadoPagoPreference(product, formDataList, finalTotalAmount, saleDocIds, notificationUrl, selectedPaymentMethod);
         console.log('[createCheckoutSession] Preferência Mercado Pago criada com sucesso:', mpPreference.id);
 
         for (const docId of saleDocIds) {
