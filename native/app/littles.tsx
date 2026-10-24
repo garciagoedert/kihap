@@ -415,8 +415,7 @@ export default function LittlesScreen() {
                   </View>
                 </TouchableOpacity>
               );
-            })
-          )}
+            })}
         </View>
       </ScrollView>
 
