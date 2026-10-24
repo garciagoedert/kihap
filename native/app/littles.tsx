@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Modal,
   Platform,
   StyleSheet,
@@ -16,8 +15,6 @@ import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
-  Search,
-  X,
   ChevronRight,
   BookOpen,
   Heart,
@@ -265,22 +262,7 @@ export default function LittlesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeModalChar, setActiveModalChar] = useState<LittleCharacter | null>(null);
-
-  const filteredCharacters = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return LITTLES_DATA;
-    return LITTLES_DATA.filter((c) => {
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.animal.toLowerCase().includes(q) ||
-        c.belt.toLowerCase().includes(q) ||
-        c.challenge.toLowerCase().includes(q) ||
-        c.virtue.toLowerCase().includes(q)
-      );
-    });
-  }, [searchQuery]);
 
   const handleOpenModal = (char: LittleCharacter) => {
     try {
@@ -324,24 +306,6 @@ export default function LittlesScreen() {
             />
           </View>
         </View>
-
-        {/* CAMPO DE BUSCA LIMPO */}
-        <View style={styles.searchContainer}>
-          <Search size={18} color="#9ca3af" />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Buscar por nome, animal ou faixa..."
-            placeholderTextColor="#9ca3af"
-            style={styles.searchInput}
-            clearButtonMode="while-editing"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={10}>
-              <X size={16} color="#9ca3af" />
-            </TouchableOpacity>
-          )}
-        </View>
       </View>
 
       <ScrollView
@@ -354,24 +318,16 @@ export default function LittlesScreen() {
         {/* CONTADOR DE ITENS */}
         <View style={styles.listHeaderRow}>
           <Text style={styles.listHeaderTitle}>
-            {searchQuery ? 'Resultados da Busca' : 'Todos os Personagens'}
+            Todos os Personagens
           </Text>
           <Text style={styles.listHeaderCount}>
-            {filteredCharacters.length} {filteredCharacters.length === 1 ? 'mascote' : 'mascotes'}
+            {LITTLES_DATA.length} mascotes
           </Text>
         </View>
 
         {/* LISTA DE CARDS DOS PERSONAGENS */}
         <View style={styles.cardsContainer}>
-          {filteredCharacters.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>Nenhum mascote encontrado</Text>
-              <Text style={styles.emptySubtitle}>
-                Tente buscar por outro termo ou escolha a opção "Todos".
-              </Text>
-            </View>
-          ) : (
-            filteredCharacters.map((char) => {
+          {LITTLES_DATA.map((char) => {
               return (
                 <TouchableOpacity
                   key={char.id}
@@ -418,7 +374,7 @@ export default function LittlesScreen() {
                         <Text style={styles.characterName}>{char.name}</Text>
                         <View style={styles.animalTag}>
                           <Text style={styles.animalTagText}>
-                            {char.animalEmoji} {char.animal}
+                            {char.animal}
                           </Text>
                         </View>
                       </View>
@@ -514,7 +470,7 @@ export default function LittlesScreen() {
                   />
                   <Text style={styles.modalName}>{activeModalChar.name}</Text>
                   <Text style={styles.modalAnimal}>
-                    {activeModalChar.animalEmoji} {activeModalChar.animal}
+                    {activeModalChar.animal}
                   </Text>
                 </View>
 
@@ -590,7 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   backButton: {
     width: 40,
