@@ -164,10 +164,12 @@ export default function ProductDetailScreen() {
       const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
       const selectedAmount = pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price;
       const selectedVariantName = pVariant ? pVariant.name : undefined;
+      const pixAmount = pVariant?.pixPrice || product.pixPrice || undefined;
       
-      const priceData = {
+      const priceData: any = {
         amount: selectedAmount,
-        ...(selectedVariantName ? { variantName: selectedVariantName } : {})
+        ...(selectedVariantName ? { variantName: selectedVariantName } : {}),
+        ...(pixAmount ? { pixAmount } : {})
       };
 
       const { selectedVariant, ...rest } = p;
@@ -348,6 +350,9 @@ export default function ProductDetailScreen() {
                         const isSelected = participant.selectedVariant?.name === variant.name;
                         const variantEff = getEffectiveVariantPrice(variant, userData, product);
                         const variantPriceFormatted = formatCentsToCurrency(variantEff.price);
+                        const pixFormatted = (variant.pixPrice && variant.pixPrice < variantEff.price) 
+                          ? ` (Pix ${formatCentsToCurrency(variant.pixPrice)})`
+                          : '';
                         return (
                           <TouchableOpacity 
                             key={variant.name}
@@ -355,7 +360,7 @@ export default function ProductDetailScreen() {
                             className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${isSelected ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
                           >
                             <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>
-                              {variant.name} ({variantPriceFormatted})
+                              {variant.name} ({variantPriceFormatted}{pixFormatted})
                             </Text>
                           </TouchableOpacity>
                         );

@@ -87,7 +87,39 @@ export default function CheckoutScreen() {
     }
   };
 
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const calculatePixDiscount = () => {
+    let pixDisc = 0;
+    let hasExplicit = false;
+    const globalPct = (paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0)
+      ? Number(paymentSettings.pixDiscountPercentage)
+      : 0;
+
+    items.forEach((item: any) => {
+      if (item.formDataList && Array.isArray(item.formDataList)) {
+        item.formDataList.forEach((form: any) => {
+          const priceData = form.priceData;
+          const amount = priceData?.amount || (item.totalAmount / item.formDataList.length);
+          if (priceData?.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
+            hasExplicit = true;
+            pixDisc += (amount - Number(priceData.pixAmount));
+          } else if (globalPct > 0) {
+            pixDisc += Math.round(amount * (globalPct / 100));
+          }
+        });
+      }
+      if (item.recommendedItems && Array.isArray(item.recommendedItems)) {
+        item.recommendedItems.forEach((rec: any) => {
+          if (globalPct > 0) {
+            pixDisc += Math.round(rec.amount * (globalPct / 100));
+          }
+        });
+      }
+    });
+
+    return { discount: pixDisc, hasExplicitPixPrice: hasExplicit };
+  };
+
+  const { discount: pixDiscountAmount, hasExplicitPixPrice } = calculatePixDiscount();
 
   const handlePayment = async () => {
     if (!name || !email || !phone || !cpf || !unit || !cep || !logradouro || !numero || !bairro || !cidade || !estado) {
@@ -117,10 +149,8 @@ export default function CheckoutScreen() {
 
     try {
       const isPix = paymentMethod === 'pix';
-      const hasPixDiscount = isPix && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0;
-      const pixDiscountPercent = hasPixDiscount ? Number(paymentSettings.pixDiscountPercentage) : 0;
-      const pixDiscountAmount = hasPixDiscount ? Math.round(total * (pixDiscountPercent / 100)) : 0;
-      const finalTotal = Math.max(0, total - pixDiscountAmount);
+      const hasPixDiscount = isPix && pixDiscountAmount > 0;
+      const finalTotal = Math.max(0, total - (isPix ? pixDiscountAmount : 0));
 
       const isFree = finalTotal <= 0;
       const endpoint = isFree 
@@ -263,19 +293,21 @@ export default function CheckoutScreen() {
                 </Text>
               </View>
             )}
-            {paymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 && (
+            {paymentMethod === 'pix' && pixDiscountAmount > 0 && (
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-[10px] font-black text-green-500 uppercase">⚡ Desconto Pix ({paymentSettings.pixDiscountPercentage}%)</Text>
+                <Text className="text-[10px] font-black text-green-500 uppercase">
+                  ⚡ Desconto Pix {hasExplicitPixPrice ? '(Preço Especial)' : `(${paymentSettings.pixDiscountPercentage}%)`}
+                </Text>
                 <Text className="text-sm font-black text-green-500">
-                  - {((Math.round(total * (Number(paymentSettings.pixDiscountPercentage) / 100))) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  - {(pixDiscountAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </Text>
               </View>
             )}
             <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-white/5">
               <Text className="text-sm font-black text-gray-900 dark:text-white uppercase">Total</Text>
               <Text className="text-xl font-black text-yellow-600 dark:text-yellow-500">
-                {((paymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 
-                  ? Math.max(0, total - Math.round(total * (Number(paymentSettings.pixDiscountPercentage) / 100))) 
+                {((paymentMethod === 'pix' 
+                  ? Math.max(0, total - pixDiscountAmount) 
                   : total) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </Text>
             </View>
@@ -294,10 +326,10 @@ export default function CheckoutScreen() {
                 <View className="w-9 h-9 rounded-2xl bg-green-500/20 items-center justify-center">
                   <QrCode size={18} color="#22c55e" />
                 </View>
-                {paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0 && (
+                {(hasExplicitPixPrice || (paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0)) && (
                   <View className="bg-green-500 px-2 py-0.5 rounded-full">
                     <Text className="text-[9px] font-black text-black uppercase tracking-wider">
-                      -{paymentSettings.pixDiscountPercentage}%
+                      {hasExplicitPixPrice ? 'Preço Especial' : `-${paymentSettings.pixDiscountPercentage}%`}
                     </Text>
                   </View>
                 )}

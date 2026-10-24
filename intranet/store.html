@@ -1188,24 +1188,31 @@
                                     </div>
                                 </div>
 
-                                <!-- Fixed Price Grid (Regular, Promotional, Cost) -->
-                                <div id="fixed-price-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <!-- Fixed Price Grid (Regular, Pix, Promotional, Cost) -->
+                                <div id="fixed-price-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div>
-                                        <label for="product-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Principal (centavos)</label>
+                                        <label for="product-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Cartão (centavos)</label>
                                         <input type="number" id="product-price" name="product-price"
                                             placeholder="Ex: 10000 para R$ 100,00"
                                             class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
                                     </div>
 
                                     <div>
-                                        <label for="product-promo-price" class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">Preço Promocional (centavos)</label>
+                                        <label for="product-pix-price" class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">⚡ Preço Pix (centavos)</label>
+                                        <input type="number" id="product-pix-price" name="product-pix-price"
+                                            placeholder="Opcional (Ex: 9500)"
+                                            class="w-full px-4 py-3 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                                    </div>
+
+                                    <div>
+                                        <label for="product-promo-price" class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">Preço Promo (centavos)</label>
                                         <input type="number" id="product-promo-price" name="product-promo-price"
                                             placeholder="Ex: 7990 para R$ 79,90"
                                             class="w-full px-4 py-3 text-gray-900 dark:text-white bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium">
                                     </div>
 
                                     <div>
-                                        <label for="product-cost-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Custo Interno R$ (centavos)</label>
+                                        <label for="product-cost-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Custo Interno R$</label>
                                         <input type="number" id="product-cost-price" name="product-cost-price"
                                             placeholder="Ex: 4000 para R$ 40,00"
                                             class="w-full px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
@@ -1213,7 +1220,10 @@
                                 </div>
 
                                 <div id="variable-prices-container" class="hidden animate-fadeIn space-y-3">
-                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Variações de Preço</label>
+                                    <div class="flex items-center justify-between">
+                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Variações de Preço</label>
+                                        <span class="text-[10px] text-gray-400 italic">Preço Pix é opcional (se vazio, usa regra global ou valor cartão)</span>
+                                    </div>
                                     <input type="text" id="product-variants-label" placeholder="Título da Opção (Padrão: Opções)"
                                         class="w-full px-4 py-2 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm mb-2">
                                     <div id="price-variants-list" class="space-y-2 mt-2"></div>

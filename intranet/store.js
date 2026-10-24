@@ -137,6 +137,7 @@ export async function setupStorePage() {
     const productOrderInput = document.getElementById('product-order');
     const reorderProductsBtn = document.getElementById('reorder-products-btn');
     const productPriceInput = document.getElementById('product-price');
+    const productPixPriceInput = document.getElementById('product-pix-price');
     const productPromoPriceInput = document.getElementById('product-promo-price');
     const productCostPriceInput = document.getElementById('product-cost-price');
     const profitMarginBadge = document.getElementById('profit-margin-badge');
@@ -1639,6 +1640,7 @@ Requisitos:
 
                 if (priceType === 'fixed') {
                     productData.price = parseInt(productPriceInput.value, 10) || 0;
+                    productData.pixPrice = (productPixPriceInput && productPixPriceInput.value) ? parseInt(productPixPriceInput.value, 10) : null;
                 } else if (priceType === 'variable') {
                     saveActiveVariantDiffPricing();
                     const variants = [];
@@ -1646,9 +1648,14 @@ Requisitos:
                     variantElements.forEach(item => {
                         const name = item.querySelector('input[name="variant-name"]').value;
                         const price = parseInt(item.querySelector('input[name="variant-price"]').value, 10);
+                        const pixPriceInput = item.querySelector('input[name="variant-pix-price"]');
+                        const pixPrice = (pixPriceInput && pixPriceInput.value) ? parseInt(pixPriceInput.value, 10) : null;
                         const diffPricing = item._variantDiffPricing || { staffPrice: null, unitPrices: {} };
                         if (name && !isNaN(price)) {
                             const vData = { name, price };
+                            if (pixPrice !== null && !isNaN(pixPrice) && pixPrice > 0) {
+                                vData.pixPrice = pixPrice;
+                            }
                             if (diffPricing.staffPrice !== undefined && diffPricing.staffPrice !== null && diffPricing.staffPrice !== '') {
                                 vData.staffPrice = parseInt(diffPricing.staffPrice, 10);
                             }
@@ -1860,7 +1867,7 @@ Requisitos:
                         const vUnits = (variant.unitPrices && typeof variant.unitPrices === 'object') 
                             ? variant.unitPrices 
                             : {};
-                        addPriceVariant(variant.name, variant.price, vStaff, vUnits);
+                        addPriceVariant(variant.name, variant.price, vStaff, vUnits, variant.pixPrice);
                     });
                     activeDiffVariantIndex = 0;
                     refreshDiffPricingVariantTabs();
@@ -1893,6 +1900,7 @@ Requisitos:
                     lotesContainer.classList.add('hidden');
                     kitContainer.classList.add('hidden');
                     productPriceInput.value = product.price;
+                    if (productPixPriceInput) productPixPriceInput.value = product.pixPrice || '';
                 }
 
                 // Handle Addons load
@@ -2384,10 +2392,10 @@ Requisitos:
         renderSizeStockInputs();
     });
 
-    const addPriceVariant = (name = '', price = '', staffPrice = null, unitPrices = {}) => {
+    const addPriceVariant = (name = '', price = '', staffPrice = null, unitPrices = {}, pixPrice = null) => {
         const variantId = Date.now();
         const variantItem = document.createElement('div');
-        variantItem.className = 'price-variant-item flex items-center space-x-2';
+        variantItem.className = 'price-variant-item grid grid-cols-1 sm:grid-cols-[1.5fr,1fr,1fr,auto] gap-2 items-center p-2 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50';
         const isVariablePrice = document.querySelector('input[name="price-type"]:checked').value === 'variable';
 
         variantItem._variantDiffPricing = {
@@ -2396,9 +2404,16 @@ Requisitos:
         };
 
         variantItem.innerHTML = `
-            <input type="text" name="variant-name" placeholder="Nome da Variação" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <input type="number" name="variant-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
-            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
+            <input type="text" name="variant-name" placeholder="Nome (Ex: 3º Dan)" value="${name}" class="px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+            <div class="relative">
+                <input type="number" name="variant-price" placeholder="Preço Cartão" value="${price}" class="w-full pl-3 pr-2 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" ${isVariablePrice ? 'required' : ''}>
+                <span class="text-[9px] font-bold text-gray-400 absolute right-2 top-2 pointer-events-none">💳 Cartão</span>
+            </div>
+            <div class="relative">
+                <input type="number" name="variant-pix-price" placeholder="⚡ Pix (opcional)" value="${pixPrice !== undefined && pixPrice !== null ? pixPrice : ''}" class="w-full pl-3 pr-2 py-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <span class="text-[9px] font-bold text-emerald-500 absolute right-2 top-2 pointer-events-none">⚡ Pix</span>
+            </div>
+            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-2"><i class="fas fa-trash-alt"></i></button>
         `;
         priceVariantsList.appendChild(variantItem);
         refreshDiffPricingVariantTabs();

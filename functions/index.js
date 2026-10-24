@@ -566,22 +566,54 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     }
 
     let finalTotalAmount = Number(totalAmount);
-    let appliedPixDiscountPercentage = 0;
+    let appliedPixDiscount = 0;
     const selectedPaymentMethod = paymentMethod || 'credit_card';
+
+    let pixDiscountPercentage = 0;
+    let pixDiscountEnabled = false;
 
     try {
         const paymentSettingsDoc = await db.collection('settings').doc('payment').get();
         if (paymentSettingsDoc.exists) {
             const pData = paymentSettingsDoc.data();
-            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0 && selectedPaymentMethod === 'pix') {
-                appliedPixDiscountPercentage = Number(pData.pixDiscountPercentage);
-                if (!isPixDiscountApplied) {
-                    finalTotalAmount = Math.round(finalTotalAmount * (1 - appliedPixDiscountPercentage / 100));
-                }
+            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0) {
+                pixDiscountEnabled = true;
+                pixDiscountPercentage = Number(pData.pixDiscountPercentage);
             }
         }
     } catch (err) {
         console.warn('[createCartCheckoutSession] Erro ao buscar configurações de pagamento:', err);
+    }
+
+    if (selectedPaymentMethod === 'pix') {
+        let calculatedPixDiscount = 0;
+        for (const cartItem of cartItems) {
+            if (cartItem.formDataList) {
+                for (const itemFormData of cartItem.formDataList) {
+                    const priceData = itemFormData.priceData;
+                    const amount = priceData ? priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
+                    if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
+                        calculatedPixDiscount += (amount - Number(priceData.pixAmount));
+                    } else if (pixDiscountEnabled && pixDiscountPercentage > 0) {
+                        calculatedPixDiscount += Math.round(amount * (pixDiscountPercentage / 100));
+                    }
+                }
+            }
+            if (cartItem.recommendedItems) {
+                for (const item of cartItem.recommendedItems) {
+                    if (pixDiscountEnabled && pixDiscountPercentage > 0) {
+                        calculatedPixDiscount += Math.round(item.amount * (pixDiscountPercentage / 100));
+                    }
+                }
+            }
+        }
+
+        if (calculatedPixDiscount > 0) {
+            appliedPixDiscount = calculatedPixDiscount;
+            if (!isPixDiscountApplied) {
+                finalTotalAmount = Math.max(0, finalTotalAmount - calculatedPixDiscount);
+            }
+        }
     }
 
     // FAIL-SAFE: Se o valor for zero ou negativo (cupom 100%), processa como gratuito imediatamente
@@ -882,22 +914,49 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
     }
 
     let finalTotalAmount = Number(totalAmount);
-    let appliedPixDiscountPercentage = 0;
+    let appliedPixDiscount = 0;
     const selectedPaymentMethod = paymentMethod || 'credit_card';
+
+    let pixDiscountPercentage = 0;
+    let pixDiscountEnabled = false;
 
     try {
         const paymentSettingsDoc = await db.collection('settings').doc('payment').get();
         if (paymentSettingsDoc.exists) {
             const pData = paymentSettingsDoc.data();
-            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0 && selectedPaymentMethod === 'pix') {
-                appliedPixDiscountPercentage = Number(pData.pixDiscountPercentage);
-                if (!isPixDiscountApplied) {
-                    finalTotalAmount = Math.round(finalTotalAmount * (1 - appliedPixDiscountPercentage / 100));
-                }
+            if (pData.pixDiscountEnabled && Number(pData.pixDiscountPercentage) > 0) {
+                pixDiscountEnabled = true;
+                pixDiscountPercentage = Number(pData.pixDiscountPercentage);
             }
         }
     } catch (err) {
         console.warn('[createCheckoutSession] Erro ao buscar configurações de pagamento:', err);
+    }
+
+    if (selectedPaymentMethod === 'pix') {
+        let calculatedPixDiscount = 0;
+        for (const formData of formDataList) {
+            const priceData = formData.priceData;
+            const amount = priceData ? priceData.amount : 0;
+            if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
+                calculatedPixDiscount += (amount - Number(priceData.pixAmount));
+            } else if (pixDiscountEnabled && pixDiscountPercentage > 0) {
+                calculatedPixDiscount += Math.round(amount * (pixDiscountPercentage / 100));
+            }
+        }
+        if (recommendedItems) {
+            for (const item of recommendedItems) {
+                if (pixDiscountEnabled && pixDiscountPercentage > 0) {
+                    calculatedPixDiscount += Math.round(item.amount * (pixDiscountPercentage / 100));
+                }
+            }
+        }
+        if (calculatedPixDiscount > 0) {
+            appliedPixDiscount = calculatedPixDiscount;
+            if (!isPixDiscountApplied) {
+                finalTotalAmount = Math.max(0, finalTotalAmount - calculatedPixDiscount);
+            }
+        }
     }
 
     // Validação robusta do productId

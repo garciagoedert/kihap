@@ -81,6 +81,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
+    const calculatePixDiscount = (items, baseTotal, pSettings) => {
+        let discount = 0;
+        const globalPct = (pSettings && pSettings.pixDiscountEnabled && Number(pSettings.pixDiscountPercentage) > 0)
+            ? Number(pSettings.pixDiscountPercentage)
+            : 0;
+        let hasExplicitPixPrice = false;
+
+        items.forEach(item => {
+            if (item.formDataList && Array.isArray(item.formDataList)) {
+                item.formDataList.forEach(form => {
+                    const priceData = form.priceData;
+                    const amount = priceData ? priceData.amount : (item.totalAmount / item.formDataList.length);
+                    if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
+                        hasExplicitPixPrice = true;
+                        discount += (amount - Number(priceData.pixAmount));
+                    } else if (globalPct > 0) {
+                        discount += Math.round(amount * (globalPct / 100));
+                    }
+                });
+            }
+            if (item.recommendedItems && Array.isArray(item.recommendedItems)) {
+                item.recommendedItems.forEach(rec => {
+                    if (globalPct > 0) {
+                        discount += Math.round(rec.amount * (globalPct / 100));
+                    }
+                });
+            }
+        });
+
+        return { discount, hasExplicitPixPrice };
+    };
+
     const updatePaymentMethodUI = () => {
         const baseTotal = cart.getTotalAmount();
         let finalTotal = baseTotal;
@@ -88,6 +120,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         paymentMethodInputs.forEach(input => {
             if (input.checked) selectedPaymentMethod = input.value;
         });
+
+        const items = cart.getCart();
+        const { discount: pixDiscountAmount, hasExplicitPixPrice } = calculatePixDiscount(items, baseTotal, paymentSettings);
 
         if (paymentPixCard && paymentCardCard) {
             const pixDot = paymentPixCard.querySelector('.radio-dot');
@@ -112,14 +147,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        if (selectedPaymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0) {
-            const pct = Number(paymentSettings.pixDiscountPercentage);
-            const discountAmount = Math.round(baseTotal * (pct / 100));
-            finalTotal = Math.max(0, baseTotal - discountAmount);
+        if (pixBadge && (hasExplicitPixPrice || (paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0))) {
+            const pct = paymentSettings.pixDiscountPercentage;
+            pixBadge.textContent = hasExplicitPixPrice ? 'Preço Especial no Pix' : `${pct}% de Desconto`;
+            pixBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-green-500 text-black uppercase tracking-wider animate-pulse';
+            if (pixSubtitle) {
+                pixSubtitle.textContent = hasExplicitPixPrice 
+                    ? 'Desconto exclusivo no Pix já configurado neste pedido!' 
+                    : `Pague via Pix e ganhe ${pct}% de desconto imediato`;
+                pixSubtitle.className = 'text-xs text-green-400 font-semibold mt-0.5';
+            }
+        }
+
+        if (selectedPaymentMethod === 'pix' && pixDiscountAmount > 0) {
+            finalTotal = Math.max(0, baseTotal - pixDiscountAmount);
             if (pixDiscountRow) {
                 pixDiscountRow.classList.remove('hidden');
-                if (pixDiscountLabel) pixDiscountLabel.textContent = `⚡ Desconto Pix (${pct}%)`;
-                if (summaryPixDiscount) summaryPixDiscount.textContent = `- ${formatCurrency(discountAmount)}`;
+                if (pixDiscountLabel) pixDiscountLabel.textContent = `⚡ Desconto Pix`;
+                if (summaryPixDiscount) summaryPixDiscount.textContent = `- ${formatCurrency(pixDiscountAmount)}`;
             }
         } else {
             if (pixDiscountRow) pixDiscountRow.classList.add('hidden');
@@ -446,11 +491,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             let finalTotal = baseTotal;
             let isPixDiscountApplied = false;
 
-            if (selectedPaymentMethod === 'pix' && paymentSettings.pixDiscountEnabled && Number(paymentSettings.pixDiscountPercentage) > 0) {
-                const pct = Number(paymentSettings.pixDiscountPercentage);
-                const discountAmount = Math.round(baseTotal * (pct / 100));
-                finalTotal = Math.max(0, baseTotal - discountAmount);
-                isPixDiscountApplied = true;
+            if (selectedPaymentMethod === 'pix') {
+                const { discount: pixDiscountAmount } = calculatePixDiscount(items, baseTotal, paymentSettings);
+                if (pixDiscountAmount > 0) {
+                    finalTotal = Math.max(0, baseTotal - pixDiscountAmount);
+                    isPixDiscountApplied = true;
+                }
             }
 
             // Robust check for free purchases (handles potential float precision issues)

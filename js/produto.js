@@ -331,7 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 productData.priceVariants.forEach((variant, index) => {
                     const option = document.createElement('option');
                     option.value = index;
-                    option.textContent = `${variant.name} - ${(variant.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                    const pixText = (variant.pixPrice && variant.pixPrice < variant.price)
+                        ? ` (ou ${(variant.pixPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} no Pix)`
+                        : '';
+                    option.textContent = `${variant.name} - ${(variant.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${pixText}`;
                     priceVariantSelector.appendChild(option);
                 });
 
@@ -641,8 +644,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedVariant) {
                     priceData.variantName = selectedVariant.name;
                     priceData.amount = selectedVariant.price;
+                    if (selectedVariant.pixPrice) {
+                        priceData.pixAmount = selectedVariant.pixPrice;
+                    }
                 } else {
                     priceData.amount = productData.price;
+                    if (productData.pixPrice) {
+                        priceData.pixAmount = productData.pixPrice;
+                    }
                 }
             } else if (productData.priceType === 'kit') {
                 priceData.amount = productData.kitBasePrice || productData.price || 0;
@@ -655,6 +664,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 priceData.amount = productData.price;
+                if (productData.pixPrice) {
+                    priceData.pixAmount = productData.pixPrice;
+                }
             }
 
             let addonsSelected = null;
