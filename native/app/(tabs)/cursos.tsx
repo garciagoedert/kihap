@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Image, Modal, ScrollView } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { BookOpen, Play, Clock, Star, Menu, X, Home, Layout, MessageSquare, UserCheck, Activity, ShoppingBag, CreditCard, LogOut, Calendar, Lock, Sparkles } from 'lucide-react-native';
+import { BookOpen, Play, Clock, Star, Menu, X, Home, Layout, MessageSquare, UserCheck, Activity, ShoppingBag, CreditCard, LogOut, Calendar, Lock, Sparkles, Panda } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
@@ -419,7 +419,7 @@ export default function CursosScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => { setSidebarOpen(false); router.push('/(tabs)'); }} />
-                <SidebarItem icon={Sparkles} label="Littles" onPress={() => { setSidebarOpen(false); router.push('/littles'); }} color="#eab308" />
+                <SidebarItem icon={Panda} label="Littles" onPress={() => { setSidebarOpen(false); router.push('/littles'); }} color="#eab308" />
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />

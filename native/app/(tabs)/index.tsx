@@ -9,7 +9,7 @@ import StoriesBar from '../../src/components/StoriesBar';
 import BannerCarousel from '../../src/components/BannerCarousel';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
-import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Send, Sparkles } from 'lucide-react-native';
+import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Send, Sparkles, Panda } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useScrollToTop } from '@react-navigation/native';
 
@@ -511,7 +511,7 @@ export default function FeedScreen() {
 
               <ScrollView className="flex-1 p-4">
                 <SidebarItem icon={Home} label="Início" onPress={() => setSidebarOpen(false)} />
-                <SidebarItem icon={Sparkles} label="Littles" onPress={() => { setSidebarOpen(false); router.push('/littles'); }} color="#eab308" />
+                <SidebarItem icon={Panda} label="Littles" onPress={() => { setSidebarOpen(false); router.push('/littles'); }} color="#eab308" />
                 <SidebarItem icon={Clock} label="Horários" onPress={() => { setSidebarOpen(false); router.push('/atividades'); }} />
                 <SidebarItem icon={Calendar} label="Calendário" onPress={() => { setSidebarOpen(false); router.push('/calendario'); }} />
                 <SidebarItem icon={ShoppingBag} label="Loja" onPress={() => { setSidebarOpen(false); router.push('/(tabs)/store'); }} />
