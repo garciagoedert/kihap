@@ -87,6 +87,8 @@ export default function CheckoutScreen() {
     }
   };
 
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
   const calculatePixDiscount = () => {
     let pixDisc = 0;
     let hasExplicit = false;
