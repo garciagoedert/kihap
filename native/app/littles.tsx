@@ -15,6 +15,7 @@ import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
+  X,
   ChevronRight,
   BookOpen,
   Heart,
