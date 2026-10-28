@@ -106,74 +106,191 @@ const sendTicketEmail = async (saleId, saleData) => {
         });
         const qrCodeDataURL = await qrcode.toDataURL(saleId);
 
+        const seatList = [];
+        if (saleData.seatId) {
+            seatList.push(saleData.seatId);
+        }
+        if (Array.isArray(saleData.selectedSeats)) {
+            saleData.selectedSeats.forEach(s => {
+                if (s && !seatList.includes(s)) seatList.push(s);
+            });
+        } else if (typeof saleData.selectedSeats === 'string' && saleData.selectedSeats) {
+            if (!seatList.includes(saleData.selectedSeats)) seatList.push(saleData.selectedSeats);
+        }
+        const seatDisplay = seatList.length > 0 ? seatList.join(', ') : null;
+        const seatLabel = seatList.length > 1 ? 'Assentos Marcados / Cadeiras' : 'Assento Marcado / Cadeira';
+
+        const formatPrice = (centavos) => {
+            if (centavos === 0) return 'R$ 0,00';
+            return ((centavos || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+        const totalFormatted = formatPrice(saleData.amountTotal);
+
+        const buyerName = saleData.userName || saleData.payerName || 'Aluno';
+
         const mailOptions = {
             from: `Kihap <${gmailEmail}>`,
             to: saleData.userEmail,
-            subject: `Seu Ingresso para ${saleData.productName}`,
+            subject: `Ingresso Confirmado: ${saleData.productName}`,
             html: `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; border: 1px solid #333; border-radius: 12px; overflow: hidden;">
-                    <div style="background-color: #000; padding: 30px; text-align: center; border-bottom: 2px solid #FFC107;">
-                        <img src="https://kihap.com.br/imgs/logo.png" width="140" alt="Kihap">
-                    </div>
-                    <div style="padding: 40px; text-align: center;">
-                        <h1 style="color: #FFC107; font-size: 28px; text-transform: uppercase; margin-bottom: 20px;">Compra Confirmada!</h1>
-                        <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName || saleData.payerName || 'Aluno'}</strong>.</p>
-                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
-                        
-                        ${(saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0)) ? `
-                        <div style="margin: 25px 0; background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 2px solid #FFC107; border-radius: 12px; padding: 20px; text-align: center;">
-                            <span style="color: #FFC107; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 6px;">Assento Marcado / Cadeira</span>
-                            <div style="font-size: 32px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px;">CADEIRA ${saleData.seatId || (Array.isArray(saleData.selectedSeats) ? saleData.selectedSeats.join(', ') : saleData.selectedSeats)}</div>
-                            ${saleData.locationName ? `<div style="color: #c084fc; font-size: 14px; font-weight: bold; margin-top: 8px;"><span style="color: #a855f7;">Local / Cidade:</span> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}</div>` : ''}
-                            ${saleData.locationAddress ? `<div style="color: #9ca3af; font-size: 12px; margin-top: 3px;">📍 ${saleData.locationAddress}</div>` : ''}
-                            ${saleData.sessionLabel ? `<div style="color: #93c5fd; font-size: 13px; font-weight: bold; margin-top: 8px;"><span style="color: #60a5fa;">Sessão:</span> ${saleData.sessionLabel}</div>` : ''}
-                        </div>
-                        ` : ''}
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Seu Ingresso Kihap</title>
+                </head>
+                <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f1f5f9; padding: 30px 12px;">
+                        <tr>
+                            <td align="center">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
+                                    
+                                    <!-- Header -->
+                                    <tr>
+                                        <td align="center" style="background-color: #0f172a; padding: 28px 20px; border-bottom: 4px solid #f59e0b;">
+                                            <img src="https://kihap.com.br/imgs/logo.png" width="130" alt="Kihap" style="display: block; border: 0;" />
+                                            <div style="margin-top: 10px; font-size: 11px; font-weight: 800; letter-spacing: 2.5px; color: #f59e0b; text-transform: uppercase;">
+                                                INGRESSO OFICIAL
+                                            </div>
+                                        </td>
+                                    </tr>
 
-                        ${saleData.isEvent ? `
-                        <div style="margin: 30px 0; background-color: #111; border: 1px solid #FFC107; border-radius: 10px; padding: 20px; text-align: left;">
-                            <h3 style="color: #FFC107; margin-top: 0; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Detalhes do Evento</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-                                <div>
-                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Número</span>
-                                    <span style="color: #FFF; font-size: 18px; font-weight: bold;">#${saleData.attendeeNumber}</span>
-                                </div>
-                                <div>
-                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Ringue</span>
-                                    <span style="color: #FFF; font-size: 18px; font-weight: bold;">${saleData.eventRing || 'TBD'}</span>
-                                </div>
-                                <div>
-                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Data</span>
-                                    <span style="color: #FFF; font-size: 14px;">${saleData.eventDay || 'TBD'}</span>
-                                </div>
-                                <div>
-                                    <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Horário</span>
-                                    <span style="color: #FFF; font-size: 14px;">${saleData.eventTime || 'TBD'}</span>
-                                </div>
-                            </div>
-                            ${saleData.eventAddress ? `
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; text-align: left;">
-                                <span style="color: #666; font-size: 11px; text-transform: uppercase; display: block;">Endereço</span>
-                                <span style="color: #FFF; font-size: 13px; line-height: 1.4; display: block; margin-top: 5px;">${saleData.eventAddress}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        ` : `
-                        <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Apresente este QR Code no dia do evento para fazer o check-in.</p>
-                        `}
-                        
-                        <div style="margin: 30px 0; background-color: #fff; padding: 15px; display: inline-block; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
-                            <img src="cid:ticket_qr" alt="QR Code" style="width: 180px; height: 180px; display: block;">
-                        </div>
+                                    <!-- Content -->
+                                    <tr>
+                                        <td style="padding: 36px 30px 28px; text-align: center;">
+                                            <div style="display: inline-block; background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 14px; border-radius: 9999px; margin-bottom: 16px;">
+                                                ✓ Inscrição Confirmada
+                                            </div>
 
-                        <div style="margin-top: 20px; text-align: center;">
-                             <a href="https://www.kihap.com.br" style="background-color: #FFC107; color: #000; padding: 15px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Visitar Site</a>
-                        </div>
-                        
-                        <hr style="border: 0; border-top: 1px solid #222; margin: 40px 0;">
-                        <p style="font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px;">ID da Compra: ${saleId}</p>
-                    </div>
-                </div>
+                                            <h1 style="color: #0f172a; font-size: 24px; font-weight: 900; margin: 0 0 10px; letter-spacing: -0.5px;">
+                                                Seu ingresso está garantido!
+                                            </h1>
+                                            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                                                Olá, <strong style="color: #0f172a;">${buyerName}</strong>.<br>
+                                                Obrigado por sua compra. Aqui estão os detalhes de acesso para <strong>${saleData.productName}</strong>.
+                                            </p>
+
+                                            <!-- Seat Card -->
+                                            ${seatDisplay ? `
+                                            <div style="margin: 22px 0; background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 14px; padding: 20px 16px; text-align: center;">
+                                                <span style="color: #b45309; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 6px;">
+                                                    🪑 ${seatLabel}
+                                                </span>
+                                                <div style="font-size: 30px; font-weight: 900; color: #0f172a; letter-spacing: 1.5px;">
+                                                    CADEIRA ${seatDisplay}
+                                                </div>
+                                                ${saleData.locationName ? `
+                                                <div style="color: #334155; font-size: 13px; font-weight: 700; margin-top: 10px;">
+                                                    📍 <strong>Local:</strong> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}
+                                                </div>
+                                                ` : ''}
+                                                ${saleData.locationAddress ? `
+                                                <div style="color: #64748b; font-size: 12px; margin-top: 3px;">
+                                                    ${saleData.locationAddress}
+                                                </div>
+                                                ` : ''}
+                                                ${(saleData.sessionLabel || saleData.sessionName) ? `
+                                                <div style="color: #0369a1; font-size: 13px; font-weight: 700; margin-top: 8px;">
+                                                    🕒 <strong>Sessão:</strong> ${saleData.sessionLabel || saleData.sessionName}
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                            ` : ''}
+
+                                            <!-- Event Details (if applicable) -->
+                                            ${saleData.isEvent ? `
+                                            <div style="margin: 20px 0; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; text-align: left;">
+                                                <h3 style="color: #0f172a; margin: 0 0 12px; text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: 1px;">
+                                                    Detalhes do Evento
+                                                </h3>
+                                                <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px;">
+                                                    <tr>
+                                                        <td style="padding: 5px 0; color: #64748b;">Número:</td>
+                                                        <td style="padding: 5px 0; color: #0f172a; font-weight: 700; text-align: right;">#${saleData.attendeeNumber || 'Confirmado'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0; color: #64748b;">Ringue / Área:</td>
+                                                        <td style="padding: 5px 0; color: #0f172a; font-weight: 700; text-align: right;">${saleData.eventRing || 'Principal'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0; color: #64748b;">Data:</td>
+                                                        <td style="padding: 5px 0; color: #0f172a; font-weight: 700; text-align: right;">${saleData.eventDay || 'A Definir'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0; color: #64748b;">Horário:</td>
+                                                        <td style="padding: 5px 0; color: #0f172a; font-weight: 700; text-align: right;">${saleData.eventTime || 'A Definir'}</td>
+                                                    </tr>
+                                                    ${saleData.eventAddress ? `
+                                                    <tr>
+                                                        <td colspan="2" style="padding-top: 10px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px;">
+                                                            📍 <strong>Endereço:</strong> ${saleData.eventAddress}
+                                                        </td>
+                                                    </tr>
+                                                    ` : ''}
+                                                </table>
+                                            </div>
+                                            ` : ''}
+
+                                            <!-- QR Code Box -->
+                                            <div style="margin: 24px 0; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 22px; text-align: center;">
+                                                <p style="margin: 0 0 12px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                    Apresente este QR Code no check-in do evento
+                                                </p>
+                                                <div style="background-color: #ffffff; padding: 12px; display: inline-block; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                                                    <img src="cid:ticket_qr" alt="QR Code Ingresso" style="width: 175px; height: 175px; display: block; margin: 0 auto;">
+                                                </div>
+                                                <p style="margin: 10px 0 0; font-size: 11px; color: #94a3b8;">
+                                                    Válido para entrada e conferência exclusiva Kihap
+                                                </p>
+                                            </div>
+
+                                            <!-- Order Summary Box -->
+                                            <div style="margin: 20px 0; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; text-align: left;">
+                                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 800; margin-bottom: 6px;">
+                                                    Resumo do Pedido
+                                                </div>
+                                                <div style="font-size: 15px; font-weight: 800; color: #0f172a;">
+                                                    ${saleData.productName}
+                                                </div>
+                                                ${saleData.userSize ? `<div style="font-size: 13px; color: #475569; margin-top: 3px;">Tamanho: <strong>${saleData.userSize}</strong></div>` : ''}
+                                                ${saleData.variationName ? `<div style="font-size: 13px; color: #475569; margin-top: 3px;">Variação: <strong>${saleData.variationName}</strong></div>` : ''}
+                                                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Pago:</td>
+                                                            <td style="font-size: 18px; font-weight: 900; color: #0f172a; text-align: right;">${totalFormatted}</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Button -->
+                                            <div style="margin: 26px 0 10px; text-align: center;">
+                                                <a href="https://www.kihap.com.br" style="background-color: #014fa4; color: #ffffff; padding: 14px 34px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; box-shadow: 0 4px 12px rgba(1, 79, 164, 0.25);">
+                                                    Acessar Kihap
+                                                </a>
+                                            </div>
+
+                                            <p style="margin-top: 26px; font-size: 11px; color: #94a3b8; font-family: monospace; letter-spacing: 0.5px;">
+                                                ID DA INSCRIÇÃO: ${saleId}
+                                            </p>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td align="center" style="padding: 22px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; background-color: #f8fafc;">
+                                            <p style="margin: 0 0 6px;">&copy; ${new Date().getFullYear()} Kihap Martial Arts • Todos os direitos reservados.</p>
+                                            <a href="https://www.kihap.com.br" style="color: #014fa4; text-decoration: none; font-weight: 600;">www.kihap.com.br</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
             `,
             attachments: [
                 {
@@ -216,7 +333,8 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
         });
 
         const formatPrice = (centavos) => {
-            return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (centavos === 0) return 'R$ 0,00';
+            return ((centavos || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
 
         const totalFormatted = formatPrice(saleData.amountTotal);
@@ -224,74 +342,149 @@ const sendPurchaseReceiptEmail = async (saleId, saleData) => {
         let addonsHtml = '';
         if (saleData.selectedAddons && saleData.selectedAddons.length > 0) {
             addonsHtml = `
-                <div style="margin-top: 15px;">
+                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                    <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700;">Itens Adicionais:</span>
                     ${saleData.selectedAddons.map(addon => `
-                        <div style="font-size: 14px; color: #AAA; margin-top: 4px; border-left: 2px solid #FFC107; padding-left: 10px;">
-                            + ${addon.name} <span style="color: #666; font-size: 12px; margin-left: 5px;">(${formatPrice(addon.price)})</span>
+                        <div style="font-size: 13px; color: #475569; margin-top: 4px; padding-left: 8px; border-left: 2px solid #f59e0b;">
+                            + ${addon.name} <span style="color: #94a3b8; font-size: 12px;">(${formatPrice(addon.price)})</span>
                         </div>
                     `).join('')}
                 </div>
             `;
         }
 
+        const seatList = [];
+        if (saleData.seatId) {
+            seatList.push(saleData.seatId);
+        }
+        if (Array.isArray(saleData.selectedSeats)) {
+            saleData.selectedSeats.forEach(s => {
+                if (s && !seatList.includes(s)) seatList.push(s);
+            });
+        } else if (typeof saleData.selectedSeats === 'string' && saleData.selectedSeats) {
+            if (!seatList.includes(saleData.selectedSeats)) seatList.push(saleData.selectedSeats);
+        }
+        const seatDisplay = seatList.length > 0 ? seatList.join(', ') : null;
+        const seatLabel = seatList.length > 1 ? 'Assentos Marcados / Cadeiras' : 'Assento Marcado / Cadeira';
+
+        const buyerName = saleData.payerName || saleData.userName || 'Cliente';
+
         const mailOptions = {
             from: `Kihap Store <${gmailEmail}>`,
             to: saleData.userEmail,
-            subject: `Compra Confirmada! Recibo: ${saleData.productName}`,
+            subject: `Compra Confirmada: ${saleData.productName}`,
             html: `
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <style>
-                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background-color: #0a0a0a; border-radius: 12px; overflow: hidden; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-                        .header { background-color: #000; padding: 40px; text-align: center; border-bottom: 3px solid #FFC107; }
-                        .content { padding: 40px; line-height: 1.6; }
-                        .footer { background-color: #000; padding: 30px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #222; }
-                        h1 { color: #FFC107; font-size: 28px; font-weight: 800; text-transform: uppercase; margin-top: 0; margin-bottom: 20px; }
-                        p { color: #CCCCCC; }
-                        strong { color: #FFFFFF; }
-                        .receipt-box { background-color: #111; border-radius: 10px; padding: 30px; margin-top: 30px; border: 1px solid #222; }
-                        .item-name { font-weight: bold; font-size: 20px; color: #FFF; display: block; margin-bottom: 5px; }
-                        .item-variant { font-size: 14px; color: #FFC107; margin-top: 5px; display: block; font-weight: 600; }
-                        .total-section { margin-top: 30px; border-top: 1px solid #333; padding-top: 25px; text-align: right; }
-                        .total-label { font-size: 14px; font-weight: bold; color: #888; text-transform: uppercase; margin-right: 15px; }
-                        .total-value { font-size: 26px; font-weight: 900; color: #FFC107; }
-                        .btn { background-color: #FFC107; color: #000; padding: 18px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; }
-                    </style>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Recibo de Compra Kihap</title>
                 </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <img src="https://kihap.com.br/imgs/logo.png" width="150" alt="Kihap Store">
-                        </div>
-                        <div class="content">
-                            <h1>Compra Confirmada!</h1>
-                            <p>Olá, <strong>${saleData.payerName || saleData.userName}</strong>,</p>
-                            <p>Obrigado por comprar na <strong>Kihap Store</strong>. Seu pedido foi recebido e já estamos preparando tudo!</p>
-                            
-                            <div class="receipt-box">
-                                <span class="item-name">${saleData.productName}</span>
-                                ${saleData.userSize ? `<span class="item-variant">TAMANHO: ${saleData.userSize}</span>` : ''}
-                                ${saleData.variationName ? `<span class="item-variant">VARIAÇÃO: ${saleData.variationName}</span>` : ''}
-                                ${addonsHtml}
+                <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f1f5f9; padding: 30px 12px;">
+                        <tr>
+                            <td align="center">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
+                                    
+                                    <!-- Header -->
+                                    <tr>
+                                        <td align="center" style="background-color: #0f172a; padding: 28px 20px; border-bottom: 4px solid #f59e0b;">
+                                            <img src="https://kihap.com.br/imgs/logo.png" width="130" alt="Kihap Store" style="display: block; border: 0;" />
+                                            <div style="margin-top: 10px; font-size: 11px; font-weight: 800; letter-spacing: 2.5px; color: #f59e0b; text-transform: uppercase;">
+                                                RECIBO DE COMPRA
+                                            </div>
+                                        </td>
+                                    </tr>
 
-                                <div class="total-section">
-                                    <span class="total-label">Total Pago</span>
-                                    <span class="total-value">${totalFormatted}</span>
-                                </div>
-                            </div>
+                                    <!-- Content -->
+                                    <tr>
+                                        <td style="padding: 36px 30px 28px; text-align: center;">
+                                            <div style="display: inline-block; background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 14px; border-radius: 9999px; margin-bottom: 16px;">
+                                                ✓ Pedido Confirmado
+                                            </div>
 
-                            <div style="text-align: center; margin-top: 20px;">
-                                <a href="https://www.kihap.com.br/store" class="btn">Voltar para a Loja</a>
-                            </div>
-                            
-                            <p style="margin-top: 50px; font-size: 10px; color: #333; text-align: center; text-transform: uppercase; letter-spacing: 1px;">Identificador do Pedido: ${saleId}</p>
-                        </div>
-                        <div class="footer">
-                            <p>&copy; ${new Date().getFullYear()} Kihap Martial Arts - A Força Para a Mudança. <br> <a href="https://www.kihap.com.br" style="color: #FFC107; text-decoration: none; font-weight: bold; margin-top: 10px; display: inline-block;">www.kihap.com.br</a></p>
-                        </div>
-                    </div>
+                                            <h1 style="color: #0f172a; font-size: 24px; font-weight: 900; margin: 0 0 10px; letter-spacing: -0.5px;">
+                                                Obrigado pela sua compra!
+                                            </h1>
+                                            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                                                Olá, <strong style="color: #0f172a;">${buyerName}</strong>.<br>
+                                                Seu pedido foi registrado com sucesso e já está sendo processado.
+                                            </p>
+
+                                            <!-- Seat Card (se houver assento marcado) -->
+                                            ${seatDisplay ? `
+                                            <div style="margin: 22px 0; background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 14px; padding: 20px 16px; text-align: center;">
+                                                <span style="color: #b45309; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 6px;">
+                                                    🪑 ${seatLabel}
+                                                </span>
+                                                <div style="font-size: 30px; font-weight: 900; color: #0f172a; letter-spacing: 1.5px;">
+                                                    CADEIRA ${seatDisplay}
+                                                </div>
+                                                ${saleData.locationName ? `
+                                                <div style="color: #334155; font-size: 13px; font-weight: 700; margin-top: 10px;">
+                                                    📍 <strong>Local:</strong> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}
+                                                </div>
+                                                ` : ''}
+                                                ${saleData.locationAddress ? `
+                                                <div style="color: #64748b; font-size: 12px; margin-top: 3px;">
+                                                    ${saleData.locationAddress}
+                                                </div>
+                                                ` : ''}
+                                                ${(saleData.sessionLabel || saleData.sessionName) ? `
+                                                <div style="color: #0369a1; font-size: 13px; font-weight: 700; margin-top: 8px;">
+                                                    🕒 <strong>Sessão:</strong> ${saleData.sessionLabel || saleData.sessionName}
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                            ` : ''}
+
+                                            <!-- Order Summary Card -->
+                                            <div style="margin: 20px 0; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; text-align: left;">
+                                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 800; margin-bottom: 8px;">
+                                                    Detalhes do Pedido
+                                                </div>
+                                                <div style="font-size: 16px; font-weight: 800; color: #0f172a;">
+                                                    ${saleData.productName}
+                                                </div>
+                                                ${saleData.userSize ? `<div style="font-size: 13px; color: #475569; margin-top: 4px;">Tamanho: <strong>${saleData.userSize}</strong></div>` : ''}
+                                                ${saleData.variationName ? `<div style="font-size: 13px; color: #475569; margin-top: 4px;">Variação: <strong>${saleData.variationName}</strong></div>` : ''}
+                                                ${addonsHtml}
+                                                
+                                                <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Pago:</td>
+                                                            <td style="font-size: 20px; font-weight: 900; color: #0f172a; text-align: right;">${totalFormatted}</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Button -->
+                                            <div style="margin: 26px 0 10px; text-align: center;">
+                                                <a href="https://www.kihap.com.br/store" style="background-color: #014fa4; color: #ffffff; padding: 14px 34px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; box-shadow: 0 4px 12px rgba(1, 79, 164, 0.25);">
+                                                    Voltar para a Loja
+                                                </a>
+                                            </div>
+
+                                            <p style="margin-top: 26px; font-size: 11px; color: #94a3b8; font-family: monospace; letter-spacing: 0.5px;">
+                                                IDENTIFICADOR DO PEDIDO: ${saleId}
+                                            </p>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td align="center" style="padding: 22px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; background-color: #f8fafc;">
+                                            <p style="margin: 0 0 6px;">&copy; ${new Date().getFullYear()} Kihap Martial Arts • A Força Para a Mudança.</p>
+                                            <a href="https://www.kihap.com.br" style="color: #014fa4; text-decoration: none; font-weight: 600;">www.kihap.com.br</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
                 </body>
                 </html>
             `
@@ -681,6 +874,25 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                         created: admin.firestore.FieldValue.serverTimestamp(),
                     };
 
+                    if (!saleData.seatId && cartItem.selectedSeats && cartItem.selectedSeats.length > 0) {
+                        saleData.selectedSeats = cartItem.selectedSeats;
+                    }
+                    if (!saleData.sessionId && cartItem.sessionId) {
+                        saleData.sessionId = cartItem.sessionId;
+                    }
+                    if (!saleData.sessionLabel && cartItem.sessionLabel) {
+                        saleData.sessionLabel = cartItem.sessionLabel;
+                    }
+                    if (!saleData.locationName && cartItem.locationName) {
+                        saleData.locationName = cartItem.locationName;
+                    }
+                    if (!saleData.locationVenue && cartItem.locationVenue) {
+                        saleData.locationVenue = cartItem.locationVenue;
+                    }
+                    if (!saleData.locationAddress && cartItem.locationAddress) {
+                        saleData.locationAddress = cartItem.locationAddress;
+                    }
+
                     if (product.isEvent || product.isTicket) {
                         const eventData = await assignEventParticipantData(null, saleData, product);
                         saleData = { ...saleData, ...eventData };
@@ -772,6 +984,25 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     subscriptionPeriod: productData.subscriptionPeriod || null,
                     created: admin.firestore.FieldValue.serverTimestamp(),
                 };
+
+                if (!saleData.seatId && cartItem.selectedSeats && cartItem.selectedSeats.length > 0) {
+                    saleData.selectedSeats = cartItem.selectedSeats;
+                }
+                if (!saleData.sessionId && cartItem.sessionId) {
+                    saleData.sessionId = cartItem.sessionId;
+                }
+                if (!saleData.sessionLabel && cartItem.sessionLabel) {
+                    saleData.sessionLabel = cartItem.sessionLabel;
+                }
+                if (!saleData.locationName && cartItem.locationName) {
+                    saleData.locationName = cartItem.locationName;
+                }
+                if (!saleData.locationVenue && cartItem.locationVenue) {
+                    saleData.locationVenue = cartItem.locationVenue;
+                }
+                if (!saleData.locationAddress && cartItem.locationAddress) {
+                    saleData.locationAddress = cartItem.locationAddress;
+                }
                 const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
                 saleDocIds.push(docRef.id);
             }
@@ -879,6 +1110,25 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                     couponCode: couponCode || null,
                     created: admin.firestore.FieldValue.serverTimestamp(),
                 };
+
+                if (!saleData.seatId && cartItem.selectedSeats && cartItem.selectedSeats.length > 0) {
+                    saleData.selectedSeats = cartItem.selectedSeats;
+                }
+                if (!saleData.sessionId && cartItem.sessionId) {
+                    saleData.sessionId = cartItem.sessionId;
+                }
+                if (!saleData.sessionLabel && cartItem.sessionLabel) {
+                    saleData.sessionLabel = cartItem.sessionLabel;
+                }
+                if (!saleData.locationName && cartItem.locationName) {
+                    saleData.locationName = cartItem.locationName;
+                }
+                if (!saleData.locationVenue && cartItem.locationVenue) {
+                    saleData.locationVenue = cartItem.locationVenue;
+                }
+                if (!saleData.locationAddress && cartItem.locationAddress) {
+                    saleData.locationAddress = cartItem.locationAddress;
+                }
 
                 // Lógica de Evento para compras gratuitas
                 if (product.isEvent || product.isTicket) {
@@ -1544,10 +1794,14 @@ exports.processFreePurchase = functions.https.onRequest(async (req, res) => {
             };
             const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
 
-            // Se o produto for um ingresso, envie o e-mail
-            if (product.isTicket) {
-                console.log(`[processFreePurchase] Produto gratuito é um ingresso. Enviando e-mail para a venda ${docRef.id}.`);
+            // Envio de e-mail (ingresso ou recibo)
+            const isTicketOrEvent = product.isTicket || product.isEvent || product.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
+            if (isTicketOrEvent) {
+                console.log(`[processFreePurchase] Produto gratuito é um ingresso/evento/assento. Enviando e-mail para a venda ${docRef.id}.`);
                 await sendTicketEmail(docRef.id, saleData);
+            } else {
+                console.log(`[processFreePurchase] Produto gratuito da loja. Enviando recibo para a venda ${docRef.id}.`);
+                await sendPurchaseReceiptEmail(docRef.id, saleData);
             }
         }
 
