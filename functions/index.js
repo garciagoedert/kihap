@@ -117,13 +117,13 @@ const sendTicketEmail = async (saleId, saleData) => {
                     </div>
                     <div style="padding: 40px; text-align: center;">
                         <h1 style="color: #FFC107; font-size: 28px; text-transform: uppercase; margin-bottom: 20px;">Compra Confirmada!</h1>
-                        <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName}</strong>.</p>
+                        <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName || saleData.payerName || 'Aluno'}</strong>.</p>
                         <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
                         
-                        ${saleData.seatId ? `
+                        ${(saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0)) ? `
                         <div style="margin: 25px 0; background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 2px solid #FFC107; border-radius: 12px; padding: 20px; text-align: center;">
                             <span style="color: #FFC107; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 6px;">Assento Marcado / Cadeira</span>
-                            <div style="font-size: 32px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px;">CADEIRA ${saleData.seatId}</div>
+                            <div style="font-size: 32px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px;">CADEIRA ${saleData.seatId || (Array.isArray(saleData.selectedSeats) ? saleData.selectedSeats.join(', ') : saleData.selectedSeats)}</div>
                             ${saleData.locationName ? `<div style="color: #c084fc; font-size: 14px; font-weight: bold; margin-top: 8px;"><span style="color: #a855f7;">Local / Cidade:</span> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}</div>` : ''}
                             ${saleData.locationAddress ? `<div style="color: #9ca3af; font-size: 12px; margin-top: 3px;">📍 ${saleData.locationAddress}</div>` : ''}
                             ${saleData.sessionLabel ? `<div style="color: #93c5fd; font-size: 13px; font-weight: bold; margin-top: 8px;"><span style="color: #60a5fa;">Sessão:</span> ${saleData.sessionLabel}</div>` : ''}
@@ -546,7 +546,8 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     // Envio de e-mail (ingresso ou recibo)
     if (!saleData.emailSent) {
         if (productData) {
-            if (productData.isTicket || productData.isEvent) {
+            const isTicketOrEvent = productData.isTicket || productData.isEvent || productData.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
+            if (isTicketOrEvent) {
                 console.log(`[updateSaleToPaid] Enviando e-mail de ingresso para ${saleId}`);
                 await sendTicketEmail(saleId, saleData);
             } else {
@@ -700,7 +701,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                         });
                     }
 
-                    if (product.isTicket || product.isEvent) {
+                    const isTicketOrEvent = product.isTicket || product.isEvent || product.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
+                    if (isTicketOrEvent) {
                         await sendTicketEmail(docRef.id, saleData);
                     } else {
                         await sendPurchaseReceiptEmail(docRef.id, saleData);
@@ -898,7 +900,8 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                     });
                 }
 
-                if (product.isTicket) {
+                const isTicketOrEvent = product.isTicket || product.isEvent || product.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
+                if (isTicketOrEvent) {
                     await sendTicketEmail(docRef.id, saleData);
                 } else {
                     await sendPurchaseReceiptEmail(docRef.id, saleData);
@@ -1221,7 +1224,8 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
                             const productSnapInner = await productRefInner.get();
                             if (productSnapInner.exists) {
                                 const pData = productSnapInner.data();
-                                if (pData.isTicket || pData.isEvent) {
+                                const isTicketOrEvent = pData.isTicket || pData.isEvent || pData.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
+                                if (isTicketOrEvent) {
                                     await sendTicketEmail(docId, saleData);
                                 } else {
                                     await sendPurchaseReceiptEmail(docId, saleData);
@@ -1675,8 +1679,10 @@ exports.resendEmail = functions.https.onCall(async (data, context) => {
 
         const productRef = db.collection('products').doc(saleData.productId);
         const productSnap = await productRef.get();
+        const pData = productSnap.exists ? productSnap.data() : {};
+        const isTicketOrEvent = pData.isTicket || pData.isEvent || pData.hasSeatMap || saleData.seatId || (Array.isArray(saleData.selectedSeats) && saleData.selectedSeats.length > 0);
 
-        if (productSnap.exists && productSnap.data().isTicket) {
+        if (isTicketOrEvent) {
             await sendTicketEmail(saleId, saleData);
             return {
                 message: `E-mail de ingresso reenviado com sucesso para ${saleData.userEmail}.`,
