@@ -5,7 +5,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
-import { ArrowLeft, ShoppingCart, Minus, Plus, Star, ShieldCheck, Calendar, Clock, Armchair, MapPin } from 'lucide-react-native';
+import { ArrowLeft, ShoppingCart, Minus, Plus, Star, ShieldCheck, Calendar, Clock, Armchair, MapPin, Check, Ticket } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -48,6 +48,8 @@ export default function ProductDetailScreen() {
     }
   }>({});
   const [lockingSeats, setLockingSeats] = useState(false);
+  const [purchaseMode, setPurchaseMode] = useState<'full' | 'extra_only'>('full');
+  const [hasExistingEnrollment, setHasExistingEnrollment] = useState(false);
 
   // Flattened array of all chosen seats across all sessions
   const allSelectedSeats = useMemo(() => {
@@ -172,6 +174,32 @@ export default function ProductDetailScreen() {
     return () => unsubscribeProduct();
   }, [id]);
 
+  useEffect(() => {
+    if (!userData?.uid || !id) return;
+    const checkUserEnrollment = async () => {
+      try {
+        const q = query(
+          collection(db, 'inscricoesFaixaPreta'),
+          where('userId', '==', userData.uid)
+        );
+        const snap = await getDocs(q);
+        const found = snap.docs.some(d => {
+          const order = d.data();
+          if (order.productId === id) return true;
+          if (Array.isArray(order.items) && order.items.some((it: any) => it.productId === id)) return true;
+          return false;
+        });
+        if (found) {
+          setHasExistingEnrollment(true);
+          setPurchaseMode('extra_only');
+        }
+      } catch (err) {
+        console.warn('Erro ao verificar inscrição existente:', err);
+      }
+    };
+    checkUserEnrollment();
+  }, [userData?.uid, id]);
+
   const handleSeatToggle = (seatId: string) => {
     const activeSess = selectedSession || availableSessions[0];
     if (!activeSess) return;
@@ -276,6 +304,10 @@ export default function ProductDetailScreen() {
     const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
 
     if (hasExtraTicket) {
+      if (purchaseMode === 'extra_only') {
+        return allSelectedSeats.length * (product.extraTicketPrice || 0);
+      }
+
       const pVariant = participants[0]?.selectedVariant || product.priceVariants?.[0];
       const basePrice = (product.priceType === 'variable' && pVariant)
         ? getEffectiveVariantPrice(pVariant, userData, product).price
@@ -310,7 +342,7 @@ export default function ProductDetailScreen() {
 
     // Basic validation
     const incomplete = participants.some((p, idx) => {
-      const isExtra = hasExtraTicket && (idx >= includedCount);
+      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
       if (isExtra) {
         return !p.userName?.trim();
       }
@@ -365,13 +397,13 @@ export default function ProductDetailScreen() {
     const effective = getEffectiveProductPrice(product, userData);
 
     const formDataList = participants.map((p, idx) => {
-      const isExtra = hasExtraTicket && (idx >= includedCount);
+      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
       const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
       const selectedAmount = isExtra
         ? (product.extraTicketPrice || 0)
         : (pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price);
       const selectedVariantName = isExtra
-        ? 'Ingresso Adicional (Acompanhante)'
+        ? (purchaseMode === 'extra_only' ? 'Ingresso Acompanhante' : 'Ingresso Adicional (Acompanhante)')
         : (pVariant ? pVariant.name : undefined);
       const pixAmount = isExtra
         ? undefined
@@ -416,18 +448,20 @@ export default function ProductDetailScreen() {
     const summaryLocations = Array.from(new Set(allSelectedSeats.map(s => s.locationName).filter(Boolean)));
 
     addItem({
-      id: product.id,
+      id: purchaseMode === 'extra_only' ? `${product.id}_extras` : product.id,
       productId: product.id,
-      name: product.name,
-      productName: product.name,
+      name: purchaseMode === 'extra_only' ? `${product.name} (Ingressos Acompanhante)` : product.name,
+      productName: purchaseMode === 'extra_only' ? `${product.name} (Ingressos Acompanhante)` : product.name,
       imageUrl: product.imageUrl,
       priceType: product.priceType || 'fixed',
-      price: firstVariantPrice,
+      price: purchaseMode === 'extra_only' ? (product.extraTicketPrice || 0) : firstVariantPrice,
       totalAmount,
+      purchaseMode,
+      isExtraTicketOnly: purchaseMode === 'extra_only',
       hasSeatMap: Boolean(product.hasSeatMap),
       hasExtraTicketPrice: Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0),
       extraTicketPrice: product.extraTicketPrice || 0,
-      includedTicketsCount: includedCount,
+      includedTicketsCount: purchaseMode === 'extra_only' ? 0 : includedCount,
       selectedSeats: summarySeats,
       sessionId: allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default',
       sessionLabel: summarySessions.join(' | ') || selectedSession?.label || null,
@@ -561,6 +595,81 @@ export default function ProductDetailScreen() {
           {/* Módulo de Mapa de Assentos, Locais & Sessões */}
           {product.hasSeatMap && (
             <View className="mb-6">
+              {/* Seletor de Modalidade: Inscrição Completa vs Apenas Ingressos Acompanhante */}
+              {(product.hasExtraTicketPrice || (product.extraTicketPrice && product.extraTicketPrice > 0)) && (
+                <View 
+                  style={{
+                    marginBottom: 20,
+                    padding: 16,
+                    borderRadius: 20,
+                    backgroundColor: isDark ? '#141414' : '#f9fafb',
+                    borderWidth: 1,
+                    borderColor: isDark ? '#262626' : '#e5e7eb'
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '900', color: isDark ? '#9ca3af' : '#4b5563', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                    O que você deseja adquirir?
+                  </Text>
+                  
+                  {hasExistingEnrollment && (
+                    <View style={{ marginBottom: 12, padding: 10, borderRadius: 12, backgroundColor: 'rgba(16, 185, 129, 0.12)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ticket size={16} color="#10b981" />
+                      <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: '#10b981' }}>
+                        Identificamos que você já possui inscrição neste evento! O modo de cadeiras extras foi ativado.
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => setPurchaseMode('full')}
+                      activeOpacity={0.8}
+                      style={{
+                        flex: 1,
+                        padding: 14,
+                        borderRadius: 16,
+                        borderWidth: 2,
+                        borderColor: purchaseMode === 'full' ? '#eab308' : (isDark ? '#262626' : '#e5e7eb'),
+                        backgroundColor: purchaseMode === 'full' ? 'rgba(234, 179, 8, 0.12)' : (isDark ? '#1c1c1c' : '#ffffff')
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: purchaseMode === 'full' ? '#eab308' : (isDark ? '#ffffff' : '#111827') }}>
+                          Inscrição + Cadeira
+                        </Text>
+                        {purchaseMode === 'full' && <Check size={14} color="#eab308" />}
+                      </View>
+                      <Text style={{ fontSize: 10, color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>
+                        Graduação do aluno (já inclui 1 cadeira)
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setPurchaseMode('extra_only')}
+                      activeOpacity={0.8}
+                      style={{
+                        flex: 1,
+                        padding: 14,
+                        borderRadius: 16,
+                        borderWidth: 2,
+                        borderColor: purchaseMode === 'extra_only' ? '#10b981' : (isDark ? '#262626' : '#e5e7eb'),
+                        backgroundColor: purchaseMode === 'extra_only' ? 'rgba(16, 185, 129, 0.12)' : (isDark ? '#1c1c1c' : '#ffffff')
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: purchaseMode === 'extra_only' ? '#10b981' : (isDark ? '#ffffff' : '#111827') }}>
+                          Apenas Cadeira Extra
+                        </Text>
+                        {purchaseMode === 'extra_only' && <Check size={14} color="#10b981" />}
+                      </View>
+                      <Text style={{ fontSize: 10, color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>
+                        {formatCentsToCurrency(product.extraTicketPrice || 0)} cada (Acompanhante)
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
               {/* Seletor de Cidades / Locais */}
               {product.hasLocations && product.locations && product.locations.length > 0 && (
                 <View className="mb-4">
@@ -765,8 +874,8 @@ export default function ProductDetailScreen() {
 
           {/* Participant Info Fields */}
           {participants.map((participant, index) => {
-            const isExtra = !!(product.hasSeatMap && product.hasExtraTicketPrice && index >= (product.includedTicketsCount || 1));
-            const isGraduationMain = !!(product.hasSeatMap && product.hasExtraTicketPrice && index < (product.includedTicketsCount || 1));
+            const isExtra = !!(product.hasSeatMap && product.hasExtraTicketPrice && (purchaseMode === 'extra_only' || index >= (product.includedTicketsCount || 1)));
+            const isGraduationMain = !!(product.hasSeatMap && product.hasExtraTicketPrice && purchaseMode !== 'extra_only' && index < (product.includedTicketsCount || 1));
 
             return (
               <View 
@@ -1022,8 +1131,12 @@ export default function ProductDetailScreen() {
           
           <View className="items-end">
             <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-              {product.hasSeatMap && product.hasExtraTicketPrice && allSelectedSeats.length > (product.includedTicketsCount || 1)
-                ? `1x Inscrição + ${allSelectedSeats.length - (product.includedTicketsCount || 1)}x Extra`
+              {product.hasSeatMap && product.hasExtraTicketPrice
+                ? (purchaseMode === 'extra_only'
+                    ? `${allSelectedSeats.length}x Cadeira Extra`
+                    : (allSelectedSeats.length > (product.includedTicketsCount || 1)
+                        ? `1x Inscrição + ${allSelectedSeats.length - (product.includedTicketsCount || 1)}x Extra`
+                        : 'Total'))
                 : 'Total'}
             </Text>
             <Text className="text-xl font-black text-gray-900 dark:text-white">
@@ -1044,7 +1157,9 @@ export default function ProductDetailScreen() {
             <>
               <ShoppingCart size={20} color="#fff" strokeWidth={3} />
               <Text className="ml-3 text-white font-black uppercase tracking-widest">
-                {product.hasSeatMap ? 'Garantir Cadeiras & Comprar' : 'Adicionar ao Carrinho'}
+                {product.hasSeatMap 
+                  ? (purchaseMode === 'extra_only' ? 'Comprar Ingressos Extras' : 'Garantir Cadeiras & Comprar') 
+                  : 'Adicionar ao Carrinho'}
               </Text>
             </>
           )}

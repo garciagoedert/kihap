@@ -191,6 +191,32 @@
                                 <div id="web-lock-timer-badge" class="hidden px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 rounded-xl text-xs font-bold text-purple-300 flex items-center gap-2">
                                     <i class="fas fa-clock animate-pulse"></i>
                                     <span>Reservado por: <strong id="web-lock-timer-text" class="text-white">15:00</strong></span>
+                            </div>
+
+                            <!-- Seletor de Tipo de Compra: Inscrição Completa vs Apenas Ingressos Acompanhante -->
+                            <div id="web-purchase-mode-container" class="hidden p-4 bg-gray-900/80 border border-gray-800 rounded-2xl space-y-3">
+                                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fas fa-ticket-alt text-amber-400"></i> O que você deseja adquirir?
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button type="button" id="btn-mode-full" class="p-3.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition-all cursor-pointer">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-xs text-white flex items-center gap-1.5">
+                                                <i class="fas fa-user-graduate text-amber-400"></i> Inscrição + Cadeira
+                                            </span>
+                                            <i class="fas fa-check-circle text-amber-400 text-sm" id="icon-mode-full"></i>
+                                        </div>
+                                        <p class="text-[11px] text-gray-400 mt-1" id="desc-mode-full">Graduação do aluno (já inclui 1 cadeira)</p>
+                                    </button>
+                                    <button type="button" id="btn-mode-extra" class="p-3.5 rounded-xl border border-gray-700 bg-gray-800/40 text-left hover:border-gray-600 transition-all cursor-pointer">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-xs text-white flex items-center gap-1.5">
+                                                <i class="fas fa-chair text-emerald-400"></i> Apenas Ingressos Extras
+                                            </span>
+                                            <i class="far fa-circle text-gray-500 text-sm" id="icon-mode-extra"></i>
+                                        </div>
+                                        <p class="text-[11px] text-gray-400 mt-1" id="desc-mode-extra">Para familiares/amigos que vão assistir</p>
+                                    </button>
                                 </div>
                             </div>
 

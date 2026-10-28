@@ -44,6 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const webLockTimerBadge = document.getElementById('web-lock-timer-badge');
     const webLockTimerText = document.getElementById('web-lock-timer-text');
 
+    // Purchase Mode (Inscrição Completa vs Apenas Ingressos Acompanhante)
+    const webPurchaseModeContainer = document.getElementById('web-purchase-mode-container');
+    const btnModeFull = document.getElementById('btn-mode-full');
+    const btnModeExtra = document.getElementById('btn-mode-extra');
+    const iconModeFull = document.getElementById('icon-mode-full');
+    const iconModeExtra = document.getElementById('icon-mode-extra');
+    const descModeFull = document.getElementById('desc-mode-full');
+    const descModeExtra = document.getElementById('desc-mode-extra');
+    let currentPurchaseMode = 'full'; // 'full' | 'extra_only'
+
     let productId = null;
     let productData = null;
     let currentUser = null;
@@ -56,6 +66,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedSeatsBySession = {}; // { [sessionId]: { session, location, seats: ['A-1', 'A-2'] } }
     let reservedSeatsMap = {};
     let unsubscribeSeatListener = null;
+
+    const setPurchaseMode = (mode) => {
+        currentPurchaseMode = mode;
+        if (!btnModeFull || !btnModeExtra) return;
+        if (mode === 'full') {
+            btnModeFull.className = 'p-3.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition-all cursor-pointer';
+            if (iconModeFull) iconModeFull.className = 'fas fa-check-circle text-amber-400 text-sm';
+            btnModeExtra.className = 'p-3.5 rounded-xl border border-gray-700 bg-gray-800/40 text-left hover:border-gray-600 transition-all cursor-pointer';
+            if (iconModeExtra) iconModeExtra.className = 'far fa-circle text-gray-500 text-sm';
+        } else {
+            btnModeExtra.className = 'p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-left transition-all cursor-pointer';
+            if (iconModeExtra) iconModeExtra.className = 'fas fa-check-circle text-emerald-400 text-sm';
+            btnModeFull.className = 'p-3.5 rounded-xl border border-gray-700 bg-gray-800/40 text-left hover:border-gray-600 transition-all cursor-pointer';
+            if (iconModeFull) iconModeFull.className = 'far fa-circle text-gray-500 text-sm';
+        }
+        renderForms(getAllSelectedSeats().length > 0 ? getAllSelectedSeats().length : 1);
+        updateTotalPrice();
+    };
+
+    if (btnModeFull && btnModeExtra) {
+        btnModeFull.addEventListener('click', () => setPurchaseMode('full'));
+        btnModeExtra.addEventListener('click', () => setPurchaseMode('extra_only'));
+    }
 
     const getAllSelectedSeats = () => {
         const list = [];
@@ -273,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!product.hasSeatMap) {
             if (seatMapSection) seatMapSection.classList.add('hidden');
             if (seatMapNotice) seatMapNotice.classList.add('hidden');
+            if (webPurchaseModeContainer) webPurchaseModeContainer.classList.add('hidden');
             if (quantitySelectorContainer) quantitySelectorContainer.classList.remove('hidden');
             return;
         }
@@ -280,6 +314,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (seatMapSection) seatMapSection.classList.remove('hidden');
         if (seatMapNotice) seatMapNotice.classList.remove('hidden');
         if (quantitySelectorContainer) quantitySelectorContainer.classList.add('hidden');
+
+        if (webPurchaseModeContainer) {
+            if (product.hasExtraTicketPrice || product.extraTicketPrice > 0) {
+                webPurchaseModeContainer.classList.remove('hidden');
+                if (product.extraTicketPrice && descModeExtra) {
+                    const priceFormatted = (product.extraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    descModeExtra.textContent = `${priceFormatted} cada (para familiares e amigos assistirem)`;
+                }
+            } else {
+                webPurchaseModeContainer.classList.add('hidden');
+            }
+        }
 
         // Location handling
         if (product.hasLocations && product.locations && product.locations.length > 0) {
@@ -647,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
             const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
-            const isExtraTicket = hasExtraTicketMode && (i > includedTicketsCount);
+            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (i > includedTicketsCount));
 
             if (formInstanceTitle) {
                 let seatBadgeHtml = '';
@@ -657,7 +703,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (isExtraTicket) {
                     const priceFormatted = (productData.extraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    formInstanceTitle.innerHTML = `Ingresso Adicional <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">Acompanhante (+ ${priceFormatted})</span>${seatBadgeHtml}`;
+                    const badgeLabel = (currentPurchaseMode === 'extra_only') ? `Acompanhante (${priceFormatted})` : `Acompanhante (+ ${priceFormatted})`;
+                    formInstanceTitle.innerHTML = `Ingresso <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">${badgeLabel}</span>${seatBadgeHtml}`;
                 } else if (hasExtraTicketMode) {
                     formInstanceTitle.innerHTML = `Inscrição Principal <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">Graduando</span>${seatBadgeHtml}`;
                 } else if (productData.priceType === 'kit') {
@@ -672,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isExtraTicket) {
                 const companionNotice = document.createElement('div');
                 companionNotice.className = 'p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2 mb-2';
-                companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso adicional para familiar/convidado assistir à graduação. Apenas a cadeira será reservada para o acompanhante.</span>`;
+                companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso para familiar/convidado assistir ao evento. Apenas a cadeira será reservada para o acompanhante.</span>`;
                 formInstance.querySelector('.grid').prepend(companionNotice);
             }
 
@@ -874,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         formInstances.forEach((form, idx) => {
             let instancePrice = 0;
-            const isExtraTicket = hasExtraTicketMode && (idx >= includedTicketsCount);
+            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (idx >= includedTicketsCount));
 
             if (isExtraTicket) {
                 instancePrice = productData.extraTicketPrice || 0;
@@ -952,6 +999,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 priceText += ` / ${periodName}`;
             }
+        }
+
+        if (productData.hasSeatMap && getAllSelectedSeats().length === 0 && currentPurchaseMode === 'extra_only') {
+            const extraFormatted = ((productData.extraTicketPrice || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            productPriceDisplay.innerHTML = `${extraFormatted} <span class="text-xs text-gray-400 font-normal">/ ingresso</span>`;
+            return;
         }
 
         productPriceDisplay.textContent = priceText;
@@ -1091,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
 
         formInstances.forEach((form, idx) => {
-            const isExtraTicket = hasExtraTicketMode && (idx >= includedTicketsCount);
+            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (idx >= includedTicketsCount));
             const formData = {
                 isExtraTicket: isExtraTicket,
                 isMainParticipant: !isExtraTicket,
@@ -1120,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let priceData = {};
             let kitSelections = null;
             if (isExtraTicket) {
-                priceData.variantName = 'Ingresso Adicional (Acompanhante)';
+                priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante' : 'Ingresso Adicional (Acompanhante)';
                 priceData.amount = productData.extraTicketPrice || 0;
             } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
@@ -1188,7 +1241,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             cart.addItem({
                 productId: currentProductId,
-                productName: productData.name,
+                productName: (currentPurchaseMode === 'extra_only') ? `${productData.name} (Ingressos Acompanhante)` : productData.name,
+                purchaseMode: currentPurchaseMode,
+                isExtraTicketOnly: (currentPurchaseMode === 'extra_only'),
                 imageUrl: productData.imageUrl,
                 isSubscription: productData.isSubscription || false,
                 subscriptionFrequency: productData.subscriptionFrequency || null,
