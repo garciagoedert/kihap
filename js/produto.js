@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         initSeatMap(product);
-        await renderForms(selectedSeats.length > 0 ? selectedSeats.length : 1);
+        await renderForms(getAllSelectedSeats().length > 0 ? getAllSelectedSeats().length : 1);
         productLoading.classList.add('hidden');
         productContent.classList.remove('hidden');
     };
@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : [{ id: 'default', name: 'Sessão Principal', label: 'Sessão Principal' }]);
 
         selectedSession = sessions[0];
-        selectedSeats = [];
+        selectedSeatsBySession = {};
         updateSelectedSeatsUI();
         renderForms(1);
 
