@@ -11,67 +11,116 @@
             }
         })();
         window.tailwind = { config: { darkMode: "class" } };
-    </script>    <meta charset="UTF-8">
+    </script>
+    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
-    
-    
-    
-    
-    
-    
-        
-    
     
     <title>Kihap - Check-in de Ingressos</title>
     <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
         #scanner-video {
             width: 100%;
             height: auto;
-            border-radius: 0.5rem;
-            border: 2px solid #374151;
+            max-height: 360px;
+            object-fit: cover;
+            border-radius: 1rem;
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 h-screen">
+<body class="bg-gray-50/80 dark:bg-[#0c0c0e] text-gray-900 dark:text-gray-100 transition-colors duration-200 h-screen">
     <div id="sidebar-container"></div>
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
     <main id="main-content" class="flex-1 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out">
         <div id="header-container"></div>
 
-        <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col">
-            <h1 class="text-2xl font-bold mb-6">Check-in de Ingressos</h1>
+        <div class="flex-grow p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full">
+            <!-- Header Title -->
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                        <span class="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                            <i class="fas fa-qrcode text-xl"></i>
+                        </span>
+                        Check-in de Ingressos
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Valide ingressos, assentos marcados e confirme a presença dos alunos e convidados em tempo real.
+                    </p>
+                </div>
+            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Scanner Section -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-bold mb-4">Escanear QR Code</h2>
-                    <div id="scanner-container">
-                        <video id="scanner-video"></video>
-                        <p id="scanner-status" class="text-center text-gray-400 mt-2">Iniciando câmera...</p>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Scanner Section (5 cols) -->
+                <div class="lg:col-span-5 bg-white dark:bg-[#161618] p-5 md:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-camera text-blue-600 dark:text-blue-400"></i>
+                                Câmera / Leitor
+                            </h2>
+                            <span id="camera-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ativa
+                            </span>
+                        </div>
+
+                        <div id="scanner-container" class="relative rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 bg-gray-900 overflow-hidden shadow-inner flex items-center justify-center min-h-[260px]">
+                            <video id="scanner-video" class="w-full h-full object-cover"></video>
+                        </div>
+
+                        <p id="scanner-status" class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 mt-3">
+                            Iniciando câmera...
+                        </p>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <button id="btn-restart-scanner" type="button" class="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-redo-alt text-xs"></i>
+                            Escanear Próximo
+                        </button>
                     </div>
                 </div>
 
-                <!-- Manual Search & Result Section -->
-                <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-bold mb-4">Busca Manual</h2>
-                    <form id="manual-search-form" class="flex items-center space-x-2 mb-6">
-                        <input type="text" id="search-input" placeholder="Nome, E-mail, CPF ou ID da Venda" class="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <button type="submit" aria-label="Buscar" title="Buscar" class="px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
+                <!-- Manual Search & Result Section (7 cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Search Card -->
+                    <div class="bg-white dark:bg-[#161618] p-5 md:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            <i class="fas fa-search text-blue-600 dark:text-blue-400"></i>
+                            Busca Manual
+                        </h2>
+                        <form id="manual-search-form" class="flex gap-2">
+                            <div class="relative flex-1">
+                                <i class="fas fa-user-tag absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                <input type="text" id="search-input" placeholder="Nome, E-mail, CPF ou ID da Compra..." class="w-full pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400">
+                            </div>
+                            <button type="submit" aria-label="Buscar" title="Buscar" class="px-5 py-2.5 font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all flex items-center gap-2">
+                                <i class="fas fa-search"></i>
+                                <span class="hidden sm:inline">Buscar</span>
+                            </button>
+                        </form>
+                    </div>
 
-                    <h2 class="text-xl font-bold mb-4">Resultado</h2>
-                    <div id="result-container" class="text-center p-4 border-2 border-dashed border-gray-700 rounded-lg">
-                        <p class="text-gray-500">Aguardando leitura ou busca...</p>
+                    <!-- Result Card -->
+                    <div class="bg-white dark:bg-[#161618] p-5 md:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            <i class="fas fa-id-card text-blue-600 dark:text-blue-400"></i>
+                            Resultado da Validação
+                        </h2>
+                        <div id="result-container" class="text-center p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-900/20 transition-all">
+                            <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-qrcode text-xl"></i>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Aguardando leitura ou busca</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Aponte a câmera para o QR Code do ingresso ou busque pelo nome/ID acima.</p>
+                        </div>
                     </div>
                 </div>
             </div>
