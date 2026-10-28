@@ -28,6 +28,18 @@ exports.getInstagramStories = functions.https.onCall(getInstagramStories);
 const { sendMetaCapiEvent } = require('./meta-capi.js');
 exports.sendMetaCapiEvent = sendMetaCapiEvent;
 
+const { 
+    lockSeatsHandler, 
+    releaseSeatsHandler, 
+    getSeatsStatusHandler, 
+    bookSeatsForSale, 
+    adminToggleSeatHandler 
+} = require('./seats.js');
+exports.lockSeats = functions.https.onRequest(lockSeatsHandler);
+exports.releaseSeats = functions.https.onRequest(releaseSeatsHandler);
+exports.getSeatsStatus = functions.https.onRequest(getSeatsStatusHandler);
+exports.adminToggleSeat = functions.https.onRequest(adminToggleSeatHandler);
+
 exports.getStudentPurchases = functions.https.onCall(async (data, context) => {
     // Verifica autenticação
     if (!context.auth) {
@@ -108,6 +120,16 @@ const sendTicketEmail = async (saleId, saleData) => {
                         <p style="color: #FFFFFF; font-size: 16px; margin-bottom: 10px;">Olá, <strong>${saleData.userName}</strong>.</p>
                         <p style="color: #CCCCCC; font-size: 15px; line-height: 1.6;">Obrigado por sua compra. Aqui está o seu ingresso para <strong>${saleData.productName}</strong>.</p>
                         
+                        ${saleData.seatId ? `
+                        <div style="margin: 25px 0; background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 2px solid #FFC107; border-radius: 12px; padding: 20px; text-align: center;">
+                            <span style="color: #FFC107; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 6px;">Assento Marcado / Cadeira</span>
+                            <div style="font-size: 32px; font-weight: 900; color: #FFFFFF; letter-spacing: 2px;">CADEIRA ${saleData.seatId}</div>
+                            ${saleData.locationName ? `<div style="color: #c084fc; font-size: 14px; font-weight: bold; margin-top: 8px;"><span style="color: #a855f7;">Local / Cidade:</span> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}</div>` : ''}
+                            ${saleData.locationAddress ? `<div style="color: #9ca3af; font-size: 12px; margin-top: 3px;">📍 ${saleData.locationAddress}</div>` : ''}
+                            ${saleData.sessionLabel ? `<div style="color: #93c5fd; font-size: 13px; font-weight: bold; margin-top: 8px;"><span style="color: #60a5fa;">Sessão:</span> ${saleData.sessionLabel}</div>` : ''}
+                        </div>
+                        ` : ''}
+
                         ${saleData.isEvent ? `
                         <div style="margin: 30px 0; background-color: #111; border: 1px solid #FFC107; border-radius: 10px; padding: 20px; text-align: left;">
                             <h3 style="color: #FFC107; margin-top: 0; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Detalhes do Evento</h3>
@@ -502,6 +524,23 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     await docRef.update(updateData);
     console.log(`[updateSaleToPaid] Status atualizado para 'paid' para a venda ${saleId}`);
 
+    // Confirmação de assentos do evento (se houver)
+    try {
+        if (saleData.productId && (saleData.seatId || (saleData.selectedSeats && saleData.selectedSeats.length > 0))) {
+            const seatsToBook = (saleData.selectedSeats && saleData.selectedSeats.length > 0) 
+                ? saleData.selectedSeats 
+                : [saleData.seatId];
+            await bookSeatsForSale(saleData.productId, saleData.sessionId, seatsToBook, {
+                buyerName: saleData.userName || saleData.payerName,
+                buyerEmail: saleData.userEmail,
+                buyerPhone: saleData.userPhone,
+                saleId: saleId
+            });
+        }
+    } catch (seatErr) {
+        console.error(`[updateSaleToPaid] Erro ao confirmar assentos para a venda ${saleId}:`, seatErr);
+    }
+
     // Controle de estoque agora é lidado pelo trigger onSalePaid
 
     // Envio de e-mail (ingresso ou recibo)
@@ -648,6 +687,18 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
 
                     const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
                     saleDocIds.push(docRef.id);
+
+                    if (cartItem.productId && (itemFormData.seatId || (itemFormData.selectedSeats && itemFormData.selectedSeats.length > 0))) {
+                        const seatsToBook = (itemFormData.selectedSeats && itemFormData.selectedSeats.length > 0) 
+                            ? itemFormData.selectedSeats 
+                            : [itemFormData.seatId];
+                        await bookSeatsForSale(cartItem.productId, itemFormData.sessionId, seatsToBook, {
+                            buyerName: saleData.userName || saleData.payerName,
+                            buyerEmail: saleData.userEmail,
+                            buyerPhone: saleData.userPhone,
+                            saleId: docRef.id
+                        });
+                    }
 
                     if (product.isTicket || product.isEvent) {
                         await sendTicketEmail(docRef.id, saleData);
@@ -834,6 +885,18 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                 }
 
                 const docRef = await db.collection('inscricoesFaixaPreta').add(saleData);
+
+                if (cartItem.productId && (itemFormData.seatId || (itemFormData.selectedSeats && itemFormData.selectedSeats.length > 0))) {
+                    const seatsToBook = (itemFormData.selectedSeats && itemFormData.selectedSeats.length > 0) 
+                        ? itemFormData.selectedSeats 
+                        : [itemFormData.seatId];
+                    await bookSeatsForSale(cartItem.productId, itemFormData.sessionId, seatsToBook, {
+                        buyerName: saleData.userName || saleData.payerName,
+                        buyerEmail: saleData.userEmail,
+                        buyerPhone: saleData.userPhone,
+                        saleId: docRef.id
+                    });
+                }
 
                 if (product.isTicket) {
                     await sendTicketEmail(docRef.id, saleData);

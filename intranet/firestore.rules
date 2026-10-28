@@ -292,6 +292,12 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Regra para Reservas de Assentos do Mapa de Eventos
+    match /productSeatReservations/{resId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Regra para a coleção de Banners da Loja
     match /banners/{bannerId} {
       allow read: if true;

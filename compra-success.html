@@ -113,7 +113,22 @@
                             const productRef = doc(db, 'products', saleData.productId);
                             const productSnap = await getDoc(productRef);
 
-                            if (productSnap.exists() && productSnap.data().isTicket) {
+                            if (productSnap.exists() && (productSnap.data().isTicket || saleData.seatId)) {
+                                // Se tiver cadeira marcada, exibe com destaque
+                                if (saleData.seatId) {
+                                    const seatNotice = document.createElement('div');
+                                    seatNotice.className = 'mb-6 p-4 bg-gray-900 border-2 border-amber-500 rounded-2xl inline-block shadow-lg text-center';
+                                    seatNotice.innerHTML = `
+                                        <span class="text-xs uppercase font-extrabold text-amber-400 block tracking-wider mb-1">
+                                            <i class="fas fa-couch mr-1"></i> Assento Marcado
+                                        </span>
+                                        <div class="text-3xl font-black text-white tracking-wide">Cadeira ${saleData.seatId}</div>
+                                        ${saleData.locationName ? `<div class="text-xs text-purple-300 font-bold mt-1.5"><i class="fas fa-map-marker-alt mr-1"></i> ${saleData.locationName}${saleData.locationVenue ? ` - ${saleData.locationVenue}` : ''}</div>` : ''}
+                                        ${saleData.sessionLabel ? `<div class="text-xs text-blue-300 font-bold mt-1.5"><i class="fas fa-calendar-alt mr-1"></i> ${saleData.sessionLabel}</div>` : ''}
+                                    `;
+                                    ticketContainer.insertBefore(seatNotice, qrcodeContainer);
+                                }
+
                                 // Gera o QR Code para o primeiro ingresso
                                 const qr = qrcode(0, 'L');
                                 qr.addData(firstSaleId);

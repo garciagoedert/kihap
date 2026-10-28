@@ -217,6 +217,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (form.userSize) itemDetails += `Tamanho: ${form.userSize} `;
             });
 
+            let seatInfoHtml = '';
+            if (item.hasSeatMap || (item.seats && item.seats.length > 0)) {
+                const seatsList = (item.seats && item.seats.length > 0) ? item.seats.join(', ') : item.formDataList.map(f => f.seatId).filter(Boolean).join(', ');
+                seatInfoHtml = `
+                    <div class="mt-1 flex flex-wrap gap-1 items-center">
+                        ${item.locationName ? `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt mr-1"></i> ${item.locationName}${item.locationVenue ? ` - ${item.locationVenue}` : ''}</span>` : ''}
+                        ${item.sessionLabel ? `<span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-semibold"><i class="fas fa-calendar-day mr-1"></i> ${item.sessionLabel}</span>` : ''}
+                        ${seatsList ? `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-xs font-black"><i class="fas fa-couch mr-1"></i> Cadeira(s): ${seatsList}</span>` : ''}
+                    </div>
+                `;
+            }
+
             let priceText = formatCurrency(item.totalAmount);
             if (item.isSubscription) {
                 const periodMap = { 'months': 'Mês', 'years': 'Ano', 'days': 'Dia' };
@@ -233,6 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div>
                     <p class="font-bold text-white">${item.productName}</p>
                     <p class="text-xs text-gray-400">Qtd: ${item.formDataList.length} ${itemDetails ? `| ${itemDetails}` : ''}</p>
+                    ${seatInfoHtml}
                 </div>
                 <span class="font-semibold text-gray-300">${priceText}</span>
             `;
@@ -241,8 +254,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         summarySubtotal.textContent = formatCurrency(cart.getTotalAmount());
         updatePaymentMethodUI();
+        initSeatReservationTimer();
         
         renderParticipantFields();
+    };
+
+    const initSeatReservationTimer = () => {
+        const items = cart.getCart();
+        const banner = document.getElementById('seat-reservation-banner');
+        const timerDisplay = document.getElementById('seat-timer-display');
+        if (!banner || !timerDisplay) return;
+
+        const seatItem = items.find(i => i.hasSeatMap && i.lockExpiresAt);
+        if (!seatItem) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        banner.classList.remove('hidden');
+
+        const updateTimer = () => {
+            const now = Date.now();
+            const diff = seatItem.lockExpiresAt - now;
+
+            if (diff <= 0) {
+                timerDisplay.textContent = 'EXPIRADO';
+                timerDisplay.classList.add('text-red-500');
+                return;
+            }
+
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        };
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
     };
 
     const renderParticipantFields = () => {
@@ -255,55 +302,91 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.formDataList.forEach((form, formIdx) => {
                 const isComplexEvent = true; // For now, we collect for all, but could filter by product typa
                 
+                const assignedSeat = form.seatId || (item.seats && item.seats[formIdx]);
+                const sessionTag = form.sessionName || form.sessionLabel;
+                const seatBadge = assignedSeat ? `
+                    <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black normal-case ml-2">
+                        <i class="fas fa-couch mr-1"></i> Cadeira ${assignedSeat}${sessionTag ? ` (${sessionTag})` : ''}
+                    </span>
+                ` : '';
+
+                const isExtra = Boolean(form.isExtraTicket);
+                const titleLabel = isExtra ? `Ingresso Adicional ${participantIndex}` : `Participante ${participantIndex}`;
+                const roleBadge = isExtra
+                    ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold normal-case ml-2"><i class="fas fa-ticket-alt mr-1"></i> Acompanhante</span>`
+                    : (item.hasExtraTicketPrice ? `<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-bold normal-case ml-2"><i class="fas fa-user-graduate mr-1"></i> Graduando</span>` : '');
+
                 const block = document.createElement('div');
                 block.className = 'bg-gray-700/30 p-6 rounded-xl border border-gray-600 space-y-4';
-                block.innerHTML = `
-                    <h3 class="text-lg font-bold text-yellow-500 uppercase flex justify-between">
-                        Participante ${participantIndex}
-                        <span class="text-xs text-gray-500 font-normal normal-case pt-1">${item.productName}</span>
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo</label>
-                            <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do participante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+
+                if (isExtra) {
+                    block.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-emerald-400 uppercase flex items-center">
+                                ${titleLabel} ${roleBadge} ${seatBadge}
+                            </h3>
+                            <span class="text-xs text-gray-400 font-normal normal-case">${item.productName}</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Programa</label>
-                            <select name="participant-program" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
-                                <option value="">Selecione</option>
-                                <option value="tradicional">Tradicional</option>
-                                <option value="littles">Littles</option>
-                                <option value="não aluno">Ainda não sou aluno</option>
-                            </select>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo do Acompanhante / Convidado</label>
+                                <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do familiar ou acompanhante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                            </div>
                         </div>
-                        <div class="grad-container hidden">
-                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Graduação</label>
-                            <select name="participant-grad" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500">
-                                <option value="">Selecione</option>
-                            </select>
+                    `;
+                } else {
+                    block.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-yellow-500 uppercase flex items-center">
+                                ${titleLabel} ${roleBadge} ${seatBadge}
+                            </h3>
+                            <span class="text-xs text-gray-400 font-normal normal-case">${item.productName}</span>
                         </div>
-                        ${form.hasOwnProperty('userProfessor') ? `
-                        <div class="professor-container">
-                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Professor Responsável</label>
-                            <select name="participant-professor" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
-                                <option value="">Selecione o Professor</option>
-                                ${(item.availableProfessors && item.availableProfessors.length > 0) 
-                                    ? item.availableProfessors.map(prof => `<option value="${prof}" ${form.userProfessor === prof ? 'selected' : ''}>${prof}</option>`).join('')
-                                    : instructors.map(instr => `<option value="${instr.name || instr.id}" ${form.userProfessor === (instr.name || instr.id) ? 'selected' : ''}>${instr.name || instr.id}</option>`).join('')
-                                }
-                            </select>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo do Aluno</label>
+                                <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do participante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Programa</label>
+                                <select name="participant-program" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                                    <option value="">Selecione</option>
+                                    <option value="tradicional">Tradicional</option>
+                                    <option value="littles">Littles</option>
+                                    <option value="não aluno">Ainda não sou aluno</option>
+                                </select>
+                            </div>
+                            <div class="grad-container hidden">
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Graduação</label>
+                                <select name="participant-grad" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500">
+                                    <option value="">Selecione</option>
+                                </select>
+                            </div>
+                            ${form.hasOwnProperty('userProfessor') ? `
+                            <div class="professor-container">
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Professor Responsável</label>
+                                <select name="participant-professor" data-item="${itemIdx}" data-form="${formIdx}" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                                    <option value="">Selecione o Professor</option>
+                                    ${(item.availableProfessors && item.availableProfessors.length > 0) 
+                                        ? item.availableProfessors.map(prof => `<option value="${prof}" ${form.userProfessor === prof ? 'selected' : ''}>${prof}</option>`).join('')
+                                        : instructors.map(instr => `<option value="${instr.name || instr.id}" ${form.userProfessor === (instr.name || instr.id) ? 'selected' : ''}>${instr.name || instr.id}</option>`).join('')
+                                    }
+                                </select>
+                            </div>
+                            ` : ''}
                         </div>
-                        ` : ''}
-                    </div>
-                `;
-                
-                const programSelect = block.querySelector('[name="participant-program"]');
-                const gradContainer = block.querySelector('.grad-container');
-                const gradSelect = block.querySelector('[name="participant-grad"]');
-                
-                programSelect.addEventListener('change', () => {
-                    populateGraduacao(programSelect.value, gradContainer, gradSelect);
-                });
+                    `;
+                    
+                    const programSelect = block.querySelector('[name="participant-program"]');
+                    const gradContainer = block.querySelector('.grad-container');
+                    const gradSelect = block.querySelector('[name="participant-grad"]');
+                    
+                    if (programSelect) {
+                        programSelect.addEventListener('change', () => {
+                            populateGraduacao(programSelect.value, gradContainer, gradSelect);
+                        });
+                    }
+                }
                 
                 participantsContainer.appendChild(block);
                 participantIndex++;
@@ -467,14 +550,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         const grads = document.querySelectorAll('[name="participant-grad"]');
         const professors = document.querySelectorAll('[name="participant-professor"]');
         
-        names.forEach((input, index) => {
+        names.forEach((input) => {
             const itemIdx = input.dataset.item;
             const formIdx = input.dataset.form;
+            const form = items[itemIdx].formDataList[formIdx];
+            const isExtra = Boolean(form.isExtraTicket);
             
-            items[itemIdx].formDataList[formIdx].userName = input.value;
-            items[itemIdx].formDataList[formIdx].userPrograma = programs[index].value;
-            items[itemIdx].formDataList[formIdx].userGraduacao = grads[index].required ? grads[index].value : null;
-            items[itemIdx].formDataList[formIdx].userProfessor = professors[index] ? professors[index].value : (items[itemIdx].formDataList[formIdx].userProfessor || null);
+            form.userName = input.value;
+            if (!isExtra) {
+                const programInput = document.querySelector(`[name="participant-program"][data-item="${itemIdx}"][data-form="${formIdx}"]`);
+                const gradInput = document.querySelector(`[name="participant-grad"][data-item="${itemIdx}"][data-form="${formIdx}"]`);
+                const profInput = document.querySelector(`[name="participant-professor"][data-item="${itemIdx}"][data-form="${formIdx}"]`);
+
+                form.userPrograma = programInput ? programInput.value : '';
+                form.userGraduacao = (gradInput && gradInput.required) ? gradInput.value : null;
+                form.userProfessor = profInput ? profInput.value : (form.userProfessor || null);
+            }
+
+            if (!items[itemIdx].formDataList[formIdx].seatId && items[itemIdx].seats && items[itemIdx].seats[formIdx]) {
+                items[itemIdx].formDataList[formIdx].seatId = items[itemIdx].seats[formIdx];
+            }
+            if (!items[itemIdx].formDataList[formIdx].sessionId && items[itemIdx].sessionId) {
+                items[itemIdx].formDataList[formIdx].sessionId = items[itemIdx].sessionId;
+            }
+            if (!items[itemIdx].formDataList[formIdx].sessionLabel && items[itemIdx].sessionLabel) {
+                items[itemIdx].formDataList[formIdx].sessionLabel = items[itemIdx].sessionLabel;
+            }
+            if (!items[itemIdx].formDataList[formIdx].locationId && items[itemIdx].locationId) {
+                items[itemIdx].formDataList[formIdx].locationId = items[itemIdx].locationId;
+                items[itemIdx].formDataList[formIdx].locationName = items[itemIdx].locationName;
+                items[itemIdx].formDataList[formIdx].locationVenue = items[itemIdx].locationVenue;
+                items[itemIdx].formDataList[formIdx].locationAddress = items[itemIdx].locationAddress;
+            }
         });
 
         const globalUserData = {

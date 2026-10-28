@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Calendar, User as UserIcon, MapPin, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag } from 'lucide-react-native';
+import { ArrowLeft, Calendar, User as UserIcon, MapPin, CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag, Armchair } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
@@ -131,6 +131,37 @@ export default function PedidosScreen() {
         <Text className="text-base font-black text-gray-900 dark:text-white mb-3">
           {getProductTitle(item)}
         </Text>
+
+        {/* Seat / Session Badge if applicable */}
+        {(item.seatId || item.sessionLabel) && (
+          <View className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl mb-4 flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1 mr-2">
+              <View className="w-8 h-8 rounded-xl bg-amber-500/20 items-center justify-center mr-2.5">
+                <Armchair size={16} color="#eab308" />
+              </View>
+              <View className="flex-1">
+                {item.seatId && (
+                  <Text className="text-sm font-black text-amber-500">
+                    CADEIRA {item.seatId}
+                  </Text>
+                )}
+                {item.locationName && (
+                  <Text className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mt-0.5" numberOfLines={1}>
+                    📍 {item.locationName}{item.locationVenue ? ` - ${item.locationVenue}` : ''}
+                  </Text>
+                )}
+                {item.sessionLabel && (
+                  <Text className="text-[10px] font-semibold text-gray-500 dark:text-gray-400" numberOfLines={1}>
+                    {item.sessionLabel}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View className="bg-amber-500/20 px-2.5 py-1 rounded-lg">
+              <Text className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">Marcado</Text>
+            </View>
+          </View>
+        )}
 
         {/* Participant & Unit Details */}
         <View className="bg-gray-50 dark:bg-black/20 p-3 rounded-2xl mb-4 flex-row justify-between">

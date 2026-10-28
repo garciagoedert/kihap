@@ -27,7 +27,25 @@
 
     <main class="py-16">
         <section class="container mx-auto px-6">
-            <h1 class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-12">Finalizar Pedido</h1>
+            <h1 class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-8">Finalizar Pedido</h1>
+
+            <!-- Seat Reservation Countdown Banner -->
+            <div id="seat-reservation-banner" class="hidden max-w-6xl mx-auto mb-8 p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 border border-amber-500/40 text-amber-200 shadow-lg flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg flex-shrink-0">
+                        <i class="fas fa-couch"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs uppercase font-black text-amber-400 tracking-wider block">Assentos Reservados Temporariamente</span>
+                        <span class="text-sm text-gray-200">Suas cadeiras estão garantidas para você concluir o pagamento.</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl border border-amber-500/30">
+                    <i class="fas fa-clock text-amber-400 animate-pulse"></i>
+                    <span class="text-xs text-gray-400">Tempo restante:</span>
+                    <strong id="seat-timer-display" class="font-mono text-base font-black text-amber-300">15:00</strong>
+                </div>
+            </div>
 
             <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
                 

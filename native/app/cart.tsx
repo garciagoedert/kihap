@@ -73,12 +73,23 @@ export default function CartScreen() {
       />
       <View className="flex-1 ml-4">
         <Text className="text-sm font-black text-gray-900 dark:text-white" numberOfLines={2}>{item.name}</Text>
-        <Text className="text-xs text-gray-400 mt-1 mb-1">Qtd: {item.quantity}</Text>
+        {item.locationName && (
+          <Text className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+            📍 {item.locationName}{item.locationVenue ? ` - ${item.locationVenue}` : ''}
+          </Text>
+        )}
+        {item.sessionLabel && (
+          <Text className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 mt-0.5">
+            📅 {item.sessionLabel}
+          </Text>
+        )}
         {item.formDataList && item.formDataList.map((form: any, idx: number) => {
           const variantStr = form.priceData?.variantName ? ` (${form.priceData.variantName})` : '';
+          const seatStr = form.seatId ? ` [Cadeira ${form.seatId}${form.sessionName ? ` - ${form.sessionName}` : ''}]` : '';
+          const roleBadge = form.isExtraTicket ? ' [Acompanhante]' : (form.isMainParticipant ? ' [Graduando]' : '');
           return (
             <Text key={idx} className="text-[10px] text-gray-400 mt-0.5" numberOfLines={1}>
-              • {form.userName || 'Participante'}{variantStr}
+              • {form.userName || 'Participante'}{roleBadge}{seatStr}{variantStr}
             </Text>
           );
         })}

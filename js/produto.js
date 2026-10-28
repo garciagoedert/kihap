@@ -1,5 +1,5 @@
 import { db } from '../intranet/firebase-config.js';
-import { doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { onAuthReady, getUserData } from '../members/js/auth.js';
 import { cart } from './cart.js';
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productLoteDisplay = document.getElementById('product-lote-display');
     const productStockDisplay = document.getElementById('product-stock-display');
     const quantitySelector = document.getElementById('quantity-selector');
+    const quantitySelectorContainer = document.getElementById('quantity-selector-container');
     const paymentForm = document.getElementById('payment-form');
     const formsContainer = document.getElementById('forms-container');
     const formTemplate = document.getElementById('form-template');
@@ -26,11 +27,65 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendedProductsContainer = document.getElementById('recommended-products-container');
     const recommendedProductsList = document.getElementById('recommended-products-list');
 
+    // Seat Map DOM elements
+    const seatMapSection = document.getElementById('seat-map-section');
+    const seatMapNotice = document.getElementById('seat-map-notice');
+    const webLocationsContainer = document.getElementById('web-locations-selector-container');
+    const webLocationsList = document.getElementById('web-locations-list');
+    const webSelectedLocationInfo = document.getElementById('web-selected-location-info');
+    const webLocationVenueText = document.getElementById('web-location-venue-text');
+    const webSessionsContainer = document.getElementById('web-sessions-selector-container');
+    const webSessionsList = document.getElementById('web-sessions-list');
+    const webStageLabel = document.getElementById('web-stage-label');
+    const webSeatGridContainer = document.getElementById('web-seat-grid-container');
+    const webSelectedSeatsBar = document.getElementById('web-selected-seats-bar');
+    const webSelectedSeatsChips = document.getElementById('web-selected-seats-chips');
+    const webSelectedSeatsCount = document.getElementById('web-selected-seats-count');
+    const webLockTimerBadge = document.getElementById('web-lock-timer-badge');
+    const webLockTimerText = document.getElementById('web-lock-timer-text');
+
     let productId = null;
     let productData = null;
     let currentUser = null;
     let appliedCoupon = null;
     let instructors = [];
+
+    // Seat Map State
+    let selectedLocation = null;
+    let selectedSession = null;
+    let selectedSeatsBySession = {}; // { [sessionId]: { session, location, seats: ['A-1', 'A-2'] } }
+    let reservedSeatsMap = {};
+    let unsubscribeSeatListener = null;
+
+    const getAllSelectedSeats = () => {
+        const list = [];
+        Object.entries(selectedSeatsBySession).forEach(([sessId, data]) => {
+            (data.seats || []).forEach(seatId => {
+                list.push({
+                    seatId,
+                    sessionId: sessId,
+                    sessionName: data.session?.name || 'Sessão',
+                    sessionLabel: data.session?.label || data.session?.name || 'Sessão',
+                    sessionDate: data.session?.date || null,
+                    sessionTime: data.session?.time || null,
+                    locationId: data.location?.id || null,
+                    locationName: data.location?.name || null,
+                    locationVenue: data.location?.venue || null,
+                    locationAddress: data.location?.address || null,
+                });
+            });
+        });
+        return list;
+    };
+
+    const getUserIdentifier = () => {
+        let id = sessionStorage.getItem('kihap_seat_user_id');
+        if (!id) {
+            id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            sessionStorage.setItem('kihap_seat_user_id', id);
+        }
+        return id;
+    };
 
     const getProductId = () => {
         const params = new URLSearchParams(window.location.search);
@@ -208,9 +263,334 @@ document.addEventListener('DOMContentLoaded', () => {
             payButton.innerHTML = '<i class="fas fa-lock mr-2"></i> Assinar Agora';
         }
 
-        await renderForms(1);
+        initSeatMap(product);
+        await renderForms(selectedSeats.length > 0 ? selectedSeats.length : 1);
         productLoading.classList.add('hidden');
         productContent.classList.remove('hidden');
+    };
+
+    const initSeatMap = (product) => {
+        if (!product.hasSeatMap) {
+            if (seatMapSection) seatMapSection.classList.add('hidden');
+            if (seatMapNotice) seatMapNotice.classList.add('hidden');
+            if (quantitySelectorContainer) quantitySelectorContainer.classList.remove('hidden');
+            return;
+        }
+
+        if (seatMapSection) seatMapSection.classList.remove('hidden');
+        if (seatMapNotice) seatMapNotice.classList.remove('hidden');
+        if (quantitySelectorContainer) quantitySelectorContainer.classList.add('hidden');
+
+        // Location handling
+        if (product.hasLocations && product.locations && product.locations.length > 0) {
+            if (webLocationsContainer) webLocationsContainer.classList.remove('hidden');
+            selectedLocation = product.locations[0];
+            renderWebLocationTabs(product);
+        } else {
+            if (webLocationsContainer) webLocationsContainer.classList.add('hidden');
+            selectedLocation = null;
+            setupSessionsForCurrentLocation(product);
+        }
+    };
+
+    const renderWebLocationTabs = (product) => {
+        if (!webLocationsList) return;
+        webLocationsList.innerHTML = '';
+
+        product.locations.forEach((loc) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isSelected = selectedLocation && selectedLocation.id === loc.id;
+            btn.className = `px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+                isSelected
+                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+            }`;
+            btn.innerHTML = `<i class="fas fa-map-marker-alt mr-1.5"></i> ${loc.name}`;
+            btn.addEventListener('click', () => {
+                if (selectedLocation && selectedLocation.id === loc.id) return;
+                selectedLocation = loc;
+                renderWebLocationTabs(product);
+            });
+            webLocationsList.appendChild(btn);
+        });
+
+        // Venue Info Card
+        if (webSelectedLocationInfo && webLocationVenueText) {
+            if (selectedLocation && (selectedLocation.venue || selectedLocation.address)) {
+                webSelectedLocationInfo.classList.remove('hidden');
+                const venueStr = [selectedLocation.venue, selectedLocation.address].filter(Boolean).join(' - ');
+                webLocationVenueText.textContent = venueStr;
+            } else {
+                webSelectedLocationInfo.classList.add('hidden');
+            }
+        }
+
+        setupSessionsForCurrentLocation(product);
+    };
+
+    const setupSessionsForCurrentLocation = (product) => {
+        const activeConfig = (product.hasLocations && selectedLocation && selectedLocation.seatMapConfig)
+            ? selectedLocation.seatMapConfig
+            : (product.seatMapConfig || {});
+
+        if (activeConfig.stageLabel && webStageLabel) {
+            webStageLabel.textContent = activeConfig.stageLabel.toUpperCase();
+        } else if (webStageLabel) {
+            webStageLabel.textContent = 'PALCO / TATAME PRINCIPAL';
+        }
+
+        const sessions = (product.hasLocations && selectedLocation && selectedLocation.sessions && selectedLocation.sessions.length > 0)
+            ? selectedLocation.sessions
+            : ((product.sessions && product.sessions.length > 0)
+                ? product.sessions
+                : [{ id: 'default', name: 'Sessão Principal', label: 'Sessão Principal' }]);
+
+        selectedSession = sessions[0];
+        selectedSeats = [];
+        updateSelectedSeatsUI();
+        renderForms(1);
+
+        if (sessions.length > 1 && webSessionsContainer && webSessionsList) {
+            webSessionsContainer.classList.remove('hidden');
+            renderWebSessionButtons(sessions, product);
+        } else if (webSessionsContainer) {
+            webSessionsContainer.classList.add('hidden');
+        }
+
+        updateSelectedSeatsUI();
+        const all = getAllSelectedSeats();
+        renderForms(all.length > 0 ? all.length : 1);
+        listenToSeatReservations(product.id, selectedSession ? selectedSession.id : 'default');
+    };
+
+    const renderWebSessionButtons = (sessions, product) => {
+        if (!webSessionsList) return;
+        webSessionsList.innerHTML = '';
+        sessions.forEach((sess) => {
+            const isSelected = selectedSession && selectedSession.id === sess.id;
+            const count = selectedSeatsBySession[sess.id]?.seats?.length || 0;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                isSelected
+                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+            }`;
+            const countBadge = count > 0 
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isSelected ? 'bg-black/20 text-black' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${count}</span>` 
+                : '';
+            btn.innerHTML = `<i class="fas fa-calendar-day mr-1"></i> <span>${sess.label || sess.name || 'Sessão'}</span> ${countBadge}`;
+            btn.addEventListener('click', () => {
+                if (selectedSession && selectedSession.id === sess.id) return;
+                selectedSession = sess;
+                renderWebSessionButtons(sessions, product);
+                renderWebSeatGrid();
+                listenToSeatReservations(product.id, selectedSession.id);
+            });
+            webSessionsList.appendChild(btn);
+        });
+    };
+
+    const listenToSeatReservations = (prodId, sessId) => {
+        if (unsubscribeSeatListener) {
+            unsubscribeSeatListener();
+            unsubscribeSeatListener = null;
+        }
+
+        const docId = `${prodId}_${sessId || 'default'}`;
+        const reservationRef = doc(db, 'productSeatReservations', docId);
+
+        unsubscribeSeatListener = onSnapshot(reservationRef, (docSnap) => {
+            if (docSnap.exists()) {
+                reservedSeatsMap = docSnap.data().seats || {};
+            } else {
+                reservedSeatsMap = {};
+            }
+            renderWebSeatGrid();
+        }, (error) => {
+            console.warn('Erro ao escutar reservas de assentos:', error);
+            renderWebSeatGrid();
+        });
+    };
+
+    const renderWebSeatGrid = () => {
+        if (!webSeatGridContainer || !productData) return;
+
+        const activeConfig = (productData.hasLocations && selectedLocation && selectedLocation.seatMapConfig)
+            ? selectedLocation.seatMapConfig
+            : (productData.seatMapConfig || {});
+        const rows = activeConfig.rows || 8;
+        const cols = activeConfig.cols || 10;
+        const now = Date.now();
+        const myId = getUserIdentifier();
+
+        const currentSessionSeats = (selectedSession && selectedSeatsBySession[selectedSession.id]?.seats) || [];
+
+        webSeatGridContainer.innerHTML = '';
+
+        for (let r = 0; r < rows; r++) {
+            const rowLetter = String.fromCharCode(65 + r);
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'flex items-center gap-1.5 sm:gap-2 justify-center';
+
+            const labelLeft = document.createElement('span');
+            labelLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+            labelLeft.textContent = rowLetter;
+            rowDiv.appendChild(labelLeft);
+
+            for (let c = 1; c <= cols; c++) {
+                const seatId = `${rowLetter}-${c}`;
+                const reservation = reservedSeatsMap[seatId];
+
+                let status = 'available';
+                if (currentSessionSeats.includes(seatId)) {
+                    status = 'selected';
+                } else if (reservation) {
+                    if (reservation.status === 'booked') {
+                        status = 'booked';
+                    } else if (reservation.status === 'disabled') {
+                        status = 'disabled';
+                    } else if (reservation.status === 'locked') {
+                        if (reservation.lockedUntil && reservation.lockedUntil > now) {
+                            status = (reservation.lockedBy === myId) ? 'locked_by_me' : 'locked';
+                        } else {
+                            status = 'available';
+                        }
+                    }
+                }
+
+                const seatBtn = document.createElement('button');
+                seatBtn.type = 'button';
+                seatBtn.dataset.seatId = seatId;
+                seatBtn.title = `Cadeira ${seatId}`;
+
+                let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
+
+                if (status === 'selected') {
+                    btnClass += 'bg-amber-500 text-black border-2 border-amber-300 font-black shadow-lg shadow-amber-500/30 scale-105';
+                } else if (status === 'locked_by_me') {
+                    btnClass += 'bg-purple-600 text-white border border-purple-400 font-bold';
+                } else if (status === 'locked') {
+                    btnClass += 'bg-purple-950/60 text-purple-400 border border-purple-800/80 cursor-not-allowed opacity-60';
+                    seatBtn.disabled = true;
+                } else if (status === 'booked') {
+                    btnClass += 'bg-red-950/60 text-red-500 border border-red-900 cursor-not-allowed opacity-50';
+                    seatBtn.disabled = true;
+                } else if (status === 'disabled') {
+                    btnClass += 'bg-gray-900 text-gray-700 border border-dashed border-gray-800 cursor-not-allowed opacity-30';
+                    seatBtn.disabled = true;
+                } else {
+                    btnClass += 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-amber-400 hover:bg-gray-700 hover:text-white cursor-pointer';
+                }
+
+                seatBtn.className = btnClass;
+                seatBtn.innerHTML = `<span>${c}</span>`;
+
+                if (status === 'available' || status === 'selected' || status === 'locked_by_me') {
+                    seatBtn.addEventListener('click', () => {
+                        toggleSeat(seatId);
+                    });
+                }
+
+                rowDiv.appendChild(seatBtn);
+            }
+
+            const labelRight = document.createElement('span');
+            labelRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+            labelRight.textContent = rowLetter;
+            rowDiv.appendChild(labelRight);
+
+            webSeatGridContainer.appendChild(rowDiv);
+        }
+    };
+
+    const toggleSeat = (seatId) => {
+        if (!selectedSession) return;
+        const sessId = selectedSession.id || 'default';
+
+        if (!selectedSeatsBySession[sessId]) {
+            selectedSeatsBySession[sessId] = {
+                session: selectedSession,
+                location: selectedLocation,
+                seats: []
+            };
+        }
+
+        const seatsArr = selectedSeatsBySession[sessId].seats;
+        const idx = seatsArr.indexOf(seatId);
+        if (idx > -1) {
+            seatsArr.splice(idx, 1);
+            if (seatsArr.length === 0) {
+                delete selectedSeatsBySession[sessId];
+            }
+        } else {
+            seatsArr.push(seatId);
+            seatsArr.sort((a, b) => {
+                const [rowA, colA] = a.split('-');
+                const [rowB, colB] = b.split('-');
+                if (rowA !== rowB) return rowA.localeCompare(rowB);
+                return parseInt(colA, 10) - parseInt(colB, 10);
+            });
+        }
+
+        updateSelectedSeatsUI();
+        renderWebSeatGrid();
+        
+        // Refresh session buttons count badges
+        const sessions = (productData.hasLocations && selectedLocation && selectedLocation.sessions && selectedLocation.sessions.length > 0)
+            ? selectedLocation.sessions
+            : (productData.sessions || []);
+        if (sessions.length > 1) {
+            renderWebSessionButtons(sessions, productData);
+        }
+
+        const all = getAllSelectedSeats();
+        renderForms(all.length > 0 ? all.length : 1);
+    };
+
+    const updateSelectedSeatsUI = () => {
+        if (!webSelectedSeatsBar || !webSelectedSeatsCount || !webSelectedSeatsChips) return;
+
+        const all = getAllSelectedSeats();
+        const count = all.length;
+        webSelectedSeatsCount.textContent = count;
+
+        if (count > 0) {
+            webSelectedSeatsBar.classList.remove('hidden');
+            webSelectedSeatsChips.innerHTML = '';
+            all.forEach(item => {
+                const chip = document.createElement('span');
+                chip.className = 'px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black flex items-center gap-1.5';
+                chip.innerHTML = `<i class="fas fa-couch text-[10px]"></i> ${item.seatId} <span class="text-[10px] text-gray-400 font-normal">(${item.sessionName})</span> <button type="button" class="text-amber-300 hover:text-white ml-0.5" data-seat-remove="${item.seatId}">&times;</button>`;
+                chip.querySelector('button').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const group = selectedSeatsBySession[item.sessionId];
+                    if (group) {
+                        const sIdx = group.seats.indexOf(item.seatId);
+                        if (sIdx > -1) {
+                            group.seats.splice(sIdx, 1);
+                            if (group.seats.length === 0) {
+                                delete selectedSeatsBySession[item.sessionId];
+                            }
+                        }
+                    }
+                    updateSelectedSeatsUI();
+                    renderWebSeatGrid();
+                    const sessions = (productData.hasLocations && selectedLocation && selectedLocation.sessions)
+                        ? selectedLocation.sessions
+                        : (productData.sessions || []);
+                    if (sessions.length > 1) {
+                        renderWebSessionButtons(sessions, productData);
+                    }
+                    const newAll = getAllSelectedSeats();
+                    renderForms(newAll.length > 0 ? newAll.length : 1);
+                });
+                webSelectedSeatsChips.appendChild(chip);
+            });
+        } else {
+            webSelectedSeatsBar.classList.add('hidden');
+        }
     };
 
     const fetchAndDisplayRecommendedProducts = async (productIds) => {
@@ -262,14 +642,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const formInstance = formClone.querySelector('.form-instance');
 
             const formInstanceTitle = formInstance.querySelector('.form-instance-title');
+            const all = getAllSelectedSeats();
+            const seatItemForForm = (productData && productData.hasSeatMap && all[i - 1]) ? all[i - 1] : null;
+
+            const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+            const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
+            const isExtraTicket = hasExtraTicketMode && (i > includedTicketsCount);
+
             if (formInstanceTitle) {
-                if (productData.priceType === 'kit') {
-                    formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>`;
+                let seatBadgeHtml = '';
+                if (seatItemForForm) {
+                    const sessionInfo = seatItemForForm.sessionName ? ` - ${seatItemForForm.sessionName}` : '';
+                    seatBadgeHtml = ` <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black inline-flex items-center gap-1 ml-2"><i class="fas fa-couch"></i> Cadeira ${seatItemForForm.seatId}${sessionInfo}</span>`;
+                }
+                if (isExtraTicket) {
+                    const priceFormatted = (productData.extraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    formInstanceTitle.innerHTML = `Ingresso Adicional <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">Acompanhante (+ ${priceFormatted})</span>${seatBadgeHtml}`;
+                } else if (hasExtraTicketMode) {
+                    formInstanceTitle.innerHTML = `Inscrição Principal <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">Graduando</span>${seatBadgeHtml}`;
+                } else if (productData.priceType === 'kit') {
+                    formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>${seatBadgeHtml}`;
                 } else {
-                    formInstanceTitle.innerHTML = `Inscrição <span class="form-instance-number">${i}</span>`;
+                    formInstanceTitle.innerHTML = `Inscrição <span class="form-instance-number">${i}</span>${seatBadgeHtml}`;
                 }
             } else {
                 formInstance.querySelector('.form-instance-number').textContent = i;
+            }
+
+            if (isExtraTicket) {
+                const companionNotice = document.createElement('div');
+                companionNotice.className = 'p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2 mb-2';
+                companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso adicional para familiar/convidado assistir à graduação. Apenas a cadeira será reservada para o acompanhante.</span>`;
+                formInstance.querySelector('.grid').prepend(companionNotice);
             }
 
             const fields = ['price-variant-selector', 'size-selector'];
@@ -280,8 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input) input.id = `${field}-${i}`;
             });
 
-            // Campo Idade condicional
-            if (productData.askAge) {
+            // Campo Idade condicional (ignorado em ingressos adicionais)
+            if (productData.askAge && !isExtraTicket) {
                 const ageContainer = formInstance.querySelector('.age-container');
                 if (ageContainer) {
                     ageContainer.classList.remove('hidden');
@@ -293,8 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Campo Professor condicional
-            if (productData.askProfessor) {
+            // Campo Professor condicional (ignorado em ingressos adicionais)
+            if (productData.askProfessor && !isExtraTicket) {
                 const professorContainer = formInstance.querySelector('.professor-container');
                 if (professorContainer) {
                     professorContainer.classList.remove('hidden');
@@ -323,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceVariantSelectorContainer = formInstance.querySelector('.price-variant-selector-container');
             const priceVariantSelector = formInstance.querySelector('[name="price-variant-selector"]');
 
-            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
+            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0 && !isExtraTicket) {
                 priceVariantSelectorContainer.classList.remove('hidden');
                 priceVariantSelector.required = true;
                 priceVariantSelector.innerHTML = '';
@@ -399,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sizeSelectorContainer = formInstance.querySelector('.size-selector-container');
             const sizeSelector = formInstance.querySelector('[name="size-selector"]');
-            if (productData.hasSizes && productData.sizes && productData.sizes.length > 0) {
+            if (productData.hasSizes && productData.sizes && productData.sizes.length > 0 && !isExtraTicket) {
                 sizeSelectorContainer.classList.remove('hidden');
                 sizeSelector.required = true;
                 
@@ -465,11 +869,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const formInstances = formsContainer.querySelectorAll('.form-instance');
         let activeLoteName = null;
 
-        formInstances.forEach(form => {
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
+
+        formInstances.forEach((form, idx) => {
             let instancePrice = 0;
-            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
+            const isExtraTicket = hasExtraTicketMode && (idx >= includedTicketsCount);
+
+            if (isExtraTicket) {
+                instancePrice = productData.extraTicketPrice || 0;
+            } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
-                const selectedVariant = productData.priceVariants[selector.value];
+                const selectedVariant = selector ? productData.priceVariants[selector.value] : productData.priceVariants[0];
                 if (selectedVariant) {
                     instancePrice = selectedVariant.price;
                 }
@@ -496,11 +907,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 instancePrice = productData.price || 0;
             }
 
-            // Somar Addons
-            const checkedAddons = form.querySelectorAll('.addon-checkbox:checked');
-            checkedAddons.forEach(addon => {
-                instancePrice += parseInt(addon.dataset.addonPrice, 10);
-            });
+            // Somar Addons apenas para a inscrição principal
+            if (!isExtraTicket) {
+                const checkedAddons = form.querySelectorAll('.addon-checkbox:checked');
+                checkedAddons.forEach(addon => {
+                    instancePrice += parseInt(addon.dataset.addonPrice, 10);
+                });
+            }
 
             totalAmount += instancePrice;
         });
@@ -629,16 +1042,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        formInstances.forEach(form => {
+        // Seat Map Validation & Locking
+        if (productData.hasSeatMap) {
+            const all = getAllSelectedSeats();
+            if (all.length === 0) {
+                formStatus.textContent = 'Por favor, selecione pelo menos uma cadeira no mapa de assentos acima.';
+                formStatus.className = 'mt-6 text-center text-lg text-amber-400 font-bold';
+                payButton.disabled = false;
+                if (seatMapSection) {
+                    seatMapSection.scrollIntoView({ behavior: 'smooth' });
+                }
+                return;
+            }
+
+            try {
+                formStatus.textContent = 'Reservando suas cadeiras no mapa...';
+                const userIdentifier = getUserIdentifier();
+
+                // Bloqueia as cadeiras para cada sessão selecionada
+                for (const [sessId, group] of Object.entries(selectedSeatsBySession)) {
+                    if (!group.seats || group.seats.length === 0) continue;
+                    const lockRes = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/lockSeats', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            productId: currentProductId,
+                            sessionId: sessId,
+                            seatIds: group.seats,
+                            userIdentifier: userIdentifier
+                        })
+                    });
+
+                    if (!lockRes.ok) {
+                        const errJson = await lockRes.json();
+                        throw new Error(`Sessão "${group.session?.name || ''}": ` + (errJson.error || 'Um ou mais assentos selecionados não estão mais disponíveis.'));
+                    }
+                }
+            } catch (err) {
+                console.error('Lock Seats Error:', err);
+                formStatus.textContent = err.message || 'Erro ao reservar assentos.';
+                formStatus.className = 'mt-6 text-center text-lg text-red-500 font-bold';
+                payButton.disabled = false;
+                return;
+            }
+        }
+
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
+
+        formInstances.forEach((form, idx) => {
+            const isExtraTicket = hasExtraTicketMode && (idx >= includedTicketsCount);
             const formData = {
-                userAge: form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null,
-                userSize: form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null,
-                userProfessor: form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null,
+                isExtraTicket: isExtraTicket,
+                isMainParticipant: !isExtraTicket,
+                userAge: isExtraTicket ? null : (form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null),
+                userSize: isExtraTicket ? null : (form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null),
+                userProfessor: isExtraTicket ? null : (form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null),
             };
+
+            if (productData.hasSeatMap) {
+                const all = getAllSelectedSeats();
+                const seatItem = all[idx];
+                if (seatItem) {
+                    formData.seatId = seatItem.seatId;
+                    formData.sessionId = seatItem.sessionId;
+                    formData.sessionName = seatItem.sessionName;
+                    formData.sessionDate = seatItem.sessionDate;
+                    formData.sessionTime = seatItem.sessionTime;
+                    formData.sessionLabel = seatItem.sessionLabel;
+                    formData.locationId = seatItem.locationId || null;
+                    formData.locationName = seatItem.locationName || null;
+                    formData.locationVenue = seatItem.locationVenue || null;
+                    formData.locationAddress = seatItem.locationAddress || null;
+                }
+            }
 
             let priceData = {};
             let kitSelections = null;
-            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
+            if (isExtraTicket) {
+                priceData.variantName = 'Ingresso Adicional (Acompanhante)';
+                priceData.amount = productData.extraTicketPrice || 0;
+            } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = productData.priceVariants[selector.value];
                 if (selectedVariant) {
@@ -678,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         name: addon.dataset.addonName,
                         price: parseInt(addon.dataset.addonPrice, 10)
                     });
-                    priceData.amount += parseInt(addon.dataset.addonPrice, 10); // Incorporar o valor do addon ao preço individual deste formulário
+                    priceData.amount += parseInt(addon.dataset.addonPrice, 10);
                 });
             }
 
@@ -716,6 +1200,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 recommendedItems: recommendedItems,
                 availableProfessors: productData.availableProfessors || [],
                 coupon: appliedCoupon ? appliedCoupon.code : null,
+                hasSeatMap: !!productData.hasSeatMap,
+                locationId: (productData.hasLocations && selectedLocation) ? selectedLocation.id : null,
+                locationName: (() => {
+                    const all = getAllSelectedSeats();
+                    const locs = Array.from(new Set(all.map(s => s.locationName).filter(Boolean)));
+                    return locs.join(' | ') || (selectedLocation ? selectedLocation.name : null);
+                })(),
+                locationVenue: (productData.hasLocations && selectedLocation) ? (selectedLocation.venue || '') : null,
+                locationAddress: (productData.hasLocations && selectedLocation) ? (selectedLocation.address || '') : null,
+                sessionId: (() => {
+                    const all = getAllSelectedSeats();
+                    return all[0]?.sessionId || (selectedSession ? selectedSession.id : null);
+                })(),
+                sessionLabel: (() => {
+                    const all = getAllSelectedSeats();
+                    const sessList = Array.from(new Set(all.map(s => s.sessionLabel).filter(Boolean)));
+                    return sessList.join(' | ') || (selectedSession ? (selectedSession.label || selectedSession.name) : null);
+                })(),
+                seats: (() => {
+                    const all = getAllSelectedSeats();
+                    return all.map(s => s.seatId);
+                })(),
+                hasExtraTicketPrice: Boolean(productData.hasExtraTicketPrice),
+                extraTicketPrice: productData.extraTicketPrice || 0,
+                includedTicketsCount: (productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1,
+                lockExpiresAt: productData.hasSeatMap ? (Date.now() + 15 * 60 * 1000) : null,
                 addedAt: new Date().toISOString()
             });
 

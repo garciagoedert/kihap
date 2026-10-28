@@ -48,9 +48,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     addontsText = ' + ' + form.addonsSelected.map(a => a.name).join(', ');
                 }
                 
+                let seatText = '';
+                if (form.seatId) {
+                    seatText = `
+                        <div class="mt-1 flex flex-wrap gap-1 items-center">
+                            ${form.locationName ? `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt mr-1"></i> ${form.locationName}${form.locationVenue ? ` - ${form.locationVenue}` : ''}</span>` : ''}
+                            ${form.sessionLabel ? `<span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-semibold"><i class="fas fa-calendar-day mr-1"></i> ${form.sessionLabel}</span>` : ''}
+                            <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-xs font-black"><i class="fas fa-couch mr-1"></i> Cadeira ${form.seatId}</span>
+                        </div>
+                    `;
+                }
+                
+                const isExtra = Boolean(form.isExtraTicket);
+                const roleBadge = isExtra
+                    ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-xs font-bold ml-1.5"><i class="fas fa-ticket-alt mr-1"></i> Acompanhante</span>`
+                    : (item.hasExtraTicketPrice ? `<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-bold ml-1.5"><i class="fas fa-user-graduate mr-1"></i> Graduando</span>` : '');
+
                 detailsHtml += `
-                    <div class="mt-2 text-sm bg-gray-700/50 p-2 rounded text-gray-300 border border-gray-600/50">
-                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Item ${idx + 1}</span>
+                    <div class="mt-2 text-sm bg-gray-700/50 p-2.5 rounded-lg text-gray-300 border border-gray-600/50">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Item ${idx + 1} ${roleBadge}</span>
+                        </div>
+                        ${seatText}
                         ${form.userSize ? `<br>Tamanho: <span class="text-yellow-500 font-bold">${form.userSize}</span>` : ''}
                         ${form.userAge ? `<br>Idade: <span class="text-white">${form.userAge} anos</span>` : ''}
                         ${form.userProfessor ? `<br>Professor: <span class="text-white">${form.userProfessor}</span>` : ''}

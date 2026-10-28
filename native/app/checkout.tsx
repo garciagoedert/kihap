@@ -5,7 +5,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, CheckCircle2, Lock, ChevronRight, CreditCard, QrCode } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, Lock, ChevronRight, CreditCard, QrCode, Clock, Armchair } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -43,6 +43,30 @@ export default function CheckoutScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const router = useRouter();
+
+  // Reserva de assentos: Timer de 15 minutos
+  const hasSeatReservation = items.some((item: any) => item.hasSeatMap || (item.selectedSeats && item.selectedSeats.length > 0));
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
+
+  useEffect(() => {
+    if (!hasSeatReservation) return;
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [hasSeatReservation]);
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const fetchUnits = async () => {
@@ -257,19 +281,48 @@ export default function CheckoutScreen() {
         </View>
 
         <View className="p-6">
+          {/* Banner de Reserva de Assentos */}
+          {hasSeatReservation && (
+            <View className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex-row items-center gap-3">
+              <View className="w-10 h-10 rounded-xl bg-amber-500/20 items-center justify-center">
+                <Clock size={20} color="#f59e0b" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                  Cadeiras Reservadas
+                </Text>
+                <Text className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">
+                  Conclua o pagamento em <Text className="font-black text-amber-500">{formatTimer(timeLeft)}</Text> para garantir seus lugares.
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Order Summary */}
           <View className="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-100 dark:border-white/5 mb-6">
             <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Resumo do Pedido</Text>
-            {items.map((item) => (
+            {items.map((item: any) => (
               <View key={item.cartId} className="mb-4 last:mb-0">
                 <View className="flex-row justify-between items-start">
                   <View className="flex-1 mr-4">
                     <Text className="text-gray-900 dark:text-white text-sm font-bold" numberOfLines={1}>{item.productName}</Text>
+                    {item.locationName && (
+                      <Text className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+                        📍 {item.locationName}{item.locationVenue ? ` - ${item.locationVenue}` : ''}
+                      </Text>
+                    )}
+                    {item.sessionLabel && (
+                      <Text className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 mt-0.5">
+                        📅 {item.sessionLabel}
+                      </Text>
+                    )}
                     {item.formDataList && item.formDataList.map((form: any, idx: number) => {
                       const variantStr = form.priceData?.variantName ? ` | Opção: ${form.priceData.variantName}` : '';
+                      const seatStr = form.seatId ? ` | Cadeira ${form.seatId}${form.sessionName ? ` (${form.sessionName})` : ''}` : '';
+                      const roleBadge = form.isExtraTicket ? ' [Acompanhante]' : (form.isMainParticipant ? ' [Graduando]' : '');
                       return (
                         <Text key={idx} className="text-[10px] text-gray-400 mt-0.5">
-                          {form.userName || 'Participante'} {form.userSize ? `| Tam: ${form.userSize}` : ''}{variantStr}
+                          {form.userName || 'Participante'}{roleBadge}{seatStr} {form.userSize ? `| Tam: ${form.userSize}` : ''}{variantStr}
                         </Text>
                       );
                     })}

@@ -7,6 +7,8 @@ import { db } from './firebase';
 const LAST_ACCESS_LOG_KEY = '@kihap_last_app_access_ts';
 const SESSION_THROTTLE_MS = 15 * 60 * 1000; // 15 minutos de intervalo para nova sessão
 
+let inMemoryLastTracked = 0;
+
 /**
  * Registra o acesso do usuário ao aplicativo no Firestore
  * Gera log na coleção 'app_access_logs' e atualiza 'users/{uid}'
@@ -14,8 +16,13 @@ const SESSION_THROTTLE_MS = 15 * 60 * 1000; // 15 minutos de intervalo para nova
 export async function trackAppAccess(user: any, userData?: any): Promise<void> {
   if (!user || !user.uid) return;
 
+  const now = Date.now();
+  if (now - inMemoryLastTracked < SESSION_THROTTLE_MS) {
+    return;
+  }
+  inMemoryLastTracked = now;
+
   try {
-    const now = Date.now();
     const lastAccessStr = await AsyncStorage.getItem(LAST_ACCESS_LOG_KEY);
     const lastAccessTs = lastAccessStr ? parseInt(lastAccessStr, 10) : 0;
 

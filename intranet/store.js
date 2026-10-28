@@ -407,6 +407,38 @@ export async function setupStorePage() {
     const eventSlotsList = document.getElementById('event-slots-list');
     const addEventSlotBtn = document.getElementById('add-event-slot-btn');
 
+    // Seat Map & Sessions Management elements
+    const productHasSeatMapInput = document.getElementById('product-has-seat-map');
+    const seatMapConfigContainer = document.getElementById('seat-map-config-container');
+    const seatMapRowsInput = document.getElementById('seat-map-rows');
+    const seatMapColsInput = document.getElementById('seat-map-cols');
+    const seatMapStageLabelInput = document.getElementById('seat-map-stage-label');
+    const eventSessionsContainer = document.getElementById('event-sessions-container');
+    const btnAddEventSession = document.getElementById('btn-add-event-session');
+    const intranetSeatMapSessionSelect = document.getElementById('intranet-seat-map-session-select');
+    const btnRenderSeatGrid = document.getElementById('btn-render-seat-grid');
+    const intranetSeatGridContainer = document.getElementById('intranet-seat-grid-container');
+    const previewStageLabel = document.getElementById('preview-stage-label');
+    let currentDisabledSeats = new Set();
+    let currentProductSeatsState = {};
+
+    // Multi-Location Management elements
+    const productHasLocationsInput = document.getElementById('product-has-locations');
+    const eventLocationsBar = document.getElementById('event-locations-bar');
+    const btnAddEventLocation = document.getElementById('btn-add-event-location');
+    const eventLocationsTabsContainer = document.getElementById('event-locations-tabs-container');
+    const activeLocationNameInput = document.getElementById('active-location-name');
+    const activeLocationVenueInput = document.getElementById('active-location-venue');
+    const activeLocationAddressInput = document.getElementById('active-location-address');
+    let currentLocationsList = [];
+    let activeLocationIndex = 0;
+
+    // Extra Ticket Pricing elements (Modo Graduação / Inscrição com Acompanhantes)
+    const productHasExtraTicketPriceInput = document.getElementById('product-has-extra-ticket-price');
+    const extraTicketPriceContainer = document.getElementById('extra-ticket-price-container');
+    const productExtraTicketPriceInput = document.getElementById('product-extra-ticket-price');
+    const productIncludedTicketsCountInput = document.getElementById('product-included-tickets-count');
+
     // Banner Management elements
     const bannerForm = document.getElementById('banner-form');
     const bannerFormTitle = document.getElementById('banner-form-title');
@@ -887,6 +919,12 @@ export async function setupStorePage() {
             }
 
             let productDisplay = `<span class="font-bold text-gray-900 dark:text-white">${sale.productName || 'N/A'}</span>`;
+            if (sale.seatId) {
+                productDisplay += `<div class="mt-1 flex flex-wrap items-center gap-1">
+                    ${sale.sessionLabel ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded">${sale.sessionLabel}</span>` : ''}
+                    <span class="px-1.5 py-0.5 text-[9px] font-black bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded"><i class="fas fa-chair mr-0.5"></i> Cadeira ${sale.seatId}</span>
+                </div>`;
+            }
             if (sale.recommendedItems && sale.recommendedItems.length > 0) {
                 const recommendedNames = sale.recommendedItems.map(item => `${item.productName} (x${item.quantity})`).join(', ');
                 productDisplay += `<div class="text-[10px] text-gray-400 mt-0.5">+ ${recommendedNames}</div>`;
@@ -1329,6 +1367,399 @@ export async function setupStorePage() {
         });
     };
 
+    // --- LÓGICA DO MAPA DE ASSENTOS & SESSÕES DO EVENTO ---
+    const addEventSessionRow = (session = {}) => {
+        if (!eventSessionsContainer) return;
+        const rowId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+        const sid = session.id || rowId;
+        const sname = session.name || '';
+        const sdate = session.date || '';
+        const stime = session.time || '';
+
+        const row = document.createElement('div');
+        row.className = 'session-row flex flex-col sm:flex-row items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm';
+        row.dataset.sessionId = sid;
+        row.innerHTML = `
+            <div class="flex-1 w-full">
+                <input type="text" name="session-name" value="${sname}" placeholder="Nome (Ex: Sessão 1 - Manhã)"
+                    class="w-full px-3 py-2 text-xs font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div class="w-full sm:w-36">
+                <input type="date" name="session-date" value="${sdate}"
+                    class="w-full px-3 py-2 text-xs font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div class="w-full sm:w-28">
+                <input type="time" name="session-time" value="${stime}"
+                    class="w-full px-3 py-2 text-xs font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <button type="button" class="btn-remove-session p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" title="Remover Sessão">
+                <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+        `;
+
+        row.querySelector('.btn-remove-session').addEventListener('click', () => {
+            row.remove();
+            updateIntranetSessionSelectOptions();
+        });
+
+        row.querySelector('input[name="session-name"]').addEventListener('input', () => {
+            updateIntranetSessionSelectOptions();
+        });
+
+        eventSessionsContainer.appendChild(row);
+        updateIntranetSessionSelectOptions();
+    };
+
+    // --- LÓGICA DE MÚLTIPLOS LOCAIS / CIDADES DO EVENTO ---
+    const syncActiveLocationFromUI = () => {
+        if (!productHasLocationsInput || !productHasLocationsInput.checked) return;
+        if (currentLocationsList.length === 0 || !currentLocationsList[activeLocationIndex]) return;
+
+        const loc = currentLocationsList[activeLocationIndex];
+        if (activeLocationNameInput) loc.name = activeLocationNameInput.value.trim() || `Local ${activeLocationIndex + 1}`;
+        if (activeLocationVenueInput) loc.venue = activeLocationVenueInput.value.trim();
+        if (activeLocationAddressInput) loc.address = activeLocationAddressInput.value.trim();
+        loc.seatMapConfig = {
+            rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
+            cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+            stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+            disabledSeats: Array.from(currentDisabledSeats)
+        };
+        loc.sessions = getEventSessionsData();
+    };
+
+    const loadLocationToUI = (index) => {
+        if (index < 0 || index >= currentLocationsList.length) return;
+        activeLocationIndex = index;
+        const loc = currentLocationsList[index];
+
+        if (activeLocationNameInput) activeLocationNameInput.value = loc.name || '';
+        if (activeLocationVenueInput) activeLocationVenueInput.value = loc.venue || '';
+        if (activeLocationAddressInput) activeLocationAddressInput.value = loc.address || '';
+
+        const smConfig = loc.seatMapConfig || {};
+        if (seatMapRowsInput) seatMapRowsInput.value = smConfig.rows || 8;
+        if (seatMapColsInput) seatMapColsInput.value = smConfig.cols || 16;
+        if (seatMapStageLabelInput) seatMapStageLabelInput.value = smConfig.stageLabel || 'PALCO / TATAME';
+        if (previewStageLabel) previewStageLabel.textContent = smConfig.stageLabel || 'PALCO / TATAME';
+        currentDisabledSeats = new Set(smConfig.disabledSeats || []);
+
+        if (eventSessionsContainer) {
+            eventSessionsContainer.innerHTML = '';
+            if (loc.sessions && loc.sessions.length > 0) {
+                loc.sessions.forEach(sess => addEventSessionRow(sess));
+            } else {
+                addEventSessionRow({ name: 'Sessão 1', time: '10:00' });
+            }
+        }
+
+        renderLocationTabs();
+        renderIntranetSeatGrid();
+    };
+
+    const renderLocationTabs = () => {
+        if (!eventLocationsTabsContainer) return;
+        eventLocationsTabsContainer.innerHTML = '';
+
+        currentLocationsList.forEach((loc, idx) => {
+            const isActive = idx === activeLocationIndex;
+            const tabBtn = document.createElement('div');
+            tabBtn.className = `flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                isActive
+                    ? 'bg-blue-600 text-white shadow-blue-500/20'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+            }`;
+
+            tabBtn.innerHTML = `
+                <i class="fas fa-map-marker-alt text-[10px]"></i>
+                <span>${loc.name || `Local ${idx + 1}`}</span>
+                ${currentLocationsList.length > 1 ? `
+                <button type="button" class="btn-remove-location ml-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Remover Local">
+                    &times;
+                </button>
+                ` : ''}
+            `;
+
+            tabBtn.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-remove-location') || e.target.closest('.btn-remove-location')) return;
+                if (activeLocationIndex === idx) return;
+                syncActiveLocationFromUI();
+                loadLocationToUI(idx);
+            });
+
+            const removeBtn = tabBtn.querySelector('.btn-remove-location');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Remover o local "${loc.name || `Local ${idx + 1}`}" e suas sessões?`)) {
+                        currentLocationsList.splice(idx, 1);
+                        const nextIdx = Math.max(0, idx - 1);
+                        loadLocationToUI(nextIdx);
+                    }
+                });
+            }
+
+            eventLocationsTabsContainer.appendChild(tabBtn);
+        });
+    };
+
+    const addNewLocation = () => {
+        syncActiveLocationFromUI();
+        const nextNum = currentLocationsList.length + 1;
+        const newLoc = {
+            id: 'loc_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+            name: `Local ${nextNum}`,
+            venue: '',
+            address: '',
+            seatMapConfig: {
+                rows: 8,
+                cols: 16,
+                stageLabel: 'PALCO / TATAME',
+                disabledSeats: []
+            },
+            sessions: [
+                { id: 'sess_' + Date.now().toString(36), name: 'Sessão 1', time: '10:00' }
+            ]
+        };
+        currentLocationsList.push(newLoc);
+        loadLocationToUI(currentLocationsList.length - 1);
+    };
+
+    if (btnAddEventLocation) {
+        btnAddEventLocation.addEventListener('click', addNewLocation);
+    }
+
+    if (activeLocationNameInput) {
+        activeLocationNameInput.addEventListener('input', () => {
+            if (currentLocationsList[activeLocationIndex]) {
+                currentLocationsList[activeLocationIndex].name = activeLocationNameInput.value.trim() || `Local ${activeLocationIndex + 1}`;
+                renderLocationTabs();
+            }
+        });
+    }
+
+    if (productHasLocationsInput) {
+        productHasLocationsInput.addEventListener('change', () => {
+            if (productHasLocationsInput.checked) {
+                if (eventLocationsBar) eventLocationsBar.classList.remove('hidden');
+                if (currentLocationsList.length === 0) {
+                    currentLocationsList = [{
+                        id: 'loc_' + Date.now().toString(36),
+                        name: 'Brasília - DF',
+                        venue: '',
+                        address: '',
+                        seatMapConfig: {
+                            rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
+                            cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+                            stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+                            disabledSeats: Array.from(currentDisabledSeats)
+                        },
+                        sessions: getEventSessionsData().length > 0 ? getEventSessionsData() : [{ name: 'Sessão 1', time: '10:00' }]
+                    }];
+                }
+                loadLocationToUI(0);
+            } else {
+                if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
+            }
+        });
+    }
+
+    const getEventSessionsData = () => {
+        if (!eventSessionsContainer) return [];
+        const rows = eventSessionsContainer.querySelectorAll('.session-row');
+        const list = [];
+        rows.forEach(r => {
+            const sid = r.dataset.sessionId;
+            const name = r.querySelector('input[name="session-name"]').value.trim();
+            const date = r.querySelector('input[name="session-date"]').value;
+            const time = r.querySelector('input[name="session-time"]').value;
+            if (name) {
+                let label = name;
+                if (date && time) {
+                    const [y, m, d] = date.split('-');
+                    label = `${name} (${d}/${m} às ${time})`;
+                } else if (time) {
+                    label = `${name} (às ${time})`;
+                }
+                list.push({ id: sid, name, date, time, label });
+            }
+        });
+        return list;
+    };
+
+    const updateIntranetSessionSelectOptions = () => {
+        if (!intranetSeatMapSessionSelect) return;
+        const currentVal = intranetSeatMapSessionSelect.value;
+        const sessions = getEventSessionsData();
+        intranetSeatMapSessionSelect.innerHTML = '';
+        
+        if (sessions.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = 'default';
+            opt.textContent = 'Sessão Padrão';
+            intranetSeatMapSessionSelect.appendChild(opt);
+        } else {
+            sessions.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.label;
+                intranetSeatMapSessionSelect.appendChild(opt);
+            });
+        }
+        if (sessions.some(s => s.id === currentVal)) {
+            intranetSeatMapSessionSelect.value = currentVal;
+        }
+    };
+
+    const fetchSessionSeatReservations = async (productId, sessionId) => {
+        if (!productId) return {};
+        try {
+            const docId = `${productId}_${sessionId || 'default'}`;
+            const snap = await getDoc(doc(db, 'productSeatReservations', docId));
+            if (snap.exists()) {
+                return snap.data().seats || {};
+            }
+        } catch (e) {
+            console.warn('[fetchSessionSeatReservations] Erro ao buscar reservas:', e);
+        }
+        return {};
+    };
+
+    const renderIntranetSeatGrid = async () => {
+        if (!intranetSeatGridContainer) return;
+        const numRows = Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8));
+        const numCols = Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16));
+        const stageLabel = seatMapStageLabelInput ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME';
+        if (previewStageLabel) previewStageLabel.textContent = stageLabel || 'PALCO / TATAME';
+
+        const productId = productIdInput ? productIdInput.value : null;
+        const sessionId = intranetSeatMapSessionSelect ? intranetSeatMapSessionSelect.value : 'default';
+
+        let reservations = {};
+        if (productId) {
+            reservations = await fetchSessionSeatReservations(productId, sessionId);
+        }
+        currentProductSeatsState = reservations;
+
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        intranetSeatGridContainer.innerHTML = '';
+
+        for (let r = 0; r < numRows; r++) {
+            const rowLetter = alphabet[r];
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'flex items-center gap-1.5 justify-center';
+
+            const labelLeft = document.createElement('span');
+            labelLeft.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
+            labelLeft.textContent = rowLetter;
+            rowDiv.appendChild(labelLeft);
+
+            for (let c = 1; c <= numCols; c++) {
+                const seatId = `${rowLetter}-${c}`;
+                const seatBtn = document.createElement('button');
+                seatBtn.type = 'button';
+                seatBtn.dataset.seatId = seatId;
+                seatBtn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer relative group';
+
+                const reservation = reservations[seatId];
+                const isDisabledByConfig = currentDisabledSeats.has(seatId);
+
+                if (reservation && reservation.status === 'booked') {
+                    seatBtn.className += ' bg-red-600 text-white border border-red-700 shadow-sm';
+                    seatBtn.innerHTML = `<span>${c}</span>`;
+                    seatBtn.title = `${seatId} - Vendido para: ${reservation.buyerName || 'Cliente'}`;
+                    seatBtn.addEventListener('click', () => {
+                        if (confirm(`Cadeira ${seatId} vendida para: ${reservation.buyerName || 'Cliente'}\n\nDeseja liberar esta cadeira manualmente?`)) {
+                            adminFreeSeat(productId, sessionId, seatId);
+                        }
+                    });
+                } else if (reservation && reservation.status === 'locked' && reservation.lockedUntil > Date.now()) {
+                    seatBtn.className += ' bg-amber-500 text-black border border-amber-600 animate-pulse';
+                    seatBtn.innerHTML = `<span>${c}</span>`;
+                    seatBtn.title = `${seatId} - Em checkout (bloqueio 15m)`;
+                } else if (isDisabledByConfig || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'))) {
+                    seatBtn.className += ' bg-gray-200 dark:bg-gray-800 text-gray-400 border border-gray-300 dark:border-gray-700 opacity-50';
+                    seatBtn.innerHTML = `<i class="fas fa-times text-[9px]"></i>`;
+                    seatBtn.title = `${seatId} - Desativado/Corredor. Clique para ativar.`;
+                    seatBtn.addEventListener('click', () => {
+                        currentDisabledSeats.delete(seatId);
+                        renderIntranetSeatGrid();
+                    });
+                } else {
+                    seatBtn.className += ' bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white';
+                    seatBtn.innerHTML = `<span>${c}</span>`;
+                    seatBtn.title = `${seatId} - Disponível. Clique para desativar (espaço vazio).`;
+                    seatBtn.addEventListener('click', () => {
+                        currentDisabledSeats.add(seatId);
+                        renderIntranetSeatGrid();
+                    });
+                }
+
+                rowDiv.appendChild(seatBtn);
+            }
+
+            const labelRight = document.createElement('span');
+            labelRight.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
+            labelRight.textContent = rowLetter;
+            rowDiv.appendChild(labelRight);
+
+            intranetSeatGridContainer.appendChild(rowDiv);
+        }
+    };
+
+    const adminFreeSeat = async (productId, sessionId, seatId) => {
+        try {
+            const docId = `${productId}_${sessionId || 'default'}`;
+            const docRef = doc(db, 'productSeatReservations', docId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const seats = snap.data().seats || {};
+                delete seats[seatId];
+                await updateDoc(docRef, { seats });
+                alert(`Cadeira ${seatId} liberada com sucesso!`);
+                renderIntranetSeatGrid();
+            }
+        } catch (e) {
+            console.error('Erro ao liberar cadeira:', e);
+            alert('Erro ao liberar cadeira.');
+        }
+    };
+
+    if (productHasSeatMapInput) {
+        productHasSeatMapInput.addEventListener('change', () => {
+            if (seatMapConfigContainer) {
+                seatMapConfigContainer.classList.toggle('hidden', !productHasSeatMapInput.checked);
+            }
+            if (productHasSeatMapInput.checked) {
+                if (getEventSessionsData().length === 0) {
+                    addEventSessionRow({ name: 'Sessão 1', time: '10:00' });
+                }
+                renderIntranetSeatGrid();
+            }
+        });
+    }
+
+    if (productHasExtraTicketPriceInput && extraTicketPriceContainer) {
+        productHasExtraTicketPriceInput.addEventListener('change', () => {
+            extraTicketPriceContainer.classList.toggle('hidden', !productHasExtraTicketPriceInput.checked);
+        });
+    }
+
+    if (btnAddEventSession) {
+        btnAddEventSession.addEventListener('click', () => {
+            const count = getEventSessionsData().length + 1;
+            addEventSessionRow({ name: `Sessão ${count}` });
+        });
+    }
+
+    if (seatMapRowsInput) seatMapRowsInput.addEventListener('change', renderIntranetSeatGrid);
+    if (seatMapColsInput) seatMapColsInput.addEventListener('change', renderIntranetSeatGrid);
+    if (seatMapStageLabelInput) seatMapStageLabelInput.addEventListener('input', () => {
+        if (previewStageLabel) previewStageLabel.textContent = seatMapStageLabelInput.value || 'PALCO / TATAME';
+    });
+    if (intranetSeatMapSessionSelect) intranetSeatMapSessionSelect.addEventListener('change', renderIntranetSeatGrid);
+    if (btnRenderSeatGrid) btnRenderSeatGrid.addEventListener('click', renderIntranetSeatGrid);
+
     const openProductEditor = (productId = null) => {
         if (productsCatalogView) productsCatalogView.classList.add('hidden');
         if (productEditorView) productEditorView.classList.remove('hidden');
@@ -1365,6 +1796,20 @@ export async function setupStorePage() {
         if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
         if (deleteProductPageBtn) deleteProductPageBtn.classList.add('hidden');
         if (editorQrCodeBtn) editorQrCodeBtn.classList.add('hidden');
+
+        // Reset seat map fields
+        if (productHasSeatMapInput) productHasSeatMapInput.checked = false;
+        if (productHasLocationsInput) productHasLocationsInput.checked = false;
+        if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
+        if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
+        if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
+        if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
+        if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+        currentLocationsList = [];
+        if (seatMapConfigContainer) seatMapConfigContainer.classList.add('hidden');
+        if (eventSessionsContainer) eventSessionsContainer.innerHTML = '';
+        if (intranetSeatGridContainer) intranetSeatGridContainer.innerHTML = '';
+        currentDisabledSeats.clear();
     };
 
     // Alias old modal functions for full backwards compatibility
@@ -1378,6 +1823,18 @@ export async function setupStorePage() {
             if (productOrderInput) productOrderInput.value = '';
             if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
             populateRecommendedProductsSelect();
+            currentDisabledSeats.clear();
+            if (productHasSeatMapInput) productHasSeatMapInput.checked = false;
+            if (productHasLocationsInput) productHasLocationsInput.checked = false;
+            if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
+            if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
+            if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
+            if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
+            if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+            currentLocationsList = [];
+            if (seatMapConfigContainer) seatMapConfigContainer.classList.add('hidden');
+            if (eventSessionsContainer) eventSessionsContainer.innerHTML = '';
+            if (intranetSeatGridContainer) intranetSeatGridContainer.innerHTML = '';
             openProductEditor();
         });
     }
@@ -1583,6 +2040,37 @@ Requisitos:
                     isEvent: eventConfigData.isEvent,
                     eventAddress: eventConfigData.eventAddress,
                     eventConfig: eventConfigData.eventConfig,
+                    hasSeatMap: productHasSeatMapInput ? productHasSeatMapInput.checked : false,
+                    hasLocations: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasLocationsInput && productHasLocationsInput.checked),
+                    hasExtraTicketPrice: Boolean(productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked),
+                    extraTicketPrice: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked)
+                        ? (parseInt(productExtraTicketPriceInput.value, 10) || 0)
+                        : 0,
+                    includedTicketsCount: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked)
+                        ? (parseInt(productIncludedTicketsCountInput.value, 10) || 1)
+                        : 1,
+                    locations: (() => {
+                        if (productHasSeatMapInput && productHasSeatMapInput.checked && productHasLocationsInput && productHasLocationsInput.checked) {
+                            syncActiveLocationFromUI();
+                            return currentLocationsList;
+                        }
+                        return [];
+                    })(),
+                    seatMapConfig: (productHasSeatMapInput && productHasSeatMapInput.checked) ? {
+                        rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
+                        seatsPerRow: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+                        cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+                        stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+                        disabledSeats: Array.from(currentDisabledSeats)
+                    } : null,
+                    sessions: (() => {
+                        if (!productHasSeatMapInput || !productHasSeatMapInput.checked) return [];
+                        if (productHasLocationsInput && productHasLocationsInput.checked && currentLocationsList.length > 0) {
+                            syncActiveLocationFromUI();
+                            return currentLocationsList.flatMap(l => (l.sessions || []).map(s => ({ ...s, locationId: l.id, locationName: l.name })));
+                        }
+                        return getEventSessionsData();
+                    })(),
                     staffPrice: (productStaffPriceInput && productStaffPriceInput.value.trim() !== '') ? parseInt(productStaffPriceInput.value.trim(), 10) : null,
                     unitPrices: (() => {
                         const prices = {};
@@ -1999,6 +2487,61 @@ Requisitos:
                                 addEventSlotRow(belts, slot.day, slot.time, slot.ring, slot.minAge, slot.maxAge, slot.programId || 'tradicional');
                             });
                         }
+                    }
+                }
+
+                // Handle Seat Map & Sessions load
+                if (productHasSeatMapInput) {
+                    productHasSeatMapInput.checked = Boolean(product.hasSeatMap);
+                    if (seatMapConfigContainer) {
+                        seatMapConfigContainer.classList.toggle('hidden', !productHasSeatMapInput.checked);
+                    }
+                    currentDisabledSeats.clear();
+
+                    if (product.hasLocations && product.locations && Array.isArray(product.locations) && product.locations.length > 0) {
+                        if (productHasLocationsInput) productHasLocationsInput.checked = true;
+                        if (eventLocationsBar) eventLocationsBar.classList.remove('hidden');
+                        currentLocationsList = JSON.parse(JSON.stringify(product.locations));
+                        loadLocationToUI(0);
+                    } else {
+                        if (productHasLocationsInput) productHasLocationsInput.checked = false;
+                        if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
+                        currentLocationsList = [];
+
+                        if (product.seatMapConfig) {
+                            if (seatMapRowsInput) seatMapRowsInput.value = product.seatMapConfig.rows || 8;
+                            if (seatMapColsInput) seatMapColsInput.value = product.seatMapConfig.seatsPerRow || product.seatMapConfig.cols || 16;
+                            if (seatMapStageLabelInput) seatMapStageLabelInput.value = product.seatMapConfig.stageLabel || 'PALCO / TATAME';
+                            if (previewStageLabel) previewStageLabel.textContent = product.seatMapConfig.stageLabel || 'PALCO / TATAME';
+                            if (product.seatMapConfig.disabledSeats && Array.isArray(product.seatMapConfig.disabledSeats)) {
+                                product.seatMapConfig.disabledSeats.forEach(s => currentDisabledSeats.add(s));
+                            }
+                        }
+                        if (eventSessionsContainer) {
+                            eventSessionsContainer.innerHTML = '';
+                            if (product.sessions && Array.isArray(product.sessions) && product.sessions.length > 0) {
+                                product.sessions.forEach(sess => addEventSessionRow(sess));
+                            }
+                        }
+                        updateIntranetSessionSelectOptions();
+                        if (product.hasSeatMap) {
+                            renderIntranetSeatGrid();
+                        }
+                    }
+
+                    // Extra ticket price loading
+                    const hasExtraTicket = Boolean(product.hasExtraTicketPrice || (product.extraTicketPrice && product.extraTicketPrice > 0));
+                    if (productHasExtraTicketPriceInput) {
+                        productHasExtraTicketPriceInput.checked = hasExtraTicket;
+                    }
+                    if (extraTicketPriceContainer) {
+                        extraTicketPriceContainer.classList.toggle('hidden', !hasExtraTicket);
+                    }
+                    if (productExtraTicketPriceInput) {
+                        productExtraTicketPriceInput.value = product.extraTicketPrice || '';
+                    }
+                    if (productIncludedTicketsCountInput) {
+                        productIncludedTicketsCountInput.value = (product.includedTicketsCount !== undefined) ? product.includedTicketsCount : 1;
                     }
                 }
 
