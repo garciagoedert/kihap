@@ -4855,12 +4855,16 @@ Requisitos:
             const d = getSaleDateObj(sale);
             if (d) {
                 dowRevenue[d.getDay()] += amount;
-                const dateKey = (period === 'all' || period === 'this_year' || period === '90_days')
+                const isMonthly = (period === 'all' || period === 'this_year' || period === '90_days');
+                const sortKey = isMonthly
+                    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                    : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const label = isMonthly
                     ? `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
                     : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
                 
-                if (!timeAgg[dateKey]) timeAgg[dateKey] = 0;
-                timeAgg[dateKey] += amount;
+                if (!timeAgg[sortKey]) timeAgg[sortKey] = { label, amount: 0, sortKey };
+                timeAgg[sortKey].amount += amount;
             }
         });
 
@@ -4974,8 +4978,9 @@ Requisitos:
         if (biChartTimeline) biChartTimeline.destroy();
         const ctxTimeline = document.getElementById('bi-chart-timeline');
         if (ctxTimeline) {
-            const labels = Object.keys(timeAgg);
-            const data = Object.values(timeAgg);
+            const sortedTimelineEntries = Object.values(timeAgg).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+            const labels = sortedTimelineEntries.map(e => e.label);
+            const data = sortedTimelineEntries.map(e => e.amount);
             biChartTimeline = new Chart(ctxTimeline.getContext('2d'), {
                 type: 'line',
                 data: {
@@ -5566,11 +5571,15 @@ Requisitos:
 
                     const d = getSaleDateObj(sale);
                     if (d) {
-                        const dateKey = (period === 'all' || period === 'this_year' || period === '90_days')
+                        const isMonthly = (period === 'all' || period === 'this_year' || period === '90_days');
+                        const sortKey = isMonthly
+                            ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                            : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        const label = isMonthly
                             ? `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
                             : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-                        if (!timeMap[dateKey]) timeMap[dateKey] = 0;
-                        timeMap[dateKey] += amtCents / 100;
+                        if (!timeMap[sortKey]) timeMap[sortKey] = { label, amount: 0, sortKey };
+                        timeMap[sortKey].amount += amtCents / 100;
                     }
                 });
 
@@ -5689,8 +5698,13 @@ Requisitos:
                 const allKeysSet = new Set([...Object.keys(statsA.timeAgg), ...Object.keys(statsB.timeAgg)]);
                 const sortedTimelineKeys = Array.from(allKeysSet).sort();
 
-                const dataA = sortedTimelineKeys.map(k => statsA.timeAgg[k] || 0);
-                const dataB = sortedTimelineKeys.map(k => statsB.timeAgg[k] || 0);
+                const labelMap = {};
+                Object.values(statsA.timeAgg).forEach(item => { if (item && item.sortKey) labelMap[item.sortKey] = item.label; });
+                Object.values(statsB.timeAgg).forEach(item => { if (item && item.sortKey) labelMap[item.sortKey] = item.label; });
+
+                const labels = sortedTimelineKeys.map(k => labelMap[k] || k);
+                const dataA = sortedTimelineKeys.map(k => statsA.timeAgg[k]?.amount || 0);
+                const dataB = sortedTimelineKeys.map(k => statsB.timeAgg[k]?.amount || 0);
 
                 biChartComparison = new Chart(ctxComparison.getContext('2d'), {
                     type: 'bar',
