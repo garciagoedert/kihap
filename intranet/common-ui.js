@@ -1030,9 +1030,10 @@ Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem
 - Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
 - CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups (\`contactLog\`) e as observações.
 - Loja e Pedidos: você pode pesquisar produtos (\`searchStoreProducts\`) e ver seus detalhes de preço/estoque (\`getStoreProductDetails\`). Também pode pesquisar transações de venda (\`searchStoreSales\`) e ver detalhes de uma venda específica (\`getStoreSaleDetails\`), assim como pesquisar pedidos de faixas/doboks (\`searchStoreOrders\`) e ver detalhes de um pedido específico (\`getStoreOrderDetails\`).
+- **Business Intelligence e Métricas da Kihap Store (\`getStoreBusinessIntelligence\`)**: você tem acesso analítico completo ao BI de vendas da loja (\`getStoreBusinessIntelligence\`). SEMPRE utilize esta ferramenta quando perguntarem sobre faturamento total, ticket médio, número de vendas, taxa de aprovação, rankings de unidades, instrutores com mais vendas, produtos e categorias mais vendidos, formas de pagamento, ou especificamente sobre **qual graduação ou faixa mais compra produtos na store**! Ao responder, traga análises ricas com números exatos (faturamento em R$, volume de vendas, ticket médio, percentual de participação), destaque as faixas líderes em quantidade e faturamento, e forneça insights estratégicos positivos e orientados ao crescimento da escola Kihap.
 - **Planificadores de Aula**: você pode pesquisar planificadores/planos pedagógicos (\`searchLessonPlans\`) e ver o detalhamento completo de um plano (\`getLessonPlanDetails\`), incluindo objetivos, estrutura por blocos/semanas e os links diretos de vídeos do YouTube. Quando o usuário (instrutor ou professor) perguntar sobre o que ensinar na aula, estrutura de treinos, técnicas específicas, aquecimentos ou pedir vídeos demonstrativos, consulte o planificador e envie os detalhes junto com os links de vídeos do YouTube.
 
-Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, ou planificadores de aula.`;
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, Business Intelligence da Store, ou planificadores de aula.`;
 
 function initGlobalKobeChatbot() {
     if (document.getElementById('aiChatToggle')) return; // Já injetado
@@ -1358,6 +1359,37 @@ const kobeTools = [{
                     query: {
                         type: "STRING",
                         description: "Título ou termo de busca do plano para localizar os detalhes quando o ID não for conhecido."
+                    }
+                }
+            }
+        },
+        {
+            name: "getStoreBusinessIntelligence",
+            description: "Retorna a inteligência de negócios (Business Intelligence & BI) da Kihap Store em tempo real com métricas analíticas agregadas: faturamento total, quantidade de vendas, ticket médio, taxa de aprovação, ranking de vendas e faturamento por GRADUAÇÃO/FAIXA (responde com precisão qual graduação mais compra produtos), ranking por UNIDADE, ranking por INSTRUTOR/PROFESSOR, ranking por PRODUTO e CATEGORIA, formas de pagamento (PIX, Cartão, Boleto) e tendências temporais.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    period: {
+                        type: "STRING",
+                        description: "Período da análise: '30_days' (últimos 30 dias, padrão), 'this_month' (mês atual), 'last_month' (mês anterior), '90_days' (últimos 90 dias), 'this_year' (ano atual) ou 'all' (todo o histórico).",
+                        enum: ["30_days", "this_month", "last_month", "90_days", "this_year", "all"]
+                    },
+                    unit: {
+                        type: "STRING",
+                        description: "Filtro opcional por unidade (ex: 'asa-sul', 'coqueiros', 'centro', etc.)."
+                    },
+                    instructor: {
+                        type: "STRING",
+                        description: "Filtro opcional por nome do instrutor ou professor."
+                    },
+                    graduation: {
+                        type: "STRING",
+                        description: "Filtro opcional por faixa/graduação do aluno (ex: 'Faixa Branca', '1BD', 'Faixa Azul', etc.)."
+                    },
+                    status: {
+                        type: "STRING",
+                        description: "Filtro por status da transação: 'approved_only' (apenas vendas pagas/concluídas, padrão), 'all' (todas) ou 'pending' (somente pendentes).",
+                        enum: ["approved_only", "all", "pending"]
                     }
                 }
             }
@@ -2340,6 +2372,381 @@ async function getLessonPlanDetails(args) {
     }
 }
 
+async function getStoreBusinessIntelligence(args = {}) {
+    const {
+        period = '30_days',
+        unit = '',
+        instructor = '',
+        graduation = '',
+        status: statusFilter = 'approved_only'
+    } = args;
+
+    try {
+        // 1. Obter vendas (usar window.allSales se já carregadas no DOM ou buscar no Firestore)
+        let sales = (typeof window !== 'undefined' && Array.isArray(window.allSales) && window.allSales.length > 0)
+            ? window.allSales
+            : [];
+
+        if (sales.length === 0) {
+            try {
+                const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
+                const snap = await getDocs(q);
+                sales = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (errOrderBy) {
+                console.warn('[Kobe BI] Fallback para query simples de vendas:', errOrderBy);
+                const snap = await getDocs(collection(db, 'inscricoesFaixaPreta'));
+                sales = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }
+        }
+
+        // 2. Obter produtos para categorização precisa (se disponível)
+        let products = (typeof window !== 'undefined' && Array.isArray(window.allProducts) && window.allProducts.length > 0)
+            ? window.allProducts
+            : [];
+        if (products.length === 0) {
+            try {
+                const snap = await getDocs(query(collection(db, 'products'), limit(150)));
+                products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (e) {
+                console.warn('[Kobe BI] Não foi possível carregar catálogo de produtos para mapeamento:', e);
+            }
+        }
+
+        // Helpers de extração de dados compatíveis com o Store BI Dashboard
+        const getSaleDate = (s) => {
+            if (!s || !s.created) return null;
+            if (typeof s.created.toDate === 'function') return s.created.toDate();
+            if (s.created instanceof Date) return s.created;
+            const parsed = new Date(s.created);
+            return isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const getSaleAmountCents = (s) => {
+            if (s.amountTotal !== undefined && s.amountTotal !== null) return parseInt(s.amountTotal, 10) || 0;
+            if (s.amount !== undefined && s.amount !== null) {
+                const val = parseFloat(s.amount);
+                return val < 1000 ? val * 100 : val;
+            }
+            if (s.totalAmount !== undefined && s.totalAmount !== null) return parseInt(s.totalAmount, 10) || 0;
+            return 0;
+        };
+
+        const getSaleGrad = (s) => {
+            const g = s.userGraduacao || s.graduacao || s.faixa || s.chosenVariant || s.variationName;
+            if (g && String(g).trim() !== '') return String(g).trim();
+            return 'Venda Direta / Sem Faixa';
+        };
+
+        const getSaleCat = (s) => {
+            if (!s) return 'Outros / Gerais';
+            if (s.category && String(s.category).trim() !== '') return String(s.category).trim();
+            if (s.productCategory && String(s.productCategory).trim() !== '') return String(s.productCategory).trim();
+            const prodName = s.productName || s.title || s.name || '';
+            const norm = (str) => String(str || '').trim().toLowerCase();
+
+            if (products.length > 0) {
+                const found = products.find(p => 
+                    (s.productId && p.id === s.productId) || 
+                    (s.product_id && p.id === s.product_id) || 
+                    (prodName && (norm(p.name) === norm(prodName) || norm(p.title) === norm(prodName) || norm(p.nome) === norm(prodName)))
+                );
+                if (found && (found.category || found.categoria)) {
+                    const c = found.category || found.categoria;
+                    if (String(c).trim() !== '') return String(c).trim();
+                }
+            }
+
+            const lower = prodName.toLowerCase();
+            if (lower.includes('graduaç') || lower.includes('exame') || lower.includes('1bd') || lower.includes('2bd') || lower.includes('3bd')) return 'Graduação';
+            if (lower.includes('experience') || lower.includes('torneio') || lower.includes('evento') || lower.includes('campeonato')) return 'Eventos & Experiências';
+            if (lower.includes('equipamento') || lower.includes('dobok') || lower.includes('protetor') || lower.includes('luva') || lower.includes('canela') || lower.includes('capacete') || lower.includes('faixa')) return 'Equipamentos & Uniformes';
+            if (lower.includes('curso') || lower.includes('treinamento') || lower.includes('seminario')) return 'Cursos & Treinamentos';
+            return 'Outros / Gerais';
+        };
+
+        const getPayMethod = (s) => {
+            let raw = '';
+            if (s.paymentDetails) {
+                raw = s.paymentDetails.method || s.paymentDetails.paymentMethodId || s.paymentDetails.paymentTypeId || s.paymentDetails.payment_method_id || '';
+            }
+            if (!raw) {
+                raw = s.paymentMethod || s.paymentType || s.payment_method_id || s.payment_type_id || '';
+            }
+            const lower = String(raw).toLowerCase().trim();
+            if (lower.includes('pix') || lower.includes('bank_transfer')) return 'PIX';
+            if (lower.includes('credit') || lower.includes('card') || lower === 'visa' || lower === 'master' || lower === 'elo' || lower === 'amex' || lower === 'hipercard') return 'Cartão de Crédito';
+            if (lower.includes('debit') || lower === 'debvisa' || lower === 'debmaster') return 'Cartão de Débito';
+            if (lower.includes('ticket') || lower.includes('boleto') || lower.includes('bolbradesco')) return 'Boleto Bancário';
+            if (lower.includes('account_money') || lower.includes('saldo')) return 'Saldo Mercado Pago';
+            if (lower.includes('cash') || lower.includes('dinheiro') || lower.includes('especie')) return 'Dinheiro / Espécie';
+            if (s.saleType === 'manual') return 'Venda Manual';
+            if (!raw) return 'Mercado Pago (Outros)';
+            return raw.charAt(0).toUpperCase() + raw.slice(1);
+        };
+
+        // 3. Delimitação de período
+        const now = new Date();
+        let startDateLimit = null;
+        let endDateLimit = null;
+        let periodLabel = 'Últimos 30 Dias';
+
+        if (period === 'this_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth(), 1);
+            periodLabel = 'Mês Atual';
+        } else if (period === 'last_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDateLimit = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+            periodLabel = 'Mês Anterior';
+        } else if (period === '30_days') {
+            startDateLimit = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            periodLabel = 'Últimos 30 Dias';
+        } else if (period === '90_days') {
+            startDateLimit = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+            periodLabel = 'Últimos 90 Dias';
+        } else if (period === 'this_year') {
+            startDateLimit = new Date(now.getFullYear(), 0, 1);
+            periodLabel = 'Ano Atual';
+        } else if (period === 'all') {
+            periodLabel = 'Todo o Histórico';
+        }
+
+        const normStr = (val) => String(val || '').toLowerCase().trim();
+
+        // 4. Filtragem
+        const filtered = sales.filter(s => {
+            const date = getSaleDate(s);
+            if (startDateLimit && (!date || date < startDateLimit)) return false;
+            if (endDateLimit && (!date || date > endDateLimit)) return false;
+
+            const u = normStr(s.userUnit || s.unit || s.unidade);
+            if (unit && !u.includes(normStr(unit))) return false;
+
+            const inst = normStr(s.userProfessor || s.professor || s.selectedProfessor || s.instructor);
+            if (instructor && !inst.includes(normStr(instructor))) return false;
+
+            const g = normStr(getSaleGrad(s));
+            if (graduation && !g.includes(normStr(graduation))) return false;
+
+            const st = (s.paymentStatus || '').toLowerCase();
+            if (statusFilter === 'approved_only') {
+                if (st !== 'paid' && st !== 'approved' && st !== 'pago' && st !== 'concluido') return false;
+            } else if (statusFilter === 'pending') {
+                if (st !== 'pending' && st !== 'aguardando') return false;
+            }
+
+            return true;
+        });
+
+        // 5. Agregações e Métricas
+        const totalSalesCount = filtered.length;
+        const totalRevenueCents = filtered.reduce((acc, s) => acc + getSaleAmountCents(s), 0);
+        const totalRevenue = totalRevenueCents / 100;
+        const avgTicket = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
+
+        const paidSalesCount = filtered.filter(s => {
+            const st = (s.paymentStatus || '').toLowerCase();
+            return st === 'paid' || st === 'approved' || st === 'pago' || st === 'concluido';
+        }).length;
+        const approvalRate = totalSalesCount > 0 ? Math.round((paidSalesCount / totalSalesCount) * 100) : 0;
+
+        const gradAgg = {};
+        const unitAgg = {};
+        const instAgg = {};
+        const prodAgg = {};
+        const catAgg = {};
+        const payAgg = {};
+        const dowRevenue = [0, 0, 0, 0, 0, 0, 0];
+        const dowDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+        filtered.forEach(s => {
+            const amt = getSaleAmountCents(s) / 100;
+
+            // Graduação
+            const g = getSaleGrad(s);
+            if (!gradAgg[g]) gradAgg[g] = { count: 0, revenue: 0 };
+            gradAgg[g].count += 1;
+            gradAgg[g].revenue += amt;
+
+            // Unidade
+            const u = s.userUnit || s.unit || s.unidade || 'Outras Unidades';
+            if (!unitAgg[u]) unitAgg[u] = { count: 0, revenue: 0 };
+            unitAgg[u].count += 1;
+            unitAgg[u].revenue += amt;
+
+            // Instrutor
+            const inst = s.userProfessor || s.professor || s.selectedProfessor || s.instructor || 'Venda Direta';
+            if (!instAgg[inst]) instAgg[inst] = { count: 0, revenue: 0 };
+            instAgg[inst].count += 1;
+            instAgg[inst].revenue += amt;
+
+            // Produto e Categoria
+            const pName = s.productName || 'Produto Geral';
+            const cName = getSaleCat(s);
+            if (!prodAgg[pName]) prodAgg[pName] = { count: 0, revenue: 0, category: cName };
+            prodAgg[pName].count += 1;
+            prodAgg[pName].revenue += amt;
+
+            if (!catAgg[cName]) catAgg[cName] = { count: 0, revenue: 0 };
+            catAgg[cName].count += 1;
+            catAgg[cName].revenue += amt;
+
+            if (s.recommendedItems && Array.isArray(s.recommendedItems)) {
+                s.recommendedItems.forEach(item => {
+                    const rName = item.productName || 'Item Extra';
+                    const rPrice = (item.price || 0) * (item.quantity || 1);
+                    const rCat = getSaleCat({ productName: rName, ...item });
+                    if (!prodAgg[rName]) prodAgg[rName] = { count: 0, revenue: 0, category: rCat };
+                    prodAgg[rName].count += (item.quantity || 1);
+                    prodAgg[rName].revenue += rPrice;
+
+                    if (!catAgg[rCat]) catAgg[rCat] = { count: 0, revenue: 0 };
+                    catAgg[rCat].count += (item.quantity || 1);
+                    catAgg[rCat].revenue += rPrice;
+                });
+            }
+
+            // Método de pagamento
+            const pm = getPayMethod(s);
+            if (!payAgg[pm]) payAgg[pm] = { count: 0, revenue: 0 };
+            payAgg[pm].count += 1;
+            payAgg[pm].revenue += amt;
+
+            // Dia da semana
+            const d = getSaleDate(s);
+            if (d) {
+                dowRevenue[d.getDay()] += amt;
+            }
+        });
+
+        const fmtCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        // Graduações ordenadas por número de compras (volume) e faturamento
+        const sortedGraduations = Object.entries(gradAgg).map(([gName, data]) => ({
+            graduation: gName,
+            salesCount: data.count,
+            percentOfSales: totalSalesCount > 0 ? `${((data.count / totalSalesCount) * 100).toFixed(1)}%` : '0%',
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.salesCount - a.salesCount || b.revenue - a.revenue);
+
+        // Unidades
+        const sortedUnits = Object.entries(unitAgg).map(([uName, data]) => ({
+            unit: uName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        // Instrutores
+        const sortedInstructors = Object.entries(instAgg).map(([iName, data]) => ({
+            instructor: iName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        // Produtos
+        const sortedProducts = Object.entries(prodAgg).map(([pName, data]) => ({
+            productName: pName,
+            category: data.category,
+            unitsSold: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue)
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        // Categorias
+        const sortedCategories = Object.entries(catAgg).map(([cName, data]) => ({
+            category: cName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        // Pagamentos
+        const paymentMethods = Object.entries(payAgg).map(([pMethod, data]) => ({
+            method: pMethod,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        // Melhor dia da semana
+        let maxDowIdx = 0;
+        let maxDowVal = 0;
+        dowRevenue.forEach((rev, idx) => {
+            if (rev > maxDowVal) {
+                maxDowVal = rev;
+                maxDowIdx = idx;
+            }
+        });
+
+        const topGraduationBySales = sortedGraduations[0] || null;
+        const topGraduationByRevenue = [...sortedGraduations].sort((a, b) => b.revenue - a.revenue)[0] || null;
+        const topUnit = sortedUnits[0] || null;
+        const topInstructor = sortedInstructors[0] || null;
+
+        return {
+            summary: {
+                period: periodLabel,
+                totalRevenue: totalRevenue,
+                totalRevenueFormatted: fmtCurrency(totalRevenue),
+                totalSalesCount: totalSalesCount,
+                paidSalesCount: paidSalesCount,
+                avgTicket: avgTicket,
+                avgTicketFormatted: fmtCurrency(avgTicket),
+                approvalRate: `${approvalRate}%`,
+                appliedFilters: {
+                    unit: unit || 'Todas as Unidades',
+                    instructor: instructor || 'Todos os Instrutores',
+                    graduation: graduation || 'Todas as Graduações',
+                    status: statusFilter
+                }
+            },
+            graduationsRanking: sortedGraduations,
+            topGraduation: {
+                mostSales: topGraduationBySales ? {
+                    graduation: topGraduationBySales.graduation,
+                    salesCount: topGraduationBySales.salesCount,
+                    percentOfSales: topGraduationBySales.percentOfSales,
+                    revenueFormatted: topGraduationBySales.revenueFormatted,
+                    avgTicketFormatted: topGraduationBySales.avgTicketFormatted
+                } : null,
+                highestRevenue: topGraduationByRevenue ? {
+                    graduation: topGraduationByRevenue.graduation,
+                    revenueFormatted: topGraduationByRevenue.revenueFormatted,
+                    percentOfRevenue: topGraduationByRevenue.percentOfRevenue,
+                    salesCount: topGraduationByRevenue.salesCount,
+                    avgTicketFormatted: topGraduationByRevenue.avgTicketFormatted
+                } : null
+            },
+            unitsRanking: sortedUnits.slice(0, 8),
+            topUnit: topUnit ? { unit: topUnit.unit, revenueFormatted: topUnit.revenueFormatted, salesCount: topUnit.salesCount } : null,
+            instructorsRanking: sortedInstructors.slice(0, 8),
+            topInstructor: topInstructor ? { instructor: topInstructor.instructor, revenueFormatted: topInstructor.revenueFormatted, salesCount: topInstructor.salesCount } : null,
+            productsRanking: sortedProducts.slice(0, 10),
+            categoriesRanking: sortedCategories,
+            paymentMethods: paymentMethods,
+            strongestDayOfWeek: {
+                day: dowDays[maxDowIdx],
+                revenueFormatted: fmtCurrency(maxDowVal)
+            },
+            message: `BI da Kihap Store processado com sucesso para o período "${periodLabel}". Faturamento total de ${fmtCurrency(totalRevenue)} em ${totalSalesCount} transações.`
+        };
+
+    } catch (e) {
+        console.error("Erro ao processar BI da Store no Kobe:", e);
+        return { error: e.message };
+    }
+}
+
 async function callGemini(history, systemInstruction, apiKey) {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -2462,11 +2869,25 @@ function setupKobeChatbotLogic() {
         return { spend, cpr, clicks, msgs, likes, campaigns };
     }
 
+    function getStoreKpisFromDOM() {
+        const kpis = { revenue: '', sales: '', avgTicket: '', topUnit: '', topInstructor: '' };
+        const kpiCards = document.querySelectorAll('#bi-kpi-container > div');
+        if (kpiCards.length >= 5) {
+            kpis.revenue = kpiCards[0]?.querySelector('p.text-xl, p.text-2xl')?.textContent?.trim() || '';
+            kpis.sales = kpiCards[1]?.querySelector('p.text-xl, p.text-2xl')?.textContent?.trim() || '';
+            kpis.avgTicket = kpiCards[2]?.querySelector('p.text-xl, p.text-2xl')?.textContent?.trim() || '';
+            kpis.topUnit = kpiCards[3]?.querySelector('p.text-lg, p.text-xl')?.textContent?.trim() || '';
+            kpis.topInstructor = kpiCards[4]?.querySelector('p.text-lg, p.text-xl')?.textContent?.trim() || '';
+        }
+        return kpis;
+    }
+
     async function triggerWelcomeMessage() {
         chatTypingIndicator.classList.remove('hidden');
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
         const isMetaAdsPage = window.location.pathname.includes('marketing-social.html');
+        const isStorePage = window.location.pathname.includes('store.html') || window.location.pathname.includes('/store');
         let prompt = '';
 
         const currentUserStr = localStorage.getItem('currentUser');
@@ -2487,6 +2908,28 @@ Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o ass
 Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
 
 Por favor, faça uma saudação muito amigável como Kobe e forneça um resumo rápido do desempenho atual da conta com 2 insights principais e 1 recomendação de ação imediata. Mantenha a resposta concisa.
+`;
+        } else if (isStorePage) {
+            const kpis = getStoreKpisFromDOM();
+            prompt = `
+Olá! Faça uma análise inicial de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial da Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma calorosa e pessoal pelo nome.
+Como o usuário está na página da Kihap Store (Business Intelligence & Vendas), dê as boas-vindas com foco em negócios e gestão comercial da escola.
+${kpis.revenue ? `Mencione brevemente os dados atuais visíveis no painel de BI da Store:
+- Faturamento Total: ${kpis.revenue}
+- Total de Vendas: ${kpis.sales}
+- Ticket Médio: ${kpis.avgTicket}
+- Top Unidade: ${kpis.topUnit}
+- Top Instrutor: ${kpis.topInstructor}` : 'Destaque que você possui acesso total ao Business Intelligence da Kihap Store.'}
+
+Informe com entusiasmo que você consegue analisar profundamente o Business Intelligence da Store e responder perguntas estratégicas como:
+- "Qual graduação ou faixa mais compra produtos na loja?"
+- "Qual o faturamento e ticket médio do período?"
+- "Qual unidade ou instrutor lidera as vendas?"
+- "Quais são os produtos e categorias mais vendidos?"
+
+Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
+
+Mantenha a saudação curta, amigável, entusiasmada e prestativa.
 `;
         } else {
             const pageTitle = document.title || 'Intranet Kihap';
@@ -2521,7 +2964,7 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
 
             chatHistory.push({
                 role: 'user',
-                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : `Boas-vindas à página ${document.title || 'Intranet'}` }]
+                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : (isStorePage ? "Analise o Business Intelligence da Kihap Store." : `Boas-vindas à página ${document.title || 'Intranet'}`) }]
             });
             chatHistory.push({
                 role: 'model',
@@ -2657,6 +3100,8 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                         result = await searchStoreOrders(args);
                     } else if (funcName === "getStoreOrderDetails") {
                         result = await getStoreOrderDetails(args);
+                    } else if (funcName === "getStoreBusinessIntelligence") {
+                        result = await getStoreBusinessIntelligence(args);
                     } else if (funcName === "createSupportTicket") {
                         result = await createSupportTicket(args);
                     } else if (funcName === "searchLessonPlans") {

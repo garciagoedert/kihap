@@ -875,6 +875,7 @@ export async function setupStorePage() {
                 querySnapshot = await getDocs(collection(db, 'inscricoesFaixaPreta'));
             }
             allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            window.allSales = allSales;
             allSales.sort((a, b) => {
                 const getTime = (val) => {
                     if (!val) return 0;
@@ -1126,6 +1127,7 @@ export async function setupStorePage() {
             const q = query(collection(db, 'products'), orderBy('name', 'asc'));
             const querySnapshot = await getDocs(q);
             allProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            window.allProducts = allProducts;
             sortProductsByOrder(allProducts);
             applyProductsFilter();
         } catch (error) {
