@@ -2956,7 +2956,17 @@ Requisitos:
                 <input type="number" name="variant-pix-price" placeholder="⚡ Pix (opcional)" value="${pixPrice !== undefined && pixPrice !== null ? pixPrice : ''}" class="w-full pl-3 pr-2 py-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <span class="text-[9px] font-bold text-emerald-500 absolute right-2 top-2 pointer-events-none">⚡ Pix</span>
             </div>
-            <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-2"><i class="fas fa-trash-alt"></i></button>
+            <div class="flex items-center gap-1 justify-end">
+                <button type="button" class="move-variant-up-btn text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition" title="Mover para cima">
+                    <i class="fas fa-arrow-up text-xs pointer-events-none"></i>
+                </button>
+                <button type="button" class="move-variant-down-btn text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition" title="Mover para baixo">
+                    <i class="fas fa-arrow-down text-xs pointer-events-none"></i>
+                </button>
+                <button type="button" class="remove-price-variant-btn text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Remover variação">
+                    <i class="fas fa-trash-alt text-xs pointer-events-none"></i>
+                </button>
+            </div>
         `;
         priceVariantsList.appendChild(variantItem);
         refreshDiffPricingVariantTabs();
@@ -2965,9 +2975,9 @@ Requisitos:
     if (addPriceVariantBtn) addPriceVariantBtn.addEventListener('click', () => addPriceVariant());
 
     if (priceVariantsList) priceVariantsList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-price-variant-btn') || e.target.closest('.remove-price-variant-btn')) {
-            const btn = e.target.classList.contains('remove-price-variant-btn') ? e.target : e.target.closest('.remove-price-variant-btn');
-            btn.closest('.price-variant-item').remove();
+        const removeBtn = e.target.closest('.remove-price-variant-btn');
+        if (removeBtn) {
+            removeBtn.closest('.price-variant-item').remove();
             setTimeout(() => {
                 const remaining = priceVariantsList.querySelectorAll('.price-variant-item');
                 if (activeDiffVariantIndex >= remaining.length) {
@@ -2977,7 +2987,41 @@ Requisitos:
                 if (remaining.length > 0) {
                     loadVariantDiffPricingToInputs(activeDiffVariantIndex);
                 }
+                refreshAllEventSlotDropdowns();
             }, 50);
+            return;
+        }
+
+        const moveUpBtn = e.target.closest('.move-variant-up-btn');
+        if (moveUpBtn) {
+            const item = moveUpBtn.closest('.price-variant-item');
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('price-variant-item')) {
+                saveActiveVariantDiffPricing();
+                item.parentNode.insertBefore(item, prev);
+                const allItems = Array.from(priceVariantsList.querySelectorAll('.price-variant-item'));
+                activeDiffVariantIndex = allItems.indexOf(item);
+                refreshDiffPricingVariantTabs();
+                loadVariantDiffPricingToInputs(activeDiffVariantIndex);
+                refreshAllEventSlotDropdowns();
+            }
+            return;
+        }
+
+        const moveDownBtn = e.target.closest('.move-variant-down-btn');
+        if (moveDownBtn) {
+            const item = moveDownBtn.closest('.price-variant-item');
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('price-variant-item')) {
+                saveActiveVariantDiffPricing();
+                item.parentNode.insertBefore(next, item);
+                const allItems = Array.from(priceVariantsList.querySelectorAll('.price-variant-item'));
+                activeDiffVariantIndex = allItems.indexOf(item);
+                refreshDiffPricingVariantTabs();
+                loadVariantDiffPricingToInputs(activeDiffVariantIndex);
+                refreshAllEventSlotDropdowns();
+            }
+            return;
         }
     });
 
@@ -2991,7 +3035,11 @@ Requisitos:
             <input type="text" name="lote-name" placeholder="Nome do Lote" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
             <input type="number" name="lote-price" placeholder="Preço (centavos)" value="${price}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isLotePrice ? 'required' : ''}>
             <input type="date" name="lote-start-date" value="${startDate}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 col-span-3 text-xs font-bold uppercase mt-1 flex items-center gap-1 justify-end"><i class="fas fa-trash-alt"></i> Remover</button>
+            <div class="col-span-3 flex items-center justify-end gap-1.5 mt-1">
+                <button type="button" class="move-lote-up-btn text-gray-400 hover:text-blue-500 p-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para cima"><i class="fas fa-arrow-up pointer-events-none"></i></button>
+                <button type="button" class="move-lote-down-btn text-gray-400 hover:text-blue-500 p-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para baixo"><i class="fas fa-arrow-down pointer-events-none"></i></button>
+                <button type="button" class="remove-lote-btn text-red-500 hover:text-red-400 text-xs font-bold uppercase flex items-center gap-1 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition"><i class="fas fa-trash-alt"></i> Remover</button>
+            </div>
         `;
         lotesList.appendChild(loteItem);
     };
@@ -2999,8 +3047,31 @@ Requisitos:
     if (addLoteBtn) addLoteBtn.addEventListener('click', () => addLote());
 
     if (lotesList) lotesList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-lote-btn')) {
-            e.target.closest('.lote-item').remove();
+        const removeBtn = e.target.closest('.remove-lote-btn');
+        if (removeBtn) {
+            removeBtn.closest('.lote-item').remove();
+            setTimeout(refreshAllEventSlotDropdowns, 50);
+            return;
+        }
+        const moveUpBtn = e.target.closest('.move-lote-up-btn');
+        if (moveUpBtn) {
+            const item = moveUpBtn.closest('.lote-item');
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('lote-item')) {
+                item.parentNode.insertBefore(item, prev);
+                refreshAllEventSlotDropdowns();
+            }
+            return;
+        }
+        const moveDownBtn = e.target.closest('.move-lote-down-btn');
+        if (moveDownBtn) {
+            const item = moveDownBtn.closest('.lote-item');
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('lote-item')) {
+                item.parentNode.insertBefore(next, item);
+                refreshAllEventSlotDropdowns();
+            }
+            return;
         }
     });
 
@@ -3012,7 +3083,11 @@ Requisitos:
         itemRow.innerHTML = `
             <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
             <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
+            <div class="flex items-center gap-1 justify-end">
+                <button type="button" class="move-kit-up-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para cima"><i class="fas fa-arrow-up text-xs pointer-events-none"></i></button>
+                <button type="button" class="move-kit-down-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para baixo"><i class="fas fa-arrow-down text-xs pointer-events-none"></i></button>
+                <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Remover"><i class="fas fa-times pointer-events-none"></i></button>
+            </div>
         `;
         kitItemsList.appendChild(itemRow);
     };
@@ -3020,8 +3095,28 @@ Requisitos:
     if (addKitItemBtn) addKitItemBtn.addEventListener('click', () => addKitItemRow());
 
     if (kitItemsList) kitItemsList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-kit-item-btn')) {
-            e.target.closest('.kit-item-row').remove();
+        const removeBtn = e.target.closest('.remove-kit-item-btn');
+        if (removeBtn) {
+            removeBtn.closest('.kit-item-row').remove();
+            return;
+        }
+        const moveUpBtn = e.target.closest('.move-kit-up-btn');
+        if (moveUpBtn) {
+            const item = moveUpBtn.closest('.kit-item-row');
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('kit-item-row')) {
+                item.parentNode.insertBefore(item, prev);
+            }
+            return;
+        }
+        const moveDownBtn = e.target.closest('.move-kit-down-btn');
+        if (moveDownBtn) {
+            const item = moveDownBtn.closest('.kit-item-row');
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('kit-item-row')) {
+                item.parentNode.insertBefore(next, item);
+            }
+            return;
         }
     });
 
@@ -3032,7 +3127,11 @@ Requisitos:
         addonItem.innerHTML = `
             <input type="text" name="addon-name" placeholder="Nome do Addon" value="${name}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             <input type="number" name="addon-price" placeholder="Preço (centavos)" value="${price}" class="w-1/2 px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button>
+            <div class="flex items-center gap-1 justify-end">
+                <button type="button" class="move-addon-up-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para cima"><i class="fas fa-arrow-up text-xs pointer-events-none"></i></button>
+                <button type="button" class="move-addon-down-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para baixo"><i class="fas fa-arrow-down text-xs pointer-events-none"></i></button>
+                <button type="button" class="remove-addon-btn text-red-500 hover:text-red-400 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Remover"><i class="fas fa-times pointer-events-none"></i></button>
+            </div>
         `;
         addonsList.appendChild(addonItem);
     };
@@ -3040,8 +3139,28 @@ Requisitos:
     if (addAddonBtn) addAddonBtn.addEventListener('click', () => addAddon());
 
     if (addonsList) addonsList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-addon-btn')) {
-            e.target.closest('.addon-item').remove();
+        const removeBtn = e.target.closest('.remove-addon-btn');
+        if (removeBtn) {
+            removeBtn.closest('.addon-item').remove();
+            return;
+        }
+        const moveUpBtn = e.target.closest('.move-addon-up-btn');
+        if (moveUpBtn) {
+            const item = moveUpBtn.closest('.addon-item');
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('addon-item')) {
+                item.parentNode.insertBefore(item, prev);
+            }
+            return;
+        }
+        const moveDownBtn = e.target.closest('.move-addon-down-btn');
+        if (moveDownBtn) {
+            const item = moveDownBtn.closest('.addon-item');
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('addon-item')) {
+                item.parentNode.insertBefore(next, item);
+            }
+            return;
         }
     });
 

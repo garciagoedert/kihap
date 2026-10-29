@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Torcida Kihap • Envie Energia pro Telão</title>
+    <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
+
+    <!-- Tailwind CSS CDN para o mobile -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kihap: {
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            dark: '#070709',
+                            card: '#121218',
+                            border: '#23232c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #070709;
+            color: #f3f4f6;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+        }
+
+        .gold-glow {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.45);
+        }
+
+        .btn-reaction {
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-reaction:active {
+            transform: scale(0.92);
+        }
+
+        .tap-combo-counter {
+            animation: comboPop 0.25s ease;
+        }
+
+        @keyframes comboPop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        /* Animação de confete ao enviar */
+        .celebration-toast {
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-8 select-none">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-40 bg-[#070709]/95 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <img src="/imgs/logo.png" alt="Kihap" class="h-9 w-auto" onerror="this.style.display='none'">
+            <div>
+                <h1 class="text-base font-black tracking-wider uppercase text-white leading-tight">
+                    Torcida <span class="text-amber-400">Kihap</span>
+                </h1>
+                <p class="text-[10px] uppercase tracking-widest text-gray-400">Espetáculo de Artes Marciais</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/10 border border-red-500/30 rounded-full">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Telão Ao Vivo</span>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 max-w-md w-full mx-auto px-4 pt-4 space-y-5">
+        
+        <!-- Banner de Orientação -->
+        <div class="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl shrink-0">
+                <i class="fas fa-tv"></i>
+            </div>
+            <div>
+                <h2 class="text-sm font-extrabold text-white">Sua torcida aparece no telão!</h2>
+                <p class="text-xs text-gray-400 leading-snug">Escolha um aluno, selecione sua energia e acompanhe no painel de LED do evento.</p>
+            </div>
+        </div>
+
+        <!-- Passo 1: Selecionar Aluno -->
+        <section class="space-y-2.5">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[11px] font-black flex items-center justify-center">1</span>
+                    Escolha o Aluno
+                </label>
+                <button id="btn-torcer-geral" class="text-xs text-gray-400 hover:text-amber-400 underline transition">
+                    Torcer por Todos
+                </button>
+            </div>
+
+            <!-- Aluno Selecionado Card -->
+            <div id="aluno-selecionado-card" class="bg-[#121218] border-2 border-amber-400 rounded-2xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-400 font-mono font-black text-sm flex items-center justify-center border border-amber-400/30" id="card-bib">
+                        001
+                    </div>
+                    <div>
+                        <h3 id="card-nome" class="font-extrabold text-white text-sm leading-snug">Lucas Andrade Silva</h3>
+                        <p id="card-meta" class="text-xs text-gray-400">Faixa Preta 1º Dan • Asa Sul</p>
+                    </div>
+                </div>
+                <button id="btn-trocar-aluno" class="text-xs text-amber-400 font-bold bg-amber-400/10 px-3 py-1.5 rounded-lg border border-amber-400/20">
+                    Trocar
+                </button>
+            </div>
+
+            <!-- Busca & Lista de Alunos (Modal / Dropdown rápido) -->
+            <div id="busca-alunos-container" class="hidden bg-[#121218] border border-white/15 rounded-2xl p-3 space-y-2">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+                    <input type="text" id="input-busca-aluno" placeholder="Buscar por nome ou número..." 
+                        class="w-full bg-black/60 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div id="lista-alunos-dropdown" class="max-h-52 overflow-y-auto space-y-1 pr-1">
+                    <!-- Gerado via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Passo 2: Selecionar Energia / Reação -->
+        <section class="space-y-2.5">
+            <label class="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[11px] font-black flex items-center justify-center">2</span>
+                Selecione sua Energia
+            </label>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                
+                <button class="btn-reaction flex items-center gap-3 p-3 bg-[#121218] hover:bg-[#1a1a24] border border-amber-400/40 rounded-xl text-left active:border-amber-400" data-reacao="fogo" data-pontos="50">
+                    <span class="text-2xl">🔥</span>
+                    <div>
+                        <div class="text-xs font-black text-white">KIHAP MÁXIMO</div>
+                        <div class="text-[10px] text-amber-400 font-bold">+50 KI PTS</div>
+                    </div>
+                </button>
+
+                <button class="btn-reaction flex items-center gap-3 p-3 bg-[#121218] hover:bg-[#1a1a24] border border-white/10 rounded-xl text-left active:border-amber-400" data-reacao="palmas" data-pontos="30">
+                    <span class="text-2xl">👏</span>
+                    <div>
+                        <div class="text-xs font-black text-white">APLAUSOS</div>
+                        <div class="text-[10px] text-amber-400 font-bold">+30 KI PTS</div>
+                    </div>
+                </button>
+
+                <button class="btn-reaction flex items-center gap-3 p-3 bg-[#121218] hover:bg-[#1a1a24] border border-white/10 rounded-xl text-left active:border-amber-400" data-reacao="raio" data-pontos="40">
+                    <span class="text-2xl">⚡</span>
+                    <div>
+                        <div class="text-xs font-black text-white">FORÇA TOTAL</div>
+                        <div class="text-[10px] text-amber-400 font-bold">+40 KI PTS</div>
+                    </div>
+                </button>
+
+                <button class="btn-reaction flex items-center gap-3 p-3 bg-[#121218] hover:bg-[#1a1a24] border border-white/10 rounded-xl text-left active:border-amber-400" data-reacao="trofeu" data-pontos="50">
+                    <span class="text-2xl">🏆</span>
+                    <div>
+                        <div class="text-xs font-black text-white">ORGULHO</div>
+                        <div class="text-[10px] text-amber-400 font-bold">+50 KI PTS</div>
+                    </div>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Passo 3: Mensagem e Nome do Convidado -->
+        <section class="space-y-2.5">
+            <label class="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[11px] font-black flex items-center justify-center">3</span>
+                Identificação & Grito de Torcida
+            </label>
+
+            <div class="space-y-2 bg-[#121218] border border-white/10 rounded-2xl p-3.5">
+                <div>
+                    <label class="text-[11px] font-bold text-gray-400 block mb-1">Seu Nome ou Família:</label>
+                    <input type="text" id="input-autor" placeholder="Ex: Família Silva, Pai, Tia Ju..." 
+                        class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-gray-400 block mb-1">Mensagem Curta pro Telão:</label>
+                    <input type="text" id="input-mensagem" maxlength="50" placeholder="Ex: Arrasa guerreiro! Orgulho demais!" 
+                        class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+                </div>
+            </div>
+        </section>
+
+        <!-- Botão Principal de Disparo -->
+        <div class="pt-2">
+            <button id="btn-enviar-torcida" class="w-full py-4 gold-gradient gold-glow text-black font-black text-base uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition">
+                <i class="fas fa-paper-plane"></i>
+                <span>Enviar Energia pro Telão!</span>
+            </button>
+            <div id="combo-display" class="hidden text-center mt-2 text-xs font-extrabold text-amber-400 tap-combo-counter">
+                COMBO x<span id="combo-num">1</span>! CONTINUE CLICANDO! 🔥
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Feedback Toast Flutuante -->
+    <div id="feedback-toast" class="hidden fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 celebration-toast">
+        <div class="bg-gradient-to-r from-amber-600 to-amber-500 text-black font-black p-4 rounded-2xl shadow-2xl flex items-center gap-3">
+            <div class="text-2xl">✨</div>
+            <div class="flex-1">
+                <div class="text-sm font-black uppercase">Energia Enviada!</div>
+                <div class="text-xs font-semibold text-black/80">Olhe para o telão agora! Seu carinho está brilhando lá.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/interatividade/dados-alunos.js"></script>
+    <script src="/interatividade/sync.js"></script>
+    <script src="/interatividade/torcida.js"></script>
+</body>
+</html>

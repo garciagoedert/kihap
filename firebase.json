@@ -15,6 +15,14 @@
     ],
     "rewrites": [
       {
+        "source": "/interatividade",
+        "destination": "/interatividade/index.html"
+      },
+      {
+        "source": "/interatividade/torcida",
+        "destination": "/interatividade/torcida.html"
+      },
+      {
         "source": "/:path((?!.*\\.).*)",
         "destination": "/:path.html"
       }
