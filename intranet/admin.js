@@ -14,6 +14,16 @@ let cachedUsers = [];
 let cachedLoginLogs = [];
 let cachedQuotes = [];
 
+const normalizeDanBelt = (b) => {
+    if (!b) return '';
+    const trimmed = b.trim();
+    const m = trimmed.match(/^(\d+)(?:º|o)?\s*Dan\s*(?:Preta)?$/i);
+    if (m) return `Preta ${m[1]}º Dan`;
+    const m2 = trimmed.match(/^Preta\s*(\d+)(?:º|o)?\s*Dan$/i);
+    if (m2) return `Preta ${m2[1]}º Dan`;
+    return trimmed;
+};
+
 function continueSetup() {
     console.log('[AdminCheck] Inicializando painel administrativo...');
     
@@ -74,57 +84,126 @@ function continueSetup() {
         });
     }
 
-    // Controle de exibição e seleção de subpermissões da Store
-    if (isStoreInput && storeSubContainer) {
-        isStoreInput.addEventListener('change', () => {
-            if (isStoreInput.checked) {
-                storeSubContainer.classList.remove('hidden');
-                if (!isStoreLojaInput.checked && !isStorePedidosInput.checked && !isStoreAssinaturasInput.checked && !isStoreEstoqueInput.checked) {
-                    isStoreLojaInput.checked = true;
-                    isStorePedidosInput.checked = true;
-                    isStoreAssinaturasInput.checked = true;
-                    isStoreEstoqueInput.checked = true;
-                }
+    const MODULE_NAMES = ['marketing', 'administrativo', 'store', 'tatame', 'rh', 'juridico', 'social', 'geral'];
+
+    function updateModulePermBadge(moduleName) {
+        const pageInputs = document.querySelectorAll(`.page-perm-checkbox[data-module="${moduleName}"]`);
+        const badge = document.getElementById(`badge-perm-${moduleName}`);
+        const moduleCheckbox = document.querySelector(`.module-toggle-checkbox[data-module="${moduleName}"]`);
+        if (!pageInputs.length) return;
+
+        const checkedCount = Array.from(pageInputs).filter(inp => inp.checked).length;
+        const totalCount = pageInputs.length;
+
+        if (badge) {
+            badge.textContent = `${checkedCount}/${totalCount}`;
+            if (checkedCount > 0) {
+                badge.classList.remove('opacity-50');
             } else {
-                storeSubContainer.classList.add('hidden');
-                if (isStoreLojaInput) isStoreLojaInput.checked = false;
-                if (isStorePedidosInput) isStorePedidosInput.checked = false;
-                if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
-                if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+                badge.classList.add('opacity-50');
             }
+        }
+
+        if (moduleCheckbox) {
+            moduleCheckbox.checked = checkedCount > 0;
+            moduleCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        }
+    }
+
+    function updateAllModuleBadges() {
+        MODULE_NAMES.forEach(mod => updateModulePermBadge(mod));
+    }
+
+    function setupGranularPermissionListeners() {
+        // 1. Checkbox do módulo: ao marcar/desmarcar, marca/desmarca todas as páginas do módulo
+        document.querySelectorAll('.module-toggle-checkbox').forEach(modCb => {
+            modCb.addEventListener('change', () => {
+                const moduleName = modCb.dataset.module;
+                const pageInputs = document.querySelectorAll(`.page-perm-checkbox[data-module="${moduleName}"]`);
+                const isChecked = modCb.checked;
+
+                pageInputs.forEach(inp => {
+                    inp.checked = isChecked;
+                });
+
+                if (isChecked) {
+                    const content = document.getElementById(`perm-content-${moduleName}`);
+                    if (content) content.classList.remove('hidden');
+                }
+
+                updateModulePermBadge(moduleName);
+            });
         });
 
-        const storeSubInputs = [isStoreLojaInput, isStorePedidosInput, isStoreAssinaturasInput, isStoreEstoqueInput];
-        storeSubInputs.forEach(input => {
-            input?.addEventListener('change', () => {
-                const anyChecked = storeSubInputs.some(inp => inp && inp.checked);
-                if (anyChecked) {
-                    isStoreInput.checked = true;
-                } else {
-                    isStoreInput.checked = false;
-                    storeSubContainer.classList.add('hidden');
+        // 2. Checkboxes individuais de cada página
+        document.querySelectorAll('.page-perm-checkbox').forEach(pageCb => {
+            pageCb.addEventListener('change', () => {
+                const moduleName = pageCb.dataset.module;
+                if (moduleName) {
+                    updateModulePermBadge(moduleName);
                 }
             });
         });
 
-        const checkAllBtn = document.getElementById('store-sub-check-all');
-        const uncheckAllBtn = document.getElementById('store-sub-uncheck-all');
-        if (checkAllBtn) {
-            checkAllBtn.addEventListener('click', (e) => {
+        // 3. Botões "Todas" e "Nenhuma" por módulo
+        document.querySelectorAll('.btn-check-all').forEach(btn => {
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                storeSubInputs.forEach(inp => { if (inp) inp.checked = true; });
-                isStoreInput.checked = true;
+                const moduleName = btn.dataset.checkAll;
+                const pageInputs = document.querySelectorAll(`.page-perm-checkbox[data-module="${moduleName}"]`);
+                pageInputs.forEach(inp => { inp.checked = true; });
+                const content = document.getElementById(`perm-content-${moduleName}`);
+                if (content) content.classList.remove('hidden');
+                updateModulePermBadge(moduleName);
+            });
+        });
+
+        document.querySelectorAll('.btn-uncheck-all').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const moduleName = btn.dataset.uncheckAll;
+                const pageInputs = document.querySelectorAll(`.page-perm-checkbox[data-module="${moduleName}"]`);
+                pageInputs.forEach(inp => { inp.checked = false; });
+                updateModulePermBadge(moduleName);
+            });
+        });
+
+        // 4. Accordion expand/collapse chevrons
+        document.querySelectorAll('[data-toggle-accordion]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const moduleName = btn.dataset.toggleAccordion;
+                const content = document.getElementById(`perm-content-${moduleName}`);
+                const icon = btn.querySelector('i');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    if (icon) {
+                        icon.classList.toggle('rotate-180');
+                    }
+                }
+            });
+        });
+
+        // 5. Botões globais de marcar/desmarcar tudo
+        const selectAllBtn = document.getElementById('perm-select-all-modules');
+        const unselectAllBtn = document.getElementById('perm-unselect-all-modules');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.page-perm-checkbox').forEach(inp => { inp.checked = true; });
+                updateAllModuleBadges();
             });
         }
-        if (uncheckAllBtn) {
-            uncheckAllBtn.addEventListener('click', (e) => {
+        if (unselectAllBtn) {
+            unselectAllBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                storeSubInputs.forEach(inp => { if (inp) inp.checked = false; });
-                isStoreInput.checked = false;
-                storeSubContainer.classList.add('hidden');
+                document.querySelectorAll('.page-perm-checkbox').forEach(inp => { inp.checked = false; });
+                updateAllModuleBadges();
             });
         }
     }
+
+    setupGranularPermissionListeners();
 
     async function renderUsers(filter = '', forceRefresh = false) {
         if (!userTableBody || !userMobileList) return;
@@ -145,16 +224,6 @@ function continueSetup() {
         // Batch DOM Updates using DocumentFragment for better performance
         const tableFragment = document.createDocumentFragment();
         const listFragment = document.createDocumentFragment();
-
-        const normalizeDanBelt = (b) => {
-            if (!b) return '';
-            const trimmed = b.trim();
-            const m = trimmed.match(/^(\d+)(?:º|o)?\s*Dan\s*(?:Preta)?$/i);
-            if (m) return `Preta ${m[1]}º Dan`;
-            const m2 = trimmed.match(/^Preta\s*(\d+)(?:º|o)?\s*Dan$/i);
-            if (m2) return `Preta ${m2[1]}º Dan`;
-            return trimmed;
-        };
 
         filteredUsers.forEach(user => {
             const roles = [];
@@ -286,23 +355,28 @@ function continueSetup() {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
 
         try {
+            const pageCheckboxes = document.querySelectorAll('.page-perm-checkbox:checked');
+            const allowedPages = Array.from(pageCheckboxes).map(cb => cb.value);
+            const hasModule = (mod) => document.querySelectorAll(`.page-perm-checkbox[data-module="${mod}"]:checked`).length > 0;
+
             const userData = {
                 name: nameInput.value,
                 isAdmin: isAdminInput.checked,
                 isInstructor: isInstructorInput.checked,
                 isColarinhoPreto: isColarinhoPretoInput ? isColarinhoPretoInput.checked : false,
-                isRH: isRHInput.checked,
-                isMarketing: isMarketingInput.checked,
-                isFinanceiro: isFinanceiroInput.checked,
-                isAdministrativo: isAdministrativoInput.checked,
-                isStore: isStoreInput.checked,
-                isStoreLoja: isStoreInput.checked && isStoreLojaInput ? isStoreLojaInput.checked : false,
-                isStorePedidos: isStoreInput.checked && isStorePedidosInput ? isStorePedidosInput.checked : false,
-                isStoreAssinaturas: isStoreInput.checked && isStoreAssinaturasInput ? isStoreAssinaturasInput.checked : false,
-                isStoreEstoque: isStoreInput.checked && isStoreEstoqueInput ? isStoreEstoqueInput.checked : false,
-                isAcademy: isAcademyInput.checked,
-                isJuridico: isJuridicoInput.checked,
-                isSuporte: isSuporteInput.checked,
+                isFinanceiro: isFinanceiroInput ? isFinanceiroInput.checked : false,
+                allowedPages: allowedPages,
+                isRH: hasModule('rh'),
+                isMarketing: hasModule('marketing'),
+                isAdministrativo: hasModule('administrativo'),
+                isStore: hasModule('store'),
+                isStoreLoja: allowedPages.includes('store.html'),
+                isStorePedidos: allowedPages.includes('pedidos.html'),
+                isStoreAssinaturas: allowedPages.includes('assinaturas.html'),
+                isStoreEstoque: allowedPages.includes('estoque.html'),
+                isAcademy: allowedPages.includes('cursos.html'),
+                isJuridico: hasModule('juridico'),
+                isSuporte: allowedPages.includes('gestao-suporte') || allowedPages.includes('suporte.html'),
                 unitId: userUnitSelect ? userUnitSelect.value : '',
                 belt: userBeltSelect ? userBeltSelect.value.trim() : '',
                 graduacao: userBeltSelect ? userBeltSelect.value.trim() : ''
@@ -355,12 +429,10 @@ function continueSetup() {
             passwordInput.placeholder = "";
         }
         
-        // Reset subpermissões da Store
-        if (storeSubContainer) storeSubContainer.classList.add('hidden');
-        if (isStoreLojaInput) isStoreLojaInput.checked = false;
-        if (isStorePedidosInput) isStorePedidosInput.checked = false;
-        if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
-        if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+        // Reset permissões de páginas e módulos
+        document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.module-toggle-checkbox').forEach(cb => { cb.checked = false; });
+        updateAllModuleBadges();
         
         // Reset profile preview
         const previewImg = document.getElementById('profile-preview-img');
@@ -401,31 +473,68 @@ function continueSetup() {
                 isAdminInput.checked = user.isAdmin || false;
                 isInstructorInput.checked = user.isInstructor || false;
                 if (isColarinhoPretoInput) isColarinhoPretoInput.checked = user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto || false;
-                isRHInput.checked = user.isRH || false;
-                isMarketingInput.checked = user.isMarketing || false;
-                isFinanceiroInput.checked = user.isFinanceiro || false;
-                isAdministrativoInput.checked = user.isAdministrativo || false;
-                
-                const userIsStore = user.isStore || false;
-                isStoreInput.checked = userIsStore;
-                if (userIsStore) {
-                    if (storeSubContainer) storeSubContainer.classList.remove('hidden');
-                    const hasExplicitSub = user.isStoreLoja !== undefined || user.isStorePedidos !== undefined || user.isStoreAssinaturas !== undefined || user.isStoreEstoque !== undefined;
-                    if (isStoreLojaInput) isStoreLojaInput.checked = hasExplicitSub ? Boolean(user.isStoreLoja) : true;
-                    if (isStorePedidosInput) isStorePedidosInput.checked = hasExplicitSub ? Boolean(user.isStorePedidos) : true;
-                    if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = hasExplicitSub ? Boolean(user.isStoreAssinaturas) : true;
-                    if (isStoreEstoqueInput) isStoreEstoqueInput.checked = hasExplicitSub ? Boolean(user.isStoreEstoque) : true;
+                if (isFinanceiroInput) isFinanceiroInput.checked = user.isFinanceiro || false;
+
+                // Reset all granular checkboxes first
+                document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = false; });
+                document.querySelectorAll('.module-toggle-checkbox').forEach(cb => { cb.checked = false; });
+
+                if (Array.isArray(user.allowedPages)) {
+                    user.allowedPages.forEach(page => {
+                        const cb = document.querySelector(`.page-perm-checkbox[value="${page}"]`);
+                        if (cb) cb.checked = true;
+                    });
                 } else {
-                    if (storeSubContainer) storeSubContainer.classList.add('hidden');
-                    if (isStoreLojaInput) isStoreLojaInput.checked = false;
-                    if (isStorePedidosInput) isStorePedidosInput.checked = false;
-                    if (isStoreAssinaturasInput) isStoreAssinaturasInput.checked = false;
-                    if (isStoreEstoqueInput) isStoreEstoqueInput.checked = false;
+                    // Fallback para usuários legados
+                    if (user.isAdmin) {
+                        document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = true; });
+                    } else {
+                        if (user.isMarketing) {
+                            document.querySelectorAll('.page-perm-checkbox[data-module="marketing"]').forEach(cb => { cb.checked = true; });
+                        }
+                        if (user.isAdministrativo) {
+                            document.querySelectorAll('.page-perm-checkbox[data-module="administrativo"]').forEach(cb => { cb.checked = true; });
+                        }
+                        if (user.isStore) {
+                            const storePerms = typeof getStorePermissions === 'function' ? getStorePermissions(user) : { loja: true, pedidos: true, assinaturas: true, estoque: true };
+                            if (storePerms.loja) {
+                                const cb = document.querySelector('.page-perm-checkbox[value="store.html"]');
+                                if (cb) cb.checked = true;
+                            }
+                            if (storePerms.pedidos) {
+                                const cb = document.querySelector('.page-perm-checkbox[value="pedidos.html"]');
+                                if (cb) cb.checked = true;
+                            }
+                            if (storePerms.assinaturas) {
+                                const cb = document.querySelector('.page-perm-checkbox[value="assinaturas.html"]');
+                                if (cb) cb.checked = true;
+                            }
+                            if (storePerms.estoque) {
+                                const cb = document.querySelector('.page-perm-checkbox[value="estoque.html"]');
+                                if (cb) cb.checked = true;
+                            }
+                        }
+                        if (user.isRH) {
+                            document.querySelectorAll('.page-perm-checkbox[data-module="rh"]').forEach(cb => { cb.checked = true; });
+                        }
+                        if (user.isJuridico) {
+                            document.querySelectorAll('.page-perm-checkbox[data-module="juridico"]').forEach(cb => { cb.checked = true; });
+                        }
+                        if (user.isInstructor || user.isColarinhoPreto || user.isAdministrativo) {
+                            document.querySelectorAll('.page-perm-checkbox[data-module="tatame"]').forEach(cb => { cb.checked = true; });
+                        }
+                        ['alunos.html', 'cursos.html', 'suporte.html', 'chat.html', 'feed.html'].forEach(p => {
+                            const cb = document.querySelector(`.page-perm-checkbox[value="${p}"]`);
+                            if (cb) cb.checked = true;
+                        });
+                        if (user.isSuporte) {
+                            const cb = document.querySelector('.page-perm-checkbox[value="gestao-suporte"]');
+                            if (cb) cb.checked = true;
+                        }
+                    }
                 }
 
-                isAcademyInput.checked = user.isAcademy || false;
-                isJuridicoInput.checked = user.isJuridico || false;
-                isSuporteInput.checked = user.isSuporte || false;
+                updateAllModuleBadges();
                 if (userUnitSelect) userUnitSelect.value = user.unitId || '';
 
                 if (userBeltSelect) {

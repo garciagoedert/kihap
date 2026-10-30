@@ -3249,6 +3249,55 @@ async function getWhatsAppConfig() {
     return DEFAULT_CONFIG;
 }
 
+function detectUnitFromTextGlobal(text) {
+    if (!text || typeof text !== 'string') return null;
+    const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Brasília
+    if (lower.includes('asa sul')) return { unidade: 'Kihap - Asa Sul', praca: 'Brasília' };
+    if (lower.includes('sudoeste')) return { unidade: 'Kihap - Sudoeste', praca: 'Brasília' };
+    if (lower.includes('lago sul')) return { unidade: 'Kihap - Lago Sul', praca: 'Brasília' };
+    if (lower.includes('noroeste')) return { unidade: 'Kihap - Noroeste', praca: 'Brasília' };
+    if (lower.includes('jardim botanico')) return { unidade: 'Kihap - Jardim Botânico', praca: 'Brasília' };
+    if (lower.includes('pontos de ensino') || lower.includes('ponto de ensino')) return { unidade: 'Kihap - Pontos de Ensino', praca: 'Brasília' };
+    
+    // Florianópolis
+    if (lower.includes('coqueiros')) return { unidade: 'Kihap - Coqueiros', praca: 'Florianópolis' };
+    if (lower.includes('santa monica') || lower.includes('santa mônica')) return { unidade: 'Kihap - Santa Mônica', praca: 'Florianópolis' };
+    if (lower.includes('centro') && !lower.includes('dourados')) return { unidade: 'Kihap - Centro (Floripa)', praca: 'Florianópolis' };
+    
+    // Dourados (MS)
+    if (lower.includes('dourados')) return { unidade: 'Kihap - Dourados', praca: 'Dourados' };
+
+    // Cidades/Praças genéricas
+    if (lower.includes('florianopolis') || lower.includes('floripa')) return { unidade: '', praca: 'Florianópolis' };
+    if (lower.includes('brasilia') || lower.includes('bsb') || lower.includes('distrito federal')) return { unidade: '', praca: 'Brasília' };
+
+    return null;
+}
+
+function inferLocationFromPhoneGlobal(phone) {
+    if (!phone || typeof phone !== 'string') return null;
+    const clean = phone.replace(/\D/g, '');
+    let ddd = '';
+    if (clean.startsWith('55') && clean.length >= 4) {
+        ddd = clean.substring(2, 4);
+    } else if (clean.length >= 2) {
+        ddd = clean.substring(0, 2);
+    }
+
+    if (ddd === '67') {
+        return { unidade: 'Kihap - Dourados', praca: 'Dourados' };
+    }
+    if (ddd === '48') {
+        return { unidade: '', praca: 'Florianópolis' };
+    }
+    if (ddd === '61') {
+        return { unidade: '', praca: 'Brasília' };
+    }
+    return null;
+}
+
 exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
     // Only accept POST/PUT/PATCH as per Whapi docs
     if (!['POST', 'PUT', 'PATCH'].includes(req.method)) {
@@ -3322,7 +3371,16 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     await updateDocLog('prospects', prospectsSnapshot.docs[0].id);
                 } else if (!leadsSnapshot.empty) {
                     await updateDocLog('leads', leadsSnapshot.docs[0].id);
-                } else {
+                    // Detecta unidade do anúncio, mensagem ou DDD
+                    let botOffUnit = '';
+                    const detectedBotOff = detectUnitFromTextGlobal((metaHeadline || '') + ' ' + messageText);
+                    if (detectedBotOff && detectedBotOff.unidade) {
+                        botOffUnit = detectedBotOff.unidade;
+                    } else {
+                        const dddBotOff = inferLocationFromPhoneGlobal(cleanPhone);
+                        if (dddBotOff && dddBotOff.unidade) botOffUnit = dddBotOff.unidade;
+                    }
+
                     // Create new prospect even if bot disabled, so we don't lose the lead
                     const newProspect = {
                         responsavel: prospectTitle,
@@ -3332,7 +3390,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                         origemLead: isMetaReferral ? 'Meta Ads WhatsApp (Bot Off)' : 'WhatsApp Inbound (Bot Off)',
                         observacoes: `Mensagem recebida com bot desligado: ${messageText}${metaHeadline ? `\nAnúncio Meta: ${metaHeadline}` : ''}`,
                         ticketEstimado: 0,
-                        unidade: '',
+                        unidade: botOffUnit,
                         tags: isMetaReferral ? ['Meta Ads', 'Bot Desligado'] : ['Bot Desligado'],
                         ctwaClid: ctwaClid || null,
                         metaAdId: metaAdId || null,
@@ -3686,6 +3744,16 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                 const initialLog = [logEntry];
                 if (welcomeLog) initialLog.push(welcomeLog);
 
+                // Detecta unidade do anúncio, mensagem ou DDD
+                let inboundUnit = '';
+                const detectedInbound = detectUnitFromTextGlobal((metaHeadline || '') + ' ' + messageText);
+                if (detectedInbound && detectedInbound.unidade) {
+                    inboundUnit = detectedInbound.unidade;
+                } else {
+                    const dddInbound = inferLocationFromPhoneGlobal(cleanPhone);
+                    if (dddInbound && dddInbound.unidade) inboundUnit = dddInbound.unidade;
+                }
+
                 const newProspect = {
                     responsavel: prospectTitle,
                     telefone: cleanPhone,
@@ -3698,7 +3766,7 @@ exports.whapiWebhook = functions.https.onRequest(async (req, res) => {
                     redesSociais: '',
                     observacoes: `Mensagem inicial: ${messageText}${metaHeadline ? `\nAnúncio Meta: ${metaHeadline}` : ''}`,
                     ticketEstimado: 0,
-                    unidade: '',
+                    unidade: inboundUnit,
                     tags: isMetaReferral ? ['Meta Ads'] : [],
                     ctwaClid: ctwaClid || null,
                     metaAdId: metaAdId || null,
@@ -4809,6 +4877,7 @@ exports.whatsappWebhook = require('./whatsapp.js').whatsappWebhook;
 exports.milesInactivityReminder = require('./whatsapp.js').milesInactivityReminder;
 exports.milesDailyMotivation = require('./whatsapp.js').milesDailyMotivation;
 exports.registerDailyMotivation = require('./whatsapp.js').registerDailyMotivation;
+exports.testUnitNotification = require('./whatsapp.js').testUnitNotification;
 
 /**
  * Trigger de Firestore para disparar eventos de conversão no Meta CAPI quando o status do prospect muda
@@ -4968,11 +5037,28 @@ exports.metaLeadWebhook = functions.https.onRequest(async (req, res) => {
                                             if (name.includes('full_name') || name.includes('nome')) fullName = val;
                                             if (name.includes('phone') || name.includes('telefone') || name.includes('celular')) phone = val;
                                             if (name.includes('email')) email = val;
-                                            if (name.includes('unidade') || name.includes('city') || name.includes('cidade')) unit = val;
+                                            if (name.includes('unidade') || name.includes('city') || name.includes('cidade') || name.includes('bairro') || name.includes('localizacao')) unit = val;
                                         });
+
+                                        // Fallback se o nome do campo for genérico mas o valor indicar uma unidade
+                                        if (!unit) {
+                                            leadData.field_data.forEach(field => {
+                                                const val = field.values ? field.values[0] : '';
+                                                const d = detectUnitFromTextGlobal(val);
+                                                if (d && d.unidade) unit = d.unidade.replace('Kihap - ', '');
+                                            });
+                                        }
                                     }
 
                                     const cleanPhone = phone.replace(/\D/g, '');
+
+                                    // Fallback por DDD se ainda estiver sem unidade
+                                    if (!unit && cleanPhone) {
+                                        const dddInferred = inferLocationFromPhoneGlobal(cleanPhone);
+                                        if (dddInferred && dddInferred.unidade) {
+                                            unit = dddInferred.unidade.replace('Kihap - ', '');
+                                        }
+                                    }
 
                                     // Salvar no Firestore
                                     const newProspect = {

@@ -6,7 +6,7 @@ const db = admin.firestore();
 
 // Credenciais da Meta e Token de Validação do Webhook
 const WHATSAPP_TOKEN = "EAASLYib5SP8BRrg9PdevC18xe4BkFMWQ8d8kMF7hwa1vZAGUpLGZB138qFIkOPr8znZBOeqPV9UvoNsSSFt5v689ZC6iHTMZCIMUHD0vpRZBjZBb3MAaZCV5gQFztvUkJiXsHg6m37KtIFqOmSu6a4lSKCKHhLQlnZARFInzUWZCe7Uf4Od8hf6VFiZCiL35lHVFZCGUnQZDZD";
-const PHONE_NUMBER_ID = "1116033658265418";
+const PHONE_NUMBER_ID = "1176590548868735";
 const VERIFY_TOKEN = "kihap_miles_webhook_token_2026";
 
 const UNIT_MANAGERS = {
@@ -56,18 +56,17 @@ Florianópolis: Centro, Coqueiros, Santa Mônica.
 Mato Grosso do Sul: Dourados.
 
 FLUXO DE ATENDIMENTO OBRIGATÓRIO:
-1. Cumprimentar calorosamente e perguntar o que o visitante busca (para filho? adulto? família?)
-2. Identificar o programa mais adequado e apresentá-lo brevemente com entusiasmo
-3. Convidar para conhecer pessoalmente com uma aula experimental 100% gratuita
-4. Coletar o **nome completo** e **telefone (WhatsApp)** do visitante, e a **unidade de preferência**
-5. Quando tiver nome + telefone + unidade, chamar a ferramenta saveLead() imediatamente para registrar o interesse
-6. Após salvar o lead, OFERECER verificar a grade de horários: chame getSchedule(unidadeKey, categoria) para mostrar as aulas disponíveis com vagas
-7. Se o visitante escolher um horário específico e confirmar, chame bookTrialClass() para agendar a aula experimental diretamente
-8. Após o agendamento, confirmar o horário e informar que a equipe entrará em contato
+1. Cumprimentar calorosamente e perguntar o que o visitante busca (para filho? adulto? família?) e qual unidade ou bairro fica melhor para ele.
+2. Identificar o programa mais adequado e apresentá-lo brevemente com entusiasmo.
+3. Convidar para conhecer pessoalmente com uma aula experimental 100% gratuita.
+4. IMPORTANTE: Assim que o visitante informar a **unidade de interesse** (ou bairro/cidade), o **nome** ou programa, chame IMEDIATAMENTE a ferramenta saveLead() para registrar essa informação no CRM, sem esperar pelo final da conversa!
+5. Após ter a unidade, chame getSchedule(unidadeKey, categoria) para consultar e mostrar as aulas disponíveis com vagas reais.
+6. Se o visitante escolher um horário específico e confirmar, chame bookTrialClass() para agendar a aula experimental diretamente.
+7. Após o agendamento, confirmar o horário e informar que a equipe entrará em contato.
 
 IMPORTANTE:
-- Só chame saveLead() quando tiver coletado nome, telefone E unidade.
-- Só chame getSchedule() após salvar o lead (ou se o visitante pedir para ver os horários).
+- Chame saveLead() assim que o visitante mencionar a unidade de preferência ou seu nome, para garantir que o CRM fique com a unidade atribuída sem depender de agendamento.
+- Só chame getSchedule() após ter a unidade identificada (ou se o visitante pedir para ver os horários).
 - Só chame bookTrialClass() quando o visitante confirmar explicitamente que quer agendar naquele horário.
 - Para listar as unidades disponíveis, chame getAvailableUnits().
 - Seja proativo: se o visitante estiver em dúvida sobre qual unidade, pergunte a cidade ou bairro.
@@ -83,17 +82,16 @@ const MILES_TOOLS = [{
         },
         {
             name: "saveLead",
-            description: "Salva os dados do lead (visitante interessado) no sistema CRM da Kihap. Chamar SOMENTE quando tiver coletado nome completo, telefone/WhatsApp e a unidade de preferência do visitante.",
+            description: "Salva ou atualiza os dados do lead no sistema CRM da Kihap. Chamar assim que o visitante informar sua unidade de preferência, nome ou programa de interesse.",
             parameters: {
                 type: "OBJECT",
                 properties: {
-                    nome: { type: "STRING", description: "Nome completo do visitante interessado." },
-                    telefone: { type: "STRING", description: "Telefone ou WhatsApp do visitante, com DDD." },
+                    nome: { type: "STRING", description: "Nome do visitante interessado (se informado)." },
+                    telefone: { type: "STRING", description: "Telefone ou WhatsApp do visitante (se informado)." },
                     programaInteresse: { type: "STRING", description: "Nome do programa de interesse (ex: Kids, Adultos, Baby Littles)." },
-                    unidade: { type: "STRING", description: "Nome da unidade (ex: Asa Sul, Centro, Dourados)." },
-                    unidadeKey: { type: "STRING", description: "A chave interna da unidade (ex: asa-sul, centro, dourados)." }
-                },
-                required: ["nome", "telefone", "unidade"]
+                    unidade: { type: "STRING", description: "Nome da unidade (ex: Asa Sul, Sudoeste, Centro, Dourados)." },
+                    unidadeKey: { type: "STRING", description: "A chave interna da unidade (ex: asa-sul, sudoeste, centro, dourados)." }
+                }
             }
         },
         {
@@ -1401,15 +1399,88 @@ function getAvailableUnits() {
     };
 }
 
+function detectUnitFromText(text) {
+    if (!text || typeof text !== 'string') return null;
+    const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Unidades de Brasília
+    if (lower.includes('asa sul')) return { unidade: 'Asa Sul', unidadeKey: 'asa-sul', praca: 'Brasília' };
+    if (lower.includes('sudoeste')) return { unidade: 'Sudoeste', unidadeKey: 'sudoeste', praca: 'Brasília' };
+    if (lower.includes('lago sul')) return { unidade: 'Lago Sul', unidadeKey: 'lago-sul', praca: 'Brasília' };
+    if (lower.includes('noroeste')) return { unidade: 'Noroeste', unidadeKey: 'noroeste', praca: 'Brasília' };
+    if (lower.includes('jardim botanico')) return { unidade: 'Jardim Botânico', unidadeKey: 'jardim-botanico', praca: 'Brasília' };
+    if (lower.includes('pontos de ensino') || lower.includes('ponto de ensino')) return { unidade: 'Pontos de Ensino', unidadeKey: 'pontos-de-ensino', praca: 'Brasília' };
+    
+    // Unidades de Florianópolis
+    if (lower.includes('coqueiros')) return { unidade: 'Coqueiros', unidadeKey: 'coqueiros', praca: 'Florianópolis' };
+    if (lower.includes('santa monica') || lower.includes('santa mônica')) return { unidade: 'Santa Mônica', unidadeKey: 'santa-monica', praca: 'Florianópolis' };
+    if (lower.includes('centro') && !lower.includes('dourados')) return { unidade: 'Centro', unidadeKey: 'centro', praca: 'Florianópolis' };
+    
+    // Dourados (MS)
+    if (lower.includes('dourados')) return { unidade: 'Dourados', unidadeKey: 'dourados', praca: 'Dourados' };
+    
+    // Cidades/Praças genéricas
+    if (lower.includes('florianopolis') || lower.includes('floripa')) return { unidade: '', unidadeKey: '', praca: 'Florianópolis' };
+    if (lower.includes('brasilia') || lower.includes('bsb') || lower.includes('distrito federal')) return { unidade: '', unidadeKey: '', praca: 'Brasília' };
+
+    return null;
+}
+
+function inferLocationFromPhone(phone) {
+    if (!phone || typeof phone !== 'string') return null;
+    const clean = phone.replace(/\D/g, '');
+    let ddd = '';
+    if (clean.startsWith('55') && clean.length >= 4) {
+        ddd = clean.substring(2, 4);
+    } else if (clean.length >= 2) {
+        ddd = clean.substring(0, 2);
+    }
+
+    if (ddd === '67') {
+        // Dourados só possui 1 unidade no MS
+        return { unidade: 'Dourados', unidadeKey: 'dourados', praca: 'Dourados', inferredByDDD: true };
+    }
+    if (ddd === '48') {
+        return { unidade: '', unidadeKey: '', praca: 'Florianópolis', inferredByDDD: true };
+    }
+    if (ddd === '61') {
+        return { unidade: '', unidadeKey: '', praca: 'Brasília', inferredByDDD: true };
+    }
+    return null;
+}
+
 async function saveLeadBackend(args, customerPhone, existingLeadId = null) {
     const { nome, telefone, programaInteresse, unidade, unidadeKey } = args;
     try {
+        let resolvedUnidade = unidade || '';
+        let resolvedKey = unidadeKey || '';
+        let resolvedPraca = '';
+
+        if (resolvedUnidade) {
+            const detected = detectUnitFromText(resolvedUnidade);
+            if (detected) {
+                if (detected.unidade) resolvedUnidade = detected.unidade;
+                if (detected.unidadeKey) resolvedKey = detected.unidadeKey;
+                if (detected.praca) resolvedPraca = detected.praca;
+            }
+        }
+
+        if (!resolvedUnidade && (telefone || customerPhone)) {
+            const dddInfo = inferLocationFromPhone(telefone || customerPhone);
+            if (dddInfo) {
+                if (dddInfo.unidade) resolvedUnidade = dddInfo.unidade;
+                if (dddInfo.unidadeKey) resolvedKey = dddInfo.unidadeKey;
+                if (dddInfo.praca) resolvedPraca = dddInfo.praca;
+            }
+        }
+
         const leadData = {
-            nome: nome || '',
-            telefone: telefone || customerPhone || '',
-            programaInteresse: programaInteresse || '',
-            unidade: unidade || '',
-            unidadeKey: unidadeKey || '',
+            ...(nome ? { nome } : {}),
+            ...(telefone || customerPhone ? { telefone: telefone || customerPhone } : {}),
+            ...(programaInteresse ? { programaInteresse } : {}),
+            ...(resolvedUnidade ? { unidade: resolvedUnidade } : {}),
+            ...(resolvedKey ? { unidadeKey: resolvedKey } : {}),
+            ...(resolvedPraca ? { praca: resolvedPraca } : {}),
             origem: 'Chatbot Miles',
             'origem do lead': 'Chatbot Miles',
             status: 'Novo',
@@ -1419,10 +1490,15 @@ async function saveLeadBackend(args, customerPhone, existingLeadId = null) {
         if (existingLeadId) {
             try {
                 await db.collection('leads').doc(existingLeadId).update(leadData);
+
+                if (resolvedUnidade) {
+                    notifyUnitManagerOfLead(resolvedUnidade, { ...leadData, nome: nome || '', telefone: telefone || customerPhone || '', programaInteresse, unidade: resolvedUnidade }).catch(() => {});
+                }
+
                 return {
                     success: true,
                     leadId: existingLeadId,
-                    message: `Lead de ${nome} atualizado com sucesso no CRM! Agora ofereça a grade de horários chamando getSchedule().`
+                    message: `Lead atualizado com sucesso no CRM! Unidade: ${resolvedUnidade || 'Aguardando definição'}.`
                 };
             } catch (err) {
                 console.warn(`[Miles WhatsApp] Lead ${existingLeadId} não encontrado para atualizar. Criando novo...`);
@@ -1430,17 +1506,117 @@ async function saveLeadBackend(args, customerPhone, existingLeadId = null) {
         }
 
         const docRef = await db.collection('leads').add({
-            ...leadData,
+            nome: nome || 'Visitante WhatsApp',
+            telefone: telefone || customerPhone || '',
+            programaInteresse: programaInteresse || '',
+            unidade: resolvedUnidade || '',
+            unidadeKey: resolvedKey || '',
+            praca: resolvedPraca || '',
+            origem: 'Chatbot Miles',
+            'origem do lead': 'Chatbot Miles',
+            status: 'Novo',
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
+
+        if (resolvedUnidade) {
+            notifyUnitManagerOfLead(resolvedUnidade, { ...leadData, nome: nome || '', telefone: telefone || customerPhone || '', programaInteresse, unidade: resolvedUnidade }).catch(() => {});
+        }
+
         return {
             success: true,
             leadId: docRef.id,
-            message: `Lead de ${nome} criado com sucesso no CRM! Agora ofereça a grade de horários chamando getSchedule().`
+            message: `Lead criado com sucesso no CRM! Unidade: ${resolvedUnidade || 'Aguardando definição'}.`
         };
     } catch (e) {
         console.error("[Miles WhatsApp] Erro ao salvar lead:", e);
         return { success: false, error: e.message };
+    }
+}
+
+async function notifyUnitManagerOfLead(unitIdentifier, leadData) {
+    try {
+        if (!unitIdentifier) return false;
+        let unitKey = (unitIdentifier || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (unitKey.includes('asa sul')) unitKey = 'asa-sul';
+        else if (unitKey.includes('sudoeste')) unitKey = 'sudoeste';
+        else if (unitKey.includes('lago sul')) unitKey = 'lago-sul';
+        else if (unitKey.includes('noroeste')) unitKey = 'noroeste';
+        else if (unitKey.includes('jardim botanico')) unitKey = 'jardim-botanico';
+        else if (unitKey.includes('pontos de ensino') || unitKey.includes('ponto de ensino')) unitKey = 'pontos-de-ensino';
+        else if (unitKey.includes('coqueiros')) unitKey = 'coqueiros';
+        else if (unitKey.includes('santa monica')) unitKey = 'santa-monica';
+        else if (unitKey.includes('centro') && !unitKey.includes('dourados')) unitKey = 'centro';
+        else if (unitKey.includes('dourados')) unitKey = 'dourados';
+
+        const managerPhone = UNIT_MANAGERS[unitKey];
+        if (!managerPhone) {
+            console.log(`[notifyUnitManagerOfLead] Nenhum telefone de gerente configurado para ${unitIdentifier}`);
+            return false;
+        }
+
+        const configSnap = await db.collection('public_config').doc('miles').get();
+        const configData = configSnap.exists ? configSnap.data() : {};
+        const whatsappToken = configData.whatsappToken || WHATSAPP_TOKEN;
+        const phoneNumberId = configData.phoneNumberId || PHONE_NUMBER_ID;
+
+        if (!whatsappToken || !phoneNumberId) return false;
+
+        const nome = leadData.nome || 'Visitante';
+        const telefone = leadData.telefone || 'Não informado';
+        const programa = leadData.programaInteresse || 'Interesse Geral';
+        const unidadeNome = leadData.unidade || unitIdentifier;
+
+        const bodyMsg = `🔔 *Novo Lead Kihap - ${unidadeNome}*\n\n👤 *Nome:* ${nome}\n📱 *WhatsApp:* ${telefone}\n🥋 *Interesse:* ${programa}\n📍 *Origem:* ${leadData['origem do lead'] || leadData.origem || 'WhatsApp Miles'}\n\n🔗 *CRM:* https://novokihap.web.app/intranet/prospeccao.html`;
+
+        try {
+            await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                to: managerPhone,
+                type: "text",
+                text: { body: bodyMsg }
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${whatsappToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`[Miles WhatsApp] Notificação de Novo Lead (Texto) enviada para ${managerPhone} (${unidadeNome})`);
+            return true;
+        } catch (textErr) {
+            console.warn(`[Miles WhatsApp] Envio de texto direto falhou para ${managerPhone}. Tentando template oficial...`, textErr.response?.data || textErr.message);
+
+            await axios.post(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                to: managerPhone,
+                type: "template",
+                template: {
+                    name: "notificacaoaula",
+                    language: { code: "pt_BR" },
+                    components: [
+                        {
+                            type: "body",
+                            parameters: [
+                                { type: "text", text: nome },
+                                { type: "text", text: telefone },
+                                { type: "text", text: programa },
+                                { type: "text", text: "Novo Lead no CRM" },
+                                { type: "text", text: "Aguardando Contato" }
+                            ]
+                        }
+                    ]
+                }
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${whatsappToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`[Miles WhatsApp] Notificação de Novo Lead (Template) enviada para ${managerPhone} (${unidadeNome})`);
+            return true;
+        }
+    } catch (e) {
+        console.error('[notifyUnitManagerOfLead] Erro ao notificar unidade:', e.response?.data || e.message);
+        return false;
     }
 }
 
@@ -1859,21 +2035,86 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                         mode = dataDoc.mode || 'miles';
                     }
 
+                    // Extração de dados de anúncio (Meta Ads Click-to-WhatsApp Referral) se disponível
+                    const referral = messageData.referral || (messageData.context && messageData.context.referral) || null;
+                    const ctwaClid = referral?.ctwa_clid || null;
+                    const metaAdId = referral?.source_id || null;
+                    const metaHeadline = referral?.headline || null;
+                    const metaBody = referral?.body || null;
+
+                    // Detecção automática de unidade (via anúncio, texto da mensagem ou DDD)
+                    let detectedInfo = detectUnitFromText((metaHeadline || '') + ' ' + (metaBody || '') + ' ' + messageText);
+                    if (!detectedInfo || !detectedInfo.unidade) {
+                        const dddInference = inferLocationFromPhone(customerPhone);
+                        if (dddInference) {
+                            detectedInfo = {
+                                unidade: detectedInfo?.unidade || dddInference.unidade || '',
+                                unidadeKey: detectedInfo?.unidadeKey || dddInference.unidadeKey || '',
+                                praca: detectedInfo?.praca || dddInference.praca || ''
+                            };
+                        }
+                    }
+
                     // Cria um lead preliminar no CRM caso ainda não exista (Apenas se estiver no modo Miles)
                     if (mode === 'miles' && !lastLeadId) {
                         try {
+                            const initialTags = ['WhatsApp'];
+                            if (referral || ctwaClid || metaAdId) initialTags.push('Meta Ads');
+                            if (detectedInfo?.praca) initialTags.push(detectedInfo.praca);
+
+                            const originName = (referral || ctwaClid || metaAdId) ? 'Meta Ads WhatsApp' : 'Chatbot Miles';
+
                             const leadRef = await db.collection('leads').add({
                                 nome: customerName || 'Visitante WhatsApp',
                                 telefone: customerPhone,
                                 status: 'Novo',
-                                'origem do lead': 'Chatbot Miles',
-                                origem: 'Chatbot Miles',
+                                unidade: detectedInfo?.unidade || '',
+                                unidadeKey: detectedInfo?.unidadeKey || '',
+                                praca: detectedInfo?.praca || '',
+                                'origem do lead': originName,
+                                origem: originName,
+                                tags: initialTags,
+                                ctwaClid: ctwaClid || null,
+                                metaAdId: metaAdId || null,
+                                metaHeadline: metaHeadline || null,
                                 createdAt: admin.firestore.FieldValue.serverTimestamp()
                             });
                             lastLeadId = leadRef.id;
-                            console.log(`[WhatsApp Webhook] Lead preliminar criado no CRM para ${customerPhone}: ${lastLeadId}`);
+                            console.log(`[WhatsApp Webhook] Lead preliminar criado no CRM para ${customerPhone}: ${lastLeadId} (Unidade: ${detectedInfo?.unidade || 'Pendente'})`);
+
+                            if (detectedInfo?.unidade) {
+                                notifyUnitManagerOfLead(detectedInfo.unidade, {
+                                    nome: customerName || 'Visitante WhatsApp',
+                                    telefone: customerPhone,
+                                    unidade: detectedInfo.unidade,
+                                    origem: originName
+                                }).catch(() => {});
+                            }
                         } catch (leadErr) {
                             console.error("[WhatsApp Webhook] Erro ao criar lead preliminar:", leadErr);
+                        }
+                    } else if (mode === 'miles' && lastLeadId) {
+                        // Se o lead já existia, mas o usuário acabou de mencionar uma unidade na mensagem:
+                        const msgUnit = detectUnitFromText(messageText);
+                        if (msgUnit && msgUnit.unidade) {
+                            try {
+                                await db.collection('leads').doc(lastLeadId).update({
+                                    unidade: msgUnit.unidade,
+                                    unidadeKey: msgUnit.unidadeKey || '',
+                                    ...(msgUnit.praca ? { praca: msgUnit.praca } : {}),
+                                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                                });
+                                console.log(`[WhatsApp Webhook] Unidade '${msgUnit.unidade}' auto-atribuída ao lead existente ${lastLeadId}`);
+
+                                notifyUnitManagerOfLead(msgUnit.unidade, {
+                                    nome: customerName || 'Visitante WhatsApp',
+                                    telefone: customerPhone,
+                                    unidade: msgUnit.unidade,
+                                    origem: 'Chatbot Miles'
+                                }).catch(() => {});
+                            } catch (updateErr) {
+                                console.warn("[WhatsApp Webhook] Erro ao atualizar unidade no lead existente:", updateErr);
+                            }
                         }
                     }
 
@@ -2260,4 +2501,27 @@ exports.registerDailyMotivation = functions.https.onCall(async (data, context) =
     }, { merge: true });
 
     return { success: true, message: `Número ${phone} cadastrado com sucesso para receber a mensagem diária do Miles às 06h!` };
+});
+
+// Endpoint HTTP para testar notificação de lead para a unidade
+exports.testUnitNotification = functions.https.onRequest(async (req, res) => {
+    const unit = req.query.unit || 'centro';
+    const nome = req.query.nome || 'Lead de Teste';
+    const telefone = req.query.telefone || '(48) 99999-8888';
+    const programa = req.query.programa || 'Adultos';
+
+    const result = await notifyUnitManagerOfLead(unit, {
+        nome,
+        telefone,
+        programaInteresse: programa,
+        unidade: unit,
+        origem: 'Teste Manual via HTTP'
+    });
+
+    res.json({
+        success: true,
+        unit,
+        result,
+        message: `Disparo de teste para a unidade ${unit} concluído.`
+    });
 });

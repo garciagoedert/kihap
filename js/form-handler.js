@@ -211,10 +211,18 @@ if (cursoLeadForm) {
         submitBtn.classList.add('opacity-50');
         cursoFormStatus.textContent = '';
 
+        const cursoTel = document.getElementById('curso-telefone').value;
+        let cursoUnit = 'Online / Geral';
+        const cleanCursoTel = cursoTel.replace(/\D/g, '');
+        if (cleanCursoTel.startsWith('5567') || cleanCursoTel.startsWith('67')) cursoUnit = 'Dourados';
+        else if (cleanCursoTel.startsWith('5548') || cleanCursoTel.startsWith('48')) cursoUnit = 'Florianópolis';
+        else if (cleanCursoTel.startsWith('5561') || cleanCursoTel.startsWith('61')) cursoUnit = 'Brasília';
+
         const data = {
             nome: document.getElementById('curso-nome').value,
             email: document.getElementById('curso-email').value,
-            telefone: document.getElementById('curso-telefone').value,
+            telefone: cursoTel,
+            unidade: cursoUnit,
             'origem do lead': 'Curso Mente Faixa Preta',
             tags: ['Mente Faixa Preta'],
             status: 'Novo',
@@ -260,10 +268,18 @@ if (academyLeadForm) {
         submitBtn.classList.add('opacity-50');
         academyFormStatus.textContent = '';
 
+        const academyTel = document.getElementById('academy-telefone').value;
+        let academyUnit = 'Online / Geral';
+        const cleanAcademyTel = academyTel.replace(/\D/g, '');
+        if (cleanAcademyTel.startsWith('5567') || cleanAcademyTel.startsWith('67')) academyUnit = 'Dourados';
+        else if (cleanAcademyTel.startsWith('5548') || cleanAcademyTel.startsWith('48')) academyUnit = 'Florianópolis';
+        else if (cleanAcademyTel.startsWith('5561') || cleanAcademyTel.startsWith('61')) academyUnit = 'Brasília';
+
         const data = {
             nome: document.getElementById('academy-nome').value,
             email: document.getElementById('academy-email').value,
-            telefone: document.getElementById('academy-telefone').value,
+            telefone: academyTel,
+            unidade: academyUnit,
             'origem do lead': 'Academy',
             debug_source: 'Academy Form',
             status: 'Novo',

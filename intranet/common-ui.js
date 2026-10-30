@@ -229,6 +229,199 @@ function setupProfileMenu() {
 }
 
 /**
+ * Exibe notificação flutuante elegante estilo toast.
+ */
+function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        warning: 'bg-amber-500 text-white',
+        info: 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+    };
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    toast.className = `${colors[type] || colors.info} pointer-events-auto px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0`;
+    toast.innerHTML = `<i class="${icons[type] || icons.info}"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+    });
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function denyAccessAndRedirect(reason = 'Você não tem permissão para acessar esta página.') {
+    sessionStorage.setItem('access_denied_toast', reason);
+    window.location.href = 'index.html';
+}
+
+const PAGE_PARENT_MAP = {
+    'aluno.html': 'alunos.html',
+    'sales-history.html': 'store.html',
+    'course-editor.html': 'cursos.html',
+    'player.html': 'cursos.html',
+    'conteudo-editor.html': 'cursos.html',
+    'conteudo-viewer.html': 'cursos.html',
+    'projeto-editor.html': 'projetos.html',
+    'processos-editor.html': 'processos.html',
+    'processos-viewer.html': 'processos.html',
+    'juridico-novademanda.html': 'juridico-trello.html',
+    'novademanda.html': 'juridico-trello.html',
+    'nova-demanda.html': 'juridico-trello.html',
+    'evolucao-detalhes.html': 'analysis.html',
+    'abertura-unidades.html': 'expansao.html',
+    'snapshots-history.html': 'analise.html'
+};
+
+function isPageAllowedForUser(pageKey, user) {
+    if (!user) return false;
+    const isAdmin = user.isAdmin === true || user.isAdmin === 'true';
+    if (isAdmin) return true;
+    if (pageKey === 'admin.html') return false;
+
+    const publicPages = ['index.html', 'perfil.html', 'login.html', 'redefinir-senha.html', 'cadastro.html'];
+    if (publicPages.includes(pageKey)) return true;
+
+    // Se o usuário possui a configuração explícita de páginas permitidas
+    if (Array.isArray(user.allowedPages)) {
+        return user.allowedPages.includes(pageKey);
+    }
+
+    // Compatibilidade com usuários legados sem allowedPages
+    const isJuridico = user.isJuridico === true || user.isJuridico === 'true';
+    const isRH = user.isRH === true || user.isRH === 'true';
+    const isMarketing = user.isMarketing === true || user.isMarketing === 'true';
+    const isInstructor = user.isInstructor === true || user.isInstructor === 'true';
+    const isColarinhoPreto = user.isColarinhoPreto === true || user.isBlackCollar === true || user.colarinhoPreto === true;
+    const isAdministrativo = user.isAdministrativo === true || user.isAdministrativo === 'true';
+    const isSuporte = user.isSuporte === true || user.isSuporte === 'true';
+
+    // Store legada
+    const storePerms = getStorePermissions(user);
+    if (pageKey === 'store.html' || pageKey === 'sales-history.html') return storePerms.loja;
+    if (pageKey === 'pedidos.html') return storePerms.pedidos;
+    if (pageKey === 'assinaturas.html') return storePerms.assinaturas;
+    if (pageKey === 'estoque.html') return storePerms.estoque;
+
+    // Jurídico
+    if (pageKey === 'juridico-trello.html' || pageKey === 'juridico-novademanda.html' || pageKey === 'novademanda.html') {
+        return isJuridico;
+    }
+
+    // RH
+    if (pageKey === 'rh.html' || pageKey === 'organograma.html') {
+        return isRH;
+    }
+
+    // Marketing
+    const mktPages = ['prospeccao.html', 'trello.html', 'marketing.html', 'newsletter.html', 'comunicados.html', 'leads-analysis.html', 'marketing-social.html', 'marketing-google.html', 'arquivo.html'];
+    if (mktPages.includes(pageKey)) {
+        return isMarketing || isAdministrativo || isInstructor;
+    }
+
+    // Administrativo
+    const admPages = ['analysis.html', 'app-analytics.html', 'unidades-planos.html', 'expansao.html', 'analise.html', 'tarefas.html', 'calendario.html', 'relatorios.html', 'projetos.html', 'processos.html', 'scripts.html', 'fornecedores.html', 'contas-mp.html', 'nps.html'];
+    if (admPages.includes(pageKey)) {
+        return isAdministrativo;
+    }
+
+    // Tatame
+    if (pageKey === 'tatame.html' || pageKey === 'planificador.html') {
+        return isInstructor || isColarinhoPreto || isAdministrativo;
+    }
+
+    // Suporte
+    if (pageKey === 'suporte.html') return true;
+    if (pageKey === 'gestao-suporte') return isSuporte;
+
+    // Outras páginas base
+    if (['alunos.html', 'cursos.html', 'chat.html', 'feed.html'].includes(pageKey)) {
+        return true;
+    }
+
+    return false;
+}
+
+function applySidebarPagePermissions(user, sidebarContainer = null) {
+    const container = sidebarContainer || document.getElementById('sidebar-container') || document.getElementById('sidebar');
+    if (!container || !user) return;
+
+    const isAdmin = user.isAdmin === true || user.isAdmin === 'true';
+
+    // 1. Links diretos e dentro de submenus
+    const allLinks = container.querySelectorAll('nav a, div.border-t a');
+    allLinks.forEach(link => {
+        const href = link.getAttribute('href') || '';
+        let pageKey = href.split('?')[0].split('/').pop();
+
+        if (href.includes('dept=Suporte') || link.id === 'gestao-suporte-link') {
+            pageKey = 'gestao-suporte';
+        }
+
+        if (pageKey === 'admin.html' || link.id === 'admin-link') {
+            if (isAdmin) link.classList.remove('hidden');
+            else link.classList.add('hidden');
+            return;
+        }
+
+        if (pageKey === 'index.html') {
+            link.classList.remove('hidden');
+            return;
+        }
+
+        if (isPageAllowedForUser(pageKey, user)) {
+            link.classList.remove('hidden');
+        } else {
+            link.classList.add('hidden');
+        }
+    });
+
+    // 2. Dropdowns / Submenus: ocultar o container do menu pai se todos os filhos estiverem ocultos
+    const submenus = [
+        { btnId: 'prospeccao-menu-btn', submenuId: 'prospeccao-submenu' },
+        { btnId: 'administrativo-menu-btn', submenuId: 'administrativo-submenu' },
+        { btnId: 'rh-menu-btn', submenuId: 'rh-submenu' },
+        { btnId: 'juridico-menu-btn', submenuId: 'juridico-submenu' },
+        { btnId: 'social-menu-btn', submenuId: 'social-submenu' },
+        { btnId: 'tatame-menu-btn', submenuId: 'tatame-submenu' },
+        { btnId: 'store-menu-btn', submenuId: 'store-submenu' }
+    ];
+
+    submenus.forEach(({ btnId, submenuId }) => {
+        const submenu = container.querySelector(`#${submenuId}`);
+        const btn = container.querySelector(`#${btnId}`);
+        const parentModuleContainer = btn?.parentElement;
+        if (!parentModuleContainer || !submenu) return;
+
+        if (isAdmin) {
+            parentModuleContainer.classList.remove('hidden');
+            return;
+        }
+
+        const visibleLinks = submenu.querySelectorAll('a:not(.hidden)');
+        if (visibleLinks.length === 0) {
+            parentModuleContainer.classList.add('hidden');
+        } else {
+            parentModuleContainer.classList.remove('hidden');
+        }
+    });
+}
+
+/**
  * Retorna as permissões granulares da Store para um usuário.
  * Compatibilidade retroativa: se o usuário tiver isStore=true mas nenhuma subpermissão explícita configurada,
  * todas as 4 subpermissões retornam true.
@@ -311,6 +504,10 @@ function updateStoreMenuUI(user) {
 if (typeof window !== 'undefined') {
     window.getStorePermissions = getStorePermissions;
     window.updateStoreMenuUI = updateStoreMenuUI;
+    window.showToast = showToast;
+    window.isPageAllowedForUser = isPageAllowedForUser;
+    window.applySidebarPagePermissions = applySidebarPagePermissions;
+    window.denyAccessAndRedirect = denyAccessAndRedirect;
 }
 
 async function updateUserProfileUI() {
@@ -364,6 +561,7 @@ async function updateUserProfileUI() {
 
             // Atualiza visibilidade dinâmica da Store e suas sub-abas no menu lateral com dados frescos
             updateStoreMenuUI(currentUser);
+            applySidebarPagePermissions(currentUser);
         }
     } catch (error) {
         console.error("Error updating profile UI:", error);
@@ -627,7 +825,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.1.4'; 
+    const CACHE_VERSION = '1.1.5'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -712,6 +910,27 @@ async function loadComponents(pageSpecificSetup) {
             mainEl.style.width = '100%';
         }
 
+        // Verifica se há toast pendente de redirecionamento por permissão negada
+        const pendingToast = sessionStorage.getItem('access_denied_toast');
+        if (pendingToast) {
+            sessionStorage.removeItem('access_denied_toast');
+            setTimeout(() => {
+                if (typeof showToast === 'function') {
+                    showToast(pendingToast, 'warning');
+                }
+            }, 300);
+        }
+
+        const getEffectivePageKey = (page) => {
+            const rawPage = (page || '').split('?')[0];
+            if (rawPage === 'trello.html' && new URLSearchParams(window.location.search).get('dept') === 'Suporte') {
+                return 'gestao-suporte';
+            }
+            return PAGE_PARENT_MAP[rawPage] || rawPage;
+        };
+
+        const effectiveCurrentPage = getEffectivePageKey(currentPage);
+
         // Enquanto os componentes carregam (ou logo após), buscamos o usuário para ACL
         // Usamos o cache do localStorage se disponível para rapidez total, depois validamos
         const cachedUser = localStorage.getItem('currentUser');
@@ -726,80 +945,24 @@ async function loadComponents(pageSpecificSetup) {
             getCurrentUser().then(fresh => {
                 if (fresh) {
                     localStorage.setItem('currentUser', JSON.stringify(fresh));
-                    const freshPerms = getStorePermissions(fresh);
-
-                    if (storePages.includes(currentPage)) {
-                        const lojaPages = ['store.html', 'sales-history.html'];
-                        if (lojaPages.includes(currentPage) && !freshPerms.loja) {
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                        if (currentPage === 'pedidos.html' && !freshPerms.pedidos) {
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                        if (currentPage === 'assinaturas.html' && !freshPerms.assinaturas) {
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                        if (currentPage === 'estoque.html' && !freshPerms.estoque) {
-                            window.location.href = 'index.html';
-                            return;
-                        }
+                    if (!isPageAllowedForUser(effectiveCurrentPage, fresh)) {
+                        denyAccessAndRedirect('Você não tem permissão para acessar esta página.');
+                        return;
                     }
-
-                    updateStoreMenuUI(fresh);
+                    applySidebarPagePermissions(fresh, sidebarContainer);
                 }
             });
         }
 
+        // Valida acesso à página atual
+        if (!isPageAllowedForUser(effectiveCurrentPage, userData)) {
+            denyAccessAndRedirect('Você não tem permissão para acessar esta página.');
+            return;
+        }
+
         const isAdmin = userData.isAdmin === true || userData.isAdmin === 'true';
-        const isJuridico = userData.isJuridico === true || userData.isJuridico === 'true';
         const isStore = userData.isStore === true || userData.isStore === 'true';
-        const isRH = userData.isRH === true || userData.isRH === 'true';
-        const isMarketing = userData.isMarketing === true || userData.isMarketing === 'true';
-        const isInstructor = userData.isInstructor === true || userData.isInstructor === 'true';
-        const isColarinhoPreto = userData.isColarinhoPreto === true || userData.isBlackCollar === true || userData.colarinhoPreto === true;
-        const isAdministrativo = userData.isAdministrativo === true || userData.isAdministrativo === 'true';
         const isSuporte = userData.isSuporte === true || userData.isSuporte === 'true';
-
-        // Se for uma página administrativa, valida acesso
-        if (adminPages.includes(currentPage)) {
-            if (!isAdmin) {
-                window.location.href = 'index.html';
-                return;
-            }
-        }
-
-        // Validação granular de páginas da Store por subpermissão
-        if (storePages.includes(currentPage)) {
-            const userStorePerms = getStorePermissions(userData);
-            const lojaPages = ['store.html', 'sales-history.html'];
-            if (lojaPages.includes(currentPage) && !userStorePerms.loja) {
-                window.location.href = 'index.html';
-                return;
-            }
-            if (currentPage === 'pedidos.html' && !userStorePerms.pedidos) {
-                window.location.href = 'index.html';
-                return;
-            }
-            if (currentPage === 'assinaturas.html' && !userStorePerms.assinaturas) {
-                window.location.href = 'index.html';
-                return;
-            }
-            if (currentPage === 'estoque.html' && !userStorePerms.estoque) {
-                window.location.href = 'index.html';
-                return;
-            }
-        }
-
-        // Se for uma página do Jurídico, valida acesso
-        if (juridicoPages.includes(currentPage)) {
-            if (!isAdmin && !isJuridico) {
-                window.location.href = 'index.html';
-                return;
-            }
-        }
 
         applyWhitelabelSettings(); // Non-blocking apply
 
@@ -862,67 +1025,8 @@ async function loadComponents(pageSpecificSetup) {
         localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
         localStorage.setItem('isStore', isStore ? 'true' : 'false');
 
-        const adminOnlyElements = document.querySelectorAll('.admin-only');
-        adminOnlyElements.forEach(el => {
-            if (el.getAttribute('href') === 'suporte.html' || isAdmin) {
-                el.classList.remove('hidden');
-            }
-        });
-
-        const adminLink = document.getElementById('admin-link');
-        if (isAdmin && adminLink) {
-            adminLink.classList.remove('hidden');
-        }
-
-        const gestaoSuporteLink = document.getElementById('gestao-suporte-link');
-        if ((isAdmin || isSuporte) && gestaoSuporteLink) {
-            gestaoSuporteLink.classList.remove('hidden');
-        }
-
-
-        // VISIBILIDADE DA SIDEBAR
-        // VISIBILIDADE DA SIDEBAR
-        
-        // Jurídico: Visível para Admin ou Juridico
-        const juridicoMenu = document.getElementById('juridico-menu-btn')?.parentElement;
-        if (juridicoMenu && !isAdmin && !isJuridico) juridicoMenu.classList.add('hidden');
-
-        // RH: Visível para Admin ou RH
-        const rhMenu = document.getElementById('rh-menu-btn')?.parentElement;
-        if (rhMenu && !isAdmin && !isRH) rhMenu.classList.add('hidden');
-
-        // Marketing: Visível para Admin ou Marketing ou Instrutor ou Administrativo
-        const marketingMenu = document.getElementById('prospeccao-menu-btn')?.parentElement;
-        if (marketingMenu && !isAdmin && !isMarketing && !isInstructor && !isAdministrativo) marketingMenu.classList.add('hidden');
-
-        // Store e Sub-abas: Visibilidade controlada por subpermissões
-        updateStoreMenuUI(userData);
-
-
-        // Outras seções: Esconder apenas se for um usuário RESTRITO (Jurídico)
-        if (isJuridico && !isAdmin) {
-            // Oculta Alunos, Cursos, Livrinhos, Feed e outras seções administrativas
-            const selectorsToHide = [
-                'a[href="alunos.html"]',
-                'a[href="cursos.html"]',
-                'a[href="feed.html"]',
-                'a[href*="livrinhos"]',
-                '#administrativo-menu-btn',
-                '#tatame-menu-btn',
-                '#store-menu-btn'
-            ];
-            selectorsToHide.forEach(selector => {
-                const el = sidebarContainer.querySelector(selector);
-                if (el) {
-                    const container = el.tagName === 'BUTTON' ? el.parentElement : el;
-                    container.classList.add('hidden');
-                }
-            });
-        } else if (isStore && !isAdmin) {
-            // Oculta apenas o Admin se for um usuário de Store (outras seções podem ser úteis)
-            const adminLink = sidebarContainer.querySelector('#admin-link');
-            if (adminLink) adminLink.classList.add('hidden');
-        }
+        // Aplica visibilidade dinâmica e granular a todos os links e módulos da sidebar
+        applySidebarPagePermissions(userData, sidebarContainer);
 
 
 
@@ -3232,4 +3336,4 @@ function showConfirm(message, onConfirm, title = "Confirmar Ação") {
     };
 }
 
-export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache, getStorePermissions, updateStoreMenuUI };
+export { setupUIListeners, loadComponents, getAllUsers, showAlert, showConfirm, showInviteLinkModal, getUnidades, invalidateUnidadesCache, getStorePermissions, updateStoreMenuUI, showToast, isPageAllowedForUser, applySidebarPagePermissions };

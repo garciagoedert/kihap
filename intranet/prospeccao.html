@@ -264,7 +264,7 @@
                 </div>
 
                 <!-- Kanban Board -->
-                <div id="kanban-board" class="flex flex-col md:grid md:grid-cols-4 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+                <div id="kanban-board" class="flex flex-col md:grid md:grid-cols-5 lg:grid-cols-5 gap-4 flex-1 min-h-0">
                     <!-- Columns will be injected here by JS -->
                 </div>
             </div>
@@ -448,6 +448,22 @@
                     <input type="hidden" id="prospectId">
                     <input type="hidden" id="prospectType">
                     
+                    <!-- Notice: Lead Perdido -->
+                    <div id="perdidoNotice" class="hidden p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400">
+                            <i class="fas fa-times-circle text-lg"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">Lead Marcado como Perdido</h4>
+                                <span id="perdidoNoticeDate" class="text-[10px] text-gray-500 dark:text-gray-400"></span>
+                            </div>
+                            <p class="text-xs font-semibold text-rose-950 dark:text-rose-200 mt-1">
+                                Motivo: <span id="perdidoNoticeText" class="font-normal text-gray-800 dark:text-gray-200"></span>
+                            </p>
+                        </div>
+                    </div>
+                    
                     <!-- Section 1: Informações Principais -->
                     <div class="bg-gray-50/30 dark:bg-gray-800/10 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
                         <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-150/50 dark:border-gray-800/50">
@@ -595,6 +611,12 @@
                                 <i class="fab fa-facebook"></i>
                                 <span>Meta CAPI</span>
                             </button>
+                            <button type="button" id="markLostBtn"
+                                class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-4 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
+                                title="Marcar este lead como Perdido e registrar o motivo obrigatório">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Perdido</span>
+                            </button>
                             <button type="button" id="archiveBtn"
                                 class="bg-amber-600/10 hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-white border border-amber-600/20 hover:border-amber-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
                                 <i class="fas fa-archive"></i>
@@ -711,6 +733,75 @@
         </div>
     </div>
 
+    <!-- Modal Motivo da Perda (Obrigatório) -->
+    <div id="perdidoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 transition-all">
+            <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-150 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
+                        <i class="fas fa-user-slash text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Marcar como Perdido</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Obrigatório informar o motivo da perda</p>
+                    </div>
+                </div>
+                <button type="button" id="closePerdidoModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none">&times;</button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-3 bg-gray-50 dark:bg-gray-850 rounded-xl border border-gray-150 dark:border-gray-800">
+                    <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Lead</span>
+                    <p id="perdidoLeadName" class="text-sm font-bold text-gray-900 dark:text-white truncate">Nome do Lead</p>
+                </div>
+
+                <div>
+                    <label for="motivoPerdaSelect" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+                        Motivo Principal <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="motivoPerdaSelect"
+                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm">
+                        <option value="">Selecione o motivo da perda...</option>
+                        <option value="Sem interesse / Desistiu">Sem interesse / Desistiu</option>
+                        <option value="Não respondeu / Sem contato">Não respondeu / Sem contato</option>
+                        <option value="Preço / Fora do orçamento">Preço / Fora do orçamento</option>
+                        <option value="Horário incompatível">Horário incompatível</option>
+                        <option value="Distância / Localização distante">Distância / Localização distante</option>
+                        <option value="Optou por concorrente / outra atividade">Optou por concorrente / outra atividade</option>
+                        <option value="Número inválido / Engano">Número inválido / Engano</option>
+                        <option value="Outro">Outro motivo (especificar abaixo)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="motivoPerdaDetalhes" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+                        Detalhes adicionais <span id="motivoPerdaDetalhesObrigatorio" class="text-rose-500 hidden">*</span>
+                    </label>
+                    <textarea id="motivoPerdaDetalhes" rows="3"
+                        placeholder="Adicione observações ou especifique o motivo..."
+                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm"></textarea>
+                </div>
+
+                <div id="perdidoErrorMessage" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-rose-500"></i>
+                    <span id="perdidoErrorText">Por favor, selecione ou informe o motivo da perda.</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6 pt-4 border-t border-gray-150 dark:border-gray-800">
+                <button type="button" id="cancelPerdidoBtn"
+                    class="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2.5 px-4 rounded-xl text-sm transition-all">
+                    Cancelar
+                </button>
+                <button type="button" id="confirmPerdidoBtn"
+                    class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5">
+                    <i class="fas fa-check"></i>
+                    <span>Confirmar Perda</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters Modal -->
     <div id="filtersModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-sm">
         <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-lg rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -740,6 +831,7 @@
                         <select id="unidadeFilter"
                             class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
                             <option value="">Todas</option>
+                            <option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>
                         </select>
                     </div>
                 </div>
@@ -1029,8 +1121,11 @@
         let currentProspectId = null;
 
         const COLUMNS = {
-            'Novo': 'novo', 'Contactado': 'contactado', 'Aula experimental': 'aula_experimental',
-            'Matrícula': 'matricula'
+            'Novo': 'novo',
+            'Contactado': 'contactado',
+            'Aula experimental': 'aula_experimental',
+            'Matrícula': 'matricula',
+            'Perdido': 'perdido'
         };
         const COLUMN_NAMES = Object.keys(COLUMNS);
         const TAGS = ['Whatsapp', 'Ligação', 'Email', 'Follow-up', 'Urgente'];
@@ -1041,6 +1136,7 @@
         const formModal = document.getElementById('formModal');
         const prospectForm = document.getElementById('prospectForm');
         const confirmModal = document.getElementById('confirmModal');
+        const perdidoModal = document.getElementById('perdidoModal');
         const kanbanContainer = document.getElementById('kanban-container');
         const importModal = document.getElementById('importModal');
         const filtersModal = document.getElementById('filtersModal');
@@ -1102,6 +1198,9 @@
                 telefone: lead.telefone,
                 email: lead.email,
                 createdAt: lead.createdAt,
+                motivoPerda: lead.motivoPerda || '',
+                perdidoEm: lead.perdidoEm || null,
+                perdidoPor: lead.perdidoPor || '',
                 type: 'lead'
             }));
             combinedData = [...prospects, ...formattedLeads];
@@ -1116,12 +1215,13 @@
                 COLUMN_NAMES.forEach(status => {
                     const columnId = COLUMNS[status];
                     const columnProspects = filteredProspects.filter(p => p.status === status);
+                    const isPerdido = status === 'Perdido';
 
                     const columnEl = document.createElement('div');
 
                     let contentHTML;
                     if (isMobile) {
-                        columnEl.className = 'bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col border border-gray-100 dark:border-gray-800/50 backdrop-blur-xl transition-all duration-300';
+                        columnEl.className = `bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col border ${isPerdido ? 'border-rose-200/70 dark:border-rose-900/40' : 'border-gray-100 dark:border-gray-800/50'} backdrop-blur-xl transition-all duration-300`;
                         contentHTML = `
                             <div class="overflow-x-auto pb-3">
                                 <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-4 p-4 min-h-[120px]">
@@ -1130,7 +1230,7 @@
                             </div>
                         `;
                     } else {
-                        columnEl.className = 'bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-800/50 backdrop-blur-xl transition-all duration-300';
+                        columnEl.className = `bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col overflow-hidden border ${isPerdido ? 'border-rose-200/70 dark:border-rose-900/40' : 'border-gray-100 dark:border-gray-800/50'} backdrop-blur-xl transition-all duration-300`;
                         contentHTML = `
                             <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-4 space-y-4 rounded-md overflow-y-auto custom-scrollbar">
                                <!-- Cards will be injected here -->
@@ -1138,10 +1238,18 @@
                         `;
                     }
 
+                    const headerTitle = isPerdido
+                        ? `<h3 class="font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5 text-rose-600 dark:text-rose-400"><i class="fas fa-times-circle"></i> ${status}</h3>`
+                        : `<h3 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-[11px]">${status}</h3>`;
+
+                    const badgeClass = isPerdido
+                        ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700';
+
                     columnEl.innerHTML = `
-                        <div class="flex justify-between items-center p-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-800/50">
-                            <h3 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-[11px]">${status}</h3>
-                            <span class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-700">${columnProspects.length}</span>
+                        <div class="flex justify-between items-center p-4 flex-shrink-0 border-b ${isPerdido ? 'border-rose-100/80 dark:border-rose-950/40 bg-rose-50/20 dark:bg-rose-950/10' : 'border-gray-100 dark:border-gray-800/50'}">
+                            ${headerTitle}
+                            <span class="${badgeClass} text-[10px] font-bold px-2 py-0.5 rounded-lg border">${columnProspects.length}</span>
                         </div>
                         ${contentHTML}
                     `;
@@ -1173,7 +1281,7 @@
             const card = document.createElement('div');
             const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
             card.className = `prospect-card bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm hover:shadow-md cursor-pointer border-l-4 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 ${mobileClasses}`;
-            card.style.borderLeftColor = getPriorityColor(prospect.prioridade);
+            card.style.borderLeftColor = prospect.status === 'Perdido' ? '#f43f5e' : getPriorityColor(prospect.prioridade);
             card.draggable = true;
             card.dataset.id = prospect.id;
 
@@ -1209,15 +1317,26 @@
                     ${(prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : ''}
                     ${prospect.capiSyncedAt ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''}
                 </div>
-                <div class="flex items-center gap-1 mb-3 flex-wrap">
+                <div class="flex items-center gap-1 mb-2.5 flex-wrap">
                     ${tagsHTML}
                 </div>
-                ${prospect.unidade ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1"><i class="fas fa-map-marker-alt"></i> ${prospect.unidade}</p>` : ''}
-                ${prospect.origemLead ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1"><i class="fas fa-sign-in-alt"></i> ${prospect.origemLead}</p>` : ''}
+                ${prospect.motivoPerda ? `
+                    <div class="mb-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200/70 dark:border-rose-900/50 text-[10px] text-rose-700 dark:text-rose-300">
+                        <div class="flex items-center gap-1 font-bold text-rose-800 dark:text-rose-300 mb-0.5">
+                            <i class="fas fa-ban text-[9px]"></i>
+                            <span>Motivo da perda:</span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 italic break-words leading-tight">${prospect.motivoPerda}</p>
+                    </div>
+                ` : ''}
+                ${prospect.origemLead ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1"><i class="fas fa-sign-in-alt"></i> ${prospect.origemLead}</p>` : ''}
                 ${dateTimeHTML}
-                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <p class="text-sm text-emerald-600 dark:text-emerald-400 font-bold">R$ ${prospect.ticketEstimado?.toLocaleString('pt-BR') || 'N/A'}</p>
-                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-2">por ${prospect.createdBy.split('@')[0]}</span>` : ''}
+                <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center gap-2">
+                    ${prospect.unidade ? 
+                        `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 truncate" title="${prospect.unidade}"><i class="fas fa-map-marker-alt text-red-500 text-[11px] flex-shrink-0"></i> <span class="truncate">${prospect.unidade}</span></span>` : 
+                        `<span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-800/40 flex-shrink-0" title="Lead ainda sem unidade atribuída"><i class="fas fa-exclamation-triangle text-amber-500 text-[10px]"></i> Sem Unidade</span>`
+                    }
+                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-auto flex-shrink-0">por ${prospect.createdBy.split('@')[0]}</span>` : ''}
                 </div>
             `;
 
@@ -1256,13 +1375,17 @@
                     if (draggingCard) {
                         const prospectId = draggingCard.dataset.id;
                         const newStatus = dropTarget.dataset.status;
-                        updateProspectStatus(prospectId, newStatus);
+                        if (newStatus === 'Perdido') {
+                            openPerdidoModal(prospectId);
+                        } else {
+                            updateProspectStatus(prospectId, newStatus);
+                        }
                     }
                 });
             });
         }
 
-        async function updateProspectStatus(prospectId, newStatus) {
+        async function updateProspectStatus(prospectId, newStatus, motivoPerda = '') {
             const user = auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous';
             const item = combinedData.find(p => p.id === prospectId);
             const oldStatus = item ? item.status : 'N/A';
@@ -1280,19 +1403,56 @@
                     itemRef = doc(db, 'prospects', prospectId);
                 }
 
-                await updateDoc(itemRef, {
+                const updateData = {
                     status: newStatus,
                     updatedAt: serverTimestamp()
-                });
+                };
+
+                if (newStatus === 'Perdido') {
+                    updateData.motivoPerda = motivoPerda;
+                    updateData.perdidoEm = serverTimestamp();
+                    updateData.perdidoPor = user;
+                } else if (oldStatus === 'Perdido' && newStatus !== 'Perdido') {
+                    updateData.motivoPerda = null;
+                }
+
+                await updateDoc(itemRef, updateData);
 
                 const itemName = item.responsavel || item.empresa || 'N/A';
-                generalLog.add(user, 'Move Card', `Card "${itemName}" moved from ${oldStatus} to ${newStatus}`);
+                const logDetail = (newStatus === 'Perdido' && motivoPerda)
+                    ? `Card "${itemName}" movido para Perdido. Motivo: ${motivoPerda}`
+                    : `Card "${itemName}" moved from ${oldStatus} to ${newStatus}`;
+                generalLog.add(user, 'Move Card', logDetail);
+
+                if (newStatus === 'Perdido' && motivoPerda) {
+                    const lostLogEntry = {
+                        date: new Date().toISOString(),
+                        user: user,
+                        description: `Marcado como Perdido. Motivo: ${motivoPerda}`
+                    };
+                    try {
+                        await updateDoc(itemRef, {
+                            contactLog: arrayUnion(lostLogEntry)
+                        });
+                    } catch (e) {
+                        console.warn("Could not append to contactLog:", e);
+                    }
+                }
 
                 if (newStatus === 'Fechado' && item.type === 'prospect') {
                     await archiveProspect(prospectId);
                 }
+
+                if (newStatus === 'Perdido') {
+                    if (typeof showToast === 'function') {
+                        showToast(`Lead "${itemName}" movido para Perdido!`, 'info');
+                    }
+                }
             } catch (error) {
                 console.error("Error updating status:", error);
+                if (typeof showToast === 'function') {
+                    showToast(`Erro ao atualizar status: ${error.message}`, 'error');
+                }
             }
         }
 
@@ -1322,7 +1482,12 @@
                     matchTag = p.tags && p.tags.includes(tag);
                 }
 
-                const matchUnidade = !unidade || p.unidade === unidade;
+                let matchUnidade = true;
+                if (unidade === '__SEM_UNIDADE__') {
+                    matchUnidade = !p.unidade || p.unidade.trim() === '';
+                } else if (unidade) {
+                    matchUnidade = p.unidade === unidade;
+                }
 
                 // Match Lead Origin
                 let matchOrigin = true;
@@ -1891,6 +2056,49 @@
 
                 renderContactLog(prospect);
 
+                // Perdido Notice Banner
+                const perdidoNotice = document.getElementById('perdidoNotice');
+                const perdidoNoticeText = document.getElementById('perdidoNoticeText');
+                const perdidoNoticeDate = document.getElementById('perdidoNoticeDate');
+                if (perdidoNotice) {
+                    if (prospect.status === 'Perdido' || prospect.motivoPerda) {
+                        perdidoNotice.classList.remove('hidden');
+                        if (perdidoNoticeText) perdidoNoticeText.textContent = prospect.motivoPerda || 'Motivo não registrado';
+                        if (perdidoNoticeDate) {
+                            let perdidoDateStr = '';
+                            if (prospect.perdidoEm) {
+                                let dt = null;
+                                if (typeof prospect.perdidoEm.toDate === 'function') dt = prospect.perdidoEm.toDate();
+                                else if (typeof prospect.perdidoEm.toMillis === 'function') dt = new Date(prospect.perdidoEm.toMillis());
+                                else dt = new Date(prospect.perdidoEm);
+                                if (dt && !isNaN(dt)) {
+                                    perdidoDateStr = `Perdido em ${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                                }
+                            }
+                            perdidoNoticeDate.textContent = perdidoDateStr;
+                        }
+                    } else {
+                        perdidoNotice.classList.add('hidden');
+                    }
+                }
+
+                // Action Buttons
+                const markLostBtn = document.getElementById('markLostBtn');
+                if (markLostBtn) {
+                    if (prospect.status === 'Perdido') {
+                        markLostBtn.innerHTML = '<i class="fas fa-edit"></i> <span>Editar Motivo</span>';
+                        markLostBtn.title = 'Editar o motivo deste lead perdido';
+                    } else {
+                        markLostBtn.innerHTML = '<i class="fas fa-times-circle"></i> <span>Perdido</span>';
+                        markLostBtn.title = 'Marcar lead como Perdido';
+                    }
+                    markLostBtn.onclick = () => {
+                        openPerdidoModal(prospect.id, () => {
+                            closeFormModal();
+                        });
+                    };
+                }
+
                 archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
                 deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
 
@@ -1992,6 +2200,171 @@
             confirmModal.classList.add('hidden');
             confirmModal.classList.remove('flex');
         }
+
+        // --- MOTIVO DA PERDA MODAL (OBRIGATÓRIO) ---
+        let pendingPerdidoProspectId = null;
+        let pendingPerdidoCallback = null;
+
+        function openPerdidoModal(prospectId, onCompletedCallback = null) {
+            const item = combinedData.find(p => p.id === prospectId);
+            if (!item) {
+                console.error("Prospect not found for perdido modal:", prospectId);
+                return;
+            }
+
+            pendingPerdidoProspectId = prospectId;
+            pendingPerdidoCallback = onCompletedCallback;
+
+            const leadNameEl = document.getElementById('perdidoLeadName');
+            if (leadNameEl) {
+                leadNameEl.textContent = item.responsavel || item.empresa || 'Lead sem nome';
+            }
+
+            const selectEl = document.getElementById('motivoPerdaSelect');
+            const detalhesEl = document.getElementById('motivoPerdaDetalhes');
+            const errorEl = document.getElementById('perdidoErrorMessage');
+            const requiredStar = document.getElementById('motivoPerdaDetalhesObrigatorio');
+
+            if (selectEl) {
+                if (item.motivoPerda) {
+                    const presetFound = Array.from(selectEl.options).some(o => o.value && item.motivoPerda.startsWith(o.value));
+                    if (presetFound) {
+                        const matched = Array.from(selectEl.options).find(o => o.value && item.motivoPerda.startsWith(o.value));
+                        selectEl.value = matched.value;
+                        const remainder = item.motivoPerda.replace(matched.value, '').replace(/^\s*-\s*/, '').trim();
+                        if (detalhesEl) detalhesEl.value = remainder;
+                    } else {
+                        selectEl.value = 'Outro';
+                        if (detalhesEl) detalhesEl.value = item.motivoPerda;
+                    }
+                } else {
+                    selectEl.value = '';
+                    if (detalhesEl) detalhesEl.value = '';
+                }
+            }
+
+            if (requiredStar) {
+                if (selectEl && selectEl.value === 'Outro') {
+                    requiredStar.classList.remove('hidden');
+                } else {
+                    requiredStar.classList.add('hidden');
+                }
+            }
+
+            if (errorEl) errorEl.classList.add('hidden');
+
+            const modal = document.getElementById('perdidoModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closePerdidoModal() {
+            const modal = document.getElementById('perdidoModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            pendingPerdidoProspectId = null;
+            pendingPerdidoCallback = null;
+            renderBoard(); // Restores board state if drag move was cancelled
+        }
+
+        async function confirmPerdido() {
+            if (!pendingPerdidoProspectId) return;
+
+            const selectEl = document.getElementById('motivoPerdaSelect');
+            const detalhesEl = document.getElementById('motivoPerdaDetalhes');
+            const errorEl = document.getElementById('perdidoErrorMessage');
+            const errorText = document.getElementById('perdidoErrorText');
+
+            const selectedReason = selectEl ? selectEl.value.trim() : '';
+            const details = detalhesEl ? detalhesEl.value.trim() : '';
+
+            // Strict validation: Reason is mandatory
+            if (!selectedReason && !details) {
+                if (errorEl && errorText) {
+                    errorText.textContent = 'O motivo da perda é obrigatório. Por favor, selecione uma opção.';
+                    errorEl.classList.remove('hidden');
+                }
+                selectEl?.focus();
+                return;
+            }
+
+            if (selectedReason === 'Outro' && !details) {
+                if (errorEl && errorText) {
+                    errorText.textContent = 'Você selecionou "Outro". Por favor, especifique o motivo no campo de texto.';
+                    errorEl.classList.remove('hidden');
+                }
+                detalhesEl?.focus();
+                return;
+            }
+
+            let finalReason = '';
+            if (selectedReason === 'Outro') {
+                finalReason = details;
+            } else if (selectedReason && details) {
+                finalReason = `${selectedReason} - ${details}`;
+            } else {
+                finalReason = selectedReason || details;
+            }
+
+            const prospectIdToUpdate = pendingPerdidoProspectId;
+            const cb = pendingPerdidoCallback;
+
+            // Close modal first
+            const modal = document.getElementById('perdidoModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            pendingPerdidoProspectId = null;
+            pendingPerdidoCallback = null;
+
+            await updateProspectStatus(prospectIdToUpdate, 'Perdido', finalReason);
+
+            if (typeof cb === 'function') {
+                cb();
+            }
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                warning: 'bg-amber-500 text-white',
+                info: 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+            };
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+            toast.className = `${colors[type] || colors.info} pointer-events-auto px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0`;
+            toast.innerHTML = `<i class="${icons[type] || icons.info}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        window.showToast = showToast;
+        window.openPerdidoModal = openPerdidoModal;
+        window.closePerdidoModal = closePerdidoModal;
 
         // --- CRUD OPERATIONS ---
         async function handleFormSubmit(e) {
@@ -2314,8 +2687,8 @@
                 const result = await getEvoUnits();
                 evoUnits = result.data.sort();
 
-                // Clear existing options except the first one
-                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option>';
+                // Clear existing options except default ones
+                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option><option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>';
                 unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
 
                 evoUnits.forEach(unitId => {
@@ -2336,7 +2709,7 @@
 
             } catch (error) {
                 console.error("Erro ao buscar unidades do EVO:", error);
-                unidadeFilter.innerHTML = '<option value="">Erro ao carregar</option>';
+                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option><option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>';
                 unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
             }
         }
@@ -2578,6 +2951,35 @@
                         applyFilters();
                     });
                 }
+                // Perdido Modal Event Listeners
+                const cancelPerdidoBtn = document.getElementById('cancelPerdidoBtn');
+                const closePerdidoModalBtn = document.getElementById('closePerdidoModalBtn');
+                const confirmPerdidoBtn = document.getElementById('confirmPerdidoBtn');
+                const motivoSelect = document.getElementById('motivoPerdaSelect');
+                const motivoDetalhes = document.getElementById('motivoPerdaDetalhes');
+                const motivoDetalhesStar = document.getElementById('motivoPerdaDetalhesObrigatorio');
+                const perdidoError = document.getElementById('perdidoErrorMessage');
+
+                if (cancelPerdidoBtn) cancelPerdidoBtn.addEventListener('click', closePerdidoModal);
+                if (closePerdidoModalBtn) closePerdidoModalBtn.addEventListener('click', closePerdidoModal);
+                if (confirmPerdidoBtn) confirmPerdidoBtn.addEventListener('click', confirmPerdido);
+
+                if (motivoSelect) {
+                    motivoSelect.addEventListener('change', () => {
+                        if (motivoSelect.value === 'Outro') {
+                            motivoDetalhesStar?.classList.remove('hidden');
+                            motivoDetalhes?.focus();
+                        } else {
+                            motivoDetalhesStar?.classList.add('hidden');
+                        }
+                        if (perdidoError) perdidoError.classList.add('hidden');
+                    });
+                }
+                if (motivoDetalhes) {
+                    motivoDetalhes.addEventListener('input', () => {
+                        if (perdidoError) perdidoError.classList.add('hidden');
+                    });
+                }
             });
 
         });
@@ -2661,6 +3063,11 @@
             if (target.id === 'configModal') {
                 target.classList.add('hidden');
                 target.classList.remove('flex');
+            }
+
+            // 8. Close Perdido Modal on Backdrop Click
+            if (target.id === 'perdidoModal') {
+                if (typeof closePerdidoModal === 'function') closePerdidoModal();
             }
 
         });
