@@ -1316,15 +1316,6 @@
                 <div class="flex items-center gap-1 mb-2.5 flex-wrap">
                     ${tagsHTML}
                 </div>
-                ${prospect.motivoPerda ? `
-                    <div class="mb-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200/70 dark:border-rose-900/50 text-[10px] text-rose-700 dark:text-rose-300">
-                        <div class="flex items-center gap-1 font-bold text-rose-800 dark:text-rose-300 mb-0.5">
-                            <i class="fas fa-ban text-[9px]"></i>
-                            <span>Motivo da perda:</span>
-                        </div>
-                        <p class="text-gray-700 dark:text-gray-300 italic break-words leading-tight">${prospect.motivoPerda}</p>
-                    </div>
-                ` : ''}
                 ${prospect.origemLead ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1"><i class="fas fa-sign-in-alt"></i> ${prospect.origemLead}</p>` : ''}
                 ${dateTimeHTML}
                 <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center gap-2">

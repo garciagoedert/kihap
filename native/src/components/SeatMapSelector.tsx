@@ -27,17 +27,19 @@ interface SeatMapSelectorProps {
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-export function getSeatSectorName(seatId: string, config?: SeatConfig): string {
-  if (!config) return '';
+export function getSeatSectorName(seatId?: string, config?: SeatConfig): string {
+  if (!seatId || typeof seatId !== 'string' || !config) return '';
   const layout = config.layoutType || 'theater';
   if (layout === 'theater') return '';
 
-  const [rowLetter, colStr] = seatId.split('-');
-  const col = parseInt(colStr, 10);
+  const parts = seatId.split('-');
+  if (parts.length < 2) return '';
+  const rowLetter = parts[0];
+  const col = parseInt(parts[1], 10) || 0;
   const rowIdx = ALPHABET.indexOf(rowLetter);
 
-  const numRows = config.rows || 8;
-  const numCols = config.seatsPerRow || config.cols || 16;
+  const numRows = Math.min(26, Math.max(1, parseInt(String(config.rows || 8), 10) || 8));
+  const numCols = Math.min(50, Math.max(1, parseInt(String(config.seatsPerRow || config.cols || 16), 10) || 16));
 
   if (layout === 'gym_sides') {
     const leftCols = Math.floor(numCols / 2);
@@ -45,11 +47,16 @@ export function getSeatSectorName(seatId: string, config?: SeatConfig): string {
   }
 
   if (layout === 'arena_4_sides') {
-    const topRows = Math.min(Math.max(1, config.topRows || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
-    const bottomRows = Math.min(Math.max(1, config.bottomRows || config.topRows || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
-    const sideCols = Math.min(Math.max(1, config.sideCols || 4), Math.max(1, Math.floor((numCols - 2) / 2)));
+    const maxBlockRows = Math.max(1, Math.floor((numRows - 1) / 2));
+    const rawTop = parseInt(String(config.topRows || 2), 10) || 2;
+    const rawBottom = parseInt(String(config.bottomRows || config.topRows || 2), 10) || 2;
+    const rawSide = parseInt(String(config.sideCols || 4), 10) || 4;
 
-    if (rowIdx < topRows) return 'Setor Superior';
+    const topRows = Math.min(Math.max(1, rawTop), maxBlockRows);
+    const bottomRows = Math.min(Math.max(1, rawBottom), maxBlockRows);
+    const sideCols = Math.min(Math.max(1, rawSide), Math.max(1, Math.floor((numCols - 2) / 2)));
+
+    if (rowIdx >= 0 && rowIdx < topRows) return 'Setor Superior';
     if (rowIdx >= numRows - bottomRows) return 'Setor Inferior';
     if (col <= sideCols) return 'Setor Oeste (Esq)';
     return 'Setor Leste (Dir)';
@@ -63,24 +70,29 @@ export default function SeatMapSelector({
   sessionId = 'default',
   config,
   selectedSeats,
-  onSeatToggle,
-  maxSeats
+  onSeatToggle
 }: SeatMapSelectorProps) {
   const [reservations, setReservations] = useState<{ [seatId: string]: any }>({});
   const [loading, setLoading] = useState(true);
   const [activeSectorFilter, setActiveSectorFilter] = useState<'all' | 'left' | 'right' | 'top' | 'bottom'>('all');
 
   const layoutType = config?.layoutType || 'theater';
-  const numRows = Math.min(26, Math.max(1, config?.rows || 8));
-  const numCols = Math.min(50, Math.max(1, config?.seatsPerRow || config?.cols || 16));
+  const numRows = Math.min(26, Math.max(1, parseInt(String(config?.rows || 8), 10) || 8));
+  const numCols = Math.min(50, Math.max(1, parseInt(String(config?.seatsPerRow || config?.cols || 16), 10) || 16));
   const stageLabel = config?.stageLabel || (layoutType === 'theater' ? 'PALCO / TATAME' : 'TATAME CENTRAL');
   const disabledSet = useMemo(() => new Set(config?.disabledSeats || []), [config?.disabledSeats]);
 
-  // Parâmetros de proporção para Ginásio e Arena
-  const leftCols = Math.floor(numCols / 2);
-  const topRows = Math.min(Math.max(1, config?.topRows || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
-  const bottomRows = Math.min(Math.max(1, config?.bottomRows || config?.topRows || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
-  const sideCols = Math.min(Math.max(1, config?.sideCols || 4), Math.max(1, Math.floor((numCols - 2) / 2)));
+  // Parâmetros de proporção seguros para Ginásio e Arena
+  const leftCols = Math.max(1, Math.floor(numCols / 2));
+  const maxBlockRows = Math.max(1, Math.floor((numRows - 1) / 2));
+  const rawTop = parseInt(String(config?.topRows || 2), 10) || 2;
+  const rawBottom = parseInt(String(config?.bottomRows || config?.topRows || 2), 10) || 2;
+  const rawSide = parseInt(String(config?.sideCols || 4), 10) || 4;
+
+  const topRows = Math.min(Math.max(1, rawTop), maxBlockRows);
+  const bottomRows = Math.min(Math.max(1, rawBottom), maxBlockRows);
+  const sideCols = Math.min(Math.max(1, rawSide), Math.max(1, Math.floor((numCols - 2) / 2)));
+  const midRowsCount = Math.max(0, numRows - topRows - bottomRows);
 
   useEffect(() => {
     if (!productId) return;
@@ -116,7 +128,7 @@ export default function SeatMapSelector({
 
   const now = Date.now();
 
-  const renderSeat = (seatId: string, seatNum: number, sectorName?: string) => {
+  const renderSeat = (seatId: string, seatNum: number, _sectorName?: string) => {
     const isSelected = selectedSeats.includes(seatId);
     const reservation = reservations[seatId];
     const isDisabled = disabledSet.has(seatId) || reservation?.status === 'disabled' || reservation?.status === 'blocked_admin';
@@ -132,7 +144,7 @@ export default function SeatMapSelector({
           key={seatId}
           style={{ width: 28, height: 28, margin: 2, alignItems: 'center', justifyContent: 'center', opacity: 0.15 }}
         >
-          <Text className="text-[8px] text-gray-400">•</Text>
+          <Text style={{ fontSize: 8, color: '#9ca3af' }}>•</Text>
         </View>
       );
     }
@@ -192,126 +204,192 @@ export default function SeatMapSelector({
   };
 
   return (
-    <View className="my-4 p-4 bg-white dark:bg-[#121212] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
-      <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+    <View style={{
+      marginVertical: 16,
+      padding: 16,
+      borderRadius: 24,
+      backgroundColor: '#ffffff',
+      borderWidth: 1,
+      borderColor: 'rgba(229, 231, 235, 0.8)',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1
+    }}>
+      <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: 13, fontWeight: '900', color: '#111827', textTransform: 'uppercase', letterSpacing: 0.8 }}>
           Escolha suas cadeiras
         </Text>
         {selectedSeats.length > 0 && (
-          <View className="px-2.5 py-1 bg-yellow-500/20 border border-yellow-500 rounded-full">
-            <Text className="text-xs font-black text-yellow-600 dark:text-yellow-400">
+          <View style={{
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            backgroundColor: 'rgba(234, 179, 8, 0.2)',
+            borderWidth: 1,
+            borderColor: '#eab308',
+            borderRadius: 9999
+          }}>
+            <Text style={{ fontSize: 11, fontWeight: '900', color: '#ca8a04' }}>
               {selectedSeats.length} {selectedSeats.length === 1 ? 'cadeira' : 'cadeiras'}
             </Text>
           </View>
         )}
       </View>
 
-      {/* Seletor rápido de setor/ala para facilitar a visualização no mobile */}
+      {/* Seletor rápido de setor para layout Ginásio */}
       {layoutType === 'gym_sides' && (
-        <View className="mb-3 flex-row items-center justify-center gap-1.5 bg-gray-100 dark:bg-gray-800/60 p-1 rounded-xl">
+        <View style={{
+          marginBottom: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          backgroundColor: '#f3f4f6',
+          padding: 4,
+          borderRadius: 12
+        }}>
           <TouchableOpacity
             onPress={() => setActiveSectorFilter('all')}
-            className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'all' ? 'bg-amber-500 shadow-sm' : ''}`}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              backgroundColor: activeSectorFilter === 'all' ? '#f59e0b' : 'transparent'
+            }}
           >
-            <Text className={`text-[10px] font-bold ${activeSectorFilter === 'all' ? 'text-black' : 'text-gray-500 dark:text-gray-400'}`}>
+            <Text style={{
+              fontSize: 10,
+              fontWeight: '700',
+              color: activeSectorFilter === 'all' ? '#000000' : '#6b7280'
+            }}>
               🏟️ Ginásio Completo
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => setActiveSectorFilter('left')}
-            className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'left' ? 'bg-amber-500 shadow-sm' : ''}`}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              backgroundColor: activeSectorFilter === 'left' ? '#f59e0b' : 'transparent'
+            }}
           >
-            <Text className={`text-[10px] font-bold ${activeSectorFilter === 'left' ? 'text-black' : 'text-gray-500 dark:text-gray-400'}`}>
+            <Text style={{
+              fontSize: 10,
+              fontWeight: '700',
+              color: activeSectorFilter === 'left' ? '#000000' : '#6b7280'
+            }}>
               ⬅️ Ala Esquerda
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => setActiveSectorFilter('right')}
-            className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'right' ? 'bg-blue-600 shadow-sm' : ''}`}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 8,
+              backgroundColor: activeSectorFilter === 'right' ? '#2563eb' : 'transparent'
+            }}
           >
-            <Text className={`text-[10px] font-bold ${activeSectorFilter === 'right' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+            <Text style={{
+              fontSize: 10,
+              fontWeight: '700',
+              color: activeSectorFilter === 'right' ? '#ffffff' : '#6b7280'
+            }}>
               Ala Direita ➡️
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* Seletor rápido de setor para Arena 360° com botões simples (sem ScrollView aninhado) */}
       {layoutType === 'arena_4_sides' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 py-1">
-          <View className="flex-row items-center gap-1.5 bg-gray-100 dark:bg-gray-800/60 p-1 rounded-xl">
-            <TouchableOpacity
-              onPress={() => setActiveSectorFilter('all')}
-              className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'all' ? 'bg-amber-500 shadow-sm' : ''}`}
-            >
-              <Text className={`text-[10px] font-bold ${activeSectorFilter === 'all' ? 'text-black' : 'text-gray-500 dark:text-gray-400'}`}>
-                🔄 Arena 360°
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveSectorFilter('top')}
-              className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'top' ? 'bg-indigo-600 shadow-sm' : ''}`}
-            >
-              <Text className={`text-[10px] font-bold ${activeSectorFilter === 'top' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                ⬆️ Superior (Norte)
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveSectorFilter('left')}
-              className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'left' ? 'bg-amber-500 shadow-sm' : ''}`}
-            >
-              <Text className={`text-[10px] font-bold ${activeSectorFilter === 'left' ? 'text-black' : 'text-gray-500 dark:text-gray-400'}`}>
-                ⬅️ Oeste (Esq)
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveSectorFilter('right')}
-              className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'right' ? 'bg-blue-600 shadow-sm' : ''}`}
-            >
-              <Text className={`text-[10px] font-bold ${activeSectorFilter === 'right' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                Leste (Dir) ➡️
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveSectorFilter('bottom')}
-              className={`px-3 py-1.5 rounded-lg ${activeSectorFilter === 'bottom' ? 'bg-emerald-600 shadow-sm' : ''}`}
-            >
-              <Text className={`text-[10px] font-bold ${activeSectorFilter === 'bottom' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                ⬇️ Inferior (Sul)
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+        <View style={{ marginBottom: 14 }}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingVertical: 2, paddingHorizontal: 2 }}
+          >
+            {[
+              { id: 'all', label: '🔄 Arena 360°', activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'top', label: '⬆️ Norte (Sup)', activeBg: '#4f46e5', activeText: '#ffffff' },
+              { id: 'left', label: '⬅️ Oeste (Esq)', activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'right', label: 'Leste (Dir) ➡️', activeBg: '#2563eb', activeText: '#ffffff' },
+              { id: 'bottom', label: '⬇️ Sul (Inf)', activeBg: '#059669', activeText: '#ffffff' },
+            ].map(sec => {
+              const isActive = activeSectorFilter === sec.id;
+              return (
+                <TouchableOpacity
+                  key={sec.id}
+                  onPress={() => setActiveSectorFilter(sec.id as any)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                    borderRadius: 10,
+                    backgroundColor: isActive ? sec.activeBg : '#f3f4f6'
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: '800',
+                    color: isActive ? sec.activeText : '#6b7280'
+                  }}>
+                    {sec.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       )}
 
       {/* Palco no Topo para layout teatro */}
       {layoutType === 'theater' && (
-        <View className="mb-6 items-center">
-          <View className="w-4/5 py-2 px-4 bg-gray-100 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 items-center justify-center shadow-sm">
-            <Text className="text-[11px] font-black text-gray-600 dark:text-gray-300 tracking-widest uppercase">
+        <View style={{ marginBottom: 20, alignItems: 'center' }}>
+          <View style={{
+            width: '80%',
+            paddingVertical: 8,
+            paddingHorizontal: 16,
+            backgroundColor: '#f3f4f6',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: '#d1d5db',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Text style={{ fontSize: 11, fontWeight: '900', color: '#4b5563', letterSpacing: 1.5, textTransform: 'uppercase' }}>
               {stageLabel}
             </Text>
           </View>
-          <View className="w-3/5 h-1 bg-yellow-500/40 rounded-full mt-1.5" />
+          <View style={{ width: '60%', height: 4, backgroundColor: 'rgba(234, 179, 8, 0.4)', borderRadius: 2, marginTop: 6 }} />
         </View>
       )}
 
       {/* Loading state */}
       {loading ? (
-        <View className="py-8 items-center justify-center">
+        <View style={{ paddingVertical: 32, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="small" color="#eab308" />
-          <Text className="text-xs text-gray-400 mt-2">Carregando mapa de cadeiras...</Text>
+          <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 8 }}>Carregando mapa de cadeiras...</Text>
         </View>
       ) : (
-        /* Grid com rolagem horizontal e vertical suave */
-        <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 4 }}>
+        /* Grid com rolagem horizontal */
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={true} 
+          contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 4 }}
+        >
           {layoutType === 'theater' && (
-            <View className="flex-col gap-1.5 min-w-full items-center">
+            <View style={{ flexDirection: 'column', gap: 6, minWidth: '100%', alignItems: 'center' }}>
               {Array.from({ length: numRows }).map((_, r) => {
-                const rowLetter = ALPHABET[r];
+                const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                 return (
-                  <View key={rowLetter} className="flex-row items-center gap-1">
-                    <View className="w-5 items-center justify-center">
-                      <Text className="text-[11px] font-black text-gray-400 dark:text-gray-500">{rowLetter}</Text>
+                  <View key={`row_${rowLetter}_${r}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 20, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                     </View>
 
                     {Array.from({ length: numCols }).map((__, cIndex) => {
@@ -320,8 +398,8 @@ export default function SeatMapSelector({
                       return renderSeat(seatId, seatNum);
                     })}
 
-                    <View className="w-5 items-center justify-center">
-                      <Text className="text-[11px] font-black text-gray-400 dark:text-gray-500">{rowLetter}</Text>
+                    <View style={{ width: 20, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                     </View>
                   </View>
                 );
@@ -330,22 +408,30 @@ export default function SeatMapSelector({
           )}
 
           {layoutType === 'gym_sides' && (
-            <View className="flex-row items-center justify-center gap-5 min-w-full">
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, minWidth: '100%' }}>
               {/* Ala Esquerda */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'left') && (
-                <View className="flex-col items-center">
-                  <View className="mb-2 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                    <Text className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase">
+                <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                  <View style={{
+                    marginBottom: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(245, 158, 11, 0.3)',
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
                       ⬅️ Ala Esquerda (1 a {leftCols})
                     </Text>
                   </View>
-                  <View className="flex-col gap-1.5">
+                  <View style={{ flexDirection: 'column', gap: 6 }}>
                     {Array.from({ length: numRows }).map((_, r) => {
-                      const rowLetter = ALPHABET[r];
+                      const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                       return (
-                        <View key={rowLetter} className="flex-row items-center gap-1 justify-end">
-                          <View className="w-5 items-center justify-center">
-                            <Text className="text-[10px] font-black text-gray-400">{rowLetter}</Text>
+                        <View key={`left_${rowLetter}_${r}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                          <View style={{ width: 20, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 10, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                           {Array.from({ length: leftCols }).map((__, cIndex) => {
                             const seatNum = cIndex + 1;
@@ -385,24 +471,32 @@ export default function SeatMapSelector({
 
               {/* Ala Direita */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'right') && (
-                <View className="flex-col items-center">
-                  <View className="mb-2 px-2.5 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <Text className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                  <View style={{
+                    marginBottom: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(37, 99, 235, 0.3)',
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
                       Ala Direita ({leftCols + 1} a {numCols}) ➡️
                     </Text>
                   </View>
-                  <View className="flex-col gap-1.5">
+                  <View style={{ flexDirection: 'column', gap: 6 }}>
                     {Array.from({ length: numRows }).map((_, r) => {
-                      const rowLetter = ALPHABET[r];
+                      const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                       return (
-                        <View key={rowLetter} className="flex-row items-center gap-1 justify-start">
-                          {Array.from({ length: numCols - leftCols }).map((__, cIndex) => {
+                        <View key={`right_${rowLetter}_${r}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-start' }}>
+                          {Array.from({ length: Math.max(0, numCols - leftCols) }).map((__, cIndex) => {
                             const seatNum = leftCols + cIndex + 1;
                             const seatId = `${rowLetter}-${seatNum}`;
                             return renderSeat(seatId, seatNum, 'Ala Direita');
                           })}
-                          <View className="w-5 items-center justify-center">
-                            <Text className="text-[10px] font-black text-gray-400">{rowLetter}</Text>
+                          <View style={{ width: 20, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 10, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                         </View>
                       );
@@ -414,30 +508,38 @@ export default function SeatMapSelector({
           )}
 
           {layoutType === 'arena_4_sides' && (
-            <View className="flex-col items-center gap-4 min-w-full">
+            <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16, minWidth: '100%' }}>
               {/* 1. Setor Superior (Norte) */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'top') && (
-                <View className="flex-col items-center">
-                  <View className="mb-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
-                    <Text className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">
+                <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                  <View style={{
+                    marginBottom: 6,
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(79, 70, 229, 0.3)',
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#4f46e5', textTransform: 'uppercase' }}>
                       ⬆️ Setor Superior (Norte)
                     </Text>
                   </View>
-                  <View className="flex-col gap-1">
+                  <View style={{ flexDirection: 'column', gap: 4 }}>
                     {Array.from({ length: topRows }).map((_, r) => {
-                      const rowLetter = ALPHABET[r];
+                      const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                       return (
-                        <View key={rowLetter} className="flex-row items-center gap-1 justify-center">
-                          <View className="w-4 items-center justify-center">
-                            <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                        <View key={`arena_top_${rowLetter}_${r}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                          <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                           {Array.from({ length: numCols }).map((__, cIndex) => {
                             const seatNum = cIndex + 1;
                             const seatId = `${rowLetter}-${seatNum}`;
                             return renderSeat(seatId, seatNum, 'Setor Superior');
                           })}
-                          <View className="w-4 items-center justify-center">
-                            <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                          <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                         </View>
                       );
@@ -448,23 +550,31 @@ export default function SeatMapSelector({
 
               {/* 2. Miolo: Setor Oeste + Tatame Central + Setor Leste */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'left' || activeSectorFilter === 'right') && (
-                <View className="flex-row items-center justify-center gap-4">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
                   {/* Setor Oeste (Esquerda) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'left') && (
-                    <View className="flex-col items-center">
-                      <View className="mb-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-md">
-                        <Text className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase">
+                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                      <View style={{
+                        marginBottom: 6,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(245, 158, 11, 0.3)',
+                        borderRadius: 6
+                      }}>
+                        <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
                           ⬅️ Oeste (Esq)
                         </Text>
                       </View>
-                      <View className="flex-col gap-1">
-                        {Array.from({ length: numRows - topRows - bottomRows }).map((_, idx) => {
+                      <View style={{ flexDirection: 'column', gap: 4 }}>
+                        {Array.from({ length: midRowsCount }).map((_, idx) => {
                           const r = topRows + idx;
-                          const rowLetter = ALPHABET[r];
+                          const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                           return (
-                            <View key={rowLetter} className="flex-row items-center gap-1 justify-end">
-                              <View className="w-4 items-center justify-center">
-                                <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                            <View key={`arena_west_${rowLetter}_${idx}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                              <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                               </View>
                               {Array.from({ length: sideCols }).map((__, cIndex) => {
                                 const seatNum = cIndex + 1;
@@ -504,25 +614,33 @@ export default function SeatMapSelector({
 
                   {/* Setor Leste (Direita) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'right') && (
-                    <View className="flex-col items-center">
-                      <View className="mb-1.5 px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded-md">
-                        <Text className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                      <View style={{
+                        marginBottom: 6,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(37, 99, 235, 0.3)',
+                        borderRadius: 6
+                      }}>
+                        <Text style={{ fontSize: 9, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
                           Leste (Dir) ➡️
                         </Text>
                       </View>
-                      <View className="flex-col gap-1">
-                        {Array.from({ length: numRows - topRows - bottomRows }).map((_, idx) => {
+                      <View style={{ flexDirection: 'column', gap: 4 }}>
+                        {Array.from({ length: midRowsCount }).map((_, idx) => {
                           const r = topRows + idx;
-                          const rowLetter = ALPHABET[r];
+                          const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                           return (
-                            <View key={rowLetter} className="flex-row items-center gap-1 justify-start">
+                            <View key={`arena_east_${rowLetter}_${idx}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-start' }}>
                               {Array.from({ length: sideCols }).map((__, cIndex) => {
-                                const seatNum = numCols - sideCols + cIndex + 1;
+                                const seatNum = Math.max(1, numCols - sideCols + cIndex + 1);
                                 const seatId = `${rowLetter}-${seatNum}`;
                                 return renderSeat(seatId, seatNum, 'Setor Leste');
                               })}
-                              <View className="w-4 items-center justify-center">
-                                <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                              <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                               </View>
                             </View>
                           );
@@ -535,28 +653,36 @@ export default function SeatMapSelector({
 
               {/* 3. Setor Inferior (Sul) */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'bottom') && (
-                <View className="flex-col items-center">
-                  <View className="mb-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                    <Text className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                  <View style={{
+                    marginBottom: 6,
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(5, 150, 105, 0.3)',
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
                       ⬇️ Setor Inferior (Sul)
                     </Text>
                   </View>
-                  <View className="flex-col gap-1">
+                  <View style={{ flexDirection: 'column', gap: 4 }}>
                     {Array.from({ length: bottomRows }).map((_, idx) => {
-                      const r = numRows - bottomRows + idx;
-                      const rowLetter = ALPHABET[r];
+                      const r = Math.max(0, numRows - bottomRows + idx);
+                      const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
                       return (
-                        <View key={rowLetter} className="flex-row items-center gap-1 justify-center">
-                          <View className="w-4 items-center justify-center">
-                            <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                        <View key={`arena_bottom_${rowLetter}_${idx}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                          <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                           {Array.from({ length: numCols }).map((__, cIndex) => {
                             const seatNum = cIndex + 1;
                             const seatId = `${rowLetter}-${seatNum}`;
                             return renderSeat(seatId, seatNum, 'Setor Inferior');
                           })}
-                          <View className="w-4 items-center justify-center">
-                            <Text className="text-[9px] font-black text-gray-400">{rowLetter}</Text>
+                          <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#9ca3af' }}>{rowLetter}</Text>
                           </View>
                         </View>
                       );
@@ -570,20 +696,30 @@ export default function SeatMapSelector({
       )}
 
       {/* Legenda visual */}
-      <View className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex-row flex-wrap items-center justify-around gap-2">
-        <View className="flex-row items-center gap-1.5">
-          <View className="w-3.5 h-3.5 rounded bg-yellow-500 border border-yellow-400" />
-          <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300">Selecionada</Text>
+      <View style={{
+        marginTop: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        gap: 8
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: '#eab308', borderWidth: 1, borderColor: '#facc15' }} />
+          <Text style={{ fontSize: 10, fontWeight: '700', color: '#4b5563' }}>Selecionada</Text>
         </View>
 
-        <View className="flex-row items-center gap-1.5">
-          <View className="w-3.5 h-3.5 rounded bg-emerald-500/10 border border-emerald-500/30" />
-          <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300">Disponível</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: 'rgba(16, 185, 129, 0.12)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.35)' }} />
+          <Text style={{ fontSize: 10, fontWeight: '700', color: '#4b5563' }}>Disponível</Text>
         </View>
 
-        <View className="flex-row items-center gap-1.5">
-          <View className="w-3.5 h-3.5 rounded bg-red-500/20 border border-red-500/40" />
-          <Text className="text-[10px] font-bold text-gray-600 dark:text-gray-300">Ocupada</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: 'rgba(239, 68, 68, 0.15)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.35)' }} />
+          <Text style={{ fontSize: 10, fontWeight: '700', color: '#4b5563' }}>Ocupada</Text>
         </View>
       </View>
     </View>
