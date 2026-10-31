@@ -1098,10 +1098,12 @@ async function loadComponents(pageSpecificSetup) {
 }
 
 const systemInstruction = `Você é o Kobe, o simpático, inteligente, ativo e prestativo assistente virtual oficial e mascote de toda a Intranet da Kihap, uma renomada escola de artes marciais.
-Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores e administradores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte, vendas, produtos e muito mais.
+Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores e administradores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte, vendas, produtos, e atuar ativamente como um **Copiloto de Atendimento e Respostas a Leads**.
 
-IDENTIDADE IMPORTANTE:
-- Você é simplesmente o "Kobe".
+IDENTIDADE E TERMINOLOGIA IMPORTANTE:
+- Você é simplesmente o "Kobe", o assistente virtual oficial e mascote da Intranet da escola Kihap.
+- A pessoa que conversa com você é um usuário humano (colaborador, instrutor ou gestor da Kihap). **NUNCA** chame o usuário de "Kobe" nem peça desculpas chamando ele de "Kobe"! Trate o usuário pelo nome se souber, ou como "campeão(ã)", "professor(a)", "equipe".
+- **TERMINOLOGIA OBRIGATÓRIA**: NUNCA utilize a palavra "dojo". A escola Kihap utiliza exclusivamente o termo **"escola"** (ou "unidade", "tatame"). A palavra "dojo" é estritamente proibida em qualquer resposta, roteiro ou conselho.
 - Você **NÃO** deve se referir a si mesmo como "macaco", "primata" ou qualquer termo relacionado a animais.
 - Você **NÃO** é um mestre de artes marciais. Nunca use títulos como "mestre", "macaco-mestre" ou similares para se referir a você mesmo. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito, dedicação e graduação.
 
@@ -1112,6 +1114,38 @@ DIRETRIZES DE COMUNICAÇÃO E TOM DE VOZ KIHAP:
 4. **Valores da Kihap**: Em todas as suas interações, conselhos e respostas, reflita os valores essenciais da escola: **DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR**.
 5. **Foco no Relacionamento e Valor (Jeito Kihap de Vender)**: Quando questionado sobre vendas ou processos comerciais da escola, lembre-se de que "vender significa gerar valor através do relacionamento, da experiência e da transformação proporcionada pela Arte Marcial". Foque em comunicar benefícios, transformação e propósito, em vez de apenas focar em custos financeiros.
 6. **Linguagem Direta e Organizada**: Mantenha suas respostas diretas, organizadas (use negritos como **texto** para destacar caminhos e termos importantes) e evite textos excessivamente longos.
+
+==================================================
+NOVO PAPEL ESPECIALIZADO: COPILOTO DE ATENDIMENTO & FORMULAÇÃO DE RESPOSTAS A LEADS
+==================================================
+Você é o braço direito da equipe comercial, recepção e atendimento da Kihap no WhatsApp, Instagram e canais digitais!
+SEMPRE que o usuário colar uma mensagem de um lead/prospect, pedir ajuda para responder um cliente, contornar uma objeção ou formular um atendimento:
+1. **Análise Rápida da Mensagem do Lead**:
+   - Identifique a intenção central, faixa etária (criança, adolescente ou adulto) e eventuais objeções (preço, horário, localização, insegurança/medo de começar, vergonha, disciplina infantil).
+2. **Forneça Respostas Prontas para Envio (Prontas para Copiar e Colar)**:
+   - Forneça SEMPRE o texto das mensagens completo e detalhado imediatamente na mesma resposta. NUNCA diga que vai formular e pare de falar sem enviar o texto!
+   - Formate as respostas sugeridas dentro de blocos de texto com a tag \`\`\`whatsapp para que o colaborador possa copiar com 1 clique!
+   - **FORMATAÇÃO WHATSAPP OBRIGATÓRIA**: No WhatsApp, para deixar palavras em negrito, utiliza-se apenas UM asterisco no início e no final (ex: *palavra*, *aula experimental*, *disciplina*). **NUNCA USE DOIS ASTERISCOS (\*\*palavra\*\*)** dentro das mensagens para o lead! Use SEMPRE apenas 1 asterisco no início e 1 no final da palavra/frase destacada.
+   - **TERMINOLOGIA OBRIGATÓRIA**: NUNCA use a palavra "dojo", utilize sempre "escola" (ou "unidade", "tatame").
+   - Sempre dê de 1 a 2 opções adequadas ao contexto:
+     * **Opção 1: Direta e Calorosa** (rápida, simpática e humanizada, perfeita para WhatsApp dinâmico).
+     * **Opção 2: Focada em Valor & Contorno de Objeções** (contextualizada, educativa, destacando a transformação antes do preço).
+3. **Regras de Ouro do Atendimento Kihap**:
+   - **Objetivo Número 1: Agendar Aula Experimental Gratuita**: A mágica da Kihap acontece quando a família ou o aluno pisa no tatame e vivencia a energia, o carinho dos professores e a segurança da escola. O foco de toda resposta é sempre convidar para a aula experimental sem compromisso!
+   - **Objeção de Preço ("Quanto custa a mensalidade?", "Qual o valor?")**:
+     * NUNCA passe apenas uma tabela fria de preços sem acolher e entender o objetivo do aluno primeiro.
+     * Acolha calorosamente, pergunte quem vai praticar (idade) e se já tem alguma experiência, explique que os planos são personalizados de acordo com os objetivos e a frequência, e proponha a aula experimental gratuita para vivenciar a metodologia no tatame antes de qualquer decisão.
+   - **Programas por Faixa Etária**:
+     * **Littles (3 a 6 anos)**: Foco em coordenação motora, respeito, socialização, gasto de energia positiva e disciplina lúdica e divertida.
+     * **Kids (7 a 12 anos)**: Autoconfiança, foco nos estudos, respeito, superação de timidez, prevenção ao bullying e defesa pessoal.
+     * **Teens (13 a 17 anos)**: Condicionamento, descompressão de telas, liderança, comunidade saudável e autoestima.
+     * **Adultos**: Alívio do estresse do dia a dia, condicionamento, flexibilidade e autodefesa em um ambiente super seguro para quem está começando do absoluto zero (sem risco de lesões).
+   - **Finalize Sempre com uma Pergunta Aberta Convidativa**:
+     * Facilite a resposta do lead (ex: "Qual período fica melhor para vocês: manhã, tarde ou noite?", "Ele(a) já praticou alguma atividade antes ou seria a primeira vez?", "Qual unidade fica mais perto para você: Asa Sul, Centro ou Coqueiros?").
+4. **Dica Estratégica Rápida**:
+   - Após as opções de texto, adicione um breve comentário estratégico com 1 ou 2 dicas de atendimento (ex: timing de envio, áudio vs texto, como criar rapport).
+5. **Integração com Ferramentas do CRM**:
+   - Se o usuário mencionar o nome de um lead cadastrado (ex: "o que respondo para a Taina?", "veja o lead Gustavo"), use ativamente \`searchProspects\` e \`getProspectDetails\` para consultar a unidade, fase do funil, canal de origem (ex: Chatbot Miles, Site, Meta) e histórico de contatos antes de formular a resposta.
 
 Aqui estão algumas seções principais da intranet que você pode guiar os usuários a encontrar:
 - **Início/Painel**: Tela inicial com visão geral.
@@ -1142,23 +1176,26 @@ Use essas ferramentas ativamente quando o usuário solicitar informações sobre
 function initGlobalKobeChatbot() {
     if (document.getElementById('aiChatToggle')) return; // Já injetado
 
+    // Os botões rápidos de atendimento só devem ser exibidos na página do CRM/Prosecção
+    const isCrmPage = window.location.pathname.includes('prospeccao') || window.location.pathname.includes('crm');
+
     // Injeta o CSS/HTML
     const chatContainer = document.createElement('div');
     chatContainer.id = 'global-kobe-chatbot';
     chatContainer.innerHTML = `
         <!-- Botão Flutuante do Chat IA -->
-        <button id="aiChatToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-tr from-[#6366F1] via-[#A855F7] to-[#EC4899] text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 shadow-purple-500/30 hover:shadow-purple-500/50 border border-white/10">
+        <button id="aiChatToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-tr from-[#6366F1] via-[#A855F7] to-[#EC4899] text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 shadow-purple-500/30 hover:shadow-purple-500/50 border border-white/10" title="Conversar com Kobe (IA da Intranet)">
             <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 1.5C12 7.3 16.7 12 22.5 12C16.7 12 12 16.7 12 22.5C12 16.7 7.3 12 1.5 12C7.3 12 12 7.3 12 1.5Z"/>
             </svg>
         </button>
 
         <!-- Janela do Chat IA -->
-        <div id="aiChatWindow" class="fixed bottom-24 right-6 w-96 h-[550px] z-50 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+        <div id="aiChatWindow" class="fixed bottom-24 right-6 w-96 h-[570px] z-50 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
             <!-- Header -->
-            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 rounded-t-3xl">
+            <div class="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 rounded-t-3xl">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-white">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-white shadow-sm">
                         <img src="/imgs/personagens/perfilpersonagens/avatar_03.png" alt="Kobe" class="w-full h-full object-cover">
                     </div>
                     <div>
@@ -1166,7 +1203,7 @@ function initGlobalKobeChatbot() {
                             Kobe
                             <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
                         </h3>
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Assistente IA da Intranet</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Assistente IA & Copiloto de Atendimento</p>
                     </div>
                 </div>
                 <button id="closeChatBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg transition-colors">
@@ -1175,7 +1212,7 @@ function initGlobalKobeChatbot() {
             </div>
 
             <!-- Messages Body -->
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-sm text-gray-700 dark:text-gray-300">
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar text-sm text-gray-700 dark:text-gray-300">
                 <!-- Messages bubble -->
             </div>
 
@@ -1188,12 +1225,25 @@ function initGlobalKobeChatbot() {
                 </div>
             </div>
 
+            <!-- Sugestões Rápidas de Atendimento (Exclusivas da tela de CRM) -->
+            <div id="kobeQuickChips" class="px-3 py-1.5 ${isCrmPage ? 'flex' : 'hidden'} gap-1.5 overflow-x-auto no-scrollbar border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 text-[11px]">
+                <button type="button" class="kobe-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 transition-colors flex items-center gap-1 font-medium active:scale-95" data-prompt-type="lead">
+                    <i class="fab fa-whatsapp text-emerald-500"></i> Responder Lead
+                </button>
+                <button type="button" class="kobe-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40 transition-colors flex items-center gap-1 font-medium active:scale-95" data-prompt-type="preco">
+                    <i class="fas fa-comment-dollar text-purple-500"></i> Objeção de Preço
+                </button>
+                <button type="button" class="kobe-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40 transition-colors flex items-center gap-1 font-medium active:scale-95" data-prompt-type="experimental">
+                    <i class="fas fa-calendar-check text-blue-500"></i> Agendar Aula
+                </button>
+            </div>
+
             <!-- Input Area -->
-            <form id="chatForm" class="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-b-3xl">
-                <input type="text" id="chatInput" required placeholder="Faça uma pergunta ou peça ajuda..." autocomplete="off"
-                    class="flex-grow px-4 py-2.5 text-sm bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-white">
-                <button type="submit" id="sendChatBtn" class="w-10 h-10 bg-gradient-to-tr from-[#6366F1] to-[#A855F7] hover:from-[#4F46E5] hover:to-[#9333EA] text-white rounded-2xl flex items-center justify-center shadow-md transition-all active:scale-95 disabled:opacity-50">
-                    <i class="fas fa-paper-plane"></i>
+            <form id="chatForm" class="p-2.5 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-b-3xl">
+                <input type="text" id="chatInput" required placeholder="Tire dúvidas ou cole a mensagem de um lead..." autocomplete="off"
+                    class="flex-grow px-3.5 py-2 text-sm bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-white">
+                <button type="submit" id="sendChatBtn" class="w-9 h-9 bg-gradient-to-tr from-[#6366F1] to-[#A855F7] hover:from-[#4F46E5] hover:to-[#9333EA] text-white rounded-xl flex items-center justify-center shadow-md transition-all active:scale-95 disabled:opacity-50">
+                    <i class="fas fa-paper-plane text-xs"></i>
                 </button>
             </form>
         </div>
@@ -2896,11 +2946,77 @@ function setupKobeChatbotLogic() {
         }
     }
 
+    function escapeHtml(str) {
+        return (str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function extractTextFromParts(parts) {
+        if (!Array.isArray(parts)) return '';
+        return parts
+            .filter(p => p && typeof p.text === 'string')
+            .map(p => p.text)
+            .join('')
+            .trim();
+    }
+
     function formatMessageText(text) {
-        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        formatted = formatted.replace(/\n/g, '<br>');
-        return formatted;
+        if (!text) return '';
+
+        // Extrai blocos de mensagens/código sugeridos (```whatsapp, ```text ou ```)
+        const codeBlocks = [];
+        let processed = text.replace(/```(?:whatsapp|text|markdown|code)?\s*\n?([\s\S]*?)```/g, (match, code) => {
+            let cleanCode = code.trim();
+            // Substitui termos relacionados a "dojo" por "escola"
+            cleanCode = cleanCode.replace(/\bno dojo\b/gi, 'na escola');
+            cleanCode = cleanCode.replace(/\bnosso dojo\b/gi, 'nossa escola');
+            cleanCode = cleanCode.replace(/\bdojos\b/gi, 'escolas');
+            cleanCode = cleanCode.replace(/\bdojo\b/gi, 'escola');
+            // Converte automaticamente negrito duplo (**texto**) para padrão de WhatsApp com apenas 1 asterisco (*texto*)
+            cleanCode = cleanCode.replace(/\*\*(.*?)\*\*/g, '*$1*');
+
+            const index = codeBlocks.length;
+            codeBlocks.push(cleanCode);
+            return `__KOBE_CODE_BLOCK_${index}__`;
+        });
+
+        // Substitui "dojo" por "escola" também no corpo do texto
+        processed = processed.replace(/\bno dojo\b/gi, 'na escola');
+        processed = processed.replace(/\bnosso dojo\b/gi, 'nossa escola');
+        processed = processed.replace(/\bdojos\b/gi, 'escolas');
+        processed = processed.replace(/\bdojo\b/gi, 'escola');
+
+        // Formata negrito e itálico fora dos blocos de código
+        processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        processed = processed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        processed = processed.replace(/^&gt;\s?(.*)$/gm, '<blockquote class="border-l-2 border-emerald-500 pl-2 my-1 text-xs italic opacity-90">$1</blockquote>');
+        processed = processed.replace(/\n/g, '<br>');
+
+        // Substitui os placeholders pelos blocos estéticos copiáveis
+        codeBlocks.forEach((code, i) => {
+            const escapedCode = escapeHtml(code);
+            const rawCodeAttr = encodeURIComponent(code);
+            const blockHtml = `
+                <div class="kobe-copyable-block my-2.5 p-3 bg-white dark:bg-gray-900 rounded-xl border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm text-left">
+                    <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-100 dark:border-gray-800 text-[11px]">
+                        <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                            <i class="fab fa-whatsapp text-sm"></i> Mensagem Pronta para Envio
+                        </span>
+                        <button type="button" class="kobe-copy-btn px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-semibold transition-all text-xs flex items-center gap-1 active:scale-95 cursor-pointer shadow-xs" data-raw="${rawCodeAttr}" title="Copiar resposta para o WhatsApp">
+                            <i class="far fa-copy text-xs"></i> <span>Copiar</span>
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-800 dark:text-gray-100 whitespace-pre-wrap leading-relaxed select-all font-sans">${escapedCode}</div>
+                </div>
+            `;
+            processed = processed.replace(`__KOBE_CODE_BLOCK_${i}__`, () => blockHtml);
+        });
+
+        return processed;
     }
 
     function appendMessage(role, text) {
@@ -2923,8 +3039,8 @@ function setupKobeChatbotLogic() {
     function renderHistory() {
         chatMessages.innerHTML = '';
         chatHistory.forEach(msg => {
-            const text = msg.parts?.[0]?.text;
-            if (text && !text.includes('systemInstruction') && !text.includes('Faça uma análise inicial') && !text.includes('Analise o desempenho recente') && !text.includes('Boas-vindas à página')) {
+            const text = extractTextFromParts(msg.parts);
+            if (text && !text.includes('systemInstruction') && !text.includes('Faça uma análise inicial') && !text.includes('Analise o desempenho recente') && !text.includes('Boas-vindas à página') && !text.includes('Boas-vindas ao CRM')) {
                 appendMessage(msg.role, text);
             }
         });
@@ -2992,6 +3108,7 @@ function setupKobeChatbotLogic() {
 
         const isMetaAdsPage = window.location.pathname.includes('marketing-social.html');
         const isStorePage = window.location.pathname.includes('store.html') || window.location.pathname.includes('/store');
+        const isCrmPage = window.location.pathname.includes('prospeccao.html') || window.location.pathname.includes('/crm');
         let prompt = '';
 
         const currentUserStr = localStorage.getItem('currentUser');
@@ -3035,10 +3152,21 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
 
 Mantenha a saudação curta, amigável, entusiasmada e prestativa.
 `;
+        } else if (isCrmPage) {
+            prompt = `
+Olá! Faça uma mensagem inicial de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial e mascote de toda a Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma calorosa e pessoal pelo nome.
+Como o usuário está no CRM / Funil de Prospecção (/intranet/prospeccao.html), dê as boas-vindas com foco em conversão e atendimento humanizado aos leads da Kihap.
+Apresente seu papel com entusiasmo:
+- Diga que você agora é o **Copiloto de Atendimento e Vendas**: o colaborador pode colar aqui qualquer mensagem que recebeu de um lead (WhatsApp, Instagram ou e-mail), e você analisará e formulará opções de respostas prontas, acolhedoras e de alta conversão para agendar a aula experimental!
+- Destaque que você ajuda a contornar objeções (como "está caro", dúvidas de horários, medo de começar ou timidez infantil).
+- Lembre que você também pode consultar histórico e dados de qualquer prospect cadastrado.
+Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
+Mantenha a saudação curta, amigável, entusiasmada e prestativa.
+`;
         } else {
             const pageTitle = document.title || 'Intranet Kihap';
             prompt = `
-Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial de toda a Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma muito calorosa e pessoal pelo nome (ex: "Olá, Mr. Garcia!" ou "Que energia boa ver você por aqui, Mr. Garcia!"). Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos ou qualquer suporte. Mantenha a saudação curta, amigável e direta.
+Olá! Faça uma mensagem de boas-vindas. Se apresente como o Kobe, o assistente virtual oficial de toda a Intranet da Kihap. O usuário logado chama-se ${userName ? userName : 'campeão(ã)'}. Diga olá especificamente para essa pessoa na saudação inicial de forma muito calorosa e pessoal pelo nome (ex: "Olá, Mr. Garcia!" ou "Que energia boa ver você por aqui, Mr. Garcia!"). Como o usuário está na página de "${pageTitle}", dê as boas-vindas com entusiasmo, mantendo a filosofia das artes marciais (energia positiva, foco, respeito) e ofereça ajuda para tirar dúvidas sobre o sistema, processos internos, suporte ou como seu copiloto de atendimento para formular respostas a mensagens de leads. Mantenha a saudação curta, amigável e direta.
 
 Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'macaco-mestre') e você NÃO deve se referir a si mesmo como 'macaco' ou 'primata'. Nunca use essas nomenclaturas para si mesmo. Você é o assistente virtual oficial da intranet.
 `;
@@ -3064,11 +3192,11 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
             const json = await response.json();
             if (json.error) throw new Error(json.error.message);
 
-            const aiText = json.candidates?.[0]?.content?.parts?.[0]?.text || "Olá! Como posso te ajudar hoje?";
+            const aiText = extractTextFromParts(json.candidates?.[0]?.content?.parts) || "Olá! Como posso te ajudar hoje?";
 
             chatHistory.push({
                 role: 'user',
-                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : (isStorePage ? "Analise o Business Intelligence da Kihap Store." : `Boas-vindas à página ${document.title || 'Intranet'}`) }]
+                parts: [{ text: isMetaAdsPage ? "Analise o desempenho recente da minha conta." : (isStorePage ? "Analise o Business Intelligence da Kihap Store." : (isCrmPage ? "Boas-vindas ao CRM e copiloto de atendimentos." : `Boas-vindas à página ${document.title || 'Intranet'}`)) }]
             });
             chatHistory.push({
                 role: 'model',
@@ -3090,6 +3218,19 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
     aiChatToggle?.addEventListener('click', () => {
         const isHidden = aiChatWindow.classList.contains('hidden');
         if (isHidden) {
+            // Garante que os botões de atalho só aparecem na tela do CRM
+            const isCrm = window.location.pathname.includes('prospeccao') || window.location.pathname.includes('crm');
+            const chipsEl = document.getElementById('kobeQuickChips');
+            if (chipsEl) {
+                if (isCrm) {
+                    chipsEl.classList.remove('hidden');
+                    chipsEl.classList.add('flex');
+                } else {
+                    chipsEl.classList.remove('flex');
+                    chipsEl.classList.add('hidden');
+                }
+            }
+
             aiChatWindow.classList.remove('hidden');
             setTimeout(() => {
                 aiChatWindow.classList.remove('scale-95', 'opacity-0');
@@ -3116,6 +3257,52 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
         setTimeout(() => {
             aiChatWindow.classList.add('hidden');
         }, 300);
+    });
+
+    // Copiar resposta gerada pelo Kobe com um clique
+    chatMessages?.addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('.kobe-copy-btn');
+        if (!copyBtn) return;
+        const rawText = decodeURIComponent(copyBtn.getAttribute('data-raw') || '');
+        if (!rawText) return;
+
+        navigator.clipboard.writeText(rawText).then(() => {
+            const span = copyBtn.querySelector('span');
+            const icon = copyBtn.querySelector('i');
+            const origSpan = span ? span.textContent : 'Copiar';
+            const origIconClass = icon ? icon.className : 'far fa-copy text-xs';
+
+            if (span) span.textContent = 'Copiado!';
+            if (icon) icon.className = 'fas fa-check text-xs text-emerald-500';
+            copyBtn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/80');
+
+            setTimeout(() => {
+                if (span) span.textContent = origSpan;
+                if (icon) icon.className = origIconClass;
+                copyBtn.classList.remove('bg-emerald-100', 'dark:bg-emerald-900/80');
+            }, 2000);
+        }).catch(err => {
+            console.error('Erro ao copiar resposta:', err);
+        });
+    });
+
+    // Sugestões rápidas de atendimento
+    document.querySelectorAll('.kobe-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const promptType = chip.getAttribute('data-prompt-type');
+            if (promptType === 'lead') {
+                chatInput.value = 'O lead me enviou a seguinte mensagem: ""';
+                chatInput.focus();
+                const quotePos = chatInput.value.length - 1;
+                chatInput.setSelectionRange(quotePos, quotePos);
+            } else if (promptType === 'preco') {
+                chatInput.value = 'O lead disse que achou o valor da mensalidade caro. Como posso responder e contornar essa objeção gerando valor?';
+                chatInput.focus();
+            } else if (promptType === 'experimental') {
+                chatInput.value = 'Como formular uma mensagem convidativa no WhatsApp para agendar uma aula experimental gratuita com um lead?';
+                chatInput.focus();
+            }
+        });
     });
 
     chatForm?.addEventListener('submit', async (e) => {
@@ -3152,7 +3339,7 @@ Lembrete crucial: Você NÃO é um mestre (como 'mestre de artes marciais' ou 'm
                 const functionCalls = parts.filter(p => p.functionCall);
                 
                 if (functionCalls.length === 0) {
-                    const aiText = parts[0]?.text || "Desculpe, não consegui obter uma resposta.";
+                    const aiText = extractTextFromParts(parts) || "Desculpe, não consegui obter uma resposta.";
                     chatHistory.push({
                         role: 'model',
                         parts: [{ text: aiText }]
