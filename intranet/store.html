@@ -1795,25 +1795,57 @@
                                         </div>
                                     </div>
 
-                                    <!-- Configuração das Dimensões do Grid -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-                                        <div>
-                                            <label for="seat-map-rows" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Fileiras (A até Z)</label>
-                                            <input type="number" id="seat-map-rows" min="1" max="26" value="8"
-                                                class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold">
-                                            <span class="text-[10px] text-gray-400">Ex: 8 fileiras geram de A a H</span>
+                                    <!-- Configuração das Dimensões do Grid e Formato do Local -->
+                                    <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-4">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="seat-map-layout-type" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                    <i class="fas fa-shapes text-amber-500"></i> Disposição do Espaço / Mapa
+                                                </label>
+                                                <select id="seat-map-layout-type" class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold">
+                                                    <option value="theater">🎭 Palco Frontal / Auditório (Tatame no Topo)</option>
+                                                    <option value="gym_sides">🏟️ Ginásio com Laterais (Tatame no Meio, 2 Alas)</option>
+                                                    <option value="arena_4_sides">🔄 Arena 360° (Tatame Central, 4 Lados)</option>
+                                                </select>
+                                                <span class="text-[10px] text-gray-400" id="seat-map-layout-hint">Tatame no topo com público à frente</span>
+                                            </div>
+                                            <div>
+                                                <label for="seat-map-stage-label" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Nome do Palco / Tatame</label>
+                                                <input type="text" id="seat-map-stage-label" value="PALCO / TATAME"
+                                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium">
+                                                <span class="text-[10px] text-gray-400">Ex: PALCO / TATAME, TATAME 1, ARENA PRINCIPAL</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label for="seat-map-cols" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Cadeiras por Fileira</label>
-                                            <input type="number" id="seat-map-cols" min="1" max="50" value="16"
-                                                class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold">
-                                            <span class="text-[10px] text-gray-400">Ex: 16 cadeiras geram 1 a 16</span>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-amber-500/10">
+                                            <div>
+                                                <label for="seat-map-rows" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Fileiras (A até Z)</label>
+                                                <input type="number" id="seat-map-rows" min="1" max="26" value="8"
+                                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold">
+                                                <span class="text-[10px] text-gray-400" id="seat-map-rows-hint">Ex: 8 fileiras geram de A a H</span>
+                                            </div>
+                                            <div>
+                                                <label for="seat-map-cols" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Cadeiras por Fileira</label>
+                                                <input type="number" id="seat-map-cols" min="1" max="50" value="16"
+                                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold">
+                                                <span class="text-[10px] text-gray-400" id="seat-map-cols-hint">Ex: 16 cadeiras geram 1 a 16</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label for="seat-map-stage-label" class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-1.5">Nome do Palco / Frente</label>
-                                            <input type="text" id="seat-map-stage-label" value="PALCO / TATAME"
-                                                class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium">
-                                            <span class="text-[10px] text-gray-400">Identificação visual da frente</span>
+
+                                        <!-- Configurações específicas para Arena 360° -->
+                                        <div id="arena-360-settings" class="hidden p-3 bg-white/60 dark:bg-gray-800/60 rounded-xl border border-amber-500/20 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <label for="seat-map-top-rows" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Fileiras Norte & Sul</label>
+                                                <input type="number" id="seat-map-top-rows" min="1" max="10" value="2"
+                                                    class="w-full px-3 py-1.5 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold">
+                                                <span class="text-[10px] text-gray-400">Fileiras nos blocos superior e inferior</span>
+                                            </div>
+                                            <div>
+                                                <label for="seat-map-side-cols" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Cadeiras Laterais (Leste & Oeste)</label>
+                                                <input type="number" id="seat-map-side-cols" min="1" max="20" value="4"
+                                                    class="w-full px-3 py-1.5 text-gray-900 dark:text-white bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold">
+                                                <span class="text-[10px] text-gray-400">Cadeiras nas arquibancadas laterais</span>
+                                            </div>
                                         </div>
                                     </div>
 

@@ -410,6 +410,11 @@ export async function setupStorePage() {
     // Seat Map & Sessions Management elements
     const productHasSeatMapInput = document.getElementById('product-has-seat-map');
     const seatMapConfigContainer = document.getElementById('seat-map-config-container');
+    const seatMapLayoutTypeInput = document.getElementById('seat-map-layout-type');
+    const seatMapLayoutHint = document.getElementById('seat-map-layout-hint');
+    const arena360Settings = document.getElementById('arena-360-settings');
+    const seatMapTopRowsInput = document.getElementById('seat-map-top-rows');
+    const seatMapSideColsInput = document.getElementById('seat-map-side-cols');
     const seatMapRowsInput = document.getElementById('seat-map-rows');
     const seatMapColsInput = document.getElementById('seat-map-cols');
     const seatMapStageLabelInput = document.getElementById('seat-map-stage-label');
@@ -1422,9 +1427,14 @@ export async function setupStorePage() {
         if (activeLocationVenueInput) loc.venue = activeLocationVenueInput.value.trim();
         if (activeLocationAddressInput) loc.address = activeLocationAddressInput.value.trim();
         loc.seatMapConfig = {
+            layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
             rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
             cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+            seatsPerRow: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
             stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+            topRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+            bottomRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+            sideCols: parseInt(seatMapSideColsInput ? seatMapSideColsInput.value : 4, 10) || 4,
             disabledSeats: Array.from(currentDisabledSeats)
         };
         loc.sessions = getEventSessionsData();
@@ -1440,8 +1450,23 @@ export async function setupStorePage() {
         if (activeLocationAddressInput) activeLocationAddressInput.value = loc.address || '';
 
         const smConfig = loc.seatMapConfig || {};
+        if (seatMapLayoutTypeInput) {
+            seatMapLayoutTypeInput.value = smConfig.layoutType || 'theater';
+            if (arena360Settings) arena360Settings.classList.toggle('hidden', smConfig.layoutType !== 'arena_4_sides');
+            if (seatMapLayoutHint) {
+                if (smConfig.layoutType === 'gym_sides') {
+                    seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
+                } else if (smConfig.layoutType === 'arena_4_sides') {
+                    seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
+                } else {
+                    seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
+                }
+            }
+        }
+        if (seatMapTopRowsInput) seatMapTopRowsInput.value = smConfig.topRows || 2;
+        if (seatMapSideColsInput) seatMapSideColsInput.value = smConfig.sideCols || 4;
         if (seatMapRowsInput) seatMapRowsInput.value = smConfig.rows || 8;
-        if (seatMapColsInput) seatMapColsInput.value = smConfig.cols || 16;
+        if (seatMapColsInput) seatMapColsInput.value = smConfig.seatsPerRow || smConfig.cols || 16;
         if (seatMapStageLabelInput) seatMapStageLabelInput.value = smConfig.stageLabel || 'PALCO / TATAME';
         if (previewStageLabel) previewStageLabel.textContent = smConfig.stageLabel || 'PALCO / TATAME';
         currentDisabledSeats = new Set(smConfig.disabledSeats || []);
@@ -1514,9 +1539,14 @@ export async function setupStorePage() {
             venue: '',
             address: '',
             seatMapConfig: {
+                layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
                 rows: 8,
                 cols: 16,
+                seatsPerRow: 16,
                 stageLabel: 'PALCO / TATAME',
+                topRows: 2,
+                bottomRows: 2,
+                sideCols: 4,
                 disabledSeats: []
             },
             sessions: [
@@ -1551,9 +1581,14 @@ export async function setupStorePage() {
                         venue: '',
                         address: '',
                         seatMapConfig: {
+                            layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
                             rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
                             cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
+                            seatsPerRow: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
                             stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+                            topRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+                            bottomRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+                            sideCols: parseInt(seatMapSideColsInput ? seatMapSideColsInput.value : 4, 10) || 4,
                             disabledSeats: Array.from(currentDisabledSeats)
                         },
                         sessions: getEventSessionsData().length > 0 ? getEventSessionsData() : [{ name: 'Sessão 1', time: '10:00' }]
@@ -1629,10 +1664,10 @@ export async function setupStorePage() {
 
     const renderIntranetSeatGrid = async () => {
         if (!intranetSeatGridContainer) return;
+        const layoutType = (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater';
         const numRows = Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8));
         const numCols = Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16));
-        const stageLabel = seatMapStageLabelInput ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME';
-        if (previewStageLabel) previewStageLabel.textContent = stageLabel || 'PALCO / TATAME';
+        const stageLabel = (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME';
 
         const productId = productIdInput ? productIdInput.value : null;
         const sessionId = intranetSeatMapSessionSelect ? intranetSeatMapSessionSelect.value : 'default';
@@ -1646,66 +1681,321 @@ export async function setupStorePage() {
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         intranetSeatGridContainer.innerHTML = '';
 
-        for (let r = 0; r < numRows; r++) {
-            const rowLetter = alphabet[r];
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'flex items-center gap-1.5 justify-center';
+        // Helper genérico para criar botões de cadeira
+        const createSeatBtn = (seatId, c, sectorLabel = '') => {
+            const seatBtn = document.createElement('button');
+            seatBtn.type = 'button';
+            seatBtn.dataset.seatId = seatId;
+            seatBtn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer relative group';
 
-            const labelLeft = document.createElement('span');
-            labelLeft.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
-            labelLeft.textContent = rowLetter;
-            rowDiv.appendChild(labelLeft);
+            const reservation = reservations[seatId];
+            const isDisabledByConfig = currentDisabledSeats.has(seatId);
+            const sectorSuffix = sectorLabel ? ` (${sectorLabel})` : '';
 
-            for (let c = 1; c <= numCols; c++) {
-                const seatId = `${rowLetter}-${c}`;
-                const seatBtn = document.createElement('button');
-                seatBtn.type = 'button';
-                seatBtn.dataset.seatId = seatId;
-                seatBtn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer relative group';
+            if (reservation && reservation.status === 'booked') {
+                seatBtn.className += ' bg-red-600 text-white border border-red-700 shadow-sm';
+                seatBtn.innerHTML = `<span>${c}</span>`;
+                seatBtn.title = `${seatId}${sectorSuffix} - Vendido para: ${reservation.buyerName || 'Cliente'}`;
+                seatBtn.addEventListener('click', () => {
+                    if (confirm(`Cadeira ${seatId}${sectorSuffix} vendida para: ${reservation.buyerName || 'Cliente'}\n\nDeseja liberar esta cadeira manualmente?`)) {
+                        adminFreeSeat(productId, sessionId, seatId);
+                    }
+                });
+            } else if (reservation && reservation.status === 'locked' && reservation.lockedUntil > Date.now()) {
+                seatBtn.className += ' bg-amber-500 text-black border border-amber-600 animate-pulse';
+                seatBtn.innerHTML = `<span>${c}</span>`;
+                seatBtn.title = `${seatId}${sectorSuffix} - Em checkout (bloqueio 15m)`;
+            } else if (isDisabledByConfig || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'))) {
+                seatBtn.className += ' bg-gray-200 dark:bg-gray-800 text-gray-400 border border-gray-300 dark:border-gray-700 opacity-50';
+                seatBtn.innerHTML = `<i class="fas fa-times text-[9px]"></i>`;
+                seatBtn.title = `${seatId}${sectorSuffix} - Desativado/Corredor. Clique para ativar.`;
+                seatBtn.addEventListener('click', () => {
+                    currentDisabledSeats.delete(seatId);
+                    renderIntranetSeatGrid();
+                });
+            } else {
+                seatBtn.className += ' bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white';
+                seatBtn.innerHTML = `<span>${c}</span>`;
+                seatBtn.title = `${seatId}${sectorSuffix} - Disponível. Clique para desativar (espaço vazio).`;
+                seatBtn.addEventListener('click', () => {
+                    currentDisabledSeats.add(seatId);
+                    renderIntranetSeatGrid();
+                });
+            }
+            return seatBtn;
+        };
 
-                const reservation = reservations[seatId];
-                const isDisabledByConfig = currentDisabledSeats.has(seatId);
-
-                if (reservation && reservation.status === 'booked') {
-                    seatBtn.className += ' bg-red-600 text-white border border-red-700 shadow-sm';
-                    seatBtn.innerHTML = `<span>${c}</span>`;
-                    seatBtn.title = `${seatId} - Vendido para: ${reservation.buyerName || 'Cliente'}`;
-                    seatBtn.addEventListener('click', () => {
-                        if (confirm(`Cadeira ${seatId} vendida para: ${reservation.buyerName || 'Cliente'}\n\nDeseja liberar esta cadeira manualmente?`)) {
-                            adminFreeSeat(productId, sessionId, seatId);
-                        }
-                    });
-                } else if (reservation && reservation.status === 'locked' && reservation.lockedUntil > Date.now()) {
-                    seatBtn.className += ' bg-amber-500 text-black border border-amber-600 animate-pulse';
-                    seatBtn.innerHTML = `<span>${c}</span>`;
-                    seatBtn.title = `${seatId} - Em checkout (bloqueio 15m)`;
-                } else if (isDisabledByConfig || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'))) {
-                    seatBtn.className += ' bg-gray-200 dark:bg-gray-800 text-gray-400 border border-gray-300 dark:border-gray-700 opacity-50';
-                    seatBtn.innerHTML = `<i class="fas fa-times text-[9px]"></i>`;
-                    seatBtn.title = `${seatId} - Desativado/Corredor. Clique para ativar.`;
-                    seatBtn.addEventListener('click', () => {
-                        currentDisabledSeats.delete(seatId);
-                        renderIntranetSeatGrid();
-                    });
-                } else {
-                    seatBtn.className += ' bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white';
-                    seatBtn.innerHTML = `<span>${c}</span>`;
-                    seatBtn.title = `${seatId} - Disponível. Clique para desativar (espaço vazio).`;
-                    seatBtn.addEventListener('click', () => {
-                        currentDisabledSeats.add(seatId);
-                        renderIntranetSeatGrid();
-                    });
-                }
-
-                rowDiv.appendChild(seatBtn);
+        if (layoutType === 'theater') {
+            // Layout 1: Teatro / Auditório Frontal (Tatame no topo)
+            if (previewStageLabel) {
+                previewStageLabel.classList.remove('hidden');
+                previewStageLabel.textContent = stageLabel || 'PALCO / TATAME';
             }
 
-            const labelRight = document.createElement('span');
-            labelRight.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
-            labelRight.textContent = rowLetter;
-            rowDiv.appendChild(labelRight);
+            for (let r = 0; r < numRows; r++) {
+                const rowLetter = alphabet[r];
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'flex items-center gap-1.5 justify-center';
 
-            intranetSeatGridContainer.appendChild(rowDiv);
+                const labelLeft = document.createElement('span');
+                labelLeft.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
+                labelLeft.textContent = rowLetter;
+                rowDiv.appendChild(labelLeft);
+
+                for (let c = 1; c <= numCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rowDiv.appendChild(createSeatBtn(seatId, c));
+                }
+
+                const labelRight = document.createElement('span');
+                labelRight.className = 'w-6 text-center text-xs font-black text-gray-500 select-none';
+                labelRight.textContent = rowLetter;
+                rowDiv.appendChild(labelRight);
+
+                intranetSeatGridContainer.appendChild(rowDiv);
+            }
+        } else if (layoutType === 'gym_sides') {
+            // Layout 2: Ginásio com 2 Laterais (Tatame no meio)
+            if (previewStageLabel) previewStageLabel.classList.add('hidden');
+
+            const leftCols = Math.floor(numCols / 2);
+            const rightCols = numCols - leftCols;
+
+            const gymWrapper = document.createElement('div');
+            gymWrapper.className = 'flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-8 p-2 w-full';
+
+            // 1. Ala Esquerda
+            const leftWingDiv = document.createElement('div');
+            leftWingDiv.className = 'flex flex-col items-center';
+            leftWingDiv.innerHTML = `
+                <div class="px-3 py-1 mb-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fas fa-arrow-left text-[10px]"></i> Ala Esquerda (Cadeiras 1 a ${leftCols})
+                </div>
+            `;
+            const leftRowsDiv = document.createElement('div');
+            leftRowsDiv.className = 'space-y-1.5';
+            for (let r = 0; r < numRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-end';
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                for (let c = 1; c <= leftCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Ala Esquerda'));
+                }
+                leftRowsDiv.appendChild(rDiv);
+            }
+            leftWingDiv.appendChild(leftRowsDiv);
+
+            // 2. Tatame Central no Meio
+            const centerTatameDiv = document.createElement('div');
+            centerTatameDiv.className = 'flex flex-col items-center justify-center my-2 md:my-0 px-8 py-14 bg-gradient-to-b from-amber-500/15 via-amber-500/25 to-amber-500/15 border-2 border-dashed border-amber-500/50 rounded-3xl min-w-[170px] shadow-sm select-none text-center';
+            centerTatameDiv.innerHTML = `
+                <span class="text-3xl mb-1.5">🥋</span>
+                <span class="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest">${stageLabel || 'TATAME CENTRAL'}</span>
+                <span class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 uppercase font-bold tracking-wider">Área Central de Lutas</span>
+                <div class="w-12 h-0.5 bg-amber-500/40 rounded-full mt-2"></div>
+            `;
+
+            // 3. Ala Direita
+            const rightWingDiv = document.createElement('div');
+            rightWingDiv.className = 'flex flex-col items-center';
+            rightWingDiv.innerHTML = `
+                <div class="px-3 py-1 mb-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                    Ala Direita (Cadeiras ${leftCols + 1} a ${numCols}) <i class="fas fa-arrow-right text-[10px]"></i>
+                </div>
+            `;
+            const rightRowsDiv = document.createElement('div');
+            rightRowsDiv.className = 'space-y-1.5';
+            for (let r = 0; r < numRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-start';
+
+                for (let c = leftCols + 1; c <= numCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Ala Direita'));
+                }
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                rightRowsDiv.appendChild(rDiv);
+            }
+            rightWingDiv.appendChild(rightRowsDiv);
+
+            gymWrapper.appendChild(leftWingDiv);
+            gymWrapper.appendChild(centerTatameDiv);
+            gymWrapper.appendChild(rightWingDiv);
+
+            intranetSeatGridContainer.appendChild(gymWrapper);
+        } else if (layoutType === 'arena_4_sides') {
+            // Layout 3: Arena 360° (Tatame Central, 4 Lados)
+            if (previewStageLabel) previewStageLabel.classList.add('hidden');
+
+            const topRows = Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
+            const bottomRows = Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
+            const sideCols = Math.min(Math.max(1, parseInt(seatMapSideColsInput ? seatMapSideColsInput.value : 4, 10) || 4), Math.max(1, Math.floor((numCols - 2) / 2)));
+
+            const arenaWrapper = document.createElement('div');
+            arenaWrapper.className = 'flex flex-col items-center gap-5 p-2 w-full';
+
+            // 1. Setor Superior (Norte)
+            const topSectorDiv = document.createElement('div');
+            topSectorDiv.className = 'flex flex-col items-center';
+            topSectorDiv.innerHTML = `
+                <div class="px-3 py-1 mb-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fas fa-arrow-up text-[10px]"></i> Setor Superior / Norte
+                </div>
+            `;
+            const topRowsDiv = document.createElement('div');
+            topRowsDiv.className = 'space-y-1.5';
+            for (let r = 0; r < topRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-center';
+
+                const lblLeft = document.createElement('span');
+                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblLeft.textContent = rowLetter;
+                rDiv.appendChild(lblLeft);
+
+                for (let c = 1; c <= numCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Superior'));
+                }
+
+                const lblRight = document.createElement('span');
+                lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblRight.textContent = rowLetter;
+                rDiv.appendChild(lblRight);
+
+                topRowsDiv.appendChild(rDiv);
+            }
+            topSectorDiv.appendChild(topRowsDiv);
+            arenaWrapper.appendChild(topSectorDiv);
+
+            // 2. Meio: Setor Oeste + Tatame Central + Setor Leste
+            const midRowDiv = document.createElement('div');
+            midRowDiv.className = 'flex flex-row items-center justify-center gap-4 sm:gap-6 w-full';
+
+            // 2a. Setor Oeste (Esquerda)
+            const leftSectorDiv = document.createElement('div');
+            leftSectorDiv.className = 'flex flex-col items-center';
+            leftSectorDiv.innerHTML = `
+                <div class="px-2.5 py-1 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                    <i class="fas fa-arrow-left text-[9px]"></i> Setor Oeste (Esq)
+                </div>
+            `;
+            const leftRowsDiv = document.createElement('div');
+            leftRowsDiv.className = 'space-y-1.5';
+            for (let r = topRows; r < numRows - bottomRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-end';
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                for (let c = 1; c <= sideCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Oeste'));
+                }
+                leftRowsDiv.appendChild(rDiv);
+            }
+            leftSectorDiv.appendChild(leftRowsDiv);
+            midRowDiv.appendChild(leftSectorDiv);
+
+            // 2b. Tatame Central 360°
+            const arenaCenterTatame = document.createElement('div');
+            arenaCenterTatame.className = 'flex-1 max-w-sm flex flex-col items-center justify-center py-10 px-6 bg-gradient-to-br from-amber-500/20 via-yellow-500/15 to-amber-600/20 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-inner text-center select-none';
+            arenaCenterTatame.innerHTML = `
+                <span class="text-3xl mb-1">🥋</span>
+                <span class="font-black text-xs sm:text-sm text-amber-700 dark:text-amber-300 tracking-widest uppercase">
+                    ${stageLabel || 'TATAME CENTRAL'}
+                </span>
+                <span class="text-[9px] text-gray-500 font-bold mt-1 tracking-tight">ARENA 360° • KIHAP</span>
+                <div class="w-16 h-0.5 bg-amber-500/40 rounded-full mt-2"></div>
+            `;
+            midRowDiv.appendChild(arenaCenterTatame);
+
+            // 2c. Setor Leste (Direita)
+            const rightSectorDiv = document.createElement('div');
+            rightSectorDiv.className = 'flex flex-col items-center';
+            rightSectorDiv.innerHTML = `
+                <div class="px-2.5 py-1 mb-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1">
+                    Setor Leste (Dir) <i class="fas fa-arrow-right text-[9px]"></i>
+                </div>
+            `;
+            const rightRowsDiv = document.createElement('div');
+            rightRowsDiv.className = 'space-y-1.5';
+            for (let r = topRows; r < numRows - bottomRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-start';
+
+                for (let c = numCols - sideCols + 1; c <= numCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Leste'));
+                }
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                rightRowsDiv.appendChild(rDiv);
+            }
+            rightSectorDiv.appendChild(rightRowsDiv);
+            midRowDiv.appendChild(rightSectorDiv);
+
+            arenaWrapper.appendChild(midRowDiv);
+
+            // 3. Setor Inferior (Sul)
+            const bottomSectorDiv = document.createElement('div');
+            bottomSectorDiv.className = 'flex flex-col items-center';
+            bottomSectorDiv.innerHTML = `
+                <div class="px-3 py-1 mb-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fas fa-arrow-down text-[10px]"></i> Setor Inferior / Sul
+                </div>
+            `;
+            const bottomRowsDiv = document.createElement('div');
+            bottomRowsDiv.className = 'space-y-1.5';
+            for (let r = numRows - bottomRows; r < numRows; r++) {
+                const rowLetter = alphabet[r];
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-center';
+
+                const lblLeft = document.createElement('span');
+                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblLeft.textContent = rowLetter;
+                rDiv.appendChild(lblLeft);
+
+                for (let c = 1; c <= numCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Inferior'));
+                }
+
+                const lblRight = document.createElement('span');
+                lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblRight.textContent = rowLetter;
+                rDiv.appendChild(lblRight);
+
+                bottomRowsDiv.appendChild(rDiv);
+            }
+            bottomSectorDiv.appendChild(bottomRowsDiv);
+            arenaWrapper.appendChild(bottomSectorDiv);
+
+            intranetSeatGridContainer.appendChild(arenaWrapper);
         }
     };
 
@@ -1754,6 +2044,25 @@ export async function setupStorePage() {
         });
     }
 
+    if (seatMapLayoutTypeInput) {
+        seatMapLayoutTypeInput.addEventListener('change', () => {
+            const val = seatMapLayoutTypeInput.value;
+            if (arena360Settings) arena360Settings.classList.toggle('hidden', val !== 'arena_4_sides');
+            if (seatMapLayoutHint) {
+                if (val === 'gym_sides') {
+                    seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
+                } else if (val === 'arena_4_sides') {
+                    seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
+                } else {
+                    seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
+                }
+            }
+            renderIntranetSeatGrid();
+        });
+    }
+
+    if (seatMapTopRowsInput) seatMapTopRowsInput.addEventListener('change', renderIntranetSeatGrid);
+    if (seatMapSideColsInput) seatMapSideColsInput.addEventListener('change', renderIntranetSeatGrid);
     if (seatMapRowsInput) seatMapRowsInput.addEventListener('change', renderIntranetSeatGrid);
     if (seatMapColsInput) seatMapColsInput.addEventListener('change', renderIntranetSeatGrid);
     if (seatMapStageLabelInput) seatMapStageLabelInput.addEventListener('input', () => {
@@ -1833,6 +2142,14 @@ export async function setupStorePage() {
             if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
             if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
             if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+            if (seatMapLayoutTypeInput) seatMapLayoutTypeInput.value = 'theater';
+            if (arena360Settings) arena360Settings.classList.add('hidden');
+            if (seatMapLayoutHint) seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
+            if (seatMapRowsInput) seatMapRowsInput.value = '8';
+            if (seatMapColsInput) seatMapColsInput.value = '16';
+            if (seatMapStageLabelInput) seatMapStageLabelInput.value = 'PALCO / TATAME';
+            if (seatMapTopRowsInput) seatMapTopRowsInput.value = '2';
+            if (seatMapSideColsInput) seatMapSideColsInput.value = '4';
             currentLocationsList = [];
             if (seatMapConfigContainer) seatMapConfigContainer.classList.add('hidden');
             if (eventSessionsContainer) eventSessionsContainer.innerHTML = '';
@@ -2059,10 +2376,14 @@ Requisitos:
                         return [];
                     })(),
                     seatMapConfig: (productHasSeatMapInput && productHasSeatMapInput.checked) ? {
+                        layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
                         rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
                         seatsPerRow: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
                         cols: Math.min(50, Math.max(1, parseInt(seatMapColsInput ? seatMapColsInput.value : 16, 10) || 16)),
                         stageLabel: (seatMapStageLabelInput && seatMapStageLabelInput.value.trim()) ? seatMapStageLabelInput.value.trim() : 'PALCO / TATAME',
+                        topRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+                        bottomRows: parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2,
+                        sideCols: parseInt(seatMapSideColsInput ? seatMapSideColsInput.value : 4, 10) || 4,
                         disabledSeats: Array.from(currentDisabledSeats)
                     } : null,
                     sessions: (() => {
@@ -2511,6 +2832,21 @@ Requisitos:
                         currentLocationsList = [];
 
                         if (product.seatMapConfig) {
+                            if (seatMapLayoutTypeInput) {
+                                seatMapLayoutTypeInput.value = product.seatMapConfig.layoutType || 'theater';
+                                if (arena360Settings) arena360Settings.classList.toggle('hidden', product.seatMapConfig.layoutType !== 'arena_4_sides');
+                                if (seatMapLayoutHint) {
+                                    if (product.seatMapConfig.layoutType === 'gym_sides') {
+                                        seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
+                                    } else if (product.seatMapConfig.layoutType === 'arena_4_sides') {
+                                        seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
+                                    } else {
+                                        seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
+                                    }
+                                }
+                            }
+                            if (seatMapTopRowsInput) seatMapTopRowsInput.value = product.seatMapConfig.topRows || 2;
+                            if (seatMapSideColsInput) seatMapSideColsInput.value = product.seatMapConfig.sideCols || 4;
                             if (seatMapRowsInput) seatMapRowsInput.value = product.seatMapConfig.rows || 8;
                             if (seatMapColsInput) seatMapColsInput.value = product.seatMapConfig.seatsPerRow || product.seatMapConfig.cols || 16;
                             if (seatMapStageLabelInput) seatMapStageLabelInput.value = product.seatMapConfig.stageLabel || 'PALCO / TATAME';

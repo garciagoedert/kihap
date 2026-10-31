@@ -14,7 +14,7 @@ import { useCart } from '../../src/context/CartContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { getEffectiveProductPrice, getEffectiveVariantPrice, formatCentsToCurrency } from '../../src/utils/pricing';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import SeatMapSelector from '../../src/components/SeatMapSelector';
+import SeatMapSelector, { getSeatSectorName } from '../../src/components/SeatMapSelector';
 
 const GRADUACOES: { [key: string]: string[] } = {
   tradicional: [
@@ -860,6 +860,7 @@ export default function ProductDetailScreen() {
                         <Armchair size={12} color="#eab308" />
                         <Text style={{ fontSize: 12, fontWeight: '900', color: '#eab308' }}>
                           Cadeira {item.seatId}
+                          {getSeatSectorName(item.seatId, activeSeatMapConfig) ? ` (${getSeatSectorName(item.seatId, activeSeatMapConfig)})` : ''}
                         </Text>
                         <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '600' }}>
                           • {item.sessionName}
@@ -925,7 +926,10 @@ export default function ProductDetailScreen() {
                   {product.hasSeatMap && allSelectedSeats[index]?.seatId && (
                     <View className="px-3 py-1 bg-yellow-500 rounded-full flex-row items-center gap-1.5 shadow-sm">
                       <Armchair size={12} color="#000" />
-                      <Text className="text-xs font-black text-black">Cadeira {allSelectedSeats[index].seatId}</Text>
+                      <Text className="text-xs font-black text-black">
+                        Cadeira {allSelectedSeats[index].seatId}
+                        {getSeatSectorName(allSelectedSeats[index].seatId, activeSeatMapConfig) ? ` • ${getSeatSectorName(allSelectedSeats[index].seatId, activeSeatMapConfig)}` : ''}
+                      </Text>
                     </View>
                   )}
                 </View>
