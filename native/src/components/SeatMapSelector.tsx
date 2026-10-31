@@ -3,6 +3,15 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'rea
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import * as Haptics from 'expo-haptics';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  ArrowUp, 
+  ArrowDown, 
+  RotateCcw, 
+  LayoutGrid, 
+  Award 
+} from 'lucide-react-native';
 
 export interface SeatConfig {
   rows: number;
@@ -197,7 +206,7 @@ export default function SeatMapSelector({
             textDecorationLine: isLineThrough ? 'line-through' : 'none' 
           }}
         >
-          {seatNum}
+          {String(seatNum)}
         </Text>
       </TouchableOpacity>
     );
@@ -221,7 +230,7 @@ export default function SeatMapSelector({
         <Text style={{ fontSize: 13, fontWeight: '900', color: '#111827', textTransform: 'uppercase', letterSpacing: 0.8 }}>
           Escolha suas cadeiras
         </Text>
-        {selectedSeats.length > 0 && (
+        {selectedSeats.length > 0 ? (
           <View style={{
             paddingHorizontal: 10,
             paddingVertical: 4,
@@ -234,11 +243,11 @@ export default function SeatMapSelector({
               {selectedSeats.length} {selectedSeats.length === 1 ? 'cadeira' : 'cadeiras'}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       {/* Seletor rápido de setor para layout Ginásio */}
-      {layoutType === 'gym_sides' && (
+      {layoutType === 'gym_sides' ? (
         <View style={{
           marginBottom: 12,
           flexDirection: 'row',
@@ -255,15 +264,19 @@ export default function SeatMapSelector({
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 8,
-              backgroundColor: activeSectorFilter === 'all' ? '#f59e0b' : 'transparent'
+              backgroundColor: activeSectorFilter === 'all' ? '#f59e0b' : 'transparent',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4
             }}
           >
+            <LayoutGrid size={12} color={activeSectorFilter === 'all' ? '#000000' : '#6b7280'} />
             <Text style={{
               fontSize: 10,
               fontWeight: '700',
               color: activeSectorFilter === 'all' ? '#000000' : '#6b7280'
             }}>
-              🏟️ Ginásio Completo
+              Ginásio Completo
             </Text>
           </TouchableOpacity>
 
@@ -273,15 +286,19 @@ export default function SeatMapSelector({
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 8,
-              backgroundColor: activeSectorFilter === 'left' ? '#f59e0b' : 'transparent'
+              backgroundColor: activeSectorFilter === 'left' ? '#f59e0b' : 'transparent',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4
             }}
           >
+            <ArrowLeft size={12} color={activeSectorFilter === 'left' ? '#000000' : '#6b7280'} />
             <Text style={{
               fontSize: 10,
               fontWeight: '700',
               color: activeSectorFilter === 'left' ? '#000000' : '#6b7280'
             }}>
-              ⬅️ Ala Esquerda
+              Ala Esquerda
             </Text>
           </TouchableOpacity>
 
@@ -291,7 +308,10 @@ export default function SeatMapSelector({
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 8,
-              backgroundColor: activeSectorFilter === 'right' ? '#2563eb' : 'transparent'
+              backgroundColor: activeSectorFilter === 'right' ? '#2563eb' : 'transparent',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4
             }}
           >
             <Text style={{
@@ -299,14 +319,15 @@ export default function SeatMapSelector({
               fontWeight: '700',
               color: activeSectorFilter === 'right' ? '#ffffff' : '#6b7280'
             }}>
-              Ala Direita ➡️
+              Ala Direita
             </Text>
+            <ArrowRight size={12} color={activeSectorFilter === 'right' ? '#ffffff' : '#6b7280'} />
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
 
-      {/* Seletor rápido de setor para Arena 360° com botões simples (sem ScrollView aninhado) */}
-      {layoutType === 'arena_4_sides' && (
+      {/* Seletor rápido de setor para Arena 360° */}
+      {layoutType === 'arena_4_sides' ? (
         <View style={{ marginBottom: 14 }}>
           <ScrollView 
             horizontal 
@@ -314,13 +335,14 @@ export default function SeatMapSelector({
             contentContainerStyle={{ gap: 6, paddingVertical: 2, paddingHorizontal: 2 }}
           >
             {[
-              { id: 'all', label: '🔄 Arena 360°', activeBg: '#f59e0b', activeText: '#000000' },
-              { id: 'top', label: '⬆️ Norte (Sup)', activeBg: '#4f46e5', activeText: '#ffffff' },
-              { id: 'left', label: '⬅️ Oeste (Esq)', activeBg: '#f59e0b', activeText: '#000000' },
-              { id: 'right', label: 'Leste (Dir) ➡️', activeBg: '#2563eb', activeText: '#ffffff' },
-              { id: 'bottom', label: '⬇️ Sul (Inf)', activeBg: '#059669', activeText: '#ffffff' },
+              { id: 'all', label: 'Arena 360°', icon: RotateCcw, activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'top', label: 'Norte (Sup)', icon: ArrowUp, activeBg: '#4f46e5', activeText: '#ffffff' },
+              { id: 'left', label: 'Oeste (Esq)', icon: ArrowLeft, activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'right', label: 'Leste (Dir)', icon: ArrowRight, activeBg: '#2563eb', activeText: '#ffffff' },
+              { id: 'bottom', label: 'Sul (Inf)', icon: ArrowDown, activeBg: '#059669', activeText: '#ffffff' },
             ].map(sec => {
               const isActive = activeSectorFilter === sec.id;
+              const IconComp = sec.icon;
               return (
                 <TouchableOpacity
                   key={sec.id}
@@ -329,9 +351,13 @@ export default function SeatMapSelector({
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                     borderRadius: 10,
-                    backgroundColor: isActive ? sec.activeBg : '#f3f4f6'
+                    backgroundColor: isActive ? sec.activeBg : '#f3f4f6',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5
                   }}
                 >
+                  <IconComp size={11} color={isActive ? sec.activeText : '#6b7280'} />
                   <Text style={{
                     fontSize: 10,
                     fontWeight: '800',
@@ -344,10 +370,10 @@ export default function SeatMapSelector({
             })}
           </ScrollView>
         </View>
-      )}
+      ) : null}
 
       {/* Palco no Topo para layout teatro */}
-      {layoutType === 'theater' && (
+      {layoutType === 'theater' ? (
         <View style={{ marginBottom: 20, alignItems: 'center' }}>
           <View style={{
             width: '80%',
@@ -367,7 +393,7 @@ export default function SeatMapSelector({
           </View>
           <View style={{ width: '60%', height: 4, backgroundColor: 'rgba(234, 179, 8, 0.4)', borderRadius: 2, marginTop: 6 }} />
         </View>
-      )}
+      ) : null}
 
       {/* Loading state */}
       {loading ? (
@@ -382,7 +408,7 @@ export default function SeatMapSelector({
           showsHorizontalScrollIndicator={true} 
           contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 4 }}
         >
-          {layoutType === 'theater' && (
+          {layoutType === 'theater' ? (
             <View style={{ flexDirection: 'column', gap: 6, minWidth: '100%', alignItems: 'center' }}>
               {Array.from({ length: numRows }).map((_, r) => {
                 const rowLetter = ALPHABET[Math.min(ALPHABET.length - 1, r)] || 'A';
@@ -405,24 +431,28 @@ export default function SeatMapSelector({
                 );
               })}
             </View>
-          )}
+          ) : null}
 
-          {layoutType === 'gym_sides' && (
+          {layoutType === 'gym_sides' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, minWidth: '100%' }}>
               {/* Ala Esquerda */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'left') && (
+              {(activeSectorFilter === 'all' || activeSectorFilter === 'left') ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 8,
                     paddingHorizontal: 10,
-                    paddingVertical: 4,
+                    paddingVertical: 5,
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
                     borderWidth: 1,
                     borderColor: 'rgba(245, 158, 11, 0.3)',
-                    borderRadius: 8
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5
                   }}>
+                    <ArrowLeft size={11} color="#d97706" />
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
-                      ⬅️ Ala Esquerda (1 a {leftCols})
+                      Ala Esquerda (1 a {leftCols})
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'column', gap: 6 }}>
@@ -443,13 +473,13 @@ export default function SeatMapSelector({
                     })}
                   </View>
                 </View>
-              )}
+              ) : null}
 
               {/* Tatame Central no Meio */}
-              {activeSectorFilter === 'all' && (
+              {activeSectorFilter === 'all' ? (
                 <View style={{
                   paddingHorizontal: 16,
-                  paddingVertical: 28,
+                  paddingVertical: 24,
                   borderRadius: 24,
                   borderWidth: 1.5,
                   borderStyle: 'dashed',
@@ -459,7 +489,7 @@ export default function SeatMapSelector({
                   justifyContent: 'center',
                   minWidth: 130
                 }}>
-                  <Text style={{ fontSize: 24, marginBottom: 4 }}>🥋</Text>
+                  <Award size={24} color="#b45309" style={{ marginBottom: 4 }} />
                   <Text style={{ fontSize: 10, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center' }}>
                     {stageLabel}
                   </Text>
@@ -467,23 +497,27 @@ export default function SeatMapSelector({
                     Área Central
                   </Text>
                 </View>
-              )}
+              ) : null}
 
               {/* Ala Direita */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'right') && (
+              {(activeSectorFilter === 'all' || activeSectorFilter === 'right') ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 8,
                     paddingHorizontal: 10,
-                    paddingVertical: 4,
+                    paddingVertical: 5,
                     backgroundColor: 'rgba(37, 99, 235, 0.1)',
                     borderWidth: 1,
                     borderColor: 'rgba(37, 99, 235, 0.3)',
-                    borderRadius: 8
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5
                   }}>
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
-                      Ala Direita ({leftCols + 1} a {numCols}) ➡️
+                      Ala Direita ({leftCols + 1} a {numCols})
                     </Text>
+                    <ArrowRight size={11} color="#2563eb" />
                   </View>
                   <View style={{ flexDirection: 'column', gap: 6 }}>
                     {Array.from({ length: numRows }).map((_, r) => {
@@ -503,14 +537,14 @@ export default function SeatMapSelector({
                     })}
                   </View>
                 </View>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
 
-          {layoutType === 'arena_4_sides' && (
+          {layoutType === 'arena_4_sides' ? (
             <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16, minWidth: '100%' }}>
               {/* 1. Setor Superior (Norte) */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'top') && (
+              {(activeSectorFilter === 'all' || activeSectorFilter === 'top') ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 6,
@@ -519,10 +553,14 @@ export default function SeatMapSelector({
                     backgroundColor: 'rgba(79, 70, 229, 0.1)',
                     borderWidth: 1,
                     borderColor: 'rgba(79, 70, 229, 0.3)',
-                    borderRadius: 8
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5
                   }}>
+                    <ArrowUp size={11} color="#4f46e5" />
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#4f46e5', textTransform: 'uppercase' }}>
-                      ⬆️ Setor Superior (Norte)
+                      Setor Superior (Norte)
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -546,25 +584,29 @@ export default function SeatMapSelector({
                     })}
                   </View>
                 </View>
-              )}
+              ) : null}
 
               {/* 2. Miolo: Setor Oeste + Tatame Central + Setor Leste */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'left' || activeSectorFilter === 'right') && (
+              {(activeSectorFilter === 'all' || activeSectorFilter === 'left' || activeSectorFilter === 'right') ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
                   {/* Setor Oeste (Esquerda) */}
-                  {(activeSectorFilter === 'all' || activeSectorFilter === 'left') && (
+                  {(activeSectorFilter === 'all' || activeSectorFilter === 'left') ? (
                     <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                       <View style={{
                         marginBottom: 6,
                         paddingHorizontal: 8,
-                        paddingVertical: 2,
+                        paddingVertical: 3,
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
                         borderWidth: 1,
                         borderColor: 'rgba(245, 158, 11, 0.3)',
-                        borderRadius: 6
+                        borderRadius: 6,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4
                       }}>
+                        <ArrowLeft size={10} color="#d97706" />
                         <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
-                          ⬅️ Oeste (Esq)
+                          Oeste (Esq)
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -586,13 +628,13 @@ export default function SeatMapSelector({
                         })}
                       </View>
                     </View>
-                  )}
+                  ) : null}
 
                   {/* Tatame Central da Arena 360° */}
-                  {activeSectorFilter === 'all' && (
+                  {activeSectorFilter === 'all' ? (
                     <View style={{
                       paddingHorizontal: 14,
-                      paddingVertical: 20,
+                      paddingVertical: 18,
                       borderRadius: 20,
                       borderWidth: 1.5,
                       borderStyle: 'dashed',
@@ -602,7 +644,7 @@ export default function SeatMapSelector({
                       justifyContent: 'center',
                       minWidth: 120
                     }}>
-                      <Text style={{ fontSize: 22, marginBottom: 2 }}>🥋</Text>
+                      <Award size={22} color="#b45309" style={{ marginBottom: 2 }} />
                       <Text style={{ fontSize: 9, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' }}>
                         {stageLabel}
                       </Text>
@@ -610,23 +652,27 @@ export default function SeatMapSelector({
                         Arena 360°
                       </Text>
                     </View>
-                  )}
+                  ) : null}
 
                   {/* Setor Leste (Direita) */}
-                  {(activeSectorFilter === 'all' || activeSectorFilter === 'right') && (
+                  {(activeSectorFilter === 'all' || activeSectorFilter === 'right') ? (
                     <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                       <View style={{
                         marginBottom: 6,
                         paddingHorizontal: 8,
-                        paddingVertical: 2,
+                        paddingVertical: 3,
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 1,
                         borderColor: 'rgba(37, 99, 235, 0.3)',
-                        borderRadius: 6
+                        borderRadius: 6,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4
                       }}>
                         <Text style={{ fontSize: 9, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
-                          Leste (Dir) ➡️
+                          Leste (Dir)
                         </Text>
+                        <ArrowRight size={10} color="#2563eb" />
                       </View>
                       <View style={{ flexDirection: 'column', gap: 4 }}>
                         {Array.from({ length: midRowsCount }).map((_, idx) => {
@@ -647,12 +693,12 @@ export default function SeatMapSelector({
                         })}
                       </View>
                     </View>
-                  )}
+                  ) : null}
                 </View>
-              )}
+              ) : null}
 
               {/* 3. Setor Inferior (Sul) */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'bottom') && (
+              {(activeSectorFilter === 'all' || activeSectorFilter === 'bottom') ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 6,
@@ -661,10 +707,14 @@ export default function SeatMapSelector({
                     backgroundColor: 'rgba(5, 150, 105, 0.1)',
                     borderWidth: 1,
                     borderColor: 'rgba(5, 150, 105, 0.3)',
-                    borderRadius: 8
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5
                   }}>
+                    <ArrowDown size={11} color="#059669" />
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
-                      ⬇️ Setor Inferior (Sul)
+                      Setor Inferior (Sul)
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -689,9 +739,9 @@ export default function SeatMapSelector({
                     })}
                   </View>
                 </View>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
         </ScrollView>
       )}
 
