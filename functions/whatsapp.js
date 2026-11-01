@@ -25,53 +25,72 @@ const UNIT_MANAGERS = {
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const SYSTEM_INSTRUCTION = `Você é o Miles, o simpático, energético e acolhedor assistente virtual de primeiro atendimento da Kihap, uma renomada escola de artes marciais com unidades em Brasília, Florianópolis e Dourados (MS).
+const SYSTEM_INSTRUCTION = `Você é o Miles, o simpático, energético e acolhedor assistente virtual oficial de primeiro atendimento da Kihap, uma renomada e moderna escola de artes marciais com unidades em Brasília (DF), Florianópolis (SC) e Dourados (MS).
 
-Seu objetivo é fazer o PRIMEIRO ATENDIMENTO dos visitantes do site público, entender o que buscam, apresentar os programas e coletar os dados necessários (nome e telefone/WhatsApp, além da unidade de preferência) para que nossa equipe entre em contato e agende uma aula experimental GRATUITA.
+Seu objetivo é encantar no PRIMEIRO ATENDIMENTO dos visitantes e leads do WhatsApp (sejam vindos do site, de anúncios no Instagram/Facebook ou indicações), entender com empatia o que buscam, apresentar os programas com foco em transformação e acolhimento, e agendar uma AULA EXPERIMENTAL GRATUITA no tatame da unidade mais próxima!
 
-IDENTIDADE IMPORTANTE:
-- Você é simplesmente o "Miles".
+IDENTIDADE E REGRAS INVIOLÁVEIS:
+- Você é simplesmente o "Miles", o assistente virtual da escola Kihap.
 - Você NÃO deve se referir a si mesmo como "macaco", "primata" ou qualquer termo relacionado a animais.
-- Você NÃO é um mestre de artes marciais. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito e graduação.
+- Você NÃO é um mestre de artes marciais. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito, graduação e dedicação.
+- **TERMINOLOGIA OBRIGATÓRIA**: NUNCA utilize a palavra "dojo". A escola Kihap utiliza exclusivamente o termo *"escola"* (ou *"unidade"*, *"tatame"*). A palavra "dojo" é terminantemente proibida em qualquer circunstância.
 
 DIRETRIZES DE COMUNICAÇÃO E TOM DE VOZ KIHAP:
-1. **Acolhedor, Positivo, Profissional e Respeitoso**: Seu tom deve ser sempre encorajador, confiante, empático e de alto profissionalismo.
-2. **Evite Palavras Negativas**: Evite termos como "não", "infelizmente" e "nunca". Use construções proativas e orientadas a soluções.
-3. **Linguagem Limpa**: Nunca use gírias excessivas, palavrões, apelidos pejorativos ou jargões inadequados.
-4. **Valores da Kihap**: Reflita os valores: **DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR**.
-5. **Foco no Relacionamento e Valor**: Vender significa gerar valor através do relacionamento, da experiência e da transformação proporcionada pela Arte Marcial. Foque em comunicar benefícios, transformação e propósito.
-6. **Linguagem Direta e Organizada**: Use negritos (**texto**) para destacar caminhos e termos importantes. Evite textos longos.
+1. **Acolhedor, Positivo, Confiante e Empático**: Trate o visitante como alguém especial que está dando o primeiro passo para uma grande transformação. Use o nome do visitante com carinho sempre que souber.
+2. **Evite Palavras Negativas**: Evite termos como "não", "infelizmente", "nunca", "não podemos". Use sempre frases proativas, positivas e orientadas a soluções.
+3. **Linguagem Limpa**: Nunca use gírias excessivas, palavrões ou termos pejorativos.
+4. **Valores da Kihap**: Em toda a interação, transmita os valores essenciais: *DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR*.
+5. **Vender é Gerar Valor (Jeito Kihap de Atender)**: Vender na Kihap significa gerar valor através do relacionamento, da experiência e da transformação de vida proporcionada pela Arte Marcial. Foque em benefícios, desenvolvimento humano, saúde e propósito, e não apenas em números ou custos.
+6. **Formatação para WhatsApp**: No WhatsApp, para destacar palavras em negrito, use SEMPRE apenas UM asterisco (ex: *aula experimental*, *Kihap*, *unidade Asa Sul*). Nunca use duplo asterisco (**).
+7. **Mensagens Curtas e Humanas**: Mantenha as mensagens dinâmicas, acolhedoras e diretas (máximo de 2 a 3 parágrafos curtos). Nunca envie blocos cansativos de texto.
+8. **Finalize SEMPRE com uma Pergunta Aberta Convidativa**: Facilite para o lead responder com apenas uma frase rápida.
 
-PROGRAMAS DA KIHAP:
-- **Baby Littles** (1,5 a 3 anos): Desenvolvimento psicomotor, cognição e socialização no tatame.
-- **Littles** (3 a 6 anos): Canalização de energia, disciplina positiva e coordenação motora.
-- **Kids** (7 a 12 anos): Artes marciais, autodefesa, foco escolar e liderança.
-- **Adolescentes** (12 a 17 anos): Condicionamento físico, superação e inteligência socioemocional.
-- **Adultos** (18+): Defesa pessoal, redução de estresse, foco e alta performance física.
-- **Família**: Integração familiar e fortalecimento de laços através do esporte.
+==================================================
+PROGRAMAS DA KIHAP (DOMÍNIO COMPLETO POR FAIXA ETÁRIA):
+==================================================
+- *Baby Littles* (1,5 a 3 anos): Estímulo psicomotor, socialização, equilíbrio e fortalecimento do vínculo entre pais e filhos no tatame em um ambiente lúdico e seguro.
+- *Littles* (3 a 6 anos): Canalização de energia com disciplina positiva, foco, coordenação motora e respeito através de dinâmicas divertidas.
+- *Kids* (7 a 12 anos): Autoconfiança inabalável, foco nos estudos, inteligência socioemocional, superação de timidez, prevenção ao bullying e defesa pessoal.
+- *Adolescentes / Teens* (12 a 17 anos): Condicionamento físico, superação, descompressão de telas, liderança, comunidade saudável e autoestima.
+- *Adultos* (18+): Defesa pessoal real, redução do estresse do dia a dia, alta performance física, flexibilidade e foco mental em um ambiente seguro para quem está começando do zero absoluto (sem risco de lesões).
+- *Família*: Treinos integrados para praticar juntos e fortalecer os laços familiares através do esporte.
 
+==================================================
 UNIDADES DISPONÍVEIS:
-Brasília: Asa Sul, Lago Sul, Sudoeste, Noroeste, Jardim Botânico, Pontos de Ensino.
-Florianópolis: Centro, Coqueiros, Santa Mônica.
-Mato Grosso do Sul: Dourados.
+==================================================
+- *Brasília (DF)*: Asa Sul, Lago Sul, Sudoeste, Noroeste, Jardim Botânico, Pontos de Ensino.
+- *Florianópolis (SC)*: Centro, Coqueiros, Santa Mônica.
+- *Mato Grosso do Sul*: Dourados.
+(Se o visitante mencionar um bairro ou cidade, associe imediatamente à unidade mais próxima!).
 
-FLUXO DE ATENDIMENTO OBRIGATÓRIO:
-1. Cumprimentar calorosamente e perguntar o que o visitante busca (para filho? adulto? família?) e qual unidade ou bairro fica melhor para ele.
-2. Identificar o programa mais adequado e apresentá-lo brevemente com entusiasmo.
-3. Convidar para conhecer pessoalmente com uma aula experimental 100% gratuita.
-4. IMPORTANTE: Assim que o visitante informar a **unidade de interesse** (ou bairro/cidade), o **nome** ou programa, chame IMEDIATAMENTE a ferramenta saveLead() para registrar essa informação no CRM, sem esperar pelo final da conversa!
-5. Após ter a unidade, chame getSchedule(unidadeKey, categoria) para consultar e mostrar as aulas disponíveis com vagas reais.
-6. Se o visitante escolher um horário específico e confirmar, chame bookTrialClass() para agendar a aula experimental diretamente.
-7. Após o agendamento, confirmar o horário e informar que a equipe entrará em contato.
+==================================================
+COMO CONTORNAR AS PRINCIPAIS DÚVIDAS E OBJEÇÕES:
+==================================================
+1. *Dúvida sobre Preço / Mensalidade ("Quanto custa?", "Qual o valor?")*:
+   - NUNCA envie apenas uma tabela fria nem diga secamente que não pode informar.
+   - Acolha com transparência e entusiasmo: explique que os planos da Kihap são personalizados de acordo com a faixa etária, o programa e a frequência semanal que a pessoa ou o filho(a) for praticar.
+   - Ancore no valor da experiência: *"Para que você conheça de verdade a nossa metodologia, sinta a energia do tatame e conheça os professores antes de qualquer decisão financeira, nosso primeiro passo é uma *aula experimental 100% gratuita e sem compromisso!*"*
+   - Conclua perguntando: *"A aula seria para você ou para o seu filho(a)? Qual a idade do praticante?"*
+2. *Medo de não acompanhar / "Nunca fiz artes marciais"*:
+   - Tranquilize: mais de 90% dos nossos alunos começaram do zero absoluto! As turmas são divididas por faixa etária e nível de habilidade, com acompanhamento cuidadoso dos instrutores.
+3. *Timidez infantil ou excesso de agitação*:
+   - Ressalte como o método pedagógico da Kihap ajuda crianças tímidas a ganharem autoconfiança e crianças enérgicas a canalizarem sua energia com foco e disciplina positiva.
 
-IMPORTANTE:
-- Chame saveLead() assim que o visitante mencionar a unidade de preferência ou seu nome, para garantir que o CRM fique com a unidade atribuída sem depender de agendamento.
-- Só chame getSchedule() após ter a unidade identificada (ou se o visitante pedir para ver os horários).
-- Só chame bookTrialClass() quando o visitante confirmar explicitamente que quer agendar naquele horário.
-- Para listar as unidades disponíveis, chame getAvailableUnits().
-- Seja proativo: se o visitante estiver em dúvida sobre qual unidade, pergunte a cidade ou bairro.
-- Mantenha respostas curtas e diretas — máximo 3 parágrafos por mensagem.
-- Ao exibir a grade de horários, mostre os dias e horários de forma organizada. NÃO mostre turmas sem vagas disponíveis.`;
+==================================================
+FLUXO DE ATENDIMENTO DE ALTA CONVERSÃO:
+==================================================
+1. *Acolhimento*: Cumprimente pelo nome, agradeça o contato e pergunte para quem é a aula (filho, adulto, família) e qual unidade ou região fica mais próxima. Se o lead veio de um anúncio específico (Meta Ads), faça a ponte natural com o tema.
+2. *Registro Imediato no CRM*: Assim que o visitante informar a *unidade de preferência*, o *nome* ou o *programa*, chame IMEDIATAMENTE a ferramenta *saveLead()* para registrar no CRM sem esperar o final da conversa!
+3. *Apresentação do Programa*: Identifique o programa ideal por idade/objetivo e fale dele com brilho nos olhos em poucas linhas.
+4. *Convite para Aula Experimental*: Convide para a aula experimental gratuita para vivenciar a metodologia no tatame.
+5. *Consulta de Grade Real*: Chame *getSchedule(unidadeKey, categoria)* para verificar as aulas disponíveis com vagas reais nos próximos 7 dias. Apresente os dias e horários de forma organizada.
+6. *Agendamento*: Quando o visitante escolher um horário, chame *bookTrialClass()* para confirmar a vaga no sistema da escola!
+7. *Confirmação*: Confirme o agendamento com calor, passe o endereço da unidade e avise que a equipe da recepção estará esperando com muita alegria!
+
+REGRAS FINAIS:
+- Seja proativo, rápido, empático e focado no ser humano.
+- Chame saveLead() assim que tiver qualquer dado novo (nome, telefone, unidade ou programa).
+- Nunca deixe o lead sem uma resposta convidativa ao final.`;
 
 const MILES_TOOLS = [{
     functionDeclarations: [
@@ -127,46 +146,81 @@ const MILES_TOOLS = [{
     ]
 }];
 
-const KOBE_SYSTEM_INSTRUCTION = `Você é o Kobe, o simpático, inteligente, ativo e prestativo assistente virtual oficial e mascote de toda a Intranet da Kihap, uma renomada escola de artes marciais.
-Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores e administradores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte, vendas, produtos e muito mais.
+const KOBE_SYSTEM_INSTRUCTION = `Você é o Kobe, o simpático, inteligente, ativo e prestativo assistente virtual oficial e mascote de toda a Intranet da escola Kihap, uma renomada escola de artes marciais.
+Seu objetivo é servir como um assistente completo para todos os colaboradores, instrutores, professores e gestores da Kihap. Você deve ajudar com dúvidas sobre o sistema, processos internos, uso da intranet, gestão de alunos, marketing, suporte, vendas, produtos, e atuar ativamente como um *Copiloto de Atendimento e Respostas a Leads*.
 
-IDENTIDADE IMPORTANTE:
-- Você é simplesmente o "Kobe".
-- Você **NÃO** deve se referir a si mesmo como "macaco", "primata" ou qualquer termo relacionado a animais.
-- Você **NÃO** é um mestre de artes marciais. Nunca use títulos como "mestre", "macaco-mestre" ou similares para se referir a você mesmo. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito, dedicação e graduação.
+IDENTIDADE E REGRAS INVIOLÁVEIS:
+- Você é simplesmente o "Kobe", o assistente virtual oficial e mascote da Intranet da Kihap.
+- A pessoa que conversa com você é um usuário humano (colaborador, instrutor ou gestor da Kihap). *NUNCA* chame o usuário de "Kobe" nem peça desculpas chamando ele de "Kobe"! Trate o usuário pelo nome se souber, ou como "campeão(ã)", "professor(a)", "equipe".
+- **TERMINOLOGIA OBRIGATÓRIA**: NUNCA utilize a palavra "dojo". A escola Kihap utiliza exclusivamente o termo *"escola"* (ou *"unidade"*, *"tatame"*). A palavra "dojo" é estritamente proibida em qualquer resposta, roteiro ou conselho.
+- Você *NÃO* deve se referir a si mesmo como "macaco", "primata" ou qualquer termo relacionado a animais.
+- Você *NÃO* é um mestre de artes marciais. Nunca use títulos como "mestre", "macaco-mestre" ou similares para se referir a você mesmo. Na escola Kihap, o título de "Mestre" é um cargo humano de altíssimo respeito, dedicação e graduação.
 
 DIRETRIZES DE COMUNICAÇÃO E TOM DE VOZ KIHAP:
 1. **Acolhedor, Positivo, Profissional e Respeitoso**: Seu tom deve ser sempre encorajador, confiante, empático e de alto profissionalismo.
-2. **Evite Palavras Negativas**: Evite ao máximo termos excessivamente negativos como "não", "infelizmente" e "nunca". Em vez disso, utilize construções de frases proativas, positivas e orientadas a soluções (ex: em vez de dizer "Eu não posso fazer isso", prefira "Consigo te ajudar com isso através de..."). Isso evita confronto e mantém a cultura de desenvolvimento positivo da escola.
+2. **Evite Palavras Negativas**: Evite ao máximo termos excessivamente negativos como "não", "infelizmente" e "nunca". Em vez disso, utilize construções de frases proativas, positivas e orientadas a soluções.
 3. **Linguagem Limpa**: Nunca use gírias excessivas, palavrões, apelidos pejorativos ou jargões inadequados.
-4. **Valores da Kihap**: Em todas as suas interações, conselhos e respostas, reflita os valores essenciais da escola: **DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR**.
+4. **Valores da Kihap**: Em todas as suas interações, conselhos e respostas, reflita os valores essenciais da escola: *DISCIPLINA, RESPEITO, AUTOESTIMA, COMUNICAÇÃO, GRATIDÃO e ACREDITAR*.
 5. **Foco no Relacionamento e Valor (Jeito Kihap de Vender)**: Quando questionado sobre vendas ou processos comerciais da escola, lembre-se de que "vender significa gerar valor através do relacionamento, da experiência e da transformação proporcionada pela Arte Marcial". Foque em comunicar benefícios, transformação e propósito, em vez de apenas focar em custos financeiros.
 6. **Linguagem Direta e Organizada**: Mantenha suas respostas diretas, organizadas (use negritos como *texto* para destacar caminhos e termos importantes) e evite textos excessivamente longos. No WhatsApp, use apenas um asterisco * para negrito (ex: *texto*) em vez de dois **.
 
+==================================================
+PAPEL ESPECIALIZADO: COPILOTO DE ATENDIMENTO & FORMULAÇÃO DE RESPOSTAS A LEADS
+==================================================
+Você é o braço direito da equipe comercial, recepção e atendimento da Kihap no WhatsApp, Instagram e canais digitais!
+SEMPRE que o usuário colar uma mensagem de um lead/prospect, pedir ajuda para responder um cliente, contornar uma objeção ou formular um atendimento:
+1. *Análise Rápida da Mensagem do Lead*:
+   - Identifique a intenção central, faixa etária (criança, adolescente ou adulto) e eventuais objeções (preço, horário, localização, insegurança/medo de começar, vergonha, timidez ou disciplina infantil).
+2. *Forneça Respostas Prontas para Envio (Prontas para Copiar e Colar)*:
+   - Forneça SEMPRE o texto das mensagens completo e detalhado imediatamente na mesma resposta. NUNCA diga que vai formular e pare de falar sem enviar o texto!
+   - Formate as mensagens prontas usando o padrão do WhatsApp com *apenas um asterisco* para negrito (ex: *aula experimental gratuita*).
+   - *TERMINOLOGIA OBRIGATÓRIA*: NUNCA use a palavra "dojo", utilize sempre "escola" (ou "unidade", "tatame").
+   - Sempre dê de 1 a 2 opções adequadas ao contexto:
+     * *Opção 1: Direta e Calorosa* (rápida, simpática e humanizada, perfeita para WhatsApp dinâmico).
+     * *Opção 2: Focada em Valor & Contorno de Objeções* (contextualizada, educativa, destacando a transformação antes do preço).
+3. *Regras de Ouro do Atendimento Kihap*:
+   - *Objetivo Número 1: Agendar Aula Experimental Gratuita*: A mágica da Kihap acontece quando a família ou o aluno pisa no tatame e vivencia a energia, o carinho dos professores e a segurança da escola. O foco de toda resposta é sempre convidar para a aula experimental sem compromisso!
+   - *Objeção de Preço ("Quanto custa a mensalidade?", "Qual o valor?")*:
+     * NUNCA passe apenas uma tabela fria de preços sem acolher e entender o objetivo do aluno primeiro.
+     * Acolha calorosamente, pergunte quem vai praticar (idade) e se já tem alguma experiência, explique que os planos são personalizados de acordo com os objetivos e a frequência, e proponha a aula experimental gratuita para vivenciar a metodologia no tatame antes de qualquer decisão.
+   - *Programas por Faixa Etária*:
+     * *Baby Littles (1,5 a 3 anos)*: Desenvolvimento psicomotor e vínculo familiar.
+     * *Littles (3 a 6 anos)*: Foco em coordenação motora, respeito, socialização, gasto de energia positiva e disciplina lúdica e divertida.
+     * *Kids (7 a 12 anos)*: Autoconfiança, foco nos estudos, respeito, superação de timidez, prevenção ao bullying e defesa pessoal.
+     * *Teens (13 a 17 anos)*: Condicionamento, descompressão de telas, liderança, comunidade saudável e autoestima.
+     * *Adultos*: Alívio do estresse do dia a dia, condicionamento, flexibilidade e autodefesa em um ambiente super seguro para quem está começando do absoluto zero (sem risco de lesões).
+   - *Finalize Sempre com uma Pergunta Aberta Convidativa*:
+     * Facilite a resposta do lead (ex: "Qual período fica melhor para vocês: manhã, tarde ou noite?", "Ele(a) já praticou alguma atividade antes ou seria a primeira vez?", "Qual unidade fica mais perto para você: Asa Sul, Centro ou Coqueiros?").
+4. *Dica Estratégica Rápida*:
+   - Após as opções de texto, adicione um breve comentário estratégico com 1 ou 2 dicas de atendimento (ex: timing de envio, áudio vs texto, como criar rapport).
+5. *Integração com Ferramentas do CRM*:
+   - Se o usuário mencionar o nome de um lead cadastrado (ex: "o que respondo para a Taina?", "veja o lead Gustavo"), use ativamente *searchProspects* e *getProspectDetails* para consultar a unidade, fase do funil, canal de origem (ex: Chatbot Miles, Site, Meta) e histórico de contatos antes de formular a resposta.
+
 Aqui estão algumas seções principais da intranet que você pode guiar os colaboradores a encontrar:
-- **Início/Painel**: Tela inicial com visão geral.
-- **Alunos**: Cadastro e acompanhamento de alunos (/intranet/alunos.html).
-- **Marketing**:
-  - **Prospecção**: Funil de vendas / CRM (/intranet/prospeccao.html).
-  - **Redes Sociais (Meta Ads)**: Dashboard de campanhas e métricas (/intranet/marketing-social.html).
-  - **Google Ads**: Métricas de Google Ads (/intranet/marketing-google.html).
-- **Administrativo**:
-  - **Projetos**: Gerenciador de tarefas e projetos (/intranet/projetos.html).
-  - **Processos**: Biblioteca de manuais e POPs (/intranet/processos.html).
-  - **Pedidos**: Pedidos de doboks, faixas, etc. (/intranet/pedidos.html).
-- **RH**: Setor de recursos humanos, recrutamento e seleção (/intranet/rh.html).
-- **Chat**: Comunicação interna em tempo real (/intranet/chat.html).
-- **Cursos / Tatame**: Treinamentos e aulas (/intranet/cursos.html).
-- **Feed**: Comunicados internos (/intranet/feed.html).
+- *Início/Painel*: Tela inicial com visão geral.
+- *Alunos*: Cadastro e acompanhamento de alunos (/intranet/alunos.html).
+- *Marketing*:
+  - *Prospecção*: Funil de vendas / CRM (/intranet/prospeccao.html).
+  - *Redes Sociais (Meta Ads)*: Dashboard de campanhas e métricas (/intranet/marketing-social.html).
+  - *Google Ads*: Métricas de Google Ads (/intranet/marketing-google.html).
+- *Administrativo*:
+  - *Projetos*: Gerenciador de tarefas e projetos (/intranet/projetos.html).
+  - *Processos*: Biblioteca de manuais e POPs (/intranet/processos.html).
+  - *Pedidos*: Pedidos de doboks, faixas, etc. (/intranet/pedidos.html).
+- *RH*: Setor de recursos humanos, recrutamento e seleção (/intranet/rh.html).
+- *Chat*: Comunicação interna em tempo real (/intranet/chat.html).
+- *Cursos / Tatame*: Treinamentos e aulas (/intranet/cursos.html).
+- *Feed*: Comunicados internos (/intranet/feed.html).
 
 Para ajudar de maneira profunda e com dados em tempo real da intranet, você tem acesso a ferramentas integradas ao banco de dados:
-- Alunos: você pode pesquisar alunos (\`searchStudents\`) e ver a ficha completa de um aluno (\`getStudentProfile\`), incluindo informações financeiras simplificadas, histórico de testes físicos, cursos liberados e emblemas conquistados.
-- Demandas (Trello): você pode pesquisar demandas (\`searchDemands\`) e ver detalhes de uma demanda específica (\`getDemandDetails\`), que traz inclusive todas as notas internas e comentários.
-- CRM/Prospects: você pode pesquisar leads (\`searchProspects\`) e ver os detalhes completos de um prospect específico (\`getProspectDetails\`), incluindo o histórico completo de contatos/follow-ups e as observações.
-- Loja e Pedidos: você pode pesquisar produtos (\`searchStoreProducts\`) e ver seus detalhes de preço/estoque (\`getStoreProductDetails\`). Também pode pesquisar transações de venda (\`searchStoreSales\`) e ver detalhes de uma venda específica (\`getStoreSaleDetails\`), assim como pesquisar pedidos de faixas/doboks (\`searchStoreOrders\`) e ver detalhes de um pedido específico (\`getStoreOrderDetails\`).
-- Planificadores de Aula: você pode pesquisar planificadores/planos pedagógicos (\`searchLessonPlans\`) e ver o detalhamento completo de um plano (\`getLessonPlanDetails\`), incluindo objetivos, estrutura por blocos/semanas e os links diretos de vídeos do YouTube. Quando professores ou instrutores perguntarem sobre planos de aula, treinos, técnicas específicas, aquecimentos ou pedirem vídeos demonstrativos, consulte o planificador e envie a explicação com os links de vídeo do YouTube.
+- Alunos: você pode pesquisar alunos (*searchStudents*) e ver a ficha completa de um aluno (*getStudentProfile*), incluindo histórico de testes físicos, cursos liberados e informações cadastrais.
+- Demandas (Trello): você pode pesquisar demandas (*searchDemands*) e ver detalhes de uma demanda específica (*getDemandDetails*), que traz inclusive notas internas e comentários.
+- CRM/Prospects: você pode pesquisar leads (*searchProspects*) e ver os detalhes completos de um prospect específico (*getProspectDetails*), incluindo o histórico completo de contatos/follow-ups e as observações.
+- Loja e Pedidos: você pode pesquisar produtos (*searchStoreProducts*), ver preços/estoque (*getStoreProductDetails*), pesquisar transações de venda (*searchStoreSales*) e ver detalhes de pedidos de faixas/doboks (*searchStoreOrders*, *getStoreOrderDetails*).
+- **Business Intelligence e Métricas da Kihap Store (*getStoreBusinessIntelligence*)**: você tem acesso analítico completo ao BI de vendas da loja (*getStoreBusinessIntelligence*). SEMPRE utilize esta ferramenta quando perguntarem sobre faturamento total, ticket médio, número de vendas, taxa de aprovação, rankings de unidades, instrutores com mais vendas, produtos e categorias mais vendidos, formas de pagamento, ou especificamente sobre **qual graduação ou faixa mais compra produtos na store**! Ao responder, traga análises ricas com números exatos (faturamento em R$, volume de vendas, ticket médio, percentual de participação), destaque as faixas líderes em quantidade e faturamento, e forneça insights estratégicos positivos e orientados ao crescimento da escola Kihap.
+- Planificadores de Aula: você pode pesquisar planificadores (*searchLessonPlans*) e ver o detalhamento completo de um plano (*getLessonPlanDetails*), incluindo objetivos, blocos/semanas e links de vídeos do YouTube para instrutores e professores.
 
-Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, ou planificadores de aula.`;
+Use essas ferramentas ativamente quando o usuário solicitar informações sobre alunos, trello/demandas, prospects/leads, produtos, vendas e pedidos da loja, BI da Store, ou planificadores de aula.`;
 
 const KOBE_TOOLS = [{
     functionDeclarations: [
@@ -431,9 +485,354 @@ const KOBE_TOOLS = [{
                     }
                 }
             }
+        },
+        {
+            name: "getStoreBusinessIntelligence",
+            description: "Retorna a inteligência de negócios (Business Intelligence & BI) da Kihap Store em tempo real com métricas analíticas agregadas: faturamento total, quantidade de vendas, ticket médio, taxa de aprovação, ranking de vendas e faturamento por GRADUAÇÃO/FAIXA (responde com precisão qual graduação mais compra produtos), ranking por UNIDADE, ranking por INSTRUTOR/PROFESSOR, ranking por PRODUTO e CATEGORIA, formas de pagamento (PIX, Cartão, Boleto) e tendências temporais.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    period: {
+                        type: "STRING",
+                        description: "Período da análise: '30_days' (últimos 30 dias, padrão), 'this_month' (mês atual), 'last_month' (mês anterior), '90_days' (últimos 90 dias), 'this_year' (ano atual) ou 'all' (todo o histórico).",
+                        enum: ["30_days", "this_month", "last_month", "90_days", "this_year", "all"]
+                    },
+                    unit: {
+                        type: "STRING",
+                        description: "Filtro opcional por unidade (ex: 'asa-sul', 'coqueiros', 'centro', etc.)."
+                    },
+                    instructor: {
+                        type: "STRING",
+                        description: "Filtro opcional por nome do instrutor ou professor."
+                    },
+                    graduation: {
+                        type: "STRING",
+                        description: "Filtro opcional por faixa/graduação do aluno (ex: 'Faixa Branca', '1BD', 'Faixa Azul', etc.)."
+                    },
+                    status: {
+                        type: "STRING",
+                        description: "Filtro por status da transação: 'approved_only' (apenas vendas pagas/concluídas, padrão), 'all' (todas) ou 'pending' (somente pendentes).",
+                        enum: ["approved_only", "all", "pending"]
+                    }
+                }
+            }
         }
     ]
 }];
+
+// --- KOBE BACKEND FUNCTIONS ---
+
+async function getStoreBusinessIntelligenceBackend(args = {}) {
+    const {
+        period = '30_days',
+        unit = '',
+        instructor = '',
+        graduation = '',
+        status: statusFilter = 'approved_only'
+    } = args;
+
+    try {
+        let salesSnap;
+        try {
+            salesSnap = await db.collection('inscricoesFaixaPreta').orderBy('created', 'desc').limit(600).get();
+        } catch (e) {
+            salesSnap = await db.collection('inscricoesFaixaPreta').limit(600).get();
+        }
+        const sales = [];
+        salesSnap.forEach(d => sales.push({ id: d.id, ...d.data() }));
+
+        let products = [];
+        try {
+            const prodSnap = await db.collection('products').limit(150).get();
+            prodSnap.forEach(d => products.push({ id: d.id, ...d.data() }));
+        } catch (e) {
+            console.warn('[Kobe Backend BI] Erro ao carregar produtos:', e);
+        }
+
+        const getSaleDate = (s) => {
+            if (!s || !s.created) return null;
+            if (typeof s.created.toDate === 'function') return s.created.toDate();
+            if (s.created instanceof Date) return s.created;
+            const parsed = new Date(s.created);
+            return isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const getSaleAmountCents = (s) => {
+            if (s.amountTotal !== undefined && s.amountTotal !== null) return parseInt(s.amountTotal, 10) || 0;
+            if (s.amount !== undefined && s.amount !== null) {
+                const val = parseFloat(s.amount);
+                return val < 1000 ? val * 100 : val;
+            }
+            if (s.totalAmount !== undefined && s.totalAmount !== null) return parseInt(s.totalAmount, 10) || 0;
+            return 0;
+        };
+
+        const getSaleGrad = (s) => {
+            const g = s.userGraduacao || s.graduacao || s.faixa || s.chosenVariant || s.variationName;
+            if (g && String(g).trim() !== '') return String(g).trim();
+            return 'Venda Direta / Sem Faixa';
+        };
+
+        const getSaleCat = (s) => {
+            if (!s) return 'Outros / Gerais';
+            if (s.category && String(s.category).trim() !== '') return String(s.category).trim();
+            if (s.productCategory && String(s.productCategory).trim() !== '') return String(s.productCategory).trim();
+            const prodName = s.productName || s.title || s.name || '';
+            const norm = (str) => String(str || '').trim().toLowerCase();
+
+            if (products.length > 0) {
+                const found = products.find(p => 
+                    (s.productId && p.id === s.productId) || 
+                    (s.product_id && p.id === s.product_id) || 
+                    (prodName && (norm(p.name) === norm(prodName) || norm(p.title) === norm(prodName) || norm(p.nome) === norm(prodName)))
+                );
+                if (found && (found.category || found.categoria)) {
+                    const c = found.category || found.categoria;
+                    if (String(c).trim() !== '') return String(c).trim();
+                }
+            }
+
+            const lower = prodName.toLowerCase();
+            if (lower.includes('graduaç') || lower.includes('exame') || lower.includes('1bd') || lower.includes('2bd') || lower.includes('3bd')) return 'Graduação';
+            if (lower.includes('experience') || lower.includes('torneio') || lower.includes('evento') || lower.includes('campeonato')) return 'Eventos & Experiências';
+            if (lower.includes('equipamento') || lower.includes('dobok') || lower.includes('protetor') || lower.includes('luva') || lower.includes('canela') || lower.includes('capacete') || lower.includes('faixa')) return 'Equipamentos & Uniformes';
+            if (lower.includes('curso') || lower.includes('treinamento') || lower.includes('seminario')) return 'Cursos & Treinamentos';
+            return 'Outros / Gerais';
+        };
+
+        const getPayMethod = (s) => {
+            let raw = '';
+            if (s.paymentDetails) {
+                raw = s.paymentDetails.method || s.paymentDetails.paymentMethodId || s.paymentDetails.paymentTypeId || s.paymentDetails.payment_method_id || '';
+            }
+            if (!raw) {
+                raw = s.paymentMethod || s.paymentType || s.payment_method_id || s.payment_type_id || '';
+            }
+            const lower = String(raw).toLowerCase().trim();
+            if (lower.includes('pix') || lower.includes('bank_transfer')) return 'PIX';
+            if (lower.includes('credit') || lower.includes('card') || lower === 'visa' || lower === 'master' || lower === 'elo' || lower === 'amex' || lower === 'hipercard') return 'Cartão de Crédito';
+            if (lower.includes('debit') || lower === 'debvisa' || lower === 'debmaster') return 'Cartão de Débito';
+            if (lower.includes('ticket') || lower.includes('boleto') || lower.includes('bolbradesco')) return 'Boleto Bancário';
+            if (lower.includes('account_money') || lower.includes('saldo')) return 'Saldo Mercado Pago';
+            if (lower.includes('cash') || lower.includes('dinheiro') || lower.includes('especie')) return 'Dinheiro / Espécie';
+            if (s.saleType === 'manual') return 'Venda Manual';
+            if (!raw) return 'Mercado Pago (Outros)';
+            return raw.charAt(0).toUpperCase() + raw.slice(1);
+        };
+
+        const now = new Date();
+        let startDateLimit = null;
+        let endDateLimit = null;
+        let periodLabel = 'Últimos 30 Dias';
+
+        if (period === 'this_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth(), 1);
+            periodLabel = 'Mês Atual';
+        } else if (period === 'last_month') {
+            startDateLimit = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDateLimit = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+            periodLabel = 'Mês Anterior';
+        } else if (period === '30_days') {
+            startDateLimit = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            periodLabel = 'Últimos 30 Dias';
+        } else if (period === '90_days') {
+            startDateLimit = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+            periodLabel = 'Últimos 90 Dias';
+        } else if (period === 'this_year') {
+            startDateLimit = new Date(now.getFullYear(), 0, 1);
+            periodLabel = 'Ano Atual';
+        } else if (period === 'all') {
+            periodLabel = 'Todo o Histórico';
+        }
+
+        const normStr = (val) => String(val || '').toLowerCase().trim();
+
+        const filtered = sales.filter(s => {
+            const date = getSaleDate(s);
+            if (startDateLimit && (!date || date < startDateLimit)) return false;
+            if (endDateLimit && (!date || date > endDateLimit)) return false;
+
+            const u = normStr(s.userUnit || s.unit || s.unidade);
+            if (unit && !u.includes(normStr(unit))) return false;
+
+            const inst = normStr(s.userProfessor || s.professor || s.selectedProfessor || s.instructor);
+            if (instructor && !inst.includes(normStr(instructor))) return false;
+
+            const g = normStr(getSaleGrad(s));
+            if (graduation && !g.includes(normStr(graduation))) return false;
+
+            const st = (s.paymentStatus || '').toLowerCase();
+            if (statusFilter === 'approved_only') {
+                if (st !== 'paid' && st !== 'approved' && st !== 'pago' && st !== 'concluido') return false;
+            } else if (statusFilter === 'pending') {
+                if (st !== 'pending' && st !== 'aguardando') return false;
+            }
+
+            return true;
+        });
+
+        const totalSalesCount = filtered.length;
+        const totalRevenueCents = filtered.reduce((acc, s) => acc + getSaleAmountCents(s), 0);
+        const totalRevenue = totalRevenueCents / 100;
+        const avgTicket = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
+
+        const paidSalesCount = filtered.filter(s => {
+            const st = (s.paymentStatus || '').toLowerCase();
+            return st === 'paid' || st === 'approved' || st === 'pago' || st === 'concluido';
+        }).length;
+        const approvalRate = totalSalesCount > 0 ? Math.round((paidSalesCount / totalSalesCount) * 100) : 0;
+
+        const gradAgg = {};
+        const unitAgg = {};
+        const instAgg = {};
+        const prodAgg = {};
+        const catAgg = {};
+        const payAgg = {};
+        const dowRevenue = [0, 0, 0, 0, 0, 0, 0];
+        const dowDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+        filtered.forEach(s => {
+            const amt = getSaleAmountCents(s) / 100;
+
+            const g = getSaleGrad(s);
+            if (!gradAgg[g]) gradAgg[g] = { count: 0, revenue: 0 };
+            gradAgg[g].count += 1;
+            gradAgg[g].revenue += amt;
+
+            const u = s.userUnit || s.unit || s.unidade || 'Outras Unidades';
+            if (!unitAgg[u]) unitAgg[u] = { count: 0, revenue: 0 };
+            unitAgg[u].count += 1;
+            unitAgg[u].revenue += amt;
+
+            const inst = s.userProfessor || s.professor || s.selectedProfessor || s.instructor || 'Venda Direta';
+            if (!instAgg[inst]) instAgg[inst] = { count: 0, revenue: 0 };
+            instAgg[inst].count += 1;
+            instAgg[inst].revenue += amt;
+
+            const pName = s.productName || 'Produto Geral';
+            const cName = getSaleCat(s);
+            if (!prodAgg[pName]) prodAgg[pName] = { count: 0, revenue: 0, category: cName };
+            prodAgg[pName].count += 1;
+            prodAgg[pName].revenue += amt;
+
+            if (!catAgg[cName]) catAgg[cName] = { count: 0, revenue: 0 };
+            catAgg[cName].count += 1;
+            catAgg[cName].revenue += amt;
+
+            if (s.recommendedItems && Array.isArray(s.recommendedItems)) {
+                s.recommendedItems.forEach(item => {
+                    const rName = item.productName || 'Item Extra';
+                    const rPrice = (item.price || 0) * (item.quantity || 1);
+                    const rCat = getSaleCat({ productName: rName, ...item });
+                    if (!prodAgg[rName]) prodAgg[rName] = { count: 0, revenue: 0, category: rCat };
+                    prodAgg[rName].count += (item.quantity || 1);
+                    prodAgg[rName].revenue += rPrice;
+
+                    if (!catAgg[rCat]) catAgg[rCat] = { count: 0, revenue: 0 };
+                    catAgg[rCat].count += (item.quantity || 1);
+                    catAgg[rCat].revenue += rPrice;
+                });
+            }
+
+            const pm = getPayMethod(s);
+            if (!payAgg[pm]) payAgg[pm] = { count: 0, revenue: 0 };
+            payAgg[pm].count += 1;
+            payAgg[pm].revenue += amt;
+
+            const d = getSaleDate(s);
+            if (d) {
+                dowRevenue[d.getDay()] += amt;
+            }
+        });
+
+        const fmtCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        const sortedGraduations = Object.entries(gradAgg).map(([gName, data]) => ({
+            graduation: gName,
+            salesCount: data.count,
+            percentOfSales: totalSalesCount > 0 ? `${((data.count / totalSalesCount) * 100).toFixed(1)}%` : '0%',
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.salesCount - a.salesCount || b.revenue - a.revenue);
+
+        const sortedUnits = Object.entries(unitAgg).map(([uName, data]) => ({
+            unit: uName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        const sortedInstructors = Object.entries(instAgg).map(([iName, data]) => ({
+            instructor: iName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%',
+            avgTicketFormatted: data.count > 0 ? fmtCurrency(data.revenue / data.count) : 'R$ 0,00'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        const sortedProducts = Object.entries(prodAgg).map(([pName, data]) => ({
+            productName: pName,
+            category: data.category,
+            unitsSold: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue)
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        const sortedCategories = Object.entries(catAgg).map(([cName, data]) => ({
+            category: cName,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        const paymentMethods = Object.entries(payAgg).map(([pMethod, data]) => ({
+            method: pMethod,
+            salesCount: data.count,
+            revenue: data.revenue,
+            revenueFormatted: fmtCurrency(data.revenue),
+            percentOfRevenue: totalRevenue > 0 ? `${((data.revenue / totalRevenue) * 100).toFixed(1)}%` : '0%'
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        let maxDowIdx = 0;
+        let maxDowVal = 0;
+        dowRevenue.forEach((rev, idx) => {
+            if (rev > maxDowVal) {
+                maxDowVal = rev;
+                maxDowIdx = idx;
+            }
+        });
+
+        const topGraduationBySales = sortedGraduations[0] || null;
+        const topGraduationByRevenue = [...sortedGraduations].sort((a, b) => b.revenue - a.revenue)[0] || null;
+
+        return {
+            periodLabel,
+            totalSalesCount,
+            totalRevenueFormatted: fmtCurrency(totalRevenue),
+            avgTicketFormatted: fmtCurrency(avgTicket),
+            approvalRate: `${approvalRate}%`,
+            topGraduationBySales: topGraduationBySales ? `${topGraduationBySales.graduation} (${topGraduationBySales.salesCount} vendas, ${topGraduationBySales.percentOfSales})` : 'N/A',
+            topGraduationByRevenue: topGraduationByRevenue ? `${topGraduationByRevenue.graduation} (${topGraduationByRevenue.revenueFormatted}, ${topGraduationByRevenue.percentOfRevenue})` : 'N/A',
+            graduationsRanking: sortedGraduations.slice(0, 8),
+            unitsRanking: sortedUnits.slice(0, 6),
+            instructorsRanking: sortedInstructors.slice(0, 6),
+            productsRanking: sortedProducts.slice(0, 6),
+            categoriesRanking: sortedCategories.slice(0, 6),
+            paymentMethodsRanking: paymentMethods,
+            bestDayOfWeek: dowDays[maxDowIdx],
+            message: `Análise de BI da Kihap Store para o período '${periodLabel}' realizada com sucesso.`
+        };
+    } catch (e) {
+        console.error("[Kobe Backend] Erro no BI da Store:", e);
+        return { error: e.message };
+    }
+}
 
 // --- KOBE BACKEND FUNCTIONS ---
 
@@ -1373,7 +1772,7 @@ async function callGeminiKobe(history, apiKey) {
         tools: KOBE_TOOLS,
         generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 600
+            maxOutputTokens: 2048
         }
     }, {
         headers: { 'Content-Type': 'application/json' }
@@ -1878,7 +2277,7 @@ async function callGeminiMiles(history, apiKey) {
         tools: MILES_TOOLS,
         generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 600
+            maxOutputTokens: 2048
         }
     }, {
         headers: { 'Content-Type': 'application/json' }
@@ -2042,6 +2441,21 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     const metaHeadline = referral?.headline || null;
                     const metaBody = referral?.body || null;
 
+                    // Se a mensagem vier com referência de anúncio do Meta (Click-to-WhatsApp), SEMPRE force o modo Miles!
+                    if (referral || ctwaClid || metaAdId) {
+                        mode = 'miles';
+                    } else if (mode === 'kobe') {
+                        // Se o chat estava no modo Kobe, mas a mensagem é claramente de um cliente/visitante buscando informações sobre aulas/preços/matrícula:
+                        const leadKeywords = ['aula experimental', 'experimental', 'quanto custa', 'valor da mensalidade', 'qual o valor', 'fazer aula', 'agendar aula', 'grade de horários', 'horario de aula', 'preço', 'matricula', 'inscrição'];
+                        const isDirectLeadIntent = leadKeywords.some(kw => cleanText.includes(kw));
+                        const isCopilotRequest = cleanText.includes('como respond') || cleanText.includes('o lead') || cleanText.includes('cliente disse') || cleanText.includes('sugir') || cleanText.includes('copiloto') || cleanText.includes('mensagem recebida') || cleanText.includes('ajuda para responder');
+
+                        if (isDirectLeadIntent && !isCopilotRequest) {
+                            console.log(`[WhatsApp Webhook] Mensagem de lead detectada no modo Kobe para ${customerPhone}. Alternando para Miles.`);
+                            mode = 'miles';
+                        }
+                    }
+
                     // Detecção automática de unidade (via anúncio, texto da mensagem ou DDD)
                     let detectedInfo = detectUnitFromText((metaHeadline || '') + ' ' + (metaBody || '') + ' ' + messageText);
                     if (!detectedInfo || !detectedInfo.unidade) {
@@ -2193,6 +2607,8 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                                     result = await searchLessonPlansBackend(args);
                                 } else if (fnName === 'getLessonPlanDetails') {
                                     result = await getLessonPlanDetailsBackend(args);
+                                } else if (fnName === 'getStoreBusinessIntelligence') {
+                                    result = await getStoreBusinessIntelligenceBackend(args);
                                 } else {
                                     result = { error: 'Função do Kobe desconhecida.' };
                                 }
