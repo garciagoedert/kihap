@@ -47,6 +47,31 @@
             font-family: 'Inter', sans-serif;
         }
 
+        /* High-Performance Fluid Modal Animation */
+        #formModal {
+            opacity: 0;
+            transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #formModal.modal-open {
+            opacity: 1;
+        }
+        #formModalContent {
+            transform: scale(0.97) translateY(8px);
+            opacity: 0;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #formModal.modal-open #formModalContent {
+            transform: none;
+            opacity: 1;
+        }
+
+        /* Dedicated hardware-accelerated scrolling layer for modal form */
+        #prospectForm {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            transform: translateZ(0);
+        }
+
         /* Dragging styles */
         .dragging {
             opacity: 0.5;
@@ -55,6 +80,11 @@
 
         .drag-over {
             @apply border-dashed border-2 border-gray-500 bg-gray-500/10;
+        }
+
+        /* WhatsApp Floating Window */
+        #whatsappDrawer {
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         /* Chat Styles */
@@ -414,8 +444,8 @@
             </form>
         </div>
     </div>
-    <div id="formModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-md transition-all duration-300">
-        <div class="bg-white dark:bg-[#151515] w-full h-full sm:h-auto sm:rounded-2xl shadow-2xl sm:max-w-3xl sm:max-h-[92vh] flex flex-col border border-gray-150 dark:border-gray-800/80 overflow-hidden transform scale-100 transition-all">
+    <div id="formModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-sm">
+        <div id="formModalContent" class="bg-white dark:bg-[#151515] w-full h-full sm:h-auto sm:rounded-2xl shadow-2xl sm:max-w-3xl sm:max-h-[92vh] flex flex-col border border-gray-150 dark:border-gray-800/80 overflow-hidden">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-4 md:px-6 border-b border-gray-150 dark:border-gray-800 gap-4">
                 <div class="flex items-center gap-2.5">
@@ -569,16 +599,16 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="block text-xs font-semibold text-gray-750 dark:text-gray-300 uppercase tracking-wider mb-2">Tags</label>
-                                <div id="tagsContainer" class="flex flex-wrap gap-2 p-3 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-750 rounded-xl shadow-sm">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Tags</label>
+                                <div id="tagsContainer" class="flex flex-wrap gap-2 p-3 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-750 rounded-xl shadow-sm min-h-[46px]">
                                     <!-- As tags serão inseridas aqui pelo JS -->
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="block text-xs font-semibold text-gray-755 dark:text-gray-300 uppercase tracking-wider mb-2">Log de Contatos (Timeline)</label>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Log de Contatos (Timeline)</label>
                                 <div id="contactLogContainer"
-                                    class="max-h-60 overflow-y-auto bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 custom-scrollbar shadow-inner">
+                                    class="max-h-60 overflow-y-auto bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 custom-scrollbar shadow-inner min-h-[70px]">
                                     <!-- Log entries will be injected here -->
                                 </div>
                                 <div class="flex flex-col gap-2 mt-3">
@@ -708,6 +738,114 @@
                     class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
                 <button type="button" id="processImportBtn"
                     class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating WhatsApp Drawer Trigger Button (positioned cleanly above Kobe AI button) -->
+    <button id="floatingWhatsAppBtn" class="fixed bottom-[88px] right-6 z-50 bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer shadow-emerald-600/30 border border-white/10" title="Atendimento WhatsApp">
+        <i class="fab fa-whatsapp text-2xl group-hover:scale-110 transition-transform"></i>
+        <span id="floatingWhatsAppBadge" class="hidden absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[11px] font-bold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center shadow-md animate-pulse">0</span>
+    </button>
+
+    <!-- WhatsApp Floating Chat Window (identical style to Kobe AI popup, floating at bottom-right) -->
+    <div id="whatsappDrawer" class="fixed bottom-24 right-6 w-96 sm:w-[410px] h-[580px] max-h-[calc(100vh-120px)] z-50 bg-white/95 dark:bg-[#151515]/95 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right overflow-hidden">
+        
+        <!-- ================= VIEW 1: ALL CHATS LIST ================= -->
+        <div id="drawerListView" class="flex flex-col h-full w-full">
+            <!-- Header for List -->
+            <div class="p-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between gap-2 shadow-sm rounded-t-3xl flex-shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-white/20 text-white font-bold flex items-center justify-center text-sm flex-shrink-0 shadow-inner">
+                        <i class="fab fa-whatsapp text-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-white truncate">Conversas WhatsApp</h3>
+                        <p id="drawerListSubtitle" class="text-[11px] text-emerald-100 truncate">Selecione para conversar</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button id="drawerListOpenFullBtn" class="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 text-xs transition-all cursor-pointer" title="Abrir Central WhatsApp Completa">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                    <button id="closeWhatsAppDrawerBtnList" class="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 text-lg transition-all cursor-pointer" aria-label="Fechar">&times;</button>
+                </div>
+            </div>
+
+            <!-- Search in List -->
+            <div class="px-3 py-2 bg-gray-50 dark:bg-[#1a1c1e] border-b border-gray-150 dark:border-gray-800 flex items-center gap-2 flex-shrink-0">
+                <i class="fas fa-search text-[11px] text-gray-400"></i>
+                <input type="text" id="drawerChatListSearchInput" placeholder="Buscar conversas ou leads..."
+                    class="w-full bg-transparent text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none">
+            </div>
+
+            <!-- Scrollable Chats List -->
+            <div id="drawerChatsListContainer" class="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800/60 custom-scrollbar bg-white dark:bg-[#151515]">
+                <div class="text-center text-gray-400 text-xs py-16">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Carregando conversas...
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 2: SINGLE CHAT CONVERSATION ================= -->
+        <div id="drawerChatView" class="hidden flex-col h-full w-full">
+            <!-- Header for Single Chat with Back Arrow -->
+            <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between gap-1.5 shadow-sm rounded-t-3xl flex-shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    <!-- SETINHA DE VOLTAR PARA TODAS AS CONVERSAS -->
+                    <button id="drawerBackBtn" class="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:bg-white/20 active:scale-95 text-sm transition-all cursor-pointer flex-shrink-0" title="Voltar para todas as conversas">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div id="drawerAvatar" class="w-8 h-8 rounded-xl bg-white/20 text-white font-bold flex items-center justify-center text-xs uppercase flex-shrink-0 shadow-inner">
+                        <i class="fab fa-whatsapp text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <h3 id="drawerTitle" class="text-xs font-bold text-white truncate">WhatsApp CRM</h3>
+                            <span id="drawerStageBadge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-white/25 text-white">Novo</span>
+                        </div>
+                        <p id="drawerSubtitle" class="text-[10px] text-emerald-100 truncate">Atendimento em Tempo Real</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button id="drawerToggleAiBtn" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-lg bg-white/20 hover:bg-white/30 text-white transition-all cursor-pointer" title="Alternar IA Miles / Atendente">
+                        🤖 IA
+                    </button>
+                    <button id="drawerOpenFullBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 text-xs transition-all cursor-pointer" title="Abrir Central WhatsApp Completa">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                    <button id="closeWhatsAppDrawerBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 text-lg transition-all cursor-pointer" aria-label="Fechar">&times;</button>
+                </div>
+            </div>
+
+            <!-- Floating Chat Messages Area -->
+            <div id="drawerChatArea" class="flex-1 min-h-0 p-3.5 overflow-y-auto space-y-2.5 custom-scrollbar bg-gray-50/50 dark:bg-[#111]">
+                <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-16">
+                    <i class="fab fa-whatsapp text-4xl mb-3 text-emerald-500/30 block animate-pulse"></i>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Carregando conversa...</p>
+                </div>
+            </div>
+
+            <!-- Floating Quick Replies -->
+            <div class="px-3 py-1.5 bg-white dark:bg-[#181a1c] border-t border-gray-100 dark:border-gray-800/80 flex items-center gap-1.5 overflow-x-auto custom-scrollbar text-[10px] flex-shrink-0">
+                <span class="text-gray-400 uppercase font-bold text-[9px] whitespace-nowrap">Rápidas:</span>
+                <button class="drawer-template-btn px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-600 dark:text-gray-300 hover:text-emerald-600 whitespace-nowrap transition-all cursor-pointer" data-text="Olá! Tudo bem? Como posso te ajudar na Kihap hoje? 🥋">
+                    👋 Boas-vindas
+                </button>
+                <button class="drawer-template-btn px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-600 dark:text-gray-300 hover:text-emerald-600 whitespace-nowrap transition-all cursor-pointer" data-text="Queremos te presentear com uma aula experimental gratuita! Qual o melhor dia para você? 🥊">
+                    🥋 Aula Exp.
+                </button>
+                <button class="drawer-template-btn px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-600 dark:text-gray-300 hover:text-emerald-600 whitespace-nowrap transition-all cursor-pointer" data-text="Qual de nossas unidades fica mais conveniente para você? 📍">
+                    📍 Unidades
+                </button>
+            </div>
+
+            <!-- Floating Chat Input -->
+            <div class="p-2.5 bg-white dark:bg-[#1a1c1e] border-t border-gray-150 dark:border-gray-800 flex items-center gap-2 flex-shrink-0 rounded-b-3xl">
+                <textarea id="drawerMessageInput" rows="1" placeholder="Mensagem WhatsApp (Enter para enviar)..." class="flex-1 bg-gray-100 dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none max-h-24 custom-scrollbar"></textarea>
+                <button id="drawerSendBtn" class="w-9 h-9 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-600/20 transition-all duration-200 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    <i class="fas fa-paper-plane text-xs"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -1160,6 +1298,9 @@
         });
 
         // --- DATA HANDLING (FIRESTORE) ---
+        let isModalOpen = false;
+        let pendingBoardRender = false;
+
         function setupListeners() {
             if (prospectsListener) prospectsListener();
             if (leadsListener) leadsListener();
@@ -1167,7 +1308,11 @@
             const prospectsCollection = collection(db, 'prospects');
             prospectsListener = onSnapshot(prospectsCollection, (snapshot) => {
                 prospects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'prospect' })).filter(p => !p.pagina || p.pagina === 'Prospecção');
-                combineAndRender();
+                if (isModalOpen) {
+                    pendingBoardRender = true;
+                } else {
+                    combineAndRender();
+                }
             }, (error) => {
                 console.error("Error fetching prospects:", error);
             });
@@ -1175,7 +1320,11 @@
             const leadsCollection = collection(db, 'leads');
             leadsListener = onSnapshot(leadsCollection, (snapshot) => {
                 leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lead' }));
-                combineAndRender();
+                if (isModalOpen) {
+                    pendingBoardRender = true;
+                } else {
+                    combineAndRender();
+                }
             }, (error) => {
                 console.error("Error fetching leads:", error);
             });
@@ -1306,6 +1455,10 @@
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <h4 class="font-bold text-gray-900 dark:text-white leading-tight">${prospect.responsavel || 'Prospect sem nome'}</h4>
+                    ${prospect.telefone ? `
+                    <button type="button" class="quick-whatsapp-drawer-btn w-6 h-6 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-all duration-200 flex-shrink-0 ml-1.5 cursor-pointer" title="Conversar no WhatsApp">
+                        <i class="fab fa-whatsapp text-xs"></i>
+                    </button>` : ''}
                 </div>
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">P${prospect.prioridade}</span>
@@ -1326,6 +1479,14 @@
                     ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-auto flex-shrink-0">por ${prospect.createdBy.split('@')[0]}</span>` : ''}
                 </div>
             `;
+
+            const whatsappDrawerBtn = card.querySelector('.quick-whatsapp-drawer-btn');
+            if (whatsappDrawerBtn) {
+                whatsappDrawerBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openWhatsAppDrawer(prospect);
+                });
+            }
 
             card.addEventListener('click', () => {
                 openFormModal(prospect);
@@ -1508,7 +1669,458 @@
             renderBoard();
         }
 
-        // --- MODAL HANDLING ---
+        // --- MODAL HANDLING & CACHING ---
+        let modalElements = null;
+        let modalTagCheckboxes = [];
+        let modalFields = [];
+        let activeProspect = null;
+        let modalBindingsDone = false;
+        let pollingInterval = null;
+
+        function initModalElements() {
+            if (modalElements) return;
+
+            modalElements = {
+                formModal: document.getElementById('formModal'),
+                formModalContent: document.getElementById('formModalContent'),
+                prospectForm: document.getElementById('prospectForm'),
+                editBtn: document.getElementById('editBtn'),
+                saveBtn: document.getElementById('saveBtn'),
+                cancelFormBtn: document.getElementById('cancelFormBtn'),
+                addContactLogBtn: document.getElementById('addContactLogBtn'),
+                newContactLog: document.getElementById('newContactLog'),
+                contactLogNewNoteSection: document.getElementById('newContactLog')?.parentElement,
+                contactLogContainer: document.getElementById('contactLogContainer'),
+                whatsappChatArea: document.getElementById('whatsappChatArea'),
+                whatsappInput: document.getElementById('whatsappInput'),
+                whatsappSendBtn: document.getElementById('whatsappSendBtn'),
+                refreshChatBtn: document.getElementById('refreshChatBtn'),
+                tabDetailsBtn: document.getElementById('tabDetailsBtn'),
+                tabWhatsAppBtn: document.getElementById('tabWhatsAppBtn'),
+                tabDetailsContent: document.getElementById('tabDetailsContent'),
+                tabWhatsAppContent: document.getElementById('tabWhatsAppContent'),
+                modalTitle: document.getElementById('modalTitle'),
+                closeFormModalBtn: document.getElementById('closeFormModalBtn'),
+                prospectId: document.getElementById('prospectId'),
+                prospectType: document.getElementById('prospectType'),
+                whatsappLink: document.getElementById('whatsappLink'),
+                telefone: document.getElementById('telefone'),
+                modalActionButtons: document.getElementById('modalActionButtons'),
+                formControls: document.getElementById('formControls'),
+                archiveBtn: document.getElementById('archiveBtn'),
+                deleteBtn: document.getElementById('deleteBtn'),
+                markLostBtn: document.getElementById('markLostBtn'),
+                sendCapiBtn: document.getElementById('sendCapiBtn'),
+                perdidoNotice: document.getElementById('perdidoNotice'),
+                perdidoNoticeText: document.getElementById('perdidoNoticeText'),
+                perdidoNoticeDate: document.getElementById('perdidoNoticeDate'),
+                createdByContainer: document.getElementById('createdByContainer'),
+                createdByInfo: document.getElementById('createdByInfo'),
+                unidade: document.getElementById('unidade'),
+                setor: document.getElementById('setor'),
+                prioridade: document.getElementById('prioridade'),
+                ticketEstimado: document.getElementById('ticketEstimado'),
+                origemLead: document.getElementById('origemLead'),
+                dataChegada: document.getElementById('dataChegada'),
+                responsavel: document.getElementById('responsavel'),
+                email: document.getElementById('email'),
+                cpf: document.getElementById('cpf'),
+                redesSociais: document.getElementById('redesSociais'),
+                observacoes: document.getElementById('observacoes'),
+                tagsContainer: document.getElementById('tagsContainer')
+            };
+
+            populateTagsInModal();
+            if (modalElements.tagsContainer) {
+                modalTagCheckboxes = Array.from(modalElements.tagsContainer.querySelectorAll('input[type="checkbox"]'));
+            }
+            if (modalElements.prospectForm) {
+                modalFields = Array.from(modalElements.prospectForm.querySelectorAll('input, select, textarea'));
+            }
+
+            setupModalStaticBindings();
+        }
+
+        function setupModalStaticBindings() {
+            if (modalBindingsDone || !modalElements) return;
+            modalBindingsDone = true;
+
+            if (modalElements.tabDetailsBtn) modalElements.tabDetailsBtn.onclick = () => switchTab('details');
+            if (modalElements.tabWhatsAppBtn) modalElements.tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
+
+            if (modalElements.telefone) {
+                modalElements.telefone.addEventListener('input', updateWhatsAppLink);
+            }
+            if (modalElements.whatsappLink) {
+                modalElements.whatsappLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab('whatsapp');
+                });
+            }
+
+            if (modalElements.closeFormModalBtn) {
+                modalElements.closeFormModalBtn.onclick = closeFormModal;
+            }
+
+            if (modalElements.formModal) {
+                modalElements.formModal.addEventListener('click', (e) => {
+                    if (e.target === modalElements.formModal) {
+                        closeFormModal();
+                    }
+                });
+            }
+
+            if (modalElements.cancelFormBtn) {
+                modalElements.cancelFormBtn.onclick = (e) => {
+                    e.stopImmediatePropagation();
+                    if (activeProspect) {
+                        openFormModal(activeProspect);
+                    } else {
+                        closeFormModal();
+                    }
+                };
+            }
+
+            if (modalElements.editBtn) {
+                modalElements.editBtn.onclick = () => setFormEditable(true);
+            }
+
+            if (modalElements.whatsappSendBtn) {
+                modalElements.whatsappSendBtn.onclick = sendWhatsApp;
+            }
+            if (modalElements.whatsappInput) {
+                modalElements.whatsappInput.onkeypress = (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendWhatsApp();
+                    }
+                };
+            }
+
+            if (modalElements.refreshChatBtn) {
+                modalElements.refreshChatBtn.onclick = () => {
+                    if (!activeProspect) return;
+                    const icon = modalElements.refreshChatBtn.querySelector('i');
+                    if (icon) icon.classList.add('fa-spin');
+                    loadWhatsAppHistory(activeProspect, true).finally(() => {
+                        if (icon) icon.classList.remove('fa-spin');
+                    });
+                };
+            }
+
+            if (modalElements.archiveBtn) {
+                modalElements.archiveBtn.onclick = () => {
+                    if (!activeProspect) return;
+                    const name = activeProspect.responsavel || 'este prospect';
+                    showConfirmModal(`Deseja arquivar "${name}"?`, () => {
+                        archiveProspect(activeProspect.id);
+                        closeFormModal();
+                    });
+                };
+            }
+
+            if (modalElements.deleteBtn) {
+                modalElements.deleteBtn.onclick = () => {
+                    if (!activeProspect) return;
+                    const name = activeProspect.responsavel || 'este prospect';
+                    showConfirmModal(`Deseja realmente excluir "${name}"?`, () => {
+                        deleteItem(activeProspect.id);
+                        closeFormModal();
+                    });
+                };
+            }
+
+            if (modalElements.markLostBtn) {
+                modalElements.markLostBtn.onclick = () => {
+                    if (!activeProspect) return;
+                    openPerdidoModal(activeProspect.id, () => {
+                        closeFormModal();
+                    });
+                };
+            }
+
+            if (modalElements.sendCapiBtn) {
+                modalElements.sendCapiBtn.onclick = async () => {
+                    if (!activeProspect) return;
+                    try {
+                        if (typeof showToast === 'function') showToast('Enviando evento para a Meta Conversions API...', 'info');
+                        const triggerMetaCapiManual = firebase.functions().httpsCallable('triggerMetaCapiManual');
+                        let eventToTrigger = 'Lead';
+                        if (activeProspect.status && activeProspect.status.toLowerCase().includes('agendad')) {
+                            eventToTrigger = 'Schedule';
+                        } else if (activeProspect.status && (activeProspect.status.toLowerCase().includes('matricula') || activeProspect.status === 'Ganha')) {
+                            eventToTrigger = 'CompleteRegistration';
+                        }
+
+                        const res = await triggerMetaCapiManual({ prospectId: activeProspect.id, eventName: eventToTrigger });
+                        if (res.data && res.data.success) {
+                            if (typeof showToast === 'function') showToast(`Evento ${eventToTrigger} enviado com sucesso para a Meta CAPI!`, 'success');
+                        } else {
+                            const errMsg = res.data?.error?.message || res.data?.error || 'Verifique as credenciais em public_config/miles';
+                            if (typeof showToast === 'function') showToast(`Aviso CAPI: ${errMsg}`, 'warning');
+                        }
+                    } catch (err) {
+                        console.error('[CAPI Manual] Erro ao disparar evento:', err);
+                        if (typeof showToast === 'function') showToast(`Erro ao conectar CAPI: ${err.message}`, 'error');
+                    }
+                };
+            }
+
+            if (modalElements.addContactLogBtn) {
+                modalElements.addContactLogBtn.onclick = async () => {
+                    const description = modalElements.newContactLog.value.trim();
+                    if (!description) return alert('Por favor, digite o conteúdo da nota.');
+
+                    if (!activeProspect || !activeProspect.id) {
+                        return alert('Salve o card antes de adicionar uma nota.');
+                    }
+
+                    modalElements.addContactLogBtn.disabled = true;
+                    const originalHTML = modalElements.addContactLogBtn.innerHTML;
+                    modalElements.addContactLogBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...';
+
+                    try {
+                        const newLog = {
+                            author: localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
+                            description: description,
+                            timestamp: new Date(),
+                            type: 'note'
+                        };
+
+                        const collectionName = activeProspect.type === 'lead' ? 'leads' : 'prospects';
+                        const itemRef = doc(db, collectionName, activeProspect.id);
+
+                        await updateDoc(itemRef, {
+                            contactLog: arrayUnion(newLog)
+                        });
+
+                        if (!activeProspect.contactLog) activeProspect.contactLog = [];
+                        activeProspect.contactLog.push(newLog);
+                        renderContactLog(activeProspect);
+
+                        modalElements.newContactLog.value = '';
+                    } catch (error) {
+                        console.error("Error adding note:", error);
+                        alert("Erro: " + error.message);
+                    } finally {
+                        modalElements.addContactLogBtn.disabled = false;
+                        modalElements.addContactLogBtn.innerHTML = originalHTML;
+                    }
+                };
+            }
+        }
+
+        function setFormEditable(isEditable) {
+            if (!modalElements) return;
+            modalFields.forEach(field => {
+                if (field.id !== 'prospectId' && field.id !== 'prospectType') {
+                    field.disabled = !isEditable;
+                }
+            });
+            modalTagCheckboxes.forEach(cb => {
+                cb.disabled = !isEditable;
+            });
+            if (modalElements.contactLogNewNoteSection) {
+                modalElements.contactLogNewNoteSection.style.display = isEditable ? 'flex' : 'none';
+            }
+            modalElements.editBtn.classList.toggle('hidden', isEditable);
+            modalElements.saveBtn.classList.toggle('hidden', !isEditable);
+            modalElements.cancelFormBtn.classList.toggle('hidden', !isEditable);
+        }
+
+        function updateWhatsAppLink() {
+            if (!modalElements || !modalElements.telefone || !modalElements.whatsappLink) return;
+            const phone = modalElements.telefone.value.replace(/\D/g, '');
+            if (phone) {
+                modalElements.whatsappLink.classList.remove('hidden');
+                modalElements.whatsappLink.classList.add('flex');
+                modalElements.whatsappLink.href = '#';
+            } else {
+                modalElements.whatsappLink.classList.add('hidden');
+                modalElements.whatsappLink.classList.remove('flex');
+            }
+        }
+
+        function switchTab(tab) {
+            if (!modalElements) return;
+            if (tab === 'details') {
+                modalElements.tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                modalElements.tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                modalElements.tabDetailsContent.classList.remove('hidden');
+                modalElements.tabWhatsAppContent.classList.add('hidden');
+                modalElements.modalActionButtons.classList.remove('hidden');
+                modalElements.formControls.classList.remove('hidden');
+                stopPolling();
+            } else {
+                modalElements.tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                modalElements.tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
+                modalElements.tabWhatsAppContent.classList.remove('hidden');
+                modalElements.tabDetailsContent.classList.add('hidden');
+                modalElements.modalActionButtons.classList.add('hidden');
+                modalElements.formControls.classList.add('hidden');
+
+                if (activeProspect) {
+                    loadWhatsAppHistory(activeProspect);
+                    startPolling();
+                }
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                if (modalElements && !modalElements.tabWhatsAppContent.classList.contains('hidden') && activeProspect) {
+                    loadWhatsAppHistory(activeProspect, true);
+                }
+            }, 10000);
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        async function loadWhatsAppHistory(currentProspect, isBackground = false) {
+            if (!modalElements) return;
+            if (!currentProspect || !currentProspect.telefone) {
+                modalElements.whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
+                modalElements.whatsappInput.disabled = true;
+                modalElements.whatsappSendBtn.disabled = true;
+                return;
+            }
+
+            if (!isBackground && (modalElements.whatsappChatArea.children.length === 0 || modalElements.whatsappChatArea.innerText.includes('Selecione um prospect') || modalElements.whatsappChatArea.innerText.includes('Carregar Histórico'))) {
+                modalElements.whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
+            }
+
+            if (!isBackground) {
+                modalElements.whatsappInput.disabled = false;
+                modalElements.whatsappSendBtn.disabled = false;
+            }
+
+            try {
+                const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
+                const messages = result.data.messages;
+
+                if (messages.length === 0) {
+                    if (!isBackground) {
+                        modalElements.whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
+                    }
+                } else {
+                    renderChatMessages(messages.reverse(), isBackground);
+                }
+            } catch (error) {
+                console.error("Error loading history:", error);
+                if (!isBackground) {
+                    modalElements.whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
+                }
+                modalElements.whatsappInput.disabled = false;
+                modalElements.whatsappSendBtn.disabled = false;
+            }
+        }
+
+        function renderChatMessages(messages, isBackground = false) {
+            if (!modalElements) return;
+            const isAtBottom = modalElements.whatsappChatArea.scrollHeight - modalElements.whatsappChatArea.scrollTop <= modalElements.whatsappChatArea.clientHeight + 100;
+
+            const fragment = document.createDocumentFragment();
+
+            messages.forEach(msg => {
+                const bubble = document.createElement('div');
+                bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
+
+                let content = '';
+
+                if (msg.media_url) {
+                    const mediaClass = "max-w-full rounded-lg mb-2";
+                    if (msg.type === 'image' || msg.type === 'sticker') {
+                        content += `<img src="${msg.media_url}" class="${mediaClass} cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" alt="Image" loading="lazy">`;
+                    } else if (msg.type === 'video') {
+                        content += `<video src="${msg.media_url}" controls class="${mediaClass}"></video>`;
+                    } else if (msg.type === 'audio' || msg.type === 'voice') {
+                        content += `<audio src="${msg.media_url}" controls class="w-full mb-2"></audio>`;
+                    } else {
+                        const icon = msg.type === 'document' ? 'fa-file-alt' : 'fa-paperclip';
+                        content += `
+                            <a href="${msg.media_url}" target="_blank" class="flex items-center gap-3 bg-black/20 p-3 rounded-lg mb-2 hover:bg-black/30 transition-colors">
+                                <div class="bg-gray-700/50 p-2 rounded-full w-10 h-10 flex items-center justify-center shrink-0">
+                                    <i class="fas ${icon} text-yellow-500"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <p class="text-sm font-medium truncate text-white">Arquivo</p>
+                                    <p class="text-xs text-green-400">Clique para baixar</p>
+                                </div>
+                            </a>
+                        `;
+                    }
+                }
+
+                let text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text || '');
+
+                if (text && text !== '""') {
+                    text = text.replace(
+                        /(https?:\/\/[^\s]+)/g,
+                        '<a href="$1" target="_blank" class="text-blue-400 hover:underline break-all">$1</a>'
+                    );
+                    content += `<div class="whitespace-pre-wrap break-words">${text}</div>`;
+                }
+
+                const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                bubble.innerHTML = `
+                    ${content}
+                    <div class="chat-time select-none pt-1">${time}</div>
+                `;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
+                wrapper.appendChild(bubble);
+                fragment.appendChild(wrapper);
+            });
+
+            modalElements.whatsappChatArea.innerHTML = '';
+            modalElements.whatsappChatArea.appendChild(fragment);
+
+            if (!isBackground || isAtBottom) {
+                modalElements.whatsappChatArea.scrollTop = modalElements.whatsappChatArea.scrollHeight;
+            }
+        }
+
+        const sendWhatsApp = async () => {
+            if (!modalElements || !activeProspect) return;
+            const text = modalElements.whatsappInput.value.trim();
+            if (!text) return;
+
+            modalElements.whatsappInput.disabled = true;
+            modalElements.whatsappSendBtn.disabled = true;
+            const originalIcon = modalElements.whatsappSendBtn.innerHTML;
+            modalElements.whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const phone = activeProspect.telefone;
+                await sendWhatsAppMessage({
+                    prospectId: activeProspect.id,
+                    phone: phone,
+                    message: text
+                });
+
+                modalElements.whatsappInput.value = '';
+                setTimeout(() => {
+                    if (activeProspect) loadWhatsAppHistory(activeProspect, true);
+                }, 1000);
+            } catch (error) {
+                alert('Erro ao enviar: ' + error.message);
+            } finally {
+                modalElements.whatsappInput.value = '';
+                modalElements.whatsappInput.disabled = false;
+                modalElements.whatsappSendBtn.disabled = false;
+                modalElements.whatsappSendBtn.innerHTML = originalIcon;
+                modalElements.whatsappInput.focus();
+            }
+        };
+
         function renderContactLog(prospect) {
             const logContainer = document.getElementById('contactLogContainer');
             if (!logContainer) return;
@@ -1531,58 +2143,62 @@
                 { bg: 'bg-violet-50 dark:bg-violet-950/30', text: 'text-violet-600 dark:text-violet-300', border: 'border-violet-150 dark:border-violet-900/20' },
             ];
 
-            logContainer.innerHTML = logs
-                .sort((a, b) => (b.timestamp.toMillis ? b.timestamp.toMillis() : b.timestamp.getTime()) - (a.timestamp.toMillis ? a.timestamp.toMillis() : a.timestamp.getTime()))
-                .map((log, index) => {
-                    const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
-                    const author = log.author || 'Sistema';
-                    const initials = author.split(/[ @._-]/).filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('') || 'U';
-                    
-                    const colorIndex = stringToColorIndex(author, colors.length);
-                    const scheme = colors[colorIndex];
-                    
-                    const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 p-1.5 rounded-lg text-sm ml-2 self-center transition-all duration-200" title="Excluir nota"><i class="fas fa-trash-alt pointer-events-none"></i></button>` : '';
-                    
-                    const isWhatsApp = log.type === 'whatsapp-sent';
-                    const bubbleClasses = isWhatsApp 
-                        ? 'bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-150 dark:border-emerald-900/30 border-l-4 border-l-emerald-500' 
-                        : 'bg-white dark:bg-gray-800/40 border-gray-150 dark:border-gray-800/60 border-l-4 border-l-indigo-500 dark:border-l-indigo-600';
-                    
-                    return `
-                        <div class="flex gap-3 items-start group relative transition-all duration-200">
-                            <!-- Avatar / Initials -->
-                            <div class="w-8 h-8 rounded-full ${scheme.bg} ${scheme.text} border ${scheme.border} flex items-center justify-center text-xs font-bold shrink-0 shadow-sm transition-all duration-200 select-none">
-                                ${initials}
-                            </div>
-                            <!-- Card Content -->
-                            <div class="flex-grow p-3 rounded-xl border ${bubbleClasses} shadow-sm transition-all duration-200">
-                                <div class="flex justify-between items-center mb-1 gap-2 select-none">
-                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-tight">${author}</span>
-                                    <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">${date}</span>
-                                </div>
-                                <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                                    ${isWhatsApp ? '<i class="fab fa-whatsapp text-emerald-500 mr-1 text-xs"></i> ' : ''}
-                                    ${log.description}
-                                </p>
-                            </div>
-                            <!-- Delete Button -->
-                            ${deleteButtonHTML}
+            const sortedLogs = logs.slice().sort((a, b) => {
+                const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp || 0).getTime());
+                const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp || 0).getTime());
+                return timeB - timeA;
+            });
+
+            logContainer.innerHTML = sortedLogs.map((log, index) => {
+                const date = log.timestamp ? (log.timestamp.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : new Date(log.timestamp).toLocaleString('pt-BR')) : 'Data pendente';
+                const author = log.author || 'Sistema';
+                const initials = author.split(/[ @._-]/).filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('') || 'U';
+
+                const colorIndex = stringToColorIndex(author, colors.length);
+                const scheme = colors[colorIndex];
+
+                const deleteButtonHTML = isAdmin ? `<button data-log-index="${index}" class="delete-log-btn text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 p-1.5 rounded-lg text-sm ml-2 self-center transition-all duration-200" title="Excluir nota"><i class="fas fa-trash-alt pointer-events-none"></i></button>` : '';
+
+                const isWhatsApp = log.type === 'whatsapp-sent';
+                const bubbleClasses = isWhatsApp 
+                    ? 'bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-150 dark:border-emerald-900/30 border-l-4 border-l-emerald-500' 
+                    : 'bg-white dark:bg-gray-800/40 border-gray-150 dark:border-gray-800/60 border-l-4 border-l-indigo-500 dark:border-l-indigo-600';
+
+                return `
+                    <div class="flex gap-3 items-start group relative transition-all duration-200">
+                        <div class="w-8 h-8 rounded-full ${scheme.bg} ${scheme.text} border ${scheme.border} flex items-center justify-center text-xs font-bold shrink-0 shadow-sm transition-all duration-200 select-none">
+                            ${initials}
                         </div>
-                    `;
-                }).join('');
+                        <div class="flex-grow p-3 rounded-xl border ${bubbleClasses} shadow-sm transition-all duration-200">
+                            <div class="flex justify-between items-center mb-1 gap-2 select-none">
+                                <span class="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-tight">${author}</span>
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">${date}</span>
+                            </div>
+                            <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                ${isWhatsApp ? '<i class="fab fa-whatsapp text-emerald-500 mr-1 text-xs"></i> ' : ''}
+                                ${log.description}
+                            </p>
+                        </div>
+                        ${deleteButtonHTML}
+                    </div>
+                `;
+            }).join('');
 
             if (isAdmin) {
                 logContainer.querySelectorAll('.delete-log-btn').forEach(button => {
                     button.addEventListener('click', async (e) => {
                         const logIndex = parseInt(e.currentTarget.dataset.logIndex, 10);
-                        const logToDelete = logs[logIndex];
+                        const logToDelete = sortedLogs[logIndex];
 
                         if (confirm('Tem certeza que deseja excluir este log?')) {
                             try {
-                                const prospectRef = doc(db, 'artifacts', appId, 'public', 'data', 'prospects', prospect.id);
+                                const collectionName = prospect.type === 'lead' ? 'leads' : 'prospects';
+                                const prospectRef = doc(db, collectionName, prospect.id);
                                 await updateDoc(prospectRef, {
                                     contactLog: arrayRemove(logToDelete)
                                 });
+                                prospect.contactLog = prospect.contactLog.filter(l => l !== logToDelete);
+                                renderContactLog(prospect);
                             } catch (error) {
                                 console.error("Error deleting contact log:", error);
                                 alert("Erro ao excluir o registro de contato.");
@@ -1593,420 +2209,794 @@
             }
         }
 
-        async function openFormModal(prospect = null) {
-            currentProspectId = prospect ? prospect.id : null;
+        // --- WHATSAPP FLOATING CHAT WIDGET ---
+        let drawerActiveProspect = null;
+        let drawerChatUnsubscribe = null;
+        let drawerCurrentChatData = null;
+        let drawerAllChats = [];
 
-            // Declare UI elements first to avoid initialization errors
-            const editBtn = document.getElementById('editBtn');
-            const saveBtn = document.getElementById('saveBtn');
-            const cancelFormBtn = document.getElementById('cancelFormBtn');
-            const addContactLogBtn = document.getElementById('addContactLogBtn');
-            const newContactLogTextarea = document.getElementById('newContactLog');
-            const contactLogSection = newContactLogTextarea.parentElement.parentElement;
-            const whatsappChatArea = document.getElementById('whatsappChatArea');
-            const whatsappInput = document.getElementById('whatsappInput');
-            const whatsappSendBtn = document.getElementById('whatsappSendBtn');
-            const tabDetailsBtn = document.getElementById('tabDetailsBtn');
-            const tabWhatsAppBtn = document.getElementById('tabWhatsAppBtn');
-            const tabDetailsContent = document.getElementById('tabDetailsContent');
-            const tabWhatsAppContent = document.getElementById('tabWhatsAppContent');
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
-            // Mark as read if unread
-            // Mark as read if unread
-            if (prospect && prospect.unread) {
-                try {
-                    const prospectRef = doc(db, 'prospects', prospect.id);
-                    await updateDoc(prospectRef, { unread: false });
-                    // Optimistic update of the local object
-                    prospect.unread = false;
+        function parseSafeDate(val) {
+            if (!val) return new Date(0);
+            if (val && typeof val.toDate === 'function') return val.toDate();
+            if (val && val.seconds) return new Date(val.seconds * 1000);
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? new Date(0) : d;
+        }
 
-                    // Simple re-render logic - update element if it exists in DOM without full redraw
-                    const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
-                    if (card) {
-                        const badge = card.querySelector('.animate-pulse');
-                        if (badge) badge.remove();
+        function formatPhoneNumber(phone) {
+            if (!phone) return '';
+            const digits = String(phone).replace(/\D/g, '');
+            let clean = digits;
+            if (digits.startsWith('55') && digits.length >= 12) {
+                clean = digits.slice(2);
+            }
+            if (clean.length === 11) {
+                return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`;
+            }
+            if (clean.length === 10) {
+                return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
+            }
+            return phone;
+        }
+
+        function formatChatTime(date) {
+            if (!date || isNaN(date.getTime()) || date.getTime() === 0) return '';
+            const now = new Date();
+            const isToday = now.toDateString() === date.toDateString();
+            if (isToday) {
+                return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (yesterday.toDateString() === date.toDateString()) {
+                return 'Ontem';
+            }
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+
+        function cleanPhoneDrawer(phone) {
+            let clean = (phone || '').replace(/\D/g, '');
+            if (clean.length >= 10 && clean.length <= 11) clean = '55' + clean;
+            return clean;
+        }
+
+        function cleanPhoneDrawerVariations(phone) {
+            if (!phone) return [];
+            const digits = String(phone).replace(/\D/g, '');
+            if (!digits) return [];
+            const variations = new Set();
+            variations.add(digits);
+            let sans55 = digits;
+            if (digits.startsWith('55') && digits.length >= 12) {
+                sans55 = digits.slice(2);
+                variations.add(sans55);
+            } else {
+                variations.add('55' + digits);
+            }
+            if (sans55.length === 10) {
+                const with9 = sans55.slice(0, 2) + '9' + sans55.slice(2);
+                variations.add(with9);
+                variations.add('55' + with9);
+            } else if (sans55.length === 11) {
+                const without9 = sans55.slice(0, 2) + sans55.slice(3);
+                variations.add(without9);
+                variations.add('55' + without9);
+            }
+            return Array.from(variations);
+        }
+
+        function getAvatarGradient(str) {
+            const gradients = [
+                'bg-gradient-to-tr from-emerald-600 to-teal-500',
+                'bg-gradient-to-tr from-blue-600 to-indigo-500',
+                'bg-gradient-to-tr from-purple-600 to-pink-500',
+                'bg-gradient-to-tr from-amber-500 to-orange-500',
+                'bg-gradient-to-tr from-rose-500 to-red-600',
+                'bg-gradient-to-tr from-cyan-500 to-blue-600',
+                'bg-gradient-to-tr from-violet-600 to-indigo-700',
+                'bg-gradient-to-tr from-fuchsia-600 to-purple-600'
+            ];
+            if (!str) return gradients[0];
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % gradients.length;
+            return gradients[index];
+        }
+
+        function renderDrawerChatsList(query = '') {
+            const container = document.getElementById('drawerChatsListContainer');
+            const subtitle = document.getElementById('drawerListSubtitle');
+            if (!container) return;
+
+            const q = (query || '').trim().toLowerCase();
+            const qDigits = q.replace(/\D/g, '');
+
+            const allLeads = Array.isArray(prospects) ? prospects : [];
+            const chatItems = drawerAllChats.map(c => {
+                const variations = cleanPhoneDrawerVariations(c.phone);
+                const matchedLead = allLeads.find(p => {
+                    const pVars = cleanPhoneDrawerVariations(p.telefone);
+                    return variations.some(v => pVars.includes(v));
+                });
+
+                const name = matchedLead?.responsavel || c.customerName || formatPhoneNumber(c.phone);
+                const stage = matchedLead?.status || '';
+                const unit = matchedLead?.unidade || '';
+                const phone = c.phone;
+                const photoUrl = c.data?.photoUrl || c.photoUrl || matchedLead?.photoURL || matchedLead?.photoUrl || matchedLead?.avatarUrl || null;
+
+                return {
+                    chat: c,
+                    matchedLead,
+                    name,
+                    stage,
+                    unit,
+                    phone,
+                    photoUrl,
+                    lastMessage: c.lastMessage,
+                    unread: c.unread,
+                    updatedAt: c.updatedAt
+                };
+            });
+
+            let displayList = chatItems;
+
+            if (q) {
+                displayList = chatItems.filter(item => {
+                    const nameLower = (item.name || '').toLowerCase();
+                    const phoneDigits = (item.phone || '').replace(/\D/g, '');
+                    const unitLower = (item.unit || '').toLowerCase();
+                    const msgLower = (item.lastMessage || '').toLowerCase();
+                    return nameLower.includes(q) || (qDigits && phoneDigits.includes(qDigits)) || unitLower.includes(q) || msgLower.includes(q);
+                });
+
+                // Also find CRM leads matching query that don't have chat doc yet
+                const matchingLeadsWithoutChat = allLeads.filter(p => {
+                    if (!p.telefone) return false;
+                    const pDigits = (p.telefone || '').replace(/\D/g, '');
+                    const pVars = cleanPhoneDrawerVariations(p.telefone);
+                    const alreadyInList = chatItems.some(c => pVars.includes(c.phone) || c.phone.includes(pDigits));
+                    if (alreadyInList) return false;
+
+                    const nameLower = (p.responsavel || '').toLowerCase();
+                    const unitLower = (p.unidade || '').toLowerCase();
+                    return nameLower.includes(q) || (qDigits && pDigits.includes(qDigits)) || unitLower.includes(q);
+                }).slice(0, 10);
+
+                matchingLeadsWithoutChat.forEach(lead => {
+                    displayList.push({
+                        chat: null,
+                        matchedLead: lead,
+                        name: lead.responsavel || 'Lead',
+                        stage: lead.status || 'Novo',
+                        unit: lead.unidade || '',
+                        phone: lead.telefone,
+                        photoUrl: lead.photoURL || lead.photoUrl || lead.avatarUrl || null,
+                        lastMessage: 'Iniciar conversa...',
+                        unread: false,
+                        updatedAt: new Date(0)
+                    });
+                });
+            }
+
+            if (subtitle) {
+                subtitle.textContent = `${displayList.length} conversa${displayList.length === 1 ? '' : 's'}`;
+            }
+
+            if (displayList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-16 px-4">
+                        <i class="far fa-comment-dots text-3xl mb-2 text-gray-300 dark:text-gray-600 block"></i>
+                        <p class="font-medium text-gray-700 dark:text-gray-300">${q ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa recente'}</p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">${q ? 'Tente pesquisar outro termo ou número' : 'Clique no WhatsApp em qualquer card do Kanban para iniciar!'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            displayList.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'drawer-chat-row p-3 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/20 active:bg-emerald-100/50 cursor-pointer flex items-center gap-3 transition-colors select-none';
+                
+                const initial = (item.name || 'W').trim().charAt(0).toUpperCase();
+                const timeStr = item.chat ? formatChatTime(item.updatedAt) : '';
+                const isUnread = item.unread === true;
+                const candidatePhoto = item.photoUrl || item.matchedLead?.photoURL || item.matchedLead?.photoUrl || item.chat?.data?.photoUrl || item.chat?.photoUrl || null;
+                const photoUrl = (typeof candidatePhoto === 'string' && candidatePhoto.trim() && (candidatePhoto.startsWith('http://') || candidatePhoto.startsWith('https://') || candidatePhoto.startsWith('data:image/'))) ? candidatePhoto.trim() : null;
+                const gradientClass = getAvatarGradient(item.name || item.phone);
+
+                itemEl.innerHTML = `
+                    <div class="w-10 h-10 rounded-2xl flex-shrink-0 relative overflow-hidden shadow-sm flex items-center justify-center border border-black/5 dark:border-white/10 select-none">
+                        ${photoUrl ? `
+                            <img src="${escapeHtml(photoUrl)}" 
+                                 alt="${escapeHtml(item.name)}"
+                                 class="w-full h-full object-cover" 
+                                 loading="lazy"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                            <div class="hidden w-full h-full items-center justify-center font-bold text-xs uppercase text-white ${gradientClass}">
+                                ${initial}
+                            </div>
+                        ` : `
+                            <div class="w-full h-full flex items-center justify-center font-bold text-xs uppercase text-white ${gradientClass}">
+                                ${initial}
+                            </div>
+                        `}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                            <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">${escapeHtml(item.name)}</h4>
+                            ${timeStr ? `<span class="text-[10px] text-gray-400 flex-shrink-0 font-medium">${timeStr}</span>` : ''}
+                        </div>
+                        <div class="flex items-center justify-between gap-1">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate ${isUnread ? 'font-semibold text-gray-900 dark:text-gray-100' : ''}">
+                                ${escapeHtml(item.lastMessage || 'Conversa')}
+                            </p>
+                            ${isUnread ? '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0 animate-pulse shadow-sm"></span>' : ''}
+                        </div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            ${item.stage ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">${item.stage}</span>` : ''}
+                            ${item.unit ? `<span class="text-[9px] text-gray-400 truncate"><i class="fas fa-map-marker-alt text-[8px] text-red-500"></i> ${escapeHtml(item.unit)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                itemEl.addEventListener('click', () => {
+                    if (item.matchedLead) {
+                        showDrawerChatView(item.matchedLead);
+                    } else if (item.chat) {
+                        showDrawerChatView(item.chat);
+                    } else {
+                        showDrawerChatView({
+                            responsavel: item.name,
+                            telefone: item.phone,
+                            unidade: item.unit,
+                            status: item.stage
+                        });
                     }
-                } catch (error) {
-                    console.error("Error marking prospect as read:", error);
-                }
+                });
+
+                fragment.appendChild(itemEl);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(fragment);
+        }
+
+        function showDrawerListView() {
+            const listView = document.getElementById('drawerListView');
+            const chatView = document.getElementById('drawerChatView');
+            const searchInput = document.getElementById('drawerChatListSearchInput');
+
+            if (drawerChatUnsubscribe) {
+                drawerChatUnsubscribe();
+                drawerChatUnsubscribe = null;
             }
 
-            // Reset to default tab (Details)
-            switchTab('details');
-            prospectForm.reset();
-            populateTagsInModal();
+            if (chatView) {
+                chatView.classList.add('hidden');
+                chatView.classList.remove('flex');
+            }
+            if (listView) {
+                listView.classList.remove('hidden');
+                listView.classList.add('flex');
+            }
 
-            const modalTitle = document.getElementById('modalTitle');
-            const prospectIdInput = document.getElementById('prospectId');
-            const whatsappLink = document.getElementById('whatsappLink');
-            const telefoneInput = document.getElementById('telefone');
-            const modalActionButtons = document.getElementById('modalActionButtons');
-            const archiveBtn = document.getElementById('archiveBtn');
-            const deleteBtn = document.getElementById('deleteBtn');
+            if (searchInput) {
+                searchInput.value = '';
+            }
 
-            const fields = prospectForm.querySelectorAll('input, select, textarea');
-            // Tab Switching Logic
-            // (Elements declared at top of function)
+            renderDrawerChatsList();
+        }
 
-            function switchTab(tab) {
-                const modalActionButtons = document.getElementById('modalActionButtons');
-                const formControls = document.getElementById('formControls');
+        function showDrawerChatView(target) {
+            const listView = document.getElementById('drawerListView');
+            const chatView = document.getElementById('drawerChatView');
+            const title = document.getElementById('drawerTitle');
+            const subtitle = document.getElementById('drawerSubtitle');
+            const stageBadge = document.getElementById('drawerStageBadge');
+            const drawerAvatar = document.getElementById('drawerAvatar');
+            const input = document.getElementById('drawerMessageInput');
+            const sendBtn = document.getElementById('drawerSendBtn');
+            const chatArea = document.getElementById('drawerChatArea');
 
-                if (tab === 'details') {
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-yellow-500 border-b-2 border-yellow-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
-                    if (tabDetailsContent) tabDetailsContent.classList.remove('hidden');
-                    if (tabWhatsAppContent) tabWhatsAppContent.classList.add('hidden');
-                    if (modalActionButtons) modalActionButtons.classList.remove('hidden');
-                    if (formControls) formControls.classList.remove('hidden');
+            if (listView) {
+                listView.classList.add('hidden');
+                listView.classList.remove('flex');
+            }
+            if (chatView) {
+                chatView.classList.remove('hidden');
+                chatView.classList.add('flex');
+            }
+
+            let prospect = null;
+            let phone = '';
+
+            if (target.responsavel || target.origemLead || target.status) {
+                // It's a CRM lead/prospect
+                prospect = target;
+                phone = prospect.telefone || '';
+            } else if (target.phone) {
+                // It's a chat object from drawerAllChats
+                phone = target.phone;
+                const variations = cleanPhoneDrawerVariations(phone);
+                const matched = (Array.isArray(prospects) ? prospects : []).find(p => {
+                    const pVars = cleanPhoneDrawerVariations(p.telefone);
+                    return variations.some(v => pVars.includes(v));
+                });
+                if (matched) {
+                    prospect = matched;
                 } else {
-                    if (tabWhatsAppBtn) tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-green-500 border-b-2 border-green-500 focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
-                    if (tabDetailsBtn) tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
-                    if (tabWhatsAppContent) tabWhatsAppContent.classList.remove('hidden');
-                    if (tabDetailsContent) tabDetailsContent.classList.add('hidden');
-                    if (modalActionButtons) modalActionButtons.classList.add('hidden');
-                    if (formControls) formControls.classList.add('hidden');
-
-                    loadWhatsAppHistory(prospect);
+                    prospect = {
+                        responsavel: target.customerName || formatPhoneNumber(phone),
+                        telefone: phone,
+                        unidade: '',
+                        status: ''
+                    };
                 }
             }
 
-            if (tabDetailsBtn) tabDetailsBtn.onclick = () => switchTab('details');
-            if (tabWhatsAppBtn) tabWhatsAppBtn.onclick = () => switchTab('whatsapp');
-            switchTab('details'); // Reset to details on open
+            drawerActiveProspect = prospect;
 
-            async function loadWhatsAppHistory(currentProspect, isBackground = false) {
-                if (!currentProspect || !currentProspect.telefone) {
-                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Este prospect não possui telefone cadastrado.</div>';
-                    whatsappInput.disabled = true;
-                    whatsappSendBtn.disabled = true;
+            if (drawerAvatar) {
+                const initial = (prospect?.responsavel || 'W').trim().charAt(0).toUpperCase();
+                const candidatePhoto = prospect?.photoURL || prospect?.photoUrl || prospect?.avatarUrl || target?.data?.photoUrl || target?.photoUrl || null;
+                const photoUrl = (typeof candidatePhoto === 'string' && candidatePhoto.trim() && (candidatePhoto.startsWith('http://') || candidatePhoto.startsWith('https://') || candidatePhoto.startsWith('data:image/'))) ? candidatePhoto.trim() : null;
+                const gradientClass = getAvatarGradient(prospect?.responsavel || phone);
+
+                if (photoUrl) {
+                    drawerAvatar.className = 'w-8 h-8 rounded-xl relative overflow-hidden text-white font-bold flex items-center justify-center text-xs flex-shrink-0 shadow-inner bg-white/10';
+                    drawerAvatar.innerHTML = `
+                        <img src="${escapeHtml(photoUrl)}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <span class="hidden font-bold text-xs text-white">${initial}</span>
+                    `;
+                } else {
+                    drawerAvatar.className = `w-8 h-8 rounded-xl text-white font-bold flex items-center justify-center text-xs uppercase flex-shrink-0 shadow-inner ${gradientClass}`;
+                    drawerAvatar.innerHTML = `<span class="font-bold text-xs text-white">${initial}</span>`;
+                }
+            }
+            if (title) title.textContent = prospect?.responsavel || 'Contato';
+            if (subtitle) {
+                const phoneFormatted = formatPhoneNumber(prospect?.telefone || phone);
+                subtitle.textContent = prospect?.unidade ? `${phoneFormatted} • ${prospect.unidade}` : (phoneFormatted || 'Sem telefone');
+            }
+            if (stageBadge) {
+                if (prospect?.status) {
+                    stageBadge.textContent = prospect.status;
+                    stageBadge.classList.remove('hidden');
+                } else {
+                    stageBadge.classList.add('hidden');
+                }
+            }
+
+            if (input) input.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
+
+            if (phone) {
+                loadDrawerChat(phone);
+                setTimeout(() => input?.focus(), 150);
+            } else {
+                if (chatArea) {
+                    chatArea.innerHTML = '<div class="text-center text-gray-400 text-xs py-10">Este lead não possui telefone cadastrado.</div>';
+                }
+            }
+        }
+
+        function initWhatsAppDrawer() {
+            const floatingBtn = document.getElementById('floatingWhatsAppBtn');
+            const drawer = document.getElementById('whatsappDrawer');
+            const closeBtn = document.getElementById('closeWhatsAppDrawerBtn');
+            const closeBtnList = document.getElementById('closeWhatsAppDrawerBtnList');
+            const backBtn = document.getElementById('drawerBackBtn');
+            const openFullBtn = document.getElementById('drawerOpenFullBtn');
+            const openFullBtnList = document.getElementById('drawerListOpenFullBtn');
+            const toggleAiBtn = document.getElementById('drawerToggleAiBtn');
+            const sendBtn = document.getElementById('drawerSendBtn');
+            const input = document.getElementById('drawerMessageInput');
+            const listSearchInput = document.getElementById('drawerChatListSearchInput');
+
+            // Floating Button click: toggle floating WhatsApp window (never navigates away!)
+            if (floatingBtn) {
+                floatingBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = drawer && !drawer.classList.contains('hidden') && drawer.classList.contains('scale-100');
+                    if (isOpen) {
+                        closeWhatsAppDrawer();
+                    } else {
+                        // Open drawer showing all chats list
+                        openWhatsAppDrawer(null);
+                    }
+                });
+            }
+
+            // SETINHA DE VOLTAR: volta para a lista com todos os chats
+            if (backBtn) {
+                backBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showDrawerListView();
+                });
+            }
+
+            // Close buttons
+            if (closeBtn) closeBtn.addEventListener('click', closeWhatsAppDrawer);
+            if (closeBtnList) closeBtnList.addEventListener('click', closeWhatsAppDrawer);
+
+            // Mutual exclusivity with Kobe AI: clicking Kobe closes WhatsApp floating chat
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('#aiChatToggle')) {
+                    if (drawer && !drawer.classList.contains('hidden')) {
+                        closeWhatsAppDrawer();
+                    }
+                }
+            });
+
+            // Escape key closes floating chat
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) {
+                    closeWhatsAppDrawer();
+                }
+            });
+
+            // Open full WhatsApp page links
+            if (openFullBtn) {
+                openFullBtn.addEventListener('click', () => {
+                    if (drawerActiveProspect?.telefone) {
+                        window.location.href = `whatsapp.html?phone=${encodeURIComponent(drawerActiveProspect.telefone)}`;
+                    } else {
+                        window.location.href = 'whatsapp.html';
+                    }
+                });
+            }
+            if (openFullBtnList) {
+                openFullBtnList.addEventListener('click', () => {
+                    window.location.href = 'whatsapp.html';
+                });
+            }
+
+            // Search in Chats List View
+            if (listSearchInput) {
+                listSearchInput.addEventListener('input', (e) => {
+                    renderDrawerChatsList(e.target.value);
+                });
+            }
+
+            // AI Mode Toggle in chat header
+            if (toggleAiBtn) {
+                toggleAiBtn.addEventListener('click', async () => {
+                    if (!drawerActiveProspect?.telefone) return;
+                    const clean = cleanPhoneDrawer(drawerActiveProspect.telefone);
+                    const currentHuman = drawerCurrentChatData?.humanMode === true || drawerCurrentChatData?.mode === 'human';
+                    const nextHuman = !currentHuman;
+                    try {
+                        const chatRef = doc(db, 'whatsapp_chats', clean);
+                        await updateDoc(chatRef, {
+                            humanMode: nextHuman,
+                            mode: nextHuman ? 'human' : 'miles',
+                            updatedAt: serverTimestamp()
+                        });
+                    } catch (e) {
+                        console.error("Erro ao alterar modo da IA no WhatsApp flutuante:", e);
+                    }
+                });
+            }
+
+            // Send message logic
+            if (sendBtn && input) {
+                const sendDrawerMsg = async () => {
+                    const text = input.value.trim();
+                    if (!text || !drawerActiveProspect?.telefone) return;
+                    input.disabled = true;
+                    sendBtn.disabled = true;
+                    const origHtml = sendBtn.innerHTML;
+                    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+                    try {
+                        await sendWhatsAppMessage({
+                            prospectId: drawerActiveProspect.id || 'direct',
+                            phone: drawerActiveProspect.telefone,
+                            message: text
+                        });
+                        input.value = '';
+                    } catch (err) {
+                        alert('Erro ao enviar mensagem: ' + err.message);
+                    } finally {
+                        input.disabled = false;
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = origHtml;
+                        input.focus();
+                    }
+                };
+
+                sendBtn.addEventListener('click', sendDrawerMsg);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendDrawerMsg();
+                    }
+                });
+            }
+
+            // Template reply buttons
+            document.querySelectorAll('.drawer-template-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (input && !input.disabled) {
+                        input.value = btn.dataset.text || '';
+                        input.focus();
+                    }
+                });
+            });
+
+            // Listen to all whatsapp_chats for chats list and badge count
+            onSnapshot(collection(db, 'whatsapp_chats'), (snapshot) => {
+                drawerAllChats = [];
+                let unreadCount = 0;
+
+                snapshot.forEach(docSnap => {
+                    try {
+                        const data = docSnap.data();
+                        const phone = docSnap.id;
+                        const history = data.history || [];
+                        const lastMsgObj = history.length > 0 ? history[history.length - 1] : null;
+
+                        let lastMessageText = data.lastMessage || '';
+                        if (!lastMessageText && lastMsgObj) {
+                            const parts = lastMsgObj.parts || [];
+                            lastMessageText = parts.map(p => p.text).filter(Boolean).join(' ') || '';
+                        }
+
+                        const isUnread = data.unread === true || (lastMsgObj && lastMsgObj.role === 'user' && !data.read);
+                        if (isUnread) unreadCount++;
+
+                        drawerAllChats.push({
+                            phone: phone,
+                            data: data,
+                            customerName: data.customerName || '',
+                            mode: data.mode || 'miles',
+                            humanMode: data.humanMode === true || data.mode === 'human',
+                            lastMessage: lastMessageText,
+                            unread: isUnread,
+                            updatedAt: parseSafeDate(data.updatedAt)
+                        });
+                    } catch (err) {
+                        console.warn("Skipping corrupt chat in drawer:", docSnap.id, err);
+                    }
+                });
+
+                drawerAllChats.sort((a, b) => b.updatedAt - a.updatedAt);
+
+                const badge = document.getElementById('floatingWhatsAppBadge');
+                if (badge) {
+                    if (unreadCount > 0) {
+                        badge.textContent = unreadCount;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+
+                // If currently showing list view, update it
+                const listView = document.getElementById('drawerListView');
+                if (listView && !listView.classList.contains('hidden')) {
+                    const searchInput = document.getElementById('drawerChatListSearchInput');
+                    renderDrawerChatsList(searchInput ? searchInput.value : '');
+                }
+            }, (err) => {
+                console.warn("Error listening to whatsapp_chats in drawer:", err);
+            });
+        }
+
+        function openWhatsAppDrawer(prospectOrChat = null) {
+            const drawer = document.getElementById('whatsappDrawer');
+            if (!drawer) return;
+
+            // Mutually exclusive: close Kobe AI chat if open
+            const aiWindow = document.getElementById('aiChatWindow');
+            if (aiWindow && !aiWindow.classList.contains('hidden')) {
+                aiWindow.classList.remove('scale-100', 'opacity-100');
+                aiWindow.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    aiWindow.classList.add('hidden');
+                }, 200);
+            }
+
+            // Smooth floating popup transition (identical to Kobe AI)
+            drawer.classList.remove('hidden');
+            setTimeout(() => {
+                drawer.classList.remove('scale-95', 'opacity-0');
+                drawer.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            if (prospectOrChat) {
+                showDrawerChatView(prospectOrChat);
+            } else {
+                showDrawerListView();
+            }
+        }
+
+        function closeWhatsAppDrawer() {
+            const drawer = document.getElementById('whatsappDrawer');
+            if (drawer) {
+                drawer.classList.remove('scale-100', 'opacity-100');
+                drawer.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 250);
+            }
+
+            if (drawerChatUnsubscribe) {
+                drawerChatUnsubscribe();
+                drawerChatUnsubscribe = null;
+            }
+        }
+
+        async function loadDrawerChat(rawPhone) {
+            if (drawerChatUnsubscribe) {
+                drawerChatUnsubscribe();
+                drawerChatUnsubscribe = null;
+            }
+
+            const chatArea = document.getElementById('drawerChatArea');
+            const toggleAiBtn = document.getElementById('drawerToggleAiBtn');
+            if (!chatArea) return;
+
+            chatArea.innerHTML = '<div class="text-center text-gray-400 text-xs py-10"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando mensagens...</div>';
+
+            const variations = cleanPhoneDrawerVariations(rawPhone);
+            let activePhoneKey = cleanPhoneDrawer(rawPhone);
+
+            for (const v of variations) {
+                try {
+                    const snap = await getDoc(doc(db, 'whatsapp_chats', v));
+                    if (snap.exists()) {
+                        activePhoneKey = v;
+                        break;
+                    }
+                } catch (e) {}
+            }
+
+            const chatRef = doc(db, 'whatsapp_chats', activePhoneKey);
+            drawerChatUnsubscribe = onSnapshot(chatRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    chatArea.innerHTML = `
+                        <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-12 px-4">
+                            <i class="fab fa-whatsapp text-3xl mb-2 text-emerald-500/40 block"></i>
+                            <p class="font-medium text-gray-700 dark:text-gray-300">Nenhuma conversa registrada ainda.</p>
+                            <p class="text-gray-400 dark:text-gray-500 text-[11px] mt-1">Envie a primeira mensagem abaixo para iniciar o atendimento!</p>
+                        </div>
+                    `;
+                    if (toggleAiBtn) toggleAiBtn.classList.add('hidden');
                     return;
                 }
 
-                // Only show loading spinner if it's the first load (not background refresh)
-                // Also show if it contains the placeholder text
-                if (!isBackground && (whatsappChatArea.children.length === 0 || whatsappChatArea.innerText.includes('Selecione um prospect'))) {
-                    whatsappChatArea.innerHTML = '<div class="text-center text-gray-400 text-sm mt-4"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando histórico...</div>';
-                }
+                drawerCurrentChatData = docSnap.data();
+                const history = drawerCurrentChatData.history || [];
+                const isHuman = drawerCurrentChatData.humanMode === true || drawerCurrentChatData.mode === 'human';
 
-                if (!isBackground) {
-                    whatsappInput.disabled = false;
-                    whatsappSendBtn.disabled = false;
-                }
-
-                try {
-                    const result = await getWhatsAppHistory({ phone: currentProspect.telefone });
-                    const messages = result.data.messages;
-
-                    if (messages.length === 0) {
-                        if (!isBackground) {
-                            whatsappChatArea.innerHTML = '<div class="text-center text-gray-500 text-sm mt-4">Nenhuma mensagem encontrada. Inicie a conversa!</div>';
-                        }
+                if (toggleAiBtn) {
+                    toggleAiBtn.classList.remove('hidden');
+                    if (isHuman) {
+                        toggleAiBtn.className = 'px-2 py-0.5 text-[10px] font-bold rounded-lg bg-amber-500/30 text-white hover:bg-amber-500/40 border border-amber-300/40 cursor-pointer transition-all';
+                        toggleAiBtn.innerHTML = '👤 Humano';
+                        toggleAiBtn.title = 'Modo Humano ativo. Clique para reativar IA.';
                     } else {
-                        renderChatMessages(messages.reverse(), isBackground); // Show oldest first
+                        toggleAiBtn.className = 'px-2 py-0.5 text-[10px] font-bold rounded-lg bg-white/20 text-white hover:bg-white/30 border border-white/25 cursor-pointer transition-all';
+                        toggleAiBtn.innerHTML = '🤖 Miles';
+                        toggleAiBtn.title = 'IA Miles ativa. Clique para assumir atendimento.';
                     }
-                } catch (error) {
-                    console.error("Error loading history:", error);
-                    // Only show error if it's not a background refresh, to avoid annoyance
-                    if (!isBackground) {
-                        whatsappChatArea.innerHTML = `<div class="text-center text-red-500 text-xs mt-4">Não foi possível carregar o histórico anterior.</div>`;
-                    }
-
-                    // Allow sending even if history fails (maybe it's just a fetch error, but network is fine)
-                    whatsappInput.disabled = false;
-                    whatsappSendBtn.disabled = false;
                 }
-            }
 
-            function renderChatMessages(messages, isBackground = false) {
-                // Smart Rendering: Diffing and Scroll Management
+                if (history.length === 0) {
+                    chatArea.innerHTML = '<div class="text-center text-gray-400 text-xs py-10">Nenhuma mensagem nesta conversa. Envie uma abaixo!</div>';
+                    return;
+                }
 
-                // 1. Check if we need to scroll to bottom *before* updating
-                const isAtBottom = whatsappChatArea.scrollHeight - whatsappChatArea.scrollTop <= whatsappChatArea.clientHeight + 100; // 100px threshold
+                const frag = document.createDocumentFragment();
+                history.forEach(msg => {
+                    const isSent = msg.role === 'model';
+                    const parts = msg.parts || [];
+                    const text = parts.map(p => p.text).filter(Boolean).join('\n');
+                    if (!text) return;
 
-                // 2. Simple comparison to avoid re-rendering if nothing changed (optional but good)
-                // For a robust check we would need message IDs. Assuming 'messages' contains objects.
-                // We'll proceed to re-build or append.
+                    const wrap = document.createElement('div');
+                    wrap.className = `flex w-full mb-2 ${isSent ? 'justify-end' : 'justify-start'}`;
 
-                // If it's a full reload (not background) or empty, clear it.
-                // But for background, we want to be smarter. 
-                // However, without unique IDs on the DOM elements, appending only new messages is tricky if we don't know which are new.
-                // A simple strategy that works well for "refresh" is to rebuild the HTML string and replace `innerHTML` 
-                // BUT current browsers are fast. The flicker comes from `innerHTML = ''` happening *before* the new content is ready.
-                // So we will build the NEW content first, then swap.
+                    const bub = document.createElement('div');
+                    bub.className = `chat-bubble ${isSent ? 'sent' : 'received'}`;
 
-                const fragment = document.createDocumentFragment();
+                    const formattedText = escapeHtml(text).replace(
+                        /(https?:\/\/[^\s]+)/g,
+                        '<a href="$1" target="_blank" class="text-blue-500 underline break-all">$1</a>'
+                    );
 
-                messages.forEach(msg => {
-                    const bubble = document.createElement('div');
-                    bubble.className = `chat-bubble ${msg.from_me ? 'sent' : 'received'}`;
-
-                    let content = '';
-
-                    // MEDIA RENDERING
-                    if (msg.media_url) {
-                        const mediaClass = "max-w-full rounded-lg mb-2";
-                        if (msg.type === 'image' || msg.type === 'sticker') {
-                            // For images/stickers, clickable to open full size
-                            content += `<img src="${msg.media_url}" class="${mediaClass} cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" alt="Image" loading="lazy">`;
-                        } else if (msg.type === 'video') {
-                            content += `<video src="${msg.media_url}" controls class="${mediaClass}"></video>`;
-                        } else if (msg.type === 'audio' || msg.type === 'voice') {
-                            content += `<audio src="${msg.media_url}" controls class="w-full mb-2"></audio>`;
-                        } else {
-                            // Documents and others
-                            const icon = msg.type === 'document' ? 'fa-file-alt' : 'fa-paperclip';
-                            content += `
-                                <a href="${msg.media_url}" target="_blank" class="flex items-center gap-3 bg-black/20 p-3 rounded-lg mb-2 hover:bg-black/30 transition-colors">
-                                    <div class="bg-gray-700/50 p-2 rounded-full w-10 h-10 flex items-center justify-center shrink-0">
-                                        <i class="fas ${icon} text-yellow-500"></i>
-                                    </div>
-                                    <div class="overflow-hidden">
-                                        <p class="text-sm font-medium truncate text-white">Arquivo</p>
-                                        <p class="text-xs text-green-400">Clique para baixar</p>
-                                    </div>
-                                </a>
-                           `;
-                        }
-                    }
-
-                    // Decode text/caption safely
-                    let text = typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text || '');
-
-                    // Only show text if it exists (it might be empty if it's just media without caption)
-                    if (text && text !== '""') {
-                        // Simple URL linking for text
-                        text = text.replace(
-                            /(https?:\/\/[^\s]+)/g,
-                            '<a href="$1" target="_blank" class="text-blue-400 hover:underline break-all">$1</a>'
-                        );
-                        content += `<div class="whitespace-pre-wrap break-words">${text}</div>`;
-                    }
-
-                    const time = new Date(msg.timestamp * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-                    bubble.innerHTML = `
-                        ${content}
-                        <div class="chat-time select-none pt-1">${time}</div>
+                    bub.innerHTML = `
+                        <div class="whitespace-pre-wrap">${formattedText}</div>
+                        <div class="text-[9px] text-right mt-1 opacity-60 select-none flex items-center justify-end gap-1">
+                            ${isSent ? '<i class="fas fa-check-double text-[8px] text-emerald-600 dark:text-emerald-400"></i>' : ''}
+                        </div>
                     `;
 
-                    // Container for alignment
-                    const wrapper = document.createElement('div');
-                    wrapper.className = `flex w-full mb-2 ${msg.from_me ? 'justify-end' : 'justify-start'}`;
-                    wrapper.appendChild(bubble);
-                    fragment.appendChild(wrapper);
+                    wrap.appendChild(bub);
+                    frag.appendChild(wrap);
                 });
 
-                // 3. Update DOM
-                whatsappChatArea.innerHTML = '';
-                whatsappChatArea.appendChild(fragment);
+                chatArea.innerHTML = '';
+                chatArea.appendChild(frag);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, (e) => {
+                console.error("Erro no drawer chat:", e);
+                chatArea.innerHTML = `<div class="text-center text-red-500 text-xs py-10">Erro: ${e.message}</div>`;
+            });
+        }
 
-                // 4. Handle Scrolling
-                if (!isBackground || isAtBottom) {
-                    whatsappChatArea.scrollTop = whatsappChatArea.scrollHeight;
-                }
-                // Else: User is scrolling up, do not disturb their position
-            }
+        function openFormModal(prospect = null) {
+            isModalOpen = true;
+            if (!modalElements) initModalElements();
 
-            // WhatsApp Send Logic
-            const sendWhatsApp = async () => {
-                const text = whatsappInput.value.trim();
-                if (!text) return;
+            activeProspect = prospect;
+            currentProspectId = prospect ? prospect.id : null;
 
-                whatsappInput.disabled = true;
-                whatsappSendBtn.disabled = true;
-                const originalIcon = whatsappSendBtn.innerHTML;
-                whatsappSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                try {
-                    const phone = prospect.telefone;
-                    await sendWhatsAppMessage({
-                        prospectId: prospect.id,
-                        phone: phone,
-                        message: text
-                    });
-
-                    // Clear input immediately
-                    whatsappInput.value = '';
-
-                    // Reload history after a brief delay to show the sent message
-                    // Use background mode to prevent flashing
-                    setTimeout(() => loadWhatsAppHistory(prospect, true), 1000);
-
-                } catch (error) {
-                    alert('Erro ao enviar: ' + error.message);
-                } finally {
-                    // Ensure input is cleared even if there was an error
-                    whatsappInput.value = '';
-                    whatsappInput.disabled = false;
-                    whatsappSendBtn.disabled = false;
-                    whatsappSendBtn.innerHTML = originalIcon;
-                    whatsappInput.focus();
-                }
-            };
-
-            whatsappSendBtn.onclick = sendWhatsApp;
-            whatsappInput.onkeypress = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendWhatsApp();
-                }
-            };
-
-            // Manual refresh button
-            const refreshChatBtn = document.getElementById('refreshChatBtn');
-            refreshChatBtn.onclick = () => {
-                const icon = refreshChatBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                // For manual refresh, we probably WANT to scroll to bottom, so treat as foreground?
-                // Or maybe just background so it's smooth. Let's use background=true for smoothness, 
-                // but since user asked for it, maybe force scroll?
-                // The logical "Refresh" usually implies "I want to see new stuff", so scrolling to bottom is expected.
-                // Our logic `if (!isBackground || isAtBottom)` handles it if we pass isBackground=false.
-                // But we want smoothness...
-                // Let's pass isBackground=true to avoid the "spinner" clear, but we might want to force scroll.
-                // Actually, the issue is `loadWhatsAppHistory` logic for spinner.
-                // If we pass `true`, no spinner, no clear. Smooth.
-                // Our render logic will scroll to bottom IF user was at bottom.
-                // If user clicks refresh, they likely expect to see latest.
-                loadWhatsAppHistory(prospect, true).finally(() => {
-                    icon.classList.remove('fa-spin');
-                });
-            };
-
-            // Auto-refresh polling for new messages (every 10 seconds)
-            let pollingInterval = null;
-
-            function startPolling() {
-                if (pollingInterval) clearInterval(pollingInterval);
-                pollingInterval = setInterval(() => {
-                    // Only poll if WhatsApp tab is active
-                    if (!tabWhatsAppContent.classList.contains('hidden')) {
-                        loadWhatsAppHistory(prospect, true);
-                    }
-                }, 10000); // 10 seconds
-            }
-
-            function stopPolling() {
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
-                }
-            }
-
-            // Start polling when WhatsApp tab is opened
-            const originalSwitchTab = switchTab;
-            switchTab = (tab) => {
-                originalSwitchTab(tab);
-                if (tab === 'whatsapp') {
-                    startPolling();
-                } else {
-                    stopPolling();
-                }
-            };
-
-            // Clean up on modal close
-            closeFormModalBtn.addEventListener('click', stopPolling);
-
-
-
-            const setFormEditable = (isEditable) => {
-                fields.forEach(field => {
-                    if (field.id !== 'prospectId') field.disabled = !isEditable;
-                });
-                contactLogSection.style.display = isEditable ? 'flex' : 'none';
-                editBtn.classList.toggle('hidden', isEditable);
-                saveBtn.classList.toggle('hidden', !isEditable);
-                cancelFormBtn.classList.toggle('hidden', !isEditable);
-            };
-
-            const updateWhatsAppLink = () => {
-                const phone = telefoneInput.value.replace(/\D/g, '');
-                if (phone) {
-                    whatsappLink.classList.remove('hidden');
-                    whatsappLink.classList.add('flex');
-                    // We don't need href anymore if we capture click, but let's keep it valid or void
-                    whatsappLink.href = '#';
-                } else {
-                    whatsappLink.classList.add('hidden');
-                    whatsappLink.classList.remove('flex');
-                }
-            };
-            telefoneInput.addEventListener('input', updateWhatsAppLink);
-
-            // Redirect "Chamar no WhatsApp" button to the new tab
-            whatsappLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchTab('whatsapp');
+            // 1. Instantly display modal with hardware-accelerated transition
+            const modal = modalElements.formModal;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            requestAnimationFrame(() => {
+                modal.classList.add('modal-open');
             });
 
-            // Removed redundant mode switching logic since WhatsApp now has its own tab.
-            // The "newAddContactBtn" now only handles "Nota Interna".
-
-            const newAddContactBtn = addContactLogBtn.cloneNode(true);
-            addContactLogBtn.parentNode.replaceChild(newAddContactBtn, addContactLogBtn);
-            newAddContactBtn.addEventListener('click', async () => {
-                const description = newContactLogTextarea.value.trim();
-                if (!description) return alert('Por favor, digite o conteúdo da nota.');
-
-                if (!prospect || !prospect.id) {
-                    return alert('Salve o card antes de adicionar uma nota.');
+            // 2. Non-blocking optimistic unread update
+            if (prospect && prospect.unread) {
+                prospect.unread = false;
+                const card = document.querySelector(`.prospect-card[data-id="${prospect.id}"]`);
+                if (card) {
+                    const badge = card.querySelector('.animate-pulse');
+                    if (badge) badge.remove();
                 }
+                const prospectRef = doc(db, 'prospects', prospect.id);
+                updateDoc(prospectRef, { unread: false }).catch(err => {
+                    console.error("Error marking prospect as read:", err);
+                });
+            }
 
-                newAddContactBtn.disabled = true;
-                const originalText = newAddContactBtn.textContent;
-                newAddContactBtn.textContent = 'Salvando...';
+            // 3. Reset to default tab (Details)
+            switchTab('details');
+            modalElements.prospectForm.reset();
 
-                try {
-                    // Standard Internal Note
-                    const newLog = {
-                        author: localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email || 'anonymous' : 'anonymous'),
-                        description: description,
-                        timestamp: new Date(),
-                        type: 'note'
-                    };
-
-                    let collectionName = prospect.type === 'lead' ? 'leads' : 'prospects';
-                    const itemRef = doc(db, collectionName, prospect.id);
-
-                    await updateDoc(itemRef, {
-                        contactLog: arrayUnion(newLog)
-                    });
-
-                    if (!prospect.contactLog) prospect.contactLog = [];
-                    prospect.contactLog.push(newLog);
-                    renderContactLog(prospect);
-
-                    newContactLogTextarea.value = '';
-                } catch (error) {
-                    console.error("Error adding note:", error);
-                    alert("Erro: " + error.message);
-                } finally {
-                    newAddContactBtn.disabled = false;
-                    newAddContactBtn.textContent = originalText;
-                }
+            // 4. Update tags
+            const activeTags = new Set(prospect?.tags || []);
+            modalTagCheckboxes.forEach(cb => {
+                cb.checked = activeTags.has(cb.value);
             });
 
+            // 5. Populate fields
             if (prospect) {
-                document.getElementById('prospectType').value = prospect.type || 'prospect';
-                modalActionButtons.classList.remove('hidden');
-                modalTitle.textContent = 'Detalhes do Prospect';
-                prospectIdInput.value = prospect.id;
+                modalElements.prospectType.value = prospect.type || 'prospect';
+                modalElements.modalActionButtons.classList.remove('hidden');
+                modalElements.modalTitle.textContent = 'Detalhes do Prospect';
+                modalElements.prospectId.value = prospect.id;
 
-                const createdByContainer = document.getElementById('createdByContainer');
-                const createdByInfo = document.getElementById('createdByInfo');
                 if (prospect.createdBy) {
-                    createdByInfo.textContent = prospect.createdBy;
-                    createdByContainer.classList.remove('hidden');
+                    modalElements.createdByInfo.textContent = prospect.createdBy;
+                    modalElements.createdByContainer.classList.remove('hidden');
                 } else {
-                    createdByContainer.classList.add('hidden');
+                    modalElements.createdByContainer.classList.add('hidden');
                 }
 
-                document.getElementById('unidade').value = prospect.unidade || '';
-                document.getElementById('setor').value = prospect.setor || '';
-                document.getElementById('prioridade').value = prospect.prioridade || '';
-                document.getElementById('ticketEstimado').value = prospect.ticketEstimado || '';
-                document.getElementById('origemLead').value = prospect.origemLead || '';
+                modalElements.unidade.value = prospect.unidade || '';
+                modalElements.setor.value = prospect.setor || '';
+                modalElements.prioridade.value = prospect.prioridade || '';
+                modalElements.ticketEstimado.value = prospect.ticketEstimado || '';
+                modalElements.origemLead.value = prospect.origemLead || '';
 
                 let dateTimeStr = '';
                 if (prospect.createdAt) {
@@ -2024,34 +3014,27 @@
                         dateTimeStr = `${formattedDate} às ${formattedTime}`;
                     }
                 }
-                const dataChegadaInput = document.getElementById('dataChegada');
-                if (dataChegadaInput) {
-                    dataChegadaInput.value = dateTimeStr || 'N/A';
+                if (modalElements.dataChegada) {
+                    modalElements.dataChegada.value = dateTimeStr || 'N/A';
                 }
 
-                document.getElementById('responsavel').value = prospect.responsavel || '';
-                document.getElementById('telefone').value = prospect.telefone || '';
-                document.getElementById('email').value = prospect.email || '';
-                document.getElementById('cpf').value = prospect.cpf || '';
-                document.getElementById('redesSociais').value = prospect.redesSociais || '';
-                document.getElementById('observacoes').value = prospect.observacoes || '';
-
-                (prospect.tags || []).forEach(tag => {
-                    const checkbox = document.getElementById(`tag-${tag}`);
-                    if (checkbox) checkbox.checked = true;
-                });
+                modalElements.responsavel.value = prospect.responsavel || '';
+                modalElements.telefone.value = prospect.telefone || '';
+                modalElements.email.value = prospect.email || '';
+                modalElements.cpf.value = prospect.cpf || '';
+                modalElements.redesSociais.value = prospect.redesSociais || '';
+                modalElements.observacoes.value = prospect.observacoes || '';
 
                 renderContactLog(prospect);
 
                 // Perdido Notice Banner
-                const perdidoNotice = document.getElementById('perdidoNotice');
-                const perdidoNoticeText = document.getElementById('perdidoNoticeText');
-                const perdidoNoticeDate = document.getElementById('perdidoNoticeDate');
-                if (perdidoNotice) {
+                if (modalElements.perdidoNotice) {
                     if (prospect.status === 'Perdido' || prospect.motivoPerda) {
-                        perdidoNotice.classList.remove('hidden');
-                        if (perdidoNoticeText) perdidoNoticeText.textContent = prospect.motivoPerda || 'Motivo não registrado';
-                        if (perdidoNoticeDate) {
+                        modalElements.perdidoNotice.classList.remove('hidden');
+                        if (modalElements.perdidoNoticeText) {
+                            modalElements.perdidoNoticeText.textContent = prospect.motivoPerda || 'Motivo não registrado';
+                        }
+                        if (modalElements.perdidoNoticeDate) {
                             let perdidoDateStr = '';
                             if (prospect.perdidoEm) {
                                 let dt = null;
@@ -2062,86 +3045,60 @@
                                     perdidoDateStr = `Perdido em ${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
                                 }
                             }
-                            perdidoNoticeDate.textContent = perdidoDateStr;
+                            modalElements.perdidoNoticeDate.textContent = perdidoDateStr;
                         }
                     } else {
-                        perdidoNotice.classList.add('hidden');
+                        modalElements.perdidoNotice.classList.add('hidden');
                     }
                 }
 
                 // Action Buttons
-                const markLostBtn = document.getElementById('markLostBtn');
-                if (markLostBtn) {
+                if (modalElements.markLostBtn) {
                     if (prospect.status === 'Perdido') {
-                        markLostBtn.innerHTML = '<i class="fas fa-edit"></i> <span>Editar Motivo</span>';
-                        markLostBtn.title = 'Editar o motivo deste lead perdido';
+                        modalElements.markLostBtn.innerHTML = '<i class="fas fa-edit"></i> <span>Editar Motivo</span>';
+                        modalElements.markLostBtn.title = 'Editar o motivo deste lead perdido';
                     } else {
-                        markLostBtn.innerHTML = '<i class="fas fa-times-circle"></i> <span>Perdido</span>';
-                        markLostBtn.title = 'Marcar lead como Perdido';
+                        modalElements.markLostBtn.innerHTML = '<i class="fas fa-times-circle"></i> <span>Perdido</span>';
+                        modalElements.markLostBtn.title = 'Marcar lead como Perdido';
                     }
-                    markLostBtn.onclick = () => {
-                        openPerdidoModal(prospect.id, () => {
-                            closeFormModal();
-                        });
-                    };
                 }
-
-                archiveBtn.onclick = () => showConfirmModal(`Deseja arquivar "${prospect.responsavel}"?`, () => { archiveProspect(prospect.id); closeFormModal(); });
-                deleteBtn.onclick = () => showConfirmModal(`Deseja realmente excluir "${prospect.responsavel}"?`, () => { deleteItem(prospect.id); closeFormModal(); });
-
-                const sendCapiBtn = document.getElementById('sendCapiBtn');
-                if (sendCapiBtn) {
-                    sendCapiBtn.onclick = async () => {
-                        try {
-                            if (typeof showToast === 'function') showToast('Enviando evento para a Meta Conversions API...', 'info');
-                            const triggerMetaCapiManual = firebase.functions().httpsCallable('triggerMetaCapiManual');
-                            let eventToTrigger = 'Lead';
-                            if (prospect.status && prospect.status.toLowerCase().includes('agendad')) {
-                                eventToTrigger = 'Schedule';
-                            } else if (prospect.status && (prospect.status.toLowerCase().includes('matricula') || prospect.status === 'Ganha')) {
-                                eventToTrigger = 'CompleteRegistration';
-                            }
-                            
-                            const res = await triggerMetaCapiManual({ prospectId: prospect.id, eventName: eventToTrigger });
-                            if (res.data && res.data.success) {
-                                if (typeof showToast === 'function') showToast(`Evento ${eventToTrigger} enviado com sucesso para a Meta CAPI!`, 'success');
-                            } else {
-                                const errMsg = res.data?.error?.message || res.data?.error || 'Verifique as credenciais em public_config/miles';
-                                if (typeof showToast === 'function') showToast(`Aviso CAPI: ${errMsg}`, 'warning');
-                            }
-                        } catch (err) {
-                            console.error('[CAPI Manual] Erro ao disparar evento:', err);
-                            if (typeof showToast === 'function') showToast(`Erro ao conectar CAPI: ${err.message}`, 'error');
-                        }
-                    };
-                }
-
 
                 setFormEditable(false);
-                editBtn.onclick = () => setFormEditable(true);
-                cancelFormBtn.onclick = () => openFormModal(prospect);
-
             } else {
-                document.getElementById('prospectType').value = 'prospect';
-                modalActionButtons.classList.add('hidden');
-                modalTitle.textContent = 'Adicionar Novo Prospect';
-                prospectIdInput.value = '';
-                const dataChegadaInput = document.getElementById('dataChegada');
-                if (dataChegadaInput) {
-                    dataChegadaInput.value = '';
-                }
+                modalElements.prospectType.value = 'prospect';
+                modalElements.modalActionButtons.classList.add('hidden');
+                modalElements.modalTitle.textContent = 'Adicionar Novo Prospect';
+                modalElements.prospectId.value = '';
+                if (modalElements.dataChegada) modalElements.dataChegada.value = '';
+                if (modalElements.createdByContainer) modalElements.createdByContainer.classList.add('hidden');
+                if (modalElements.perdidoNotice) modalElements.perdidoNotice.classList.add('hidden');
                 renderContactLog({ contactLog: [] });
                 setFormEditable(true);
             }
 
             updateWhatsAppLink();
-            formModal.classList.remove('hidden');
-            formModal.classList.add('flex');
         }
 
         function closeFormModal() {
-            formModal.classList.add('hidden');
-            formModal.classList.remove('flex');
+            isModalOpen = false;
+            stopPolling();
+            const modal = modalElements?.formModal || formModal;
+            if (modal) {
+                modal.classList.remove('modal-open');
+                setTimeout(() => {
+                    if (!modal.classList.contains('modal-open')) {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                    }
+                    if (pendingBoardRender) {
+                        pendingBoardRender = false;
+                        combineAndRender();
+                    }
+                }, 160);
+            } else if (pendingBoardRender) {
+                pendingBoardRender = false;
+                combineAndRender();
+            }
         }
 
         function openImportModal() {
@@ -2610,7 +3567,8 @@
 
         function populateTagsInModal() {
             const tagsContainer = document.getElementById('tagsContainer');
-            tagsContainer.innerHTML = ''; // Limpa para evitar duplicação
+            if (!tagsContainer || tagsContainer.children.length > 0) return;
+            tagsContainer.innerHTML = '';
             TAGS.forEach(tag => {
                 const checkboxContainer = document.createElement('div');
                 checkboxContainer.className = 'flex items-center';
@@ -2618,12 +3576,12 @@
                 checkbox.type = 'checkbox';
                 checkbox.id = `tag-${tag}`;
                 checkbox.value = tag;
-                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-700';
+                checkbox.className = 'h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 bg-gray-100 dark:bg-gray-700 cursor-pointer';
 
                 const label = document.createElement('label');
                 label.htmlFor = `tag-${tag}`;
                 label.textContent = tag;
-                label.className = 'ml-2 block text-sm text-gray-300';
+                label.className = 'ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none';
 
                 checkboxContainer.appendChild(checkbox);
                 checkboxContainer.appendChild(label);
@@ -2895,6 +3853,8 @@
 
             populateTags();
             populateEvoUnits();
+            initModalElements();
+            initWhatsAppDrawer();
 
             loadComponents(() => {
                 // This callback runs after header/sidebar are loaded

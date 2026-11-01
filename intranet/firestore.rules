@@ -23,7 +23,12 @@ service cloud.firestore {
 
     // Regra para a coleção prospects
     match /prospects/{prospectId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
+    }
+
+    // Regra para conversas do WhatsApp
+    match /whatsapp_chats/{chatId} {
+      allow read, write: if true;
     }
 
     // Regra para a coleção de Estoque
@@ -362,6 +367,11 @@ service cloud.firestore {
     match /public_config/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
+    }
+
+    // Regra para Publicações das Redes Sociais
+    match /social_posts/{postId} {
+      allow read, write: if request.auth != null;
     }
 
     // Regra para Logs de Login

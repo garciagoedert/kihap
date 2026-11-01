@@ -2532,6 +2532,26 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                         }
                     }
 
+                    // Verifica se o chat está em Modo Humano (IA pausada pela equipe no CRM)
+                    if (dataDoc && (dataDoc.humanMode === true || mode === 'human')) {
+                        if (history.length > 20) {
+                            history = history.slice(-20);
+                        }
+                        history.push({ role: 'user', parts: [{ text: messageText }] });
+                        await chatRef.set({
+                            history,
+                            lastLeadId,
+                            mode: 'human',
+                            humanMode: true,
+                            lastMessage: messageText,
+                            customerName: customerName || dataDoc.customerName || 'Visitante',
+                            unread: true,
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        console.log(`[WhatsApp Webhook] Mensagem recebida em Modo Humano para ${customerPhone}. IA não responderá.`);
+                        return res.status(200).send('EVENT_RECEIVED');
+                    }
+
                     // Limita histórico a 20 mensagens para evitar tokens excessivos
                     if (history.length > 20) {
                         history = history.slice(-20);
@@ -2657,7 +2677,10 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                         history,
                         lastLeadId,
                         mode,
+                        customerName: customerName || (chatSnap.exists ? chatSnap.data().customerName : 'Visitante'),
+                        lastMessage: finalReplyText,
                         reminderSent: false,
+                        unread: false,
                         updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
 

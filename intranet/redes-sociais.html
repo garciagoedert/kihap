@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = {
+            config: {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#FF9800",
+                            "primary-dark": "#E68900"
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+
+    <title>Kihap - Redes Sociais</title>
+    <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="log.css">
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Mockup Phone Styling */
+        .phone-frame {
+            border: 10px solid #1f2937;
+            border-radius: 42px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .phone-notch {
+            width: 110px;
+            height: 20px;
+            background-color: #1f2937;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 20px;
+        }
+
+        /* Spinning animation for vinyl disc */
+        @keyframes spinSlow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin-slow {
+            animation: spinSlow 5s linear infinite;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300 flex h-screen overflow-hidden">
+
+    <div id="sidebar-container"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+    <main id="main-content" class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+
+            <!-- Header & Action Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-5">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-bold uppercase tracking-[0.2em] px-2.5 py-1 rounded-md bg-primary/10 text-primary">
+                            Social Hub
+                        </span>
+                        <span class="text-xs text-gray-400">Multi-Posting</span>
+                    </div>
+                    <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                        <i class="fas fa-share-nodes text-primary"></i> Redes Sociais
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Central de criação, agendamento e publicação simultânea no Instagram, TikTok e YouTube.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Status das Contas Conectadas -->
+                    <div class="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <!-- Instagram Badge -->
+                        <div id="badge-status-instagram"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500/10 text-pink-600 dark:text-pink-400 cursor-pointer hover:bg-pink-500/20 transition-all"
+                            title="Instagram: Conectado (@kihap.martialarts)">
+                            <i class="fab fa-instagram text-sm"></i>
+                            <span>Instagram</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+
+                        <!-- TikTok Badge -->
+                        <div id="badge-status-tiktok"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-500/10 text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-500/20 transition-all"
+                            title="TikTok: Clique para configurar">
+                            <i class="fab fa-tiktok text-sm"></i>
+                            <span>TikTok</span>
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        </div>
+
+                        <!-- YouTube Badge -->
+                        <div id="badge-status-youtube"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-600 dark:text-red-400 cursor-pointer hover:bg-red-500/20 transition-all"
+                            title="YouTube Shorts: Conectado">
+                            <i class="fab fa-youtube text-sm"></i>
+                            <span>YouTube</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Configurações das APIs -->
+                    <button id="open-config-btn"
+                        class="p-2.5 bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all shadow-sm"
+                        title="Configurar Chaves & Tokens de APIs">
+                        <i class="fas fa-sliders text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navegação por Abas Principais -->
+            <div class="flex items-center gap-3 border-b border-gray-200 dark:border-gray-800">
+                <button id="tab-btn-create"
+                    class="tab-btn active px-5 py-3 text-sm font-bold border-b-2 border-primary text-primary transition-all flex items-center gap-2">
+                    <i class="fas fa-pen-to-square"></i> Criar & Programar
+                </button>
+                <button id="tab-btn-history"
+                    class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center gap-2">
+                    <i class="fas fa-clock-rotate-left"></i> Fila & Histórico
+                    <span id="history-count-badge" class="px-2 py-0.5 rounded-full text-xs bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">0</span>
+                </button>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 1: CRIAR & PROGRAMAR                   -->
+            <!-- ========================================== -->
+            <div id="view-create-post" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <!-- Formulário de Composição (7 Colunas) -->
+                <div class="lg:col-span-7 space-y-6">
+
+                    <!-- 1. Upload de Mídia (Dropzone) -->
+                    <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-photo-film text-primary"></i> 1. Mídia do Post (Vídeo ou Foto)
+                            </h2>
+                            <span class="text-xs text-gray-400">Recomendado: 9:16 (Vertical) MP4/MOV</span>
+                        </div>
+
+                        <!-- Dropzone Area -->
+                        <div id="dropzone"
+                            class="relative border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary rounded-2xl p-6 transition-all cursor-pointer bg-gray-50/50 dark:bg-black/20 flex flex-col items-center justify-center text-center group min-h-[200px]">
+                            <input type="file" id="media-file-input" accept="video/mp4,video/quicktime,image/jpeg,image/png,image/webp"
+                                class="hidden">
+
+                            <!-- Empty State -->
+                            <div id="dropzone-empty" class="space-y-3">
+                                <div class="w-14 h-14 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-cloud-arrow-up"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                                        Arraste e solte o vídeo ou clique para escolher
+                                    </p>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        Suporta MP4, MOV, JPG, PNG (Até 100MB)
+                                    </p>
+                                </div>
+                                <button type="button"
+                                    class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:border-primary transition-colors shadow-sm">
+                                    <i class="fas fa-folder-open mr-1.5"></i> Procurar arquivo
+                                </button>
+                            </div>
+
+                            <!-- Media Uploaded / Preview State -->
+                            <div id="dropzone-preview-container" class="hidden w-full relative">
+                                <div class="flex items-center gap-4 bg-gray-100 dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
+                                    <div class="w-20 h-28 bg-black rounded-lg overflow-hidden flex-shrink-0 relative flex items-center justify-center">
+                                        <video id="dropzone-video-preview" class="w-full h-full object-cover hidden" muted playsinline></video>
+                                        <img id="dropzone-image-preview" class="w-full h-full object-cover hidden" alt="Preview da mídia">
+                                        <span id="media-type-badge" class="absolute bottom-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/70 text-white">
+                                            VÍDEO
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 text-left min-w-0">
+                                        <p id="media-filename" class="font-bold text-sm text-gray-900 dark:text-white truncate">video.mp4</p>
+                                        <p id="media-filesize" class="text-xs text-gray-400 mt-0.5">14.2 MB • 1080x1920 (9:16)</p>
+                                        
+                                        <!-- Upload progress bar -->
+                                        <div id="upload-progress-wrapper" class="hidden mt-2">
+                                            <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                                                <div id="upload-progress-bar" class="bg-primary h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                            </div>
+                                            <span id="upload-progress-text" class="text-[10px] text-gray-400 mt-1 block">Enviando: 0%</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="remove-media-btn"
+                                        class="p-2.5 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                        title="Remover mídia">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Seleção de Redes Sociais (Destinos) -->
+                    <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-bullseye text-primary"></i> 2. Onde Publicar
+                            </h2>
+                            <span class="text-xs text-gray-400">Selecione uma ou mais redes</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Instagram Option -->
+                            <label
+                                class="platform-checkbox-card relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-primary bg-primary/5 cursor-pointer transition-all hover:shadow-md select-none">
+                                <input type="checkbox" id="dest-instagram" checked class="hidden platform-toggle">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-600 text-white flex items-center justify-center text-xl shadow-md">
+                                    <i class="fab fa-instagram"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">Instagram</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Reels & Feed</p>
+                                </div>
+                                <div class="checkbox-indicator w-5 h-5 rounded-full border-2 border-primary bg-primary text-black flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-check text-[10px]"></i>
+                                </div>
+                            </label>
+
+                            <!-- TikTok Option -->
+                            <label
+                                class="platform-checkbox-card relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] cursor-pointer transition-all hover:shadow-md select-none opacity-80 hover:opacity-100">
+                                <input type="checkbox" id="dest-tiktok" checked class="hidden platform-toggle">
+                                <div class="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center text-xl shadow-md border border-gray-700">
+                                    <i class="fab fa-tiktok"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">TikTok</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Feed de Vídeo</p>
+                                </div>
+                                <div class="checkbox-indicator w-5 h-5 rounded-full border-2 border-primary bg-primary text-black flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-check text-[10px]"></i>
+                                </div>
+                            </label>
+
+                            <!-- YouTube Shorts Option -->
+                            <label
+                                class="platform-checkbox-card relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] cursor-pointer transition-all hover:shadow-md select-none opacity-80 hover:opacity-100">
+                                <input type="checkbox" id="dest-youtube" checked class="hidden platform-toggle">
+                                <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center text-xl shadow-md">
+                                    <i class="fab fa-youtube"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">YouTube</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Shorts / Vídeo</p>
+                                </div>
+                                <div class="checkbox-indicator w-5 h-5 rounded-full border-2 border-primary bg-primary text-black flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-check text-[10px]"></i>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 3. Texto da Publicação -->
+                    <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-align-left text-primary"></i> 3. Legenda & Conteúdo
+                            </h2>
+                            <button type="button" id="ai-enhance-btn"
+                                class="px-3 py-1 bg-gradient-to-r from-purple-500/10 to-primary/10 hover:from-purple-500/20 hover:to-primary/20 text-purple-600 dark:text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                <i class="fas fa-wand-magic-sparkles text-xs"></i> Sugerir com IA
+                            </button>
+                        </div>
+
+                        <!-- Título (Obrigatório para YouTube) -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Título do Vídeo (Obrigatório para YouTube Shorts)
+                            </label>
+                            <input type="text" id="post-title"
+                                placeholder="Ex: Defesa pessoal indispensável para o dia a dia 🥋"
+                                class="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+                        </div>
+
+                        <!-- Legenda Principal -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Legenda Completa
+                                </label>
+                                <span id="caption-counter" class="text-xs text-gray-400 font-mono">0 / 2.200</span>
+                            </div>
+                            <textarea id="post-caption" rows="5"
+                                placeholder="Escreva a legenda do post aqui... Insira emojis, chamada para ação (CTA) e detalhes da aula experimental!"
+                                class="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800 rounded-xl p-4 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-y"></textarea>
+                        </div>
+
+                        <!-- Tags Rápidas -->
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold text-gray-400 block">Hashtags Recomendadas da Kihap:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#kihap</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#artesmarciais</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#taekwondo</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#defesapessoal</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#brasilia</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#florianopolis</button>
+                                <button type="button" class="quick-tag-btn px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-primary/20 hover:text-primary rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">#dourados</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Agendamento & Disparo -->
+                    <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-calendar-days text-primary"></i> 4. Modo de Publicação
+                            </h2>
+                        </div>
+
+                        <!-- Selector: Agora vs Programado -->
+                        <div class="grid grid-cols-2 gap-3 bg-gray-100 dark:bg-black/30 p-1.5 rounded-2xl">
+                            <button type="button" id="mode-now-btn"
+                                class="py-2.5 px-4 rounded-xl text-sm font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-bolt text-yellow-500"></i> Publicar Agora
+                            </button>
+                            <button type="button" id="mode-schedule-btn"
+                                class="py-2.5 px-4 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-clock text-primary"></i> Agendar Data
+                            </button>
+                        </div>
+
+                        <!-- Schedule Controls (oculto por padrão) -->
+                        <div id="schedule-controls" class="hidden space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800/80 animate-fade-in">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                        Data de Publicação
+                                    </label>
+                                    <input type="date" id="schedule-date"
+                                        class="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white outline-none focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                        Horário de Publicação
+                                    </label>
+                                    <input type="time" id="schedule-time"
+                                        class="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white outline-none focus:border-primary">
+                                </div>
+                            </div>
+                            <p class="text-xs text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+                                <i class="fas fa-info-circle"></i> O post entrará na fila e o nosso agendador automático publicará no horário exato configurado.
+                            </p>
+                        </div>
+
+                        <!-- Botão de Ação Principal -->
+                        <button type="button" id="submit-post-btn"
+                            class="w-full py-4 bg-primary hover:bg-primary-dark text-black font-extrabold text-base rounded-2xl transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 flex items-center justify-center gap-3">
+                            <i class="fas fa-paper-plane text-lg"></i>
+                            <span id="submit-btn-label">Publicar Imediatamente</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Lado Direito: Smartphone Live Mockup Preview (5 Colunas) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="sticky top-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                                    Preview em Tempo Real
+                                </span>
+                                <!-- Alternador de Rede para o Mockup -->
+                                <div class="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl gap-1">
+                                    <button type="button" data-preview-net="instagram"
+                                        class="preview-net-tab active px-3 py-1 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm flex items-center gap-1">
+                                        <i class="fab fa-instagram text-pink-500"></i> Reels
+                                    </button>
+                                    <button type="button" data-preview-net="tiktok"
+                                        class="preview-net-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
+                                        <i class="fab fa-tiktok"></i> TikTok
+                                    </button>
+                                    <button type="button" data-preview-net="youtube"
+                                        class="preview-net-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
+                                        <i class="fab fa-youtube text-red-500"></i> Shorts
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Phone Container -->
+                            <div class="flex justify-center">
+                                <div class="w-[310px] h-[610px] bg-black phone-frame relative overflow-hidden flex flex-col justify-between select-none">
+                                    <!-- Notch -->
+                                    <div class="phone-notch"></div>
+
+                                    <!-- Media Container (Background) -->
+                                    <div class="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center">
+                                        <video id="mockup-video" class="w-full h-full object-cover hidden" loop muted playsinline></video>
+                                        <img id="mockup-image" class="w-full h-full object-cover hidden" alt="Mockup preview">
+                                        <!-- Placeholder when no media -->
+                                        <div id="mockup-placeholder" class="text-center p-6 space-y-3">
+                                            <div class="w-16 h-16 rounded-full bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-gray-500 text-2xl">
+                                                <i class="fas fa-play"></i>
+                                            </div>
+                                            <p class="text-xs text-gray-400 font-medium">Faça upload de um vídeo ou imagem para visualizar aqui</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gradient Overlay for readability -->
+                                    <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none z-10"></div>
+
+                                    <!-- Top Status Bar -->
+                                    <div class="relative z-20 pt-6 px-4 flex items-center justify-between text-white text-xs font-semibold">
+                                        <span id="mockup-top-header" class="text-sm font-bold tracking-tight">Reels</span>
+                                        <i class="fas fa-camera text-sm"></i>
+                                    </div>
+
+                                    <!-- Floating Side Actions (Right Side) -->
+                                    <div class="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-4 text-white">
+                                        <!-- Like -->
+                                        <div class="flex flex-col items-center">
+                                            <button class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-lg hover:scale-110 transition-transform">
+                                                <i class="fas fa-heart text-white"></i>
+                                            </button>
+                                            <span class="text-[10px] font-bold mt-1">1.4k</span>
+                                        </div>
+                                        <!-- Comments -->
+                                        <div class="flex flex-col items-center">
+                                            <button class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-lg hover:scale-110 transition-transform">
+                                                <i class="fas fa-comment-dots"></i>
+                                            </button>
+                                            <span class="text-[10px] font-bold mt-1">82</span>
+                                        </div>
+                                        <!-- Share -->
+                                        <div class="flex flex-col items-center">
+                                            <button class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-lg hover:scale-110 transition-transform">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                            <span class="text-[10px] font-bold mt-1">Share</span>
+                                        </div>
+                                        <!-- Sound/Music Disc -->
+                                        <div id="mockup-disc-container" class="w-9 h-9 rounded-full bg-neutral-800 border-2 border-white/60 flex items-center justify-center animate-spin-slow mt-1 overflow-hidden">
+                                            <img src="/imgs/favicon.png" alt="Audio Disc" class="w-5 h-5 invert">
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom Caption & Profile Information -->
+                                    <div class="relative z-20 p-4 pb-6 text-white space-y-2 max-w-[80%] text-left">
+                                        <!-- Profile Info -->
+                                        <div class="flex items-center gap-2">
+                                            <img src="/imgs/favicon.png" alt="Profile avatar" class="w-8 h-8 rounded-full border border-white/50 bg-black p-0.5 object-cover">
+                                            <span id="mockup-handle" class="text-xs font-extrabold tracking-tight">@kihap.martialarts</span>
+                                            <button class="px-2 py-0.5 rounded-full bg-white text-black text-[10px] font-extrabold ml-1">Seguir</button>
+                                        </div>
+
+                                        <!-- Title (Only YouTube Shorts) -->
+                                        <p id="mockup-title" class="text-xs font-bold text-white line-clamp-1 hidden">Título do vídeo aqui...</p>
+
+                                        <!-- Caption -->
+                                        <p id="mockup-caption" class="text-xs text-gray-200 line-clamp-2 leading-relaxed">
+                                            Sua legenda incrível aparecerá aqui em tempo real...
+                                        </p>
+
+                                        <!-- Audio Track -->
+                                        <div class="flex items-center gap-1.5 text-[10px] text-gray-300 font-medium">
+                                            <i class="fas fa-music text-[9px]"></i>
+                                            <span class="truncate">Áudio Original • Kihap Artes Marciais</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 2: FILA & HISTÓRICO DE POSTAGENS       -->
+            <!-- ========================================== -->
+            <div id="view-history-posts" class="hidden space-y-6">
+                <!-- Filtros e Busca -->
+                <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button data-filter="all" class="history-filter-btn active px-4 py-2 rounded-xl text-xs font-bold bg-primary text-black transition-all">Todos</button>
+                        <button data-filter="scheduled" class="history-filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-all">Agendados</button>
+                        <button data-filter="published" class="history-filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-all">Publicados</button>
+                        <button data-filter="failed" class="history-filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-all">Falhas</button>
+                    </div>
+
+                    <button id="refresh-history-btn"
+                        class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                        <i class="fas fa-sync-alt"></i> Atualizar Fila
+                    </button>
+                </div>
+
+                <!-- Lista de Posts (Cards) -->
+                <div id="posts-history-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Loaded dynamically via JS -->
+                    <div class="col-span-full py-16 text-center text-gray-400">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3 text-primary"></i>
+                        <p class="font-bold">Carregando histórico de postagens...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL: CONFIGURAÇÃO DE CREDENCIAIS & APIS  -->
+        <!-- ========================================== -->
+        <div id="config-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden animate-scale-up">
+                
+                <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-sliders text-primary"></i> Configurações de APIs & Tokens
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Gerenciamento seguro das chaves de publicação de cada rede social.</p>
+                    </div>
+                    <button id="close-config-modal-btn" class="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-xl">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scroll">
+                    
+                    <!-- 1. Meta / Instagram -->
+                    <div class="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fab fa-instagram text-pink-500 text-lg"></i>
+                                <span class="font-extrabold text-sm text-gray-900 dark:text-white">Instagram Graph API</span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">Ativo</span>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">Access Token Permanente (Meta System User)</label>
+                            <input type="password" id="cfg-instagram-token"
+                                class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">Instagram Business Account ID (Opcional se auto-detectado)</label>
+                            <input type="text" id="cfg-instagram-account-id" placeholder="Ex: 1784140028..."
+                                class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                        </div>
+                        <button type="button" id="test-meta-token-btn" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-800 hover:bg-primary hover:text-black rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
+                            <i class="fas fa-plug text-xs"></i> Testar Validade do Token
+                        </button>
+                    </div>
+
+                    <!-- 2. TikTok -->
+                    <div class="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fab fa-tiktok text-gray-900 dark:text-white text-lg"></i>
+                                <span class="font-extrabold text-sm text-gray-900 dark:text-white">TikTok Content Posting API</span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">Configuração Pendente</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">Client Key</label>
+                                <input type="text" id="cfg-tiktok-client-key" placeholder="Client Key do TikTok"
+                                    class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">Client Secret</label>
+                                <input type="password" id="cfg-tiktok-client-secret" placeholder="Client Secret do TikTok"
+                                    class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. YouTube -->
+                    <div class="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fab fa-youtube text-red-600 text-lg"></i>
+                                <span class="font-extrabold text-sm text-gray-900 dark:text-white">YouTube Data API v3</span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">Configuração Pendente</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">OAuth Client ID</label>
+                                <input type="text" id="cfg-yt-client-id" placeholder="Client ID do Google"
+                                    class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400">OAuth Refresh Token</label>
+                                <input type="password" id="cfg-yt-refresh-token" placeholder="Refresh Token do Canal"
+                                    class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="p-6 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-black/20">
+                    <button type="button" id="cancel-config-modal-btn"
+                        class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                        Fechar
+                    </button>
+                    <button type="button" id="save-config-btn"
+                        class="px-6 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primary-dark text-black transition-all shadow-md">
+                        Salvar Configurações
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Main Logic Script -->
+    <script type="module" src="redes-sociais.js"></script>
+</body>
+
+</html>

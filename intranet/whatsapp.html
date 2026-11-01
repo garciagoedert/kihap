@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    
+    <title>Kihap - Atendimento WhatsApp</title>
+    <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        html, body {
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar for modern WhatsApp look */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.6);
+        }
+
+        /* WhatsApp chat bubbles */
+        .chat-bubble {
+            position: relative;
+            max-width: 78%;
+            border-radius: 14px;
+            padding: 10px 14px;
+            font-size: 0.875rem;
+            line-height: 1.35;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            word-wrap: break-word;
+        }
+        .chat-bubble.sent {
+            background: #dcf8c6;
+            color: #111827;
+            border-bottom-right-radius: 3px;
+        }
+        .dark .chat-bubble.sent {
+            background: #005c4b;
+            color: #f3f4f6;
+        }
+        .chat-bubble.received {
+            background: #ffffff;
+            color: #111827;
+            border-bottom-left-radius: 3px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .dark .chat-bubble.received {
+            background: #202c33;
+            color: #f3f4f6;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-wallpaper {
+            background-image: radial-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .dark .chat-wallpaper {
+            background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 0);
+            background-size: 24px 24px;
+            background-color: #0b141a;
+        }
+
+        /* Oculta o widget flutuante do Kobe nesta página para desimpedir o envio de mensagens */
+        #global-kobe-chatbot,
+        #aiChatToggle,
+        #aiChatWindow {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-gray-100 h-screen overflow-hidden flex flex-col antialiased">
+    <!-- Header Container (injected by common-ui, permanently fixed) -->
+    <div id="header-container" class="flex-shrink-0 z-20"></div>
+
+    <div class="flex flex-1 min-h-0 overflow-hidden relative">
+        <!-- Sidebar Container (injected by common-ui) -->
+        <div id="sidebar-container" class="flex-shrink-0"></div>
+
+        <!-- Main Content Area: WhatsApp Web View -->
+        <main class="flex-1 flex flex-col md:ml-72 min-h-0 h-full overflow-hidden p-2 sm:p-3 md:p-4">
+            <div class="w-full h-full min-h-0 bg-white dark:bg-[#151515] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl flex overflow-hidden">
+                
+                <!-- Left Pane: Conversations List (Fixed height, internal scroll) -->
+                <aside id="chatListPane" class="w-full md:w-96 lg:w-[410px] flex-shrink-0 flex flex-col min-h-0 h-full border-r border-gray-150 dark:border-gray-800 bg-gray-50/70 dark:bg-[#161719] overflow-hidden">
+                    <!-- Pane Header (Fixed) -->
+                    <div class="p-3.5 bg-white dark:bg-[#1a1c1e] border-b border-gray-150 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold shadow-sm">
+                                <i class="fab fa-whatsapp text-xl"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-sm font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                                    Atendimento WhatsApp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                        Oficial
+                                    </span>
+                                </h1>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">Meta Cloud API em Tempo Real</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button id="refreshChatsBtn" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Atualizar lista">
+                                <i class="fas fa-sync-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters (Fixed) -->
+                    <div class="p-3 bg-white dark:bg-[#181a1c] border-b border-gray-150 dark:border-gray-800 space-y-2.5 flex-shrink-0">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input type="text" id="chatSearchInput" placeholder="Buscar por nome, telefone ou unidade..."
+                                class="w-full bg-gray-100 dark:bg-gray-850 border border-transparent focus:border-emerald-500 dark:focus:border-emerald-500 rounded-xl pl-9 pr-8 py-2 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                            <button id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </div>
+
+                        <!-- Filter Chips -->
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar text-[11px]">
+                            <button class="filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-emerald-500 text-white shadow-sm transition-all" data-filter="all">
+                                Todos (<span id="totalChatsCount">0</span>)
+                            </button>
+                            <button class="filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all" data-filter="unread">
+                                Não Lidos (<span id="unreadChatsCount">0</span>)
+                            </button>
+                            <button class="filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all" data-filter="human">
+                                👤 Humano
+                            </button>
+                            <button class="filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all" data-filter="ai">
+                                🤖 IA Miles
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Conversations Scroll List (Scrolls cleanly inside this container) -->
+                    <div id="chatsListContainer" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <div class="p-8 text-center text-gray-400 dark:text-gray-500 text-xs flex flex-col items-center justify-center h-full">
+                            <i class="fas fa-spinner fa-spin text-2xl text-emerald-500 mb-2"></i>
+                            Carregando conversas do WhatsApp...
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right Pane: Active Chat Room -->
+                <section id="chatRoomPane" class="flex-1 flex flex-col min-h-0 h-full bg-white dark:bg-[#121416] overflow-hidden">
+                    <!-- Empty State (No Chat Selected) -->
+                    <div id="noChatSelected" class="flex-1 min-h-0 flex flex-col items-center justify-center p-8 text-center bg-gray-50/50 dark:bg-[#121416] chat-wallpaper select-none">
+                        <div class="w-20 h-20 rounded-3xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-4xl mb-4 shadow-sm">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-800 dark:text-white tracking-tight mb-1">Central de Atendimento WhatsApp</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
+                            Selecione uma conversa à esquerda para responder em tempo real, pausar a IA ou atualizar o funil no CRM Kihap.
+                        </p>
+                    </div>
+
+                    <!-- Active Chat View (Hidden initially) -->
+                    <div id="activeChatWrapper" class="hidden flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+                        <!-- Chat Header -->
+                        <div class="p-3.5 bg-white dark:bg-[#1a1c1e] border-b border-gray-150 dark:border-gray-800 flex items-center justify-between gap-3 shadow-sm z-10 flex-shrink-0">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <button id="backToListBtn" class="md:hidden text-gray-500 hover:text-gray-700 dark:hover:text-white p-1.5 -ml-1">
+                                    <i class="fas fa-arrow-left"></i>
+                                </button>
+                                <div id="activeChatAvatar" class="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 font-bold flex items-center justify-center text-sm uppercase flex-shrink-0">
+                                    KH
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <h2 id="activeChatName" class="text-sm font-bold text-gray-900 dark:text-white truncate">Nome do Lead</h2>
+                                        <span id="activeChatStageBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                            Novo
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span id="activeChatPhone">55 48 99999-9999</span>
+                                        <span>•</span>
+                                        <span id="activeChatUnit" class="truncate">Unidade</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Controls in Header -->
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <!-- AI Mode Toggle -->
+                                <button id="toggleAiModeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200" title="Alternar entre atendimento da IA Miles e Atendimento Humano">
+                                    <i class="fas fa-robot text-xs"></i>
+                                    <span id="aiModeLabel">IA Miles</span>
+                                </button>
+
+                                <!-- Quick Stage Selector -->
+                                <div class="relative">
+                                    <select id="quickStageSelect" class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer">
+                                        <option value="Novo">Novo</option>
+                                        <option value="Contactado">Contactado</option>
+                                        <option value="Aula experimental">Aula Experimental</option>
+                                        <option value="Matrícula">Matrícula (Ganha)</option>
+                                        <option value="Perdido">Perdido</option>
+                                    </select>
+                                </div>
+
+                                <!-- Open Prospect Card in CRM -->
+                                <button id="openInCrmBtn" class="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 text-xs font-semibold flex items-center gap-1 transition-all" title="Ver card completo no Kanban">
+                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                    <span class="hidden lg:inline">Ver no CRM</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages Area (Scrolls cleanly inside this container) -->
+                        <div id="messagesArea" class="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto space-y-3 custom-scrollbar chat-wallpaper">
+                            <!-- Messages will be injected here -->
+                        </div>
+
+                        <!-- Quick Responses / Templates Bar (Fixed) -->
+                        <div class="px-3 pt-2 pb-1 bg-white dark:bg-[#181a1c] border-t border-gray-100 dark:border-gray-800/80 flex items-center gap-1.5 overflow-x-auto custom-scrollbar text-[11px] flex-shrink-0">
+                            <span class="text-gray-400 font-medium whitespace-nowrap text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                <i class="fas fa-bolt text-yellow-500"></i> Rápidas:
+                            </span>
+                            <button class="template-reply-btn px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all"
+                                data-text="Olá! Que alegria receber seu contato na Kihap Artes Marciais! Como posso ajudar você hoje? 🥋">
+                                👋 Boas-vindas
+                            </button>
+                            <button class="template-reply-btn px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all"
+                                data-text="Oferecemos uma aula experimental gratuita para você conhecer nossa metodologia e nossos professores! Qual dia e período fica melhor para você? 🥊">
+                                🥋 Aula Gratuita
+                            </button>
+                            <button class="template-reply-btn px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all"
+                                data-text="Temos unidades completas em Florianópolis (Centro, Trindade, Coqueiros), Kobrasol e Palhoça. Qual delas fica mais conveniente para sua rotina? 📍">
+                                📍 Nossas Unidades
+                            </button>
+                            <button class="template-reply-btn px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all"
+                                data-text="Nossos planos são flexíveis e personalizados para seu objetivo (disciplina, condicionamento físico, defesa pessoal). Você tem interesse para você ou para um familiar? 🥇">
+                                💰 Planos
+                            </button>
+                        </div>
+
+                        <!-- Chat Input Box -->
+                        <div class="p-3 bg-white dark:bg-[#1a1c1e] border-t border-gray-150 dark:border-gray-800 flex items-center gap-2">
+                            <textarea id="messageInput" rows="1" placeholder="Digite sua mensagem (Pressione Enter para enviar)..."
+                                class="flex-1 bg-gray-100 dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none max-h-32 custom-scrollbar"></textarea>
+                            <button id="sendMessageBtn"
+                                class="w-11 h-11 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-600/20 transition-all duration-200 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Enviar mensagem">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, doc, getDoc, onSnapshot, updateDoc, setDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { db, app, functions } from './firebase-config.js';
+        import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { setupUIListeners, loadComponents } from './common-ui.js';
+
+        const auth = getAuth(app);
+        const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
+
+        // State
+        let allChats = [];
+        let filteredChats = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let activeChat = null;
+        let unsubscribeActiveChat = null;
+        let leadsCache = new Map();
+
+        // DOM Elements
+        const chatListPane = document.getElementById('chatListPane');
+        const chatRoomPane = document.getElementById('chatRoomPane');
+        const chatsListContainer = document.getElementById('chatsListContainer');
+        const noChatSelected = document.getElementById('noChatSelected');
+        const activeChatWrapper = document.getElementById('activeChatWrapper');
+        const chatSearchInput = document.getElementById('chatSearchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const totalChatsCount = document.getElementById('totalChatsCount');
+        const unreadChatsCount = document.getElementById('unreadChatsCount');
+        const refreshChatsBtn = document.getElementById('refreshChatsBtn');
+        const backToListBtn = document.getElementById('backToListBtn');
+        
+        const activeChatAvatar = document.getElementById('activeChatAvatar');
+        const activeChatName = document.getElementById('activeChatName');
+        const activeChatPhone = document.getElementById('activeChatPhone');
+        const activeChatUnit = document.getElementById('activeChatUnit');
+        const activeChatStageBadge = document.getElementById('activeChatStageBadge');
+        const toggleAiModeBtn = document.getElementById('toggleAiModeBtn');
+        const quickStageSelect = document.getElementById('quickStageSelect');
+        const openInCrmBtn = document.getElementById('openInCrmBtn');
+        const messagesArea = document.getElementById('messagesArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+
+        // Check Authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (localStorage.getItem('isLoggedIn') === 'true') {
+                    initApp();
+                } else {
+                    window.location.href = 'login.html';
+                }
+            } else {
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) {
+                    console.error("Auth error:", e);
+                }
+            }
+        });
+
+        function initApp() {
+            loadComponents(() => {
+                setupUIListeners();
+                const kobe = document.getElementById('global-kobe-chatbot') || document.getElementById('aiChatToggle');
+                if (kobe) kobe.remove();
+            });
+
+            // Listen to Leads & Prospects for enrichment
+            listenToCrmData();
+
+            // Listen to WhatsApp Chats collection in real time
+            listenToWhatsAppChats();
+
+            // Setup Event Handlers
+            setupEventHandlers();
+
+            // Check if phone parameter exists in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetPhone = urlParams.get('phone');
+            if (targetPhone) {
+                setTimeout(() => openChatByPhone(targetPhone), 600);
+            }
+        }
+
+        function setupEventHandlers() {
+            // Search Input
+            chatSearchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase().trim();
+                clearSearchBtn.classList.toggle('hidden', searchQuery.length === 0);
+                applyFilters();
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                chatSearchInput.value = '';
+                searchQuery = '';
+                clearSearchBtn.classList.add('hidden');
+                applyFilters();
+                chatSearchInput.focus();
+            });
+
+            // Filter Chips
+            document.querySelectorAll('.filter-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-chip').forEach(b => {
+                        b.className = 'filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all';
+                    });
+                    btn.className = 'filter-chip px-3 py-1 rounded-full font-medium whitespace-nowrap bg-emerald-500 text-white shadow-sm transition-all';
+                    currentFilter = btn.dataset.filter;
+                    applyFilters();
+                });
+            });
+
+            refreshChatsBtn.addEventListener('click', () => {
+                refreshChatsBtn.classList.add('animate-spin');
+                setTimeout(() => refreshChatsBtn.classList.remove('animate-spin'), 600);
+            });
+
+            backToListBtn.addEventListener('click', () => {
+                chatListPane.classList.remove('hidden');
+                chatRoomPane.classList.add('hidden');
+            });
+
+            // Message Sending
+            sendMessageBtn.addEventListener('click', handleSendMessage);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+
+            // Quick Reply Templates
+            document.querySelectorAll('.template-reply-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const text = btn.dataset.text;
+                    messageInput.value = text;
+                    messageInput.focus();
+                });
+            });
+
+            // Toggle AI Mode
+            toggleAiModeBtn.addEventListener('click', handleToggleAiMode);
+
+            // Change Funnel Stage
+            quickStageSelect.addEventListener('change', handleQuickStageChange);
+
+            // Open in CRM
+            openInCrmBtn.addEventListener('click', () => {
+                if (activeChat?.lastLeadId) {
+                    window.open(`prospeccao.html?prospectId=${activeChat.lastLeadId}`, '_blank');
+                } else {
+                    window.open('prospeccao.html', '_blank');
+                }
+            });
+        }
+
+        // Phone and Date Utilities
+        function getPhoneVariations(phone) {
+            if (!phone) return [];
+            const digits = String(phone).replace(/\D/g, '');
+            if (!digits) return [];
+            const variations = new Set();
+            variations.add(digits);
+            let sans55 = digits;
+            if (digits.startsWith('55') && digits.length >= 12) {
+                sans55 = digits.slice(2);
+                variations.add(sans55);
+            } else {
+                variations.add('55' + digits);
+            }
+            if (sans55.length === 10) {
+                const with9 = sans55.slice(0, 2) + '9' + sans55.slice(2);
+                variations.add(with9);
+                variations.add('55' + with9);
+            } else if (sans55.length === 11) {
+                const without9 = sans55.slice(0, 2) + sans55.slice(3);
+                variations.add(without9);
+                variations.add('55' + without9);
+            }
+            return Array.from(variations);
+        }
+
+        function getAvatarGradient(str) {
+            const gradients = [
+                'bg-gradient-to-tr from-emerald-600 to-teal-500',
+                'bg-gradient-to-tr from-blue-600 to-indigo-500',
+                'bg-gradient-to-tr from-purple-600 to-pink-500',
+                'bg-gradient-to-tr from-amber-500 to-orange-500',
+                'bg-gradient-to-tr from-rose-500 to-red-600',
+                'bg-gradient-to-tr from-cyan-500 to-blue-600',
+                'bg-gradient-to-tr from-violet-600 to-indigo-700',
+                'bg-gradient-to-tr from-fuchsia-600 to-purple-600'
+            ];
+            if (!str) return gradients[0];
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % gradients.length;
+            return gradients[index];
+        }
+
+        function getContactPhoto(chat, crmLead) {
+            const candidate = (
+                chat?.photoUrl ||
+                chat?.data?.photoUrl ||
+                chat?.data?.profilePicUrl ||
+                chat?.data?.photoURL ||
+                chat?.data?.avatarUrl ||
+                crmLead?.photoURL ||
+                crmLead?.photoUrl ||
+                crmLead?.profilePic ||
+                crmLead?.profilePicture ||
+                crmLead?.avatarUrl ||
+                crmLead?.foto ||
+                crmLead?.photo ||
+                null
+            );
+            if (typeof candidate === 'string' && candidate.trim() && (candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('data:image/'))) {
+                return candidate.trim();
+            }
+            return null;
+        }
+
+        function registerLeadInCache(leadData) {
+            if (!leadData) return;
+            const rawPhones = [
+                leadData.telefone,
+                leadData.phone,
+                leadData.celular,
+                leadData.whatsapp,
+                leadData.telephone
+            ].filter(Boolean);
+
+            rawPhones.forEach(p => {
+                const variations = getPhoneVariations(p);
+                variations.forEach(k => {
+                    const existing = leadsCache.get(k) || {};
+                    const leadName = leadData.nome || leadData.responsavel || leadData.name;
+                    const merged = { ...existing, ...leadData };
+                    if (leadData.sourceCollection === 'leads' && leadName) {
+                        merged.nome = leadName;
+                        merged.responsavel = leadName;
+                    }
+                    if (existing.unidade && !leadData.unidade) {
+                        merged.unidade = existing.unidade;
+                    }
+                    if (existing.status && existing.status !== 'Novo' && leadData.status === 'Novo') {
+                        merged.status = existing.status;
+                    }
+                    leadsCache.set(k, merged);
+                });
+            });
+        }
+
+        function getLeadFromCache(phone) {
+            if (!phone) return null;
+            const variations = getPhoneVariations(phone);
+            for (const v of variations) {
+                if (leadsCache.has(v)) return leadsCache.get(v);
+            }
+            return null;
+        }
+
+        function parseSafeDate(val) {
+            if (!val) return new Date(0);
+            if (typeof val?.toDate === 'function') {
+                try { return val.toDate(); } catch (e) { return new Date(0); }
+            }
+            if (val instanceof Date) return val;
+            if (typeof val === 'number') return new Date(val);
+            if (val.seconds !== undefined) return new Date(val.seconds * 1000);
+            if (typeof val === 'string') {
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? new Date(0) : d;
+            }
+            return new Date(0);
+        }
+
+        // Listen to CRM Leads, Prospects and Users to correlate data and profile photos
+        function listenToCrmData() {
+            onSnapshot(collection(db, 'prospects'), (snapshot) => {
+                snapshot.forEach(docSnap => {
+                    const data = { id: docSnap.id, ...docSnap.data(), sourceCollection: 'prospects' };
+                    registerLeadInCache(data);
+                });
+                applyFilters();
+            }, (err) => console.warn("Error listening to prospects:", err));
+
+            onSnapshot(collection(db, 'leads'), (snapshot) => {
+                snapshot.forEach(docSnap => {
+                    const data = { id: docSnap.id, ...docSnap.data(), sourceCollection: 'leads' };
+                    registerLeadInCache(data);
+                });
+                applyFilters();
+            }, (err) => console.warn("Error listening to leads:", err));
+
+            // Also listen to users collection to correlate existing students, parents and staff photos!
+            onSnapshot(collection(db, 'users'), (snapshot) => {
+                snapshot.forEach(docSnap => {
+                    const data = { id: docSnap.id, ...docSnap.data(), sourceCollection: 'users' };
+                    registerLeadInCache(data);
+                });
+                applyFilters();
+            }, (err) => console.warn("Error listening to users:", err));
+        }
+
+        // Listen to all whatsapp_chats
+        function listenToWhatsAppChats() {
+            const chatsCol = collection(db, 'whatsapp_chats');
+            onSnapshot(chatsCol, (snapshot) => {
+                allChats = [];
+                let unreadCount = 0;
+
+                snapshot.forEach(docSnap => {
+                    try {
+                        const data = docSnap.data();
+                        const phone = docSnap.id;
+                        const history = data.history || [];
+                        const lastMsgObj = history.length > 0 ? history[history.length - 1] : null;
+                        
+                        let lastMessageText = data.lastMessage || '';
+                        if (!lastMessageText && lastMsgObj) {
+                            const parts = lastMsgObj.parts || [];
+                            lastMessageText = parts.map(p => p.text).filter(Boolean).join(' ') || '';
+                        }
+
+                        const isUnread = data.unread === true || (lastMsgObj && lastMsgObj.role === 'user' && !data.read);
+                        if (isUnread) unreadCount++;
+
+                        allChats.push({
+                            phone: phone,
+                            data: data,
+                            customerName: data.customerName || '',
+                            photoUrl: data.photoUrl || data.profilePicUrl || data.photoURL || data.avatarUrl || null,
+                            mode: data.mode || 'miles',
+                            humanMode: data.humanMode === true || data.mode === 'human',
+                            lastMessage: lastMessageText,
+                            lastLeadId: data.lastLeadId || null,
+                            unread: isUnread,
+                            updatedAt: parseSafeDate(data.updatedAt)
+                        });
+                    } catch (err) {
+                        console.warn("Skipping corrupt chat doc:", docSnap.id, err);
+                    }
+                });
+
+                // Sort by most recent
+                allChats.sort((a, b) => b.updatedAt - a.updatedAt);
+
+                totalChatsCount.textContent = allChats.length;
+                unreadChatsCount.textContent = unreadCount;
+
+                // Update sidebar badge if present
+                const sidebarBadge = document.getElementById('sidebar-whatsapp-badge');
+                if (sidebarBadge) {
+                    if (unreadCount > 0) {
+                        sidebarBadge.textContent = unreadCount;
+                        sidebarBadge.classList.remove('hidden');
+                    } else {
+                        sidebarBadge.classList.add('hidden');
+                    }
+                }
+
+                applyFilters();
+
+                // If currently viewed chat was updated, refresh details
+                if (activeChat) {
+                    const variations = getPhoneVariations(activeChat.phone);
+                    const updated = allChats.find(c => {
+                        const cVars = getPhoneVariations(c.phone);
+                        return variations.some(v => cVars.includes(v));
+                    });
+                    if (updated) {
+                        activeChat = updated;
+                        updateChatHeaderUI();
+                    }
+                }
+            }, (error) => {
+                console.error("Error listening to chats:", error);
+                chatsListContainer.innerHTML = `<div class="p-6 text-center text-red-500 text-xs">Erro ao carregar conversas: ${error.message}</div>`;
+            });
+        }
+
+        function applyFilters() {
+            filteredChats = allChats.filter(chat => {
+                // Filter Chip criteria
+                if (currentFilter === 'unread' && !chat.unread) return false;
+                if (currentFilter === 'human' && !chat.humanMode) return false;
+                if (currentFilter === 'ai' && chat.humanMode) return false;
+
+                // Search criteria
+                if (searchQuery) {
+                    const crmLead = getLeadFromCache(chat.phone) || {};
+                    const name = (crmLead.responsavel || crmLead.nome || chat.customerName || '').toLowerCase();
+                    const phone = chat.phone.toLowerCase();
+                    const unit = (crmLead.unidade || '').toLowerCase();
+                    const lastMsg = (chat.lastMessage || '').toLowerCase();
+
+                    const matches = name.includes(searchQuery) ||
+                                    phone.includes(searchQuery) ||
+                                    unit.includes(searchQuery) ||
+                                    lastMsg.includes(searchQuery);
+                    if (!matches) return false;
+                }
+
+                return true;
+            });
+
+            renderChatsList();
+        }
+
+        function renderChatsList() {
+            if (filteredChats.length === 0) {
+                chatsListContainer.innerHTML = `
+                    <div class="p-8 text-center text-gray-400 dark:text-gray-500 text-xs">
+                        <i class="fas fa-comment-slash text-2xl mb-2 opacity-50 block"></i>
+                        Nenhuma conversa encontrada com os filtros atuais.
+                    </div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            filteredChats.forEach(chat => {
+                const crmLead = getLeadFromCache(chat.phone) || {};
+                const displayName = crmLead.responsavel || crmLead.nome || crmLead.name || chat.customerName || 'Lead WhatsApp';
+                const unit = crmLead.unidade || crmLead.userUnit || 'Sem Unidade';
+                const stage = crmLead.status || 'Novo';
+                const isSelected = activeChat && activeChat.phone === chat.phone;
+                const photoUrl = getContactPhoto(chat, crmLead);
+                const initials = getInitials(displayName);
+                const gradientClass = getAvatarGradient(displayName || chat.phone);
+                const timeStr = formatTimestamp(chat.updatedAt);
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 flex items-start gap-3 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800/40 hover:bg-gray-100/70 dark:hover:bg-gray-855/50 ${isSelected ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-l-4 border-l-emerald-500' : ''}`;
+
+                card.innerHTML = `
+                    <div class="w-11 h-11 rounded-full flex-shrink-0 relative overflow-hidden shadow-sm flex items-center justify-center select-none ${isSelected ? 'ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-gray-900' : ''}">
+                        ${photoUrl ? `
+                            <img src="${escapeHtml(photoUrl)}" 
+                                 alt="${escapeHtml(displayName)}"
+                                 class="w-full h-full object-cover"
+                                 loading="lazy"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                            <div class="hidden w-full h-full items-center justify-center font-bold text-xs uppercase text-white ${gradientClass}">
+                                ${initials}
+                            </div>
+                        ` : `
+                            <div class="w-full h-full flex items-center justify-center font-bold text-xs uppercase text-white ${gradientClass}">
+                                ${initials}
+                            </div>
+                        `}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                            <h3 class="text-xs font-bold text-gray-900 dark:text-white truncate ${chat.unread ? 'font-extrabold' : ''}">
+                                ${escapeHtml(displayName)}
+                            </h3>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">${timeStr}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 mb-1.5">
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-gray-150 dark:bg-gray-800 text-gray-600 dark:text-gray-300 truncate max-w-[120px]">
+                                ${escapeHtml(unit)}
+                            </span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold ${getStageBadgeClass(stage)}">
+                                ${escapeHtml(stage)}
+                            </span>
+                            <span class="ml-auto text-[10px]">
+                                ${chat.humanMode ? '👤 <span class="text-amber-500 font-semibold">Humano</span>' : '🤖 <span class="text-emerald-500 font-semibold">Miles</span>'}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate ${chat.unread ? 'font-semibold text-gray-800 dark:text-gray-200' : ''}">
+                            ${escapeHtml(chat.lastMessage || 'Nenhuma mensagem recente')}
+                        </p>
+                    </div>
+                    ${chat.unread ? '<div class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1 shadow-sm animate-pulse"></div>' : ''}
+                `;
+
+                card.addEventListener('click', () => {
+                    openChat(chat);
+                });
+
+                fragment.appendChild(card);
+            });
+
+            chatsListContainer.innerHTML = '';
+            chatsListContainer.appendChild(fragment);
+        }
+
+        // Open chat room
+        function openChat(chat) {
+            activeChat = chat;
+            
+            // Mark chat as read in Firestore
+            if (chat.unread) {
+                const chatRef = doc(db, 'whatsapp_chats', chat.phone);
+                updateDoc(chatRef, { unread: false }).catch(() => {});
+            }
+
+            // On mobile, hide list pane and show chat room
+            if (window.innerWidth < 768) {
+                chatListPane.classList.add('hidden');
+                chatRoomPane.classList.remove('hidden');
+            }
+
+            noChatSelected.classList.add('hidden');
+            activeChatWrapper.classList.remove('hidden');
+
+            renderChatsList();
+            updateChatHeaderUI();
+            listenToChatMessages(chat.phone);
+        }
+
+        function openChatByPhone(rawPhone) {
+            const variations = getPhoneVariations(rawPhone);
+            const found = allChats.find(c => {
+                const cVars = getPhoneVariations(c.phone);
+                return variations.some(v => cVars.includes(v));
+            });
+            if (found) {
+                openChat(found);
+                return;
+            }
+
+            // If not yet in allChats, check if exists in CRM leads
+            const crmLead = getLeadFromCache(rawPhone);
+            if (crmLead) {
+                const clean = cleanPhone(rawPhone);
+                const newChatObj = {
+                    phone: clean,
+                    data: {},
+                    customerName: crmLead.responsavel || crmLead.nome || 'Lead WhatsApp',
+                    mode: 'miles',
+                    humanMode: false,
+                    lastMessage: '',
+                    lastLeadId: crmLead.id,
+                    unread: false,
+                    updatedAt: new Date()
+                };
+                allChats.unshift(newChatObj);
+                renderChatsList();
+                openChat(newChatObj);
+            }
+        }
+
+        function updateChatHeaderUI() {
+            if (!activeChat) return;
+
+            const crmLead = getLeadFromCache(activeChat.phone) || {};
+            const displayName = crmLead.responsavel || crmLead.nome || crmLead.name || activeChat.customerName || 'Lead WhatsApp';
+            const unit = crmLead.unidade || crmLead.userUnit || 'Sem Unidade Definida';
+            const stage = crmLead.status || 'Novo';
+            const photoUrl = getContactPhoto(activeChat, crmLead);
+            const initials = getInitials(displayName);
+            const gradientClass = getAvatarGradient(displayName || activeChat.phone);
+
+            if (photoUrl) {
+                activeChatAvatar.className = 'w-10 h-10 rounded-full relative overflow-hidden flex-shrink-0 shadow-md flex items-center justify-center bg-gray-100 dark:bg-gray-800';
+                activeChatAvatar.innerHTML = `
+                    <img src="${escapeHtml(photoUrl)}" 
+                         alt="${escapeHtml(displayName)}"
+                         class="w-full h-full object-cover" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                    <div class="hidden w-full h-full items-center justify-center font-bold text-sm uppercase text-white ${gradientClass}">
+                        ${initials}
+                    </div>
+                `;
+            } else {
+                activeChatAvatar.className = `w-10 h-10 rounded-full text-white font-bold flex items-center justify-center text-sm shadow-md flex-shrink-0 ${gradientClass}`;
+                activeChatAvatar.textContent = initials;
+            }
+
+            activeChatName.textContent = displayName;
+            activeChatPhone.textContent = formatPhone(activeChat.phone);
+            activeChatUnit.textContent = unit;
+
+            activeChatStageBadge.textContent = stage;
+            activeChatStageBadge.className = `px-2 py-0.5 rounded-full text-[10px] font-semibold ${getStageBadgeClass(stage)}`;
+            activeChatStageBadge.classList.remove('hidden');
+
+            quickStageSelect.value = stage;
+
+            // Update AI Mode Toggle State
+            if (activeChat.humanMode) {
+                toggleAiModeBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all';
+                toggleAiModeBtn.innerHTML = '<i class="fas fa-user-check text-xs"></i> <span>Modo Humano (IA Pausada)</span>';
+            } else {
+                toggleAiModeBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all';
+                toggleAiModeBtn.innerHTML = '<i class="fas fa-robot text-xs animate-pulse"></i> <span>IA Miles Ativa</span>';
+            }
+        }
+
+        // Listen in real-time to active chat's document
+        function listenToChatMessages(phone) {
+            if (unsubscribeActiveChat) {
+                unsubscribeActiveChat();
+            }
+
+            messagesArea.innerHTML = '<div class="text-center text-gray-400 text-xs py-10"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando mensagens...</div>';
+
+            const chatDocRef = doc(db, 'whatsapp_chats', phone);
+            unsubscribeActiveChat = onSnapshot(chatDocRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    messagesArea.innerHTML = '<div class="text-center text-gray-400 text-xs py-10">Nenhuma mensagem registrada nesta conversa.</div>';
+                    return;
+                }
+
+                const data = docSnap.data();
+                const history = data.history || [];
+
+                renderMessages(history);
+            }, (err) => {
+                console.error("Error listening to active chat:", err);
+                messagesArea.innerHTML = `<div class="text-center text-red-500 text-xs py-10">Erro ao carregar mensagens: ${err.message}</div>`;
+            });
+        }
+
+        function renderMessages(history) {
+            if (history.length === 0) {
+                messagesArea.innerHTML = `
+                    <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-12">
+                        <i class="fab fa-whatsapp text-4xl mb-2 text-emerald-500/30 block"></i>
+                        Inicie o atendimento com este lead! Envie uma mensagem abaixo.
+                    </div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            history.forEach(msg => {
+                const isSent = msg.role === 'model'; // sent by AI or agent
+                const parts = msg.parts || [];
+                const text = parts.map(p => p.text).filter(Boolean).join('\n');
+
+                if (!text) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex w-full ${isSent ? 'justify-end' : 'justify-start'}`;
+
+                const bubble = document.createElement('div');
+                bubble.className = `chat-bubble ${isSent ? 'sent' : 'received'}`;
+
+                // Parse links
+                const formattedText = escapeHtml(text).replace(
+                    /(https?:\/\/[^\s]+)/g,
+                    '<a href="$1" target="_blank" class="text-blue-500 dark:text-blue-400 underline break-all">$1</a>'
+                );
+
+                bubble.innerHTML = `
+                    <div class="whitespace-pre-wrap">${formattedText}</div>
+                    <div class="text-[9px] text-right mt-1 opacity-60 select-none flex items-center justify-end gap-1">
+                        ${isSent ? '<i class="fas fa-check-double text-[8px] text-emerald-600 dark:text-emerald-400"></i>' : ''}
+                    </div>
+                `;
+
+                wrapper.appendChild(bubble);
+                fragment.appendChild(wrapper);
+            });
+
+            messagesArea.innerHTML = '';
+            messagesArea.appendChild(fragment);
+
+            // Auto-scroll to bottom
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // Send Message Handler
+        async function handleSendMessage() {
+            if (!activeChat) return;
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            messageInput.disabled = true;
+            sendMessageBtn.disabled = true;
+            const originalIcon = sendMessageBtn.innerHTML;
+            sendMessageBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const targetPhone = activeChat.phone;
+                const prospectId = activeChat.lastLeadId || 'direct';
+
+                await sendWhatsAppMessage({
+                    prospectId: prospectId,
+                    phone: targetPhone,
+                    message: text
+                });
+
+                messageInput.value = '';
+                messageInput.focus();
+            } catch (err) {
+                console.error("Error sending message:", err);
+                alert(`Erro ao enviar mensagem: ${err.message}`);
+            } finally {
+                messageInput.disabled = false;
+                sendMessageBtn.disabled = false;
+                sendMessageBtn.innerHTML = originalIcon;
+                messageInput.focus();
+            }
+        }
+
+        // Toggle AI Mode (Human takeover vs Miles)
+        async function handleToggleAiMode() {
+            if (!activeChat) return;
+
+            const nextHumanMode = !activeChat.humanMode;
+            const nextMode = nextHumanMode ? 'human' : 'miles';
+
+            try {
+                const chatDocRef = doc(db, 'whatsapp_chats', activeChat.phone);
+                await updateDoc(chatDocRef, {
+                    humanMode: nextHumanMode,
+                    mode: nextMode,
+                    updatedAt: serverTimestamp()
+                });
+
+                activeChat.humanMode = nextHumanMode;
+                activeChat.mode = nextMode;
+                updateChatHeaderUI();
+                renderChatsList();
+            } catch (err) {
+                console.error("Error toggling AI mode:", err);
+                alert(`Erro ao alterar modo da IA: ${err.message}`);
+            }
+        }
+
+        // Quick Stage Change
+        async function handleQuickStageChange(e) {
+            if (!activeChat || !activeChat.lastLeadId) return;
+
+            const newStage = e.target.value;
+            const leadId = activeChat.lastLeadId;
+
+            try {
+                // Try updating prospect first
+                const prospectRef = doc(db, 'prospects', leadId);
+                const snap = await getDoc(prospectRef);
+                if (snap.exists()) {
+                    await updateDoc(prospectRef, { status: newStage, updatedAt: serverTimestamp() });
+                } else {
+                    const leadRef = doc(db, 'leads', leadId);
+                    await updateDoc(leadRef, { status: newStage, updatedAt: serverTimestamp() });
+                }
+
+                activeChatStageBadge.textContent = newStage;
+                activeChatStageBadge.className = `px-2 py-0.5 rounded-full text-[10px] font-semibold ${getStageBadgeClass(newStage)}`;
+            } catch (err) {
+                console.error("Error updating stage:", err);
+                alert(`Erro ao atualizar fase: ${err.message}`);
+            }
+        }
+
+        // Utilities
+        function cleanPhone(raw) {
+            let clean = (raw || '').replace(/\D/g, '');
+            if (clean.length >= 10 && clean.length <= 11) {
+                clean = '55' + clean;
+            }
+            return clean;
+        }
+
+        function formatPhone(phone) {
+            const clean = phone.replace(/\D/g, '');
+            if (clean.length === 13 && clean.startsWith('55')) {
+                return `+55 (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
+            }
+            if (clean.length === 12 && clean.startsWith('55')) {
+                return `+55 (${clean.slice(2, 4)}) ${clean.slice(4, 8)}-${clean.slice(8)}`;
+            }
+            return phone;
+        }
+
+        function getInitials(name) {
+            if (!name) return 'KH';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return name.slice(0, 2).toUpperCase();
+        }
+
+        function formatTimestamp(date) {
+            if (!date || date.getTime() === 0) return '';
+            const now = new Date();
+            const isToday = now.toDateString() === date.toDateString();
+            if (isToday) {
+                return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            const isYesterday = new Date(now - 86400000).toDateString() === date.toDateString();
+            if (isYesterday) {
+                return 'Ontem';
+            }
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+
+        function getStageBadgeClass(stage) {
+            const map = {
+                'Novo': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+                'Contactado': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+                'Aula experimental': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+                'Matrícula': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+                'Ganha': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+                'Perdido': 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+            };
+            return map[stage] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

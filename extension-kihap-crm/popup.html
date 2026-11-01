@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Kihap CRM Extension</title>
+    <style>
+        body {
+            width: 320px;
+            margin: 0;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #111827;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .badge-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 700;
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 4px;
+            display: block;
+        }
+        input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 12px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #00a884;
+        }
+        .btn-primary {
+            background: #00a884;
+            color: white;
+            border: none;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .btn-primary:hover {
+            background: #008f6f;
+        }
+        .btn-outline {
+            background: #f9fafb;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 6px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        .btn-outline:hover {
+            background: #f3f4f6;
+        }
+        .footer {
+            margin-top: 10px;
+            font-size: 10px;
+            color: #9ca3af;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span style="font-size: 20px;">🥋</span>
+        <div>
+            <h1>Kihap CRM Web</h1>
+            <span class="badge-status">Conectado</span>
+        </div>
+    </div>
+
+    <label class="label">Endereço do CRM (Base URL):</label>
+    <input type="text" id="crmUrlInput" value="http://localhost:9000/intranet">
+    <button id="saveUrlBtn" class="btn-primary">Salvar Configuração</button>
+
+    <div style="margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+        <label class="label">Acessos Rápidos:</label>
+        <a href="https://web.whatsapp.com" target="_blank" class="btn-outline">Abrir WhatsApp Web</a>
+        <a id="linkCrmKanban" href="http://localhost:9000/intranet/prospeccao.html" target="_blank" class="btn-outline">Abrir CRM Kanban</a>
+        <a id="linkCrmWhats" href="http://localhost:9000/intranet/whatsapp.html" target="_blank" class="btn-outline">Abrir Central WhatsApp</a>
+    </div>
+
+    <div class="footer">
+        Kihap Artes Marciais • Extensão Oficial v1.0
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

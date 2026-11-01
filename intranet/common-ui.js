@@ -328,7 +328,7 @@ function isPageAllowedForUser(pageKey, user) {
     }
 
     // Marketing
-    const mktPages = ['prospeccao.html', 'trello.html', 'marketing.html', 'newsletter.html', 'comunicados.html', 'leads-analysis.html', 'marketing-social.html', 'marketing-google.html', 'arquivo.html'];
+    const mktPages = ['prospeccao.html', 'trello.html', 'marketing.html', 'newsletter.html', 'comunicados.html', 'leads-analysis.html', 'marketing-social.html', 'marketing-google.html', 'arquivo.html', 'redes-sociais.html'];
     if (mktPages.includes(pageKey)) {
         return isMarketing || isAdministrativo || isInstructor;
     }
@@ -1061,7 +1061,8 @@ async function loadComponents(pageSpecificSetup) {
                 'suporte.html',
                 'grade.html',
                 'relatorios.html',
-                'planificador.html'
+                'planificador.html',
+                'redes-sociais.html'
             ];
             if (pagesToHideButton.includes(currentPage)) {
                 addProspectBtn.classList.add('hidden');
@@ -1175,6 +1176,9 @@ Use essas ferramentas ativamente quando o usuário solicitar informações sobre
 
 function initGlobalKobeChatbot() {
     if (document.getElementById('aiChatToggle')) return; // Já injetado
+
+    // Não exibir na página de atendimento do WhatsApp para não cobrir a caixa de envio de mensagens
+    if (window.location.pathname.includes('whatsapp')) return;
 
     // Os botões rápidos de atendimento só devem ser exibidos na página do CRM/Prosecção
     const isCrmPage = window.location.pathname.includes('prospeccao') || window.location.pathname.includes('crm');
