@@ -270,27 +270,24 @@
             <div id="header-container" class="flex-shrink-0"></div>
 
             <!-- Board Content -->
-            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
-                <!-- Stats -->
-                <!-- Stats Removed -->
-
+            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-hidden">
                 <!-- Filters -->
-                <div class="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0 bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
+                <div class="flex flex-col sm:flex-row gap-2 mb-6 shrink-0">
                     <div class="relative flex-grow">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por empresa ou setor..."
-                            class="w-full bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                        <input type="text" id="searchInput" placeholder="Busca"
+                            class="w-full bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm dark:shadow-md transition-all">
                     </div>
                     <div class="flex gap-2">
                         <button id="openFiltersBtn"
-                            class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-2 transition-all">
+                            class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-md flex items-center gap-2 transition-all">
                             <i class="fas fa-filter text-primary"></i> <span class="hidden sm:inline">Filtros</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Kanban Board -->
-                <div id="kanban-board" class="flex flex-col md:grid md:grid-cols-5 lg:grid-cols-5 gap-4 flex-1 min-h-0">
+                <div id="kanban-board" class="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
                     <!-- Columns will be injected here by JS -->
                 </div>
             </div>
@@ -1353,56 +1350,42 @@
         }
 
         // --- RENDERING ---
+        const COLUMN_COLORS = {
+            'Novo': '#9ca3af',
+            'Contactado': '#3b82f6',
+            'Aula experimental': '#eab308',
+            'Matrícula': '#22c55e',
+            'Perdido': '#ef4444'
+        };
+
         function renderBoard() {
             kanbanBoard.innerHTML = '';
-            const isMobile = window.innerWidth < 768;
 
-                COLUMN_NAMES.forEach(status => {
-                    const columnId = COLUMNS[status];
-                    const columnProspects = filteredProspects.filter(p => p.status === status);
-                    const isPerdido = status === 'Perdido';
+            COLUMN_NAMES.forEach(status => {
+                const columnId = COLUMNS[status];
+                const columnProspects = filteredProspects.filter(p => p.status === status);
+                const colColor = COLUMN_COLORS[status] || '#9ca3af';
 
-                    const columnEl = document.createElement('div');
+                const columnEl = document.createElement('div');
+                columnEl.className = 'bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-sm dark:shadow-lg border border-gray-200 dark:border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0 transition-all';
+                columnEl.dataset.column = columnId;
 
-                    let contentHTML;
-                    if (isMobile) {
-                        columnEl.className = `bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col border ${isPerdido ? 'border-rose-200/70 dark:border-rose-900/40' : 'border-gray-100 dark:border-gray-800/50'} backdrop-blur-xl transition-all duration-300`;
-                        contentHTML = `
-                            <div class="overflow-x-auto pb-3">
-                                <div id="${columnId}" data-status="${status}" class="column-content flex flex-nowrap space-x-4 p-4 min-h-[120px]">
-                                    <!-- Cards will be injected here -->
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        columnEl.className = `bg-white/50 dark:bg-[#1a1a1a]/50 rounded-2xl flex flex-col overflow-hidden border ${isPerdido ? 'border-rose-200/70 dark:border-rose-900/40' : 'border-gray-100 dark:border-gray-800/50'} backdrop-blur-xl transition-all duration-300`;
-                        contentHTML = `
-                            <div id="${columnId}" data-status="${status}" class="column-content flex-grow p-4 space-y-4 rounded-md overflow-y-auto custom-scrollbar">
-                               <!-- Cards will be injected here -->
-                            </div>
-                        `;
-                    }
-
-                    const headerTitle = isPerdido
-                        ? `<h3 class="font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5 text-rose-600 dark:text-rose-400"><i class="fas fa-times-circle"></i> ${status}</h3>`
-                        : `<h3 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-[11px]">${status}</h3>`;
-
-                    const badgeClass = isPerdido
-                        ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
-                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700';
-
-                    columnEl.innerHTML = `
-                        <div class="flex justify-between items-center p-4 flex-shrink-0 border-b ${isPerdido ? 'border-rose-100/80 dark:border-rose-950/40 bg-rose-50/20 dark:bg-rose-950/10' : 'border-gray-100 dark:border-gray-800/50'}">
-                            ${headerTitle}
-                            <span class="${badgeClass} text-[10px] font-bold px-2 py-0.5 rounded-lg border">${columnProspects.length}</span>
+                columnEl.innerHTML = `
+                    <h2 class="font-bold mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center w-full shrink-0" style="color: ${colColor}">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="truncate" title="${status}">${status}</span>
+                            <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-1 px-2 rounded-full count shadow-inner shrink-0">${columnProspects.length}</span>
                         </div>
-                        ${contentHTML}
-                    `;
-                    kanbanBoard.appendChild(columnEl);
+                    </h2>
+                    <div id="${columnId}" data-status="${status}" class="column-content flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[200px]">
+                        <!-- Cards will be injected here -->
+                    </div>
+                `;
+                kanbanBoard.appendChild(columnEl);
 
                 const contentArea = columnEl.querySelector('.column-content');
                 if (columnProspects.length === 0) {
-                    contentArea.innerHTML = `<div class="text-center text-gray-500 p-4 text-sm flex-shrink-0 w-full">Nenhum card aqui</div>`;
+                    contentArea.innerHTML = `<div class="text-center text-gray-400 dark:text-gray-500 p-4 text-xs flex-shrink-0 w-full">Nenhum card aqui</div>`;
                 } else {
                     columnProspects
                         .sort((a, b) => {
@@ -1415,24 +1398,21 @@
                             return getTime(b) - getTime(a);
                         })
                         .forEach(prospect => {
-                            contentArea.appendChild(createProspectCard(prospect, isMobile));
+                            contentArea.appendChild(createProspectCard(prospect));
                         });
                 }
             });
             addDragAndDropHandlers();
         }
 
-        function createProspectCard(prospect, isMobile = false) {
+        function createProspectCard(prospect) {
             const card = document.createElement('div');
-            const mobileClasses = isMobile ? 'w-72 flex-shrink-0' : '';
-            card.className = `prospect-card bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-sm hover:shadow-md cursor-pointer border-l-4 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 ${mobileClasses}`;
-            card.style.borderLeftColor = prospect.status === 'Perdido' ? '#f43f5e' : getPriorityColor(prospect.prioridade);
+            card.className = 'prospect-card bg-white dark:bg-gray-800 border-l-4 rounded shadow-sm dark:shadow p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-all border border-gray-100 dark:border-transparent';
+            card.style.borderLeftColor = prospect.status === 'Perdido' ? '#ef4444' : getPriorityColor(prospect.prioridade);
             card.draggable = true;
             card.dataset.id = prospect.id;
 
-            const sectorColor = getSectorColor(prospect.setor);
-
-            const tagsHTML = (prospect.tags || []).map(tag => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 uppercase tracking-wider">${tag}</span>`).join('');
+            const tagsHTML = (prospect.tags || []).map(tag => `<span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded">${tag}</span>`).join(' ');
 
             let dateTimeHTML = '';
             if (prospect.createdAt) {
@@ -1448,45 +1428,30 @@
                 if (dateObj && !isNaN(dateObj)) {
                     const formattedDate = dateObj.toLocaleDateString('pt-BR');
                     const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    dateTimeHTML = `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1"><i class="far fa-clock"></i> ${formattedDate} às ${formattedTime}</p>`;
+                    dateTimeHTML = `<span class="flex items-center gap-1"><i class="far fa-calendar-alt"></i> ${formattedDate} às ${formattedTime}</span>`;
                 }
             }
 
             card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-bold text-gray-900 dark:text-white leading-tight">${prospect.responsavel || 'Prospect sem nome'}</h4>
-                    ${prospect.telefone ? `
-                    <button type="button" class="quick-whatsapp-drawer-btn w-6 h-6 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-all duration-200 flex-shrink-0 ml-1.5 cursor-pointer" title="Conversar no WhatsApp">
-                        <i class="fab fa-whatsapp text-xs"></i>
-                    </button>` : ''}
+                <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                    ${prospect.origemLead ? `<span class="text-[10px] bg-gray-50 dark:bg-gray-900 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold border border-amber-500/30">${prospect.origemLead}</span>` : ''}
+                    ${prospect.unread ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase">Novo</span>' : ''}
+                    ${(prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : ''}
+                    ${prospect.capiSyncedAt ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''}
                 </div>
-                <div class="flex items-center gap-2 mb-2 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">P${prospect.prioridade}</span>
-                    ${prospect.unread ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase tracking-wider">Novo</span>' : ''}
-                    ${(prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : ''}
-                    ${prospect.capiSyncedAt ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''}
-                </div>
-                <div class="flex items-center gap-1 mb-2.5 flex-wrap">
-                    ${tagsHTML}
-                </div>
-                ${prospect.origemLead ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1"><i class="fas fa-sign-in-alt"></i> ${prospect.origemLead}</p>` : ''}
-                ${dateTimeHTML}
-                <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center gap-2">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2" title="${prospect.responsavel || 'Prospect sem nome'}">${prospect.responsavel || 'Prospect sem nome'}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate flex items-center gap-1">
                     ${prospect.unidade ? 
-                        `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 truncate" title="${prospect.unidade}"><i class="fas fa-map-marker-alt text-red-500 text-[11px] flex-shrink-0"></i> <span class="truncate">${prospect.unidade}</span></span>` : 
-                        `<span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-800/40 flex-shrink-0" title="Lead ainda sem unidade atribuída"><i class="fas fa-exclamation-triangle text-amber-500 text-[10px]"></i> Sem Unidade</span>`
+                        `<i class="fas fa-map-marker-alt text-gray-400 text-[11px]"></i><span>${prospect.unidade}</span>` : 
+                        `<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200/60 dark:border-amber-800/40" title="Lead ainda sem unidade atribuída"><i class="fas fa-exclamation-triangle text-amber-500 text-[9px]"></i> Sem Unidade</span>`
                     }
-                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-auto flex-shrink-0">por ${prospect.createdBy.split('@')[0]}</span>` : ''}
+                </div>
+                ${tagsHTML ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHTML}</div>` : ''}
+                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400">
+                    ${dateTimeHTML || '<span></span>'}
+                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-auto">${prospect.createdBy.split('@')[0]}</span>` : ''}
                 </div>
             `;
-
-            const whatsappDrawerBtn = card.querySelector('.quick-whatsapp-drawer-btn');
-            if (whatsappDrawerBtn) {
-                whatsappDrawerBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openWhatsAppDrawer(prospect);
-                });
-            }
 
             card.addEventListener('click', () => {
                 openFormModal(prospect);
