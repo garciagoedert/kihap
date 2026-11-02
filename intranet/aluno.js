@@ -72,6 +72,40 @@ export function setupAlunoPage() {
     document.getElementById('editStudentForm').onsubmit = handleEditSubmit;
 }
 
+function parseEvoMemberLevel(memberLevel) {
+    if (!Array.isArray(memberLevel) || memberLevel.length === 0) return null;
+
+    const primaryLevel = memberLevel.find(l => l.levelGroupName && !l.levelGroupName.toLowerCase().includes('colarinho')) || memberLevel[0];
+    const collarLevel = memberLevel.find(l => l.levelGroupName && l.levelGroupName.toLowerCase().includes('colarinho'));
+
+    const rawGroup = (primaryLevel?.levelGroupName || '').trim();
+    const rawBelt = (primaryLevel?.currentLevelName || '').trim();
+    if (!rawBelt) return null;
+
+    let rankType = rawGroup.replace(/^Kihap\s*-\s*/i, '').trim() || 'Tradicional';
+    if (rankType.toLowerCase().includes('little')) {
+        rankType = 'Littles';
+    }
+
+    let belt = rawBelt.replace(/^Faixa\s+/i, '').trim();
+    const danMatch = belt.match(/^Preta\s*(\d+)(?:º|o|°)?\s*dan$/i);
+    if (danMatch) {
+        belt = `Preta ${danMatch[1]}º Dan`;
+    } else {
+        belt = belt
+            .replace(/\bdecidida\b/gi, 'Decidida')
+            .replace(/\brecomendada\b/gi, 'Recomendada');
+    }
+
+    return {
+        belt,
+        rawBelt,
+        rankType,
+        rawGroup,
+        collar: collarLevel?.currentLevelName || null
+    };
+}
+
 async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
     try {
         const user = auth.currentUser;
@@ -101,18 +135,50 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
             throw new Error("Aluno não encontrado.");
         }
 
-        // --- MERGE FIRESTORE DATA ---
+        // --- EXTRAI NÍVEL DO EVO (memberLevel) ---
+        const evoLevel = parseEvoMemberLevel(currentStudent.memberLevel);
+        if (evoLevel) {
+            currentStudent.belt = evoLevel.belt;
+            currentStudent.graduacao = evoLevel.belt;
+            currentStudent.rankType = evoLevel.rankType;
+            if (evoLevel.collar) {
+                currentStudent.collar = evoLevel.collar;
+            }
+        }
+
+        // --- MERGE & SYNC FIRESTORE DATA (APP KIHAP) ---
         try {
             const studentUser = await findUserByEvoId(parseInt(studentId));
             if (studentUser) {
-                // Se o dado existe no Firestore, ele prevalece para campos sociais/manuais
-                if (studentUser.belt) currentStudent.belt = studentUser.belt;
-                if (studentUser.partials !== undefined) currentStudent.partials = studentUser.partials;
-                if (studentUser.rankType) currentStudent.rankType = studentUser.rankType;
-                if (studentUser.photoURL) currentStudent.photoURL = studentUser.photoURL;
-                
                 // Armazenar o UID do Firestore para uso em outras partes
                 currentStudent.firestoreUid = studentUser.id;
+
+                if (studentUser.partials !== undefined) currentStudent.partials = studentUser.partials;
+                if (studentUser.photoURL) currentStudent.photoURL = studentUser.photoURL;
+
+                if (evoLevel) {
+                    // Sincroniza o nível vindo do EVO para o documento do aluno no App (users)
+                    const needsSync =
+                        studentUser.belt !== evoLevel.belt ||
+                        studentUser.graduacao !== evoLevel.belt ||
+                        studentUser.rankType !== evoLevel.rankType;
+                    if (needsSync) {
+                        const syncPayload = {
+                            belt: evoLevel.belt,
+                            graduacao: evoLevel.belt,
+                            rankType: evoLevel.rankType,
+                            memberLevel: currentStudent.memberLevel
+                        };
+                        if (evoLevel.collar) syncPayload.collar = evoLevel.collar;
+                        updateDoc(doc(db, 'users', studentUser.id), syncPayload).catch(err =>
+                            console.warn("Aviso ao sincronizar nível com users:", err)
+                        );
+                    }
+                } else {
+                    // Fallback para campos manuais do Firestore caso o EVO não tenha memberLevel
+                    if (studentUser.belt) currentStudent.belt = studentUser.belt;
+                    if (studentUser.rankType) currentStudent.rankType = studentUser.rankType;
+                }
             }
         } catch (e) {
             console.warn("Aviso: Falha ao mesclar dados do Firestore:", e);
@@ -196,7 +262,8 @@ function renderDetailsTab() {
         responsible: "Responsável",
         origin: "Origem / Como conheceu",
         rankType: "Categoria",
-        belt: "Faixa",
+        belt: "Faixa / Nível",
+        collar: "Colarinho",
         partials: "Parciais (Faixa Preta)"
     };
 
@@ -216,6 +283,7 @@ function renderDetailsTab() {
 
     let html = '<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">';
     for (const key in translations) {
+        if (key === 'collar' && !currentStudent.collar) continue;
         if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt', 'partials'].includes(key)) {
             html += `
                 <div class="flex flex-col gap-1 group">
@@ -488,6 +556,17 @@ function setupGeneratePaymentLinkHandlers() {
 }
 
 // Modal Logic
+function ensureSelectOption(selectEl, value) {
+    if (!selectEl || !value) return;
+    const exists = Array.from(selectEl.options).some(opt => opt.value === value);
+    if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = value;
+        selectEl.appendChild(opt);
+    }
+}
+
 function openEditModal() {
     const modal = document.getElementById('editStudentModal');
     const form = document.getElementById('editStudentForm');
@@ -502,15 +581,19 @@ function openEditModal() {
     form.address.value = currentStudent.address || '';
     form.responsible.value = currentStudent.responsible || '';
     form.origin.value = currentStudent.origin || '';
-    form.rankType.value = currentStudent.rankType || 'Tradicional';
-    form.belt.value = currentStudent.belt || 'Branca Recomendada';
+    const targetRankType = currentStudent.rankType || 'Tradicional';
+    const targetBelt = currentStudent.belt || 'Branca Recomendada';
+    ensureSelectOption(form.rankType, targetRankType);
+    ensureSelectOption(form.belt, targetBelt);
+    form.rankType.value = targetRankType;
+    form.belt.value = targetBelt;
     
     // Partials logic
     const partialsContainer = document.getElementById('partials-field-container');
     const beltSelect = document.getElementById('edit-belt-select');
     
     const updatePartialsVisibility = () => {
-        if (beltSelect.value === 'Preta') {
+        if (beltSelect.value && beltSelect.value.startsWith('Preta')) {
             partialsContainer.classList.remove('hidden');
         } else {
             partialsContainer.classList.add('hidden');
@@ -555,7 +638,10 @@ async function handleEditSubmit(e) {
             const firestoreUpdates = {};
             
             if (updates.partials !== undefined) firestoreUpdates.partials = parseInt(updates.partials) || 0;
-            if (updates.belt) firestoreUpdates.belt = updates.belt;
+            if (updates.belt) {
+                firestoreUpdates.belt = updates.belt;
+                firestoreUpdates.graduacao = updates.belt;
+            }
             if (updates.rankType) firestoreUpdates.rankType = updates.rankType;
 
             if (Object.keys(firestoreUpdates).length > 0) {

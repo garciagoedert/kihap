@@ -1,7 +1,35 @@
 import { onAuthReady, getUserData } from './auth.js';
 
 import { functions, db, auth } from '../../intranet/firebase-config.js';
-import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+function parseEvoMemberLevel(memberLevel) {
+    if (!Array.isArray(memberLevel) || memberLevel.length === 0) return null;
+    let belt = null;
+    let rankType = null;
+    let collar = null;
+
+    for (const item of memberLevel) {
+        const group = (item.levelGroupName || '').trim();
+        const level = (item.currentLevelName || '').trim();
+        if (/colarinho/i.test(group) || /colarinho/i.test(level)) {
+            collar = level;
+            continue;
+        }
+        if (group) {
+            rankType = group.replace(/^Kihap\s*-\s*/i, '').trim();
+        }
+        if (level) {
+            let cleanBelt = level.replace(/^Faixa\s+/i, '').trim();
+            cleanBelt = cleanBelt.replace(/\bdecidida\b/gi, 'Decidida');
+            cleanBelt = cleanBelt.replace(/(\d+)\s*[º°]?\s*DAN/i, '$1º Dan');
+            belt = cleanBelt;
+        }
+    }
+
+    if (!belt && !rankType && !collar) return null;
+    return { belt, rankType, collar };
+}
 
 // Substitui httpsCallable por fetch direto para lidar com a função HTTP getMemberDetails
 async function getMemberData(data) {
@@ -53,7 +81,21 @@ export function loadMemberDashboard() {
                     if (member) {
                         // Preenche os campos com os dados da API
                         const fullName = `${member.firstName || ''} ${member.lastName || ''}`;
-                        const graduation = member.memberships?.[0]?.name || 'Não informada';
+                        const evoLevelInfo = parseEvoMemberLevel(member.memberLevel);
+                        const graduation = member.belt || evoLevelInfo?.belt || userData.belt || userData.graduacao || member.memberships?.[0]?.name || 'Não informada';
+
+                        if ((member.belt || evoLevelInfo?.belt) && auth.currentUser?.uid) {
+                            const syncedBelt = member.belt || evoLevelInfo?.belt;
+                            const syncedRankType = member.rankType || evoLevelInfo?.rankType || userData.rankType || null;
+                            if (userData.belt !== syncedBelt || (syncedRankType && userData.rankType !== syncedRankType)) {
+                                updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                    belt: syncedBelt,
+                                    graduacao: syncedBelt,
+                                    ...(syncedRankType ? { rankType: syncedRankType } : {}),
+                                    ...(Array.isArray(member.memberLevel) ? { memberLevel: member.memberLevel } : {})
+                                }).catch(err => console.warn("Erro ao sincronizar faixa no perfil:", err));
+                            }
+                        }
 
                         // Atualiza a foto do perfil
                         const avatar = document.getElementById('user-avatar');

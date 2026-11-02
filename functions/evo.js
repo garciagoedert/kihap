@@ -125,6 +125,43 @@ async function getActiveStudentsFromUnit(unitId) {
 exports.getActiveStudentsFromUnit = getActiveStudentsFromUnit;
 
 /**
+ * Extrai e normaliza Categoria (rankType), Faixa/Nível (belt) e Colarinho a partir do array memberLevel retornado pela API EVO.
+ */
+function parseEvoMemberLevel(memberLevel) {
+    if (!Array.isArray(memberLevel) || memberLevel.length === 0) return null;
+
+    const primaryLevel = memberLevel.find(l => l.levelGroupName && !l.levelGroupName.toLowerCase().includes('colarinho')) || memberLevel[0];
+    const collarLevel = memberLevel.find(l => l.levelGroupName && l.levelGroupName.toLowerCase().includes('colarinho'));
+
+    const rawGroup = (primaryLevel?.levelGroupName || '').trim();
+    const rawBelt = (primaryLevel?.currentLevelName || '').trim();
+    if (!rawBelt) return null;
+
+    let rankType = rawGroup.replace(/^Kihap\s*-\s*/i, '').trim() || 'Tradicional';
+    if (rankType.toLowerCase().includes('little')) {
+        rankType = 'Littles';
+    }
+
+    let belt = rawBelt.replace(/^Faixa\s+/i, '').trim();
+    const danMatch = belt.match(/^Preta\s*(\d+)(?:º|o|°)?\s*dan$/i);
+    if (danMatch) {
+        belt = `Preta ${danMatch[1]}º Dan`;
+    } else {
+        belt = belt
+            .replace(/\bdecidida\b/gi, 'Decidida')
+            .replace(/\brecomendada\b/gi, 'Recomendada');
+    }
+
+    return {
+        belt,
+        rawBelt,
+        rankType,
+        rawGroup,
+        collar: collarLevel?.currentLevelName || null
+    };
+}
+
+/**
  * Busca os dados de um membro específico na API da EVO.
  */
 exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
@@ -189,6 +226,56 @@ exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
             totalCoins = memberData.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
         }
         memberData.totalFitCoins = totalCoins;
+
+        // Extrai e sincroniza o nível (memberLevel) do EVO para o cache evo_students e perfil do App (users)
+        const parsedLevel = parseEvoMemberLevel(memberData.memberLevel);
+        if (parsedLevel) {
+            memberData.belt = parsedLevel.belt;
+            memberData.graduacao = parsedLevel.belt;
+            memberData.rankType = parsedLevel.rankType;
+            if (parsedLevel.collar) {
+                memberData.collar = parsedLevel.collar;
+            }
+        }
+
+        try {
+            const cachePayload = {
+                totalFitCoins: totalCoins,
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+            };
+            if (Array.isArray(memberData.memberLevel)) {
+                cachePayload.memberLevel = memberData.memberLevel;
+            }
+            if (parsedLevel) {
+                cachePayload.belt = parsedLevel.belt;
+                cachePayload.graduacao = parsedLevel.belt;
+                cachePayload.rankType = parsedLevel.rankType;
+                if (parsedLevel.collar) cachePayload.collar = parsedLevel.collar;
+            }
+            await db.collection('evo_students').doc(String(memberIdInt)).set(cachePayload, { merge: true });
+
+            if (parsedLevel) {
+                const [usersNumSnap, usersStrSnap] = await Promise.all([
+                    db.collection('users').where('evoMemberId', '==', memberIdInt).get(),
+                    db.collection('users').where('evoMemberId', '==', String(memberIdInt)).get()
+                ]);
+                const userDocs = new Map();
+                usersNumSnap.forEach(d => userDocs.set(d.id, d.ref));
+                usersStrSnap.forEach(d => userDocs.set(d.id, d.ref));
+
+                const userUpdates = {
+                    belt: parsedLevel.belt,
+                    graduacao: parsedLevel.belt,
+                    rankType: parsedLevel.rankType,
+                    memberLevel: memberData.memberLevel
+                };
+                if (parsedLevel.collar) userUpdates.collar = parsedLevel.collar;
+
+                await Promise.all(Array.from(userDocs.values()).map(ref => ref.set(userUpdates, { merge: true })));
+            }
+        } catch (syncErr) {
+            functions.logger.warn(`Warning syncing memberLevel to Firestore for member ${memberIdInt}:`, syncErr.message);
+        }
 
         functions.logger.info(`EVO API response for getMemberDetails (ID: ${memberId}):`, memberData);
         return res.status(200).send({ data: memberData });
