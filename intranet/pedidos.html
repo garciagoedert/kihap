@@ -12,30 +12,22 @@
             }
         })();
         window.tailwind = { config: { darkMode: "class" } };
-    </script>    <meta charset="UTF-8">
+    </script>
+    <meta charset="UTF-8">
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
-    
-    
-    
-    
-    
-    
-        
-    
     
     <title>Pedidos - Intranet KIHAP</title>
     <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
     <link rel="stylesheet" href="log.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-
         .table-responsive {
             overflow-x: auto;
         }
@@ -44,7 +36,7 @@
 </head>
 
 <body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
-    <div class="flex h-screen">
+    <div class="flex h-screen overflow-hidden">
         <div id="sidebar-container"></div>
         <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
 
@@ -52,135 +44,351 @@
             <div id="header-container"></div>
 
             <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
-                <div class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl p-6 rounded-2xl border border-gray-100 dark:border-gray-800/50 shadow-sm flex-grow flex flex-col transition-all duration-300">
-                    <div class="flex justify-between items-center mb-6">
-                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Gestão de Pedidos</h1>
-                        <div class="flex items-center gap-2">
-                            <button id="refresh-pedidos"
-                                class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200"
-                                aria-label="Atualizar Histórico">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button id="open-pedido-modal-btn"
-                                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-yellow-500/20 transition-all duration-200 text-sm">
-                                Fazer Novo Pedido
-                            </button>
-                            <button id="export-pedidos-btn"
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2 text-sm">
-                                <i class="fas fa-file-export"></i> Exportar Pendentes
-                            </button>
-                            <button id="open-faixa-preta-modal-btn"
-                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-200 text-sm hidden">
-                                Novo Pedido Faixa Preta
-                            </button>
-                            <button id="open-dobok-modal-btn"
-                                class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-200 text-sm hidden">
-                                Novo Pedido Dobok
-                            </button>
+                
+                <!-- Top Header & Primary Actions -->
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-2xl bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg">
+                                <i class="fas fa-ribbon"></i>
+                            </span>
+                            Gestão de Pedidos
+                        </h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Controle de solicitações de faixas coloridas, faixas pretas e doboks por unidade.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                        <button id="refresh-pedidos"
+                            class="bg-white dark:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shadow-sm"
+                            title="Atualizar Pedidos" aria-label="Atualizar Histórico">
+                            <i class="fas fa-sync-alt text-xs"></i>
+                        </button>
+
+                        <button id="open-auto-pedido-modal-btn"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all duration-200 flex items-center gap-2 text-xs md:text-sm">
+                            <i class="fas fa-magic"></i>
+                            <span>Pedido por Alunos Ativos</span>
+                        </button>
+
+                        <button id="open-pedido-modal-btn"
+                            class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-yellow-500/20 transition-all duration-200 flex items-center gap-2 text-xs md:text-sm">
+                            <i class="fas fa-plus"></i>
+                            <span>Fazer Novo Pedido</span>
+                        </button>
+
+                        <button id="open-faixa-preta-modal-btn"
+                            class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-200 flex items-center gap-2 text-xs md:text-sm hidden">
+                            <i class="fas fa-plus"></i>
+                            <span>Novo Pedido Faixa Preta</span>
+                        </button>
+
+                        <button id="open-dobok-modal-btn"
+                            class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-200 flex items-center gap-2 text-xs md:text-sm hidden">
+                            <i class="fas fa-plus"></i>
+                            <span>Novo Pedido Dobok</span>
+                        </button>
+
+                        <button id="export-pedidos-btn"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center gap-2 text-xs md:text-sm">
+                            <i class="fas fa-file-export"></i>
+                            <span>Exportar Pendentes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white dark:bg-[#1a1a1a] p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Total de Pedidos</p>
+                            <h3 id="kpi-pedidos-total" class="text-xl md:text-2xl font-black text-gray-900 dark:text-white mt-0.5">--</h3>
                         </div>
                     </div>
 
-                    <!-- Abas de Navegação -->
-                    <div class="border-b border-gray-100 dark:border-gray-800/50 mb-6">
-                        <nav class="flex space-x-6" aria-label="Tabs">
+                    <div class="bg-white dark:bg-[#1a1a1a] p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-lg shrink-0">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Pendentes</p>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <h3 id="kpi-pedidos-pendentes" class="text-xl md:text-2xl font-black text-orange-600 dark:text-orange-400">--</h3>
+                                <span id="kpi-itens-pendentes" class="text-[11px] font-semibold text-gray-400"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1a1a1a] p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Produção / Enviados</p>
+                            <h3 id="kpi-pedidos-andamento" class="text-xl md:text-2xl font-black text-gray-900 dark:text-white mt-0.5">--</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1a1a1a] p-4 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Entregues</p>
+                            <h3 id="kpi-pedidos-entregues" class="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">--</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Card Container -->
+                <div class="bg-white dark:bg-[#1a1a1a] p-5 md:p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm flex-grow flex flex-col transition-all duration-300">
+                    
+                    <!-- Tabs & Global Filters Row -->
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
+                        <!-- Abas de Navegação -->
+                        <nav class="flex items-center gap-2 bg-gray-100/80 dark:bg-gray-800/60 p-1.5 rounded-2xl w-fit" aria-label="Tabs">
                             <button id="tab-coloridas"
-                                class="tab-btn text-yellow-600 dark:text-yellow-500 border-b-2 border-yellow-500 px-1 py-3 text-sm font-bold transition-all duration-200">
+                                class="tab-btn bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white shadow-sm px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
                                 Faixas Coloridas
                             </button>
                             <button id="tab-pretas"
-                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-1 py-3 text-sm font-medium transition-all duration-200">
+                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-gray-900 dark:bg-gray-300"></span>
                                 Faixas Pretas
                             </button>
                             <button id="tab-doboks"
-                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-1 py-3 text-sm font-medium transition-all duration-200">
+                                class="tab-btn text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-teal-500"></span>
                                 Doboks
                             </button>
                         </nav>
+
+                        <!-- Unified Filter Bar -->
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <div class="relative flex-grow sm:flex-grow-0 sm:w-56">
+                                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" id="filter-search-global" placeholder="Busca"
+                                    class="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                            </div>
+
+                            <select id="filter-unidade-global" aria-label="Filtrar por unidade"
+                                class="px-3.5 py-2 bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+
+                            <select id="filter-status-global" aria-label="Filtrar por status"
+                                class="px-3.5 py-2 bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                <option value="">Todos os Status</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Em produção">Em produção</option>
+                                <option value="Enviado">Enviado</option>
+                                <option value="Entregue">Entregue</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Conteúdo das Abas -->
                     <div id="tab-content-coloridas" class="tab-content table-responsive flex-grow">
-                        <table class="table w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-100 dark:border-gray-800">
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Itens</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pedidos-table-body"></tbody>
-                        </table>
+                        <div class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/80 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800">
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Data</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Unidade</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Itens do Pedido</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Total Faixas</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pedidos-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60 bg-white dark:bg-[#1a1a1a]"></tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div id="tab-content-pretas" class="tab-content table-responsive flex-grow hidden">
-                        <table class="table w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-100 dark:border-gray-800">
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Aluno</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Faixa</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pedidos-pretas-table-body"></tbody>
-                        </table>
+                        <div class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/80 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800">
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Data</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Unidade</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Aluno</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Faixa / Tamanho</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pedidos-pretas-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60 bg-white dark:bg-[#1a1a1a]"></tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div id="tab-content-doboks" class="tab-content table-responsive flex-grow hidden">
-                        <div id="dobok-filters" class="flex flex-wrap items-center gap-4 mb-6 p-6 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl">
-                            <div class="flex-grow min-w-[200px]">
+                        <div id="dobok-filters" class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50/70 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 rounded-2xl">
+                            <div class="min-w-[180px]">
                                 <label for="filter-unidade-dobok"
-                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Unidade</label>
                                 <select id="filter-unidade-dobok"
-                                    class="w-full px-4 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-sm font-medium">
+                                    class="w-full px-3.5 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all text-xs font-semibold">
                                     <option value="">Todas</option>
                                 </select>
                             </div>
-                            <div class="flex items-center pt-5">
+                            <div class="flex items-center pt-4">
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="filter-faixa-preta-dobok" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                                    <span class="ml-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Apenas Faixa Preta</span>
+                                    <div class="w-10 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
+                                    <span class="ml-2.5 text-xs font-bold text-gray-600 dark:text-gray-300">Apenas Faixa Preta</span>
                                 </label>
                             </div>
-                            <div class="flex items-center pt-5">
+                            <div class="flex items-center pt-4">
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="filter-tradicional-dobok" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                                    <span class="ml-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Apenas Tradicional</span>
+                                    <div class="w-10 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
+                                    <span class="ml-2.5 text-xs font-bold text-gray-600 dark:text-gray-300">Apenas Tradicional</span>
                                 </label>
                             </div>
                         </div>
-                        <table class="table w-full text-left">
-                            <thead>
-                                <tr class="border-b border-gray-100 dark:border-gray-800">
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Data</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Unidade</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Aluno</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tamanho</th>
-                                    <th class="p-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pedidos-doboks-table-body"></tbody>
-                        </table>
+                        <div class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/80 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800">
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Data</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Unidade</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Aluno</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Tamanho / Colarinho</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+                                        <th class="p-4 text-[11px] font-extrabold text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pedidos-doboks-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60 bg-white dark:bg-[#1a1a1a]"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Modal: Pedido Baseado nos Alunos Ativos (Próxima Faixa) -->
+    <div id="auto-pedido-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white tracking-tight">Gerar Pedido por Alunos Ativos</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Calcula automaticamente a próxima faixa de cada aluno ativo na unidade selecionada.</p>
+                    </div>
+                </div>
+                <button id="close-auto-pedido-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Controls Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <div>
+                        <label for="auto-unidade-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade dos Alunos</label>
+                        <select id="auto-unidade-select"
+                            class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold">
+                            <option value="">Selecione uma unidade...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="auto-default-size-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Tamanho Padrão Inicial</label>
+                        <select id="auto-default-size-select"
+                            class="w-full px-3.5 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold">
+                            <option value="P">P (Pequeno)</option>
+                            <option value="PP">PP (Extra Pequeno)</option>
+                            <option value="M" selected>M (Médio)</option>
+                            <option value="G">G (Grande)</option>
+                            <option value="GG">GG (Extra Grande)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="calculate-auto-pedido-btn" type="button"
+                            class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all text-sm flex items-center justify-center gap-2">
+                            <i class="fas fa-calculator"></i>
+                            <span>Calcular Próximas Faixas</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Stats Banner -->
+                <div id="auto-pedido-summary" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-900/15 border border-blue-100 dark:border-blue-800/40 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Alunos Ativos na Unidade</p>
+                            <p id="auto-stat-ativos" class="text-xl font-black text-blue-900 dark:text-blue-200 mt-0.5">0</p>
+                        </div>
+                        <i class="fas fa-users text-blue-400 text-xl"></i>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Faixas Seguintes Calculadas</p>
+                            <p id="auto-stat-com-faixa" class="text-xl font-black text-emerald-900 dark:text-emerald-200 mt-0.5">0</p>
+                        </div>
+                        <i class="fas fa-ribbon text-emerald-400 text-xl"></i>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-800/40 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Sem Faixa no Cadastro</p>
+                            <p id="auto-stat-sem-faixa" class="text-xl font-black text-amber-900 dark:text-amber-200 mt-0.5">0</p>
+                        </div>
+                        <i class="fas fa-exclamation-circle text-amber-400 text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="auto-pedido-results-container" class="space-y-3">
+                    <div class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+                        <i class="fas fa-hand-pointer text-2xl mb-2 block opacity-50"></i>
+                        Selecione uma unidade acima e clique em <strong>Calcular Próximas Faixas</strong> para visualizar a previsão.
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/60 dark:bg-gray-800/30">
+                <div id="auto-pedido-footer-info" class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Distribua os tamanhos (PP, P, M, G, GG) para cada faixa antes de gerar o pedido.
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <button id="cancel-auto-pedido-btn" type="button"
+                        class="px-5 py-2.5 text-xs md:text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">
+                        Cancelar
+                    </button>
+                    <button id="open-in-manual-modal-btn" type="button" disabled
+                        class="px-4 py-2.5 text-xs md:text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl hover:bg-indigo-100 transition-all disabled:opacity-40">
+                        Revisar no Editor
+                    </button>
+                    <button id="confirm-auto-pedido-btn" type="button" disabled
+                        class="px-6 py-2.5 text-xs md:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-40 disabled:shadow-none flex items-center gap-2">
+                        <i class="fas fa-check"></i>
+                        <span>Criar Pedido na Store</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Novo/Editar Pedido -->
     <div id="pedido-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 id="pedido-modal-title" class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Faixas</h2>
                 <button id="close-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
-            <div class="p-8 flex-grow overflow-y-auto custom-scrollbar space-y-6">
+            <div class="p-6 md:p-8 flex-grow overflow-y-auto custom-scrollbar space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="unidade-select" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unidade</label>
@@ -248,7 +456,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+            <div class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
                 <button id="cancel-modal-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-pedido-btn"
                     class="px-10 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none" disabled>
@@ -261,14 +469,14 @@
     <!-- Modal de Detalhes do Pedido -->
     <div id="details-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
                 <button id="close-details-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
             <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar">
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-2 gap-4">
                     <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidade</p>
                         <p id="details-unidade" class="font-semibold text-gray-900 dark:text-white"></p>
@@ -301,7 +509,7 @@
                     <p id="details-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
+            <div id="details-admin-actions" class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-pedido-btn"
                     class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-pedido-btn"
@@ -313,7 +521,7 @@
     <!-- Modal de Novo Pedido de Faixa Preta -->
     <div id="faixa-preta-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Faixa Preta</h2>
                 <button id="close-faixa-preta-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
@@ -379,7 +587,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+            <div class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
                 <button id="cancel-faixa-preta-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-faixa-preta-btn"
                     class="px-10 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">Salvar Pedido</button>
@@ -390,7 +598,7 @@
     <!-- Modal de Detalhes do Pedido de Faixa Preta -->
     <div id="details-preta-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
                 <button id="close-details-preta-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
@@ -437,7 +645,7 @@
                     <p id="details-preta-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-preta-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
+            <div id="details-preta-admin-actions" class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-preta-pedido-btn"
                     class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-preta-pedido-btn"
@@ -449,7 +657,7 @@
     <!-- Modal de Detalhes do Pedido de Dobok -->
     <div id="details-dobok-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Detalhes do Pedido</h2>
                 <button id="close-details-dobok-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
@@ -500,7 +708,7 @@
                     <p id="details-dobok-justificativa" class="text-sm text-gray-700 dark:text-gray-300 italic"></p>
                 </div>
             </div>
-            <div id="details-dobok-admin-actions" class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
+            <div id="details-dobok-admin-actions" class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30 hidden">
                 <button id="delete-dobok-pedido-btn"
                     class="px-6 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">Excluir</button>
                 <button id="edit-dobok-pedido-btn"
@@ -512,7 +720,7 @@
     <!-- Modal de Novo Pedido de Dobok -->
     <div id="dobok-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-6 border-b border-gray-50 dark:border-gray-800/50">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800/50">
                 <h2 id="dobok-modal-title" class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Novo Pedido de Dobok</h2>
                 <button id="close-dobok-modal-btn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <i class="fas fa-times text-lg"></i>
@@ -577,7 +785,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-6 border-t border-gray-50 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
+            <div class="p-6 border-t border-gray-100 dark:border-gray-800/50 flex justify-end gap-3 bg-gray-50/50 dark:bg-gray-800/30">
                 <button id="cancel-dobok-btn" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Cancelar</button>
                 <button id="submit-dobok-btn"
                     class="px-10 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/20">Salvar Pedido</button>
@@ -588,7 +796,7 @@
     <script type="module" src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
-        import { setupPedidosPage } from './pedidos.js?v=2';
+        import { setupPedidosPage } from './pedidos.js?v=3';
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(setupPedidosPage);
         });
