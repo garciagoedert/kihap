@@ -1327,6 +1327,43 @@
             });
         }
 
+        function getDefaultTicketByUnit(unidade) {
+            if (!unidade || !unidade.trim()) return 0;
+            const norm = unidade
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[-_]/g, ' ')
+                .trim();
+
+            // Unidades de Brasília -> R$ 677
+            if (
+                norm.includes('asa sul') ||
+                norm.includes('sudoeste') ||
+                norm.includes('noroeste') ||
+                norm.includes('lago sul') ||
+                norm.includes('jardim botanico') ||
+                norm.includes('botanico') ||
+                norm.includes('pontos de ensino') ||
+                norm.includes('ensino') ||
+                norm.includes('brasilia')
+            ) {
+                return 677;
+            }
+
+            // Unidades de Florianópolis -> R$ 507
+            if (
+                norm.includes('centro') ||
+                norm.includes('santa monica') ||
+                norm.includes('coqueiros') ||
+                norm.includes('florianopolis')
+            ) {
+                return 507;
+            }
+
+            return 0;
+        }
+
         function combineAndRender() {
             const formattedLeads = leads.map(lead => ({
                 id: lead.id,
@@ -1335,7 +1372,7 @@
                 setor: '', // Leads from website don't have a program yet
                 prioridade: 3, // Default priority for leads
                 status: lead.status || 'Novo',
-                ticketEstimado: 0,
+                ticketEstimado: lead.ticketEstimado || getDefaultTicketByUnit(lead.unidade),
                 origemLead: lead['origem do lead'] || 'Site',
                 telefone: lead.telefone,
                 email: lead.email,
@@ -1345,7 +1382,11 @@
                 perdidoPor: lead.perdidoPor || '',
                 type: 'lead'
             }));
-            combinedData = [...prospects, ...formattedLeads];
+            const enrichedProspects = prospects.map(p => ({
+                ...p,
+                ticketEstimado: p.ticketEstimado || getDefaultTicketByUnit(p.unidade)
+            }));
+            combinedData = [...enrichedProspects, ...formattedLeads];
             applyFilters();
         }
 
@@ -1405,10 +1446,43 @@
             addDragAndDropHandlers();
         }
 
+        function getUnitColor(unidade) {
+            if (!unidade || !unidade.trim() || unidade.trim().toLowerCase() === 'sem unidade') {
+                return '#f59e0b'; // Amber (Sem Unidade)
+            }
+            const norm = unidade
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[-_]/g, ' ')
+                .trim();
+
+            if (norm.includes('santa monica')) return '#8b5cf6'; // Violeta
+            if (norm.includes('centro')) return '#3b82f6';       // Azul
+            if (norm.includes('coqueiros')) return '#06b6d4';    // Ciano
+            if (norm.includes('asa sul')) return '#10b981';      // Esmeralda
+            if (norm.includes('sudoeste')) return '#f97316';     // Laranja
+            if (norm.includes('noroeste')) return '#ec4899';     // Rosa/Magenta
+            if (norm.includes('lago sul')) return '#6366f1';     // Índigo
+            if (norm.includes('dourados')) return '#14b8a6';     // Teal
+            if (norm.includes('jardim botanico') || norm.includes('botanico')) return '#84cc16'; // Lima
+            if (norm.includes('pontos de ensino') || norm.includes('ensino')) return '#0ea5e9';  // Azul Celeste
+
+            const fallbackPalette = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ec4899', '#06b6d4', '#6366f1', '#14b8a6'];
+            return fallbackPalette[stringToColorIndex(norm, fallbackPalette.length)];
+        }
+
         function createProspectCard(prospect) {
+            const hasUnit = Boolean(prospect.unidade && prospect.unidade.trim() && prospect.unidade.trim().toLowerCase() !== 'sem unidade');
+            const unitLabel = hasUnit ? prospect.unidade.trim() : 'Sem Unidade';
+            const unitColor = getUnitColor(prospect.unidade);
+
+            const ticketVal = Number(prospect.ticketEstimado) || getDefaultTicketByUnit(prospect.unidade);
+            const formattedTicket = ticketVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
             const card = document.createElement('div');
-            card.className = 'prospect-card bg-white dark:bg-gray-800 border-l-4 rounded shadow-sm dark:shadow p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-all border border-gray-100 dark:border-transparent';
-            card.style.borderLeftColor = prospect.status === 'Perdido' ? '#ef4444' : getPriorityColor(prospect.prioridade);
+            card.className = 'prospect-card bg-white dark:bg-gray-800 border-l-4 rounded shadow-sm dark:shadow p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-all border border-gray-100 dark:border-transparent relative';
+            card.style.borderLeftColor = unitColor;
             card.draggable = true;
             card.dataset.id = prospect.id;
 
@@ -1428,28 +1502,39 @@
                 if (dateObj && !isNaN(dateObj)) {
                     const formattedDate = dateObj.toLocaleDateString('pt-BR');
                     const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    dateTimeHTML = `<span class="flex items-center gap-1"><i class="far fa-calendar-alt"></i> ${formattedDate} às ${formattedTime}</span>`;
+                    dateTimeHTML = `<span class="inline-flex items-center gap-1 shrink-0"><i class="far fa-calendar-alt"></i> ${formattedDate} às ${formattedTime}</span>`;
                 }
             }
 
+            const statusBadgesHTML = [
+                prospect.unread ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase">Novo</span>' : '',
+                (prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : '',
+                prospect.capiSyncedAt ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''
+            ].filter(Boolean).join('');
+
             card.innerHTML = `
-                <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-                    ${prospect.origemLead ? `<span class="text-[10px] bg-gray-50 dark:bg-gray-900 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold border border-amber-500/30">${prospect.origemLead}</span>` : ''}
-                    ${prospect.unread ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase">Novo</span>' : ''}
-                    ${(prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : ''}
-                    ${prospect.capiSyncedAt ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''}
-                </div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2" title="${prospect.responsavel || 'Prospect sem nome'}">${prospect.responsavel || 'Prospect sem nome'}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate flex items-center gap-1">
-                    ${prospect.unidade ? 
-                        `<i class="fas fa-map-marker-alt text-gray-400 text-[11px]"></i><span>${prospect.unidade}</span>` : 
-                        `<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200/60 dark:border-amber-800/40" title="Lead ainda sem unidade atribuída"><i class="fas fa-exclamation-triangle text-amber-500 text-[9px]"></i> Sem Unidade</span>`
-                    }
+                ${statusBadgesHTML ? `<div class="flex items-center gap-1.5 flex-wrap mb-1.5">${statusBadgesHTML}</div>` : ''}
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug" title="${escapeHtml(prospect.responsavel || 'Prospect sem nome')}">${escapeHtml(prospect.responsavel || 'Prospect sem nome')}</div>
+                        ${prospect.origemLead ? `<span class="inline-block mt-1 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-gray-700/40 px-1.5 py-0.5 rounded leading-none">${escapeHtml(prospect.origemLead)}</span>` : ''}
+                    </div>
+                    <div class="group/ticket relative shrink-0">
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors ${ticketVal > 0 ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:text-emerald-600 hover:border-emerald-300'}">
+                            $
+                        </span>
+                        <div class="pointer-events-none opacity-0 group-hover/ticket:opacity-100 transition-opacity duration-150 absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-900 dark:bg-black text-white text-[10px] font-semibold whitespace-nowrap shadow-lg z-30">
+                            Ticket: ${formattedTicket}
+                        </div>
+                    </div>
                 </div>
                 ${tagsHTML ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHTML}</div>` : ''}
-                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400">
+                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-y-1 gap-x-2 text-[10px] text-gray-500 dark:text-gray-400">
                     ${dateTimeHTML || '<span></span>'}
-                    ${prospect.createdBy ? `<span class="text-[9px] text-gray-400 dark:text-gray-500 italic truncate ml-auto">${prospect.createdBy.split('@')[0]}</span>` : ''}
+                    <span class="inline-flex items-center gap-1.5 font-semibold px-1.5 py-0.5 rounded-md truncate max-w-[145px]" style="background-color: ${unitColor}18; color: ${unitColor}; border: 1px solid ${unitColor}35;" title="Unidade: ${escapeHtml(unitLabel)}">
+                        <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${unitColor};"></span>
+                        <span class="truncate">${escapeHtml(unitLabel)}</span>
+                    </span>
                 </div>
             `;
 
@@ -1715,6 +1800,17 @@
 
             if (modalElements.telefone) {
                 modalElements.telefone.addEventListener('input', updateWhatsAppLink);
+            }
+            if (modalElements.unidade && modalElements.ticketEstimado) {
+                modalElements.unidade.addEventListener('change', () => {
+                    const currentVal = parseInt(modalElements.ticketEstimado.value, 10) || 0;
+                    if (!currentVal || currentVal === 507 || currentVal === 677) {
+                        const defTicket = getDefaultTicketByUnit(modalElements.unidade.value);
+                        if (defTicket > 0) {
+                            modalElements.ticketEstimado.value = defTicket;
+                        }
+                    }
+                });
             }
             if (modalElements.whatsappLink) {
                 modalElements.whatsappLink.addEventListener('click', (e) => {
@@ -2960,7 +3056,7 @@
                 modalElements.unidade.value = prospect.unidade || '';
                 modalElements.setor.value = prospect.setor || '';
                 modalElements.prioridade.value = prospect.prioridade || '';
-                modalElements.ticketEstimado.value = prospect.ticketEstimado || '';
+                modalElements.ticketEstimado.value = prospect.ticketEstimado || getDefaultTicketByUnit(prospect.unidade) || '';
                 modalElements.origemLead.value = prospect.origemLead || '';
 
                 let dateTimeStr = '';
@@ -3300,12 +3396,13 @@
                 selectedTags.push(checkbox.value);
             });
 
+            const selectedUnidade = document.getElementById('unidade').value;
             const data = {
                 responsavel: document.getElementById('responsavel').value,
-                unidade: document.getElementById('unidade').value,
+                unidade: selectedUnidade,
                 setor: document.getElementById('setor').value,
                 prioridade: parseInt(document.getElementById('prioridade').value),
-                ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || 0,
+                ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || getDefaultTicketByUnit(selectedUnidade),
                 origemLead: document.getElementById('origemLead').value,
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,

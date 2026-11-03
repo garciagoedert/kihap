@@ -8,6 +8,11 @@
     let currentActiveLead = null;
     let isQuerying = false;
     const syncedPhotosCache = new Set();
+    // Índices em memória para exibir as tags de fase direto na lista de contatos (#pane-side)
+    const leadsPhoneIndex = new Map(); // variationDigits -> { status, nome, id }
+    const leadsNameIndex = new Map();  // normalizedName -> { status, nome, id }
+    const chatRowLookupCache = new Map(); // rawTitle -> { status, nome, id } | null | 'pending'
+    const KIHAP_LOGO_DATA_URI = 'data:image/png;base64,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';
 
     // Carrega configuração de URL salva
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -23,6 +28,8 @@
         createFloatingButton();
         createSidebar();
         observeWhatsAppChat();
+        preloadCrmLeadsIndex();
+        setInterval(preloadCrmLeadsIndex, 120000);
     }
 
     // Cria o botão flutuante
@@ -30,7 +37,9 @@
         const btn = document.createElement('div');
         btn.id = 'kihap-crm-floating-btn';
         btn.innerHTML = `
-            <span style="font-size: 16px;">🥋</span>
+            <span class="kihap-logo-badge">
+                <img src="${KIHAP_LOGO_DATA_URI}" alt="Kihap" />
+            </span>
             <span>Kihap CRM</span>
         `;
         btn.title = 'Abrir Barra Lateral do Kihap CRM';
@@ -45,14 +54,18 @@
         sidebar.innerHTML = `
             <div class="kihap-header">
                 <div class="kihap-title">
-                    <span style="font-size: 18px;">🥋</span>
+                    <span class="kihap-logo-badge">
+                        <img src="${KIHAP_LOGO_DATA_URI}" alt="Kihap" />
+                    </span>
                     <span>Kihap CRM</span>
                 </div>
                 <button id="kihap-close-btn" class="kihap-close-btn" title="Fechar">&times;</button>
             </div>
             <div class="kihap-content" id="kihap-sidebar-content">
                 <div class="kihap-card" style="text-align: center; padding: 28px 16px;">
-                    <div style="font-size: 32px; margin-bottom: 8px;">🥋</div>
+                    <div class="kihap-logo-badge-lg">
+                        <img src="${KIHAP_LOGO_DATA_URI}" alt="Kihap" />
+                    </div>
                     <p style="font-weight: 700; margin-bottom: 6px; font-size: 14px;">Selecione uma conversa</p>
                     <p style="font-size: 11px; opacity: 0.7; line-height: 1.4;">
                         Abra qualquer conversa no WhatsApp Web para sincronizar automaticamente com o funil do CRM Kihap.
@@ -74,26 +87,221 @@
 
         sidebarOpen = typeof forceState === 'boolean' ? forceState : !sidebarOpen;
         sidebar.classList.toggle('open', sidebarOpen);
+        document.body.classList.toggle('kihap-crm-open', sidebarOpen);
+        document.documentElement.classList.toggle('kihap-crm-open', sidebarOpen);
 
         if (sidebarOpen) {
             checkAndSyncActiveChat(true);
         }
     }
 
-    // Monitora alterações de chat ativo no WhatsApp Web
+    // Monitora alterações de chat ativo e da lista de conversas no WhatsApp Web
     function observeWhatsAppChat() {
         // Interval de verificação contínua
         setInterval(() => {
             checkAndSyncActiveChat(false);
-        }, 800);
+            syncChatListBadges();
+        }, 900);
 
-        // Observer para mudanças rápidas no DOM do #main
+        // Observer para mudanças rápidas no DOM do #app
+        let badgeDebounce = null;
         const observer = new MutationObserver(() => {
             checkAndSyncActiveChat(false);
+            if (!badgeDebounce) {
+                badgeDebounce = setTimeout(() => {
+                    badgeDebounce = null;
+                    syncChatListBadges();
+                }, 250);
+            }
         });
 
         const target = document.querySelector('#app') || document.body;
         observer.observe(target, { childList: true, subtree: true });
+    }
+
+    function normalizeContactName(name) {
+        return String(name || '').trim().toLowerCase();
+    }
+
+    function getStageShortLabel(stage) {
+        if (stage === 'Aula experimental') return 'Aula Exp.';
+        return stage || 'Novo';
+    }
+
+    function getStageBadgeClass(stage) {
+        const stageBadges = {
+            'Novo': 'badge-novo',
+            'Contactado': 'badge-contactado',
+            'Aula experimental': 'badge-aula',
+            'Matrícula': 'badge-matricula',
+            'Perdido': 'badge-perdido'
+        };
+        return stageBadges[stage] || 'badge-novo';
+    }
+
+    function indexLeadInMemory(lead, extraPhone, extraName) {
+        if (!lead) return;
+        const entry = {
+            id: lead.id,
+            status: lead.status || 'Novo',
+            nome: lead.nome || lead.responsavel || ''
+        };
+
+        const phonesToIndex = [lead.telefone, extraPhone].filter(Boolean);
+        for (const p of phonesToIndex) {
+            for (const v of getPhoneVariations(p)) {
+                leadsPhoneIndex.set(v, entry);
+            }
+        }
+
+        const namesToIndex = [lead.nome, lead.responsavel, extraName].filter(Boolean);
+        for (const n of namesToIndex) {
+            const norm = normalizeContactName(n);
+            if (norm && norm.length >= 3 && !/^\+?\d+$/.test(norm)) {
+                leadsNameIndex.set(norm, entry);
+            }
+        }
+
+        if (extraPhone) chatRowLookupCache.set(extraPhone.trim(), entry);
+        if (extraName) chatRowLookupCache.set(extraName.trim(), entry);
+    }
+
+    async function preloadCrmLeadsIndex() {
+        const collections = ['leads', 'prospects'];
+        for (const col of collections) {
+            try {
+                const res = await fetch('https://firestore.googleapis.com/v1/projects/intranet-kihap/databases/(default)/documents:runQuery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        structuredQuery: {
+                            from: [{ collectionId: col }],
+                            select: {
+                                fields: [
+                                    { fieldPath: 'nome' },
+                                    { fieldPath: 'responsavel' },
+                                    { fieldPath: 'telefone' },
+                                    { fieldPath: 'status' }
+                                ]
+                            },
+                            limit: 1000
+                        }
+                    })
+                });
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        if (item && item.document) {
+                            const parsed = parseFirestoreDoc(item.document, col);
+                            indexLeadInMemory(parsed);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn(`[Kihap CRM] Erro ao pré-carregar índice de ${col}:`, e);
+            }
+        }
+        syncChatListBadges();
+    }
+
+    function findLeadEntryForChatTitle(rawTitle) {
+        if (!rawTitle) return null;
+        const title = rawTitle.trim();
+        if (!title) return null;
+
+        // 1. Tenta pelo índice de variações de telefone
+        const digits = title.replace(/\D/g, '');
+        if (digits.length >= 8) {
+            for (const v of getPhoneVariations(digits)) {
+                if (leadsPhoneIndex.has(v)) {
+                    return leadsPhoneIndex.get(v);
+                }
+            }
+        }
+
+        // 2. Tenta pelo índice de nome normalizado
+        const normName = normalizeContactName(title);
+        if (leadsNameIndex.has(normName)) {
+            return leadsNameIndex.get(normName);
+        }
+
+        // 3. Tenta pelo cache de consulta direta da linha
+        if (chatRowLookupCache.has(title)) {
+            const cached = chatRowLookupCache.get(title);
+            return cached === 'pending' ? null : cached;
+        }
+
+        // 4. Se parece número de telefone (ex: +55 48 9650-6107), consulta 1x em background
+        if (digits.length >= 10) {
+            chatRowLookupCache.set(title, 'pending');
+            searchLeadInFirestore(title, '').then(found => {
+                if (found) {
+                    indexLeadInMemory(found, title, '');
+                    syncChatListBadges();
+                } else {
+                    chatRowLookupCache.set(title, null);
+                }
+            }).catch(() => {
+                chatRowLookupCache.set(title, null);
+            });
+        }
+
+        return null;
+    }
+
+    function syncChatListBadges() {
+        const paneSide = document.querySelector('#pane-side');
+        if (!paneSide) return;
+
+        const rows = paneSide.querySelectorAll('div[role="listitem"], div[role="row"], [data-testid="cell-frame-container"]');
+        rows.forEach(row => {
+            // O primeiro span[title] na linha de conversa do WhatsApp Web é o nome/número do contato
+            const titleSpan = row.querySelector('span[dir="auto"][title], span[title]');
+            if (!titleSpan) return;
+
+            const rawTitle = (titleSpan.getAttribute('title') || titleSpan.textContent || '').trim();
+            if (!rawTitle) return;
+
+            const leadEntry = findLeadEntryForChatTitle(rawTitle);
+            const parentEl = titleSpan.parentElement;
+            if (!parentEl) return;
+
+            let badgeEl = parentEl.querySelector(':scope > .kihap-chatlist-badge');
+
+            if (!leadEntry || !leadEntry.status) {
+                if (badgeEl) badgeEl.remove();
+                return;
+            }
+
+            const shortLabel = getStageShortLabel(leadEntry.status);
+            const badgeClass = getStageBadgeClass(leadEntry.status);
+            const tooltip = leadEntry.nome
+                ? `${leadEntry.nome} • Fase: ${leadEntry.status}`
+                : `Fase no CRM: ${leadEntry.status}`;
+
+            if (!badgeEl) {
+                badgeEl = document.createElement('span');
+                parentEl.style.display = 'inline-flex';
+                parentEl.style.alignItems = 'center';
+                parentEl.style.maxWidth = '100%';
+                parentEl.style.overflow = 'hidden';
+                titleSpan.style.overflow = 'hidden';
+                titleSpan.style.textOverflow = 'ellipsis';
+                titleSpan.style.whiteSpace = 'nowrap';
+                parentEl.appendChild(badgeEl);
+            }
+
+            const targetClass = `kihap-chatlist-badge ${badgeClass}`;
+            if (badgeEl.className !== targetClass) {
+                badgeEl.className = targetClass;
+            }
+            if (badgeEl.textContent !== shortLabel) {
+                badgeEl.textContent = shortLabel;
+            }
+            if (badgeEl.title !== tooltip) {
+                badgeEl.title = tooltip;
+            }
+        });
     }
 
     // Extrai o contato ativo no WhatsApp Web
@@ -265,7 +473,9 @@
         if (!content) return;
         content.innerHTML = `
             <div class="kihap-card" style="text-align: center; padding: 28px 16px;">
-                <div style="font-size: 32px; margin-bottom: 8px;">🥋</div>
+                <div class="kihap-logo-badge-lg">
+                    <img src="${KIHAP_LOGO_DATA_URI}" alt="Kihap" />
+                </div>
                 <p style="font-weight: 700; margin-bottom: 6px; font-size: 14px;">Selecione uma conversa</p>
                 <p style="font-size: 11px; opacity: 0.7; line-height: 1.4;">
                     Abra qualquer conversa no WhatsApp Web para sincronizar automaticamente com o funil do CRM Kihap.
@@ -374,33 +584,35 @@
             }
         }
 
-        // 3. Se não achou por telefone, tenta por Nome
+        // 3. Se não achou por telefone, tenta por Nome em leads e prospects
         if (name && name.length >= 3 && !/^\+?\d+$/.test(name.trim())) {
-            try {
-                const resN = await fetch('https://firestore.googleapis.com/v1/projects/intranet-kihap/databases/(default)/documents:runQuery', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        structuredQuery: {
-                            from: [{ collectionId: 'leads' }],
-                            where: {
-                                fieldFilter: {
-                                    field: { fieldPath: 'nome' },
-                                    op: 'EQUAL',
-                                    value: { stringValue: name.trim() }
-                                }
-                            },
-                            limit: 1
-                        }
-                    })
-                });
+            for (const col of ['leads', 'prospects']) {
+                try {
+                    const resN = await fetch('https://firestore.googleapis.com/v1/projects/intranet-kihap/databases/(default)/documents:runQuery', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            structuredQuery: {
+                                from: [{ collectionId: col }],
+                                where: {
+                                    fieldFilter: {
+                                        field: { fieldPath: 'nome' },
+                                        op: 'EQUAL',
+                                        value: { stringValue: name.trim() }
+                                    }
+                                },
+                                limit: 1
+                            }
+                        })
+                    });
 
-                const dataN = await resN.json();
-                if (Array.isArray(dataN) && dataN[0] && dataN[0].document) {
-                    return parseFirestoreDoc(dataN[0].document, 'leads');
+                    const dataN = await resN.json();
+                    if (Array.isArray(dataN) && dataN[0] && dataN[0].document) {
+                        return parseFirestoreDoc(dataN[0].document, col);
+                    }
+                } catch (e) {
+                    console.warn(`[Kihap CRM] Erro ao buscar por nome em ${col}:`, e);
                 }
-            } catch (e) {
-                console.warn("[Kihap CRM] Erro ao buscar por nome:", e);
             }
         }
 
@@ -462,6 +674,8 @@
         currentActiveLead = lead;
 
         if (lead) {
+            indexLeadInMemory(lead, rawPhone, rawName);
+            syncChatListBadges();
             renderLeadFoundCard(lead);
         } else {
             renderLeadNotFoundCard(rawPhone, rawName);
@@ -688,6 +902,8 @@
                 })
             });
             lead.status = newStage;
+            indexLeadInMemory(lead, currentRawPhone, currentContactName);
+            syncChatListBadges();
         } catch (e) {
             console.error("[Kihap CRM] Erro ao atualizar fase:", e);
             alert("Erro ao sincronizar fase com o servidor: " + e.message);
@@ -754,11 +970,23 @@
         }
     }
 
+    function getDefaultTicketByUnit(unit) {
+        const norm = String(unit || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (norm.includes('asa sul') || norm.includes('sudoeste') || norm.includes('noroeste') || norm.includes('lago sul') || norm.includes('botanico') || norm.includes('ensino') || norm.includes('brasilia')) {
+            return 677;
+        }
+        if (norm.includes('centro') || norm.includes('santa monica') || norm.includes('coqueiros') || norm.includes('florianopolis')) {
+            return 507;
+        }
+        return 0;
+    }
+
     // Cria novo lead no Firestore via REST
     async function createLeadInFirestore(name, phone, unit) {
         try {
             const clean = (phone || '').replace(/\D/g, '');
             const finalPhone = clean.length <= 11 && !clean.startsWith('55') ? clean : (clean.startsWith('55') ? clean.slice(2) : clean);
+            const defaultTicket = getDefaultTicketByUnit(unit);
 
             const leadFields = {
                 nome: { stringValue: name },
@@ -768,6 +996,9 @@
                 'origem do lead': { stringValue: 'WhatsApp Web' },
                 createdAt: { timestampValue: new Date().toISOString() }
             };
+            if (defaultTicket > 0) {
+                leadFields.ticketEstimado = { integerValue: String(defaultTicket) };
+            }
             if (currentActivePhotoUrl) {
                 leadFields.photoURL = { stringValue: currentActivePhotoUrl };
             }
@@ -782,6 +1013,8 @@
             if (data && data.name) {
                 const newLead = parseFirestoreDoc(data, 'leads');
                 currentActiveLead = newLead;
+                indexLeadInMemory(newLead, phone, name);
+                syncChatListBadges();
                 renderLeadFoundCard(newLead);
 
                 if (currentActivePhotoUrl) {
