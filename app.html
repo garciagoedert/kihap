@@ -21,38 +21,34 @@
             --text-dark: #111111;
         }
 
-        body {
+        html, body {
             background-color: var(--bg-color);
             background-image: radial-gradient(#d1d1d1 1px, transparent 1px);
             background-size: 24px 24px;
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             display: flex;
             flex-direction: column;
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+            overflow: hidden;
             font-family: 'Neue Machina', sans-serif;
         }
 
         .app-title {
-            font-size: 3.5rem;
+            font-size: clamp(2.25rem, 5vh, 3.25rem);
             line-height: 1;
             letter-spacing: -0.02em;
             color: var(--text-dark);
             font-weight: 900;
         }
 
-        @media (max-width: 768px) {
-            .app-title {
-                font-size: 2.8rem;
-            }
-        }
-
         .download-btn {
             background-color: var(--primary-yellow);
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -68,35 +64,37 @@
         .mockup-section {
             position: relative;
             width: 100%;
-            height: 480px;
-            margin-top: 1rem;
-            margin-bottom: 2rem;
+            flex: 1;
+            min-height: 0;
+            margin: 0.5rem 0;
             display: flex;
             justify-content: center;
+            align-items: center;
         }
 
         .mockup-container {
             position: relative;
             width: 100%;
-            max-width: 400px;
+            max-width: 360px;
             height: 100%;
+            max-height: 390px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
         }
 
         .iphone-mockup {
-            width: 210px;
+            width: clamp(145px, 21vh, 185px);
             flex-shrink: 0;
-            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.12));
+            filter: drop-shadow(0 16px 32px rgba(0,0,0,0.12));
             transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         .iphone-mockup.side-left {
             position: absolute;
-            left: -20px;
-            top: 60px;
-            transform: scale(0.85) rotate(-12deg);
+            left: 0px;
+            top: 50%;
+            transform: translateY(-44%) scale(0.85) rotate(-12deg);
             z-index: 5;
             opacity: 0.9;
         }
@@ -109,9 +107,9 @@
 
         .iphone-mockup.side-right {
             position: absolute;
-            right: -20px;
-            top: 40px;
-            transform: scale(0.85) rotate(10deg);
+            right: 0px;
+            top: 50%;
+            transform: translateY(-48%) scale(0.85) rotate(10deg);
             z-index: 5;
             opacity: 0.9;
         }
@@ -171,22 +169,13 @@
 </head>
 
 <body>
-    <main class="flex-1 flex flex-col items-center justify-start pt-12 px-6 max-w-lg mx-auto w-full">
+    <main class="h-full flex-1 flex flex-col items-center justify-between py-6 px-6 max-w-lg mx-auto w-full overflow-hidden">
         <!-- Text Content -->
-        <div class="w-full text-left mb-4">
+        <div class="w-full text-center shrink-0">
             <h1 class="app-title font-title fade-in-up">
                 Baixe o<br>
                 App Kihap!
             </h1>
-            
-            <!-- Download Button (Arrow) -->
-            <div class="mt-6 fade-in-up delay-1">
-                <a href="#downloads" class="download-btn">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
-            </div>
         </div>
 
         <!-- Mockups Section -->
@@ -208,40 +197,40 @@
                 <div class="iphone-mockup main floating">
                     <div class="phone-screen bg-white">
                         <!-- Screen Content -->
-                        <div class="h-full w-full flex flex-col px-6 pt-12">
-                            <div class="flex flex-col items-center mb-8">
-                                <img src="imgs/logo.png" alt="Kihap Logo" class="w-24 mb-1">
-                                <span class="text-[8px] text-gray-300 font-bold tracking-widest uppercase">Martial Arts</span>
+                        <div class="h-full w-full flex flex-col px-4 pt-9">
+                            <div class="flex flex-col items-center mb-5">
+                                <img src="imgs/logo.png" alt="Kihap Logo" class="w-20 mb-0.5">
+                                <span class="text-[7px] text-gray-300 font-bold tracking-widest uppercase">Martial Arts</span>
                             </div>
                             
-                            <div class="space-y-4">
+                            <div class="space-y-2.5">
                                 <div class="space-y-1">
-                                    <div class="w-full h-10 bg-gray-50 border border-gray-100 rounded-lg px-3 flex items-center">
-                                        <span class="text-[10px] text-gray-300">seu@email.com</span>
+                                    <div class="w-full h-8 bg-gray-50 border border-gray-100 rounded-lg px-2.5 flex items-center">
+                                        <span class="text-[9px] text-gray-300">seu@email.com</span>
                                     </div>
                                 </div>
                                 
                                 <div class="space-y-1">
-                                    <div class="w-full h-10 bg-gray-50 border border-gray-100 rounded-lg px-3 flex items-center">
-                                        <span class="text-[10px] text-gray-300">Sua senha</span>
+                                    <div class="w-full h-8 bg-gray-50 border border-gray-100 rounded-lg px-2.5 flex items-center">
+                                        <span class="text-[9px] text-gray-300">Sua senha</span>
                                     </div>
                                 </div>
                                 
-                                <button class="w-full h-10 bg-[#2563EB] text-white font-bold rounded-lg shadow-lg shadow-blue-500/20 uppercase text-[10px] tracking-wider">
+                                <button class="w-full h-8 bg-[#2563EB] text-white font-bold rounded-lg shadow-lg shadow-blue-500/20 uppercase text-[9px] tracking-wider">
                                     Entrar
                                 </button>
                                 
-                                <div class="text-center pt-2">
-                                    <p class="text-[9px] text-gray-400">Ainda não tem conta? <span class="text-blue-600 font-bold">Cadastre-se</span></p>
+                                <div class="text-center pt-1">
+                                    <p class="text-[8px] text-gray-400">Ainda não tem conta? <span class="text-blue-600 font-bold">Cadastre-se</span></p>
                                 </div>
                             </div>
                             
-                            <div class="absolute bottom-4 left-0 right-0 text-center">
-                                <p class="text-[7px] text-gray-300 uppercase tracking-widest">© 2024 KIHAP MARTIAL ARTS</p>
+                            <div class="absolute bottom-3 left-0 right-0 text-center">
+                                <p class="text-[6.5px] text-gray-300 uppercase tracking-widest">© 2024 KIHAP MARTIAL ARTS</p>
                             </div>
                         </div>
                         <!-- Dynamic Island -->
-                        <div class="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-full"></div>
+                        <div class="absolute top-2.5 left-1/2 -translate-x-1/2 w-14 h-3.5 bg-black rounded-full"></div>
                     </div>
                 </div>
 
@@ -260,8 +249,8 @@
         </div>
 
         <!-- Download Links -->
-        <div id="downloads" class="w-full flex flex-col items-center gap-6 mt-4 mb-12 fade-in-up delay-3">
-            <h2 class="font-title text-sm text-gray-400 uppercase tracking-[0.2em]">Disponível em</h2>
+        <div id="downloads" class="w-full flex flex-col items-center gap-3 shrink-0 fade-in-up delay-3">
+            <h2 class="font-title text-xs text-gray-400 uppercase tracking-[0.2em]">Disponível em</h2>
             <div class="flex justify-center gap-4">
                 <a href="https://apps.apple.com/br/app/kihap/id6761770657" target="_blank">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" class="store-badge">
@@ -271,7 +260,7 @@
                 </a>
             </div>
             
-            <a href="index.html" class="mt-4 text-gray-400 hover:text-gray-600 text-[10px] font-bold uppercase tracking-widest transition-colors">
+            <a href="index.html" class="mt-1 text-gray-400 hover:text-gray-600 text-[10px] font-bold uppercase tracking-widest transition-colors">
                 Voltar para o site &rarr;
             </a>
         </div>
