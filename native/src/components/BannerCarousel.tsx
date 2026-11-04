@@ -57,11 +57,44 @@ export const BannerCarousel = React.memo(({ banners }: BannerCarouselProps) => {
 
   const handleBannerPress = useCallback((banner: BannerItem) => {
     if (!banner.link) return;
-    const link = banner.link.trim();
+    let link = banner.link.trim();
+    if (!link) return;
+
+    // Se for URL externa completa
     if (link.startsWith('http://') || link.startsWith('https://')) {
+      try {
+        // Se for link da Kihap apontando para produto ou loja, abre nativamente dentro do app
+        if (link.includes('kihap.com.br')) {
+          const matchProduct = link.match(/\/store\/([^/?#]+)/);
+          if (matchProduct && matchProduct[1]) {
+            router.push(`/store/${matchProduct[1]}` as any);
+            return;
+          }
+          if (link.includes('/store')) {
+            router.push('/(tabs)/store' as any);
+            return;
+          }
+        }
+      } catch (_) {}
+
       Linking.openURL(link).catch((e) => console.error("Error opening URL:", e));
-    } else {
+      return;
+    }
+
+    // Garante barra inicial para rotas internas
+    if (!link.startsWith('/')) {
+      link = '/' + link;
+    }
+
+    // Se for rota simples de store, redireciona para a tab da loja
+    if (link === '/store') {
+      link = '/(tabs)/store';
+    }
+
+    try {
       router.push(link as any);
+    } catch (err) {
+      console.error("Error navigating to banner link:", err);
     }
   }, [router]);
 
