@@ -2,7 +2,7 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { collection, query, orderBy, limit, getDocs, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { db, functions, auth } from "./firebase-config.js";
-import { getUnidades } from "./common-ui.js";
+import { getUnidades, loadComponents } from "./common-ui.js";
 
 // Cloud Functions
 const sendPushNotification = httpsCallable(functions, 'sendPushNotification');
@@ -65,6 +65,7 @@ const kpiDispatches = document.getElementById('kpiDispatches');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    loadComponents();
     initTabs();
     initLivePreview();
     initTargetSelection();
