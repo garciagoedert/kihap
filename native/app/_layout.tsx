@@ -18,6 +18,8 @@ export const unstable_settings = {
 
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync } from '../src/services/notifications';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -25,6 +27,31 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Registra Push Notifications quando o usuário estiver autenticado
+  useEffect(() => {
+    if (user?.uid) {
+      registerForPushNotificationsAsync(user.uid);
+    }
+  }, [user?.uid]);
+
+  // Listener para quando o usuário toca na notificação recebida
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      if (data?.url) {
+        try {
+          router.push(data.url as any);
+        } catch (e) {
+          router.push('/(tabs)/notificacoes');
+        }
+      } else {
+        router.push('/(tabs)/notificacoes');
+      }
+    });
+
+    return () => subscription.remove();
+  }, [router]);
 
   useEffect(() => {
     if (loading) return;

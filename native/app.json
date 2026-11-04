@@ -17,6 +17,7 @@
     "android": {
       "package": "com.kihap.app",
       "versionCode": 46,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#eab308",
         "foregroundImage": "./assets/images/android-foreground-safe.png"
@@ -36,6 +37,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#eab308"
+        }
+      ],
       [
         "expo-splash-screen",
         {

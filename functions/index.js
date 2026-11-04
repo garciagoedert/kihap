@@ -19,6 +19,10 @@ exports.syncEvoToOlistScheduled = syncEvoToOlistScheduled;
 const { getSwitchProfileToken } = require('./switch-profile.js');
 exports.getSwitchProfileToken = getSwitchProfileToken;
 
+const { sendPushNotification, getPushStats } = require('./notifications.js');
+exports.sendPushNotification = sendPushNotification;
+exports.getPushStats = getPushStats;
+
 const { getGoogleAdsData } = require('./google-ads.js');
 exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 
